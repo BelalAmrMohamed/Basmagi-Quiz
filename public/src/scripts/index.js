@@ -1403,33 +1403,72 @@ function openInlineCreateQuizModal() {
     </div>
     <div class="form-group" style="margin-bottom: 24px;">
       <label for="inlineQuizContent" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-text-primary); font-size: 0.9rem;">محتوى الإمتحان</label>
-      <textarea id="inlineQuizContent" rows="8" style="width: 100%; padding: 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; line-height: 1.6; transition: all 0.2s; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';">Title: C++ Quiz
-Description: A small quiz aimed at teaching Junior devs C++.
-Source: https://www.w3schools.com/CPP/default.asp
+      <textarea id="inlineQuizContent" rows="8" style="width: 100%; padding: 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; line-height: 1.6; transition: all 0.2s; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';">
+Title: Advanced C++ Stress Test
+Description: Tests multi-line questions, LaTeX math, Markdown formatting, code snippets in options, and all three question types.
+Source: https://cppreference.com
 
-1. Which programming languange is fastest?
+1. Consider the following time complexity formula for a nested loop algorithm:
 
-A. Python
-B. Rust
-C. C++
-D. C#
+   $$T(n) = \\sum_{i=1}^{n} \sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
 
-Correct: C
+   Given $n = 8$, which value correctly represents the **total number of iterations**?
 
-Explanation: C++ is the fastest programming language of them.
-
-2. Python is harder than C++.
-
-A. True
-B. False
+A) 64
+B) 36
+C) 28
+D) 72
 
 Correct: B
 
-3. Write a C++ code to print \`Hello World!\`.
+Explanation: Substituting $n = 8$ into the formula:
 
-Answer: \`\`\`cout << "Hello World!" << endl;\`\`\`
+   $$T(8) = \\frac{8 \\times 9}{2} = \\frac{72}{2} = 36$$
 
-Explanation: C++ uses \`cout\` for printing statements.</textarea>
+   This is a classic triangular number result. Compare this to a standard
+   double-loop where both bounds run from $1$ to $n$, giving $O(n^2) = 64$.
+
+   | Loop Type           | Formula             | Result for $n=8$ |
+   |---------------------|---------------------|-----------------|
+   | **Nested (this)**   | $\frac{n(n+1)}{2}$  | **36**          |
+   | Full double loop    | $n^2$               | 64              |
+
+2. In C++, a \`const\` member function can modify a \`mutable\` data member.
+
+- True
+- False
+
+Correct: A
+
+Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
+This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
+\`\`\`cpp
+   class Counter {
+       mutable int cache_ = 0;    // may be written even in const context
+   public:
+       int value() const {
+           cache_++;              // legal because cache_ is mutable
+           return cache_;
+       }
+   };
+\`\`\`
+
+ 
+3. Write a C++ function template that returns the **larger** of two values.
+The function must work for any type that supports \`operator>\`.
+
+Answer:
+\`\`\`cpp
+template <typename T>
+T maxOf(T a, T b) {
+    return (a > b) ? a : b;
+}
+\`\`\`
+
+Explanation: The \`typename T\` template parameter is deduced at the call site,
+so \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and
+\`maxOf(std::string("apple"), std::string("banana"))\` for \`std::string\` —
+as long as \`operator>\` is defined for the type.</textarea>
     </div>
     <div class="profile-actions" style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
       <button type="button" id="inlineQuizImport" style="padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--color-border); background: var(--color-background-secondary); color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.95rem; font-family: inherit;">

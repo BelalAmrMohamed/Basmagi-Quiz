@@ -1139,8 +1139,7 @@ function buildVerticalQuestionCard(q, idx) {
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      const statusMsg = isCorrect ? "Correct" : "Wrong";
-      feedbackText = `${statusMsg}<div style="margin-top:8px">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div style="margin-top:8px">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
   }
 
@@ -1267,8 +1266,7 @@ function renderQuestion() {
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      const statusMsg = isCorrect ? "Correct" : "Wrong";
-      feedbackText = `${statusMsg}<div style="margin-top:8px">${renderMarkdown(
+      feedbackText = `<div style="margin-top:8px">${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
       )}</div>`;
     }
