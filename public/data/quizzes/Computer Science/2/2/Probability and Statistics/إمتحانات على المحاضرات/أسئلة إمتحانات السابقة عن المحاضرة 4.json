@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "id": "6W7GREF6",
+    "title": "Previous Finals's questions",
+    "createdAt": "3/16/2026, 7:40:39 AM",
+    "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
+    "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
+    "path": "quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/أسئلة إمتحانات السابقة عن المحاضرة 4.json"
+  },
+  "stats": {
+    "questionCount": 8,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "When Farid plays chess against his favorite computer program, he wins with probability 0.60. What is the probability that Farid wins 6 games, if he plays 10 games?",
+      "answer": "This follows a Binomial distribution with n = 10, p = 0.60, x = 6.",
+      "explanation": "Binomial distribution: P(X = k) = C(n,k) p^k (1−p)^(n−k). With n=10, p=0.6, k=6: P(X=6) = C(10,6)(0.6)^6(0.4)^4 = 210 × 0.046656 × 0.0256 ≈ 0.2508."
+    },
+    {
+      "q": "When Farid plays chess against his favorite computer program, he wins with probability 0.60. What is the probability that Farid wins 2 games at most, if he plays 10 games?",
+      "answer": "P(X ≤ 2) = P(X=0) + P(X=1) + P(X=2)",
+      "explanation": "\"At most 2 wins\" means P(X ≤ 2) = P(0) + P(1) + P(2) using Binomial(n=10, p=0.6). Summing each term gives P(X ≤ 2) ≈ 0.012."
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class. What is the probability that Fares makes 2 mistakes during one class?",
+      "answer": "Poisson distribution with λ = 1.2, x = 2.",
+      "explanation": "Poisson formula: P(X = x) = (e^(−λ) λ^x) / x!. With λ = 1.2 and x = 2: P(X=2) = e^(−1.2) × 1.44 / 2 = 0.3012 × 1.44 / 2 ≈ 0.216."
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class. What is the probability that Fares makes at least one mistake during one class?",
+      "answer": "Using the complement rule:",
+      "explanation": "P(X ≥ 1) = 1 − P(X = 0). P(X=0) = e^(−1.2) ≈ 0.3012. Therefore P(X ≥ 1) ≈ 1 − 0.3012 = 0.699."
+    },
+    {
+      "q": "If f(x) = C(n,x) · p^x · q^(n−x), x = 0, 1, 2, ..., n — prove that this is a valid probability mass function; then find the moment generating function (MGF) and the standard deviation σ.",
+      "answer": "1. Proof that f(x) is a valid mass function:\n   - f(x) ≥ 0 for all x, since p, q ≥ 0 and C(n,x) ≥ 0. ✓\n   - Σ[x=0 to n] C(n,x) p^x q^(n−x) = (p + q)^n = (p + (1−p))^n = 1^n = 1 ✓\n     (by the Binomial Theorem)\n   So f(x) is a valid probability mass function.\n \n2. Moment Generating Function (MGF):\n   M(t) = E[e^(tX)] = Σ[x=0 to n] e^(tx) C(n,x) p^x q^(n−x)\n   = Σ[x=0 to n] C(n,x) (pe^t)^x q^(n−x)\n   = (pe^t + q)^n\n \n   So M(t) = (pe^t + q)^n\n \n3. Standard Deviation (σ):\n   For Binomial distribution:\n   Mean: μ = np\n   Variance: σ² = npq\n   σ = √(npq)",
+      "explanation": "The proof uses the Binomial Theorem: ΣC(n,x)p^x q^(n−x) = (p+q)^n = 1. The MGF is derived by replacing p with pe^t in the binomial expansion. The variance npq follows from the second moment of the distribution, giving σ = √(npq).\n"
+    },
+    {
+      "q": "20% of customers at a store make a purchase. If 15 customers visit, what is the probability exactly 4 make a purchase?",
+      "answer": "This is a binomial distribution problem where n = 15, p = 0.2, x = 4.\n\n\nP(X=4) = C(15,4) × (0.2)⁴ × (0.8)¹¹\n= 1365 × 0.0016 × 0.0859\n≈ 0.188",
+      "explanation": "Using the Binomial formula P(X=k) = C(n,k) p^k (1−p)^(n−k), with n=15, p=0.2, k=4: P(X=4) = C(15,4)(0.2)^4(0.8)^11 ≈ 1365 × 0.0016 × 0.0859 ≈ 0.1876."
+    },
+    {
+      "q": "A call center receives an average of 5 calls per hour. What is the probability of receiving exactly 3 calls in an hour?",
+      "answer": "Using the Poisson formula with λ = 5, x = 3:\n\n\nP(X = 3) = (e^(−5) × 5³) / 3!\n= (0.0067 × 125) / 6\n≈ 0.140",
+      "explanation": "Poisson formula: P(X=x) = (e^(−λ) × λ^x) / x! with λ = 5 and x = 3: (e^(−5) × 125) / 6 ≈ (0.0067 × 125) / 6 ≈ 0.1404."
+    },
+    {
+      "q": "Let X be a Binomial random variable. Show that V(X) = (1 − p) · E(X).",
+      "answer": "For a Binomial distribution with parameters n and p:\n \n\nE(X) = np\nV(X) = np(1 − p)\n \n\nSubstituting E(X) = np into the variance formula:\nV(X) = np(1 − p) = E(X) · (1 − p)\n \n\nTherefore, V(X) = (1 − p) · E(X). ✓",
+      "explanation": "This identity holds directly from the Binomial mean E(X) = np and variance V(X) = npq = np(1−p). Replacing np with E(X) immediately yields V(X) = (1−p)E(X)."
+    }
+  ]
+}

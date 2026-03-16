@@ -8,7 +8,11 @@
   },
   "stats": {
     "questionCount": 10,
-    "questionTypes": ["Essay", "MCQ", "True/False"]
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
   },
   "questions": [
     {
@@ -25,7 +29,12 @@
     {
       "q": "What is the result of the following integral?\n$$\\int_0^1 x^2 \\, dx$$",
       "correct": 2,
-      "options": ["$\\frac{1}{4}$", "$\\frac{1}{2}$", "$\\frac{1}{3}$", "$1$"],
+      "options": [
+        "$\\frac{1}{4}$",
+        "$\\frac{1}{2}$",
+        "$\\frac{1}{3}$",
+        "$1$"
+      ],
       "explanation": "Using the **Power Rule** for integration:"
     },
     {
@@ -50,7 +59,12 @@
     {
       "q": "What does this code print?\n```cpp\n#include <iostream>\n#include <cmath>\nint main() {\ndouble x = 9.0;\nstd::cout << std::sqrt(x) << std::endl;\nreturn 0;\n}\n```",
       "correct": 2,
-      "options": ["`9`", "`4.5`", "`3`", "Compiler error"],
+      "options": [
+        "`9`",
+        "`4.5`",
+        "`3`",
+        "Compiler error"
+      ],
       "explanation": "`std::sqrt(9.0)` computes $\\sqrt{9} = 3$. The mathematical relationship is:"
     },
     {
@@ -67,7 +81,10 @@
     {
       "q": "True or False: The following Python snippet runs without error.\n```python\ndata = {\"key\": [1, 2, 3]}\nprint(data[\"key\"][4])\n```",
       "correct": 1,
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "explanation": "This raises an `IndexError` at runtime. The list `[1, 2, 3]` has valid indices $0, 1, 2$. Accessing index $4$ is out of bounds."
     },
     {
@@ -78,7 +95,12 @@
     {
       "q": "Which Big-O complexity describes **binary search**?",
       "correct": 2,
-      "options": ["$O(n)$", "$O(n^2)$", "$O(\\log n)$", "$O(n \\log n)$"],
+      "options": [
+        "$O(n)$",
+        "$O(n^2)$",
+        "$O(\\log n)$",
+        "$O(n \\log n)$"
+      ],
       "explanation": "Binary search **halves** the search space each step. If we start with $n$ elements:"
     },
     {
