@@ -2154,7 +2154,11 @@ window.exportQuiz = function () {
         if (!btn.dataset.copied) {
           try {
             const text = buildQuizText(
-              { title: quizData.title, description: quizData.description },
+              {
+                title: quizData.title,
+                description: quizData.description,
+                source: quizData.source,
+              },
               exportQuestions,
             );
             await navigator.clipboard.writeText(text);

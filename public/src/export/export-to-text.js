@@ -9,7 +9,7 @@ import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
 
 /**
  * Build a plain-text string for the quiz.
- * @param {Object}  config       - { title, description }
+ * @param {Object}  config       - { title, description, source }
  * @param {Array}   questions    - normalised question objects
  * @param {Array}   userAnswers  - optional; present in results mode
  * @returns {string}
@@ -24,6 +24,8 @@ export function buildQuizText(config, questions, userAnswers = []) {
   let text = `Title: ${config.title || "Untitled"}\n`;
   if (config.description) text += `Description: ${config.description}\n`;
   text += "\n";
+  if (config.source) text += `Source: ${config.source}\n`;
+  text += "\n\n" + "─".repeat(40) + "\n\n";
 
   // ── Score summary (results mode only) ─────────────────────────────────────
   if (isResultsMode) {
@@ -67,7 +69,7 @@ export function buildQuizText(config, questions, userAnswers = []) {
     if (essayCount > 0) {
       text += `  ✏ Essay     : ${essayTotalScore} / ${essayMaxScore} pts\n`;
     }
-    text += "\n" + "─".repeat(50) + "\n\n";
+    text += "\n" + "─".repeat(40) + "\n\n";
   }
 
   // ── Questions ──────────────────────────────────────────────────────────────
@@ -112,7 +114,7 @@ export function buildQuizText(config, questions, userAnswers = []) {
     }
 
     if (q.explanation) text += `\n   Explanation: ${q.explanation}\n`;
-    text += "\n" + "─".repeat(50) + "\n\n";
+    text += "\n" + "─".repeat(40) + "\n\n";
   });
 
   return text;

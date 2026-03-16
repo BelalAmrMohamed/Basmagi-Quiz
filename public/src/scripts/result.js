@@ -361,6 +361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     id: result.examId,
     title: result.examTitle || "User Quiz",
     description: "Custom user-created quiz",
+    source: result.source,
     path: null,
   };
 

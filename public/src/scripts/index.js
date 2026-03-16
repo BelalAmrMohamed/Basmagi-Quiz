@@ -2427,6 +2427,7 @@ function createExamCard(exam) {
             const config = {
               title: exam.title || exam.id,
               description: exam.description,
+              source: exam.source,
             };
             const text = buildQuizText(config, questions);
 
@@ -2918,6 +2919,7 @@ function showUserQuizDownloadPopup(quiz) {
           const config = {
             title: qz(quiz, "title") || quiz.id,
             description: qz(quiz, "description"),
+            source: qz(quiz, "source"),
           };
           text = buildQuizText(config, questions);
 
