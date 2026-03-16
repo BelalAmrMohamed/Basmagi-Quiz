@@ -1567,9 +1567,6 @@ export async function exportToQuiz(config, questions) {
     flaggedQuestions: new Set(),
     quizStartTime: null,
     timerInterval: null,
-    touchStartX: 0,
-    touchEndX: 0,
-  
     init() {
       this.loadPreferences();
       this.loadProgress();
@@ -1579,7 +1576,6 @@ export async function exportToQuiz(config, questions) {
       this.setupMenuToggle();
       this.setupToggles();
       this.setupKeyboardNavigation();
-      this.setupTouchGestures();
       this.setupModalClickOutside();
       this.startQuizTimer();
       this.setupImageLoading();
@@ -2306,32 +2302,6 @@ export async function exportToQuiz(config, questions) {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         this.selectAnswer(qIndex, optIndex);
-      }
-    },
-  
-    setupTouchGestures() {
-      const quizBody = document.querySelector('.quiz-body');
-      
-      quizBody.addEventListener('touchstart', (e) => {
-        this.touchStartX = e.changedTouches[0].screenX;
-      }, { passive: true });
-      
-      quizBody.addEventListener('touchend', (e) => {
-        this.touchEndX = e.changedTouches[0].screenX;
-        this.handleSwipe();
-      }, { passive: true });
-    },
-  
-    handleSwipe() {
-      const swipeThreshold = 75;
-      const diff = this.touchStartX - this.touchEndX;
-      
-      if (Math.abs(diff) > swipeThreshold) {
-        if (diff > 0) {
-          this.jumpToQuestion(Math.min(this.currentQuestion + 1, questions.length - 1));
-        } else {
-          this.jumpToQuestion(Math.max(this.currentQuestion - 1, 0));
-        }
       }
     },
   
