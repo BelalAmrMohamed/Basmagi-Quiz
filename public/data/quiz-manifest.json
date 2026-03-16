@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-16T05:53:40.875Z",
+  "generatedAt": "2026-03-16T05:55:10.229Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1251,7 +1251,7 @@
         },
         {
           "id": "6W7GREF6",
-          "title": "Previous Finals's questions",
+          "title": "أسئلة إمتحانات السابقة عن المحاضرة 4",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/أسئلة إمتحانات السابقة عن المحاضرة 4.json",
           "questionCount": 8,
           "questionTypes": [
