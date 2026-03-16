@@ -394,6 +394,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (found) {
         questions = found.questions;
         config.title = found.title;
+        config.source = found.source || result.source;
+        config.createdAt = found.createdAt;
+        config.path = found.path;
       }
     } catch (e) {
       console.error("Error loading user quiz questions", e);
@@ -401,6 +404,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   document.title = `نتائج إمتحان ${config.title}`;
+
+  // ── Score breakdown ────────────────────────────────────────────────────────
+  const totalQuestions = questions.length;
+  let mcqCorrect = 0,
+    mcqWrong = 0,
+    mcqSkipped = 0,
+    mcqTotal = 0;
+  let essayCount = 0,
+    essayScoreTotal = 0,
+    essayMaxTotal = 0;
+
+  for (let i = 0; i < totalQuestions; i++) {
+    const q = questions[i];
+    const ua = result.userAnswers[i];
+    if (isEssayQuestion(q)) {
+      essayCount++;
+      essayScoreTotal += gradeEssay(ua, getEssayAnswer(q));
+      essayMaxTotal += 5;
+    } else {
+      mcqTotal++;
+      const correctIdx = q.correct ?? q.answer;
+      if (ua === undefined || ua === null) mcqSkipped++;
+      else if (ua === correctIdx) mcqCorrect++;
+      else mcqWrong++;
+    }
+  }
+
+  const displayScore =
+    result.score !== undefined ? result.score : mcqCorrect + essayScoreTotal;
+  const displayTotal =
+    result.total !== undefined ? result.total : mcqTotal + essayMaxTotal;
+  const percentage =
+    displayTotal > 0 ? Math.round((displayScore / displayTotal) * 100) : 0;
 
   // Helper for loading state
   async function withDownloadLoading(buttonEl, asyncFn) {
@@ -531,7 +567,20 @@ document.addEventListener("DOMContentLoaded", async () => {
               question.explanation = q.explanation;
             return question;
           });
-          const payload = { questions: exportQuestions };
+          const statsTypes = new Set();
+          exportQuestions.forEach((q) => {
+            if (!q.options || q.options.length === 0) statsTypes.add("Essay");
+            else if (q.options.length === 2) statsTypes.add("True/False");
+            else statsTypes.add("MCQ");
+          });
+
+          const payload = {
+            stats: {
+              questionCount: exportQuestions.length,
+              questionTypes: Array.from(statsTypes).sort(),
+            },
+            questions: exportQuestions,
+          };
           const fileContent = JSON.stringify(payload, null, 2);
           const blob = new Blob([fileContent], { type: "application/json" });
           const url = URL.createObjectURL(blob);
@@ -554,32 +603,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
   }
 
-  // ── Score breakdown ────────────────────────────────────────────────────────
-  const totalQuestions = questions.length;
-  let mcqCorrect = 0,
-    mcqWrong = 0,
-    mcqSkipped = 0,
-    mcqTotal = 0;
-  let essayCount = 0,
-    essayScoreTotal = 0,
-    essayMaxTotal = 0;
-
-  for (let i = 0; i < totalQuestions; i++) {
-    const q = questions[i];
-    const ua = result.userAnswers[i];
-    if (isEssayQuestion(q)) {
-      essayCount++;
-      essayScoreTotal += gradeEssay(ua, getEssayAnswer(q));
-      essayMaxTotal += 5;
-    } else {
-      mcqTotal++;
-      const correctIdx = q.correct ?? q.answer;
-      if (ua === undefined || ua === null) mcqSkipped++;
-      else if (ua === correctIdx) mcqCorrect++;
-      else mcqWrong++;
-    }
-  }
-
   const limit = 30;
   const title = result.examTitle;
 
@@ -588,12 +611,6 @@ document.addEventListener("DOMContentLoaded", async () => {
      of the `...` so they actually get displayed correctly */
   document.getElementById("quiz-title").textContent =
     title.length > limit ? `${title.substring(0, limit)}...` : title;
-
-  // Support both old result format and new (with mcqScore + essayScore fields)
-  const displayScore =
-    result.score !== undefined ? result.score : mcqCorrect + essayScoreTotal;
-  const displayTotal =
-    result.total !== undefined ? result.total : mcqTotal + essayMaxTotal;
 
   renderHeader(
     scoreHeader,
