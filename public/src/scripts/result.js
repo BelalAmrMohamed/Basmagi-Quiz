@@ -354,7 +354,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     essayScoreTotal,
     essayMaxTotal,
   );
+
+  // Kick off the count-up animation on #scoreDisplay.
+  // Fade out the static fraction text that renderHeader just wrote, then let
+  // countUp rewrite textContent from 0→displayScore while fading back in.
+  if (scoreDisplay) {
+    scoreDisplay.style.opacity = "0";
+    requestAnimationFrame(() => {
+      scoreDisplay.style.opacity = "1"; // CSS transition: opacity 300ms ease
+      countUp(scoreDisplay, displayScore);
+    });
+  }
+
   renderReview(container, questions, result.userAnswers);
+
+  // ── UX 2.5: Review Card Stagger Animation ─────────────────────────────────
+  // Set --stagger on each rendered card so the CSS animation-delay kicks in.
+  // Capped at index 8: cards beyond the initial fold share the same max delay
+  // and don't make the user wait an increasingly long time to see them appear.
+  document
+    .querySelectorAll("#reviewContainer .review-card")
+    .forEach((el, i) => {
+      el.style.setProperty("--stagger", Math.min(i, 8));
+    });
 
   const newBadges = result.gamification ? result.gamification.newBadges : [];
   newBadges.forEach((badge, index) => {
@@ -372,6 +394,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function goHome() {
   window.location.href = "/";
+}
+
+/**
+ * countUp — animates el.textContent from 0 to target over `duration` ms.
+ * Pure: the only DOM side-effect is writing el.textContent.
+ * Uses a cubic ease-out curve: eased = 1 − (1 − t)³
+ *
+ * @param {HTMLElement} el       - Target element whose textContent will be updated.
+ * @param {number}      target   - Final numeric value to count up to.
+ * @param {number}      duration - Animation length in milliseconds (default 1200).
+ */
+function countUp(el, target, duration = 1200) {
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 3); // cubic ease-out
+    el.textContent = Math.round(eased * target);
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 }
 
 function renderHeader(

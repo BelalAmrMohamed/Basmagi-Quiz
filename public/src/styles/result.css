@@ -177,6 +177,17 @@ body {
 }
 
 /* ─── Score Circle ────────────────────────────────────────────────────────── */
+@keyframes score-entrance {
+  from {
+    transform: scale(0.4) rotate(-8deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
 .score-circle {
   width: 180px;
   height: 180px;
@@ -193,6 +204,7 @@ body {
     var(--shadow-xl),
     inset 0 -4px 12px rgba(0, 0, 0, 0.15);
   position: relative;
+  animation: score-entrance 600ms var(--ease-spring) 200ms both;
 }
 
 .score-circle::before {
@@ -255,6 +267,7 @@ body {
   margin: 0 0 24px;
   letter-spacing: -0.03em;
   line-height: 1;
+  transition: opacity 300ms ease;
 }
 
 /* ─── Navigation Button ───────────────────────────────────────────────────── */
@@ -694,6 +707,25 @@ body {
 .download-option-image {
   max-width: 30px;
   max-height: 30px;
+}
+
+/* ─── Review Card Stagger Animation ──────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes card-fadein {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .review-card {
+    animation: card-fadein 420ms var(--ease-out-expo) both;
+    animation-delay: calc(var(--stagger, 0) * 60ms);
+  }
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────────────── */

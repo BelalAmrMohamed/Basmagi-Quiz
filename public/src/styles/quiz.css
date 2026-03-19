@@ -1311,3 +1311,147 @@ body {
 [data-theme="dark-slate"] .md-table tbody tr:hover {
   background: rgba(99, 102, 241, 0.09);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UX ENHANCEMENT 2.1 — Option Row Micro-interactions
+   ─────────────────────────────────────────────────────────────────────────
+   Rules here only add: @keyframes, animation, ::after / ::before, and a
+   position/overflow context block for .check-answer-btn so its shimmer
+   pseudo-element can clip correctly.
+   No existing selector's layout properties are modified.
+   All timing and easing values consume tokens from themes.css.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Keyframes ────────────────────────────────────────────────────────── */
+
+/*
+ * option-select
+ * Triggered when an option row receives the .selected class.
+ * Starts slightly compressed; --ease-spring drives the overshoot back to 1.
+ */
+@keyframes option-select {
+  from {
+    transform: scale(0.96);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/*
+ * reveal-correct
+ * Played on the .correct option row once the card is locked and the
+ * correct answer slides into the user's view.
+ */
+@keyframes reveal-correct {
+  from {
+    transform: translateX(-8px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/*
+ * shimmer-sweep
+ * Shared by both the hover single-pass and the .is-loading infinite loop.
+ * Uses transform only (GPU-composited, no layout cost).
+ */
+@keyframes shimmer-sweep {
+  from {
+    transform: translateX(-150%) skewX(-15deg);
+  }
+  to {
+    transform: translateX(350%) skewX(-15deg);
+  }
+}
+
+/*
+ * glow-pulse
+ * Pulses the drop-shadow on .progress-fill when progress ≥ 80 %.
+ * Shadow values are inlined because box-shadow cannot reference CSS vars
+ * inside calc(), but the timing tokens are still fully token-driven.
+ */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 28px rgba(99, 102, 241, 0.85),
+      0 0 50px rgba(139, 92, 246, 0.45);
+  }
+}
+
+/* ── 2. Option row — selection bounce ────────────────────────────────────── */
+
+.option-row.selected {
+  animation: option-select var(--duration-fast) var(--ease-spring) both;
+}
+
+/* ── 3. Option row — correct-answer reveal (post-lock) ───────────────────── */
+
+.option-row.correct {
+  animation: reveal-correct var(--duration-base) var(--ease-out-expo) both;
+}
+
+/* ── 4. Check-answer button — shimmer pseudo-element setup ───────────────── */
+/*
+ * A separate rule block adds only the stacking context needed for ::after
+ * to clip and position correctly. The existing .check-answer-btn block is
+ * left byte-for-byte identical.
+ */
+.check-answer-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.check-answer-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 100%
+  );
+  transform: translateX(-150%) skewX(-15deg);
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* Hover: single forward sweep — skipped when disabled or grading */
+.check-answer-btn:not(:disabled):not(.is-loading):hover::after {
+  opacity: 1;
+  animation: shimmer-sweep var(--duration-base) var(--ease-out-expo) forwards;
+}
+
+/* ── 5. Check-answer button — .is-loading (essay grading in flight) ──────── */
+
+.check-answer-btn.is-loading {
+  cursor: wait;
+  pointer-events: none;
+}
+
+/* Infinite shimmer bar while the AI grading request is in flight */
+.check-answer-btn.is-loading::after {
+  opacity: 1;
+  animation: shimmer-sweep calc(var(--duration-base) * 5) linear infinite;
+}
+
+/* ── 6. Progress fill — near-complete glow pulse (≥ 80 %) ───────────────── */
+/*
+ * The existing `transition: width` on .progress-fill still runs as normal;
+ * CSS transitions and animations are independent compositing layers.
+ */
+.progress-fill.progress-near-complete {
+  animation: glow-pulse calc(var(--duration-slow) * 3) var(--ease-spring)
+    infinite;
+}

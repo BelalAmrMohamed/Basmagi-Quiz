@@ -932,7 +932,13 @@ function renderAllQuestionsVertical() {
 
   const answeredCount = Object.keys(userAnswers).length;
   const progressPercent = (answeredCount / questions.length) * 100;
-  if (els.progressFill) els.progressFill.style.width = `${progressPercent}%`;
+  if (els.progressFill) {
+    els.progressFill.style.width = `${progressPercent}%`;
+    els.progressFill.classList.toggle(
+      "progress-near-complete",
+      progressPercent >= 80,
+    );
+  }
   if (els.progressText)
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
@@ -961,7 +967,13 @@ function renderQuestion() {
   const answeredCount = Object.keys(userAnswers).length;
   const progressPercent = (answeredCount / questions.length) * 100;
 
-  if (els.progressFill) els.progressFill.style.width = `${progressPercent}%`;
+  if (els.progressFill) {
+    els.progressFill.style.width = `${progressPercent}%`;
+    els.progressFill.classList.toggle(
+      "progress-near-complete",
+      progressPercent >= 80,
+    );
+  }
   if (els.progressText)
     els.progressText.textContent = `${Math.round(
       progressPercent,
