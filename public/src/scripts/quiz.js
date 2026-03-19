@@ -6,6 +6,7 @@ import {
   confirmationNotification,
 } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
+import { initKeyboardNav } from "./keyboard-nav.js";
 import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
 showNotification(
   "الإمتحان بدأ",
@@ -563,22 +564,24 @@ async function init() {
       }
     };
 
+    initKeyboardNav({
+      onNext: () => nav(1),
+      onPrev: () => nav(-1),
+      onCheck: () => checkAnswer(),
+      onBookmark: () => window.toggleBookmark(), // ← was empty
+      onFlag: () => window.toggleFlag(), // ← was empty
+      onSelect: (i) => {
+        if (lockedQuestions[currentIdx]) return;
+        userAnswers[currentIdx] = i;
+        saveStateDebounced();
+        renderQuestion();
+        renderMenuNavigationDebounced();
+        maybeAutoSubmit();
+      },
+    });
     if (els.viewToggle) {
       els.viewToggle.addEventListener("click", toggleView);
     }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        // Prevent enter action if confirmation notification is showing
-        if (document.querySelector(".confirmation-overlay.show")) return;
-        const activeElement = document.activeElement;
-        if (activeElement && activeElement.tagName === "TEXTAREA") return;
-        e.preventDefault();
-        try {
-          window.nextQuestion();
-        } catch (err) {}
-      }
-    });
   } catch (err) {
     console.error("Initialization Error:", err);
     if (els.questionContainer) {

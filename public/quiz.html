@@ -363,6 +363,10 @@
 
     <script type="module" src="src/scripts/quiz.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
+    <script type="module">
+        import { getShortcutModalHTML } from './src/scripts/keyboard-nav.js';
+        document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
+    </script>
 </body>
 
 </html>
