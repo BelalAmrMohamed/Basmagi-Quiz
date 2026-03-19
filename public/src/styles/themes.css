@@ -3,6 +3,8 @@
 /* ==================== LIGHT THEME (DEFAULT) ==================== */
 :root,
 [data-theme="light"] {
+  color-scheme: light;
+
   /* Backgrounds */
   --color-background: #fafbfc;
   --color-background-secondary: #f3f4f6;
@@ -24,6 +26,7 @@
   --color-primary-hover: #4f46e5;
   --color-primary-light: #eef2ff;
   --color-primary-dark: #4338ca;
+  --color-accent: #6366f1;
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -31,9 +34,11 @@
   --color-success-light: #d1fae5;
 
   --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
   --color-warning-light: #fef3c7;
 
   --color-error: #ef4444;
+  --color-error-hover: #dc2626;
   --color-error-light: #fee2e2;
 
   /* Code text colour (consumed by markdown.css) */
@@ -156,6 +161,8 @@
 
 /* ==================== DARK SLATE THEME ==================== */
 [data-theme="dark-slate"] {
+  color-scheme: dark;
+
   /* Backgrounds */
   --color-background: #0f172a;
   --color-background-secondary: #1e293b;
@@ -176,6 +183,7 @@
   --color-primary-hover: #4f46e5;
   --color-primary-light: rgba(99, 102, 241, 0.15);
   --color-primary-dark: #312e81;
+  --color-accent: #818cf8;
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -183,9 +191,11 @@
   --color-success-light: rgba(16, 185, 129, 0.2);
 
   --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
   --color-warning-light: rgba(245, 158, 11, 0.2);
 
   --color-error: #ef4444;
+  --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
   --color-code: #e2e8f0;
@@ -235,6 +245,8 @@
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
 [data-theme="dark"] {
+  color-scheme: dark;
+
   /* Backgrounds */
   --color-background: #121212;
   --color-background-secondary: #1e1e1e;
@@ -255,6 +267,7 @@
   --color-primary-hover: #2563eb;
   --color-primary-light: rgba(59, 130, 246, 0.15);
   --color-primary-dark: #1e40af;
+  --color-accent: #60a5fa;
 
   /* Semantic Colors */
   --color-success: #22c55e;
@@ -262,9 +275,11 @@
   --color-success-light: rgba(34, 197, 94, 0.2);
 
   --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
   --color-warning-light: rgba(245, 158, 11, 0.2);
 
   --color-error: #ef4444;
+  --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
   --color-code: #e2e8f0;
@@ -909,20 +924,20 @@ body {
 /* Fix theme button text color for dark themes */
 [data-theme="dark-slate"] .theme-btn-label,
 [data-theme="dark"] .theme-btn-label {
-  color: #ffffff; /* Makes the text white */
+  color: var(--color-text-primary); /* Makes the text white */
   font-weight: 600; /* Makes it look slightly 'bigger' and bolder */
   font-size: 14px; /* Adjust this to make it even bigger if needed */
 }
 /* Fix for Light Theme: Force all labels to be dark */
 [data-theme="light"] .theme-selector-btn .theme-btn-label {
-  color: #111827 !important; /* Dark color for light mode */
+  color: var(--color-text-primary) !important; /* Dark color for light mode */
   font-weight: 600;
 }
 
 /* Fix for Dark Themes: Force all labels to be white and bigger */
 [data-theme="dark-slate"] .theme-selector-btn .theme-btn-label,
 [data-theme="dark"] .theme-selector-btn .theme-btn-label {
-  color: #ffffff !important; /* White color for dark modes */
+  color: var(--color-text-primary) !important; /* White color for dark modes */
   font-weight: 700;
   font-size: 14px;
 }
@@ -930,13 +945,13 @@ body {
 LIGHT THEME
 ============================================================================ */
 [data-theme="light"] .header-badge {
-  background: rgba(255, 255, 255, 0.7);
-  color: #1e293b;
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
 }
 
 [data-theme="light"] .header-badge .user-name {
-  color: #2563eb;
-  background: rgba(37, 99, 235, 0.12);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 /* For the animation */
@@ -953,29 +968,29 @@ LIGHT THEME
 DARK THEME
 ============================================================================ */
 [data-theme="dark"] .header-badge {
-  background: rgba(30, 41, 59, 0.75);
-  color: #e5e7eb;
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
   box-shadow:
     0 8px 24px rgba(0, 0, 0, 0.4),
     inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 [data-theme="dark"] .header-badge .user-name {
-  color: #60a5fa;
-  background: rgba(96, 165, 250, 0.15);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 /* ============================================================================
 DARK SLATE THEME
 ============================================================================ */
 [data-theme="dark-slate"] .header-badge {
-  background: rgba(15, 23, 42, 0.8);
-  color: #e2e8f0;
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
 }
 
 [data-theme="dark-slate"] .header-badge .user-name {
-  color: #38bdf8;
-  background: rgba(56, 189, 248, 0.16);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
 }
 
 /* For the animation */

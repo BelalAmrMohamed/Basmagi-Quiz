@@ -391,10 +391,7 @@ async function init() {
 
     // Update Title UI
     if (els.title) {
-      let modeLabel = "";
-      if (quizMode === "practice") modeLabel = " (تدريب)";
-      if (quizMode === "timed") modeLabel = " (مؤقت)";
-      els.title.textContent = (metaData.title || "Quiz") + modeLabel;
+      els.title.textContent = metaData.title || "Quiz";
     }
 
     // Setup Timer

@@ -1926,14 +1926,14 @@ function createUserQuizCard(quiz, index) {
   };
   deleteBtn.onclick = (e) => {
     e.stopPropagation();
-    deleteUserQuiz(quiz.id, index);
+    deleteUserQuiz(quiz.id);
   };
 
   const downloadBtn = document.createElement("button");
   downloadBtn.textContent = "تحميل";
   downloadBtn.type = "button";
   downloadBtn.setAttribute("aria-label", `تحميل اختبار ${qz(quiz, "title")}`);
-  playBtn.className = "btn btn-primary";
+  downloadBtn.className = "btn btn-primary";
   downloadBtn.style.cssText = `
     flex: 1;
     padding: 10px 16px;
@@ -2042,7 +2042,7 @@ function playUserQuiz(quiz) {
 /**
  * Delete a user-created quiz
  */
-async function deleteUserQuiz(quizId, index) {
+async function deleteUserQuiz(quizId) {
   try {
     if (
       !(await confirmationNotification(
@@ -2053,8 +2053,8 @@ async function deleteUserQuiz(quizId, index) {
     }
 
     const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    userQuizzes.splice(index, 1);
-    setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+    const filteredQuizzes = userQuizzes.filter((q) => q.id !== quizId);
+    setInStorage("user_quizzes", JSON.stringify(filteredQuizzes));
 
     // Re-render the folder view
     renderRootCategories();
@@ -2327,6 +2327,7 @@ function createExamCard(exam) {
   };
 
   const onDownloadOption = async (format) => {
+    let mod;
     const config = {
       id: exam.id,
       title: exam.title || exam.id,
@@ -2819,6 +2820,7 @@ function escapeHtml(unsafe) {
 
 // Make functions available globally
 window.startQuiz = startQuiz;
+window.renderRootCategories = renderRootCategories;
 
 // ============================================================================
 // DOM Content Loaded
@@ -3076,11 +3078,6 @@ function showUserQuizDownloadPopup(quiz) {
 // ============================================================================
 // ERROR BOUNDARY
 // ============================================================================
-
-window.addEventListener("error", (event) => {
-  console.error("Global error:", event.error);
-  // In production, send to error tracking service
-});
 
 window.addEventListener("unhandledrejection", (event) => {
   console.error("Unhandled promise rejection:", event.reason);
