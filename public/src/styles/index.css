@@ -1076,7 +1076,7 @@ Container
     transition: none;
     filter: none;
     /* Pill background */
-    background: var(--color-background-secondary);
+    background: inherit;
     border-radius: 8px;
   }
 
@@ -1911,11 +1911,12 @@ Container
     height: 32px;
     max-width: 10px;
     flex: 0 0 32px;
-    background: var(--color-surface);
+    background: inherit;
     border: none;
     box-shadow: none;
     align-items: center;
     justify-content: end;
+    color: #0088cc;
   }
 
   .course-meta {

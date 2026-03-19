@@ -36,7 +36,7 @@
   --color-error: #ef4444;
   --color-error-light: #fee2e2;
 
-  /* Code text colour (consumed by markdown-styles.css) */
+  /* Code text colour (consumed by markdown.css) */
   --color-code: #334155;
 
   /* Gradients */
