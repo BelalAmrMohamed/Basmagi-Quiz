@@ -1895,9 +1895,11 @@ Container
 }
 
 /* Play / primary action button inside actions */
-.user-quiz-actions .btn {
+.user-quiz-actions .btn-primary {
   flex: 1;
   padding: 10px 16px;
+  background: var(--gradient-accent);
+  color: white;
   border: none;
   border-radius: 6px;
   font-weight: 600;
