@@ -572,6 +572,8 @@ async function init() {
       onFlag: () => window.toggleFlag(), // ← was empty
       onSelect: (i) => {
         if (lockedQuestions[currentIdx]) return;
+        const q = questions[currentIdx];
+        if (!q?.options || i >= q.options.length) return; // ← add this line
         userAnswers[currentIdx] = i;
         saveStateDebounced();
         renderQuestion();
