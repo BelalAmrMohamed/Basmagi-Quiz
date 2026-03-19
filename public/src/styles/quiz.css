@@ -655,14 +655,44 @@ body {
   direction: ltr;
 }
 
+/* Two-column grid: [icon col] [explanation body col]
+   Column 1 (auto): the ::before status icon — naturally sized.
+   Column 2 (1fr):  the explanation body — claims all remaining space.
+   min-width: 0 on col 2 prevents grid blowout on long unbreakable tokens. */
 .feedback.show {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto;
+  align-items: start;
+  gap: 0 12px;
 }
 
+/* Icon column */
 .feedback::before {
+  grid-column: 1;
+  grid-row: 1;
   font-size: 1.4rem;
+  line-height: 1.4;
+  align-self: start;
+  margin-top: 0.1em; /* optical alignment with the first text line */
+}
+
+/* Explanation body column */
+.feedback > div,
+.feedback-body {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  margin-top: 0 !important; /* neutralise inline style="margin-top:8px" */
+}
+
+/* <strong> score line (essay feedback) also sits in the body column */
+.feedback > strong {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
 }
 
 .feedback.correct::before {
@@ -673,9 +703,12 @@ body {
   content: "✗";
 }
 
-.feedback.essay-feedback {
+/* Essay feedback: single-column flex (no side icon) */
+.feedback.essay-feedback.show {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 8px;
 }
 
 /* Navigation */
@@ -826,9 +859,58 @@ body {
   .menu-nav-items.grid-view {
     grid-template-columns: repeat(4, 1fr);
   }
+
+  /* ── Issue 3: Stack icon above explanation on narrow screens ── */
+  /* Collapse the two-column grid to a single column so the status
+     icon moves ABOVE the explanation body instead of sitting beside
+     it and consuming ~40 px of scarce horizontal space. */
+  .feedback.show {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    gap: 6px 0;
+    padding: 14px;
+  }
+
+  /* Icon: row 1, full width, slightly larger for legibility */
+  .feedback::before {
+    grid-column: 1;
+    grid-row: 1;
+    font-size: 1.8rem;
+    margin-top: 0;
+  }
+
+  /* Body: row 2, full width */
+  .feedback > div,
+  .feedback-body,
+  .feedback > strong {
+    grid-column: 1;
+    grid-row: 2;
+  }
 }
 
-/* ─── Code Rendering (Issue 4) ──────────────────────────────── */
+/* ─── Markdown Overflow Containment ─────────────────────────── */
+/* Every element that receives renderMarkdown() output opts in to
+   overflow-wrap so long tokens, URLs, and KaTeX never escape their
+   container. min-width: 0 is essential for Flexbox / Grid children. */
+.question-text,
+.option-label,
+.feedback,
+.formal-answer,
+.formal-answer-text,
+.essay-hint,
+.md-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  min-width: 0;
+}
+
+/* Generic markdown root utility — apply to any future renderMarkdown() host */
+.md-content {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ─── Code Rendering ─────────────────────────────────────────── */
 .code-block-wrapper {
   position: relative;
   margin: 12px 0;
@@ -876,6 +958,8 @@ body {
   padding: 14px 16px;
   margin: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
+  max-width: 100%; /* never escape the card boundary */
   font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
   font-size: 0.9rem;
   line-height: 1.6;
@@ -899,7 +983,10 @@ body {
   border-radius: 5px;
   padding: 1px 6px;
   color: var(--color-primary, #6366f1);
-  white-space: nowrap;
+  /* Allow wrapping — the original white-space: nowrap caused single long
+     tokens to overflow the card on narrow viewports. */
+  white-space: normal;
+  word-break: break-all;
 }
 
 /* ─── Lucide Icon Sizing ─────────────────────────────────────── */
@@ -1085,4 +1172,142 @@ body {
 [data-theme="dark-slate"] .inline-code {
   background: rgba(203, 166, 247, 0.15);
   color: #cba6f7;
+}
+
+/* ── KaTeX / math block overflow guard ────────────────────────────────────── */
+/* KaTeX renders wide SVG for complex formulas; make them scroll horizontally
+   within their block so the page body is never affected. */
+.math-block,
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GFM TABLE STYLES (Issue 4)
+   The JS parser wraps every table in:
+     <div class="md-table-wrapper"><table class="md-table">…</table></div>
+   The wrapper is the scroll container; the table grows to natural width.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Scroll wrapper ────────────────────────────────────────────────────────── */
+.md-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 14px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+
+  /* Scroll-shadow: CSS-only affordance that fades in at the edges only when
+     there is more content to scroll. Uses background-attachment: local so
+     the gradient moves with the scroll position. */
+  background:
+    linear-gradient(to left, var(--color-background, #fff) 20%, transparent)
+      right,
+    linear-gradient(to right, var(--color-background, #fff) 20%, transparent)
+      left,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.1), transparent)
+      right,
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.1), transparent)
+      left;
+  background-color: var(--color-background, #fff);
+  background-repeat: no-repeat;
+  background-size:
+    40px 100%,
+    40px 100%,
+    10px 100%,
+    10px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* ── Table base ────────────────────────────────────────────────────────────── */
+.md-table {
+  /* min-width: max-content prevents squishing — the wrapper scrolls instead */
+  min-width: max-content;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  direction: ltr;
+  text-align: left;
+}
+
+/* ── Cells ─────────────────────────────────────────────────────────────────── */
+.md-table th,
+.md-table td {
+  padding: 10px 16px;
+  border: 1px solid var(--color-border);
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+
+.md-table th {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap; /* keep headers on one line */
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.08));
+}
+
+.md-table td {
+  white-space: normal;
+  min-width: 90px;
+}
+
+/* ── Row styling ───────────────────────────────────────────────────────────── */
+.md-table tbody tr:nth-child(even) {
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
+}
+
+.md-table tbody tr {
+  transition: background 0.12s ease;
+}
+
+.md-table tbody tr:hover {
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.06));
+}
+
+/* ── Dark-theme table overrides ────────────────────────────────────────────── */
+[data-theme="dark"] .md-table-wrapper,
+[data-theme="dark-slate"] .md-table-wrapper {
+  background:
+    linear-gradient(to left, var(--color-background) 20%, transparent) right,
+    linear-gradient(to right, var(--color-background) 20%, transparent) left,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      right,
+    radial-gradient(
+        farthest-side at 0% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      left;
+  background-color: var(--color-background);
+  background-repeat: no-repeat;
+  background-size:
+    40px 100%,
+    40px 100%,
+    10px 100%,
+    10px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+[data-theme="dark"] .md-table th,
+[data-theme="dark-slate"] .md-table th {
+  background: rgba(99, 102, 241, 0.14);
+}
+
+[data-theme="dark"] .md-table tbody tr:nth-child(even),
+[data-theme="dark-slate"] .md-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .md-table tbody tr:hover,
+[data-theme="dark-slate"] .md-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.09);
 }

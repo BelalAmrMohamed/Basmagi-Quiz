@@ -273,6 +273,57 @@ function _renderMarkdownCore(str) {
     return stashPush(`<pre class="${cls}"><code>${safe}</code></pre>`);
   });
 
+  // ── 2b. GFM Tables  | header | … |  ──────────────────────────────────────
+  // Multi-line construct — must be stashed BEFORE the line scanner runs.
+  // str.split("\n") would tokenise each pipe row individually, destroying
+  // the table structure before it could be assembled.
+  //
+  // Regex groups:
+  //   1. Header row  — pipe-delimited cells, anchored at line start (^)
+  //   2. Separator   — pipes, dashes, optional colons (GFM alignment markers)
+  //   3. Body rows   — zero or more additional pipe-delimited rows
+  str = str.replace(
+    /^(\|.+\|)\n(\|[-| :]+\|)\n((?:\|.+\|(?:\n|$))*)/gm,
+    (_, headerRow, _sepRow, bodyRows) => {
+      // Parse a single pipe-delimited row into an array of formatted cells.
+      // Strips the leading/trailing pipes captured by the regex, splits on
+      // internal pipes, trims whitespace, then applies inline formatting
+      // (bold, italic, inline-code, math, links) via applyInline().
+      const parseRow = (row) =>
+        row
+          .replace(/^\||\|$/g, "")
+          .split("|")
+          .map((cell) => applyInline(escHtml(cell.trim())));
+
+      const headers = parseRow(headerRow);
+
+      // bodyRows may be an empty string when the table has no data rows.
+      const rows = bodyRows.trim().split("\n").filter(Boolean).map(parseRow);
+
+      const thead =
+        "<thead><tr>" +
+        headers.map((h) => `<th>${h}</th>`).join("") +
+        "</tr></thead>";
+
+      const tbody =
+        "<tbody>" +
+        rows
+          .map((r) => "<tr>" + r.map((c) => `<td>${c}</td>`).join("") + "</tr>")
+          .join("") +
+        "</tbody>";
+
+      // Wrap in the scrollable container styled by quiz.css .md-table-wrapper
+      return stashPush(
+        '<div class="md-table-wrapper">' +
+          '<table class="md-table">' +
+          thead +
+          tbody +
+          "</table>" +
+          "</div>",
+      );
+    },
+  );
+
   // ── 3. Process line-by-line for block elements ────────────────────────────
   const rawLines = str.split("\n");
   const outParts = [];
@@ -1135,11 +1186,11 @@ function buildVerticalQuestionCard(q, idx) {
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div style="margin-top:8px">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div style="margin-top:8px">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
   }
 
@@ -1262,11 +1313,11 @@ function renderQuestion() {
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div style="margin-top:8px">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div style="margin-top:8px">${renderMarkdown(
+      feedbackText = `<div class="feedback-body">${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
       )}</div>`;
     }
