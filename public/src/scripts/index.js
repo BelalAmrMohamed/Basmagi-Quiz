@@ -287,15 +287,6 @@ const welcomeMessages = [
   (name) => `👑 الأسطورة يعود من جديد.. أهلاً بك يا ${name}`,
 ];
 
-const opts = [
-  ["./favicon.png", "Quiz (.html)", "quiz"],
-  ["./assets/images/HTML_Icon.png", "HTML (.html)", "html"],
-  ["./assets/images/mardownIcon.png", "Markdown (.md)", "md"],
-  ["./assets/images/PDF_Icon.png", "PDF (.pdf)", "pdf"],
-  ["./assets/images/pptx_icon.png", "PowerPoint (.pptx)", "pptx"],
-  ["./assets/images/word_icon.png", "Word (.docx)", "docx"],
-];
-
 /**
  * Get random welcome message
  */
@@ -331,31 +322,6 @@ export function updateWelcomeMessage() {
   } catch (error) {
     console.error("Error updating welcome message:", error);
   }
-}
-
-// Initial load
-updateWelcomeMessage();
-
-// Show welcome notification with error handling
-try {
-  const username = getFromStorage("username", "User");
-
-  // The `if` statement is an attempt to fix the issue where it shows this
-  // notification on all pages for some reason.
-  // It maybe be connected to another weird things, like the browser console logging errors of other
-  // pages, even though these pages aren't supposed to be loaded.
-  // The sidemenu's new side name changer button might be doing something wrong, see `window.changeUsername` in `side-menu.js`
-  if (
-    window.location.pathname.startsWith("/index") ||
-    window.location.pathname === "/"
-  )
-    showNotification(
-      "منصة إمتحانات بصمجي",
-      `السلام عليكم يا ${escapeHtml(username)}`,
-      "./assets/images/السلام عليكم.png",
-    );
-} catch (error) {
-  console.error("Error showing welcome notification:", error);
 }
 
 // ============================================================================
@@ -652,38 +618,13 @@ function handleUserQuizSearchResults(results) {
     container.innerHTML = "";
 
     const actionsBar = document.createElement("div");
-    actionsBar.style.cssText = `
-        grid-column: 1 / -1;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-    `;
+    actionsBar.className = "user-quiz-search-actions";
 
     const createBtn = document.createElement("a");
     createBtn.href = "create-quiz.html";
     createBtn.textContent = "➕ إنشاء اختبار جديد";
-    createBtn.className = "btn btn-primary";
+    createBtn.className = "btn user-quiz-create-btn";
     createBtn.setAttribute("aria-label", "إنشاء اختبار جديد");
-    createBtn.style.cssText = `
-        display: inline-block;
-        padding: 12px 24px;
-        background: var(--gradient-success);
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        box-shadow: var(--shadow-md);
-        transition: transform 0.2s;
-        margin-left: auto;
-    `;
-    createBtn.onmouseover = () => {
-      createBtn.style.transform = "translateY(-2px)";
-    };
-    createBtn.onmouseout = () => {
-      createBtn.style.transform = "translateY(0)";
-    };
 
     actionsBar.appendChild(createBtn);
     container.appendChild(actionsBar);
@@ -855,64 +796,24 @@ function addSubscribeButton(card, course) {
 
     // Create button container
     const btnContainer = document.createElement("div");
-    btnContainer.style.cssText = `
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid var(--color-border);
-    `;
+    btnContainer.className = "subscribe-btn-container";
 
     // Create subscribe button
     const subscribeBtn = document.createElement("button");
-    subscribeBtn.className = "subscribe-btn";
+    subscribeBtn.className = isSubscribed
+      ? "subscribe-btn subscribe-btn--subscribed"
+      : "subscribe-btn subscribe-btn--add";
     subscribeBtn.textContent = isSubscribed ? "✓ مشترك" : "+ إضافة";
     subscribeBtn.type = "button";
     subscribeBtn.setAttribute(
       "aria-label",
       isSubscribed ? `مشترك في ${course.name}` : `إضافة ${course.name}`,
     );
-    subscribeBtn.style.cssText = `
-      width: 100%;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      ${
-        isSubscribed
-          ? `
-          background: var(--color-success-light, #d1fae5);
-          color: var(--color-success, #059669);
-          cursor: default;
-        `
-          : `
-          background: var(--gradient-accent);
-          color: white;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        `
-      }
-    `;
 
     if (!isSubscribed) {
       subscribeBtn.onclick = (e) => {
         e.stopPropagation();
         subscribeToCourse(course, subscribeBtn);
-      };
-
-      subscribeBtn.onmouseenter = () => {
-        if (!isSubscribed) {
-          subscribeBtn.style.transform = "translateY(-1px)";
-          subscribeBtn.style.boxShadow = "0 3px 8px rgba(0, 0, 0, 0.15)";
-        }
-      };
-
-      subscribeBtn.onmouseleave = () => {
-        if (!isSubscribed) {
-          subscribeBtn.style.transform = "translateY(0)";
-          subscribeBtn.style.boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
-        }
       };
     }
 
@@ -932,12 +833,9 @@ function subscribeToCourse(course, button) {
 
     // Update button appearance
     button.textContent = "✓ مشترك";
-    button.style.background = "var(--color-success-light, #d1fae5)";
-    button.style.color = "var(--color-success, #059669)";
-    button.style.cursor = "default";
-    button.style.boxShadow = "none";
-    button.setAttribute("aria-label", `مشترك في ${course.name}`);
+    button.className = "subscribe-btn subscribe-btn--subscribed";
     button.onclick = null;
+    button.setAttribute("aria-label", `مشترك في ${course.name}`);
 
     // Show notification
     showNotification(
@@ -1104,37 +1002,14 @@ function renderUserQuizzesView() {
 
     // 1. Create 'Create New Quiz' Button (Always visible at top)
     const actionsBar = document.createElement("div");
-    actionsBar.style.cssText = `
-        grid-column: 1 / -1;
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 20px;
-    `;
+    actionsBar.className = "user-quiz-search-actions";
 
     const createBtn = document.createElement("a");
     createBtn.href = "create-quiz.html";
     createBtn.textContent = "➕ إنشاء اختبار جديد";
-    createBtn.className = "btn btn-primary";
+    createBtn.className = "btn user-quiz-create-btn";
     createBtn.setAttribute("aria-label", "إنشاء اختبار جديد");
     createBtn.setAttribute("title", "صفحة إنشاء امتحان");
-    createBtn.style.cssText = `
-        display: inline-block;
-        padding: 12px 24px;
-        background: var(--gradient-success);
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-        font-weight: 600;
-        box-shadow: var(--shadow-md);
-        transition: transform 0.2s;
-        margin-left: auto;
-    `;
-    createBtn.onmouseover = () => {
-      createBtn.style.transform = "translateY(-2px)";
-    };
-    createBtn.onmouseout = () => {
-      createBtn.style.transform = "translateY(0)";
-    };
 
     actionsBar.appendChild(createBtn);
 
@@ -1725,107 +1600,49 @@ function createUserQuizCard(quiz, index) {
     "title",
     `${qz(quiz, "description") ? `Description: ${qz(quiz, "description")}` : `Type: ${qz(quiz, "type")}`}`,
   );
-  card.style.cssText = `
-    background: var(--color-surface);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: var(--shadow-md);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: 2px solid var(--color-border);
-    position: relative;
-    overflow: visible;
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-  `;
 
   // Gradient accent on top
   const accentBar = document.createElement("div");
   accentBar.setAttribute("aria-hidden", "true");
-  accentBar.style.cssText = `
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--gradient-accent);
-    border-radius: 10px 10px 0 0;
-  `;
+  accentBar.className = "user-quiz-accent-bar";
   card.appendChild(accentBar);
 
   // User badge
   const badge = document.createElement("div");
   badge.textContent = "👤 Your Quiz";
-  badge.style.cssText = `
-  display: inline-block;
-  padding: 4px 10px;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 12px;
-  margin-left: 50px;
-  margin-right: 50px;
-`;
+  badge.className = "user-quiz-badge";
 
   card.appendChild(badge);
 
   // Quiz title
   const titleEl = document.createElement("h3");
   titleEl.textContent = qz(quiz, "title");
-  titleEl.style.cssText = `
-    margin: 0 0 8px 0;
-    color: var(--color-text-primary);
-    font-size: 1.1rem;
-  `;
+  titleEl.className = "user-quiz-title";
   card.appendChild(titleEl);
 
   // Description
   if (qz(quiz, "description")) {
     const desc = document.createElement("p");
     desc.textContent = qz(quiz, "description");
-    desc.style.cssText = `
-      color: var(--color-text-secondary);
-      font-size: 0.9rem;
-      margin: 0 0 12px 0;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      direction: ltr;
-    `;
+    desc.className = "user-quiz-desc";
     card.appendChild(desc);
   }
 
   // Metadata
   const metadata = document.createElement("div");
-  metadata.style.cssText = `
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--color-border);
-  `;
+  metadata.className = "user-quiz-metadata";
 
   const questionsCount = document.createElement("span");
   const count = qz(quiz, "count");
   questionsCount.textContent = `📝 ${formatArabicQuestionCount(count)}`;
-  questionsCount.style.cssText = `
-    color: var(--color-text-secondary);
-    font-size: 0.85rem;
-  `;
+  questionsCount.className = "user-quiz-count";
 
   const createdDate = document.createElement("span");
   const rawDate = qz(quiz, "createdAt");
   const dateObj = rawDate ? new Date(rawDate) : null;
   createdDate.textContent =
     dateObj && !isNaN(dateObj) ? dateObj.toLocaleDateString() : rawDate || "";
-  createdDate.style.cssText = `
-    color: var(--color-text-tertiary);
-    font-size: 0.85rem;
-  `;
+  createdDate.className = "user-quiz-date";
 
   metadata.appendChild(questionsCount);
   metadata.appendChild(createdDate);
@@ -1835,12 +1652,7 @@ function createUserQuizCard(quiz, index) {
   const typeStr = qz(quiz, "type");
   if (typeStr) {
     const typesRow = document.createElement("div");
-    typesRow.style.cssText = `
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 10px;
-    `;
+    typesRow.className = "user-quiz-types-row";
     typeStr.split(" · ").forEach((t) => {
       const chip = document.createElement("span");
       chip.textContent = t;
@@ -1864,29 +1676,13 @@ function createUserQuizCard(quiz, index) {
 
   // Action buttons
   const actions = document.createElement("div");
-  actions.style.cssText = `
-    display: flex;
-    gap: 8px;
-    margin-top: auto;
-    padding-top: 15px;
-  `;
+  actions.className = "user-quiz-actions";
 
   const playBtn = document.createElement("button");
   playBtn.textContent = "إبدأ الإختبار";
   playBtn.className = "btn btn-primary";
   playBtn.type = "button";
   playBtn.setAttribute("aria-label", `بدء اختبار ${qz(quiz, "title")}`);
-  playBtn.style.cssText = `
-    flex: 1;
-    padding: 10px 16px;
-    background: var(--gradient-accent);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-  `;
   playBtn.onclick = (e) => {
     e.stopPropagation();
     playUserQuiz(quiz);
@@ -1896,34 +1692,7 @@ function createUserQuizCard(quiz, index) {
   deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
   deleteBtn.type = "button";
   deleteBtn.setAttribute("aria-label", `حذف اختبار ${qz(quiz, "title")}`);
-  deleteBtn.style.cssText = `
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-error-light);
-    color: var(--color-error);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    z-index: 2;
-  `;
-  deleteBtn.onmouseover = () => {
-    deleteBtn.style.background = "var(--color-error)";
-    deleteBtn.style.color = "white";
-    deleteBtn.style.transform = "scale(1.05)";
-  };
-  deleteBtn.onmouseout = () => {
-    deleteBtn.style.background = "var(--color-error-light)";
-    deleteBtn.style.color = "var(--color-error)";
-    deleteBtn.style.transform = "scale(1)";
-  };
+  deleteBtn.className = "user-quiz-delete-btn";
   deleteBtn.onclick = (e) => {
     e.stopPropagation();
     deleteUserQuiz(quiz.id);
@@ -1933,18 +1702,7 @@ function createUserQuizCard(quiz, index) {
   downloadBtn.textContent = "تحميل";
   downloadBtn.type = "button";
   downloadBtn.setAttribute("aria-label", `تحميل اختبار ${qz(quiz, "title")}`);
-  downloadBtn.className = "btn btn-primary";
-  downloadBtn.style.cssText = `
-    flex: 1;
-    padding: 10px 16px;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.2s;
-  `;
+  downloadBtn.className = "btn user-quiz-download-btn";
 
   downloadBtn.title = "Download Quiz";
   downloadBtn.onclick = (e) => {
@@ -1956,34 +1714,7 @@ function createUserQuizCard(quiz, index) {
   editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
   editBtn.type = "button";
   editBtn.setAttribute("aria-label", `تعديل اختبار ${qz(quiz, "title")}`);
-  editBtn.style.cssText = `
-    position: absolute;
-    top: 14px;
-    right: 14px;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--color-primary-light);
-    color: var(--color-primary);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    z-index: 2;
-  `;
-  editBtn.onmouseover = () => {
-    editBtn.style.background = "var(--color-primary)";
-    editBtn.style.color = "white";
-    editBtn.style.transform = "scale(1.05)";
-  };
-  editBtn.onmouseout = () => {
-    editBtn.style.background = "var(--color-primary-light)";
-    editBtn.style.color = "var(--color-primary)";
-    editBtn.style.transform = "scale(1)";
-  };
+  editBtn.className = "user-quiz-edit-btn";
   editBtn.onclick = (e) => {
     e.stopPropagation();
     window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
@@ -2008,16 +1739,6 @@ function createUserQuizCard(quiz, index) {
   }
 
   card.appendChild(actions);
-
-  // Hover effects
-  card.onmouseenter = () => {
-    card.style.transform = "translateY(-4px)";
-    card.style.boxShadow = "var(--shadow-lg)";
-  };
-  card.onmouseleave = () => {
-    card.style.transform = "translateY(0)";
-    card.style.boxShadow = "var(--shadow-md)";
-  };
 
   return card;
 }
@@ -2175,6 +1896,19 @@ function renderCategory(category) {
   }
 }
 
+/**
+ * Returns an Arabic pluralised label for the exam count on a category card.
+ * @param {number} count
+ * @returns {string}
+ */
+function getItemText(count) {
+  if (count === 0) return "لا يوجد إمتحانات";
+  if (count === 1) return "إمتحان واحد";
+  if (count === 2) return "إمتحانان";
+  if (count <= 10) return "إمتحانات";
+  return "إمتحان";
+}
+
 function createCategoryCard(
   name,
   itemCount,
@@ -2183,19 +1917,6 @@ function createCategoryCard(
   isSubfolder = false, // ← new param: true for subcategories inside a course
 ) {
   const card = document.createElement("div");
-
-  const getItemText = (count) =>
-    `${
-      count === 0
-        ? "لا يوجد إمتحانات"
-        : count === 1
-          ? "إمتحان واحد"
-          : count === 2
-            ? "إمتحانان"
-            : count <= 10
-              ? "إمتحانات"
-              : "إمتحان"
-    }`;
 
   card.className = "card category-card";
   card.setAttribute("role", "button");
@@ -2371,31 +2092,7 @@ function createExamCard(exam) {
       alert("Failed to load exam data.");
       return;
     }
-    try {
-      switch (format) {
-        case "quiz":
-          await exportToQuiz(config, questions);
-          break;
-        case "html":
-          await exportToHtml(config, questions);
-          break;
-        case "pdf":
-          await exportToPdf(config, questions);
-          break;
-        case "docx":
-          await exportToWord(config, questions);
-          break;
-        case "pptx":
-          await exportToPptx(config, questions);
-          break;
-        case "md":
-          exportToMarkdown(config, questions);
-          break;
-      }
-    } catch (error) {
-      console.error("Export error:", error);
-      alert("حدث خطأ أثناء التحميل. حاول مرة أخرى.");
-    }
+    await executeExport(format, config, questions);
   };
 
   const showDownloadPopup = () => {
@@ -2442,67 +2139,20 @@ function createExamCard(exam) {
       grid.appendChild(b);
     });
 
-    const copyBtn = document.createElement("button");
-    copyBtn.className = "mode-btn";
-    copyBtn.type = "button";
-    copyBtn.setAttribute("aria-label", "Copy Quiz Text");
-    copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><strong>نسخ كنص</strong>`;
-    let isCopied = false;
-    let quizTextBlob = null;
-    copyBtn.onclick = (ev) => {
-      ev.stopPropagation();
-      withDownloadLoading(copyBtn, async () => {
-        try {
-          if (!isCopied) {
-            let questions = [];
-            if (exam.path.endsWith(".json")) {
-              const res = await fetch(exam.path);
-              const data = await res.json();
-              questions = data.questions || [];
-            } else {
-              const res = await fetch(exam.path);
-              const data = await res.json().catch(() => ({}));
-              questions = data.questions || [];
-            }
-            const config = {
-              title: exam.title || exam.id,
-              description: exam.description,
-              source: exam.source,
-            };
-            const text = buildQuizText(config, questions);
-
-            await navigator.clipboard.writeText(text);
-            quizTextBlob = new Blob([text], { type: "text/plain" });
-            copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><strong>تنزيل .txt</strong>`;
-            isCopied = true;
-            showNotification(
-              "تم النسخ",
-              "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
-              "success",
-            );
-          } else {
-            const url = URL.createObjectURL(quizTextBlob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${(exam.title || exam.id).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            isCopied = false;
-          }
-        } catch (e) {
-          console.error(e);
-          showNotification("خطأ", "فشل نسخ أو تحميل الإختبار.", "error");
-        }
-      }).then(() => {
-        if (isCopied) {
-          copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><strong>تنزيل .txt</strong>`;
-        } else {
-          copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><strong>نسخ كنص</strong>`;
-        }
-      });
-    };
+    const copyBtn = buildCopyDownloadButton(
+      async () => {
+        const res = await fetch(exam.path);
+        const data = await res.json();
+        const questions = data.questions || [];
+        const config = {
+          title: exam.title || exam.id,
+          description: exam.description,
+          source: exam.source,
+        };
+        return buildQuizText(config, questions);
+      },
+      (exam.title || exam.id).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_"),
+    );
     grid.appendChild(copyBtn);
 
     const jsonBtn = document.createElement("button");
@@ -2517,14 +2167,7 @@ function createExamCard(exam) {
           const res = await fetch(exam.path);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${exam.title || exam.id}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          triggerDownload(blob, `${exam.title || exam.id}.json`);
         } catch (e) {
           console.error("JSON Error:", e);
           alert("فشل تنزيل ملف JSON");
@@ -2729,12 +2372,12 @@ function updateBreadcrumb() {
   if (!breadcrumb) return;
 
   if (navigationStack.length === 0) {
-    breadcrumb.style.display = "none";
+    breadcrumb.classList.remove("show");
     breadcrumb.setAttribute("aria-hidden", "true");
     return;
   }
 
-  breadcrumb.style.display = "inline-flex";
+  breadcrumb.classList.add("show");
   breadcrumb.setAttribute("aria-hidden", "false");
   const breadcrumbText = breadcrumb.querySelector(".breadcrumb-text");
 
@@ -2756,6 +2399,110 @@ function updateBreadcrumb() {
 }
 
 /**
+ * Creates a mode-grid button that copies quiz text on first click,
+ * then offers a .txt download on the second click.
+ *
+ * @param {Function} getTextFn — async () => string  — called on first click to
+ *   retrieve the quiz text (load + format). Throw to surface an error notification.
+ * @param {string} downloadFilename — base filename for the .txt download (no extension).
+ * @returns {HTMLButtonElement}
+ */
+function buildCopyDownloadButton(getTextFn, downloadFilename) {
+  const btn = document.createElement("button");
+  btn.className = "mode-btn";
+  btn.type = "button";
+  btn.setAttribute("aria-label", "نسخ كنص");
+
+  const copyIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+  const downloadIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+
+  btn.innerHTML = `${copyIcon}<strong>نسخ كنص</strong>`;
+
+  let isCopied = false;
+  let textBlob = null;
+
+  btn.onclick = (ev) => {
+    ev.stopPropagation();
+    withDownloadLoading(btn, async () => {
+      try {
+        if (!isCopied) {
+          const text = await getTextFn();
+          await navigator.clipboard.writeText(text);
+          textBlob = new Blob([text], { type: "text/plain" });
+          btn.innerHTML = `${downloadIcon}<strong>تنزيل .txt</strong>`;
+          btn.setAttribute("aria-label", "تنزيل .txt");
+          isCopied = true;
+          showNotification(
+            "تم النسخ",
+            "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
+            "success",
+          );
+        } else {
+          triggerDownload(textBlob, `${downloadFilename}.txt`);
+          isCopied = false;
+        }
+      } catch (e) {
+        console.error(e);
+        showNotification("خطأ", "فشل نسخ أو تحميل الإختبار.", "error");
+      }
+    }).then(() => {
+      if (isCopied) {
+        btn.innerHTML = `${downloadIcon}<strong>تنزيل .txt</strong>`;
+      } else {
+        btn.innerHTML = `${copyIcon}<strong>نسخ كنص</strong>`;
+      }
+    });
+  };
+
+  return btn;
+}
+
+/**
+ * Dispatches an export operation to the correct export module.
+ * @param {string} format — one of: "quiz" | "html" | "md" | "pdf" | "pptx" | "docx"
+ * @param {object} config — { id, title, description, path?, source? }
+ * @param {Array}  questions
+ */
+async function executeExport(format, config, questions) {
+  switch (format) {
+    case "quiz":
+      await exportToQuiz(config, questions);
+      break;
+    case "html":
+      await exportToHtml(config, questions);
+      break;
+    case "pdf":
+      await exportToPdf(config, questions);
+      break;
+    case "docx":
+      await exportToWord(config, questions);
+      break;
+    case "pptx":
+      await exportToPptx(config, questions);
+      break;
+    case "md":
+      exportToMarkdown(config, questions);
+      break;
+  }
+}
+
+/**
+ * Triggers a file download from a Blob without leaving orphaned object URLs.
+ * @param {Blob} blob
+ * @param {string} filename
+ */
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
  * Wrapper for download buttons to show loading state
  */
 async function withDownloadLoading(buttonEl, asyncFn) {
@@ -2774,24 +2521,6 @@ async function withDownloadLoading(buttonEl, asyncFn) {
     buttonEl.innerHTML = originalHtml;
     buttonEl.style.width = "";
     buttonEl.style.justifyContent = "";
-  }
-}
-
-// Helper: URL or relative path Check
-function isURL_orPath(string) {
-  try {
-    const url = new URL(string);
-    return url.protocol === "http:" || url.protocol === "https:";
-  } catch (_) {
-    try {
-      const base = "http://example.com";
-      const url = new URL(string, base);
-      const isRelative = url.origin === base;
-      const isPathLike = string.includes("/") || string.startsWith(".");
-      return isRelative && isPathLike;
-    } catch (_) {
-      return false;
-    }
   }
 }
 
@@ -2841,6 +2570,21 @@ document.addEventListener("DOMContentLoaded", () => {
     p === "/" || p.endsWith("/index.html") || p.endsWith("/index");
   if (!isIndexPage) return;
 
+  // Initial load
+  updateWelcomeMessage();
+
+  // Show welcome notification with error handling
+  try {
+    const username = getFromStorage("username", "User");
+    showNotification(
+      "منصة إمتحانات بصمجي",
+      `السلام عليكم يا ${escapeHtml(username)}`,
+      "./assets/images/السلام عليكم.png",
+    );
+  } catch (error) {
+    console.error("Error showing welcome notification:", error);
+  }
+
   // ── Bug 1 Fix: listen for back / forward navigation ───────────────────────
   window.addEventListener("popstate", () => {
     if (!categoryTree) return;
@@ -2861,6 +2605,14 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================================
 // show UserQuiz Download Popup
 // ============================================================================
+const opts = [
+  ["./favicon.png", "Quiz (.html)", "quiz"],
+  ["./assets/images/HTML_Icon.png", "HTML (.html)", "html"],
+  ["./assets/images/mardownIcon.png", "Markdown (.md)", "md"],
+  ["./assets/images/PDF_Icon.png", "PDF (.pdf)", "pdf"],
+  ["./assets/images/pptx_icon.png", "PowerPoint (.pptx)", "pptx"],
+  ["./assets/images/word_icon.png", "Word (.docx)", "docx"],
+];
 function showUserQuizDownloadPopup(quiz) {
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
@@ -2900,31 +2652,7 @@ function showUserQuizDownloadPopup(quiz) {
   const questions = quiz.questions;
 
   const onDownloadOption = async (format) => {
-    try {
-      switch (format) {
-        case "quiz":
-          await exportToQuiz(config, questions);
-          break;
-        case "html":
-          await exportToHtml(config, questions);
-          break;
-        case "pdf":
-          await exportToPdf(config, questions);
-          break;
-        case "docx":
-          await exportToWord(config, questions);
-          break;
-        case "pptx":
-          await exportToPptx(config, questions);
-          break;
-        case "md":
-          exportToMarkdown(config, questions);
-          break;
-      }
-    } catch (error) {
-      console.error("Export failed:", error);
-      alert("Export failed. Please check console for details.");
-    }
+    await executeExport(format, config, questions);
   };
 
   opts.forEach(([icon, label, format]) => {
@@ -2942,60 +2670,17 @@ function showUserQuizDownloadPopup(quiz) {
     grid.appendChild(b);
   });
 
-  const copyBtn = document.createElement("button");
-  copyBtn.className = "mode-btn";
-  copyBtn.type = "button";
-  copyBtn.setAttribute("aria-label", "Copy Quiz Text");
-  copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><strong>نسخ كنص</strong>`;
-  let isCopied = false;
-  let quizTextBlob = null;
-  copyBtn.onclick = (ev) => {
-    ev.stopPropagation();
-    withDownloadLoading(copyBtn, async () => {
-      try {
-        if (!isCopied) {
-          let text = `Title: ${qz(quiz, "title") || quiz.id}\n\n`;
-          if (qz(quiz, "description"))
-            text += `Description: ${qz(quiz, "description")}\n\n`;
-          const config = {
-            title: qz(quiz, "title") || quiz.id,
-            description: qz(quiz, "description"),
-            source: qz(quiz, "source"),
-          };
-          text = buildQuizText(config, questions);
-
-          await navigator.clipboard.writeText(text);
-          quizTextBlob = new Blob([text], { type: "text/plain" });
-          copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><strong>تنزيل .txt</strong>`;
-          isCopied = true;
-          showNotification(
-            "تم النسخ",
-            "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
-            "success",
-          );
-        } else {
-          const url = URL.createObjectURL(quizTextBlob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${qz(quiz, "title").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.txt`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          isCopied = false;
-        }
-      } catch (e) {
-        console.error(e);
-        showNotification("خطأ", "فشل نسخ أو تحميل الإختبار.", "error");
-      }
-    }).then(() => {
-      if (isCopied) {
-        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><strong>تنزيل .txt</strong>`;
-      } else {
-        copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><strong>نسخ كنص</strong>`;
-      }
-    });
-  };
+  const copyBtn = buildCopyDownloadButton(
+    async () => {
+      const config = {
+        title: qz(quiz, "title") || quiz.id,
+        description: qz(quiz, "description"),
+        source: qz(quiz, "source"),
+      };
+      return buildQuizText(config, quiz.questions);
+    },
+    (qz(quiz, "title") || quiz.id).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_"),
+  );
   grid.appendChild(copyBtn);
 
   const jsonBtn = document.createElement("button");
@@ -3022,14 +2707,10 @@ function showUserQuizDownloadPopup(quiz) {
 
         const fileContent = JSON.stringify(payload, null, 2);
         const blob = new Blob([fileContent], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${(title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        triggerDownload(
+          blob,
+          `${(title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.json`,
+        );
       } catch (e) {
         console.error("JSON Error:", e);
         alert("فشل تنزيل ملف JSON");

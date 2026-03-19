@@ -88,7 +88,7 @@ body {
 }
 
 .breadcrumb-text {
-  font-size: 0.9375rem !important;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -138,7 +138,7 @@ body {
   }
 
   .breadcrumb-text {
-    font-size: 0.85rem !important;
+    font-size: 0.85rem;
   }
 }
 
@@ -154,7 +154,7 @@ body {
   }
 
   .breadcrumb-text {
-    font-size: 0.8rem !important;
+    font-size: 0.8rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -173,7 +173,7 @@ body {
   }
 
   .breadcrumb-text {
-    font-size: 0.75rem !important;
+    font-size: 0.75rem;
     max-width: calc(100vw - 60px);
   }
 }
@@ -1784,6 +1784,259 @@ Container
     border-radius: 6px;
     flex-shrink: 0;
   }
+}
+
+/* ============================================================================
+   USER QUIZ CARD
+   ============================================================================ */
+
+/* Card shell */
+.exam-card.user-quiz-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  border: 2px solid var(--color-border);
+  position: relative;
+  overflow: visible;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.exam-card.user-quiz-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Gradient accent bar at the top of the card */
+.user-quiz-accent-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-accent);
+  border-radius: 10px 10px 0 0;
+}
+
+/* "Your Quiz" badge */
+.user-quiz-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 12px;
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+/* Quiz title */
+.user-quiz-title {
+  margin: 0 0 8px 0;
+  color: var(--color-text-primary);
+  font-size: 1.1rem;
+}
+
+/* Quiz description */
+.user-quiz-desc {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin: 0 0 12px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  direction: ltr;
+}
+
+/* Metadata row (question count + date) */
+.user-quiz-metadata {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Question count span */
+.user-quiz-count {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+/* Created date span */
+.user-quiz-date {
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+}
+
+/* Question type chips row */
+.user-quiz-types-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* Action buttons container */
+.user-quiz-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 15px;
+}
+
+/* Play / primary action button inside actions */
+.user-quiz-actions .btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+/* Delete button */
+.user-quiz-delete-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.user-quiz-delete-btn:hover {
+  background: var(--color-error);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Edit button */
+.user-quiz-edit-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.user-quiz-edit-btn:hover {
+  background: var(--color-primary);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* Download button */
+.user-quiz-download-btn {
+  flex: 1;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+/* ============================================================================
+   SUBSCRIBE BUTTON
+   ============================================================================ */
+
+.subscribe-btn-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.subscribe-btn {
+  width: 100%;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.subscribe-btn--add {
+  background: var(--gradient-accent);
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.subscribe-btn--add:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.subscribe-btn--subscribed {
+  background: var(--color-success-light, #d1fae5);
+  color: var(--color-success, #059669);
+  cursor: default;
+}
+
+/* ============================================================================
+   USER QUIZ SEARCH / CREATE ACTIONS BAR
+   ============================================================================ */
+
+.user-quiz-search-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.user-quiz-create-btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background: var(--gradient-success);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s;
+  margin-left: auto;
+}
+
+.user-quiz-create-btn:hover {
+  transform: translateY(-2px);
 }
 
 /* ============================================================================
