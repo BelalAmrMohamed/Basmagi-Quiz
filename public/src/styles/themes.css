@@ -16,6 +16,8 @@
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-text-tertiary: #9ca3af;
+  /* Alias consumed by quiz.css — resolves to primary text at paint time */
+  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -34,6 +36,9 @@
   --color-error: #ef4444;
   --color-error-light: #fee2e2;
 
+  /* Code text colour (consumed by markdown-styles.css) */
+  --color-code: #334155;
+
   /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
@@ -43,6 +48,8 @@
   );
   --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  /* Secondary gradient used by result.css .nav-btn.secondary */
+  --gradient-secondary: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
 
   /* Shadows */
   --shadow-sm:
@@ -58,7 +65,37 @@
   /* Effects */
   --blur-md: 12px;
 
-  /* Animation Colors */
+  /* ── Glassmorphism system ──────────────────────────────────────────────────
+     Centralised tokens for the semi-transparent, frosted-glass aesthetic.
+     Consume with: background: var(--glass-bg); etc.
+     ────────────────────────────────────────────────────────────────────── */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-blur: blur(12px);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+  /* Light theme uses a more opaque glass surface */
+  --glass-bg-light: rgba(255, 255, 255, 0.65);
+
+  /* ── Interactive state tokens ─────────────────────────────────────────────
+     Single source of truth for hover, focus-ring, and selected states.
+     ────────────────────────────────────────────────────────────────────── */
+  --color-focus-ring: rgba(99, 102, 241, 0.45);
+  --color-hover-overlay: rgba(99, 102, 241, 0.06);
+  --color-selected-bg: rgba(99, 102, 241, 0.12);
+
+  /* ── Motion system ────────────────────────────────────────────────────────
+     Replace hard-coded 0.3s ease with these tokens throughout page CSS.
+     --ease-spring: bouncy confirmation feel (option selected, badge earned).
+     --ease-out-expo: fast-out for reveals (card entrance, progress fill).
+     ────────────────────────────────────────────────────────────────────── */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 240ms;
+  --duration-slow: 400ms;
+
+  /* Animation Colors (canvas particle system) */
   --anim-particle-1: rgba(99, 102, 241, 0.3);
   --anim-particle-2: rgba(139, 92, 246, 0.3);
   --anim-particle-3: rgba(236, 72, 153, 0.3);
@@ -132,6 +169,7 @@
   --color-text-primary: #f8fafc;
   --color-text-secondary: #94a3b8;
   --color-text-tertiary: #64748b;
+  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -150,6 +188,8 @@
   --color-error: #ef4444;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
+  --color-code: #e2e8f0;
+
   /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
@@ -159,8 +199,9 @@
   );
   --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  --gradient-secondary: linear-gradient(135deg, #475569 0%, #334155 100%);
 
-  /* Shadows */
+  /* Shadows — higher opacity for dark backgrounds */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md:
     0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
@@ -172,6 +213,18 @@
 
   /* Effects */
   --blur-md: 12px;
+
+  /* Glassmorphism — darker surfaces need subtler glass */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(12px);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-bg-light: rgba(30, 41, 59, 0.8);
+
+  /* Interactive state tokens */
+  --color-focus-ring: rgba(99, 102, 241, 0.55);
+  --color-hover-overlay: rgba(99, 102, 241, 0.09);
+  --color-selected-bg: rgba(99, 102, 241, 0.18);
 
   /* Animation Colors */
   --anim-particle-1: rgba(99, 102, 241, 0.4);
@@ -195,6 +248,7 @@
   --color-text-primary: #e0e0e0;
   --color-text-secondary: #a0a0a0;
   --color-text-tertiary: #707070;
+  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #3b82f6;
@@ -213,6 +267,8 @@
   --color-error: #ef4444;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
+  --color-code: #e2e8f0;
+
   /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
@@ -222,6 +278,7 @@
   );
   --gradient-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  --gradient-secondary: linear-gradient(135deg, #4b5563 0%, #374151 100%);
 
   /* Shadows */
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
@@ -235,6 +292,18 @@
 
   /* Effects */
   --blur-md: 12px;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-blur: blur(12px);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-bg-light: rgba(30, 30, 30, 0.85);
+
+  /* Interactive state tokens */
+  --color-focus-ring: rgba(59, 130, 246, 0.55);
+  --color-hover-overlay: rgba(59, 130, 246, 0.08);
+  --color-selected-bg: rgba(59, 130, 246, 0.16);
 
   /* Animation Colors */
   --anim-particle-1: rgba(59, 130, 246, 0.35);
@@ -828,13 +897,13 @@ body {
 
 /* Accessibility */
 *:focus-visible {
-  outline: 3px solid var(--color-primary);
+  outline: 3px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 3px;
   border-radius: 8px;
 }
 
 ::selection {
-  background: var(--color-primary-light);
+  background: var(--color-selected-bg, var(--color-primary-light));
   color: var(--color-primary);
 }
 /* Fix theme button text color for dark themes */
