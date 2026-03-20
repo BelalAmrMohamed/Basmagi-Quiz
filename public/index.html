@@ -162,15 +162,6 @@
     <link rel="stylesheet" href="src/components/notifications.css">
     <link rel="stylesheet" href="src/styles/search.css">
 
-    <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
-         KaTeX must load as a classic (non-deferred) script so that
-         window.katex is synchronously available when ES modules execute.
-         No SRI hashes: jsDelivr serves the canonical npm release unmodified.
-         Pinned to 0.16.9 exactly — do NOT add defer/async. -->
-    <!-- For the PDF export -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
     <link rel="modulepreload" href="src/shared/canvas-animation.js">
@@ -667,6 +658,41 @@
         <button onclick="location.reload()" type="button">تحديث الصفحة</button>
     </div>
 
+    <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
+         KaTeX must load as a classic (non-deferred) script so that
+         window.katex is synchronously available when ES modules execute.
+         No SRI hashes: jsDelivr serves the canonical npm release unmodified.
+         Pinned to 0.16.9 exactly — do NOT add defer/async. -->
+    <!-- For the exports -->
+
+    <!-- KaTeX lazy loader — resolves immediately if already loaded, otherwise
+         injects the stylesheet + script on first call and waits for load. -->
+    <script>
+        window.loadKatex = (function () {
+            let promise = null;
+            return function loadKatex() {
+                if (window.katex) return Promise.resolve();
+                if (promise) return promise;
+                promise = new Promise(function (resolve, reject) {
+                    var link = document.createElement('link');
+                    link.rel = 'stylesheet';
+                    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+                    document.head.appendChild(link);
+
+                    var script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
+                    script.onload = resolve;
+                    script.onerror = function () {
+                        promise = null; // allow retry
+                        reject(new Error('KaTeX failed to load'));
+                    };
+                    document.head.appendChild(script);
+                });
+                return promise;
+            };
+        })();
+    </script>
+
     <!-- Scripts -->
     <script type="module" src="src/shared/theme-controller.js"></script>
     <script type="module" src="src/shared/canvas-animation.js"></script>
@@ -696,7 +722,7 @@
             const lcpObserver = new PerformanceObserver((list) => {
                 const entries = list.getEntries();
                 const lastEntry = entries[entries.length - 1];
-                console.log('LCP:', lastEntry.renderTime || lastEntry.loadTime);
+                // LCP recorded — send to analytics in production
             });
             lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
 
@@ -704,7 +730,7 @@
             const fidObserver = new PerformanceObserver((list) => {
                 const entries = list.getEntries();
                 entries.forEach((entry) => {
-                    console.log('FID:', entry.processingStart - entry.startTime);
+                    // FID recorded — send to analytics in production
                 });
             });
             fidObserver.observe({ entryTypes: ['first-input'] });
@@ -715,7 +741,7 @@
                 list.getEntries().forEach((entry) => {
                     if (!entry.hadRecentInput) {
                         clsValue += entry.value;
-                        console.log('CLS:', clsValue);
+                        // CLS recorded — send to analytics in production
                     }
                 });
             });

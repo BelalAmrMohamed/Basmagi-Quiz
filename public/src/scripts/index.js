@@ -316,7 +316,7 @@ export function updateWelcomeMessage() {
       userNameBadge.setAttribute("aria-label", `تغيير اسم المستخدم: ${name}`);
       userNameBadge.setAttribute(
         "title",
-        `إصغط لتغيير اسم المستخدم: [${name}]`,
+        `اضغط لتغيير اسم المستخدم: [${name}]`,
       );
     }
   } catch (error) {
@@ -883,7 +883,7 @@ function renderRootCategories() {
       title.textContent = "المواد خاصتي";
       title.setAttribute(
         "title",
-        `${profile.faculty} facutly · Year ${profile.year} · Term ${profile.term}`,
+        `${profile.faculty} faculty · Year ${profile.year} · Term ${profile.term}`,
       );
     } else {
       title.textContent = "جميع المواد";
@@ -948,8 +948,8 @@ function renderRootCategories() {
       container.innerHTML += `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">📚</div>
-          <h3>No Courses Available</h3>
-          <p>Check back later for new content!</p>
+          <h3>لا توجد مواد متاحة حالياً</h3>
+          <p>تابعنا قريباً لمزيد من المحتوى!</p>
         </div>
       `;
     }
@@ -1070,7 +1070,12 @@ function renderUserQuizzesView() {
   } catch (error) {
     console.error("Error rendering user quizzes view:", error);
     if (container) {
-      container.innerHTML = `<p style="color:red" role="alert">Error loading quizzes.</p>`;
+      container.innerHTML = `
+  <div class="error-state" role="alert">
+    <p>حدث خطأ أثناء تحميل الإختبارات. يرجى تحديث الصفحة.</p>
+    <button onclick="renderRootCategories()" type="button">الرجوع للرئيسية</button>
+  </div>
+`;
     }
   }
 }
@@ -1210,7 +1215,7 @@ function createInlineCreateQuizCard() {
 
   const desc = document.createElement("p");
   desc.textContent =
-    'الصق أسئلة الإمتحان كنص وسيتم تحويلها تلقائيًاإلى امتحان".';
+    "الصق أسئلة الإمتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
 
   card.appendChild(icon);
   card.appendChild(titleEl);
@@ -1271,7 +1276,7 @@ function openInlineCreateQuizModal() {
       <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus" style="color: var(--color-primary);"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
       إنشاء إمتحان جديد
     </h2>
-    <p style="margin-bottom:24px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">الصق أو اكتب أسئلة الإمتحان في الحقل التالي، أو قم باستيراد ملف، وسنحوّلها تلقائيًاإلى امتحان".</p>
+    <p style="margin-bottom:24px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">الصق أو اكتب أسئلة الإمتحان في الحقل التالي، أو قم باستيراد ملف، وسنحوّلها تلقائيًا إلى امتحان.</p>
     <div class="form-group" style="margin-bottom: 18px;">
       <label for="inlineQuizTitle" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-text-primary); font-size: 0.9rem;">عنوان الإمتحان</label>
       <input type="text" id="inlineQuizTitle" placeholder="Arrays in C++" style="width: 100%; padding: 14px 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 1rem; transition: all 0.2s; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';"/>
@@ -1609,7 +1614,7 @@ function createUserQuizCard(quiz, index) {
 
   // User badge
   const badge = document.createElement("div");
-  badge.textContent = "👤 Your Quiz";
+  badge.textContent = "👤 اختبارك";
   badge.className = "user-quiz-badge";
 
   card.appendChild(badge);
@@ -1878,8 +1883,8 @@ function renderCategory(category) {
       container.innerHTML = `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">🔭</div>
-          <h3>No Content Yet</h3>
-          <p>This category is empty. Check back later!</p>
+          <h3>لا يوجد محتوى بعد</h3>
+          <p>هذا القسم فارغ حالياً، تابعنا لمزيد من المحتوى قريباً!</p>
         </div>
       `;
     }
