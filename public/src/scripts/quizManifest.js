@@ -201,6 +201,7 @@ function buildCompatStructures(subjects) {
         id: quiz.id,
         title: quiz.title,
         path: quiz.path,
+        createdAt: quiz.createdAt,
         category: examCategoryKey,
         questionCount: quiz.questionCount,
         questionTypes: quiz.questionTypes,

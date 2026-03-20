@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "new badge",
+    "createdAt": "2026-03-19 - 20:37",
+    "path": "quizzes/Computer Science/2/2/Website demo/new badge.json",
+    "id": "TJL3MPD5"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary rule used to determine the total number of options for a task consisting of k different cases, each with its own number of steps (n1, n2, ..., nk)?",
+      "explanation": "According to Rule 1.1, for a task with k different cases, the total options are found by multiplying the options at each step: n = n1 * n2 * ... * nk.",
+      "options": [
+        "Addition Rule",
+        "Multiplication Rule",
+        "Combination Rule",
+        "Factorial Rule"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Suppose you have 7 different shirts, 5 different pairs of pants, and 3 pairs of shoes. How many unique outfits can be formed?",
+      "explanation": "The total number of outfits is calculated by multiplying the options for each item: 7 * 5 * 3 = 105.",
+      "options": [
+        "15",
+        "35",
+        "105",
+        "210"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many ways can Mohannad order computer parts if he has 2 brands of chips, 4 hard drives, 3 memory options, and 5 accessory bundles?",
+      "explanation": "By applying the multiplication rule to the given choices (n1=2, n2=4, n3=3, n4=5), the total ways are 2 * 4 * 3 * 5 = 120.",
+      "options": [
+        "14",
+        "60",
+        "120",
+        "240"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following best defines a permutation?",
+      "explanation": "Definition 1.1 states that a permutation is an arrangement of all or part of a set of objects.",
+      "options": [
+        "A selection of objects without regard to order",
+        "An arrangement of all or part of a set of objects",
+        "The sum of a series of integers",
+        "A subset where order is irrelevant"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a permutation problem involving the arrangement of books on a shelf, why are 'ABC' and 'CBA' counted as different outcomes?",
+      "explanation": "In a permutation, the order is important, meaning the arrangement ABC is different from CBA even if they use the same books.",
+      "options": [
+        "They contain different books",
+        "The order of objects is important",
+        "They represent combinations",
+        "One is a subset of the other"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the special case value for '0 factorial' (0!) in counting techniques?",
+      "explanation": "The definition of n factorial includes the special case where 0! = 1.",
+      "options": [
+        "0",
+        "1",
+        "Infinity",
+        "-1"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How many different ways can 6 items be arranged in a display?",
+      "explanation": "The number of permutations of n different elements is n!. For 6 items, this is 6! = 720.",
+      "options": [
+        "36",
+        "120",
+        "720",
+        "5040"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Referencing the provided table of letter pairs, how many permutations are possible when taking two letters at a time from the set {a, b, c, d}?",
+      "image": "./assets/quiz-media/permutation_table.png",
+      "explanation": "As shown in the table and calculated via rule 1.1, there are 4 options for the first position and 3 for the second, resulting in 4 * 3 = 12 permutations.",
+      "options": [
+        "4",
+        "8",
+        "12",
+        "24"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the mathematical formula for the number of permutations of subsets of r elements selected from a set of n different elements?",
+      "explanation": "Rule 1.2 defines the number of permutations of subsets as P(n,r) = n! / (n-r)!.",
+      "options": [
+        "P = n! / r!",
+        "P = n! / (n-r)!",
+        "P = n! / (r!(n-r)!)",
+        "P = (n-r)!"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How many permutations of 3 different digits can be formed using the ten digits from 0 to 9 inclusive?",
+      "explanation": "The number of permutations is P(10,3) = 10! / (10-3)! = 10 * 9 * 8 = 720.",
+      "options": [
+        "120",
+        "720",
+        "1000",
+        "5040"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In how many ways can 7 graduate students be assigned to 1 triple and 2 double hotel rooms during a conference?",
+      "explanation": "This uses the rule for permutations of similar objects (partitions): 7! / (3! * 2! * 2!) = 210.",
+      "options": [
+        "210",
+        "420",
+        "840",
+        "5040"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How many different letter arrangements can be made from the word 'STATISTICS'?",
+      "explanation": "Using the formula for permutations of similar objects with n=10, n1=3 (S), n2=3 (T), n3=2 (I), n4=1 (A), and n5=1 (C), the result is 10! / (3! * 3! * 2! * 1! * 1!) = 50,400.",
+      "options": [
+        "3,628,800",
+        "50,400",
+        "151,200",
+        "25,200"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Unlike permutations, combinations are selections where:",
+      "explanation": "Combinations refer to choosing objects without regard to order; for example, 'abc' and 'bca' are considered the same combination.",
+      "options": [
+        "Order is important",
+        "Order is not important",
+        "Only the first item matters",
+        "Objects must be identical"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a standard deck of 52 cards, how many different five-card hands are possible?",
+      "explanation": "The number of ways to deal five cards where order doesn't matter is C(52,5) = 52! / (5! * 47!) = 2,598,960.",
+      "options": [
+        "311,875,200",
+        "2,598,960",
+        "120",
+        "25,989"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A coach must select a starting basketball lineup consisting of 1 center (from 2), 2 forwards (from 5), and 2 guards (from 4). How many ways can this be done?",
+      "explanation": "The total ways are the product of the combinations for each position: C(2,1) * C(5,2) * C(4,2) = 2 * 10 * 6 = 120.",
+      "options": [
+        "11",
+        "20",
+        "60",
+        "120"
+      ],
+      "correct": 3
+    }
+  ]
+}

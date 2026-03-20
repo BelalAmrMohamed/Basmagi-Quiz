@@ -1914,6 +1914,25 @@ function getItemText(count) {
   return "إمتحان";
 }
 
+/**
+ * Returns true if the ISO-8601 / locale date string `dateStr` is within
+ * `withinDays` days of today.  Returns false for missing or unparseable dates.
+ * @param {string|undefined} dateStr
+ * @param {number} [withinDays=14]
+ * @returns {boolean}
+ */
+function isRecentlyAdded(dateStr, withinDays = 14) {
+  if (!dateStr) return false;
+  // Normalise non-standard separators such as "2026-03-19 - 20:37"
+  // by collapsing any " - " (space-dash-space) between date and time into a
+  // single space so the string becomes parseable by the Date constructor.
+  const normalised = String(dateStr).replace(/\s+-\s+/, " ");
+  const d = new Date(normalised);
+  if (isNaN(d)) return false;
+  const diffMs = Date.now() - d.getTime();
+  return diffMs >= 0 && diffMs < withinDays * 24 * 60 * 60 * 1000;
+}
+
 function createCategoryCard(
   name,
   itemCount,
@@ -1931,6 +1950,14 @@ function createCategoryCard(
     "aria-label",
     `${name}, ${itemCount} ${getItemText(itemCount)}`,
   );
+
+  if (courseData && isRecentlyAdded(courseData.createdAt)) {
+    const newBadge = document.createElement("span");
+    newBadge.className = "new-badge";
+    newBadge.textContent = "جديد";
+    newBadge.setAttribute("aria-label", "مضاف حديثاً");
+    card.appendChild(newBadge);
+  }
 
   const icon = getSubjectIcon(name, isSubfolder);
 
@@ -2035,6 +2062,14 @@ function createExamCard(exam) {
 
   const h = document.createElement("h3");
   h.innerHTML = `<span class="phone-only-emoji">📖</span> ${exam.title || exam.id}`;
+
+  if (isRecentlyAdded(exam.createdAt)) {
+    const newBadge = document.createElement("span");
+    newBadge.className = "new-badge";
+    newBadge.textContent = "جديد";
+    newBadge.setAttribute("aria-label", "مضاف حديثاً");
+    card.appendChild(newBadge);
+  }
 
   const questionCountLine = document.createElement("p");
   questionCountLine.className = "exam-question-count";
@@ -2404,6 +2439,34 @@ function updateBreadcrumb() {
 }
 
 /**
+ * Copies text to the clipboard.
+ * Prefers the async Clipboard API; falls back to a hidden textarea
+ * select-and-copy for non-HTTPS or focus-restricted contexts.
+ * @param {string} text
+ * @returns {Promise<void>}
+ */
+async function copyTextWithFallback(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  // Fallback: temporary textarea
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText =
+    "position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    const ok = document.execCommand("copy");
+    if (!ok) throw new Error("execCommand copy returned false");
+  } finally {
+    document.body.removeChild(ta);
+  }
+}
+
+/**
  * Creates a mode-grid button that copies quiz text on first click,
  * then offers a .txt download on the second click.
  *
@@ -2432,7 +2495,7 @@ function buildCopyDownloadButton(getTextFn, downloadFilename) {
       try {
         if (!isCopied) {
           const text = await getTextFn();
-          await navigator.clipboard.writeText(text);
+          await copyTextWithFallback(text);
           textBlob = new Blob([text], { type: "text/plain" });
           btn.innerHTML = `${downloadIcon}<strong>تنزيل .txt</strong>`;
           btn.setAttribute("aria-label", "تنزيل .txt");
@@ -2556,6 +2619,69 @@ function escapeHtml(unsafe) {
 window.startQuiz = startQuiz;
 window.renderRootCategories = renderRootCategories;
 
+/**
+ * Shows a modal listing all keyboard shortcuts available on the index page.
+ * Pressing Escape or clicking outside dismisses it.
+ */
+function showShortcutsOverlay() {
+  if (document.getElementById("shortcutsOverlay")) return; // already open
+
+  const overlay = document.createElement("div");
+  overlay.id = "shortcutsOverlay";
+  overlay.className = "shortcuts-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "shortcutsTitle");
+
+  overlay.innerHTML = `
+    <div class="shortcuts-card">
+      <h2 id="shortcutsTitle" class="shortcuts-title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6h16M4 10h16M4 14h8M4 18h4"/>
+        </svg>
+        اختصارات لوحة المفاتيح
+      </h2>
+      <table class="shortcuts-table" aria-label="قائمة الاختصارات">
+        <tbody>
+          <tr>
+            <td><kbd>/</kbd> أو <kbd>Ctrl</kbd>+<kbd>K</kbd></td>
+            <td>فتح البحث</td>
+          </tr>
+          <tr>
+            <td><kbd>Esc</kbd></td>
+            <td>إغلاق البحث أو هذه النافذة</td>
+          </tr>
+          <tr>
+            <td><kbd>?</kbd></td>
+            <td>عرض الاختصارات</td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="shortcuts-close" aria-label="إغلاق نافذة الاختصارات" type="button">
+        إغلاق
+      </button>
+    </div>
+  `;
+
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+  overlay.querySelector(".shortcuts-close").addEventListener("click", close);
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key === "Escape") close();
+    },
+    { once: true },
+  );
+
+  document.body.appendChild(overlay);
+  overlay.querySelector(".shortcuts-close").focus();
+}
+
 // ============================================================================
 // DOM Content Loaded
 // ============================================================================
@@ -2604,6 +2730,55 @@ document.addEventListener("DOMContentLoaded", () => {
   initApp().catch((err) => {
     console.error("Init error:", err);
     if (typeof renderRootCategories === "function") renderRootCategories();
+  });
+
+  // ── Keyboard shortcut: "/" or Ctrl+K / Cmd+K → open search ──────────────────
+  document.addEventListener("keydown", (e) => {
+    // Ignore if focus is inside an input, textarea, or contenteditable
+    const tag = document.activeElement?.tagName;
+    const isEditable =
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      document.activeElement?.isContentEditable;
+    if (isEditable) return;
+
+    const isSearchShortcut =
+      e.key === "/" ||
+      ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k");
+
+    if (isSearchShortcut) {
+      e.preventDefault();
+
+      const headerSearchBtn = document.getElementById("headerSearchBtn");
+      if (!headerSearchBtn) return;
+
+      // If the search bar is already open, focus the input directly
+      const searchInput = document.getElementById("courseSearch");
+      const searchContainer = document.getElementById("searchContainer");
+      const isOpen =
+        searchContainer &&
+        searchContainer.getAttribute("aria-hidden") !== "true";
+
+      if (isOpen && searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      } else {
+        headerSearchBtn.click();
+        // Wait one frame for the panel to open before focusing
+        requestAnimationFrame(() => {
+          const input = document.getElementById("courseSearch");
+          if (input) {
+            input.focus();
+            input.select();
+          }
+        });
+      }
+    }
+
+    if (e.key === "?" && !isEditable) {
+      e.preventDefault();
+      showShortcutsOverlay();
+    }
   });
 });
 

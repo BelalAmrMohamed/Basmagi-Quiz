@@ -301,6 +301,8 @@ async function build(examsDir, repoRoot) {
           quizEntry.description = quizObj.meta.description;
         if (quizObj.meta.author) quizEntry.author = quizObj.meta.author;
         if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
+        if (quizObj.meta.createdAt)
+          quizEntry.createdAt = quizObj.meta.createdAt;
 
         const subject = subjectsMap.get(metadata.courseKey);
         if (subject) {

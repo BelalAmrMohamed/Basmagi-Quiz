@@ -2223,3 +2223,124 @@ Container
     display: none !important;
   }
 }
+
+/* ============================================================================
+   NEW BADGE — recently added content indicator
+   ============================================================================ */
+.new-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(
+    --gradient-accent,
+    linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)
+  );
+  color: #fff;
+  font-size: var(--font-size-xs, 0.72rem);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ensure the card has relative positioning for the badge anchor */
+.card,
+.category-card,
+.exam-card {
+  position: relative;
+}
+
+/* ============================================================================
+   SHORTCUTS OVERLAY
+   ============================================================================ */
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-lg);
+}
+
+.shortcuts-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-xl) var(--space-2xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.shortcuts-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.shortcuts-table td {
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+.shortcuts-table tr:last-child td {
+  border-bottom: none;
+}
+
+.shortcuts-table td:first-child {
+  width: 55%;
+  font-family: monospace;
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  font-family: inherit;
+  box-shadow: 0 1px 0 var(--color-border);
+  line-height: 1.4;
+}
+
+.shortcuts-close {
+  align-self: flex-end;
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.shortcuts-close:hover {
+  background: var(--color-primary-hover);
+}
