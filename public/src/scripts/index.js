@@ -30,6 +30,14 @@ import { isAdminAuthenticated, hasAdminSessionHint } from "./adminAuth.js";
 import { getSubscribedCourses } from "../shared/filterUtils.js";
 import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 
+// PWA — SW registration + offline banner.
+// initPWA() must run on every page (not just index), so it is called before
+// the isIndexPage guard in DOMContentLoaded below.  Because index.js is
+// imported by side-menu.js (which loads on every page), placing the call
+// here means we don't need a separate <script type="module"> bootstrap in
+// each HTML file.
+import { initPWA } from "./pwa-manager.js";
+
 /**
  * Recursively count only the actual quiz/exam leaves under a category node.
  * Subfolders are never counted as quizzes themselves — we recurse into them.
@@ -2687,6 +2695,11 @@ function showShortcutsOverlay() {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  // ── PWA bootstrap (runs on EVERY page) ───────────────────────────────────
+  // Must come before the isIndexPage guard so SW registration and the offline
+  // banner are active regardless of which page the user is on.
+  initPWA();
+
   // ── Page guard ────────────────────────────────────────────────────────────
   // index.js is imported as an ES module by side-menu.js (for the exported
   // updateWelcomeMessage function).  ES module imports cause the ENTIRE module

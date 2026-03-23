@@ -1,0 +1,73 @@
+/* ============================================================================
+   offline-banner.css
+   Styles for the fixed offline/online status banner.
+
+   Variables consumed (all defined in themes.css, verified):
+     --color-warning            (#f59e0b in light; same in dark themes)
+     --color-success            (#10b981 in all themes)
+     --color-text-primary       (high-contrast text for all themes)
+     --color-background-secondary (used for the banner's box-shadow tint)
+     --z-notification           (10000 — sits above toasts, below modals-top)
+     --transition-base          (0.3s ease)
+     --font-size-sm             (0.875rem)
+   ============================================================================ */
+
+#offlineBanner {
+  /* ── Position ──────────────────────────────────────────────────────────── */
+  position: fixed;
+  bottom: 0;                       /* anchored to viewport bottom */
+  inset-inline: 0;                 /* stretches full width, RTL-aware */
+  z-index: var(--z-notification, 9999); /* above toasts/overlays */
+
+  /* ── Colour (default = offline/warning state) ──────────────────────────── */
+  background: var(--color-warning, #f59e0b);
+  color: #1a1a1a;                  /* dark text stays legible on amber + green */
+
+  /* ── Layout ────────────────────────────────────────────────────────────── */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  font-family: "Tajawal", sans-serif;
+  font-size: var(--font-size-sm, 0.9rem);
+  font-weight: 600;
+  text-align: center;
+
+  /* ── Motion: hidden by default, slides up when .is-visible is added ─────── */
+  transform: translateY(100%);
+  transition: transform var(--transition-base, 0.3s ease);
+
+  /* ── Subtle depth ──────────────────────────────────────────────────────── */
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Show state — toggled by JS */
+#offlineBanner.is-visible {
+  transform: translateY(0);
+}
+
+/* Icon inside the banner */
+#offlineBanner .banner-icon {
+  font-size: 1.1rem;
+  /* Prevent the emoji from being squished in flex row */
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Reduced-motion: skip the slide animation, just fade ──────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  #offlineBanner {
+    transition: opacity var(--transition-base, 0.3s ease);
+    transform: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #offlineBanner.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

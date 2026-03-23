@@ -1,7 +1,7 @@
 {
-  "id": "/",
+  "id": "/basamji",
   "name": "منصة إمتحانات بصمجي",
-  "short_name": "إمتحانات بصمجي",
+  "short_name": "بصمجي",
   "description": "منصة تعليمية مجانية تضم مكتبة شاملة من الإمتحانات الخاصة بكلية الحاسبات والمعلومات.",
   "start_url": "/",
   "scope": "/",
@@ -15,32 +15,18 @@
   "lang": "ar",
   "icons": [
     {
+      "src": "favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
       "src": "favicon.png",
       "sizes": "16x16 32x32 48x48",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/images/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/images/icon-16.png",
-      "sizes": "16x16",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/images/icon-32.png",
-      "sizes": "32x32",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "assets/images/icon-180.png",
-      "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
@@ -57,14 +43,14 @@
       "purpose": "any"
     },
     {
-      "src": "assets/images/maskable-icon.png",
-      "sizes": "512x512",
+      "src": "assets/images/maskable-icon-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "assets/images/maskable-icon-192x192.png",
-      "sizes": "192x192",
+      "src": "assets/images/maskable-icon.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
@@ -90,14 +76,39 @@
       "short_name": "إنشاء إمتحانات",
       "description": "صمم اختبارات، تتضمن أسئلة متعددة الإختيار، وصورًا، وشرح",
       "url": "/create-quiz.html",
-      "icons": [{ "src": "assets/images/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "assets/images/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "اللائحة",
       "short_name": "اللائحة",
       "description": "عرض تقدمك في الإمتحانات والأوسمة التي حصلت عليها",
       "url": "/dashboard.html",
-      "icons": [{ "src": "assets/images/icon-192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "assets/images/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "الإعدادات",
+      "short_name": "الإعدادات",
+      "description": "قم بالإشتراك في المزيد من المواد واختيار أوضاع الإختبار المناسبة لك",
+      "url": "/settings.html",
+      "icons": [
+        {
+          "src": "assets/images/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ],
   "protocol_handlers": [

@@ -161,23 +161,13 @@
     <link rel="stylesheet" href="src/components/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications.css">
     <link rel="stylesheet" href="src/styles/search.css">
+    <link rel="stylesheet" href="src/components/offline-banner.css">
 
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
     <link rel="modulepreload" href="src/shared/canvas-animation.js">
     <link rel="modulepreload" href="src/scripts/index.js">
     <link rel="modulepreload" href="src/components/side-menu.js">
-
-    <!-- Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(reg => console.log('SW registered:', reg))
-                    .catch(err => console.log('SW registration failed:', err));
-            });
-        }
-    </script>
 
     <!-- Security: Content Security Policy (recommended) But it prevented the Downloading libraries like pptx and pdf -->
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 

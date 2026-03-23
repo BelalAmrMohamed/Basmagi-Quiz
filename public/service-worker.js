@@ -6,8 +6,9 @@ const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
-const SUPABASE_URL = "https://<YOUR-PROJECT-REF>.supabase.co"; // TODO: fill this in
-const SUPABASE_ANON_KEY = "<YOUR-ANON-KEY>"; // TODO: fill this in
+const SUPABASE_URL = "https://esdfdzhtavraczrhxnmp.supabase.co"; // TODO: fill this in
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZGZkemh0YXZyYWN6cmh4bm1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzY0MjcsImV4cCI6MjA4NzcxMjQyN30.7UslF6wCetqU2VJNZsyWktREtv7NLJ5LfYfGtV50c1g"; // TODO: fill this in
 
 // Files to cache immediately.
 // Everything except for signing in dependencies, since signing in requires
@@ -474,11 +475,15 @@ self.addEventListener("message", (event) => {
   }
 
   if (data.type === "CACHE_SUBSCRIBED_QUIZZES") {
-    event.waitUntil(cacheSubscribedQuizzes(data.categories || [], event.source));
+    event.waitUntil(
+      cacheSubscribedQuizzes(data.categories || [], event.source),
+    );
   }
 
   if (data.type === "TRIGGER_SYNC") {
-    event.waitUntil(self.registration.sync.register("update-subscribed-quizzes"));
+    event.waitUntil(
+      self.registration.sync.register("update-subscribed-quizzes"),
+    );
   }
 });
 
