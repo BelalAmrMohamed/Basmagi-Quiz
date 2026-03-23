@@ -2,7 +2,7 @@
 
 /* ==================== LIGHT THEME (DEFAULT) ==================== */
 :root,
-[data-theme="light"] {
+html[data-theme="light"] {
   color-scheme: light;
 
   /* Backgrounds */
@@ -160,7 +160,7 @@
 }
 
 /* ==================== DARK SLATE THEME ==================== */
-[data-theme="dark-slate"] {
+html[data-theme="dark-slate"] {
   color-scheme: dark;
 
   /* Backgrounds */
@@ -244,7 +244,7 @@
 }
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
-[data-theme="dark"] {
+html[data-theme="dark"] {
   color-scheme: dark;
 
   /* Backgrounds */
