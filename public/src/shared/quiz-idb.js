@@ -1,7 +1,8 @@
 const QUIZ_DB_NAME = "BasmagiQuizDB";
-const QUIZ_DB_VERSION = 1;
+const QUIZ_DB_VERSION = 2;
 const QUIZZES_STORE = "quizzes";
 const META_STORE = "meta";
+const STATIC_QUIZZES_STORE = "staticQuizzes";
 const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
 export async function openQuizIDB() {
@@ -11,6 +12,7 @@ export async function openQuizIDB() {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        const oldVersion = event.oldVersion || 0;
 
         if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
           const quizzesStore = db.createObjectStore(QUIZZES_STORE, {
@@ -30,6 +32,10 @@ export async function openQuizIDB() {
 
         if (!db.objectStoreNames.contains(META_STORE)) {
           db.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+
+        if (oldVersion < 2 && !db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
+          db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
         }
       };
 
@@ -168,6 +174,56 @@ export async function getSubscribedCategoriesFromIDB(db) {
     throw new Error(
       `Failed to get subscribed categories from IndexedDB: ${error.message}`,
     );
+  }
+}
+
+export async function storeStaticQuizByPath(db, pathname, data) {
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
+      const store = tx.objectStore(STATIC_QUIZZES_STORE);
+      store.put({
+        path: pathname,
+        data,
+        cachedAt: Date.now(),
+      });
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () =>
+        reject(
+          new Error(
+            `Failed to store static quiz "${pathname}": ${tx.error?.message || "transaction error"}`,
+          ),
+        );
+      tx.onabort = () =>
+        reject(
+          new Error(
+            `Store static quiz transaction aborted for "${pathname}": ${tx.error?.message || "transaction aborted"}`,
+          ),
+        );
+    });
+  } catch (error) {
+    throw new Error(`Failed to store static quiz in IndexedDB: ${error.message}`);
+  }
+}
+
+export async function getStaticQuizByPath(db, pathname) {
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readonly");
+      const store = tx.objectStore(STATIC_QUIZZES_STORE);
+      const request = store.get(pathname);
+
+      request.onsuccess = () => resolve(request.result?.data || null);
+      request.onerror = () =>
+        reject(
+          new Error(
+            `Failed to read static quiz "${pathname}": ${request.error?.message || "request error"}`,
+          ),
+        );
+    });
+  } catch (error) {
+    throw new Error(`Failed to get static quiz from IndexedDB: ${error.message}`);
   }
 }
 

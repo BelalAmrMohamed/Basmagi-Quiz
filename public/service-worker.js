@@ -1,11 +1,12 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.6";
+const CACHE_VERSION = "basmagi-v4.1.0";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
+const STATIC_QUIZ_CACHE = `${CACHE_VERSION}-static-quizzes`;
 
 // Inject these at build/deploy time from Vercel environment variables.
 // They must map to the public Supabase values used by the client.
@@ -13,6 +14,27 @@ const SUPABASE_URL = self.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = self.SUPABASE_SERVICE_KEY || "";
 const QUIZ_API_PATH_PREFIXES = ["/api/quiz-data", "/api/quiz-manifest"];
 const LATEX_CDN_ORIGIN = "https://cdn.jsdelivr.net";
+const STATIC_QUIZ_PATH_PREFIXES = ["/data/", "/src/scripts/data/"];
+
+/*
+ * HOW TO TEST STATIC QUIZ CACHING:
+ * 1. Hard refresh the app while online
+ * 2. Open a static quiz (one loaded from /data/...) while online
+ * 3. DevTools → Application → Cache Storage → basmagi-v4.0.0-static-quizzes
+ *    ✓ The quiz JSON URL should appear here
+ * 4. DevTools → Application → IndexedDB → BasmagiQuizDB → staticQuizzes store
+ *    ✓ An entry with 'path' matching the quiz pathname should appear here
+ *
+ * HOW TO TEST INDEXEDDB FALLBACK:
+ * 1. Open a static quiz while online (confirms it's written to IDB per step above)
+ * 2. DevTools → Application → Cache Storage → right-click basmagi-v4.0.0-static-quizzes → Delete
+ * 3. Set Network to Offline
+ * 4. Navigate to the same quiz
+ *    ✓ Quiz should still load — served from IDB, not cache
+ *    ✓ SW console should log: '[SW] IDB fallback used for: /data/...'
+ * 5. If quiz fails to load, open the SW console and check for '[SW] IDB fallback failed'
+ *    to confirm whether the path key lookup is the issue
+ */
 
 // Files to cache immediately.
 // Everything except for signing in dependencies, since signing in requires
@@ -115,6 +137,7 @@ const CACHE_SIZE_LIMIT = {
   [DYNAMIC_CACHE]: 50,
   [IMAGE_CACHE]: 100,
   [QUIZ_CACHE]: 500,
+  [STATIC_QUIZ_CACHE]: 300,
 };
 
 // Helper: Limit cache size
@@ -151,6 +174,21 @@ function isQuizAPIRequest(request) {
       QUIZ_API_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
     if (match) console.log("[SW] Quiz API intercepted:", request.url);
     return match;
+  } catch {
+    return false;
+  }
+}
+
+function isStaticQuizRequest(request) {
+  try {
+    const url = new URL(request.url);
+    return (
+      url.origin === self.location.origin &&
+      url.pathname.endsWith(".json") &&
+      STATIC_QUIZ_PATH_PREFIXES.some((prefix) =>
+        url.pathname.startsWith(prefix),
+      )
+    );
   } catch {
     return false;
   }
@@ -211,7 +249,8 @@ self.addEventListener("activate", (event) => {
                 cacheName !== STATIC_CACHE &&
                 cacheName !== DYNAMIC_CACHE &&
                 cacheName !== IMAGE_CACHE &&
-                cacheName !== QUIZ_CACHE
+                cacheName !== QUIZ_CACHE &&
+                cacheName !== STATIC_QUIZ_CACHE
               );
             })
             .map((cacheName) => {
@@ -253,6 +292,10 @@ self.addEventListener("fetch", (event) => {
   // Handle different types of requests with appropriate strategies
   if (isQuizAPIRequest(request)) {
     event.respondWith(staleWhileRevalidateStrategy(request, QUIZ_CACHE));
+  } else if (isStaticQuizRequest(request)) {
+    event.respondWith(
+      cacheFirstWithFallbackStrategy(request, STATIC_QUIZ_CACHE),
+    );
   } else if (isImageRequest(request)) {
     // Cache-first strategy for images
     event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
@@ -395,6 +438,105 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
     });
 
   return cachedResponse || networkFetch;
+}
+
+async function cacheFirstWithFallbackStrategy(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+  if (cachedResponse) return cachedResponse;
+
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      await cache.put(request, networkResponse.clone());
+      limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+
+      const data = await networkResponse.clone().json();
+      const pathname = new URL(request.url).pathname;
+      await storeStaticQuizInIDB(pathname, data);
+    }
+    return networkResponse;
+  } catch (err) {
+    const pathname = new URL(request.url).pathname;
+    return await idbFallbackResponse(pathname);
+  }
+}
+
+function openQuizIDBForStatic() {
+  const QUIZ_DB_NAME = "BasmagiQuizDB";
+  const QUIZ_DB_VERSION = 2;
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
+
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
+        db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () =>
+      reject(request.error || new Error("IDB open failed"));
+  });
+}
+
+async function storeStaticQuizInIDB(pathname, data) {
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
+  let db;
+  try {
+    db = await openQuizIDBForStatic();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
+      tx.objectStore(STATIC_QUIZZES_STORE).put({
+        path: pathname,
+        data,
+        cachedAt: Date.now(),
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () =>
+        reject(tx.error || new Error("Store static quiz failed"));
+      tx.onabort = () =>
+        reject(tx.error || new Error("Store static quiz aborted"));
+    });
+  } finally {
+    if (db) db.close();
+  }
+}
+
+async function getStaticQuizFromIDB(pathname) {
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
+  let db;
+  try {
+    db = await openQuizIDBForStatic();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readonly");
+      const request = tx.objectStore(STATIC_QUIZZES_STORE).get(pathname);
+      request.onsuccess = () => resolve(request.result?.data || null);
+      request.onerror = () =>
+        reject(request.error || new Error("Read static quiz failed"));
+    });
+  } finally {
+    if (db) db.close();
+  }
+}
+
+async function idbFallbackResponse(pathname) {
+  try {
+    const data = await getStaticQuizFromIDB(pathname);
+    if (data) {
+      console.log("[SW] IDB fallback used for:", pathname);
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  } catch (err) {
+    console.warn("[SW] IDB fallback failed:", err);
+  }
+  return new Response("Quiz not available offline", { status: 503 });
 }
 
 // Offline HTML fallback
@@ -583,9 +725,10 @@ self.addEventListener("periodicsync", (event) => {
 
 async function cacheSubscribedQuizzes(categoryKeys, client) {
   const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 1;
+  const QUIZ_DB_VERSION = 2;
   const QUIZZES_STORE = "quizzes";
   const META_STORE = "meta";
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
   const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
   function openQuizIDBLocal() {
@@ -614,6 +757,9 @@ async function cacheSubscribedQuizzes(categoryKeys, client) {
 
         if (!db.objectStoreNames.contains(META_STORE)) {
           db.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
+          db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
         }
       };
 
@@ -703,9 +849,10 @@ async function cacheSubscribedQuizzes(categoryKeys, client) {
 
 async function updateCachedQuizzes() {
   const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 1;
+  const QUIZ_DB_VERSION = 2;
   const QUIZZES_STORE = "quizzes";
   const META_STORE = "meta";
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
   const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
   function openQuizIDBLocal() {
@@ -734,6 +881,9 @@ async function updateCachedQuizzes() {
 
         if (!db.objectStoreNames.contains(META_STORE)) {
           db.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+        if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
+          db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
         }
       };
 
