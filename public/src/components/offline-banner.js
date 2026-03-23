@@ -22,6 +22,9 @@ const ONLINE_FLASH_DURATION = 2000;
 // ── Module-level reference so event handlers share the same element ────────
 let banner = null;
 let onlineFlashTimer = null; // tracks the auto-hide timeout
+let connectivityCheckInterval = null;
+let probeUrl = "";
+const PROBE_TIMEOUT_MS = 4000;
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -86,6 +89,38 @@ function setOnline() {
   }, ONLINE_FLASH_DURATION);
 }
 
+async function checkRealConnectivity() {
+  if (!probeUrl) {
+    return navigator.onLine;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+
+  try {
+    await fetch(probeUrl, {
+      method: "HEAD",
+      signal: controller.signal,
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function updateBannerState() {
+  const isOnline = await checkRealConnectivity();
+  if (isOnline) {
+    setOnline();
+  } else {
+    setOffline();
+  }
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────
 
 /**
@@ -95,19 +130,18 @@ function setOnline() {
  * Call order matters: must be called after <body> exists (DOMContentLoaded
  * or later), which is guaranteed by initPWA() in pwa-manager.js.
  */
-export function initOfflineBanner() {
+export function initOfflineBanner(connectivityProbeUrl) {
   // Idempotency guard: if we already set up the listeners, do nothing
   if (banner !== null) return;
 
+  probeUrl = typeof connectivityProbeUrl === "string" ? connectivityProbeUrl : "";
   banner = getOrCreateBanner();
 
   // React to future network changes
-  window.addEventListener("offline", setOffline);
-  window.addEventListener("online", setOnline);
+  window.addEventListener("offline", updateBannerState);
+  window.addEventListener("online", updateBannerState);
 
-  // Check the current state immediately (user may have loaded while offline)
-  if (!navigator.onLine) {
-    setOffline();
-  }
-  // If already online, the banner stays hidden (transform: translateY(100%))
+  // Check the current state immediately and keep polling for silent drops.
+  updateBannerState();
+  connectivityCheckInterval = setInterval(updateBannerState, 30_000);
 }

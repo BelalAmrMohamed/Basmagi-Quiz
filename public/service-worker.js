@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.4";
+const CACHE_VERSION = "basmagi-v4.0.5";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -82,6 +82,7 @@ const STATIC_ASSETS = [
   "/favicon.svg",
   "/manifest.json",
 ];
+const STATIC_ASSETS_SET = new Set(STATIC_ASSETS);
 
 // Maximum number of items in dynamic cache
 const CACHE_SIZE_LIMIT = {
@@ -116,7 +117,17 @@ function isExternalRequest(request) {
 
 function isQuizAPIRequest(request) {
   if (!SUPABASE_URL) return false;
-  return request.url.startsWith(`${SUPABASE_URL}/rest/v1/`);
+
+  try {
+    const url = new URL(request.url);
+    const supabaseOrigin = new URL(SUPABASE_URL).origin;
+    const match =
+      url.origin === supabaseOrigin && url.pathname.startsWith("/rest/v1/");
+    if (match) console.log("[SW] Quiz API intercepted:", request.url);
+    return match;
+  } catch {
+    return false;
+  }
 }
 
 function supabaseFetch(path, options = {}) {
@@ -241,6 +252,10 @@ self.addEventListener("fetch", (event) => {
 
 // Network-first strategy
 async function networkFirstStrategy(request, cacheName) {
+  const requestAccept = request.headers.get("accept") || "";
+  const isHtmlDocumentRequest =
+    request.destination === "document" || requestAccept.includes("text/html");
+
   try {
     // Try network first
     const networkResponse = await fetch(request);
@@ -251,7 +266,10 @@ async function networkFirstStrategy(request, cacheName) {
     // Cache successful responses
     if (networkResponse.ok) {
       const cache = await caches.open(cacheName);
-      await cache.put(request, responseToCache);
+      const urlPath = new URL(request.url).pathname;
+      if (!STATIC_ASSETS_SET.has(urlPath)) {
+        await cache.put(request, responseToCache);
+      }
 
       // Limit cache size
       limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
@@ -262,14 +280,16 @@ async function networkFirstStrategy(request, cacheName) {
     // Network failed, try cache
     console.log("[SW] Network failed, trying cache:", request.url);
 
-    const cachedResponse = await caches.match(request);
+    const cachedResponse = isHtmlDocumentRequest
+      ? await caches.match(request, { ignoreSearch: true })
+      : await caches.match(request);
 
     if (cachedResponse) {
       return cachedResponse;
     }
 
     // Return offline page for HTML requests
-    if (request.headers.get("accept").includes("text/html")) {
+    if (isHtmlDocumentRequest) {
       return (
         caches.match("/offline.html") ||
         new Response(getOfflineHTML(), {
