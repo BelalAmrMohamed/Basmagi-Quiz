@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.1";
+const CACHE_VERSION = "basmagi-v4.0.2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -20,21 +20,54 @@ const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/create-quiz.html",
+  "/dashboard.html",
   "/onboarding.html",
   "/quiz.html",
   "/result.html",
-  "/dashboard.html",
+  "/settings.html",
 
   // CSS
+  "/src/styles/themes.css",
+
   "/src/styles/index.css",
   "/src/styles/create-quiz.css",
+  "/src/styles/dashboard.css",
+  "/src/styles/onboarding.css",
+  "/src/styles/quiz.css",
+  "/src/styles/result.css",
+  "/src/styles/settings.css",
+
+  "/src/styles/animations.css",
+  "/src/styles/markdown.css",
+  "/src/styles/search.css",
   "/src/styles/themes.css",
 
   // JS (entry points)
   "/src/scripts/index.js",
   "/src/scripts/create-quiz.js",
+  "/src/scripts/dashboard.js",
+  "/src/scripts/onboarding.js",
+  "/src/scripts/quiz.js",
+  "/src/scripts/result.js",
+  "/src/scripts/settings.js",
+
+  "/src/scripts/search-manager.js",
+  "/src/scripts/userProfile.js",
+  "/src/scripts/quizManifest.js",
+  "/src/scripts/quizId.js",
+  "/src/scripts/pwa-manager.js",
+  "/src/scripts/keyboard-nav.js",
+
   "/src/shared/theme-controller.js",
   "/src/shared/canvas-animation.js",
+  "/src/shared/gameEngine.js",
+  "/src/shared/filterUtils.js",
+  "/src/shared/markdown.js",
+  "/src/shared/quiz-idb.js",
+  "/src/shared/quiz-processor.js",
+  "/src/shared/rate-essays.js",
+  "/src/shared/storage-helpers.js",
+  "/src/shared/user-name-validation.js",
 
   // Components
   "/src/components/side-menu.css",
