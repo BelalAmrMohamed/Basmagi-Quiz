@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.3";
+const CACHE_VERSION = "basmagi-v4.0.4";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
