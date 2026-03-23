@@ -14,14 +14,14 @@
 
 // ── String constants (Arabic, do not translate) ────────────────────────────
 const OFFLINE_TEXT = "أنت غير متصل بالإنترنت — تعمل في وضع عدم الاتصال";
-const ONLINE_TEXT  = "✓ عدت للإنترنت";
+const ONLINE_TEXT = "عدت للإنترنت";
 
 // How long the "back online" flash stays visible before the banner hides (ms)
 const ONLINE_FLASH_DURATION = 2000;
 
 // ── Module-level reference so event handlers share the same element ────────
 let banner = null;
-let onlineFlashTimer = null;   // tracks the auto-hide timeout
+let onlineFlashTimer = null; // tracks the auto-hide timeout
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -48,8 +48,7 @@ function setOffline() {
     onlineFlashTimer = null;
   }
 
-  banner.innerHTML =
-    `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
+  banner.innerHTML = `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
 
   // Use the warning token (amber) — defined in every theme in themes.css
   banner.style.background = "var(--color-warning, #f59e0b)";
@@ -68,14 +67,17 @@ function setOnline() {
     onlineFlashTimer = null;
   }
 
-  banner.innerHTML =
-    `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
+  banner.innerHTML = `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
 
   // Use the success token (green) — defined in every theme in themes.css
   banner.style.background = "var(--color-success, #10b981)";
 
   // Make sure the banner is visible (it may already be if we were offline)
   banner.classList.add("is-visible");
+
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: "TRIGGER_SYNC" });
+  }
 
   // Auto-hide after the flash duration
   onlineFlashTimer = setTimeout(() => {
@@ -101,7 +103,7 @@ export function initOfflineBanner() {
 
   // React to future network changes
   window.addEventListener("offline", setOffline);
-  window.addEventListener("online",  setOnline);
+  window.addEventListener("online", setOnline);
 
   // Check the current state immediately (user may have loaded while offline)
   if (!navigator.onLine) {

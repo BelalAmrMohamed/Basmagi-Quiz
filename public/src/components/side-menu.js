@@ -51,6 +51,7 @@
         _deferredInstallPrompt = null;
         const btns = document.querySelectorAll(".install-app");
         btns.forEach((btn) => (btn.style.display = "none"));
+        document.dispatchEvent(new CustomEvent("pwa-install-accepted"));
       }
     } catch (err) {
       console.error("PWA Prompt error:", err);

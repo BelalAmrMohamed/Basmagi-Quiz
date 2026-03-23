@@ -24,6 +24,9 @@
 
 import { initOfflineBanner } from "../components/offline-banner.js";
 import { showNotification }  from "../components/notifications.js";
+import { getSubscribedCourses } from "../shared/filterUtils.js";
+import { getManifest } from "./quizManifest.js";
+import { userProfile } from "./userProfile.js";
 
 // ── Module state ───────────────────────────────────────────────────────────
 let swRegistration = null;
@@ -105,9 +108,33 @@ function initInstallListener() {
  * Stub for Step 1 — full implementation added in Step 2.
  */
 export async function triggerSubscribedQuizCache() {
-  // Step 2: import getSubscribedCourses() from filterUtils.js, retry until
-  // navigator.serviceWorker.controller is available, then postMessage.
-  console.log("[PWA] triggerSubscribedQuizCache() — stub, wired up in Step 2.");
+  let controller = navigator.serviceWorker.controller;
+
+  for (let attempt = 0; attempt < 5 && !controller; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    controller = navigator.serviceWorker.controller;
+  }
+
+  if (!controller) {
+    console.warn("[PWA] No active SW controller after retries; cache trigger skipped.");
+    return;
+  }
+
+  const manifest = await getManifest();
+  const categoryTree = manifest?.categoryTree || {};
+  const subscribedIds = userProfile.getSubscribedCourseIds();
+  const subscribedCategories = getSubscribedCourses(categoryTree, subscribedIds)
+    .map((course) => course.key);
+
+  if (!subscribedCategories || subscribedCategories.length === 0) {
+    console.log("[PWA] No subscribed categories found; cache trigger skipped.");
+    return;
+  }
+
+  controller.postMessage({
+    type: "CACHE_SUBSCRIBED_QUIZZES",
+    categories: subscribedCategories,
+  });
 }
 
 // ── 4. SW → page message handler (Step 2 stub) ────────────────────────────
@@ -123,8 +150,23 @@ function handleSWMessage(event) {
   const { data } = event;
   if (!data) return;
 
-  // Step 2: handle CACHE_COMPLETE, CACHE_PROGRESS, SYNC_COMPLETE, etc.
-  console.log("[PWA] Message from SW:", data);
+  if (data.type === "CACHE_COMPLETE") {
+    showNotification(
+      "تم التخزين",
+      `تم حفظ ${data.count} اختبار للعمل دون اتصال ✓`,
+      "success",
+    );
+    return;
+  }
+
+  if (data.type === "CACHE_PROGRESS") {
+    console.log("[PWA] Cache progress:", data.cached, "/", data.total);
+    return;
+  }
+
+  if (data.type === "SYNC_COMPLETE") {
+    console.log("[PWA] Sync complete. Updated:", data.updated);
+  }
 }
 
 // ── 5. Public entry point ─────────────────────────────────────────────────

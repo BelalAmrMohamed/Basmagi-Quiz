@@ -454,6 +454,10 @@
 
     <script type="module" src="src/scripts/dashboard.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
+    <script type="module">
+      import { initPWA } from "./src/scripts/pwa-manager.js";
+      document.addEventListener("DOMContentLoaded", () => initPWA());
+    </script>
 </body>
 
 </html>

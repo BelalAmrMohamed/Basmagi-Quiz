@@ -1,14 +1,16 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.0";
+const CACHE_VERSION = "basmagi-v4.0.1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
-const SUPABASE_URL = "https://esdfdzhtavraczrhxnmp.supabase.co"; // TODO: fill this in
-const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzZGZkemh0YXZyYWN6cmh4bm1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMzY0MjcsImV4cCI6MjA4NzcxMjQyN30.7UslF6wCetqU2VJNZsyWktREtv7NLJ5LfYfGtV50c1g"; // TODO: fill this in
+
+// Inject these at build/deploy time from Vercel environment variables.
+// They must map to the public Supabase values used by the client.
+const SUPABASE_URL = self.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = self.SUPABASE_SERVICE_KEY || "";
 
 // Files to cache immediately.
 // Everything except for signing in dependencies, since signing in requires
@@ -81,10 +83,17 @@ function isExternalRequest(request) {
 }
 
 function isQuizAPIRequest(request) {
+  if (!SUPABASE_URL) return false;
   return request.url.startsWith(`${SUPABASE_URL}/rest/v1/`);
 }
 
 function supabaseFetch(path, options = {}) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      "[SW] Missing SUPABASE_URL/SUPABASE_SERVICE_KEY. Inject Vercel env values before serving service-worker.js.",
+    );
+  }
+
   return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
@@ -495,16 +504,247 @@ self.addEventListener("periodicsync", (event) => {
 });
 
 async function cacheSubscribedQuizzes(categoryKeys, client) {
-  // TODO: Step 3 — requires quiz-idb.js helpers
-  console.log("[SW] cacheSubscribedQuizzes stub called:", {
-    categoryCount: Array.isArray(categoryKeys) ? categoryKeys.length : 0,
-    hasClient: Boolean(client),
-  });
+  const QUIZ_DB_NAME = "BasmagiQuizDB";
+  const QUIZ_DB_VERSION = 1;
+  const QUIZZES_STORE = "quizzes";
+  const META_STORE = "meta";
+  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
+
+  function openQuizIDBLocal() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+
+        if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
+          const quizzesStore = db.createObjectStore(QUIZZES_STORE, {
+            keyPath: "id",
+          });
+          quizzesStore.createIndex("by-category", "categoryKey", {
+            unique: false,
+          });
+        } else {
+          const quizzesStore =
+            event.target.transaction.objectStore(QUIZZES_STORE);
+          if (!quizzesStore.indexNames.contains("by-category")) {
+            quizzesStore.createIndex("by-category", "categoryKey", {
+              unique: false,
+            });
+          }
+        }
+
+        if (!db.objectStoreNames.contains(META_STORE)) {
+          db.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () =>
+        reject(request.error || new Error("IDB open failed"));
+    });
+  }
+
+  function storeQuizInIDBLocal(db, quizEntry) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUIZZES_STORE, "readwrite");
+      tx.objectStore(QUIZZES_STORE).put(quizEntry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Store quiz failed"));
+      tx.onabort = () => reject(tx.error || new Error("Store quiz aborted"));
+    });
+  }
+
+  function storeSubscribedCategoriesLocal(db, keys) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(META_STORE, "readwrite");
+      tx.objectStore(META_STORE).put({
+        key: SUBSCRIBED_CATEGORIES_KEY,
+        value: Array.isArray(keys) ? keys : [],
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Store meta failed"));
+      tx.onabort = () => reject(tx.error || new Error("Store meta aborted"));
+    });
+  }
+
+  const safeCategoryKeys = Array.isArray(categoryKeys) ? categoryKeys : [];
+  if (safeCategoryKeys.length === 0) {
+    if (client) client.postMessage({ type: "CACHE_COMPLETE", count: 0 });
+    return;
+  }
+
+  let db;
+  try {
+    const response = await supabaseFetch(
+      `quizzes?select=id,category,data&category=in.(${safeCategoryKeys.join(",")})`,
+    );
+    if (!response.ok) {
+      throw new Error(`Supabase fetch failed: ${response.status}`);
+    }
+    const rows = await response.json();
+    const quizRows = Array.isArray(rows) ? rows : [];
+
+    db = await openQuizIDBLocal();
+    await storeSubscribedCategoriesLocal(db, safeCategoryKeys);
+
+    let cached = 0;
+    for (const row of quizRows) {
+      const quizEntry = {
+        id: row.id,
+        categoryKey: row.category,
+        data: row.data,
+        cachedAt: Date.now(),
+      };
+
+      await storeQuizInIDBLocal(db, quizEntry);
+      cached++;
+
+      if (client) {
+        client.postMessage({
+          type: "CACHE_PROGRESS",
+          cached,
+          total: quizRows.length,
+        });
+      }
+    }
+
+    if (client) {
+      client.postMessage({
+        type: "CACHE_COMPLETE",
+        count: cached,
+      });
+    }
+  } catch (error) {
+    console.error("[SW] Failed to cache subscribed quizzes:", error);
+    throw error;
+  } finally {
+    if (db) db.close();
+  }
 }
 
 async function updateCachedQuizzes() {
-  // TODO: Step 6 — requires quiz-idb.js helpers
-  console.log("[SW] updateCachedQuizzes stub called");
+  const QUIZ_DB_NAME = "BasmagiQuizDB";
+  const QUIZ_DB_VERSION = 1;
+  const QUIZZES_STORE = "quizzes";
+  const META_STORE = "meta";
+  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
+
+  function openQuizIDBLocal() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+
+        if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
+          const quizzesStore = db.createObjectStore(QUIZZES_STORE, {
+            keyPath: "id",
+          });
+          quizzesStore.createIndex("by-category", "categoryKey", {
+            unique: false,
+          });
+        } else {
+          const quizzesStore =
+            event.target.transaction.objectStore(QUIZZES_STORE);
+          if (!quizzesStore.indexNames.contains("by-category")) {
+            quizzesStore.createIndex("by-category", "categoryKey", {
+              unique: false,
+            });
+          }
+        }
+
+        if (!db.objectStoreNames.contains(META_STORE)) {
+          db.createObjectStore(META_STORE, { keyPath: "key" });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () =>
+        reject(request.error || new Error("IDB open failed"));
+    });
+  }
+
+  function getSubscribedCategoriesLocal(db) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(META_STORE, "readonly");
+      const request = tx.objectStore(META_STORE).get(SUBSCRIBED_CATEGORIES_KEY);
+      request.onsuccess = () => resolve(request.result?.value || []);
+      request.onerror = () =>
+        reject(request.error || new Error("Read subscribed categories failed"));
+    });
+  }
+
+  function getQuizzesByCategoryLocal(db, categoryKey) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUIZZES_STORE, "readonly");
+      const index = tx.objectStore(QUIZZES_STORE).index("by-category");
+      const request = index.getAll(categoryKey);
+      request.onsuccess = () =>
+        resolve(Array.isArray(request.result) ? request.result : []);
+      request.onerror = () =>
+        reject(request.error || new Error("Read quizzes by category failed"));
+    });
+  }
+
+  function storeQuizInIDBLocal(db, quizEntry) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(QUIZZES_STORE, "readwrite");
+      tx.objectStore(QUIZZES_STORE).put(quizEntry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Store quiz failed"));
+      tx.onabort = () => reject(tx.error || new Error("Store quiz aborted"));
+    });
+  }
+
+  let db;
+  let updated = 0;
+
+  try {
+    db = await openQuizIDBLocal();
+    const subscribedCategories = await getSubscribedCategoriesLocal(db);
+    const categoryKeys = Array.isArray(subscribedCategories)
+      ? subscribedCategories
+      : [];
+
+    for (const categoryKey of categoryKeys) {
+      const entries = await getQuizzesByCategoryLocal(db, categoryKey);
+      for (const entry of entries) {
+        try {
+          const response = await supabaseFetch(
+            `quizzes?id=eq.${entry.id}&select=id,category,data`,
+          );
+          if (!response.ok) continue;
+
+          const rows = await response.json();
+          const fresh = Array.isArray(rows) ? rows[0] : null;
+          if (!fresh) continue;
+
+          if (JSON.stringify(fresh.data) !== JSON.stringify(entry.data)) {
+            await storeQuizInIDBLocal(db, {
+              id: fresh.id,
+              categoryKey: fresh.category,
+              data: fresh.data,
+              cachedAt: Date.now(),
+            });
+            updated++;
+          }
+        } catch (_) {
+          // Ignore per-quiz network/update failures to keep sync resilient.
+        }
+      }
+    }
+  } catch (error) {
+    console.error("[SW] Failed to update cached quizzes:", error);
+    throw error;
+  } finally {
+    if (db) db.close();
+  }
+
+  const allClients = await self.clients.matchAll();
+  allClients.forEach((client) =>
+    client.postMessage({ type: "SYNC_COMPLETE", updated }),
+  );
 }
 
 console.log("[SW] Service worker script loaded");

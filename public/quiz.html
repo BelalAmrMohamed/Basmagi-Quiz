@@ -367,6 +367,10 @@
         import { getShortcutModalHTML } from './src/scripts/keyboard-nav.js';
         document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
     </script>
+    <script type="module">
+      import { initPWA } from "./src/scripts/pwa-manager.js";
+      document.addEventListener("DOMContentLoaded", () => initPWA());
+    </script>
 </body>
 
 </html>
