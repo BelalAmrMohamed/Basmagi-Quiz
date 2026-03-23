@@ -1,36 +1,50 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v3.3.2";
+const CACHE_VERSION = "basmagi-v4.0.0";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
+const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
+const SUPABASE_URL = "https://<YOUR-PROJECT-REF>.supabase.co"; // TODO: fill this in
+const SUPABASE_ANON_KEY = "<YOUR-ANON-KEY>"; // TODO: fill this in
 
-// Files to cache immediately
+// Files to cache immediately.
+// Everything except for signing in dependencies, since signing in requires
+// internet, so caching its dependencies would be useless.
 const STATIC_ASSETS = [
+  // Pages
   "/",
-  // main page and create-quiz page only
   "/index.html",
   "/create-quiz.html",
+  "/onboarding.html",
+  "/quiz.html",
+  "/result.html",
+  "/dashboard.html",
 
-  // used css files
+  // CSS
   "/src/styles/index.css",
   "/src/styles/create-quiz.css",
   "/src/styles/themes.css",
 
-  // used js files
+  // JS (entry points)
   "/src/scripts/index.js",
   "/src/scripts/create-quiz.js",
   "/src/shared/theme-controller.js",
+  "/src/shared/canvas-animation.js",
 
-  // Notifications and side menu
+  // Components
   "/src/components/side-menu.css",
   "/src/components/side-menu.js",
   "/src/components/notifications.css",
   "/src/components/notifications.js",
+  "/src/components/offline-banner.css",
+  "/src/components/offline-banner.js",
 
-  // Icon and manifest
+  // PWA shell files
   "/favicon.png",
+  "/favicon.ico",
+  "/favicon.svg",
   "/manifest.json",
 ];
 
@@ -38,6 +52,7 @@ const STATIC_ASSETS = [
 const CACHE_SIZE_LIMIT = {
   [DYNAMIC_CACHE]: 50,
   [IMAGE_CACHE]: 100,
+  [QUIZ_CACHE]: 500,
 };
 
 // Helper: Limit cache size
@@ -62,6 +77,31 @@ function isImageRequest(request) {
 // Helper: Check if request is for external resource
 function isExternalRequest(request) {
   return !request.url.startsWith(self.location.origin);
+}
+
+function isQuizAPIRequest(request) {
+  return request.url.startsWith(`${SUPABASE_URL}/rest/v1/`);
+}
+
+function supabaseFetch(path, options = {}) {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+}
+
+function fetchQuizAPIRequest(request) {
+  const url = new URL(request.url);
+  const path = `${url.pathname.replace("/rest/v1/", "")}${url.search}`;
+  return supabaseFetch(path, {
+    method: request.method,
+    headers: Object.fromEntries(request.headers.entries()),
+  });
 }
 
 // Install Event - Cache static assets
@@ -100,7 +140,8 @@ self.addEventListener("activate", (event) => {
                 cacheName.startsWith("basmagi-") &&
                 cacheName !== STATIC_CACHE &&
                 cacheName !== DYNAMIC_CACHE &&
-                cacheName !== IMAGE_CACHE
+                cacheName !== IMAGE_CACHE &&
+                cacheName !== QUIZ_CACHE
               );
             })
             .map((cacheName) => {
@@ -131,7 +172,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Handle different types of requests with appropriate strategies
-  if (isImageRequest(request)) {
+  if (isQuizAPIRequest(request)) {
+    event.respondWith(staleWhileRevalidateStrategy(request, QUIZ_CACHE));
+  } else if (isImageRequest(request)) {
     // Cache-first strategy for images
     event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
   } else if (isExternalRequest(request)) {
@@ -242,6 +285,30 @@ async function cacheFirstStrategy(request, cacheName) {
   }
 }
 
+// Stale-while-revalidate strategy for quiz API calls
+async function staleWhileRevalidateStrategy(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  const cachedResponse = await cache.match(request);
+
+  const networkFetch = fetchQuizAPIRequest(request)
+    .then(async (networkResponse) => {
+      if (networkResponse && networkResponse.ok) {
+        await cache.put(request, networkResponse.clone());
+        limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+      }
+      return networkResponse;
+    })
+    .catch(() => {
+      console.warn("[SW] SWR network fetch failed:", request.url);
+      return new Response("Offline", {
+        status: 503,
+        statusText: "Service Unavailable",
+      });
+    });
+
+  return cachedResponse || networkFetch;
+}
+
 // Offline HTML fallback
 function getOfflineHTML() {
   return `
@@ -316,6 +383,11 @@ function getOfflineHTML() {
 self.addEventListener("sync", (event) => {
   console.log("[SW] Background sync:", event.tag);
 
+  if (event.tag === "update-subscribed-quizzes") {
+    event.waitUntil(updateCachedQuizzes());
+  }
+
+  // Backwards compatibility with existing tag
   if (event.tag === "sync-quiz-results") {
     event.waitUntil(syncQuizResults());
   }
@@ -384,36 +456,50 @@ self.addEventListener("notificationclick", (event) => {
 self.addEventListener("message", (event) => {
   console.log("[SW] Message received:", event.data);
 
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
+  const { data } = event;
+  if (!data) return;
+
+  if (data.type === "SKIP_WAITING") {
+    event.waitUntil(self.skipWaiting());
   }
 
-  if (event.data && event.data.type === "CLEAR_CACHE") {
+  if (data.type === "CLEAR_CACHE") {
     event.waitUntil(
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => caches.delete(cacheName)),
-        );
-      }),
+      caches
+        .keys()
+        .then((cacheNames) =>
+          Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName))),
+        ),
     );
+  }
+
+  if (data.type === "CACHE_SUBSCRIBED_QUIZZES") {
+    event.waitUntil(cacheSubscribedQuizzes(data.categories || [], event.source));
+  }
+
+  if (data.type === "TRIGGER_SYNC") {
+    event.waitUntil(self.registration.sync.register("update-subscribed-quizzes"));
   }
 });
 
 // Periodic Background Sync (if supported)
 self.addEventListener("periodicsync", (event) => {
   if (event.tag === "update-quiz-content") {
-    event.waitUntil(updateQuizContent());
+    event.waitUntil(updateCachedQuizzes());
   }
 });
 
-async function updateQuizContent() {
-  try {
-    console.log("[SW] Updating quiz content...");
-    // Fetch and cache updated quiz content
-    // This is a placeholder for actual implementation
-  } catch (error) {
-    console.error("[SW] Failed to update quiz content:", error);
-  }
+async function cacheSubscribedQuizzes(categoryKeys, client) {
+  // TODO: Step 3 — requires quiz-idb.js helpers
+  console.log("[SW] cacheSubscribedQuizzes stub called:", {
+    categoryCount: Array.isArray(categoryKeys) ? categoryKeys.length : 0,
+    hasClient: Boolean(client),
+  });
+}
+
+async function updateCachedQuizzes() {
+  // TODO: Step 6 — requires quiz-idb.js helpers
+  console.log("[SW] updateCachedQuizzes stub called");
 }
 
 console.log("[SW] Service worker script loaded");
