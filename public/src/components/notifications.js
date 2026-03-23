@@ -10,7 +10,12 @@
    Logic: Stackable Toasts with Auto-Dismiss
    ========================================= */
 
-export function showNotification(title, message = "", type = "info") {
+export function showNotification(
+  title,
+  message = "",
+  type = "info",
+  time_in_secconds = 5,
+) {
   // 1. Get or Create Container (Logic from Function 2)
   let container = document.getElementById("notification-container");
   if (!container) {
@@ -81,7 +86,7 @@ export function showNotification(title, message = "", type = "info") {
   // A. Auto Dismiss Timer
   const autoDismissTimeout = setTimeout(() => {
     removeToast(toast);
-  }, 5000);
+  }, time_in_secconds * 1000);
 
   // B. Manual Close Button
   const closeBtn = toast.querySelector(".close-btn-notification");

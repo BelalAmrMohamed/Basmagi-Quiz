@@ -40,7 +40,6 @@ const STATIC_ASSETS = [
   "/src/styles/animations.css",
   "/src/styles/markdown.css",
   "/src/styles/search.css",
-  "/src/styles/themes.css",
 
   // JS (entry points)
   "/src/scripts/index.js",

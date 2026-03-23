@@ -1462,7 +1462,7 @@ as long as \`operator>\` is defined for the type.</textarea>
     const title = (titleInput.value || "").trim();
     const content = (contentInput.value || "").trim();
     if (!content) {
-      showNotification("بيانات ناقصة", "الرجاء إدخال المحتوى.", "warning");
+      showNotification("بيانات ناقصة", "الرجاء إدخال المحتوى.", "warning", 10);
       return;
     }
 
@@ -1470,7 +1470,7 @@ as long as \`operator>\` is defined for the type.</textarea>
     try {
       parsed = parseImportContent(content, title || "Quiz");
     } catch (err) {
-      showNotification("خطأ في التنسيق", err.message, "error");
+      showNotification("خطأ في التنسيق", err.message, "error", 10);
       return;
     }
 
