@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.0.5";
+const CACHE_VERSION = "basmagi-v4.0.6";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -11,6 +11,8 @@ const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
 // They must map to the public Supabase values used by the client.
 const SUPABASE_URL = self.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = self.SUPABASE_SERVICE_KEY || "";
+const QUIZ_API_PATH_PREFIXES = ["/api/quiz-data", "/api/quiz-manifest"];
+const LATEX_CDN_ORIGIN = "https://cdn.jsdelivr.net";
 
 // Files to cache immediately.
 // Everything except for signing in dependencies, since signing in requires
@@ -76,6 +78,30 @@ const STATIC_ASSETS = [
   "/src/components/offline-banner.css",
   "/src/components/offline-banner.js",
 
+  // KaTeX (Markdown/LaTeX rendering, must work offline)
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_AMS-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Caligraphic-Bold.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Caligraphic-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Fraktur-Bold.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Fraktur-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Bold.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-BoldItalic.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Italic.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-BoldItalic.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Bold.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Italic.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Script-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size1-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size2-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size3-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size4-Regular.woff2",
+  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Typewriter-Regular.woff2",
+
   // PWA shell files
   "/favicon.png",
   "/favicon.ico",
@@ -112,17 +138,17 @@ function isImageRequest(request) {
 
 // Helper: Check if request is for external resource
 function isExternalRequest(request) {
-  return !request.url.startsWith(self.location.origin);
+  const url = new URL(request.url);
+  const isLatexCDN = url.origin === LATEX_CDN_ORIGIN;
+  return url.origin !== self.location.origin && !isLatexCDN;
 }
 
 function isQuizAPIRequest(request) {
-  if (!SUPABASE_URL) return false;
-
   try {
     const url = new URL(request.url);
-    const supabaseOrigin = new URL(SUPABASE_URL).origin;
     const match =
-      url.origin === supabaseOrigin && url.pathname.startsWith("/rest/v1/");
+      url.origin === self.location.origin &&
+      QUIZ_API_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
     if (match) console.log("[SW] Quiz API intercepted:", request.url);
     return match;
   } catch {
@@ -145,15 +171,6 @@ function supabaseFetch(path, options = {}) {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
-  });
-}
-
-function fetchQuizAPIRequest(request) {
-  const url = new URL(request.url);
-  const path = `${url.pathname.replace("/rest/v1/", "")}${url.search}`;
-  return supabaseFetch(path, {
-    method: request.method,
-    headers: Object.fromEntries(request.headers.entries()),
   });
 }
 
@@ -222,6 +239,15 @@ self.addEventListener("fetch", (event) => {
   // Skip Chrome extensions
   if (request.url.startsWith("chrome-extension://")) {
     return;
+  }
+
+  if (request.url.includes("supabase")) {
+    console.log(
+      "[SW] Supabase request seen:",
+      request.url,
+      "| matched quiz:",
+      isQuizAPIRequest(request),
+    );
   }
 
   // Handle different types of requests with appropriate strategies
@@ -352,7 +378,7 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
 
-  const networkFetch = fetchQuizAPIRequest(request)
+  const networkFetch = fetch(request)
     .then(async (networkResponse) => {
       if (networkResponse && networkResponse.ok) {
         await cache.put(request, networkResponse.clone());

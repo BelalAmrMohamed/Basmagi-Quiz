@@ -25,6 +25,7 @@ let onlineFlashTimer = null; // tracks the auto-hide timeout
 let connectivityCheckInterval = null;
 let probeUrl = "";
 const PROBE_TIMEOUT_MS = 4000;
+let wasOfflineDuringSession = false;
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -45,6 +46,8 @@ function getOrCreateBanner() {
 
 /** Switches the banner to the offline (amber) state and shows it. */
 function setOffline() {
+  wasOfflineDuringSession = true;
+
   // Cancel any pending auto-hide from a previous "back online" flash
   if (onlineFlashTimer !== null) {
     clearTimeout(onlineFlashTimer);
@@ -112,10 +115,15 @@ async function checkRealConnectivity() {
   }
 }
 
-async function updateBannerState() {
+async function updateBannerState({ isInitialCheck = false } = {}) {
   const isOnline = await checkRealConnectivity();
   if (isOnline) {
-    setOnline();
+    if (wasOfflineDuringSession) {
+      setOnline();
+    } else if (isInitialCheck && banner) {
+      // Normal fresh online load: keep banner hidden.
+      banner.classList.remove("is-visible");
+    }
   } else {
     setOffline();
   }
@@ -135,6 +143,7 @@ export function initOfflineBanner(connectivityProbeUrl) {
   if (banner !== null) return;
 
   probeUrl = typeof connectivityProbeUrl === "string" ? connectivityProbeUrl : "";
+  wasOfflineDuringSession = false;
   banner = getOrCreateBanner();
 
   // React to future network changes
@@ -142,6 +151,6 @@ export function initOfflineBanner(connectivityProbeUrl) {
   window.addEventListener("online", updateBannerState);
 
   // Check the current state immediately and keep polling for silent drops.
-  updateBannerState();
+  updateBannerState({ isInitialCheck: true });
   connectivityCheckInterval = setInterval(updateBannerState, 30_000);
 }

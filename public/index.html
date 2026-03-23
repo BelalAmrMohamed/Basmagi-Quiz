@@ -688,6 +688,12 @@
     <script type="module" src="src/shared/canvas-animation.js"></script>
     <script type="module" src="src/scripts/index.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
+    <script type="module">
+        import { initPWAWithBanner } from "./src/scripts/pwa-manager.js";
+        document.addEventListener("DOMContentLoaded", () =>
+            initPWAWithBanner(window.SUPABASE_URL ? `${window.SUPABASE_URL}/rest/v1/` : "")
+        );
+    </script>
 
     <!-- Remove loading class when page is ready -->
     <script>

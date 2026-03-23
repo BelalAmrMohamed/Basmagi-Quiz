@@ -179,7 +179,11 @@ function handleSWMessage(event) {
  *   3. Sets up the install-acceptance listener.
  */
 export function initPWA() {
-  initOfflineBanner(window.SUPABASE_URL ? `${window.SUPABASE_URL}/rest/v1/` : "");      // must come first — body must exist
   registerServiceWorker();  // async, fire-and-forget is fine here
   initInstallListener();    // sync, just attaches an event listener
+}
+
+export function initPWAWithBanner(probeUrl) {
+  initOfflineBanner(probeUrl);
+  initPWA();
 }
