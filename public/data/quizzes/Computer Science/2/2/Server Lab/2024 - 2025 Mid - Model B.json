@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "title": "2024 - 2025 Mid - Model B",
+    "createdAt": "3/24/2026, 9:42:51 PM",
+    "id": "WMQIVOSE",
+    "path": "quizzes/Computer Science/2/2/Server Lab/2024 - 2025 Mid - Model B.json"
+  },
+  "stats": {
+    "questionCount": 9,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Define: **Identity and Access (IDA)**",
+      "answer": "Identity and Access (IDA) refers to the framework in which users, computers, services, and groups are named as **identities** that are granted **access (permissions)** to information, resources, or systems within a network.",
+      "explanation": "From Lec1: *\"Identity and Access (IDA). Users, computers, services, and groups, are named as identities that are given access (permissions) to information, resources, or systems.\"*\n\nIn practice, Active Directory is Microsoft's main system for managing IDA — it stores identity information and controls what each identity is allowed to access."
+    },
+    {
+      "q": "Define: **DNS (Domain Name System)**",
+      "answer": "DNS is a network service that translates human-readable domain names (e.g., `google.com`) into IP addresses that computers use to communicate. It operates at the **Application layer** of the OSI model.",
+      "explanation": "From Lec1 (OSI diagram): DNS is listed alongside HTTP, DHCP, and FTP as an **Application-layer** protocol in the TCP/IP model.\n\nFrom Lec2: The Server Manager installs a **DNS Server** role alongside Active Directory Domain Services, because AD depends on DNS for domain name resolution within the network.\n\nDNS uses **UDP** for quick queries (as shown in Lec1's transport protocol diagram)."
+    },
+    {
+      "q": "Define: **Authentication**",
+      "answer": "Authentication is the process of **verifying a user's identity**. The user provides credentials containing at least two components: a logon name, and a secret known only to the user and the system (such as a password).",
+      "explanation": "From Lec1 (verbatim): *\"Authentication is the process of verifying a user's identity. The user provides credentials that contain at least two components: a logon name and a secret known only to the user and the system, such as a password.\"*\n\nAuthentication is one of the two core functions of a **Domain Controller (DC)** — it answers the question *\"Who are you?\"* before authorization answers *\"What are you allowed to do?\"*"
+    },
+    {
+      "q": "Define: **Domain**",
+      "answer": "A Domain is a **logical group of network objects** (such as users, computers, and devices) that share the same Active Directory database, and are managed centrally by a Domain Controller.",
+      "explanation": "From Lec1: *\"Domain: A logical group of network objects (like users and devices) that share the same AD database.\"*\n\nFrom Lec2: *\"First we need to define a 'Domain' and at least one domain controller (DC) on Windows Server and install Active Directory (AD) service.\"*\n\nThe domain name (e.g., `etcg.com`) is configured when promoting a server to a Domain Controller and becomes the root of the AD forest."
+    },
+    {
+      "q": "Define: **Full Duplex**",
+      "answer": "Full duplex is a transmission mode in which **devices can send and receive data simultaneously** — there are two separate channels (paths) for transmission, so communication flows in both directions at the same time.",
+      "explanation": "From Lec1: *\"Full duplex: devices can send, receive data at the same time (two ways for transmission).\"*\n\nThis contrasts with **Half duplex**, where only one device can transmit at a time on a shared channel. Modern Ethernet switches typically operate in full duplex mode, eliminating collisions entirely."
+    },
+    {
+      "q": "What does Active Directory do?",
+      "options": [
+        "GROUP POLICY",
+        "Session",
+        "Build Resources",
+        "Access LAN"
+      ],
+      "correct": [
+        0
+      ],
+      "explanation": "The two correct answers are **a. GROUP POLICY** and **SSO (Single Sign-On)**.\n\nFrom Lec1: *\"What Active Directory Does: Authenticates and authorizes users and computers. Controls access to resources. **Applies security policies and software updates via Group Policy**. Enables **Single Sign-On (SSO)** within the domain.\"*\n\n- **Group Policy** is how AD pushes security settings, software, and configurations to all domain members.\n- **SSO** means a user logs in once and gains access to all permitted resources without re-authenticating."
+    },
+    {
+      "q": "Which layer in the OSI model is responsible for **error correction**?",
+      "options": [
+        "Application",
+        "Session",
+        "Data Link",
+        "Physical"
+      ],
+      "correct": 2,
+      "explanation": "The correct answer is **c. Data Link (Layer 2)**.\n\nFrom Lec1: *\"This layer provides reliable transit of data across a physical link hop by hop.\"* The Data Link layer uses techniques like **CRC (Cyclic Redundancy Check)** in frame trailers to detect (and in some implementations correct) transmission errors. Its PDU is the **Frame**."
+    },
+    {
+      "q": "The Layer whose PDU is **\"Frame\"** is:",
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
+      "correct": 3,
+      "explanation": "The correct answer is **Data Link**.\n\nFrom Lec1, the PDU hierarchy is:\n| Layer | PDU |\n|---|---|\n| Application / Presentation / Session | Data |\n| Transport (Layer 4) | **Segment** |\n| Network (Layer 3) | **Packet** |\n| Data Link (Layer 2) | **Frame** |\n| Physical (Layer 1) | **Bits** |"
+    },
+    {
+      "q": "The Layer which deals with **application** is:",
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
+      "correct": 2,
+      "explanation": "The correct answer is **c. Application (Layer 7)**.\n\nFrom Lec1: *\"This layer deals with networking applications. Examples: Email, Web browsers. Each application uses a certain service from Transport Layer (reliable or unreliable).\"*\n\nApplication layer protocols include HTTP, FTP, DNS, DHCP, and SMTP."
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "meta": {
+    "id": "XWLWZBN5",
+    "title": "2024 - 2025 Mid - Model C",
+    "createdAt": "3/24/2026, 9:47:55 PM",
+    "path": "quizzes/Computer Science/2/2/Server Lab/2024 - 2025 Mid - Model C.json"
+  },
+  "stats": {
+    "questionCount": 10,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Define: **Segmentation**",
+      "answer": "Segmentation is the process by which the **Transport layer** breaks large data from the sending host into smaller pieces called **segments**, which are then individually transmitted and reassembled in the correct order at the receiver.",
+      "explanation": "From Lec1: *\"This layer breaks up the data from the sending host and then reassembles it in the receiver. (segmentation)\"* — describing Layer 4 (Transport).\n\nSegmentation also enables **multiplexing**: multiple application conversations can be interleaved over the same network connection simultaneously, because each segment carries header information identifying which application it belongs to."
+    },
+    {
+      "q": "Define: **DNS (Domain Name System)**",
+      "answer": "DNS is a network service that translates human-readable domain names (e.g., `google.com`) into IP addresses that computers use to communicate. It operates at the **Application layer** of the OSI model.",
+      "explanation": "From Lec1 (OSI diagram): DNS is listed alongside HTTP, DHCP, and FTP as an **Application-layer** protocol in the TCP/IP model.\n\nFrom Lec2: The Server Manager installs a **DNS Server** role alongside Active Directory Domain Services, because AD depends on DNS for domain name resolution within the network.\n\nDNS uses **UDP** for quick queries (as shown in Lec1's transport protocol diagram)."
+    },
+    {
+      "q": "Define: **Authorization**",
+      "answer": "Authorization is the process that **determines whether to grant or deny** a user a requested level of access to a resource, after their identity has already been verified through authentication.",
+      "explanation": "From Lec1 (verbatim): *\"Authorization: Authorization is the process that determines whether to grant or deny a user a requested level of access to a resource.\"*\n\nRemember the distinction:\n- **Authentication** → *Who are you?* (verify identity)\n- **Authorization** → *What are you allowed to do?* (grant/deny access)\n\nActive Directory handles both — it authenticates users at login and then applies permissions (Group Policy, ACLs) to authorize their actions."
+    },
+    {
+      "q": "Define: **Domain**",
+      "answer": "A Domain is a **logical group of network objects** (such as users, computers, and devices) that share the same Active Directory database, and are managed centrally by a Domain Controller.",
+      "explanation": "From Lec1: *\"Domain: A logical group of network objects (like users and devices) that share the same AD database.\"*\n\nFrom Lec2: *\"First we need to define a 'Domain' and at least one domain controller (DC) on Windows Server and install Active Directory (AD) service.\"*\n\nThe domain name (e.g., `etcg.com`) is configured when promoting a server to a Domain Controller and becomes the root of the AD forest."
+    },
+    {
+      "q": "Define: **Half Duplex**",
+      "answer": "Half duplex is a transmission mode where **only one device can use the shared channel at a time** — a device can either send or receive, but not both simultaneously. If two devices transmit at the same time, a **collision** occurs.",
+      "explanation": "From Lec1: *\"Half duplex: one circuit for transmission, so only one device can use the bus (send or receive) at a time. If two devices sent at the same time, collision occurs.\"*\n\nThis contrasts with **Full duplex**, which allows simultaneous two-way communication. Old Ethernet hubs operated in half duplex; modern switches use full duplex."
+    },
+    {
+      "q": "IPv4 addresses are characterized by:",
+      "options": [
+        "4 bytes",
+        "4 bits",
+        "32 bytes"
+      ],
+      "correct": 0,
+      "explanation": "The correct answer is **a. 4 bytes (32 bits)**.\n\nAn IPv4 address is **32 bits = 4 bytes** long, written as four decimal octets separated by dots (e.g., `192.168.1.110`). Each octet is 8 bits (1 byte), and four octets × 8 bits = 32 bits total.\n\nFrom Lec1, IPv4 addresses are used at **Layer 3 (Network)** and consist of a **network portion** and a **host portion**."
+    },
+    {
+      "q": "Which layer in the OSI model is responsible for **encryption and compression**?",
+      "options": [
+        "Presentation",
+        "Session",
+        "Data Link",
+        "Physical"
+      ],
+      "correct": 0,
+      "explanation": "The correct answer is **a. Presentation (Layer 6)**.\n\nFrom Lec1: *\"This layer is responsible for presenting the data in the required format which may include: Encryption, Compression.\"* The Presentation layer acts as a translator, ensuring data is in a format the application layer can use, and handles encryption/decryption and compression/decompression."
+    },
+    {
+      "q": "The Layer whose PDU is **\"Frame\"** is:",
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
+      "correct": 3,
+      "explanation": "The correct answer is **d. Data Link**.\n\nFrom Lec1, the PDU hierarchy is:\n| Layer | PDU |\n|---|---|\n| Application / Presentation / Session | Data |\n| Transport (Layer 4) | **Segment** |\n| Network (Layer 3) | **Packet** |\n| Data Link (Layer 2) | **Frame** |\n| Physical (Layer 1) | **Bits** |"
+    },
+    {
+      "q": "The Layer which deals with **application** is:",
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
+      "correct": 2,
+      "explanation": "The correct answer is **c. Application (Layer 7)**. unreliable).\"*\n\nApplication layer protocols include HTTP, FTP, DNS, DHCP, and SMTP."
+    },
+    {
+      "q": "The protocol used in the **Transport layer** is:",
+      "options": [
+        "HTTP",
+        "Ethernet",
+        "FTP",
+        "TCP"
+      ],
+      "correct": 3,
+      "explanation": "The correct answer is **d. TCP (Transmission Control Protocol)**.\n\nFrom Lec1: *\"The transport layer includes the TCP and UDP protocols.\"*\n\n- **TCP** → reliable, connection-oriented (used by HTTP, SMTP, FTP)\n- **UDP** → fast, connectionless (used by DNS, VoIP)\n\nThe other options belong to different layers:\n- **HTTP** → Application layer\n- **Ethernet** → Data Link / Physical layer\n- **FTP** → Application layer"
+    }
+  ]
+}
