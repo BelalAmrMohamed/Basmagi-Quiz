@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T19:13:30.387Z",
+  "generatedAt": "2026-03-24T19:18:00.485Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -14,11 +14,7 @@
           "title": "AI Introduction To Computer Architecture",
           "path": "/data/quizzes/Computer Science/1/2/Computer Architecture/AI Introduction to Computer Architecture.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -35,11 +31,7 @@
           "title": "AI Introduction To Electronics",
           "path": "/data/quizzes/Computer Science/1/2/Electronics/AI Introduction to Electronics.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -56,11 +48,7 @@
           "title": "AI Introduction To Math 2",
           "path": "/data/quizzes/Computer Science/1/2/Math 2/AI Introduction to Math 2.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -77,11 +65,7 @@
           "title": "AI Introduction To C Sharp",
           "path": "/data/quizzes/Computer Science/1/2/Programming 1/AI Introduction to C Sharp.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -98,11 +82,7 @@
           "title": "AI Introduction To Scientific Thinking",
           "path": "/data/quizzes/Computer Science/1/2/Scientific thinking/AI Introduction to Scientific Thinking.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -119,9 +99,7 @@
           "title": "IP Address",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/IP Address.json",
           "questionCount": 30,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -129,10 +107,7 @@
           "title": "Lotus Mid 1",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/Lotus Mid 1.json",
           "questionCount": 17,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -140,10 +115,7 @@
           "title": "Lotus Mid 2",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/Lotus Mid 2.json",
           "questionCount": 35,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -151,11 +123,7 @@
           "title": "Our Mid",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/Our Mid.json",
           "questionCount": 17,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -163,9 +131,7 @@
           "title": "Previous Mid",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/Previous Mid.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -173,9 +139,7 @@
           "title": "Unknown Mid Exam",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/Unknown Mid Exam.json",
           "questionCount": 25,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -183,9 +147,7 @@
           "title": "Lecture 1 MCQs",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة الدكتورة/Lecture 1 MCQs.json",
           "questionCount": 14,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -193,9 +155,7 @@
           "title": "Lecture 2 MCQs",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة الدكتورة/Lecture 2 MCQs.json",
           "questionCount": 16,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -203,9 +163,7 @@
           "title": "Lecture 3 MCQs",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة الدكتورة/Lecture 3 MCQs.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -213,10 +171,7 @@
           "title": "40 MCQs On Lecture 2",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/40 MCQs on Lecture 2.json",
           "questionCount": 40,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -224,10 +179,7 @@
           "title": "40 MCQs On Lecture 4",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/40 MCQs on Lecture 4.json",
           "questionCount": 40,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -235,9 +187,7 @@
           "title": "CIDAR Notation",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/CIDAR notation.json",
           "questionCount": 8,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -245,11 +195,7 @@
           "title": "Lecture 1",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 1.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -257,11 +203,7 @@
           "title": "Lecture 2",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 2.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -269,11 +211,7 @@
           "title": "Lecture 3",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 3.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -281,11 +219,7 @@
           "title": "Lecture 4",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 4.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -293,11 +227,7 @@
           "title": "Lecture 5",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 5.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -305,10 +235,7 @@
           "title": "Lecture 6",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 6.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -316,11 +243,7 @@
           "title": "Lecture 7",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 7.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -328,11 +251,7 @@
           "title": "Lecture 8",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 8.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -340,11 +259,7 @@
           "title": "Lecture 9",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 9.json",
           "questionCount": 40,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -352,9 +267,7 @@
           "title": "Questions On Computer Networking",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Questions on Computer Networking.json",
           "questionCount": 34,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -362,9 +275,7 @@
           "title": "Revision",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Revision.json",
           "questionCount": 36,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -372,11 +283,7 @@
           "title": "فاينل الدكتورة في كلية علوم",
           "path": "/data/quizzes/Computer Science/2/1/Computer Network/فاينل الدكتورة في كلية علوم.json",
           "questionCount": 41,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -393,9 +300,7 @@
           "title": "50 MCQs On Chapter 1",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/50 MCQs on Chapter 1.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -403,9 +308,7 @@
           "title": "55 MCQs On Chapter 1",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/55 MCQs on Chapter 1.json",
           "questionCount": 55,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -413,9 +316,7 @@
           "title": "MCQs On Chapter 2",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/MCQs on Chapter 2.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -423,9 +324,7 @@
           "title": "Midterm 2023",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Midterm 2023.json",
           "questionCount": 10,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -433,10 +332,7 @@
           "title": "Midterm 2025",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Midterm 2025.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -444,10 +340,7 @@
           "title": "Midterm 2026",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Midterm 2026.json",
           "questionCount": 14,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -455,9 +348,7 @@
           "title": "Oral 2026 FCI",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Oral 2026 FCI.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -465,9 +356,7 @@
           "title": "Practical Exam   Model A",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Practical Exam - Model A.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -475,9 +364,7 @@
           "title": "Quiz 1",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Quiz 1.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -485,9 +372,7 @@
           "title": "Quiz 2",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Quiz 2.json",
           "questionCount": 14,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -495,9 +380,7 @@
           "title": "Quiz 3",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Quiz 3.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -505,9 +388,7 @@
           "title": "Quiz 4",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Quiz 4.json",
           "questionCount": 66,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -515,9 +396,7 @@
           "title": "Quiz 5",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Quiz 5.json",
           "questionCount": 64,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -525,11 +404,7 @@
           "title": "Revision 1",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Revision 1.json",
           "questionCount": 54,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -537,9 +412,7 @@
           "title": "Revision 2",
           "path": "/data/quizzes/Computer Science/2/1/Discrete Structure/Revision 2.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -556,9 +429,7 @@
           "title": "Ch 8 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/Ch 8 Quiz.json",
           "questionCount": 40,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -566,10 +437,7 @@
           "title": "Ch1 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/Ch1 Quiz.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -577,10 +445,7 @@
           "title": "Ch1, 2, And 3 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/Ch1, 2, and 3 Quiz.json",
           "questionCount": 60,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -588,9 +453,7 @@
           "title": "Ch6 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/Ch6 Quiz.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -598,10 +461,7 @@
           "title": "General AI Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/General AI quiz.json",
           "questionCount": 10,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -609,11 +469,7 @@
           "title": "General Exam",
           "path": "/data/quizzes/Computer Science/2/1/Foundation of IS/General Exam.json",
           "questionCount": 16,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -630,10 +486,7 @@
           "title": "Final Exam",
           "path": "/data/quizzes/Computer Science/2/1/Object-Oriented Programming/Final Exam.json",
           "questionCount": 10,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -650,9 +503,7 @@
           "title": "Ch 1, 2, 3, And 4 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch 1, 2, 3, and 4 Quiz.json",
           "questionCount": 60,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -660,9 +511,7 @@
           "title": "Ch 4 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch 4 Quiz.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -670,10 +519,7 @@
           "title": "Ch 6 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch 6 Quiz.json",
           "questionCount": 37,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -681,10 +527,7 @@
           "title": "Ch1 And 2 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch1 and 2 Quiz.json",
           "questionCount": 23,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -692,10 +535,7 @@
           "title": "Ch1 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch1 Quiz.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -703,10 +543,7 @@
           "title": "Ch2 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch2 Quiz.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -714,10 +551,7 @@
           "title": "Ch3 Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Ch3 Quiz.json",
           "questionCount": 50,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -725,9 +559,7 @@
           "title": "Final السنة اللي فاتت",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Final السنة اللي فاتت.json",
           "questionCount": 60,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -735,11 +567,7 @@
           "title": "General Exam 2",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/General Exam 2.json",
           "questionCount": 20,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -747,10 +575,7 @@
           "title": "General Exam 3",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/General Exam 3.json",
           "questionCount": 30,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -758,9 +583,7 @@
           "title": "General Exam",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/General Exam.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -768,9 +591,7 @@
           "title": "Introduction And Structure",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Introduction and Structure.json",
           "questionCount": 12,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -778,10 +599,7 @@
           "title": "Midterm Exam",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Midterm Exam.json",
           "questionCount": 20,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -789,9 +607,7 @@
           "title": "Process Concept And Management",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Process Concept and Management.json",
           "questionCount": 12,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -799,9 +615,7 @@
           "title": "Quiz On The First Chapter",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Quiz on the First Chapter.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -809,9 +623,7 @@
           "title": "Threads And CPU Scheduling",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/Threads and CPU Scheduling.json",
           "questionCount": 12,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -819,10 +631,7 @@
           "title": "1. Introduction",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/1. Introduction.json",
           "questionCount": 31,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -830,10 +639,7 @@
           "title": "2. Operating Systems Structures",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/2. Operating Systems Structures.json",
           "questionCount": 22,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -841,10 +647,7 @@
           "title": "3. Processes",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/3. Processes.json",
           "questionCount": 20,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -852,10 +655,7 @@
           "title": "4. Threads",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/4. Threads.json",
           "questionCount": 17,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -863,10 +663,7 @@
           "title": "6. CPU Scheduling",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/6. CPU Scheduling.json",
           "questionCount": 16,
-          "questionTypes": [
-            "Essay",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -874,11 +671,7 @@
           "title": "1. Introduction",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/1. Introduction.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -886,11 +679,7 @@
           "title": "2. Operating Systems Structures",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/2. Operating Systems Structures.json",
           "questionCount": 11,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -898,11 +687,7 @@
           "title": "3. Processes",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/3. Processes.json",
           "questionCount": 7,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -910,11 +695,7 @@
           "title": "4. Threads",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/4. Threads.json",
           "questionCount": 6,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -922,11 +703,7 @@
           "title": "6. CPU Scheduling",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/6. CPU Scheduling.json",
           "questionCount": 11,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -934,9 +711,7 @@
           "title": "أسئلة مقالي 2",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة مقالي 2.json",
           "questionCount": 18,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -944,9 +719,7 @@
           "title": "أسئلة مقالي",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/أسئلة مقالي.json",
           "questionCount": 18,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -954,11 +727,7 @@
           "title": "Ch1 Zaqazeeq",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch1 Zaqazeeq.json",
           "questionCount": 14,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -966,11 +735,7 @@
           "title": "Ch2 Zaqazeeq",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch2 Zaqazeeq.json",
           "questionCount": 25,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -978,11 +743,7 @@
           "title": "Ch3 Zaqazeeq",
           "path": "/data/quizzes/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch3 Zaqazeeq.json",
           "questionCount": 27,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -999,9 +760,7 @@
           "title": "Final Exam",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Final Exam.json",
           "questionCount": 36,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1009,9 +768,7 @@
           "title": "First Chapter Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/First Chapter quiz.json",
           "questionCount": 12,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1019,9 +776,7 @@
           "title": "Forth And 5th Ch Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Forth and 5th Ch Quiz.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1029,9 +784,7 @@
           "title": "General Quiz (Hard)",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/General Quiz (Hard).json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1039,9 +792,7 @@
           "title": "General Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/General Quiz.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1049,10 +800,7 @@
           "title": "Quiz 1",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Quiz 1.json",
           "questionCount": 22,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1060,10 +808,7 @@
           "title": "Quiz 2",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Quiz 2.json",
           "questionCount": 22,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1071,10 +816,7 @@
           "title": "Quiz 3",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Quiz 3.json",
           "questionCount": 22,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1082,10 +824,7 @@
           "title": "Quiz 4",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Quiz 4.json",
           "questionCount": 22,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1093,10 +832,7 @@
           "title": "Quiz 5",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Quiz 5.json",
           "questionCount": 22,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1104,10 +840,7 @@
           "title": "Second Chapter Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Second Chapter Quiz.json",
           "questionCount": 12,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1115,9 +848,7 @@
           "title": "Sixth And 7th Ch Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Sixth and 7th Ch Quiz.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1125,10 +856,7 @@
           "title": "Third Chapter Quiz",
           "path": "/data/quizzes/Computer Science/2/1/Programming 2/Third Chapter Quiz.json",
           "questionCount": 16,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1145,11 +873,7 @@
           "title": "Final 2020 2021",
           "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/Final 2020-2021.json",
           "questionCount": 9,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1157,11 +881,7 @@
           "title": "Introduction To AI",
           "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/Introduction to AI.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1178,11 +898,7 @@
           "title": "Introduction To Data Structure",
           "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Introduction to Data Structure.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1190,9 +906,7 @@
           "title": "Lecture 1 Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Lecture 1 quiz.json",
           "questionCount": 10,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1209,11 +923,7 @@
           "title": "AI Introduction To Database",
           "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/AI Introduction to Database.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1230,9 +940,7 @@
           "title": "1  Counting Techniques",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/1- Counting Techniques.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1240,9 +948,7 @@
           "title": "2  Probability",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/2- Probability.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1250,11 +956,7 @@
           "title": "AI Introduction To Probability",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/AI Introduction to Probability.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1262,10 +964,7 @@
           "title": "أسئلة الإحتمالات من الإمتحانات السابقة",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة_الإحتمالات_من_الإمتحانات_السابقة.json",
           "questionCount": 95,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "author": "بلال",
           "createdAt": "3/19/2026, 2:38:43 PM"
         },
@@ -1274,10 +973,7 @@
           "title": "2020 2021 Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2020 2021 Final.json",
           "questionCount": 18,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "source": "https://drive.google.com/file/d/1XSPMiRBspW7xPSRw6J3PtVbeo8RWDe7I/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1286,10 +982,7 @@
           "title": "2020 2021 Summer Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2020 2021 Summer Final.json",
           "questionCount": 19,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "source": "https://drive.google.com/file/d/1nY8_WFHbv7yC6j8tHALDo4UlGEx1CkaK/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1298,10 +991,7 @@
           "title": "2021 2022 Mid",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2021 2022 Mid.json",
           "questionCount": 10,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "source": "https://drive.google.com/file/d/15oGm07nAE6wSrKeH4qOoXU_ExqcOp9sM/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1310,9 +1000,7 @@
           "title": "2022 2023 Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2022 2023 Final.json",
           "questionCount": 10,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "source": "https://drive.google.com/file/d/12EePqpccRI3gKTBIFW103NFIwLvdJ9Ep/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1321,10 +1009,7 @@
           "title": "2023 2024 Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2023 2024 Final.json",
           "questionCount": 19,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "source": "https://drive.google.com/file/d/11I6iDgoBsUQLbZNY3FKhrJAWQbjL7Yk3/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1333,10 +1018,7 @@
           "title": "2024 2025 Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2024 2025 Final.json",
           "questionCount": 22,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
+          "questionTypes": ["Essay", "MCQ"],
           "source": "https://drive.google.com/file/d/1rt_rNzVXHubFtuzb_mIwRbn20nog9UTq/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1345,9 +1027,7 @@
           "title": "2025 - 2026 Summer Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Summer Final.json",
           "questionCount": 9,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "source": "https://drive.google.com/file/d/1Bg3ZFoHs2dH4qJnZvx9wqdT78nyled_P/view?usp=drive_link",
           "createdAt": "3/4/2026, 8:58:11 PM"
         },
@@ -1356,9 +1036,7 @@
           "title": "2025 Mid",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 Mid.json",
           "questionCount": 16,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link",
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
@@ -1367,9 +1045,7 @@
           "title": "Lecture 1 Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 quiz.json",
           "questionCount": 32,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "source": "https://drive.google.com/file/d/1f5WbcG8O8Vmd9DC8esdnsYUuMpTerECM/view?usp=drive_link",
           "createdAt": "2026-03-01 - 20:37"
         },
@@ -1378,9 +1054,7 @@
           "title": "أسئلة إمتحانات السابقة عن المحاضرة 4",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/أسئلة إمتحانات السابقة عن المحاضرة 4.json",
           "questionCount": 8,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
           "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
           "createdAt": "3/16/2026, 7:40:39 AM"
@@ -1399,11 +1073,7 @@
           "title": "AI Introduction To Server Lab",
           "path": "/data/quizzes/Computer Science/2/2/Server Lab/AI Introduction to Server Lab.json",
           "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1420,10 +1090,7 @@
           "title": "Lecture 1 MCQs",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Lecture 1 MCQs.json",
           "questionCount": 40,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1431,9 +1098,7 @@
           "title": "Lecture 1 Quiz",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Lecture 1 quiz.json",
           "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1441,20 +1106,15 @@
           "title": "40 MCQs",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Lecture 2 - 40 MCQs.json",
           "questionCount": 55,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["MCQ", "True/False"],
           "createdAt": "2026-03-01 - 20:37"
         },
         {
-          "id": "TAC7ZQWI",
+          "id": "T4D37W3P",
           "title": "Systems Analysis & Design – Ch.2 Mid Exam",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Systems_Analysis_Design_Ch2_Mid_Exam.json",
-          "questionCount": 2,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionCount": 7,
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "createdAt": "3/24/2026, 12:00:00 PM"
         },
         {
@@ -1462,9 +1122,7 @@
           "title": "أسئلة مقالي",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/أسئلة مقالي.json",
           "questionCount": 7,
-          "questionTypes": [
-            "Essay"
-          ],
+          "questionTypes": ["Essay"],
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
@@ -1481,9 +1139,7 @@
           "title": "new badge",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/new badge.json",
           "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
+          "questionTypes": ["MCQ"],
           "createdAt": "2026-03-19 - 20:37"
         },
         {
@@ -1491,11 +1147,7 @@
           "title": "Test Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/test-quiz.json",
           "questionCount": 15,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "source": "https://www.w3schools.com/CPP/default.asp",
           "createdAt": "2026-03-01 - 20:37"
         },
@@ -1504,11 +1156,7 @@
           "title": "Markdown & LaTeX Stress Test Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/Testing Features/Markdown_LaTeX_Stress_Test_Quiz.json",
           "questionCount": 10,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "author": "بلال",
           "createdAt": "3/14/2026, 7:19:36 AM"
         },
@@ -1517,11 +1165,7 @@
           "title": "Website Demo",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/Website Demo.json",
           "questionCount": 5,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "description": "Basmagi Quiz Platform Demo",
           "source": "https://www.w3schools.com/CPP/default.asp",
           "createdAt": "2026-03-01 - 20:37"
@@ -1531,11 +1175,7 @@
           "title": "C Plus Plus Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/أسئلة الدكتور/C_Plus_Plus_Quiz.json",
           "questionCount": 15,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
+          "questionTypes": ["Essay", "MCQ", "True/False"],
           "author": "Imported",
           "createdAt": "2026-03-13 - 08:48"
         }

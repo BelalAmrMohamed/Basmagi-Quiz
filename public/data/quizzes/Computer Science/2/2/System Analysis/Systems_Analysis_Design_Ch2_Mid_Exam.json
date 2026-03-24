@@ -7,7 +7,7 @@
   },
   "stats": {
     "questionCount": 7,
-    "questionTypes": ["Essay"]
+    "questionTypes": ["Essay", "MCQ", "True/False"]
   },
   "questions": [
     {
