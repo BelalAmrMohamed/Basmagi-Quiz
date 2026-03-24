@@ -7,13 +7,8 @@
  * without exposing the API key to the client.
  * test conectivity with this in the browser console:
 
-fetch('/api/chat', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ prompt: 'Hello!' })
-}).then(r => r.json()).then(console.log);
- 
-   */
+fetch('/api/chat', {  method: 'POST',  headers: { 'Content-Type': 'application/json' },  body: JSON.stringify({ prompt: 'Hello!' }) }).then(r => r.json()).then(console.log);
+*/
 
 export default async function handler(req, res) {
   const ALLOWED_ORIGINS = [

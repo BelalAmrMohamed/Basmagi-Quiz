@@ -8,13 +8,11 @@ const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const QUIZ_CACHE = `${CACHE_VERSION}-quizzes`;
 const STATIC_QUIZ_CACHE = `${CACHE_VERSION}-static-quizzes`;
 
-// Inject these at build/deploy time from Vercel environment variables.
-// They must map to the public Supabase values used by the client.
-const SUPABASE_URL = self.SUPABASE_URL || "";
-const SUPABASE_ANON_KEY = self.SUPABASE_SERVICE_KEY || "";
 const QUIZ_API_PATH_PREFIXES = ["/api/quiz-data", "/api/quiz-manifest"];
 const LATEX_CDN_ORIGIN = "https://cdn.jsdelivr.net";
 const STATIC_QUIZ_PATH_PREFIXES = ["/data/", "/src/scripts/data/"];
+let _supabaseUrl = null;
+let _supabaseKey = null;
 
 /*
  * HOW TO TEST STATIC QUIZ CACHING:
@@ -195,17 +193,18 @@ function isStaticQuizRequest(request) {
 }
 
 function supabaseFetch(path, options = {}) {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    throw new Error(
-      "[SW] Missing SUPABASE_URL/SUPABASE_SERVICE_KEY. Inject Vercel env values before serving service-worker.js.",
+  if (!_supabaseUrl || !_supabaseKey) {
+    console.warn(
+      "[SW] Supabase credentials are unavailable in worker scope; skipping DB fetch.",
     );
+    return null;
   }
 
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  return fetch(`${_supabaseUrl}/rest/v1/${path}`, {
     ...options,
     headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      apikey: _supabaseKey,
+      Authorization: `Bearer ${_supabaseKey}`,
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
@@ -539,6 +538,134 @@ async function idbFallbackResponse(pathname) {
   return new Response("Quiz not available offline", { status: 503 });
 }
 
+function normalizeQuizPath(pathValue) {
+  if (!pathValue || typeof pathValue !== "string") return null;
+  try {
+    return new URL(pathValue, self.location.origin).pathname;
+  } catch {
+    return pathValue.startsWith("/") ? pathValue : `/${pathValue}`;
+  }
+}
+
+function extractDbQuizIdFromApiPath(pathValue) {
+  if (!pathValue || typeof pathValue !== "string") return null;
+  try {
+    const parsed = new URL(pathValue, self.location.origin);
+    if (!parsed.pathname.startsWith("/api/quiz-data")) return null;
+    const rawPath = parsed.searchParams.get("path") || "";
+    if (!rawPath) return null;
+    const filename = rawPath.split("/").pop() || "";
+    const withoutExt = filename.replace(/\.json$/i, "");
+    return withoutExt || null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheResponseByPath(cache, pathValue, response) {
+  const request = new Request(new URL(pathValue, self.location.origin).toString());
+  return cache.put(request, response);
+}
+
+async function cacheQuizEntries(quizList, client) {
+  const QUIZ_DB_NAME = "BasmagiQuizDB";
+  const QUIZ_DB_VERSION = 2;
+  const QUIZZES_STORE = "quizzes";
+  const STATIC_QUIZZES_STORE = "staticQuizzes";
+  const safeQuizList = Array.isArray(quizList) ? quizList : [];
+  const staticQuizCache = await caches.open(STATIC_QUIZ_CACHE);
+
+  const openQuizIDBLocal = () =>
+    new Promise((resolve, reject) => {
+      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () =>
+        reject(request.error || new Error("IDB open failed"));
+    });
+
+  let db;
+  let cached = 0;
+  try {
+    db = await openQuizIDBLocal();
+
+    for (const entry of safeQuizList) {
+      try {
+        if (entry?.type === "db") {
+          const quizId = entry.id || extractDbQuizIdFromApiPath(entry.path);
+          if (quizId) {
+            const response = await supabaseFetch(
+              `quizzes?id=eq.${quizId}&select=id,category,data`,
+            );
+            if (response && response.ok) {
+              const rows = await response.json();
+              const row = Array.isArray(rows) ? rows[0] : null;
+              if (row) {
+                await new Promise((resolve, reject) => {
+                  const tx = db.transaction(QUIZZES_STORE, "readwrite");
+                  tx.objectStore(QUIZZES_STORE).put({
+                    id: row.id,
+                    categoryKey: row.category,
+                    data: row.data,
+                    cachedAt: Date.now(),
+                  });
+                  tx.oncomplete = () => resolve();
+                  tx.onerror = () => reject(tx.error || new Error("Store quiz failed"));
+                  tx.onabort = () => reject(tx.error || new Error("Store quiz aborted"));
+                });
+              }
+            }
+          }
+        } else if (entry?.type === "static" && entry.path) {
+          const normalizedPath = normalizeQuizPath(entry.path);
+          if (normalizedPath) {
+            const response = await fetch(normalizedPath);
+            if (response.ok) {
+              await cacheResponseByPath(staticQuizCache, normalizedPath, response.clone());
+              const data = await response.clone().json();
+              await new Promise((resolve, reject) => {
+                const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
+                tx.objectStore(STATIC_QUIZZES_STORE).put({
+                  path: normalizedPath,
+                  data,
+                  cachedAt: Date.now(),
+                });
+                tx.oncomplete = () => resolve();
+                tx.onerror = () =>
+                  reject(tx.error || new Error("Store static quiz failed"));
+                tx.onabort = () =>
+                  reject(tx.error || new Error("Store static quiz aborted"));
+              });
+            }
+          }
+        }
+      } catch (entryError) {
+        console.warn("[SW] Failed to cache quiz entry:", entry, entryError);
+      } finally {
+        cached++;
+        if (client) {
+          client.postMessage({
+            type: "CACHE_PROGRESS",
+            cached,
+            total: safeQuizList.length,
+          });
+        }
+      }
+    }
+
+    limitCacheSize(QUIZ_CACHE, CACHE_SIZE_LIMIT[QUIZ_CACHE]);
+    limitCacheSize(STATIC_QUIZ_CACHE, CACHE_SIZE_LIMIT[STATIC_QUIZ_CACHE]);
+
+    if (client) {
+      client.postMessage({
+        type: "CACHE_COMPLETE",
+        count: cached,
+      });
+    }
+  } finally {
+    if (db) db.close();
+  }
+}
+
 // Offline HTML fallback
 function getOfflineHTML() {
   return `
@@ -704,15 +831,25 @@ self.addEventListener("message", (event) => {
   }
 
   if (data.type === "CACHE_SUBSCRIBED_QUIZZES") {
+    _supabaseUrl = data.supabaseUrl || _supabaseUrl;
+    _supabaseKey = data.supabaseKey || _supabaseKey;
     event.waitUntil(
-      cacheSubscribedQuizzes(data.categories || [], event.source),
+      cacheSubscribedQuizzes(data.categories || [], data.quizList || [], event.source),
     );
   }
 
   if (data.type === "TRIGGER_SYNC") {
+    _supabaseUrl = data.supabaseUrl || _supabaseUrl;
+    _supabaseKey = data.supabaseKey || _supabaseKey;
     event.waitUntil(
       self.registration.sync.register("update-subscribed-quizzes"),
     );
+  }
+
+  if (data.type === "UPDATE_SUBSCRIBED_QUIZZES") {
+    _supabaseUrl = data.supabaseUrl || _supabaseUrl;
+    _supabaseKey = data.supabaseKey || _supabaseKey;
+    event.waitUntil(updateSubscriptionCache(data));
   }
 });
 
@@ -723,12 +860,10 @@ self.addEventListener("periodicsync", (event) => {
   }
 });
 
-async function cacheSubscribedQuizzes(categoryKeys, client) {
+async function cacheSubscribedQuizzes(categoryKeys, quizList, client) {
   const QUIZ_DB_NAME = "BasmagiQuizDB";
   const QUIZ_DB_VERSION = 2;
-  const QUIZZES_STORE = "quizzes";
   const META_STORE = "meta";
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
   const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
   function openQuizIDBLocal() {
@@ -738,44 +873,14 @@ async function cacheSubscribedQuizzes(categoryKeys, client) {
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
 
-        if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
-          const quizzesStore = db.createObjectStore(QUIZZES_STORE, {
-            keyPath: "id",
-          });
-          quizzesStore.createIndex("by-category", "categoryKey", {
-            unique: false,
-          });
-        } else {
-          const quizzesStore =
-            event.target.transaction.objectStore(QUIZZES_STORE);
-          if (!quizzesStore.indexNames.contains("by-category")) {
-            quizzesStore.createIndex("by-category", "categoryKey", {
-              unique: false,
-            });
-          }
-        }
-
         if (!db.objectStoreNames.contains(META_STORE)) {
           db.createObjectStore(META_STORE, { keyPath: "key" });
-        }
-        if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
-          db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
         }
       };
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () =>
         reject(request.error || new Error("IDB open failed"));
-    });
-  }
-
-  function storeQuizInIDBLocal(db, quizEntry) {
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(QUIZZES_STORE, "readwrite");
-      tx.objectStore(QUIZZES_STORE).put(quizEntry);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error || new Error("Store quiz failed"));
-      tx.onabort = () => reject(tx.error || new Error("Store quiz aborted"));
     });
   }
 
@@ -793,52 +898,40 @@ async function cacheSubscribedQuizzes(categoryKeys, client) {
   }
 
   const safeCategoryKeys = Array.isArray(categoryKeys) ? categoryKeys : [];
-  if (safeCategoryKeys.length === 0) {
+  const safeQuizList = Array.isArray(quizList) ? quizList : [];
+  if (safeCategoryKeys.length === 0 && safeQuizList.length === 0) {
     if (client) client.postMessage({ type: "CACHE_COMPLETE", count: 0 });
     return;
   }
 
   let db;
   try {
-    const response = await supabaseFetch(
-      `quizzes?select=id,category,data&category=in.(${safeCategoryKeys.join(",")})`,
-    );
-    if (!response.ok) {
-      throw new Error(`Supabase fetch failed: ${response.status}`);
-    }
-    const rows = await response.json();
-    const quizRows = Array.isArray(rows) ? rows : [];
-
     db = await openQuizIDBLocal();
     await storeSubscribedCategoriesLocal(db, safeCategoryKeys);
-
-    let cached = 0;
-    for (const row of quizRows) {
-      const quizEntry = {
-        id: row.id,
-        categoryKey: row.category,
-        data: row.data,
-        cachedAt: Date.now(),
-      };
-
-      await storeQuizInIDBLocal(db, quizEntry);
-      cached++;
-
-      if (client) {
-        client.postMessage({
-          type: "CACHE_PROGRESS",
-          cached,
-          total: quizRows.length,
-        });
-      }
+    if (safeQuizList.length > 0) {
+      await cacheQuizEntries(safeQuizList, client);
+      return;
     }
 
-    if (client) {
-      client.postMessage({
-        type: "CACHE_COMPLETE",
-        count: cached,
-      });
+    // Backward compatibility path: older clients only send categories.
+    const categoryFilter = safeCategoryKeys
+      .map((key) => `"${String(key).replace(/"/g, '\\"')}"`)
+      .join(",");
+    const response = await supabaseFetch(
+      `quizzes?select=id,category&category=in.(${categoryFilter})`,
+    );
+    if (!response || !response.ok) {
+      if (client) client.postMessage({ type: "CACHE_COMPLETE", count: 0 });
+      return;
     }
+    const rows = await response.json();
+    const fallbackQuizList = (Array.isArray(rows) ? rows : []).map((row) => ({
+      id: row.id,
+      category: row.category,
+      path: null,
+      type: "db",
+    }));
+    await cacheQuizEntries(fallbackQuizList, client);
   } catch (error) {
     console.error("[SW] Failed to cache subscribed quizzes:", error);
     throw error;
@@ -847,12 +940,130 @@ async function cacheSubscribedQuizzes(categoryKeys, client) {
   }
 }
 
-async function updateCachedQuizzes() {
+async function updateSubscriptionCache(data) {
   const QUIZ_DB_NAME = "BasmagiQuizDB";
   const QUIZ_DB_VERSION = 2;
   const QUIZZES_STORE = "quizzes";
   const META_STORE = "meta";
   const STATIC_QUIZZES_STORE = "staticQuizzes";
+  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
+  const allCategories = Array.isArray(data?.allCategories) ? data.allCategories : [];
+  const added = Array.isArray(data?.added) ? data.added : [];
+  const removed = Array.isArray(data?.removed) ? data.removed : [];
+  const allQuizList = Array.isArray(data?.quizList) ? data.quizList : [];
+
+  const openQuizIDBLocal = () =>
+    new Promise((resolve, reject) => {
+      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () =>
+        reject(request.error || new Error("IDB open failed"));
+    });
+
+  const storeSubscribedCategoriesLocal = (db, keys) =>
+    new Promise((resolve, reject) => {
+      const tx = db.transaction(META_STORE, "readwrite");
+      tx.objectStore(META_STORE).put({
+        key: SUBSCRIBED_CATEGORIES_KEY,
+        value: Array.isArray(keys) ? keys : [],
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Store meta failed"));
+      tx.onabort = () => reject(tx.error || new Error("Store meta aborted"));
+    });
+
+  const deleteQuizzesByCategoryLocal = (db, categoryKey) =>
+    new Promise((resolve, reject) => {
+      const tx = db.transaction(QUIZZES_STORE, "readwrite");
+      const index = tx.objectStore(QUIZZES_STORE).index("by-category");
+      const request = index.openCursor(IDBKeyRange.only(categoryKey));
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        cursor.delete();
+        cursor.continue();
+      };
+      request.onerror = () => reject(request.error || new Error("Delete failed"));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Delete failed"));
+      tx.onabort = () => reject(tx.error || new Error("Delete aborted"));
+    });
+
+  const deleteStaticQuizzesByPathLocal = (db, pathSubstring) =>
+    new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
+      const store = tx.objectStore(STATIC_QUIZZES_STORE);
+      const request = store.openCursor();
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        if (typeof cursor.key === "string" && cursor.key.includes(pathSubstring)) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      request.onerror = () => reject(request.error || new Error("Delete failed"));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error("Delete failed"));
+      tx.onabort = () => reject(tx.error || new Error("Delete aborted"));
+    });
+
+  const deleteMatchingCacheEntries = async (cacheName, categoryKeys) => {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    await Promise.all(
+      keys.map(async (request) => {
+        const requestUrl = new URL(request.url);
+        const haystack = `${requestUrl.pathname}${requestUrl.search}`;
+        const shouldDelete = categoryKeys.some((category) => {
+          const plain = `/${category}/`;
+          const encoded = `/${encodeURIComponent(category)}/`;
+          return haystack.includes(plain) || haystack.includes(encoded);
+        });
+        if (shouldDelete) {
+          await cache.delete(request);
+        }
+      }),
+    );
+  };
+
+  let db;
+  try {
+    db = await openQuizIDBLocal();
+
+    for (const category of removed) {
+      await deleteQuizzesByCategoryLocal(db, category);
+      await deleteStaticQuizzesByPathLocal(db, `/${encodeURIComponent(category)}/`);
+    }
+
+    if (removed.length > 0) {
+      await deleteMatchingCacheEntries(QUIZ_CACHE, removed);
+      await deleteMatchingCacheEntries(STATIC_QUIZ_CACHE, removed);
+    }
+
+    const addedQuizList = allQuizList.filter((entry) =>
+      added.includes(entry?.category),
+    );
+    await cacheQuizEntries(addedQuizList);
+    await storeSubscribedCategoriesLocal(db, allCategories);
+  } catch (error) {
+    console.error("[SW] Failed to update subscription cache:", error);
+    throw error;
+  } finally {
+    if (db) db.close();
+  }
+
+  const allClients = await self.clients.matchAll();
+  allClients.forEach((client) =>
+    client.postMessage({ type: "SYNC_COMPLETE", updated: added.length }),
+  );
+}
+
+async function updateCachedQuizzes() {
+  const QUIZ_DB_NAME = "BasmagiQuizDB";
+  const QUIZ_DB_VERSION = 2;
+  const QUIZZES_STORE = "quizzes";
+  const META_STORE = "meta";
   const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
   function openQuizIDBLocal() {
@@ -881,9 +1092,6 @@ async function updateCachedQuizzes() {
 
         if (!db.objectStoreNames.contains(META_STORE)) {
           db.createObjectStore(META_STORE, { keyPath: "key" });
-        }
-        if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
-          db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
         }
       };
 
@@ -942,7 +1150,7 @@ async function updateCachedQuizzes() {
           const response = await supabaseFetch(
             `quizzes?id=eq.${entry.id}&select=id,category,data`,
           );
-          if (!response.ok) continue;
+          if (!response || !response.ok) continue;
 
           const rows = await response.json();
           const fresh = Array.isArray(rows) ? rows[0] : null;

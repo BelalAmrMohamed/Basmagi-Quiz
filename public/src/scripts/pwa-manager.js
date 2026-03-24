@@ -31,6 +31,50 @@ import { userProfile } from "./userProfile.js";
 // ── Module state ───────────────────────────────────────────────────────────
 let swRegistration = null;
 
+function getSupabaseCredentials() {
+  const supabaseUrl = window.SUPABASE_URL || "";
+  const supabaseKey = window.SUPABASE_SERVICE_KEY || window.SUPABASE_ANON_KEY || "";
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("[PWA] Supabase credentials are missing in window globals.");
+  }
+
+  return { supabaseUrl, supabaseKey };
+}
+
+async function buildQuizListForCategories(categoryKeys) {
+  const safeKeys = Array.isArray(categoryKeys) ? categoryKeys : [];
+  if (safeKeys.length === 0) return [];
+
+  const manifest = await getManifest();
+  const categoryTree = manifest?.categoryTree || {};
+  const selectedSet = new Set(safeKeys);
+  const quizList = [];
+
+  for (const categoryKey of safeKeys) {
+    const category = categoryTree[categoryKey];
+    if (!category || !Array.isArray(category.exams)) continue;
+
+    for (const exam of category.exams) {
+      const rawPath = typeof exam?.path === "string" ? exam.path : "";
+      const isDbQuiz = rawPath.startsWith("/api/quiz-data");
+      const isStaticQuiz = rawPath.startsWith("/data/");
+
+      if (!isDbQuiz && !isStaticQuiz) continue;
+
+      quizList.push({
+        id: isDbQuiz ? exam.id || null : null,
+        category: categoryKey,
+        path: isStaticQuiz ? rawPath : null,
+        type: isDbQuiz ? "db" : "static",
+      });
+    }
+  }
+
+  // Safety guard if a future manifest item leaks from non-subscribed category keys.
+  return quizList.filter((entry) => selectedSet.has(entry.category));
+}
+
 // ── 1. Service Worker Registration ────────────────────────────────────────
 
 /**
@@ -131,9 +175,100 @@ export async function triggerSubscribedQuizCache() {
     return;
   }
 
+  const quizList = await buildQuizListForCategories(subscribedCategories);
+  const { supabaseUrl, supabaseKey } = getSupabaseCredentials();
+
   controller.postMessage({
     type: "CACHE_SUBSCRIBED_QUIZZES",
     categories: subscribedCategories,
+    quizList,
+    supabaseUrl,
+    supabaseKey,
+  });
+}
+
+function arraysEqualByValue(a, b) {
+  if (a.length !== b.length) return false;
+  const aSorted = [...a].sort();
+  const bSorted = [...b].sort();
+  return aSorted.every((value, index) => value === bSorted[index]);
+}
+
+function initSubscriptionWatcher() {
+  let previousCategories = [];
+  let checkInFlight = false;
+  let pollTimer = null;
+
+  const checkForChanges = async () => {
+    if (checkInFlight) return;
+    checkInFlight = true;
+
+    try {
+      const manifest = await getManifest();
+      const categoryTree = manifest?.categoryTree || {};
+      const subscribedIds = userProfile.getSubscribedCourseIds();
+      const currentCategories = getSubscribedCourses(categoryTree, subscribedIds)
+        .map((course) => course.key);
+
+      if (arraysEqualByValue(previousCategories, currentCategories)) return;
+
+      const added = currentCategories.filter(
+        (category) => !previousCategories.includes(category),
+      );
+      const removed = previousCategories.filter(
+        (category) => !currentCategories.includes(category),
+      );
+
+      if (added.length === 0 && removed.length === 0) return;
+
+      console.log("[PWA] Subscription changed — added:", added, "removed:", removed);
+      previousCategories = currentCategories;
+
+      if (!navigator.serviceWorker.controller) return;
+
+      const quizList = await buildQuizListForCategories(currentCategories);
+      const { supabaseUrl, supabaseKey } = getSupabaseCredentials();
+
+      navigator.serviceWorker.controller.postMessage({
+        type: "UPDATE_SUBSCRIBED_QUIZZES",
+        allCategories: currentCategories,
+        added,
+        removed,
+        quizList,
+        supabaseUrl,
+        supabaseKey,
+      });
+    } catch (error) {
+      console.warn("[PWA] Failed to process subscription changes:", error);
+    } finally {
+      checkInFlight = false;
+    }
+  };
+
+  const initWatcherState = async () => {
+    try {
+      const manifest = await getManifest();
+      const categoryTree = manifest?.categoryTree || {};
+      const subscribedIds = userProfile.getSubscribedCourseIds();
+      previousCategories = getSubscribedCourses(categoryTree, subscribedIds)
+        .map((course) => course.key);
+    } catch (error) {
+      previousCategories = [];
+      console.warn("[PWA] Failed to initialize subscription watcher:", error);
+    }
+  };
+
+  initWatcherState();
+  window.addEventListener("storage", checkForChanges);
+  window.addEventListener("focus", checkForChanges);
+  document.addEventListener("subscriptions-changed", checkForChanges);
+  pollTimer = window.setInterval(checkForChanges, 2000);
+
+  window.addEventListener("beforeunload", () => {
+    if (pollTimer) {
+      window.clearInterval(pollTimer);
+      pollTimer = null;
+    }
   });
 }
 
@@ -181,6 +316,7 @@ function handleSWMessage(event) {
 export function initPWA() {
   registerServiceWorker();  // async, fire-and-forget is fine here
   initInstallListener();    // sync, just attaches an event listener
+  initSubscriptionWatcher();
 }
 
 export function initPWAWithBanner(probeUrl) {

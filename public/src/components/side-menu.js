@@ -7,19 +7,32 @@
 // ── PWA Install Prompt — captured globally so it works on every page ─────────
 (function () {
   let _deferredInstallPrompt = null;
+  const installButtons = () => document.querySelectorAll(".install-app");
+  const setInstallButtonsVisible = (visible) => {
+    installButtons().forEach((btn) => {
+      btn.style.display = visible ? "flex" : "none";
+    });
+  };
+
+  // Hide by default. It is revealed only when installability is confirmed.
+  setInstallButtonsVisible(false);
+
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+  if (isStandalone) {
+    setInstallButtonsVisible(false);
+  }
 
   window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     _deferredInstallPrompt = e;
-    // Reveal the install button wherever it lives in the sidebar
-    const btns = document.querySelectorAll(".install-app");
-    btns.forEach((btn) => (btn.style.display = "flex"));
+    setInstallButtonsVisible(true);
   });
 
   window.addEventListener("appinstalled", () => {
     _deferredInstallPrompt = null;
-    const btns = document.querySelectorAll(".install-app");
-    btns.forEach((btn) => (btn.style.display = "none"));
+    setInstallButtonsVisible(false);
     if (typeof showNotification === "function") {
       showNotification("تم التثبيت", "تم تثبيت التطبيق بنجاح", "./favicon.png");
     }

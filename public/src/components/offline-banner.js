@@ -82,7 +82,11 @@ function setOnline() {
   banner.classList.add("is-visible");
 
   if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({ type: "TRIGGER_SYNC" });
+    navigator.serviceWorker.controller.postMessage({
+      type: "TRIGGER_SYNC",
+      supabaseUrl: window.SUPABASE_URL || "",
+      supabaseKey: window.SUPABASE_SERVICE_KEY || window.SUPABASE_ANON_KEY || "",
+    });
   }
 
   // Auto-hide after the flash duration

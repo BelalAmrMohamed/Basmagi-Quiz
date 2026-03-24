@@ -227,6 +227,90 @@ export async function getStaticQuizByPath(db, pathname) {
   }
 }
 
+export async function deleteQuizzesByCategory(db, categoryKey) {
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(QUIZZES_STORE, "readwrite");
+      const store = tx.objectStore(QUIZZES_STORE);
+      const index = store.index("by-category");
+      const request = index.openCursor(IDBKeyRange.only(categoryKey));
+
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+        cursor.delete();
+        cursor.continue();
+      };
+
+      request.onerror = () =>
+        reject(
+          new Error(
+            `Failed to delete quizzes for category "${categoryKey}": ${request.error?.message || "request error"}`,
+          ),
+        );
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () =>
+        reject(
+          new Error(
+            `Delete quizzes by category failed: ${tx.error?.message || "transaction error"}`,
+          ),
+        );
+      tx.onabort = () =>
+        reject(
+          new Error(
+            `Delete quizzes by category aborted: ${tx.error?.message || "transaction aborted"}`,
+          ),
+        );
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete quizzes by category: ${error.message}`);
+  }
+}
+
+export async function deleteStaticQuizzesByPath(db, pathSubstring) {
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
+      const store = tx.objectStore(STATIC_QUIZZES_STORE);
+      const request = store.openCursor();
+
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (!cursor) return;
+
+        if (typeof cursor.key === "string" && cursor.key.includes(pathSubstring)) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+
+      request.onerror = () =>
+        reject(
+          new Error(
+            `Failed to delete static quizzes matching "${pathSubstring}": ${request.error?.message || "request error"}`,
+          ),
+        );
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () =>
+        reject(
+          new Error(
+            `Delete static quizzes by path failed: ${tx.error?.message || "transaction error"}`,
+          ),
+        );
+      tx.onabort = () =>
+        reject(
+          new Error(
+            `Delete static quizzes by path aborted: ${tx.error?.message || "transaction aborted"}`,
+          ),
+        );
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete static quizzes by path: ${error.message}`);
+  }
+}
+
 export async function clearQuizIDB() {
   let db;
   try {
