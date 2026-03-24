@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.1.1";
+const CACHE_VERSION = "basmagi-v4.1.2";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -293,7 +293,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidateStrategy(request, QUIZ_CACHE));
   } else if (isStaticQuizRequest(request)) {
     event.respondWith(
-      cacheFirstWithFallbackStrategy(request, STATIC_QUIZ_CACHE),
+      networkFirstWithFallbackStrategy(request, STATIC_QUIZ_CACHE),
     );
   } else if (isImageRequest(request)) {
     // Cache-first strategy for images
@@ -439,10 +439,8 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
   return cachedResponse || networkFetch;
 }
 
-async function cacheFirstWithFallbackStrategy(request, cacheName) {
+async function networkFirstWithFallbackStrategy(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cachedResponse = await cache.match(request);
-  if (cachedResponse) return cachedResponse;
 
   try {
     const networkResponse = await fetch(request);
@@ -456,6 +454,9 @@ async function cacheFirstWithFallbackStrategy(request, cacheName) {
     }
     return networkResponse;
   } catch (err) {
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) return cachedResponse;
+
     const pathname = new URL(request.url).pathname;
     return await idbFallbackResponse(pathname);
   }
