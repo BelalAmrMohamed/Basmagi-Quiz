@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.1.0";
+const CACHE_VERSION = "basmagi-v4.1.1";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -563,7 +563,9 @@ function extractDbQuizIdFromApiPath(pathValue) {
 }
 
 function cacheResponseByPath(cache, pathValue, response) {
-  const request = new Request(new URL(pathValue, self.location.origin).toString());
+  const request = new Request(
+    new URL(pathValue, self.location.origin).toString(),
+  );
   return cache.put(request, response);
 }
 
@@ -609,8 +611,10 @@ async function cacheQuizEntries(quizList, client) {
                     cachedAt: Date.now(),
                   });
                   tx.oncomplete = () => resolve();
-                  tx.onerror = () => reject(tx.error || new Error("Store quiz failed"));
-                  tx.onabort = () => reject(tx.error || new Error("Store quiz aborted"));
+                  tx.onerror = () =>
+                    reject(tx.error || new Error("Store quiz failed"));
+                  tx.onabort = () =>
+                    reject(tx.error || new Error("Store quiz aborted"));
                 });
               }
             }
@@ -620,7 +624,11 @@ async function cacheQuizEntries(quizList, client) {
           if (normalizedPath) {
             const response = await fetch(normalizedPath);
             if (response.ok) {
-              await cacheResponseByPath(staticQuizCache, normalizedPath, response.clone());
+              await cacheResponseByPath(
+                staticQuizCache,
+                normalizedPath,
+                response.clone(),
+              );
               const data = await response.clone().json();
               await new Promise((resolve, reject) => {
                 const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
@@ -834,7 +842,11 @@ self.addEventListener("message", (event) => {
     _supabaseUrl = data.supabaseUrl || _supabaseUrl;
     _supabaseKey = data.supabaseKey || _supabaseKey;
     event.waitUntil(
-      cacheSubscribedQuizzes(data.categories || [], data.quizList || [], event.source),
+      cacheSubscribedQuizzes(
+        data.categories || [],
+        data.quizList || [],
+        event.source,
+      ),
     );
   }
 
@@ -947,7 +959,9 @@ async function updateSubscriptionCache(data) {
   const META_STORE = "meta";
   const STATIC_QUIZZES_STORE = "staticQuizzes";
   const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
-  const allCategories = Array.isArray(data?.allCategories) ? data.allCategories : [];
+  const allCategories = Array.isArray(data?.allCategories)
+    ? data.allCategories
+    : [];
   const added = Array.isArray(data?.added) ? data.added : [];
   const removed = Array.isArray(data?.removed) ? data.removed : [];
   const allQuizList = Array.isArray(data?.quizList) ? data.quizList : [];
@@ -983,7 +997,8 @@ async function updateSubscriptionCache(data) {
         cursor.delete();
         cursor.continue();
       };
-      request.onerror = () => reject(request.error || new Error("Delete failed"));
+      request.onerror = () =>
+        reject(request.error || new Error("Delete failed"));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error || new Error("Delete failed"));
       tx.onabort = () => reject(tx.error || new Error("Delete aborted"));
@@ -997,12 +1012,16 @@ async function updateSubscriptionCache(data) {
       request.onsuccess = (event) => {
         const cursor = event.target.result;
         if (!cursor) return;
-        if (typeof cursor.key === "string" && cursor.key.includes(pathSubstring)) {
+        if (
+          typeof cursor.key === "string" &&
+          cursor.key.includes(pathSubstring)
+        ) {
           cursor.delete();
         }
         cursor.continue();
       };
-      request.onerror = () => reject(request.error || new Error("Delete failed"));
+      request.onerror = () =>
+        reject(request.error || new Error("Delete failed"));
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error || new Error("Delete failed"));
       tx.onabort = () => reject(tx.error || new Error("Delete aborted"));
@@ -1033,7 +1052,10 @@ async function updateSubscriptionCache(data) {
 
     for (const category of removed) {
       await deleteQuizzesByCategoryLocal(db, category);
-      await deleteStaticQuizzesByPathLocal(db, `/${encodeURIComponent(category)}/`);
+      await deleteStaticQuizzesByPathLocal(
+        db,
+        `/${encodeURIComponent(category)}/`,
+      );
     }
 
     if (removed.length > 0) {
