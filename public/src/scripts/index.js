@@ -2046,26 +2046,9 @@ function createExamCard(exam) {
   card.setAttribute("title", `${exam.description || exam.title}`);
   card.setAttribute("aria-label", `اختبار: ${exam.title || exam.id}`);
 
-  // ── DB source badge ────────────────────────────────────────────────────────
-  if (exam.dbSource === "db") {
-    card.classList.add("exam-card--db");
+  // ── DB source accent border ───────────────────────────────────────────────
+  if (exam.dbSource === "db") card.classList.add("exam-card--db");
 
-    const badge = document.createElement("span");
-    badge.className = "db-source-badge";
-    badge.setAttribute("aria-label", "متاح من قاعدة البيانات");
-    badge.innerHTML = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
-           viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-           aria-hidden="true" class="db-badge-icon">
-        <ellipse cx="12" cy="5" rx="9" ry="3"/>
-        <path d="M3 5v6c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/>
-        <path d="M3 11v6c0 1.657 4.03 3 9 3s9-1.343 9-3v-6"/>
-      </svg>
-      قاعدة البيانات
-    `;
-    card.appendChild(badge);
-  }
   // ──────────────────────────────────────────────────────────────────────────
 
   const h = document.createElement("h3");

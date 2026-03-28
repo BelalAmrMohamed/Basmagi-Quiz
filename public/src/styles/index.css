@@ -751,11 +751,6 @@ Container
     font-size: 0.85rem;
   }
 
-  /* ── Hide db-source badge in compact row ─────────────────────────────────── */
-  .exam-card .db-source-badge {
-    display: none !important;
-  }
-
   /* ── Skeleton adapts to list rows ────────────────────────────────────────── */
   .skeleton-card {
     flex-direction: row;
@@ -1295,8 +1290,7 @@ Container
 }
 
 /* =============================================================================
-   DB-sourced quiz card — badge + accent border
-   Add this block to index.css (anywhere after the .exam-card rules)
+   DB-sourced quiz card — accent border
    ============================================================================= */
 
 /* ── Accent border on the whole card ──────────────────────────────────────── */
@@ -1305,45 +1299,9 @@ Container
   position: relative; /* already set in JS, but safe to repeat */
 }
 
-/* ── Badge pill ───────────────────────────────────────────────────────────── */
-.db-source-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-
-  padding: 4px 10px;
-  margin-bottom: 10px;
-
-  background: var(--color-primary-light, rgba(0, 136, 204, 0.12));
-  color: var(--color-primary);
-  border: 1px solid color-mix(in srgb, var(--color-primary) 25%, transparent);
-
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  border-radius: 20px;
-
-  /* subtle shimmer on hover so it feels alive */
-  transition:
-    background 0.2s ease,
-    transform 0.2s ease;
-}
-
-.db-source-badge:hover {
-  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  transform: scale(1.03);
-}
-
-/* ── Icon inside the badge ────────────────────────────────────────────────── */
-.db-badge-icon {
-  flex-shrink: 0;
-  opacity: 0.85;
-}
-
 /* ============================================================================
    WATERMARK
    ============================================================================ */
-
 .watermark {
   text-align: center;
   margin-top: 80px;
