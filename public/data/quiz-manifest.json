@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-24T19:49:11.790Z",
+  "generatedAt": "2026-03-28T17:21:49.744Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1464,6 +1464,7 @@
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Lecture 2 - 40 MCQs.json",
           "questionCount": 55,
           "questionTypes": [
+            "Essay",
             "MCQ",
             "True/False"
           ],
@@ -1471,8 +1472,8 @@
         },
         {
           "id": "T4D37W3P",
-          "title": "Systems Analysis & Design – Ch.2 Mid Exam",
-          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Systems_Analysis_Design_Ch2_Mid_Exam.json",
+          "title": "Mid Exam",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Mid_Exam.json",
           "questionCount": 7,
           "questionTypes": [
             "Essay"

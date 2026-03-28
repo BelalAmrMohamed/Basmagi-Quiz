@@ -1,13 +1,15 @@
 {
   "meta": {
     "id": "T4D37W3P",
-    "path": "quizzes/Computer Science/2/2/System Analysis/Systems_Analysis_Design_Ch2_Mid_Exam.json",
-    "title": "Systems Analysis & Design – Ch.2 Mid Exam",
+    "path": "quizzes/Computer Science/2/2/System Analysis/Mid_Exam.json",
+    "title": "Mid Exam",
     "createdAt": "3/24/2026, 12:00:00 PM"
   },
   "stats": {
     "questionCount": 7,
-    "questionTypes": ["Essay"]
+    "questionTypes": [
+      "Essay"
+    ]
   },
   "questions": [
     {

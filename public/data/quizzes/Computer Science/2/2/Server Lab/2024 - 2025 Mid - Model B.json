@@ -7,7 +7,10 @@
   },
   "stats": {
     "questionCount": 9,
-    "questionTypes": ["Essay", "MCQ"]
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
   },
   "questions": [
     {
@@ -37,25 +40,45 @@
     },
     {
       "q": "What does Active Directory do?",
-      "options": ["GROUP POLICY", "Session", "Build Resources", "Access LAN"],
+      "options": [
+        "GROUP POLICY",
+        "Session",
+        "Build Resources",
+        "Access LAN"
+      ],
       "correct": 0,
       "explanation": "The two correct answers are **a. GROUP POLICY** and **SSO (Single Sign-On)**.\n\nFrom Lec1: *\"What Active Directory Does: Authenticates and authorizes users and computers. Controls access to resources. **Applies security policies and software updates via Group Policy**. Enables **Single Sign-On (SSO)** within the domain.\"*\n\n- **Group Policy** is how AD pushes security settings, software, and configurations to all domain members.\n- **SSO** means a user logs in once and gains access to all permitted resources without re-authenticating."
     },
     {
       "q": "Which layer in the OSI model is responsible for **error correction**?",
-      "options": ["Application", "Session", "Data Link", "Physical"],
+      "options": [
+        "Application",
+        "Session",
+        "Data Link",
+        "Physical"
+      ],
       "correct": 2,
       "explanation": "The correct answer is **c. Data Link (Layer 2)**.\n\nFrom Lec1: *\"This layer provides reliable transit of data across a physical link hop by hop.\"* The Data Link layer uses techniques like **CRC (Cyclic Redundancy Check)** in frame trailers to detect (and in some implementations correct) transmission errors. Its PDU is the **Frame**."
     },
     {
       "q": "The Layer whose PDU is **\"Frame\"** is:",
-      "options": ["Network", "Transport", "Application", "Data Link"],
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
       "correct": 3,
       "explanation": "The correct answer is **Data Link**.\n\nFrom Lec1, the PDU hierarchy is:\n| Layer | PDU |\n|---|---|\n| Application / Presentation / Session | Data |\n| Transport (Layer 4) | **Segment** |\n| Network (Layer 3) | **Packet** |\n| Data Link (Layer 2) | **Frame** |\n| Physical (Layer 1) | **Bits** |"
     },
     {
       "q": "The Layer which deals with **application** is:",
-      "options": ["Network", "Transport", "Application", "Data Link"],
+      "options": [
+        "Network",
+        "Transport",
+        "Application",
+        "Data Link"
+      ],
       "correct": 2,
       "explanation": "The correct answer is **c. Application (Layer 7)**.\n\nFrom Lec1: *\"This layer deals with networking applications. Examples: Email, Web browsers. Each application uses a certain service from Transport Layer (reliable or unreliable).\"*\n\nApplication layer protocols include HTTP, FTP, DNS, DHCP, and SMTP."
     }
