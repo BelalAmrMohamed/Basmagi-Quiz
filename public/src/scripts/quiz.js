@@ -170,7 +170,6 @@ function toggleView() {
   }
 
   renderMenuNavigation();
-  updateMenuActionButtons();
 }
 
 // === OPTIMIZED: Load exam JSON with caching ===
@@ -421,7 +420,6 @@ async function init() {
     // Initialize Game Engine
     updateGamificationStats();
     renderMenuNavigation();
-    updateMenuActionButtons();
     renderQuestion();
     startTimer();
 
@@ -434,20 +432,17 @@ async function init() {
       gameEngine.toggleBookmark(examId, currentIdx);
       renderQuestion();
       renderMenuNavigationDebounced();
-      updateMenuActionButtons();
     };
     window.toggleFlag = () => {
       gameEngine.toggleFlag(examId, currentIdx);
       renderQuestion();
       renderMenuNavigationDebounced();
-      updateMenuActionButtons();
     };
     window.toggleQuestionBookmark = (idx) => {
       gameEngine.toggleBookmark(examId, idx);
       renderMenuNavigationDebounced();
       if (idx === currentIdx) {
         renderQuestion();
-        updateMenuActionButtons();
       }
     };
     window.toggleQuestionFlag = (idx) => {
@@ -455,7 +450,6 @@ async function init() {
       renderMenuNavigationDebounced();
       if (idx === currentIdx) {
         renderQuestion();
-        updateMenuActionButtons();
       }
     };
 
@@ -550,7 +544,6 @@ async function init() {
       saveStateDebounced();
       renderQuestion();
       renderMenuNavigationDebounced();
-      updateMenuActionButtons();
 
       const questionCard =
         quizStyle === "vertical"
@@ -782,62 +775,6 @@ function createListItem(q, idx) {
   `;
 
   return div;
-}
-
-// === Menu Action Buttons ===
-function updateMenuActionButtons() {
-  const bookmarkBtn = document.getElementById("menuBookmarkBtn");
-  const flagBtn = document.getElementById("menuFlagBtn");
-  const bookmarkIcon = document.getElementById("menuBookmarkIcon");
-  const bookmarkText = document.getElementById("menuBookmarkText");
-  const flagText = document.getElementById("menuFlagText");
-  const flagIcon = document.getElementById("menuFlagIcon");
-
-  const isListView = viewMode === "list";
-
-  if (bookmarkBtn) {
-    if (isListView) {
-      bookmarkBtn.classList.add("list-view-disabled");
-      bookmarkBtn.disabled = true;
-    } else {
-      bookmarkBtn.classList.remove("list-view-disabled");
-      bookmarkBtn.disabled = false;
-
-      const isBookmarked = gameEngine.isBookmarked(examId, currentIdx);
-      if (bookmarkIcon)
-        bookmarkIcon.innerHTML = isBookmarked
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-off-icon lucide-star-off"><path d="m10.344 4.688 1.181-2.393a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.237 3.152"/><path d="m17.945 17.945.43 2.505a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a8 8 0 0 0 .4-.099"/><path d="m2 2 20 20"/></svg>'
-          : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-icon lucide-star"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>';
-      if (bookmarkText)
-        bookmarkText.textContent = isBookmarked
-          ? "حذف من المفضلة"
-          : "حفظ في المفضلة";
-
-      bookmarkBtn.classList.toggle("bookmarked", isBookmarked);
-    }
-  }
-
-  if (flagBtn) {
-    if (isListView) {
-      flagBtn.classList.add("list-view-disabled");
-      flagBtn.disabled = true;
-    } else {
-      flagBtn.classList.remove("list-view-disabled");
-      flagBtn.disabled = false;
-
-      const isFlagged = gameEngine.isFlagged(examId, currentIdx);
-      if (flagIcon)
-        flagIcon.innerHTML = isFlagged
-          ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>'
-          : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>';
-      if (flagText)
-        flagText.textContent = isFlagged
-          ? "إزالة العلامة"
-          : "إضافة علامة للمراجعة";
-
-      flagBtn.classList.toggle("flagged", isFlagged);
-    }
-  }
 }
 
 // === Vertical style: build one question card HTML for index idx ===
@@ -1173,7 +1110,6 @@ function nav(dir) {
   saveStateDebounced();
   renderQuestion();
   renderMenuNavigationDebounced();
-  updateMenuActionButtons();
   if (quizStyle === "vertical") {
     const el = document.getElementById(`q-${currentIdx}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1308,7 +1244,6 @@ async function restart(skipconfirmationNotification) {
   // 8. Re-render
   renderQuestion();
   renderMenuNavigation();
-  updateMenuActionButtons();
   startTimer();
 
   // 9. Scroll to top
