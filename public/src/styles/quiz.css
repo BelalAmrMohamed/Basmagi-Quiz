@@ -531,13 +531,6 @@ body {
   opacity: 0.8;
 }
 
-.essay-hint {
-  font-size: 0.875rem;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border-left: 3px solid var(--color-primary);
-}
-
 .formal-answer {
   margin-top: 18px;
   padding: 16px 20px;
@@ -552,6 +545,7 @@ body {
 }
 
 .formal-answer-text {
+  text-align: left;
   font-size: 1rem;
   line-height: 1.6;
   font-weight: 500;
@@ -683,6 +677,7 @@ body {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
+  text-align: left;
   overflow-wrap: break-word;
   word-break: break-word;
   margin-top: 0 !important; /* neutralise inline style="margin-top:8px" */
@@ -897,7 +892,6 @@ body {
 .feedback,
 .formal-answer,
 .formal-answer-text,
-.essay-hint,
 .md-content {
   overflow-wrap: break-word;
   word-break: break-word;

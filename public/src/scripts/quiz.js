@@ -861,11 +861,11 @@ function buildVerticalQuestionCard(q, idx) {
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
   }
 
@@ -1000,11 +1000,11 @@ function renderQuestion() {
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5</strong> ${stars}<div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body">${renderMarkdown(
+      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
       )}</div>`;
     }
@@ -1047,7 +1047,6 @@ function renderQuestion() {
             ${isLocked ? "disabled" : ""}
             oninput="window.handleEssayInput()"
           >${escapeHtml(userSelected || "")}</textarea>
-          <div class="essay-hint">Tip: Answer is graded on keyword matching — focus on key concepts</div>
         </div>
         <button class="check-answer-btn ${
           isLocked || !showCheckButton ? "hidden" : ""

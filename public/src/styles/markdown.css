@@ -36,8 +36,7 @@
 .feedback,
 .explanation-body,
 .formal-answer,
-.formal-answer-text,
-.essay-hint {
+.formal-answer-text {
   overflow-wrap: break-word;
   word-break: break-word;
   min-width: 0;
