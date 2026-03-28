@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-28T17:21:49.744Z",
+  "generatedAt": "2026-03-28T20:06:16.717Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1438,6 +1438,61 @@
       "term": 2,
       "quizzes": [
         {
+          "id": "3TSGPZMW",
+          "title": "2017 - 2018 Final",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/2017 - 2018 Final.json",
+          "questionCount": 24,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "3/28/2026, 10:02:41 PM"
+        },
+        {
+          "id": "W7LPVYJC",
+          "title": "2018 - 2019 Final",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/2018 - 2019 Final.json",
+          "questionCount": 22,
+          "questionTypes": [
+            "Essay",
+            "True/False"
+          ],
+          "createdAt": "3/28/2026, 10:04:35 PM"
+        },
+        {
+          "id": "T4D37W3P",
+          "title": "2024 - 2025 Mid Exam",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/2024 - 2025 Mid_Exam.json",
+          "questionCount": 7,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "3/24/2026, 12:00:00 PM"
+        },
+        {
+          "id": "3N36LZWK",
+          "title": "Ch 1 - Lec 1 Quiz",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Ch 1 - Lec 1.json",
+          "questionCount": 25,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/28/2026, 9:48:30 PM"
+        },
+        {
+          "id": "CPXR2YJ4",
+          "title": "Ch 2 - Lec 2 Quiz",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Ch 2 - Lec 2.json",
+          "questionCount": 24,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/28/2026, 9:54:03 PM"
+        },
+        {
           "id": "QHYBIT4J",
           "title": "Lecture 1 MCQs",
           "path": "/data/quizzes/Computer Science/2/2/System Analysis/Lecture 1 MCQs.json",
@@ -1469,16 +1524,6 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
-        },
-        {
-          "id": "T4D37W3P",
-          "title": "Mid Exam",
-          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Mid_Exam.json",
-          "questionCount": 7,
-          "questionTypes": [
-            "Essay"
-          ],
-          "createdAt": "3/24/2026, 12:00:00 PM"
         },
         {
           "id": "G7NCGLFS",
