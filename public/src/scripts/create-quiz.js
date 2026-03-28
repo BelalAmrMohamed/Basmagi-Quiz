@@ -1896,7 +1896,7 @@ window.exportQuiz = function () {
           const url = URL.createObjectURL(quizTextBlob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `${quizData.title.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.txt`;
+          a.download = `${quizData.title}.txt`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);

@@ -2170,20 +2170,17 @@ function createExamCard(exam) {
       grid.appendChild(b);
     });
 
-    const copyBtn = buildCopyDownloadButton(
-      async () => {
-        const res = await fetch(exam.path);
-        const data = await res.json();
-        const questions = data.questions || [];
-        const config = {
-          title: exam.title || exam.id,
-          description: exam.description,
-          source: exam.source,
-        };
-        return buildQuizText(config, questions);
-      },
-      (exam.title || exam.id).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_"),
-    );
+    const copyBtn = buildCopyDownloadButton(async () => {
+      const res = await fetch(exam.path);
+      const data = await res.json();
+      const questions = data.questions || [];
+      const config = {
+        title: exam.title || exam.id,
+        description: exam.description,
+        source: exam.source,
+      };
+      return buildQuizText(config, questions);
+    }, exam.title || exam.id);
     grid.appendChild(copyBtn);
 
     const jsonBtn = document.createElement("button");
@@ -2883,10 +2880,7 @@ function showUserQuizDownloadPopup(quiz) {
 
         const fileContent = JSON.stringify(payload, null, 2);
         const blob = new Blob([fileContent], { type: "application/json" });
-        triggerDownload(
-          blob,
-          `${(title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.json`,
-        );
+        triggerDownload(blob, `${title || "quiz"}.json`);
       } catch (e) {
         console.error("JSON Error:", e);
         alert("فشل تنزيل ملف JSON");

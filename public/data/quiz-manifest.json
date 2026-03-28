@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-28T20:06:16.717Z",
+  "generatedAt": "2026-03-28T20:20:05.296Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1491,6 +1491,30 @@
             "True/False"
           ],
           "createdAt": "3/28/2026, 9:54:03 PM"
+        },
+        {
+          "id": "W2IOZNRB",
+          "title": "Ch 3 - Lec 3 Quiz",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Ch 3 - Lec 3.json",
+          "questionCount": 25,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/28/2026, 10:12:37 PM"
+        },
+        {
+          "id": "Y6YU4FPN",
+          "title": "Ch 3 - Lec 4 Quiz",
+          "path": "/data/quizzes/Computer Science/2/2/System Analysis/Ch 3 - Lec 4.json",
+          "questionCount": 25,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/28/2026, 10:19:11 PM"
         },
         {
           "id": "QHYBIT4J",
