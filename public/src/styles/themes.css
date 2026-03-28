@@ -1127,10 +1127,3 @@ DARK SLATE THEME
     0 4px 20px rgba(99, 102, 241, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-
-/* Code inside code blocks */
-
-[data-theme="dark"] .code-block code,
-[data-theme="dark-slate"] .code-block code {
-  color: var(--color-code, #e2e8f0);
-}

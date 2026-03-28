@@ -904,85 +904,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ─── Code Rendering ─────────────────────────────────────────── */
-.code-block-wrapper {
-  position: relative;
-  margin: 12px 0;
-  direction: ltr;
-}
-
-.code-block-wrapper:hover .copy-code-btn {
-  opacity: 1;
-}
-
-.copy-code-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: var(--color-surface, rgba(255, 255, 255, 0.1));
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  color: var(--color-text-secondary);
-  padding: 6px;
-  cursor: pointer;
-  opacity: 0;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(4px);
-  z-index: 2;
-}
-
-.copy-code-btn:hover {
-  background: var(--color-background-secondary);
-  color: var(--color-text-primary);
-}
-
-.copy-code-btn.copied {
-  color: var(--color-success);
-  border-color: var(--color-success);
-  opacity: 1;
-}
-
-.code-block {
-  background: var(--color-background-secondary, #1e1e2e);
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
-  max-width: 100%; /* never escape the card boundary */
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  white-space: pre;
-  text-align: left;
-}
-
-.code-block code {
-  background: none;
-  padding: 0;
-  border-radius: 0;
-  font-size: inherit;
-  color: #000000;
-}
-
-.inline-code {
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
-  font-size: 0.88em;
-  background: var(--color-background-secondary, rgba(99, 102, 241, 0.1));
-  border: 1px solid var(--color-border);
-  border-radius: 5px;
-  padding: 1px 6px;
-  color: var(--color-primary, #6366f1);
-  /* Allow wrapping — the original white-space: nowrap caused single long
-     tokens to overflow the card on narrow viewports. */
-  white-space: normal;
-  word-break: break-all;
-}
-
 /* ─── Lucide Icon Sizing ─────────────────────────────────────── */
 
 /* Stat bar icons */
@@ -1048,135 +969,17 @@ body {
   margin-bottom: 0px;
 }
 
-/* ============================================================================
-   MARKDOWN + KATEX STYLES (mirrored from create-quiz)
-   ── Do not add .md-editor-wrap / .md-rendered / .md-source / .md-live-preview
-      here — those are create-quiz editor-UI rules, not needed on the quiz page.
-   ============================================================================ */
-
 /* Direction helper used by the renderer for code blocks and math */
 .ltr {
   direction: ltr;
 }
 
-/* ── Headings ─────────────────────────────────────────────────────────────── */
-.md-h1,
-.md-h2,
-.md-h3,
-.md-h4,
-.md-h5,
-.md-h6 {
-  margin: 0.6em 0 0.3em;
-  color: var(--color-text-primary);
-  line-height: 1.3;
-}
-.md-h1 {
-  font-size: 1.6em;
-  border-bottom: 2px solid var(--color-border);
-  padding-bottom: 4px;
-}
-.md-h2 {
-  font-size: 1.35em;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 3px;
-}
-.md-h3 {
-  font-size: 1.15em;
-}
-.md-h4 {
-  font-size: 1.05em;
-}
-.md-h5 {
-  font-size: 0.95em;
-}
-.md-h6 {
-  font-size: 0.9em;
-  opacity: 0.85;
-}
+/* All of the markdown css are supposed to exist in markdown.css only
+But I found these different styles that I didn't find in markdown.css so I decided to leave them, because I'm afraid they might break something */
 
-/* ── Horizontal rule ──────────────────────────────────────────────────────── */
-.md-hr {
-  border: none;
-  border-top: 2px solid var(--color-border);
-  margin: 0.8em 0;
-}
-
-/* ── Blockquote ───────────────────────────────────────────────────────────── */
-.md-blockquote {
-  border-right: 4px solid var(--color-primary);
-  margin: 0.5em 0;
-  padding: 8px 16px;
-  background: var(--color-primary-light);
-  border-radius: 0 6px 6px 0;
-  color: var(--color-text-secondary);
-  font-style: italic;
-}
-
-/* ── Lists ────────────────────────────────────────────────────────────────── */
-.md-list {
-  margin: 0.4em 0 0.4em 1.4em;
-  padding: 0;
-  color: var(--color-text-primary);
-}
-.md-list li {
-  margin-bottom: 4px;
-  line-height: 1.6;
-}
-
-/* ── Inline link & image ──────────────────────────────────────────────────── */
-.md-link {
-  color: var(--color-primary);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.md-img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 6px;
-  margin: 4px 0;
-  display: block;
-}
-
-/* ── KaTeX / LaTeX math ───────────────────────────────────────────────────── */
-/* Block math (display mode) */
-.math-block {
-  display: block;
-  overflow-x: auto;
-  padding: 10px 0;
-  text-align: center;
-  font-size: 1.05em;
-}
-/* Inline math */
-.math-inline {
-  display: inline;
-}
-/* Fallback when KaTeX is not loaded */
-.math-raw {
-  font-family: "Courier New", Courier, monospace;
-  font-size: 0.92em;
-  background: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  color: var(--color-text-primary);
-}
-
-/* ── Dark-theme overrides for inline-code ─────────────────────────────────── */
-[data-theme="dark"] .inline-code,
-[data-theme="dark-slate"] .inline-code {
-  background: rgba(203, 166, 247, 0.15);
-  color: #cba6f7;
-}
-
-/* ── KaTeX / math block overflow guard ────────────────────────────────────── */
-/* KaTeX renders wide SVG for complex formulas; make them scroll horizontally
-   within their block so the page body is never affected. */
 .math-block,
 .katex-display {
-  max-width: 100%;
-  overflow-x: auto;
   overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1186,124 +989,16 @@ body {
    The wrapper is the scroll container; the table grows to natural width.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Scroll wrapper ────────────────────────────────────────────────────────── */
-.md-table-wrapper {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin: 14px 0;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-
-  /* Scroll-shadow: CSS-only affordance that fades in at the edges only when
-     there is more content to scroll. Uses background-attachment: local so
-     the gradient moves with the scroll position. */
-  background:
-    linear-gradient(to left, var(--color-background, #fff) 20%, transparent)
-      right,
-    linear-gradient(to right, var(--color-background, #fff) 20%, transparent)
-      left,
-    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.1), transparent)
-      right,
-    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.1), transparent)
-      left;
-  background-color: var(--color-background, #fff);
-  background-repeat: no-repeat;
-  background-size:
-    40px 100%,
-    40px 100%,
-    10px 100%,
-    10px 100%;
-  background-attachment: local, local, scroll, scroll;
-}
-
-/* ── Table base ────────────────────────────────────────────────────────────── */
-.md-table {
-  /* min-width: max-content prevents squishing — the wrapper scrolls instead */
-  min-width: max-content;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  direction: ltr;
-  text-align: left;
-}
-
 /* ── Cells ─────────────────────────────────────────────────────────────────── */
 .md-table th,
 .md-table td {
-  padding: 10px 16px;
   border: 1px solid var(--color-border);
   vertical-align: top;
   overflow-wrap: break-word;
 }
 
 .md-table th {
-  font-weight: 700;
-  color: var(--color-text-primary);
-  white-space: nowrap; /* keep headers on one line */
   background: var(--color-primary-light, rgba(99, 102, 241, 0.08));
-}
-
-.md-table td {
-  white-space: normal;
-  min-width: 90px;
-}
-
-/* ── Row styling ───────────────────────────────────────────────────────────── */
-.md-table tbody tr:nth-child(even) {
-  background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
-}
-
-.md-table tbody tr {
-  transition: background 0.12s ease;
-}
-
-.md-table tbody tr:hover {
-  background: var(--color-primary-light, rgba(99, 102, 241, 0.06));
-}
-
-/* ── Dark-theme table overrides ────────────────────────────────────────────── */
-[data-theme="dark"] .md-table-wrapper,
-[data-theme="dark-slate"] .md-table-wrapper {
-  background:
-    linear-gradient(to left, var(--color-background) 20%, transparent) right,
-    linear-gradient(to right, var(--color-background) 20%, transparent) left,
-    radial-gradient(
-        farthest-side at 100% 50%,
-        rgba(255, 255, 255, 0.07),
-        transparent
-      )
-      right,
-    radial-gradient(
-        farthest-side at 0% 50%,
-        rgba(255, 255, 255, 0.07),
-        transparent
-      )
-      left;
-  background-color: var(--color-background);
-  background-repeat: no-repeat;
-  background-size:
-    40px 100%,
-    40px 100%,
-    10px 100%,
-    10px 100%;
-  background-attachment: local, local, scroll, scroll;
-}
-
-[data-theme="dark"] .md-table th,
-[data-theme="dark-slate"] .md-table th {
-  background: rgba(99, 102, 241, 0.14);
-}
-
-[data-theme="dark"] .md-table tbody tr:nth-child(even),
-[data-theme="dark-slate"] .md-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-[data-theme="dark"] .md-table tbody tr:hover,
-[data-theme="dark-slate"] .md-table tbody tr:hover {
-  background: rgba(99, 102, 241, 0.09);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

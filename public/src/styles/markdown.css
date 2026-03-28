@@ -346,6 +346,11 @@
   color: #334155;
 }
 
+[data-theme="dark"] .code-block code,
+[data-theme="dark-slate"] .code-block code {
+  color: var(--color-code, #e2e8f0);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    GFM TABLES  (Glassmorphism)
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -432,7 +437,7 @@
 
 /* Alternating rows — very subtle frosted stripe */
 .md-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
 }
 
 /* Row hover — lift the glass slightly */
@@ -500,6 +505,49 @@
 [data-theme="dark-slate"] .md-table thead tr {
   background: rgba(99, 102, 241, 0.14);
   border-bottom-color: rgba(99, 102, 241, 0.28);
+}
+
+[data-theme="dark"] .md-table th,
+[data-theme="dark-slate"] .md-table th {
+  background: rgba(99, 102, 241, 0.14);
+}
+
+[data-theme="dark"] .md-table tbody tr:nth-child(even),
+[data-theme="dark-slate"] .md-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .md-table tbody tr:hover,
+[data-theme="dark-slate"] .md-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.09);
+}
+
+/* ── Dark-theme table overrides ────────────────────────────────────────────── */
+[data-theme="dark"] .md-table-wrapper,
+[data-theme="dark-slate"] .md-table-wrapper {
+  background:
+    linear-gradient(to left, var(--color-background) 20%, transparent) right,
+    linear-gradient(to right, var(--color-background) 20%, transparent) left,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      right,
+    radial-gradient(
+        farthest-side at 0% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      left;
+  background-color: var(--color-background);
+  background-repeat: no-repeat;
+  background-size:
+    40px 100%,
+    40px 100%,
+    10px 100%,
+    10px 100%;
+  background-attachment: local, local, scroll, scroll;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
