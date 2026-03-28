@@ -597,11 +597,11 @@ export const gameEngine = {
     }
     this.saveUserData(user);
     if (!this.isBookmarked(examId, questionIdx))
-      showNotification(`Unbookmarked Question ${questionIdx + 1}`);
+      showNotification(`تم مسح سؤال ${questionIdx + 1} من اللائحة`);
     else
       showNotification(
-        `Bookmarked Question ${questionIdx + 1}`,
-        `Check in Dashboard.`,
+        `تم حفظ سؤال ${questionIdx + 1}`,
+        `انظر في اللائحة`,
         "success",
       );
     return !!user.bookmarks[key];
@@ -626,11 +626,11 @@ export const gameEngine = {
 
     this.saveUserData(user);
     if (!this.isFlagged(examId, questionIdx))
-      showNotification(`Unflagged Question ${questionIdx + 1}`);
+      showNotification(`تمت إزالة العلامة من سؤال ${questionIdx + 1}`);
     else
       showNotification(
-        `Flagged Question ${questionIdx + 1}`,
-        "You can review it later.",
+        "تستطيع مراجعة السؤال لاحقاّ",
+        `تمت إضافة علامة مرجعية لسؤال ${questionIdx + 1}`,
         "success",
       );
 

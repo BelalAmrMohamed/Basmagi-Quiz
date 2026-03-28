@@ -865,7 +865,7 @@ function buildVerticalQuestionCard(q, idx) {
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div class="feedback-body"><strong>Explanation: </strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
   }
 
@@ -1004,7 +1004,7 @@ function renderQuestion() {
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(
+      feedbackText = `<div class="feedback-body"><strong>Explanation: </strong>${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
       )}</div>`;
     }
