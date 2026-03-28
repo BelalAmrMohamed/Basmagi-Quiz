@@ -63,12 +63,7 @@
     },
     {
       "q": "A disadvantage of packaged software is:",
-      "options": [
-        "Reliable",
-        "Flexible",
-        "Limited customization",
-        "Low cost"
-      ],
+      "options": ["Reliable", "Flexible", "Limited customization", "Low cost"],
       "correct": 2,
       "explanation": "Since it is built for a broad audience, it rarely matches an organization's unique processes perfectly and offers limited room for deep customization."
     },
@@ -96,12 +91,7 @@
     },
     {
       "q": "An example of ERP vendor is:",
-      "options": [
-        "SAP",
-        "Google Docs",
-        "Linux",
-        "MySQL"
-      ],
+      "options": ["SAP", "Google Docs", "Linux", "MySQL"],
       "correct": 0,
       "explanation": "SAP is one of the world's largest and most well-known providers of enterprise software and ERP systems."
     },
@@ -118,56 +108,31 @@
     },
     {
       "q": "ERP systems are:",
-      "options": [
-        "Easy to implement",
-        "Very simple",
-        "Complex",
-        "Free"
-      ],
+      "options": ["Easy to implement", "Very simple", "Complex", "Free"],
       "correct": 2,
       "explanation": "Due to their massive scale and the need to align with various business processes, ERP implementations are notoriously complex and time-consuming."
     },
     {
       "q": "Cloud computing provides services through:",
-      "options": [
-        "Local server",
-        "USB",
-        "Internet",
-        "CD"
-      ],
+      "options": ["Local server", "USB", "Internet", "CD"],
       "correct": 2,
       "explanation": "Cloud computing delivers on-demand computing services—from applications to storage and processing power—typically over the internet."
     },
     {
       "q": "Cloud computing is also called:",
-      "options": [
-        "ERP",
-        "SaaS",
-        "Open source",
-        "In-house"
-      ],
+      "options": ["ERP", "SaaS", "Open source", "In-house"],
       "correct": 1,
       "explanation": "Software as a Service (SaaS) is the most common model of cloud computing where software is hosted and delivered to users online."
     },
     {
       "q": "In cloud computing, software runs on:",
-      "options": [
-        "Local computers",
-        "Remote servers",
-        "Flash drives",
-        "CDs"
-      ],
+      "options": ["Local computers", "Remote servers", "Flash drives", "CDs"],
       "correct": 1,
       "explanation": "The software and its data are hosted on the cloud provider's remote servers in massive data centers, rather than on the user's local hard drive."
     },
     {
       "q": "An example of cloud computing:",
-      "options": [
-        "Gmail",
-        "Windows XP",
-        "Custom payroll",
-        "Oracle DB local"
-      ],
+      "options": ["Gmail", "Windows XP", "Custom payroll", "Oracle DB local"],
       "correct": 0,
       "explanation": "Gmail is a SaaS application hosted on Google's cloud servers, accessible from anywhere via a web browser."
     },
@@ -382,34 +347,19 @@
     },
     {
       "q": "A university hiring a company to build a system is:",
-      "options": [
-        "In-house",
-        "Cloud",
-        "Outsourcing",
-        "Open-source"
-      ],
+      "options": ["In-house", "Cloud", "Outsourcing", "Open-source"],
       "correct": 2,
       "explanation": "Paying a third-party entity to execute a project instead of using internal university IT staff is the definition of outsourcing."
     },
     {
       "q": "Google Docs is an example of:",
-      "options": [
-        "ERP",
-        "SaaS",
-        "In-house",
-        "Custom software"
-      ],
+      "options": ["ERP", "SaaS", "In-house", "Custom software"],
       "correct": 1,
       "explanation": "Google Docs is Software as a Service (SaaS) because it is hosted in the cloud and users access it via the internet without local installation."
     },
     {
       "q": "Custom software is usually:",
-      "options": [
-        "Less flexible",
-        "Fully customized",
-        "Free",
-        "Cloud only"
-      ],
+      "options": ["Less flexible", "Fully customized", "Free", "Cloud only"],
       "correct": 1,
       "explanation": "Custom software is built specifically to meet the unique requirements and precise specifications of a single organization."
     },
@@ -448,140 +398,92 @@
     },
     {
       "q": "Outsourcing means developing software internally.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 1,
       "explanation": "Outsourcing is the exact opposite of internal development; it involves hiring an external company to create the software."
     },
     {
       "q": "ERP systems integrate multiple business functions.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "The core purpose of an Enterprise Resource Planning system is to unify disparate business functions (like HR, finance, and supply chain) into one system."
     },
     {
       "q": "Cloud computing requires local installation.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 1,
       "explanation": "Cloud computing delivers software over the internet (SaaS), meaning local hard-drive installation is unnecessary."
     },
     {
       "q": "Open-source software is always paid.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 1,
       "explanation": "Open-source software is typically free to use, download, and modify, though some companies may charge for enterprise support services."
     },
     {
       "q": "In-house development gives full control.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "Because the organization builds the software itself, it retains 100% control over the features, security, and update schedule."
     },
     {
       "q": "Vendor support is not important when choosing software.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 1,
       "explanation": "Vendor support is highly critical; without it, organizations cannot get help for bugs, training, or security patches."
     },
     {
       "q": "Packaged software is ready to use.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "Packaged (off-the-shelf) software is already built, tested, and compiled, meaning it can be deployed immediately after purchase."
     },
     {
       "q": "ERP systems are simple and quick to implement.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 1,
       "explanation": "ERP implementations are notoriously complex, expensive, and can take months or years to fully integrate into a company."
     },
     {
       "q": "Flexibility refers to customization ability.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "In software evaluation, flexibility explicitly measures how easily the system can be adapted or customized to meet new demands."
     },
     {
       "q": "Documentation includes user manuals.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "Documentation encompasses all written guides, including user manuals, technical specifications, and API guides."
     },
     {
       "q": "Explain outsourcing as a source of software. Discuss its advantages, disadvantages, and when it is appropriate to use it.",
-      "options": [
-        "Outsourcing involves hiring a third-party vendor to develop or manage software instead of doing it internally."
-      ],
-      "correct": 0,
+      "answer": "Outsourcing involves hiring a third-party vendor to develop or manage software instead of doing it internally.",
       "explanation": "Advantages: Provides access to specialized skills not available in-house, can be cost-effective for one-off projects, and frees up internal staff to focus on core business operations.\n\nDisadvantages: Results in a loss of direct control over the development timeline, introduces potential security/confidentiality risks, and creates reliance on an external vendor.\n\nWhen to use: It is best used when an organization lacks internal technical expertise, when the project is not a core competency of the business, or when time-to-market is critical and requires extra manpower."
     },
     {
       "q": "Describe the six sources of software available to organizations with examples.",
-      "options": [
-        "`Organizations can source software through IT Services Firms (Outsourcing), Packaged Software Providers, ERP Providers, Cloud Computing, Open-Source Software, or In-House Development.`\n"
-      ],
-      "correct": 0,
+      "answer": "`Organizations can source software through IT Services Firms (Outsourcing), Packaged Software Providers, ERP Providers, Cloud Computing, Open-Source Software, or In-House Development.`\n",
       "explanation": "IT Services/Outsourcing: Hiring a firm to build custom software (e.g., hiring Accenture).\n\nPackaged Software: Buying pre-built, off-the-shelf software (e.g., Microsoft Office, Adobe Acrobat).\n\nERP Systems: Large-scale systems that integrate all business functions (e.g., SAP, Oracle ERP).\n\nCloud Computing (SaaS): Software hosted online and accessed via a browser (e.g., Google Workspace, Salesforce).\n\nOpen-Source Software: Software with freely available source code maintained by a community (e.g., Linux, MySQL).\n\nIn-House Development: Using internal staff to build software from scratch tailored specifically to the company's needs.\n\nExplain ERP systems. Discuss their advantages and disadvantages."
     },
     {
       "q": "Explain ERP systems. Discuss their advantages and disadvantages.",
-      "options": [
-        "Enterprise Resource Planning (ERP) systems are massive software platforms that integrate various business processes and departments into a single, unified database."
-      ],
-      "correct": 0,
+      "answer": "Enterprise Resource Planning (ERP) systems are massive software platforms that integrate various business processes and departments into a single, unified database.",
       "explanation": "Advantages: They eliminate data silos, streamline communication between departments (like HR, Finance, and Supply Chain), and provide a single source of truth for business data.\n\nDisadvantages: They are extremely expensive, highly complex to implement, and often require organizations to drastically change their established workflows to fit the software's built-in methodology."
     },
     {
       "q": "Explain cloud computing as a source of software and describe its main characteristics.",
-      "options": [
-        "Cloud computing (specifically SaaS) delivers software applications over the internet, hosted on remote servers managed by a third-party provider."
-      ],
-      "correct": 0,
+      "answer": "Cloud computing (specifically SaaS) delivers software applications over the internet, hosted on remote servers managed by a third-party provider.",
       "explanation": "Explanation: Its main characteristics include accessibility from anywhere with an internet connection, no need for local installation or internal hardware infrastructure, automatic updates handled by the vendor, and a subscription-based pricing model. It allows companies to scale their software usage up or down quickly based on demand."
     },
     {
       "q": "Discuss how organizations evaluate off-the-shelf software before purchasing it.",
-      "options": [
-        "Organizations evaluate off-the-shelf software by assessing cost, functionality, vendor viability, vendor support, flexibility, and documentation."
-      ],
-      "correct": 0,
+      "answer": "Organizations evaluate off-the-shelf software by assessing cost, functionality, vendor viability, vendor support, flexibility, and documentation.",
       "explanation": "Before buying, an organization must ensure the software's features match their needs (functionality) while offering the ability to adapt (flexibility). They must consider the Total Cost of Ownership (cost) and ensure the vendor is financially stable enough (viability) to provide long-term updates and help (vendor support). Finally, they check for adequate training materials (documentation) and how difficult the software is to deploy (ease of installation)."
     }
   ],
   "stats": {
     "questionCount": 55,
-    "questionTypes": [
-      "MCQ",
-      "True/False"
-    ]
+    "questionTypes": ["MCQ", "True/False"]
   }
 }
