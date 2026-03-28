@@ -126,7 +126,7 @@ window.copyCodeBlock = (btn) => {
     .writeText(codeEl.innerText)
     .then(() => {
       const original = btn.innerHTML;
-      btn.innerHTML = `${ICON_CHECK}<span class="copy-label">Copied!</span>`;
+      btn.innerHTML = `${ICON_CHECK}`;
       btn.classList.add("copied");
       btn.setAttribute("aria-label", "Copied!");
       setTimeout(() => {
