@@ -13,7 +13,7 @@
  */
 
 // ── String constants (Arabic, do not translate) ────────────────────────────
-const OFFLINE_TEXT = "أنت غير متصل بالإنترنت — تعمل في وضع عدم الاتصال";
+const OFFLINE_TEXT = "أنت غير متصل بالإنترنت";
 const ONLINE_TEXT = "عدت للإنترنت";
 
 // How long the "back online" flash stays visible before the banner hides (ms)
@@ -85,7 +85,8 @@ function setOnline() {
     navigator.serviceWorker.controller.postMessage({
       type: "TRIGGER_SYNC",
       supabaseUrl: window.SUPABASE_URL || "",
-      supabaseKey: window.SUPABASE_SERVICE_KEY || window.SUPABASE_ANON_KEY || "",
+      supabaseKey:
+        window.SUPABASE_SERVICE_KEY || window.SUPABASE_ANON_KEY || "",
     });
   }
 
@@ -146,7 +147,8 @@ export function initOfflineBanner(connectivityProbeUrl) {
   // Idempotency guard: if we already set up the listeners, do nothing
   if (banner !== null) return;
 
-  probeUrl = typeof connectivityProbeUrl === "string" ? connectivityProbeUrl : "";
+  probeUrl =
+    typeof connectivityProbeUrl === "string" ? connectivityProbeUrl : "";
   wasOfflineDuringSession = false;
   banner = getOrCreateBanner();
 

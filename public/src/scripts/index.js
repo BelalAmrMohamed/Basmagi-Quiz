@@ -1296,39 +1296,38 @@ Title: Advanced C++ Stress Test
 Description: Tests multi-line questions, LaTeX math, Markdown formatting, code snippets in options, and all three question types.
 Source: https://cppreference.com
 
+
 1. Consider the following time complexity formula for a nested loop algorithm:
 
-   $$T(n) = \\sum_{i=1}^{n} \sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
+   $$T(n) = \sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
 
    Given $n = 8$, which value correctly represents the **total number of iterations**?
 
-A) 64
-B) 36
-C) 28
-D) 72
+   A. 64
+   B. 36
+   C. 28
+   D. 72
 
-Correct: B
+   Correct: B. 36
 
-Explanation: Substituting $n = 8$ into the formula:
+   Explanation: The correct answer is **d. Data Link**.
 
-   $$T(8) = \\frac{8 \\times 9}{2} = \\frac{72}{2} = 36$$
+From Lec1, the PDU hierarchy is:
+| Loop Type | Formula | Result for $n=8$ |
+|---|---|---|
+| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |
+| Full double loop | $n^2$ | 64 |
 
-   This is a classic triangular number result. Compare this to a standard
-   double-loop where both bounds run from $1$ to $n$, giving $O(n^2) = 64$.
 
-   | Loop Type           | Formula             | Result for $n=8$ |
-   |---------------------|---------------------|-----------------|
-   | **Nested (this)**   | $\frac{n(n+1)}{2}$  | **36**          |
-   | Full double loop    | $n^2$               | 64              |
 
 2. In C++, a \`const\` member function can modify a \`mutable\` data member.
 
-- True
-- False
+   A. True
+   B. False
 
-Correct: A
+   Correct: A. True
 
-Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
+   Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
 This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
 \`\`\`cpp
    class Counter {
@@ -1341,11 +1340,11 @@ This is intentional and well-defined behaviour, commonly used for internal cache
    };
 \`\`\`
 
- 
+
 3. Write a C++ function template that returns the **larger** of two values.
 The function must work for any type that supports \`operator>\`.
 
-Answer:
+Answer: The function uses \`template\`:
 \`\`\`cpp
 template <typename T>
 T maxOf(T a, T b) {
@@ -1353,7 +1352,8 @@ T maxOf(T a, T b) {
 }
 \`\`\`
 
-Explanation: The \`typename T\` template parameter is deduced at the call site,
+
+   Explanation: The \`typename T\` template parameter is deduced at the call site,
 so \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and
 \`maxOf(std::string("apple"), std::string("banana"))\` for \`std::string\` —
 as long as \`operator>\` is defined for the type.</textarea>
