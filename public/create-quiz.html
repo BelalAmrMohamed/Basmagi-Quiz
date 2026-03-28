@@ -919,33 +919,71 @@
                 <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:8px;">
                     يدعم: JSON · نص مرقّم (1. سؤال / A. خيار / Correct: A / Explanation: ...)
                 </p>
-                <textarea id="importTextarea" rows="7" placeholder='Title: C++ Quiz
-Description: A small quiz aimed at teaching Junior devs C++.
-Source: https://www.w3schools.com/CPP/default.asp
+                <textarea id="importTextarea" rows="7" placeholder='Title: Advanced C++ Stress Test
+Description: Tests multi-line questions, LaTeX math, Markdown formatting, code snippets in options, and all three question types.
+Source: https://cppreference.com
 
-1. Which programming languange is fastest?
 
-A. Python
-B. Rust
-C. C++
-D. C#
+1. Consider the following time complexity formula for a nested loop algorithm:
 
-Correct: C
+   $$T(n) = \sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
 
-Explanation: C++ is the fastest programming language of them.
+   Given $n = 8$, which value correctly represents the **total number of iterations**?
 
-2. Python is harder than C++.
+   A. 64
+   B. 36
+   C. 28
+   D. 72
 
-A. True
-B. False
+Correct: B. 36
 
-Correct: B
+Explanation: The correct answer is **d. Data Link**.
 
-3. Write a C++ code to print `Hello World!`.
+From Lec1, the PDU hierarchy is:
+| Loop Type | Formula | Result for $n=8$ |
+|---|---|---|
+| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |
+| Full double loop | $n^2$ | 64 |
 
-Answer: ```cout << "Hello World!" << endl;```
 
-Explanation: C++ uses `cout` for printing statements.' aria-label="محتوى الأسئلة للاستيراد"></textarea>
+
+2. In C++, a `const` member function can modify a `mutable` data member.
+
+   A. True
+   B. False
+
+   Correct: A. True
+
+Explanation: The `mutable` keyword explicitly **opts a member out** of the `const` contract.
+This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
+```cpp
+   class Counter {
+       mutable int cache_ = 0;    // may be written even in const context
+   public:
+       int value() const {
+           cache_++;              // legal because cache_ is mutable
+           return cache_;
+       }
+   };
+```
+
+
+3. Write a C++ function template that returns the **larger** of two values.
+The function must work for any type that supports `operator>`.
+
+Answer: The function uses `template`:
+```cpp
+template <typename T>
+T maxOf(T a, T b) {
+    return (a > b) ? a : b;
+}
+```
+
+
+Explanation: The `typename T` template parameter is deduced at the call site,
+so `maxOf(3, 7)` works for `int`, `maxOf(3.14, 2.71)` for `double`, and
+`maxOf(std::string("apple"), std::string("banana"))` for `std::string` —
+as long as `operator>` is defined for the type.' aria-label="محتوى الأسئلة للاستيراد"></textarea>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="processImport()"><svg xmlns="http://www.w3.org/2000/svg"

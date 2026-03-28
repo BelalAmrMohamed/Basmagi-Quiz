@@ -2556,6 +2556,7 @@ window.resetPage = async function () {
   questionIdCounter = 0;
 
   document.getElementById("quizTitle").value = "";
+  document.getElementById("quizSource").value = "";
   document.getElementById("quizDescription").value = "";
   document.getElementById("questionsContainer").innerHTML = "";
 
