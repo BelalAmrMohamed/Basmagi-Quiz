@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-28T20:20:05.296Z",
+  "generatedAt": "2026-03-29T20:22:40.481Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1174,6 +1174,17 @@
       "term": 2,
       "quizzes": [
         {
+          "id": "YJR3KXHJ",
+          "title": "2025 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/2025 Mid.json",
+          "questionCount": 20,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/29/2026, 10:21:35 PM"
+        },
+        {
           "id": "WBXQKRLD",
           "title": "Introduction To Data Structure",
           "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Introduction to Data Structure.json",
@@ -1225,38 +1236,6 @@
       "year": 2,
       "term": 2,
       "quizzes": [
-        {
-          "id": "YAYFLGTG",
-          "title": "1  Counting Techniques",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/1- Counting Techniques.json",
-          "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "2026-03-01 - 20:37"
-        },
-        {
-          "id": "7IGTGFXT",
-          "title": "2  Probability",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/2- Probability.json",
-          "questionCount": 20,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "2026-03-01 - 20:37"
-        },
-        {
-          "id": "YPVPXTHQ",
-          "title": "AI Introduction To Probability",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/AI Introduction to Probability.json",
-          "questionCount": 12,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
-          "createdAt": "2026-03-01 - 20:37"
-        },
         {
           "id": "77ZZAPDU",
           "title": "أسئلة الإحتمالات من الإمتحانات السابقة",
