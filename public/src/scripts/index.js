@@ -38,6 +38,45 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 // each HTML file.
 import { initPWA } from "./pwa-manager.js";
 
+// AI Prompt for converting files to JSON quiz format
+const AI_PROMPT_TEXT = `Convert any given quiz PDF, Word, PPTX, or text to a JSON array that matches the platform's JSON quiz format. And find the correct answers to any unsolved question.
+
+The platform supports full markdown, tables, code blocks, math notations (LaTeX), etc.
+It also supports essay or MCQ questions.
+
+Output ONLY the JSON in the following format:
+\`\`\`json
+{
+  "questions": [
+    {
+      "q": "Consider the following time complexity formula for a nested loop algorithm:\\n\\n   $$T(n) = sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\\\frac{n(n+1)}{2}$$\\n\\n   Given $n = 8$, which value correctly represents the **total number of iterations**?",
+      "options": [
+        "64",
+        "36",
+        "28",
+        "72"
+      ],
+      "correct": 1,
+      "explanation": "The correct answer is **36**.\\n\\nFrom Lec1, the PDU hierarchy is:\\n| Loop Type | Formula | Result for $n=8$ |\\n|---|---|---|\\n| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |\\n| Full double loop | $n^2$ | 64 |"
+    },
+    {
+      "q": "In C++, a \`const\` member function can modify a \`mutable\` data member.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.\\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\\n\`\`\`cpp\\n   class Counter {\\n       mutable int cache_ = 0;    // may be written even in const context\\n   public:\\n       int value() const {\\n           cache_++;              // legal because cache_ is mutable\\n           return cache_;\\n       }\\n   };\\n\`\`\`"
+    },
+    {
+      "q": "Write a C++ function template that returns the **larger** of two values.\\nThe function must work for any type that supports \`operator>\`.",
+      "answer": "The function uses \`template\`:\\n\`\`\`cpp\\ntemplate <typename T>\\nT maxOf(T a, T b) {\\n    return (a > b) ? a : b;\\n}\\n\`\`\`",
+      "explanation": "The \`typename T\` template parameter is deduced at the call site,\\nso \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and\\n\`maxOf(std::string(\\"apple\\"), std::string(\\"banana\\"))\` for \`std::string\` —\\nas long as \`operator>\` is defined for the type."
+    }
+  ]
+}
+\`\`\``;
+
 /**
  * Recursively count only the actual quiz/exam leaves under a category node.
  * Subfolders are never counted as quizzes themselves — we recurse into them.
@@ -1283,6 +1322,10 @@ function openInlineCreateQuizModal() {
     <h2 id="inlineCreateQuizTitle" style="margin-bottom: 12px; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; color: var(--color-text-primary);">
       <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus" style="color: var(--color-primary);"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
       إنشاء إمتحان جديد
+      <button type="button" id="copyAiPromptBtn" style="margin-right: auto; font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1.5px solid var(--color-border); background: var(--color-background-secondary); color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-weight: 600;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+        Prompt
+      </button>
     </h2>
     <p style="margin-bottom:24px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">الصق أو اكتب أسئلة الإمتحان في الحقل التالي، أو قم باستيراد ملف، وسنحوّلها تلقائيًا إلى امتحان.</p>
     <div class="form-group" style="margin-bottom: 18px;">
@@ -1379,6 +1422,28 @@ as long as \`operator>\` is defined for the type.</textarea>
   const createBtn = modalCard.querySelector("#inlineQuizCreate");
   const importBtn = modalCard.querySelector("#inlineQuizImport");
   const fileInput = modalCard.querySelector("#inlineQuizFileInput");
+  const copyPromptBtn = modalCard.querySelector("#copyAiPromptBtn");
+
+  if (copyPromptBtn) {
+    copyPromptBtn.onclick = (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(AI_PROMPT_TEXT).then(() => {
+        showNotification(
+          "تم نسخ البرومبت",
+          "يمكنك الآن لصقه في أي ذكاء اصطناعي",
+          "success",
+        );
+      });
+    };
+    copyPromptBtn.onmouseover = () => {
+      copyPromptBtn.style.borderColor = "var(--color-primary)";
+      copyPromptBtn.style.color = "var(--color-primary)";
+    };
+    copyPromptBtn.onmouseout = () => {
+      copyPromptBtn.style.borderColor = "var(--color-border)";
+      copyPromptBtn.style.color = "var(--color-text-secondary)";
+    };
+  }
 
   importBtn.onmouseover = () => {
     importBtn.style.borderColor = "var(--color-primary)";
