@@ -39,10 +39,13 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 import { initPWA } from "./pwa-manager.js";
 
 // AI Prompt for converting files to JSON quiz format
-const AI_PROMPT_TEXT = `Convert any given quiz PDF, Word, PPTX, or text to a JSON array that matches the platform's JSON quiz format. And find the correct answers to any unsolved question. And don't rephrase questions.
+const AI_PROMPT_TEXT = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
 
-The platform supports full markdown, tables, code blocks, math notations (LaTeX), etc.
-It also supports essay or MCQ questions.
+Please ensure the following:
+- Preserve the original wording of all questions without rephrasing to maintain content integrity.
+- Identify and supply correct answers for any unsolved or incomplete questions using authoritative sources or logical deduction.
+- Handle ambiguous or incomplete data by applying best practices for content clarification or flagging for review.
+- Output only the finalized JSON array encapsulated within proper code block delimiters, without any additional text or commentary.
 
 Output ONLY the JSON in the following format:
 \`\`\`json
