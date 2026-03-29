@@ -25,7 +25,7 @@ export function normalizeLiteralNewlines(text) {
 
 // ─── 2. HTML escaping ─────────────────────────────────────────────────────────
 // Internal — escapes for safe insertion into markup.
-function escHtml(s) {
+export function escHtml(s) {
   return (s || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -36,7 +36,7 @@ function escHtml(s) {
 // ─── 3. Inline Markdown formatter ─────────────────────────────────────────────
 // Receives an already-escHtml-encoded string; applies spans/tags for
 // bold, italic, code, links, images, and inline math ($…$).
-function applyInline(s) {
+export function applyInline(s) {
   // ── Inline math $…$ ─────────────────────────────────────────────────────
   const iMathStash = [];
   s = s.replace(/\$([^\$\n]+)\$/g, (_, m) => {
@@ -148,7 +148,7 @@ window.copyCodeBlock = (btn) => {
 };
 
 // ─── 6. Core renderer ─────────────────────────────────────────────────────────
-function _renderMarkdownCore(str) {
+export function _renderMarkdownCore(str) {
   const stash = [];
   const stashPush = (html) => {
     const idx = stash.length;

@@ -37,13 +37,33 @@ export async function exportToHtml(config, questions, userAnswers = []) {
       <title>${config.title || "Quiz Examination"}</title>
 
       <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
-           Math in question/answer text is PRE-RENDERED at generation time
-           (window.katex is available in the app's browser context when this
-           export function runs). The stylesheet is required for the pre-rendered
-           KaTeX HTML to display correctly; the script tag is included as a safety
-           net. No defer/async. Pinned to 0.16.9 exactly. No SRI hashes. -->
+           Math is PRE-RENDERED at generation time when window.katex is available
+           in the app context (the KaTeX CSS below styles that pre-rendered HTML).
+           The auto-render extension acts as a guaranteed client-side fallback:
+           if pre-rendering was skipped (katex not yet loaded in the app), the
+           $…$ delimiters survive in the HTML and auto-render picks them up here.
+           No defer/async on katex.min.js — it must be synchronous so auto-render
+           can reference window.katex immediately. Pinned to 0.16.9. No SRI. -->
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
       <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+      <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          if (typeof renderMathInElement === "function") {
+            renderMathInElement(document.body, {
+              delimiters: [
+                { left: "$$", right: "$$", display: true  },
+                { left: "$",  right: "$",  display: false }
+              ],
+              throwOnError: false,
+              // Skip nodes that already contain rendered KaTeX so we don't
+              // double-process text that was successfully pre-rendered at
+              // export time.
+              ignoredClasses: ["katex", "katex-html"]
+            });
+          }
+        });
+      </script>
 
       <script type="module">
         const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;

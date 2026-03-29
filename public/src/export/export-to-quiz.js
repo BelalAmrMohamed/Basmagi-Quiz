@@ -5,6 +5,13 @@
 
 import { showNotification } from "../components/notifications.js";
 import { gradeEssay } from "../shared/rate-essays.js";
+import {
+  renderMarkdown,
+  _renderMarkdownCore,
+  applyInline,
+  escHtml,
+  normalizeLiteralNewlines,
+} from "../shared/markdown.js";
 
 export async function exportToQuiz(config, questions) {
   const processedQuestions = await convertImagesToBase64(questions);
@@ -27,16 +34,49 @@ export async function exportToQuiz(config, questions) {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
+  <script type="module">
+        const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
+        const ICON_CHECK = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>\`;
+
+        window.copyCodeBlock = (btn) => {
+          const wrapper = btn.closest(".code-block-wrapper");
+          if (!wrapper) return;
+          const codeEl = wrapper.querySelector("code");
+          if (!codeEl) return;
+
+          navigator.clipboard
+            .writeText(codeEl.innerText)
+            .then(() => {
+              const original = btn.innerHTML;
+              btn.innerHTML = ICON_CHECK;
+              btn.classList.add("copied");
+              btn.setAttribute("aria-label", "Copied!");
+              setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.remove("copied");
+                btn.setAttribute("aria-label", "Copy code");
+              }, 2000);
+            })
+            .catch(() => {
+              // Fallback: select the text so the user can Ctrl+C manually
+              const range = document.createRange();
+              range.selectNodeContents(codeEl);
+              const sel = window.getSelection();
+              if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            });
+        };
+  </script>
+
   <style>
   *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
-
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
   /* ── Design Tokens ───────────────────────────────────────────── */
   :root {
@@ -130,9 +170,7 @@ export async function exportToQuiz(config, questions) {
   }
 
   /* ── Base ────────────────────────────────────────────────────── */
-  [data-theme="dark"] body {
-    background: var(--gradient-body-dark) center / cover fixed;
-  }
+  [data-theme="dark"] body { background: var(--gradient-body-dark) center / cover fixed; }
 
   body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -1192,129 +1230,86 @@ export async function exportToQuiz(config, questions) {
   .toast-icon    { font-size: 16px; flex-shrink: 0; line-height: 1; }
   .toast-message { color: var(--text-primary); font-size: 14px; font-weight: 500; }
 
-  /* ── Markdown ────────────────────────────────────────────────── */
-  .code-block {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    padding: 14px 16px;
-    margin: 10px 0;
-    overflow-x: auto;
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    line-height: 1.65;
-    white-space: pre;
-    text-align: left;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
+  /* ── Markdown CSS Variables Mapping ── */
+  :root {
+    --color-primary: var(--info);
+    --color-primary-light: rgba(59, 130, 246, 0.1);
+    --color-border: var(--border-color);
+    --color-text-primary: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
+    --color-background: var(--bg-primary);
+    --color-background-secondary: var(--bg-secondary);
+    --color-success: var(--success);
+    --color-error: var(--error);
+    --color-code: var(--text-primary);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  
+  [data-theme="dark"] {
+    --color-code: #e2e8f0;
   }
 
-  [data-theme="dark"] .code-block {
-    background: #0d1117;
-    border-color: #30363d;
-  }
-
-  .code-block code {
-    background: none;
-    padding: 0;
-    font-size: inherit;
-    color: var(--text-secondary);
-  }
-
-  [data-theme="dark"] .code-block code { color: #c9d1d9; }
-
-  .inline-code {
-    font-family: var(--font-mono);
-    font-size: 0.87em;
-    background: rgba(102, 126, 234, 0.08);
-    border: 1px solid rgba(102, 126, 234, 0.22);
-    border-radius: var(--radius-xs);
-    padding: 2px 6px;
-    color: var(--gradient-start);
-    white-space: nowrap;
-  }
-
-  /* ── Markdown + KaTeX (mirrored from create-quiz) ────────────────── */
-
-  /* Direction helper for code blocks and math output */
+  /* ── Markdown + KaTeX (mirrored from create-quiz) ── */
   .ltr { direction: ltr; }
-
-  /* Headings */
-  .md-h1, .md-h2, .md-h3, .md-h4, .md-h5, .md-h6 {
-    margin: 0.6em 0 0.3em;
-    color: var(--text-primary);
-    line-height: 1.3;
-  }
-  .md-h1 { font-size: 1.6em;  border-bottom: 2px solid var(--border-color); padding-bottom: 4px; }
-  .md-h2 { font-size: 1.35em; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
+  .md-content, .question-text, .option-label, .feedback, .explanation-body, .formal-answer, .formal-answer-text { overflow-wrap: break-word; word-break: break-word; min-width: 0; }
+  .md-h1, .md-h2, .md-h3, .md-h4, .md-h5, .md-h6 { margin: 0.6em 0 0.3em; color: var(--color-text-primary); line-height: 1.3; }
+  .md-h1 { font-size: 1.6em; border-bottom: 2px solid var(--color-border); padding-bottom: 4px; }
+  .md-h2 { font-size: 1.35em; border-bottom: 1px solid var(--color-border); padding-bottom: 3px; }
   .md-h3 { font-size: 1.15em; }
   .md-h4 { font-size: 1.05em; }
   .md-h5 { font-size: 0.95em; }
-  .md-h6 { font-size: 0.9em;  opacity: 0.85; }
-
-  /* Horizontal rule */
-  .md-hr {
-    border: none;
-    border-top: 2px solid var(--border-color);
-    margin: 0.8em 0;
-  }
-
-  /* Blockquote */
-  .md-blockquote {
-    border-left: 4px solid var(--gradient-start);
-    margin: 0.5em 0;
-    padding: 8px 16px;
-    background: rgba(102, 126, 234, 0.07);
-    border-radius: 0 6px 6px 0;
-    color: var(--text-secondary);
-    font-style: italic;
-  }
-
-  /* Lists */
-  .md-list {
-    margin: 0.4em 0 0.4em 1.4em;
-    padding: 0;
-    color: var(--text-primary);
-  }
+  .md-h6 { font-size: 0.9em; opacity: 0.85; }
+  .md-hr { border: none; border-top: 2px solid var(--color-border); margin: 0.8em 0; }
+  .md-blockquote { border-right: 4px solid var(--color-primary); margin: 0.5em 0; padding: 8px 16px; background: var(--color-primary-light); border-radius: 0 6px 6px 0; color: var(--color-text-secondary); font-style: italic; }
+  .md-list { margin: 0.4em 0 0.4em 1.4em; padding: 0; color: var(--color-text-primary); }
   .md-list li { margin-bottom: 4px; line-height: 1.6; }
-
-  /* Inline link */
-  .md-link {
-    color: var(--gradient-start);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-
-  /* Inline image */
-  .md-img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 6px;
-    margin: 4px 0;
-    display: block;
-  }
-
-  /* KaTeX block math */
-  .math-block {
-    display: block;
-    overflow-x: auto;
-    padding: 10px 0;
-    text-align: center;
-    font-size: 1.05em;
-  }
-
-  /* KaTeX inline math */
+  .md-link { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
+  .md-img { max-width: 100%; height: auto; border-radius: 6px; margin: 4px 0; display: block; }
+  .math-block, .katex-display { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 10px 0; text-align: center; font-size: 1.05em; max-width: 100%; }
   .math-inline { display: inline; }
-
-  /* Fallback when KaTeX is unavailable */
-  .math-raw {
-    font-family: var(--font-mono);
-    font-size: 0.92em;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    padding: 1px 5px;
-    color: var(--text-primary);
+  .math-raw { font-family: var(--font-mono); font-size: 0.92em; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 4px; padding: 1px 5px; color: var(--color-text-primary); }
+  .inline-code { font-family: var(--font-mono); font-size: 0.88em; background: var(--color-background-secondary, rgba(99, 102, 241, 0.1)); border: 1px solid var(--color-border); border-radius: 5px; padding: 1px 6px; color: var(--color-primary, #6366f1); white-space: normal; word-break: break-all; }
+  [data-theme="dark"] .inline-code, [data-theme="dark-slate"] .inline-code { background: rgba(203, 166, 247, 0.15); color: #cba6f7; }
+  .code-block-wrapper { position: relative; margin: 14px 0; direction: ltr; border-radius: 12px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1)); overflow: hidden; }
+  .code-lang-label { position: absolute; top: 10px; left: 14px; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-secondary, #94a3b8); opacity: 0.7; pointer-events: none; user-select: none; }
+  .copy-code-btn { position: absolute; top: 8px; right: 10px; display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.72rem; font-weight: 600; line-height: 1; letter-spacing: 0.02em; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 2px 8px rgba(0, 0, 0, 0.14); color: var(--color-text-secondary, #94a3b8); transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease; opacity: 0; z-index: 2; }
+  .copy-code-btn .copy-label { font-family: "Inter", "Tajawal", sans-serif; }
+  .code-block-wrapper:hover .copy-code-btn { opacity: 1; }
+  .copy-code-btn:hover { background: rgba(255, 255, 255, 0.18); color: var(--color-text-primary, #1e1e2e); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 12px rgba(0, 0, 0, 0.18); transform: translateY(-1px); }
+  .copy-code-btn:active { transform: translateY(0); }
+  .copy-code-btn.copied { opacity: 1; background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: var(--color-success, #10b981); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 0 3px rgba(16, 185, 129, 0.12); }
+  .code-block { background: var(--color-background-secondary, #1a1a2e); border: none; border-radius: 12px; padding: 36px 16px 14px; margin: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.6; white-space: pre; text-align: left; }
+  .code-block code { background: none; padding: 0; border-radius: 0; font-size: inherit; color: var(--color-code, #e2e8f0); }
+  [data-theme="light"] .code-block-wrapper { background: rgba(0, 0, 0, 0.03); border-color: rgba(0, 0, 0, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08)); }
+  [data-theme="light"] .copy-code-btn { background: rgba(0, 0, 0, 0.06); border-color: rgba(0, 0, 0, 0.12); color: var(--color-text-secondary, #64748b); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 2px 6px rgba(0, 0, 0, 0.06); }
+  [data-theme="light"] .copy-code-btn:hover { background: rgba(0, 0, 0, 0.1); color: var(--color-text-primary, #0f172a); }
+  [data-theme="light"] .code-block { background: #f8f9fb; }
+  [data-theme="light"] .code-block code { color: #334155; }
+  [data-theme="dark"] .code-block code, [data-theme="dark-slate"] .code-block code { color: var(--color-code, #e2e8f0); }
+  .md-table-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 16px 0; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.07)); background-image: linear-gradient(to left, rgba(255, 255, 255, 0.06) 20%, transparent), linear-gradient(to right, rgba(255, 255, 255, 0.06) 20%, transparent), radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.12), transparent), radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.12), transparent); background-size: 40px 100%, 40px 100%, 12px 100%, 12px 100%; background-position: right, left, right, left; background-repeat: no-repeat; background-attachment: local, local, scroll, scroll; background-color: rgba(255, 255, 255, 0.06); }
+  .md-table { min-width: max-content; width: 100%; border-collapse: collapse; font-size: 0.9rem; line-height: 1.55; direction: ltr; text-align: left; }
+  .md-table thead tr { background: rgba(99, 102, 241, 0.1); border-bottom: 2px solid rgba(99, 102, 241, 0.22); }
+  .md-table th { padding: 11px 16px; font-weight: 700; color: var(--color-text-primary); white-space: nowrap; letter-spacing: 0.01em; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  .md-table td { padding: 10px 16px; vertical-align: top; white-space: normal; min-width: 90px; overflow-wrap: break-word; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+  .md-table tbody tr:nth-child(even) { background: var(--color-background-secondary, rgba(0, 0, 0, 0.025)); }
+  .md-table tbody tr { transition: background 0.14s ease, box-shadow 0.14s ease; }
+  .md-table tbody tr:hover { background: rgba(99, 102, 241, 0.07); box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.12); }
+  .md-table tbody tr:last-child td { border-bottom: none; }
+  [data-theme="light"] .md-table-wrapper { background: rgba(0, 0, 0, 0.02); border-color: rgba(0, 0, 0, 0.08); background-image: linear-gradient(to left, rgba(0, 0, 0, 0.02) 20%, transparent), linear-gradient(to right, rgba(0, 0, 0, 0.02) 20%, transparent), radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.08), transparent), radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.08), transparent); background-size: 40px 100%, 40px 100%, 12px 100%, 12px 100%; background-position: right, left, right, left; background-repeat: no-repeat; background-attachment: local, local, scroll, scroll; background-color: rgba(0, 0, 0, 0.02); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06)); }
+  [data-theme="light"] .md-table thead tr { background: rgba(99, 102, 241, 0.07); border-bottom-color: rgba(99, 102, 241, 0.18); }
+  [data-theme="light"] .md-table td { border-bottom-color: rgba(0, 0, 0, 0.05); }
+  [data-theme="light"] .md-table tbody tr:nth-child(even) { background: rgba(0, 0, 0, 0.025); }
+  [data-theme="light"] .md-table tbody tr:hover { background: rgba(99, 102, 241, 0.05); box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1); }
+  [data-theme="dark-slate"] .md-table thead tr { background: rgba(99, 102, 241, 0.14); border-bottom-color: rgba(99, 102, 241, 0.28); }
+  [data-theme="dark"] .md-table th, [data-theme="dark-slate"] .md-table th { background: rgba(99, 102, 241, 0.14); }
+  [data-theme="dark"] .md-table tbody tr:nth-child(even), [data-theme="dark-slate"] .md-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.04); }
+  [data-theme="dark"] .md-table tbody tr:hover, [data-theme="dark-slate"] .md-table tbody tr:hover { background: rgba(99, 102, 241, 0.09); }
+  [data-theme="dark"] .md-table-wrapper, [data-theme="dark-slate"] .md-table-wrapper { background: linear-gradient(to left, var(--color-background) 20%, transparent) right, linear-gradient(to right, var(--color-background) 20%, transparent) left, radial-gradient(farthest-side at 100% 50%, rgba(255, 255, 255, 0.07), transparent) right, radial-gradient(farthest-side at 0% 50%, rgba(255, 255, 255, 0.07), transparent) left; background-color: var(--color-background); background-repeat: no-repeat; background-size: 40px 100%, 40px 100%, 10px 100%, 10px 100%; background-attachment: local, local, scroll, scroll; }
+  @media (max-width: 480px) {
+    .copy-code-btn { opacity: 1; }
+    .code-block { font-size: 0.8rem; padding: 34px 12px 12px; }
+    .md-table th, .md-table td { padding: 8px 12px; font-size: 0.85rem; }
   }
 
   /* ── Print ───────────────────────────────────────────────────── */
@@ -1547,8 +1542,21 @@ export async function exportToQuiz(config, questions) {
   const questions = ${JSON.stringify(processedQuestions)};
   
   // ── Markdown + KaTeX integration (mirrored from create-quiz) ──
-  // All four functions are serialised from module scope via .toString() so the
-  // generated file gets clean, self-contained source with no build step needed.
+  // All functions are serialised from module scope via .toString() so the
+  // generated file is self-contained with no build step needed.
+  //
+  // IMPORTANT: _renderMarkdownCore references ICON_COPY and ICON_CHECK at
+  // module scope in markdown.js.  Those names are not captured by .toString(),
+  // so we must declare them here, before the serialised function bodies, so the
+  // non-module <script> context can resolve them without a ReferenceError.
+  // (A ReferenceError in step 2 — fenced code blocks — would cause renderMarkdown
+  // to silently fall back to plain text for every question that contains a code
+  // block, while math still works because it is processed in steps 1 and 3.)
+  const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
+  const ICON_CHECK = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>\`;
+
+  ${normalizeLiteralNewlines.toString()}
+
   ${escHtml.toString()}
   
   ${applyInline.toString()}
@@ -1854,7 +1862,7 @@ export async function exportToQuiz(config, questions) {
           </div>
           <div class="model-answer" id="modelAns\${i}">
             <strong>✓ Model Answer:</strong><br>
-            \${renderMarkdown(q.answer)}
+            \${renderMarkdown(normalizeLiteralNewlines(q.answer))}
           </div>
           <div class="essay-score" id="essayScore\${i}"></div>
         \`;
@@ -1871,7 +1879,7 @@ export async function exportToQuiz(config, questions) {
                 aria-label="Option \${letter}: \${this.escapeHTML(opt)}"
               >
                 <span class="option-letter">\${letter}</span>
-                <span>\${renderMarkdown(opt)}</span>
+                <span>\${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
               </button>
             \`;
           }).join("")
@@ -1880,7 +1888,7 @@ export async function exportToQuiz(config, questions) {
   
       const explanationHtml = q.explanation ? 
         \`<div class="explanation" id="exp\${i}">
-          <strong>💡 Explanation:</strong> \${renderMarkdown(q.explanation)}
+          <strong>💡 Explanation:</strong> \${renderMarkdown(normalizeLiteralNewlines(q.explanation))}
         </div>\` : "";
   
       return \`
@@ -1896,7 +1904,7 @@ export async function exportToQuiz(config, questions) {
           </div>
           
           \${this.renderQuestionImage(q.image, i)}
-          <div class="question-text">\${renderMarkdown(q.q)}</div>
+          <div class="question-text">\${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
           \${optionsHtml}
           \${explanationHtml}
         </div>
@@ -2505,253 +2513,3 @@ const isLocalPath = (url) => {
   // Check if it lacks a protocol (http://, https://, data:)
   return !/^(https?:|data:)/i.test(url);
 };
-
-// ── Markdown + KaTeX integration (mirrored from create-quiz) ──────────────────
-// These four functions are defined at module scope so that Function.prototype
-// .toString() produces clean, valid JS source that can be serialised directly
-// into the generated <script> block.  Null-byte / SOH escape sequences survive
-// .toString() because the method returns the literal source text, not the
-// runtime value — so \x00 in source serialises as the four-character sequence
-// \x00 and is valid JS when re-parsed in the downloaded file's <script>.
-
-function escHtml(s) {
-  return (s || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function applyInline(s) {
-  // Inline math $...$ — stash before other replacements
-  const iMathStash = [];
-  s = s.replace(/\$([^\$\n]+)\$/g, (_, m) => {
-    const idx = iMathStash.length;
-    // ── Fix: decode HTML entities before KaTeX renders ──────────────────────
-    // applyInline() always receives an already-escHtml()-encoded string.
-    // Characters like < become &lt; BEFORE this regex runs, so KaTeX would
-    // receive "&lt;" instead of "<" and render the expression in red (error).
-    // Decoding here restores the original LaTeX source that KaTeX expects.
-    const decoded = m
-      .trim()
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-    if (typeof window.katex !== "undefined") {
-      try {
-        iMathStash.push(
-          window.katex.renderToString(decoded, {
-            displayMode: false,
-            throwOnError: false,
-          }),
-        );
-      } catch {
-        iMathStash.push(
-          `<span class="math-inline math-raw">$${escHtml(m)}$</span>`,
-        );
-      }
-    } else {
-      iMathStash.push(
-        `<span class="math-inline math-raw">$${escHtml(m)}$</span>`,
-      );
-    }
-    return `\x01IM${idx}\x01`;
-  });
-
-  // Inline code
-  s = s.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
-  // Bold + italic combined
-  s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
-  // Bold: **...** or __...__
-  s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
-  s = s.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
-  // Italic: *...* or _..._
-  s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
-  s = s.replace(/_([^_\n]+)_/g, "<em>$1</em>");
-  // Strikethrough
-  s = s.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
-  // Links
-  s = s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1</a>',
-  );
-  // Images
-  s = s.replace(
-    /!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,
-    '<img src="$2" alt="$1" class="md-img" loading="lazy">',
-  );
-
-  // Restore inline math
-  s = s.replace(/\x01IM(\d+)\x01/g, (_, i) => iMathStash[parseInt(i)]);
-  return s;
-}
-
-function renderMarkdown(str) {
-  if (!str) return "";
-  try {
-    return _renderMarkdownCore(str);
-  } catch (err) {
-    console.error("renderMarkdown error:", err);
-    return escHtml(str).replace(/\n/g, "<br>");
-  }
-}
-
-function _renderMarkdownCore(str) {
-  const stash = [];
-  const stashPush = (html) => {
-    const idx = stash.length;
-    stash.push(html);
-    return `\x00ST${idx}\x00`;
-  };
-
-  // ── Fix 0: Auto-wrap bare LaTeX lines ──────────────────────────────────────
-  // Some quiz data stores LaTeX without $ delimiters (e.g. "x = \frac{...}").
-  // Detect lines that contain LaTeX commands but no $ or ` (not already
-  // math/code), and wrap them in $...$ so step 1 can render them with KaTeX.
-  const BARE_LATEX_CMD_RE =
-    /\\(?:frac|sqrt|sum|int|prod|lim|pm|mp|cdot|times|div|leq|geq|neq|approx|equiv|infty|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|nu|pi|sigma|phi|psi|omega|vec|hat|bar|tilde|dot|binom|mathbb|mathbf|mathrm|mathit)\b/;
-  if (BARE_LATEX_CMD_RE.test(str)) {
-    str = str.replace(/^(?![^\n]*[$`])([^\n]+)$/gm, (line) =>
-      BARE_LATEX_CMD_RE.test(line) ? `$${line.trim()}$` : line,
-    );
-  }
-
-  // 1. Block math  $$...$$
-  str = str.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
-    let rendered;
-    if (typeof window.katex !== "undefined") {
-      try {
-        rendered = window.katex.renderToString(m.trim(), {
-          displayMode: true,
-          throwOnError: false,
-        });
-      } catch {
-        rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
-      }
-    } else {
-      rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
-    }
-    return stashPush(`<div class="math-block">${rendered}</div>`);
-  });
-
-  // 2. Fenced code blocks  ```lang\n...\n```
-  str = str.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    const safe = escHtml(code.trim());
-    const cls = `code-block ltr${lang ? " language-" + lang : ""}`;
-    return stashPush(`<pre class="${cls}"><code>${safe}</code></pre>`);
-  });
-
-  // 3. Line-by-line block processing
-  const rawLines = str.split("\n");
-  const outParts = [];
-  let listBuf = [];
-  let listTag = null;
-
-  const flushList = () => {
-    if (listBuf.length) {
-      outParts.push(
-        `<${listTag} class="md-list">${listBuf.join("")}</${listTag}>`,
-      );
-      listBuf = [];
-      listTag = null;
-    }
-  };
-
-  const escapeAroundTokens = (line) => {
-    const TOKEN_RE = /(\x00ST\d+\x00)/g;
-    const parts = line.split(TOKEN_RE);
-    return parts
-      .map((part, i) => (i % 2 === 1 ? part : escHtml(part)))
-      .join("");
-  };
-
-  for (const rawLine of rawLines) {
-    if (/\x00ST\d+\x00/.test(rawLine)) {
-      flushList();
-      outParts.push(escapeAroundTokens(rawLine));
-      continue;
-    }
-    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(rawLine)) {
-      flushList();
-      outParts.push('<hr class="md-hr">');
-      continue;
-    }
-
-    const hMatch = rawLine.match(/^(#{1,6})\s+(.+)$/);
-    if (hMatch) {
-      flushList();
-      const lvl = hMatch[1].length;
-      outParts.push(
-        `<h${lvl} class="md-h${lvl}">${applyInline(escHtml(hMatch[2]))}</h${lvl}>`,
-      );
-      continue;
-    }
-
-    const bqMatch = rawLine.match(/^>\s*(.*)$/);
-    if (bqMatch) {
-      flushList();
-      outParts.push(
-        `<blockquote class="md-blockquote">${applyInline(escHtml(bqMatch[1]))}</blockquote>`,
-      );
-      continue;
-    }
-
-    const ulMatch = rawLine.match(/^[-*+]\s+(.+)$/);
-    if (ulMatch) {
-      if (listTag === "ol") flushList();
-      listTag = "ul";
-      listBuf.push(`<li>${applyInline(escHtml(ulMatch[1]))}</li>`);
-      continue;
-    }
-
-    const olMatch = rawLine.match(/^\d+\.\s+(.+)$/);
-    if (olMatch) {
-      if (listTag === "ul") flushList();
-      listTag = "ol";
-      listBuf.push(`<li>${applyInline(escHtml(olMatch[1]))}</li>`);
-      continue;
-    }
-
-    // Empty line → paragraph break
-    // ── Fix: push "<br>" instead of "" so blank lines produce visible output ──
-    // "" was silently swallowed: isBlock("") = true → join step added no <br>
-    // around it → the two surrounding content pieces were concatenated with
-    // nothing between them. "<br>" produces an actual line break and is also
-    // treated as a block-separator (see isBlock below) so no extra <br> is
-    // added around it.
-    if (rawLine.trim() === "") {
-      flushList();
-      outParts.push("<br>");
-      continue;
-    }
-
-    // Regular text line
-    flushList();
-    outParts.push(applyInline(escHtml(rawLine)));
-  }
-
-  flushList();
-
-  // 4. Join — insert <br> only between consecutive inline segments
-  const BLOCK_START = /^<(h[1-6]|ul|ol|blockquote|hr|div|pre|p)[\s>\/]/;
-  const BLOCK_END = /^<\/(h[1-6]|ul|ol|blockquote|div|pre|p)>/;
-  const isBlock = (s) =>
-    s === undefined ||
-    s === "" ||
-    s === "<br>" ||
-    BLOCK_START.test(s) ||
-    BLOCK_END.test(s);
-
-  let result = "";
-  for (let i = 0; i < outParts.length; i++) {
-    result += outParts[i];
-    if (!isBlock(outParts[i]) && !isBlock(outParts[i + 1])) result += "<br>";
-  }
-
-  // 5. Restore stashed blocks
-  result = result.replace(/\x00ST(\d+)\x00/g, (_, i) => stash[parseInt(i)]);
-
-  return result;
-}
