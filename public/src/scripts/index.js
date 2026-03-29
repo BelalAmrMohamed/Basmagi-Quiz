@@ -39,7 +39,7 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 import { initPWA } from "./pwa-manager.js";
 
 // AI Prompt for converting files to JSON quiz format
-const AI_PROMPT_TEXT = `Convert any given quiz PDF, Word, PPTX, or text to a JSON array that matches the platform's JSON quiz format. And find the correct answers to any unsolved question.
+const AI_PROMPT_TEXT = `Convert any given quiz PDF, Word, PPTX, or text to a JSON array that matches the platform's JSON quiz format. And find the correct answers to any unsolved question. And don't rephrase questions.
 
 The platform supports full markdown, tables, code blocks, math notations (LaTeX), etc.
 It also supports essay or MCQ questions.
