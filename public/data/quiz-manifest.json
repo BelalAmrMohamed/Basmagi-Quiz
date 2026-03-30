@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T15:28:14.168Z",
+  "generatedAt": "2026-03-30T16:53:07.240Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1270,6 +1270,39 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "NOQQR6BP",
+          "title": "2020 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2020 Mid.json",
+          "questionCount": 17,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 6:47:21 PM"
+        },
+        {
+          "id": "PZFZ3EXJ",
+          "title": "2022 - 2023 Final - Page 1",
+          "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2022 - 2023 Final - Page 1.json",
+          "questionCount": 23,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 6:11:21 PM"
+        },
+        {
+          "id": "MGRWHTPZ",
+          "title": "2024 - 2025 Final",
+          "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2024 - 2025 Final.json",
+          "questionCount": 39,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 6:19:31 PM"
         }
       ]
     },
