@@ -831,8 +831,8 @@ function buildVerticalQuestionCard(q, idx) {
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
-        <div class="${feedbackClass}">${feedbackText}</div>
         ${isLocked ? `<div class="formal-answer"><strong>Formal Answer:</strong><div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>` : ""}
+        <div class="${feedbackClass}">${feedbackText}</div>
       </div>
     `;
   }
@@ -996,7 +996,6 @@ function renderQuestion() {
                 }>
           Check Answer
         </button>
-        <div class="${feedbackClass}">${feedbackText}</div>
         ${
           isLocked
             ? `
@@ -1007,6 +1006,7 @@ function renderQuestion() {
         `
             : ""
         }
+        <div class="${feedbackClass}">${feedbackText}</div>
       </div>
     `;
   } else {
