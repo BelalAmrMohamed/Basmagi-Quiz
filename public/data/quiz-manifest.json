@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T17:32:20.211Z",
+  "generatedAt": "2026-03-30T19:03:24.492Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1453,13 +1453,66 @@
         {
           "id": "AI7Y6NOP",
           "title": "Lecture 1 Quiz",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 quiz.json",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 Quiz.json",
           "questionCount": 32,
           "questionTypes": [
             "MCQ"
           ],
           "source": "https://drive.google.com/file/d/1f5WbcG8O8Vmd9DC8esdnsYUuMpTerECM/view?usp=drive_link",
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "ZRJQMLL7",
+          "title": "Lecture 2 Quiz",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 2 Quiz.json",
+          "questionCount": 11,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 8:32:38 PM"
+        },
+        {
+          "id": "5ONYHYGP",
+          "title": "Lecture 3 - Quiz 1",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 3 - Quiz 1.json",
+          "questionCount": 5,
+          "questionTypes": [
+            "Essay",
+            "True/False"
+          ],
+          "createdAt": "3/30/2026, 8:55:54 PM"
+        },
+        {
+          "id": "SVVBLRXS",
+          "title": "Lecture 3 - Quiz 2",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 3 - Quiz 2.json",
+          "questionCount": 5,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "3/30/2026, 8:56:12 PM"
+        },
+        {
+          "id": "BUVBJFRQ",
+          "title": "Lecture 4 – Quiz 1",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 4 – Quiz 1.json",
+          "questionCount": 12,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 9:02:13 PM"
+        },
+        {
+          "id": "LAKV3WR5",
+          "title": "Lecture 4 – Quiz 2",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 4 – Quiz 2.json",
+          "questionCount": 13,
+          "questionTypes": [
+            "Essay",
+            "True/False"
+          ],
+          "createdAt": "3/30/2026, 9:02:30 PM"
         },
         {
           "id": "6W7GREF6",

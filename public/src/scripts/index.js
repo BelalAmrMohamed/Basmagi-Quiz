@@ -1336,26 +1336,20 @@ function openInlineCreateQuizModal() {
     </div>
     <div class="form-group" style="margin-bottom: 24px;">
       <label for="inlineQuizContent" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-text-primary); font-size: 0.9rem;">محتوى الإمتحان</label>
-      <textarea id="inlineQuizContent" rows="8" style="width: 100%; padding: 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; line-height: 1.6; transition: all 0.2s; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';">
-Title: Advanced C++ Stress Test
-Description: Tests multi-line questions, LaTeX math, Markdown formatting, code snippets in options, and all three question types.
-Source: https://cppreference.com
+<textarea id="inlineQuizContent" rows="8" style="width: 100%; padding: 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; line-height: 1.6; transition: all 0.2s; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" placeholder="1. Consider the following time complexity formula for a nested loop algorithm:
 
+$$T(n) = \\sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\\\frac{n(n+1)}{2}$$
 
-1. Consider the following time complexity formula for a nested loop algorithm:
+Given $n = 8$, which value correctly represents the **total number of iterations**?
 
-   $$T(n) = \sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
+A. 64
+B. 36
+C. 28
+D. 72
 
-   Given $n = 8$, which value correctly represents the **total number of iterations**?
+Correct: B. 36
 
-   A. 64
-   B. 36
-   C. 28
-   D. 72
-
-   Correct: B. 36
-
-   Explanation: The correct answer is **d. Data Link**.
+Explanation: The correct answer is **d. Data Link**.
 
 From Lec1, the PDU hierarchy is:
 | Loop Type | Formula | Result for $n=8$ |
@@ -1364,15 +1358,14 @@ From Lec1, the PDU hierarchy is:
 | Full double loop | $n^2$ | 64 |
 
 
-
 2. In C++, a \`const\` member function can modify a \`mutable\` data member.
 
-   A. True
-   B. False
+A. True
+B. False
 
-   Correct: A. True
+Correct: A. True
 
-   Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
+Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
 This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
 \`\`\`cpp
    class Counter {
@@ -1397,12 +1390,7 @@ T maxOf(T a, T b) {
 }
 \`\`\`
 
-
-   Explanation: The \`typename T\` template parameter is deduced at the call site,
-so \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and
-\`maxOf(std::string("apple"), std::string("banana"))\` for \`std::string\` —
-as long as \`operator>\` is defined for the type.</textarea>
-    </div>
+Explanation: The \`typename T\` template parameter is deduced at the call site, so \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and \`maxOf(std::string(\&quot;apple\&quot;), std::string(\&quot;banana\&quot;))\` for \`std::string\` — as long as \`operator\&gt;\` is defined for the type." onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';"></textarea>    </div>
     <div class="profile-actions" style="display: flex; gap: 12px; justify-content: flex-end; align-items: center; flex-wrap: wrap;">
       <button type="button" id="inlineQuizImport" style="padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--color-border); background: var(--color-background-secondary); color: var(--color-text-primary); display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; font-weight: 600; font-size: 0.95rem; font-family: inherit;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
