@@ -455,7 +455,7 @@ window.duplicateQuestion = function (questionId) {
   const duplicatedQuestion = {
     ...question,
     id: newId,
-    q: question.q + " (نسخة)",
+    q: question.q,
   };
 
   const index = quizData.questions.findIndex((q) => q.id === questionId);

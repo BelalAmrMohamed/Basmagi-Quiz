@@ -1,10 +1,10 @@
 {
   "meta": {
-    "title": "2025 Mid",
-    "createdAt": "3/4/2026, 9:00:13 PM",
-    "id": "UGK3N3C5",
-    "path": "quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 Mid.json",
-    "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link"
+    "id": "ORGPP7LI",
+    "title": "Mid 2025",
+    "createdAt": "3/30/2026, 4:19:27 PM",
+    "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link",
+    "path": "quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 Mid.json"
   },
   "stats": {
     "questionCount": 16,
@@ -14,42 +14,40 @@
   },
   "questions": [
     {
-      "q": "1. If `V(x) = 3`, then `V(x/3 - 3)` = ...",
+      "q": "If $V(X) = 3$, then $V(\\frac{X}{3} - 3)$ is:",
       "options": [
-        "1/3",
+        "$\\frac{1}{3}$",
         "-2",
         "1",
-        "1/9"
+        "$\\frac{1}{9}$"
       ],
       "correct": 0,
-      "explanation": "V(aX + b) = a² V(X). So V(x/3 - 3) = (1/3)² × V(x) = (1/9) × 3 = 3/9 = 1/3."
+      "explanation": "Using the property of variance $V(aX + b) = a^2 V(X)$, we have $V(\\frac{1}{3}X - 3) = (\\frac{1}{3})^2 V(X) = \\frac{1}{9} \\times 3 = \\frac{1}{3}$."
     },
     {
-      "q": "2. For a continuous random variable X with a probability density function\n```f(x) = k x³ ,  0 ≤ x ≤ 2\n       0     ,  o.w.```\nthen the value of k is",
+      "q": "For a continuous random variable $X$ with a probability density function $f(x) = \\begin{cases} k x^3, & 0 \\le x \\le 2 \\\\ 0, & o.w. \\end{cases}$, then the value of $k$ is:",
       "options": [
         "16",
-        "1/4",
+        "$\\frac{1}{4}$",
         "4",
-        "1/16"
+        "2"
       ],
       "correct": 1,
-      "image": "./assets/quiz-media/mid-2025.jpg",
-      "explanation": "For f(x) to be a valid PDF, ∫[0 to 2] kx³ dx = 1.\nk × [x⁴/4] from 0 to 2 = k × 16/4 = 4k = 1, so k = 1/4."
+      "explanation": "To be a valid PDF, $\\int_{-\\infty}^{\\infty} f(x) dx = 1$. Thus, $\\int_0^2 k x^3 dx = k [\\frac{x^4}{4}]_0^2 = k (\\frac{16}{4}) = 4k$. Setting $4k = 1$ gives $k = \\frac{1}{4}$."
     },
     {
-      "q": "3. The value of k when the probability mass function is given by:\n```P(x) = x/k ,  x = 1, 2, 3, 4\n        0   ,  o.w.```",
+      "q": "The value of $k$ when the probability mass function is given by $P(x) = \\begin{cases} \\frac{x}{k}, & x = 1, 2, 3, 4 \\\\ 0, & o.w. \\end{cases}$ is:",
       "options": [
         "15",
         "10",
-        "1/10",
-        "1/15"
+        "$\\frac{1}{10}$",
+        "$\\frac{1}{15}$"
       ],
       "correct": 1,
-      "image": "./assets/quiz-media/mid-2025-2.jpg",
-      "explanation": "ΣP(x) = 1 ⇒ (1+2+3+4)/k = 1 ⇒ 10/k = 1 ⇒ k = 10."
+      "explanation": "The sum of probabilities must equal 1: $\\sum_{x=1}^{4} \\frac{x}{k} = \\frac{1+2+3+4}{k} = \\frac{10}{k}$. Setting $\\frac{10}{k} = 1$ gives $k = 10$."
     },
     {
-      "q": "4. A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.\n\ni) If a relay is selected at random from the output of the company, what is the probability that it is defective?",
+      "q": "A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively. \n\n\n- $i)$ If a relay is selected at random from the output of the company, what is the probability that it is defective?",
       "options": [
         "0.027",
         "0.05",
@@ -57,120 +55,120 @@
         "None of them"
       ],
       "correct": 0,
-      "explanation": "Using the Total Probability Theorem:\nP(D) = P(D|B₁)P(B₁) + P(D|B₂)P(B₂) + P(D|B₃)P(B₃)\n= (0.02)(0.5) + (0.05)(0.3) + (0.01)(0.2)\n= 0.010 + 0.015 + 0.002\n= 0.027"
+      "explanation": "Using the Law of Total Probability: $P(D) = P(B_1)P(D|B_1) + P(B_2)P(D|B_2) + P(B_3)P(D|B_3) = (0.50 \\times 0.02) + (0.30 \\times 0.05) + (0.20 \\times 0.01) = 0.01 + 0.015 + 0.002 = 0.027$."
     },
     {
-      "q": "4. A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.\n\nii) If a relay selected at random is found to be defective, what is the probability that it was manufactured by plant 2?",
+      "q": "A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.  \n\n\n- $ii)$ If a relay selected at random is found to be defective, what is the probability that it was manufactured by plant 2?",
       "options": [
         "0.65",
         "0.22",
-        "0.88",
+        "0.5",
         "None of them"
       ],
       "correct": 3,
-      "explanation": "Using Bayes' Theorem:\nP(B₂|D) = P(D|B₂) × P(B₂) / P(D)\n= (0.05 × 0.3) / 0.027\n= 0.015 / 0.027\n= 5/9 ≈ 0.5556\n\nThis value does not match any of options a, b, or c, so the answer is: None of them."
+      "explanation": "Using Bayes' Theorem: $P(B_2|D) = \\frac{P(B_2)P(D|B_2)}{P(D)} = \\frac{0.30 \\times 0.05}{0.027} = \\frac{0.015}{0.027} \\approx 0.5556$. Since 0.5556 is not an option, the answer is 'None of them'."
     },
     {
-      "q": "5. If `A ⊂ B`, then `p(Aᶜ | B)` = ...",
+      "q": "If $A \\subset B$, then $P(A^c | B) = \\dots$",
       "options": [
-        "1 - p(B|Aᶜ)",
-        "P(A)",
-        "1 - P(A)/P(B)",
+        "$1 - P(B | A^c)$",
+        "$P(A)$",
+        "$1 - \\frac{P(A)}{P(B)}$",
         "None of them"
       ],
       "correct": 2,
-      "explanation": "If A ⊂ B, then Aᶜ ∩ B = B \\ A, so P(Aᶜ ∩ B) = P(B) - P(A).\nP(Aᶜ|B) = P(Aᶜ ∩ B) / P(B) = [P(B) - P(A)] / P(B) = 1 - P(A)/P(B)."
+      "explanation": "Since $A \\subset B$, $P(A^c \\cap B) = P(B) - P(A \\cap B) = P(B) - P(A)$. Therefore, $P(A^c | B) = \\frac{P(A^c \\cap B)}{P(B)} = \\frac{P(B) - P(A)}{P(B)} = 1 - \\frac{P(A)}{P(B)}$."
     },
     {
-      "q": "6. If `p(A) = 0.5`, and `p(B|A) = 1/3`, then `p(Bᶜ|A)` = ...",
+      "q": "If $P(A) = 0.5$ and $P(B | A) = 1/3$ then $P(B^c | A) = \\dots$",
       "options": [
-        "1/3",
-        "2/3",
-        "0.5",
+        "$1/3$",
+        "$2/3$",
+        "$1/2$",
         "None of them"
       ],
       "correct": 1,
-      "explanation": "P(Bᶜ|A) = 1 - P(B|A) = 1 - 1/3 = 2/3."
+      "explanation": "The complement rule for conditional probability states that $P(B^c | A) = 1 - P(B | A)$. Thus, $1 - 1/3 = 2/3$."
     },
     {
-      "q": "7. If `A = B`, Then `P(A|B)` = ...",
+      "q": "If $A = B$ then $P(A | B) = \\dots$",
       "options": [
-        "P(B|A)",
-        "P(A)",
-        "P(B)",
+        "$P(B | A)$",
+        "$\\frac{P(B)}{P(A)}$",
+        "$P(B)$",
         "None of them"
       ],
-      "correct": 1,
-      "explanation": "If A = B, then P(A|B) = P(A ∩ B)/P(B) = P(A)/P(A) = 1. But also P(A) = P(B) so P(A|B) = P(A∩B)/P(B) = P(A)/P(B) = P(B)/P(B) = 1. More directly: since A = B, P(A|B) = P(B|A) = P(A)/P(B) = 1. Since both options P(B|A) and P(A) are circled/marked on the exam, the accepted answer is P(A) (= P(B) = 1 in this case)."
+      "correct": 0,
+      "explanation": "If $A = B$, then $P(A | B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{P(B)}{P(B)} = 1$. Similarly, $P(B | A) = \\frac{P(B \\cap A)}{P(A)} = \\frac{P(A)}{P(A)} = 1$."
     },
     {
-      "q": "8. If the knowledge that an event A has occurred implies that a second event B cannot occur, the events A and B are said to be",
+      "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ cannot occur, the events $A$ and $B$ are said to be:",
       "options": [
         "Independent",
         "Mutually exclusive",
-        "A ⊂ B",
-        "B ⊂ A"
+        "$A \\subset B$",
+        "$B \\subset A$"
       ],
       "correct": 1,
-      "explanation": "If A occurring means B cannot occur, then A ∩ B = ∅, which is the definition of mutually exclusive events."
+      "explanation": "Mutually exclusive events are those that cannot happen at the same time ($A \\cap B = \\emptyset$). If $A$ occurring implies $B$ cannot occur, they are mutually exclusive."
     },
     {
-      "q": "9. If A and B be independent events in a sample space S, then which of the following statement(s) are true",
+      "q": "If $A$ and $B$ be independent events in a sample space $S$, then which of the following statement(s) are true:",
       "options": [
-        "A and Bᶜ are independent",
-        "B and Aᶜ are independent",
-        "Aᶜ and Bᶜ are independent",
+        "$A$ and $B^c$ are independent",
+        "$B$ and $A^c$ are independent",
+        "$A^c$ and $B^c$ are independent",
         "All of preceding"
       ],
       "correct": 3,
-      "explanation": "If A and B are independent, then all pairs involving their complements are also independent: A & Bᶜ, Aᶜ & B, and Aᶜ & Bᶜ are all independent pairs."
+      "explanation": "If two events are independent, their complements are also independent of the original events and each other."
     },
     {
-      "q": "10. A code consists of a digit chosen from 0 to 5 followed by a letter of the alphabet.\nWhat is the probability the code is 5Z?",
+      "q": "A code consists of a digit chosen from 0 to 5 followed by a letter of the alphabet. What is the probability the code is 5Z?",
       "options": [
-        "1/260",
-        "1/156",
-        "1/182",
+        "$\\frac{1}{260}$",
+        "$\\frac{1}{156}$",
+        "$\\frac{1}{182}$",
         "None of them"
       ],
       "correct": 1,
-      "explanation": "Digits from 0 to 5: 6 possible digits. Letters of the alphabet: 26 possible letters.\nTotal codes = 6 × 26 = 156.\nP(code is 5Z) = 1/156."
+      "explanation": "There are 6 possible digits (0, 1, 2, 3, 4, 5) and 26 possible letters. The probability of picking the digit 5 is $1/6$ and the letter Z is $1/26$. $P(5Z) = \\frac{1}{6} \\times \\frac{1}{26} = \\frac{1}{156}$."
     },
     {
-      "q": "11. If `A` and `B` are mutually exclusive events, then `p(B|A)` = ...",
+      "q": "If $A$ and $B$ are mutually exclusive events, then $P(B | A) = \\dots$",
       "options": [
-        "1 - P(A)",
-        "P(B)",
-        "P(A)",
-        "0"
-      ],
-      "correct": 3,
-      "explanation": "If A and B are mutually exclusive, A ∩ B = ∅, so P(B|A) = P(A ∩ B)/P(A) = 0/P(A) = 0."
-    },
-    {
-      "q": "12. If `A` and `B` are independent events, Then `P(A|B)` = ...",
-      "options": [
-        "P(B|A)",
-        "P(A)",
-        "P(B)",
+        "$1 - P(A)$",
+        "$P(B)$",
+        "0",
         "None of them"
       ],
-      "correct": 1,
-      "explanation": "If A and B are independent, P(A ∩ B) = P(A)P(B), so P(A|B) = P(A ∩ B)/P(B) = P(A)P(B)/P(B) = P(A)."
+      "correct": 2,
+      "explanation": "For mutually exclusive events, $A \\cap B = \\emptyset$, so $P(A \\cap B) = 0$. Therefore, $P(B | A) = \\frac{P(A \\cap B)}{P(A)} = 0$."
     },
     {
-      "q": "13. The bag contains 5 red marbles, 4 green marbles and 1 blue marble. A marble is chosen at random from the bag and not replaced; then a second marble is chosen. What is the probability both marbles are green?",
+      "q": "If $A$ and $B$ are independent events, then $P(A | B) = \\dots$",
       "options": [
-        "2/15",
-        "1/4",
+        "$P(B | A)$",
+        "$P(B)$",
+        "$P(A)$",
+        "None of them"
+      ],
+      "correct": 2,
+      "explanation": "Independence means that the occurrence of one event does not affect the probability of the other. Thus, $P(A | B) = P(A)$."
+    },
+    {
+      "q": "The bag contains 5 red marbles, 4 green marbles and 1 blue marble. A marble is chosen at random from the bag and not replaced; then a second marble is chosen. What is the probability both marbles are green?",
+      "options": [
+        "$2/15$",
+        "$1/4$",
         "0.5",
-        "4/10"
+        "$4/10$"
       ],
       "correct": 0,
-      "explanation": "P(both green) = P(1st green) × P(2nd green | 1st green)\n= (4/10) × (3/9)\n= 12/90\n= 2/15."
+      "explanation": "Probability of first green is $4/10$. Since it's not replaced, there are 3 green left out of 9 total. Probability of second green is $3/9$. $P(G_1 \\cap G_2) = \\frac{4}{10} \\times \\frac{3}{9} = \\frac{12}{90} = \\frac{2}{15}$."
     },
     {
-      "q": "14. In Exton School, 60% of the boys play baseball and 24% of the boys play baseball and football. What percent of those that play baseball also play football?",
+      "q": "In Exton School, 60% of the boys play baseball and 24% of the boys play baseball and football. What percent of those that play baseball also play football?",
       "options": [
         "0.4",
         "0.6",
@@ -178,18 +176,18 @@
         "4"
       ],
       "correct": 0,
-      "explanation": "P(football | baseball) = P(baseball ∩ football) / P(baseball) = 0.24 / 0.60 = 0.4."
+      "explanation": "Let $B$ be baseball and $F$ be football. $P(B) = 0.60$ and $P(B \\cap F) = 0.24$. We want $P(F | B) = \\frac{P(B \\cap F)}{P(B)} = \\frac{0.24}{0.60} = 0.4$ (or 40%)."
     },
     {
-      "q": "15. If `B ⊂ A`, then `p(A|B)` = ...",
+      "q": "If $B \\subset A$ then $P(A | B) = \\dots$",
       "options": [
         "1",
-        "P(A)",
-        "P(A)/P(B)",
+        "$P(A)$",
+        "$\\frac{P(A)}{P(B)}$",
         "0"
       ],
       "correct": 0,
-      "explanation": "If B ⊂ A, then every outcome in B is also in A, so A ∩ B = B.\nP(A|B) = P(A ∩ B)/P(B) = P(B)/P(B) = 1."
+      "explanation": "If $B$ is a subset of $A$, then $A \\cap B = B$. Therefore, $P(A | B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{P(B)}{P(B)} = 1$."
     }
   ]
 }

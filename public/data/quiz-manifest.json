@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T05:42:59.525Z",
+  "generatedAt": "2026-03-30T15:28:14.168Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1248,6 +1248,18 @@
       "term": 2,
       "quizzes": [
         {
+          "id": "WRWTDM2R",
+          "title": "2024 - 2025 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/2024 - 2025 Mid.json",
+          "questionCount": 13,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/30/2026, 5:15:00 PM"
+        },
+        {
           "id": "HC4RZL7I",
           "title": "AI Introduction To Database",
           "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/AI Introduction to Database.json",
@@ -1305,16 +1317,16 @@
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
         {
-          "id": "NBFAKG6E",
-          "title": "2021 2022 Mid",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2021 2022 Mid.json",
-          "questionCount": 10,
+          "id": "OM6GFOHD",
+          "title": "2021 - 2022 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2021 - 2022 Mid.json",
+          "questionCount": 15,
           "questionTypes": [
             "Essay",
             "MCQ"
           ],
           "source": "https://drive.google.com/file/d/15oGm07nAE6wSrKeH4qOoXU_ExqcOp9sM/view?usp=drive_link",
-          "createdAt": "3/4/2026, 9:00:13 PM"
+          "createdAt": "3/30/2026, 4:53:34 PM"
         },
         {
           "id": "F2FBKM3G",
@@ -1328,31 +1340,30 @@
           "createdAt": "3/4/2026, 9:00:13 PM"
         },
         {
-          "id": "IVRGWRUK",
-          "title": "2023 2024 Final",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2023 2024 Final.json",
-          "questionCount": 19,
+          "id": "NPVJY7XR",
+          "title": "2023 - 2024 Final",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2023 - 2024 Final.json",
+          "questionCount": 20,
           "questionTypes": [
             "Essay",
             "MCQ"
           ],
           "source": "https://drive.google.com/file/d/11I6iDgoBsUQLbZNY3FKhrJAWQbjL7Yk3/view?usp=drive_link",
-          "createdAt": "3/4/2026, 9:00:13 PM"
+          "createdAt": "3/30/2026, 4:24:28 PM"
         },
         {
-          "id": "YPXHQWGU",
-          "title": "2024 2025 Final",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2024 2025 Final.json",
+          "id": "MGRWHTPF",
+          "title": "2024 - 2025 Final",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2024 - 2025 Final.json",
           "questionCount": 22,
           "questionTypes": [
             "Essay",
             "MCQ"
           ],
-          "source": "https://drive.google.com/file/d/1rt_rNzVXHubFtuzb_mIwRbn20nog9UTq/view?usp=drive_link",
-          "createdAt": "3/4/2026, 9:00:13 PM"
+          "createdAt": "3/30/2026, 2:56:02 PM"
         },
         {
-          "id": "4STRBLI5",
+          "id": "6RXW5ZRZ",
           "title": "2025 - 2026 Summer Final",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Summer Final.json",
           "questionCount": 9,
@@ -1360,18 +1371,18 @@
             "Essay"
           ],
           "source": "https://drive.google.com/file/d/1Bg3ZFoHs2dH4qJnZvx9wqdT78nyled_P/view?usp=drive_link",
-          "createdAt": "3/4/2026, 8:58:11 PM"
+          "createdAt": "3/30/2026, 5:02:17 PM"
         },
         {
-          "id": "UGK3N3C5",
-          "title": "2025 Mid",
+          "id": "ORGPP7LI",
+          "title": "Mid 2025",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 Mid.json",
           "questionCount": 16,
           "questionTypes": [
             "MCQ"
           ],
           "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link",
-          "createdAt": "3/4/2026, 9:00:13 PM"
+          "createdAt": "3/30/2026, 4:19:27 PM"
         },
         {
           "id": "AI7Y6NOP",
