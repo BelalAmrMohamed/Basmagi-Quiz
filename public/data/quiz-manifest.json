@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-29T20:41:14.892Z",
+  "generatedAt": "2026-03-30T05:25:32.093Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1173,6 +1173,17 @@
       "year": 2,
       "term": 2,
       "quizzes": [
+        {
+          "id": "EMUKKIAQ",
+          "title": "2021 - 2022 Final",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/2021 - 2022 Final.json",
+          "questionCount": 25,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/30/2026, 6:56:51 AM"
+        },
         {
           "id": "OULCHDXH",
           "title": "2023 - 2024 Summer Final",
