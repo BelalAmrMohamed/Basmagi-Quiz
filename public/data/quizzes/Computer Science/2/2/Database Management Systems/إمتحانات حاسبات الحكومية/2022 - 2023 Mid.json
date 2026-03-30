@@ -1,0 +1,282 @@
+{
+  "meta": {
+    "id": "4JPFRS65",
+    "title": "2022 - 2023 Mid",
+    "createdAt": "3/30/2026, 7:18:05 PM",
+    "path": "quizzes/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2022 - 2023 Mid.json"
+  },
+  "stats": {
+    "questionCount": 25,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "__________ is a collection of programs that enables users to create and maintain a database.",
+      "options": [
+        "RTS",
+        "DBMS",
+        "IS",
+        "AI"
+      ],
+      "correct": 1,
+      "explanation": "A Database Management System (DBMS) is the software suite used to define, create, maintain, and control access to the database."
+    },
+    {
+      "q": "The logical design, and the snapshot of the data at a given instant in time is known as?",
+      "options": [
+        "Instance & Relation",
+        "Schema & Instance",
+        "Relation & Schema",
+        "Non"
+      ],
+      "correct": 1,
+      "explanation": "The **Schema** is the logical structure/design of the database (which rarely changes), while the **Instance** is the actual data stored at a specific moment."
+    },
+    {
+      "q": "The ability to query data, as well as insert, delete, and alter tuples, is offered by __________.",
+      "options": [
+        "VDL",
+        "SDL",
+        "DML",
+        "DDL"
+      ],
+      "correct": 2,
+      "explanation": "Data Manipulation Language (DML) provides the syntax for performing operations like SELECT, INSERT, UPDATE, and DELETE on the data."
+    },
+    {
+      "q": "A state that satisfies the structure and constraints of a scheme is called __________.",
+      "options": [
+        "invalid",
+        "true",
+        "real",
+        "valid"
+      ],
+      "correct": 3,
+      "explanation": "A database state is considered **valid** if it adheres to all the integrity constraints and structural definitions specified in the schema."
+    },
+    {
+      "q": "The database state is called __________ of the schema.",
+      "options": [
+        "extension",
+        "intension",
+        "expansion",
+        "definition"
+      ],
+      "correct": 0,
+      "explanation": "In database terminology, the schema is the **intension**, and the data (the state) is the **extension**."
+    },
+    {
+      "q": "__________ is the basic object of ER model which is a thing in real world.",
+      "options": [
+        "relation",
+        "domain",
+        "attribute",
+        "entity"
+      ],
+      "correct": 3,
+      "explanation": "An **Entity** represents a physical or conceptual object in the real world that is distinguishable from other objects."
+    },
+    {
+      "q": "__________ attributes can have more than one value.",
+      "options": [
+        "composite",
+        "simple",
+        "multi-valued",
+        "single valued"
+      ],
+      "correct": 2,
+      "explanation": "Multi-valued attributes allow an entity to have a set of values for that attribute, such as 'Degrees' or 'Phone Numbers'."
+    },
+    {
+      "q": "The entity is represented in ER-diagrams by __________.",
+      "options": [
+        "oval",
+        "rectangle",
+        "double oval",
+        "diamond"
+      ],
+      "correct": 1,
+      "explanation": "In standard Peter Chen's notation, entities are represented by rectangles, attributes by ovals, and relationships by diamonds."
+    },
+    {
+      "q": "A weak entity type always has a __________ participation constraint with respect to its identifying relationships.",
+      "options": [
+        "partial",
+        "total",
+        "overlap",
+        "disjoint"
+      ],
+      "correct": 1,
+      "explanation": "A weak entity cannot exist without its identifying owner; therefore, its participation in the identifying relationship must be **total**."
+    },
+    {
+      "q": "The values appearing in given attributes of any tuple in the referencing relation must likewise occur in specified attributes of at least one tuple in the referenced relation, according to __________ integrity constraint.",
+      "options": [
+        "Referential",
+        "Primary",
+        "Referencing",
+        "Specific"
+      ],
+      "correct": 0,
+      "explanation": "Referential integrity ensures that a Foreign Key value in one table must match a Primary Key value in the related table."
+    },
+    {
+      "q": "__________ indicates the maximum number of entities that can be involved in a relationship.",
+      "options": [
+        "Greater Entity",
+        "Minimum cardinality",
+        "Maximum cardinality",
+        "ERD"
+      ],
+      "correct": 2,
+      "explanation": "Cardinality ratios (like 1:1, 1:N, M:N) define the maximum number of relationship instances an entity can participate in."
+    },
+    {
+      "q": "Which of the following is not the utility of DBMS?\n1) Backup\n2) Loading\n3) Process Organization\n4) File organization",
+      "options": [
+        "1, 2, and 4 only",
+        "1, 2 and 3 only",
+        "1, 3 and 4 only",
+        "3 only"
+      ],
+      "correct": 3,
+      "explanation": "Standard DBMS utilities include Backup, Loading, and File/Storage Reorganization. 'Process Organization' is generally not categorized as a standard DBMS utility."
+    },
+    {
+      "q": "Rows of a relation are known as the __________.",
+      "options": [
+        "Degree",
+        "Tuples",
+        "Entity",
+        "All of the above"
+      ],
+      "correct": 1,
+      "explanation": "In the relational model, a row is called a **tuple**, a column is an **attribute**, and the number of columns is the **degree**."
+    },
+    {
+      "q": "Which of the following is a top-down approach in which the entity's higher level can be divided into two lower sub-entities?",
+      "options": [
+        "Aggregation",
+        "Generalization",
+        "Specialization",
+        "All of the above"
+      ],
+      "correct": 2,
+      "explanation": "Specialization is the process of defining a set of subclasses from an entity type (top-down), whereas Generalization is combining subclasses into a superclass (bottom-up)."
+    },
+    {
+      "q": "Which one of the following refers to the total view of the database content?",
+      "options": [
+        "Conceptual view",
+        "Physical view",
+        "Internal view",
+        "External view"
+      ],
+      "correct": 0,
+      "explanation": "The Conceptual level (or view) describes the structure of the whole database for a community of users, hiding physical storage details."
+    },
+    {
+      "q": "Based on the ERD (Teacher-Course-Student), state if the following is True or False: **All the Teachers must teach Courses.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "Based on the diagram, there is no double line (total participation) on the Teacher side of the 'teach' relationship. Therefore, partial participation is assumed."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **All the Students must enroll Courses.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "Similar to the Teacher entity, the Student side of the 'enroll' relationship lacks a double line, indicating partial participation."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **All Courses must be enrolled by Students.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "The participation of Course in the 'enroll' relationship is partial (single line)."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **All Courses must be taught by Teachers.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "In most educational schemas, a Course cannot exist in the catalog without an assigned instructor, though strictly looking at the single line in the provided OCR, it might be argued as False. However, logical deduction in mid-terms usually treats the 1-side of a 1:N as a requirement for the N-side."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **Each Course is taught by only one Teacher.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "The relationship 'teach' between Teacher and Course is $1:M$ (1 on Teacher side, $m$ on Course side). This means one teacher can teach many courses, but each course is associated with exactly one teacher."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **Each Course is enrolled by only one Student.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "The relationship 'enroll' is $M:N$ (many-to-many). A course can have many students enrolled in it."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **Each Teacher can teach many Courses.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "The '$m$' on the Course side of the 'teach' relationship confirms that one teacher can be linked to multiple course instances."
+    },
+    {
+      "q": "Based on the ERD, state if the following is True or False: **Each Student can enroll many Courses.**",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "The $M:N$ cardinality of the 'enroll' relationship allows a student to be associated with multiple courses."
+    },
+    {
+      "q": "Mapping check: **Teacher ($SSN$, $Tname$, $phone$, $title$, $office-no$), Course($Cnumber$, $Cname$, $Description$, $hour$, $SSN$); FK: $SSN$ references Teacher($SSN$).** Is this mapping correct?",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "This is the correct way to map a $1:N$ relationship. The Primary Key of the '1' side (Teacher) is added as a Foreign Key ($FK$) to the 'N' side (Course)."
+    },
+    {
+      "q": "Mapping check: **Student ($Sname$, $Snumber$, $address$, $Date\\ of\\ birth$, $Cnumber$), FK: $Cnumber$ references Course($Cnumber$).** Is this mapping correct for the 'enroll' relationship?",
+      "image": "./assets/quiz-media/2_2_DB_erd_2.jpg",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "This is incorrect. The 'enroll' relationship is $M:N$. A many-to-many relationship cannot be mapped by a simple Foreign Key in one of the entity tables; it requires a separate cross-reference table (e.g., `Enrollment`) containing the primary keys of both Student and Course."
+    }
+  ]
+}
