@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T17:26:57.709Z",
+  "generatedAt": "2026-03-30T17:32:20.211Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1326,6 +1326,16 @@
             "MCQ"
           ],
           "createdAt": "3/30/2026, 6:19:31 PM"
+        },
+        {
+          "id": "KYHTHYHN",
+          "title": "SQL MOCK TEST III",
+          "path": "/data/quizzes/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/SQL MOCK TEST III.json",
+          "questionCount": 50,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 7:32:06 PM"
         }
       ]
     },
