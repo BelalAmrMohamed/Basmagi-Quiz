@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T05:25:32.093Z",
+  "generatedAt": "2026-03-30T05:42:59.525Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1227,6 +1227,16 @@
             "MCQ"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "NU6S33IP",
+          "title": "أسئلة متكررة - توقعات الإمتحان",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات الإمتحان.json",
+          "questionCount": 15,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "3/30/2026, 7:40:36 AM"
         }
       ]
     },

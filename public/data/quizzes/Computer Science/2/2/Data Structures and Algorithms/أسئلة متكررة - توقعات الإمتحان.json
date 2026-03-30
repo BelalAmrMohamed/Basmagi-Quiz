@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "id": "NU6S33IP",
+    "title": "أسئلة متكررة - توقعات الإمتحان",
+    "createdAt": "3/30/2026, 7:40:36 AM",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات الإمتحان.json"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "...............is a contiguous area of memory consisting of equal-size elements",
+      "options": [
+        "Stack",
+        "LinkedList",
+        "Array",
+        "All of above"
+      ],
+      "correct": 2,
+      "explanation": "An **Array** is defined as a collection of items stored at contiguous memory locations where each element is of the same size, allowing for $O(1)$ access time via indexing."
+    },
+    {
+      "q": "What is the access time required to retrieve the element located at position $(5,9)$ in a 7-row and 12-column array?",
+      "options": [
+        "$arr\\_addr + elem\\_size \\times ((5-1) \\times 12 + (9-1))$",
+        "$arr\\_addr + elem\\_size \\times ((5-1) \\times 7 + (9-1))$",
+        "$arr\\_addr+elem\\_size\\times(5\\times9)$",
+        "$arr\\_addr + elem\\_size \\times ((7-1) \\times 12 + (5-1))$"
+      ],
+      "correct": 0,
+      "explanation": "In a row-major 2D array, the address of element $(i, j)$ is calculated as:\n$$Address = Base + Size \times ((i - 1) \times \text{TotalColumns} + (j - 1))$$\nFor $(5,9)$ in a $7 \times 12$ array, this becomes $Base + Size \times ((5-1) \times 12 + (9-1))$."
+    },
+    {
+      "q": "The complexity of adding three elements to the end of an array is........",
+      "options": [
+        "$O(3)$",
+        "$O(n)$",
+        "$O(1)$",
+        "$O(n^2)$"
+      ],
+      "correct": 2,
+      "explanation": "Adding an element to the end of an array (assuming there is space) is a constant time operation, $O(1)$. Performing a constant number of $O(1)$ operations (in this case, 3) still results in $O(1)$ complexity."
+    },
+    {
+      "q": "Find(Key) in a double linked list with a tail is.....",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1,
+      "explanation": "To find a specific key in a linked list (single or double), you must perform a linear search starting from the head (or tail), checking each node until the key is found. This results in $O(n)$ time complexity."
+    },
+    {
+      "q": "AddAfter(Node, Key) in a single linked list with a tail is........",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0,
+      "explanation": "If the specific `Node` is already provided, adding a new node immediately after it only involves updating the pointers of the current node and the new node. This does not require traversal, making it $O(1)$."
+    },
+    {
+      "q": "Erase(Key) in a single linked list with a tail is.....",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1,
+      "explanation": "In a single linked list, to erase a node by `Key`, you must find the node *before* the one to be deleted to update its `next` pointer. This search requires traversing the list, leading to $O(n)$ complexity."
+    },
+    {
+      "q": "TopBack() in a single linked list with a tail is......",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0,
+      "explanation": "With a `tail` pointer, accessing the last element of the list is a direct reference, which takes constant time $O(1)$."
+    },
+    {
+      "q": "The Function of adding an element to a stack is called",
+      "options": [
+        "AddElem(key)",
+        "Enqueue(key)",
+        "Push(key)",
+        "Pop(key)"
+      ],
+      "correct": 2,
+      "explanation": "The standard terminology for adding an item to a Stack is **Push**. **Pop** is for removal, and **Enqueue** is for adding to a Queue."
+    },
+    {
+      "q": "To return the most recently-added key in a stack, we use the....... function",
+      "options": [
+        "Key Top(key)",
+        "Key Pop-(key)",
+        "Push(key)",
+        "Pop(key)"
+      ],
+      "correct": 0,
+      "explanation": "The **Top** (or Peek) function returns the value of the most recent element added to the stack without removing it."
+    },
+    {
+      "q": "removes and returns the first added key from a Stack is known as...",
+      "options": [
+        "Key Pop()",
+        "Key Enqueue()",
+        "Key Top()",
+        "not allowed"
+      ],
+      "correct": 3,
+      "explanation": "A Stack follows **LIFO** (Last-In, First-Out). Removing the *first added* key (the bottom of the stack) violates the Stack ADT principles and is not a standard operation. That behavior is characteristic of a Queue (**FIFO**)."
+    },
+    {
+      "q": "Stack operations are known as",
+      "options": [
+        "FIFO",
+        "LIFO",
+        "MILO",
+        "none of above"
+      ],
+      "correct": 1,
+      "explanation": "Stacks operate on the **Last-In, First-Out** (LIFO) principle, meaning the last element added is the first one to be removed."
+    },
+    {
+      "q": "PushBack(Key) in a single linked list without a tail is.....",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1,
+      "explanation": "Without a tail pointer, you must traverse the entire list from the head to reach the last node before you can append a new one, resulting in $O(n)$ complexity."
+    },
+    {
+      "q": "To return and remove the most recently added key in a stack, we use the....... function",
+      "options": [
+        "KeyTop ()",
+        "Pop (key)",
+        "Push(key)",
+        "key Pop()"
+      ],
+      "correct": 3,
+      "explanation": "The **Pop** function removes the top element of the stack and typically returns its value to the caller."
+    },
+    {
+      "q": "Stack operation Push() is implemented using LikedList....... function",
+      "options": [
+        "PushBack(key)",
+        "PushFront(key)",
+        "PopBack()",
+        "a and b"
+      ],
+      "correct": 1,
+      "explanation": "While both `PushBack` and `PushFront` could theoretically work, `PushFront` is used for Stack implementation because it is $O(1)$ in a Singly Linked List, whereas `PushBack` would be $O(n)$ without a tail pointer."
+    },
+    {
+      "q": "The complexity of adding an element to the middle of an array is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1,
+      "explanation": "Adding to the middle of an array requires shifting all subsequent elements to make room for the new one. In the worst case, this involves shifting $n/2$ elements, which simplifies to $O(n)$."
+    }
+  ]
+}
