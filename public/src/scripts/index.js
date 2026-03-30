@@ -42,25 +42,24 @@ import { initPWA } from "./pwa-manager.js";
 const AI_PROMPT_TEXT = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
 
 Please ensure the following:
-- Preserve the original wording of all questions without rephrasing to maintain content integrity.
+- Preserve the original wording of all questions without rephrasing to maintain content integrity. But use math notations and tables when needed properly.
 - Identify and supply correct answers for any unsolved or incomplete questions using authoritative sources or logical deduction.
-- Handle ambiguous or incomplete data by applying best practices for content clarification or flagging for review.
-- Output only the finalized JSON array encapsulated within proper code block delimiters, without any additional text or commentary.
+- Output only the finalized JSON array without any additional text or commentary.
 
 Output ONLY the JSON in the following format:
 \`\`\`json
 {
   "questions": [
     {
-      "q": "Consider the following time complexity formula for a nested loop algorithm:\\n\\n   $$T(n) = sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\\\frac{n(n+1)}{2}$$\\n\\n   Given $n = 8$, which value correctly represents the **total number of iterations**?",
+      "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true:",
+      "correct": 3,
       "options": [
-        "64",
-        "36",
-        "28",
-        "72"
+        "$A$ and $B^c$ are independent",
+        "$B$ and $A^c$ are independent",
+        "$A^c$ and $B^c$ are independent",
+        "All of the preceding"
       ],
-      "correct": 1,
-      "explanation": "The correct answer is **36**.\\n\\nFrom Lec1, the PDU hierarchy is:\\n| Loop Type | Formula | Result for $n=8$ |\\n|---|---|---|\\n| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |\\n| Full double loop | $n^2$ | 64 |"
+      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\cap B^c) = P(A)P(B^c)$."
     },
     {
       "q": "In C++, a \`const\` member function can modify a \`mutable\` data member.",
