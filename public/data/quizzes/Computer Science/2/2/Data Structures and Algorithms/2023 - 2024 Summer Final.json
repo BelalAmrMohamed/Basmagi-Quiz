@@ -7,30 +7,22 @@
   },
   "stats": {
     "questionCount": 25,
-    "questionTypes": [
-      "MCQ",
-      "True/False"
-    ]
+    "questionTypes": ["MCQ", "True/False"]
   },
   "questions": [
     {
       "q": "Which of the following represents the number of elements currently stored in a dynamic array?",
-      "options": [
-        "arr",
-        "capacity",
-        "size",
-        "All of above"
-      ],
+      "options": ["arr", "capacity", "size", "All of above"],
       "correct": 2,
       "explanation": "In a dynamic array, **size** refers to the number of elements currently in the array, while **capacity** refers to the total amount of space allocated in memory."
     },
     {
       "q": "The access time for the $10^{th}$ element in a single-dimensional array is calculated as:",
       "options": [
-        "$$arr\\_addr + elem\\_size \\times (10 - first\\_index)$$ ",
-        "$$first\\_index + 10$$",
-        "$$arr\\_addr + elem\\_size \\times (9 - first\\_index)$$ ",
-        "$$arr\\_addr + 10$$"
+        "$arr\\_addr + elem\\_size \\times (10 - first\\_index)$",
+        "$first\\_index + 10$",
+        "$arr\\_addr + elem\\_size \\times (9 - first\\_index)$",
+        "$arr\\_addr + 10$"
       ],
       "correct": 0,
       "explanation": "To find the address of the $n^{th}$ element, the formula is: \n$$Address = BaseAddress + (Offset \\times ElementSize)$$\nWhere the offset is determined by the target position minus the starting index of the array."
@@ -38,22 +30,17 @@
     {
       "q": "What is the access time required to retrieve the element located at position $(5, 9)$ in a 7-row and 12-column array?",
       "options": [
-        "$$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 12 + (9 - 1))$$",
-        "$$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 7 + (9 - 1))$$",
-        "$$arr\\_addr + elem\\_size \\times (5 \\times 9)$$",
-        "$$arr\\_addr + elem\\_size \\times ((7 - 1) \\times 12 + (5 - 1))$$"
+        "$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 12 + (9 - 1))$",
+        "$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 7 + (9 - 1))$",
+        "$arr\\_addr + elem\\_size \\times (5 \\times 9)$$",
+        "$arr\\_addr + elem\\_size \\times ((7 - 1) \\times 12 + (5 - 1))$"
       ],
       "correct": 0,
       "explanation": "In row-major order for a 2D array, the formula to find the offset is: \n$$((row - 1) \\times total\\_columns) + (column - 1)$$\nGiven row 5 and column 9 in a 12-column grid, the calculation is $((5-1) \\times 12) + (9-1)$."
     },
     {
       "q": "What is the time complexity of adding three elements to the end of a dynamic array (assuming capacity is sufficient)?",
-      "options": [
-        "$$O(3)$$ ",
-        "$$O(n)$$ ",
-        "$$O(1)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(3)$ ", "$O(n)$ ", "$O(1)$ ", "$O(n^2)$"],
       "correct": 2,
       "explanation": "Adding an element to the end of an array is a constant time operation, $$O(1)$$. Adding a fixed number of elements (like 3) remains $$O(1)$$ because the time does not scale with the total size of the array ($n$)."
     },
@@ -70,23 +57,13 @@
     },
     {
       "q": "What is the time complexity to find element e's position in a Priority Queue (Linked List based)?",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$ ", "$O(n)$ ", "$O(n \\log n)$ ", "$O(n^2)$"],
       "correct": 1,
       "explanation": "In a linked list, searching for a specific element requires a linear scan from the head to the target position, resulting in $$O(n)$$ complexity."
     },
     {
       "q": "Which operation is used to set the value of an element at index $i$ in a dynamic array?",
-      "options": [
-        "Get(i)",
-        "Set(i, val)",
-        "PushBack(val)",
-        "insert(i)"
-      ],
+      "options": ["Get(i)", "Set(i, val)", "PushBack(val)", "insert(i)"],
       "correct": 1,
       "explanation": "The `Set(index, value)` operation specifically targets an existing index to update its stored value."
     },
@@ -103,45 +80,25 @@
     },
     {
       "q": "`Find(Key)` in a singly linked list with a tail is....",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$", "$O(n)$", "$O(n \\log n)$", "$O(n^2)$"],
       "correct": 1,
       "explanation": "A tail pointer allows $$O(1)$$ access to the last element, but finding a specific key still requires traversing the list from the head, which is an $$O(n)$$ operation."
     },
     {
       "q": "`AddAfter(Node, Key)` in a singly linked list with a tail is....",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$", "$O(n)$", "$O(n \\log n)$", "$O(n^2)$"],
       "correct": 0,
       "explanation": "If you already have a pointer to the specific node, inserting a new node immediately after it only involves updating two pointers, which is a constant time $$O(1)$$ operation."
     },
     {
       "q": "`Erase(Key)` in a single linked list with a tail is....",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$", "$O(n)$", "$O(n \\log n)$", "$O(n^2)$"],
       "correct": 1,
       "explanation": "To erase a specific key, you must first locate it (which takes $$O(n)$$) and also locate its predecessor to update the pointers. Therefore, the overall complexity is $$O(n)$$."
     },
     {
       "q": "`TopBack()` in a single Linked List with a tail is....",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$", "$O(n)$", "$O(n \\log n)$", "$O(n^2)$"],
       "correct": 0,
       "explanation": "`TopBack` returns the last element. With a tail pointer, this is a direct access operation taking $$O(1)$$ time."
     },
@@ -158,12 +115,7 @@
     },
     {
       "q": "removing and returning the **first added** key is known as....",
-      "options": [
-        "Key Pop()",
-        "Key Enqueue()",
-        "Key Top()",
-        "Not allowed"
-      ],
+      "options": ["Key Pop()", "Key Enqueue()", "Key Top()", "Not allowed"],
       "correct": 3,
       "explanation": "A Stack follows LIFO (Last-In-First-Out). You can only remove the *most recently* added item via `Pop()`. Accessing or removing the *first* added item (the bottom) is not a standard Stack operation."
     },
@@ -180,23 +132,13 @@
     },
     {
       "q": "`PushBack(Key)` in a singly linked list **without** a tail is....",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$ ",
-        "$$O(n^2)$$"
-      ],
+      "options": ["$O(1)$", "$O(n)$", "$O(n \\log n)$", "$O(n^2)$"],
       "correct": 1,
       "explanation": "Without a tail pointer, you must traverse from the head through all $n$ nodes to reach the end, making the operation $$O(n)$$."
     },
     {
       "q": "To return and remove the most recently added key in a *stack*, we use .... function.",
-      "options": [
-        "Key Top()",
-        "Pop(key)",
-        "Push(key)",
-        "Pop()"
-      ],
+      "options": ["Key Top()", "Pop(key)", "Push(key)", "Pop()"],
       "correct": 3,
       "explanation": "`Pop()` is the standard operation to remove and return the top (most recent) element of a stack."
     },
@@ -224,12 +166,7 @@
     },
     {
       "q": "The `Dequeue` operation in a Queue is implemented using which function?",
-      "options": [
-        "TopFront()",
-        "PopFront()",
-        "PushBack(key)",
-        "Both a and b"
-      ],
+      "options": ["TopFront()", "PopFront()", "PushBack(key)", "Both a and b"],
       "correct": 3,
       "explanation": "`Dequeue` typically involves looking at the front element (`TopFront`) and then removing it (`PopFront`). In many implementations, these are combined or used sequentially."
     },
@@ -246,23 +183,13 @@
     },
     {
       "q": "In a Queue implementation using an array, the Queue is considered empty when:",
-      "options": [
-        "read = 0",
-        "write = 0",
-        "read = write",
-        "read < write"
-      ],
+      "options": ["read = 0", "write = 0", "read = write", "read < write"],
       "correct": 2,
       "explanation": "When the `read` pointer (front) and `write` pointer (rear) are at the same position, it indicates there are no elements currently in the queue."
     },
     {
       "q": "What is the overall time complexity of the `Insert(e)` operation in a priority queue implemented as a **sorted array**?",
-      "options": [
-        "$$O(1)$$ ",
-        "$$O(\\log n)$$ ",
-        "$$O(n)$$ ",
-        "$$O(n \\log n)$$"
-      ],
+      "options": ["$O(1)$", "$O(\\log n)$", "$O(n)$", "$O(n \\log n)$"],
       "correct": 2,
       "explanation": "While finding the correct position can be done in $$O(\\log n)$$ using binary search, shifting the existing elements to make room for the new element takes $$O(n)$$ in the worst case."
     },
@@ -279,10 +206,7 @@
     },
     {
       "q": "One of the drawbacks of dynamic arrays is that some memory space is wasted due to over-allocation.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
       "explanation": "This is True. To ensure amortized $$O(1)$$ insertions, dynamic arrays allocate more capacity than is immediately needed, leading to 'wasted' or unused memory overhead."
     }
