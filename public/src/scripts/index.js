@@ -59,7 +59,7 @@ Output ONLY the JSON in the following format:
         "$A^c$ and $B^c$ are independent",
         "All of the preceding"
       ],
-      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\cap B^c) = P(A)P(B^c)$."
+      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\\\cap B^c) = P(A)P(B^c)$."
     },
     {
       "q": "In C++, a \`const\` member function can modify a \`mutable\` data member.",
