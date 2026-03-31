@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-30T19:51:14.571Z",
+  "generatedAt": "2026-03-31T18:35:58.198Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1140,6 +1140,18 @@
       "year": 2,
       "term": 2,
       "quizzes": [
+        {
+          "id": "WRSTDM2R",
+          "title": "2024 - 2025 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/2024 - 2025 Mid.json",
+          "questionCount": 3,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "source": "https://drive.google.com/file/d/1313Y23GHeI8LHTAiVu-iJzesraHtwMSl/view?usp=drive_link",
+          "createdAt": "3/31/2026, 8:22:03 PM"
+        },
         {
           "id": "XOZPTJYP",
           "title": "Final 2020 2021",
