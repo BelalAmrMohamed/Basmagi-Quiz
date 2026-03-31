@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-31T18:43:08.264Z",
+  "generatedAt": "2026-03-31T18:54:06.468Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1140,6 +1140,28 @@
       "year": 2,
       "term": 2,
       "quizzes": [
+        {
+          "id": "BEV736P2",
+          "title": "2021 - 2022 Mid Sinai [MCQ]",
+          "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/2021 - 2022 Mid Sinai [MCQ].json",
+          "questionCount": 5,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "source": "https://drive.google.com/file/d/1CLX2kqpbkDWF2o0SHQ1UCpRM79Zc_XqL/view?usp=drive_link",
+          "createdAt": "3/31/2026, 8:52:41 PM"
+        },
+        {
+          "id": "PESZUP7E",
+          "title": "2021 - 2022 Mid Sinai",
+          "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/2021 - 2022 Mid Sinai.json",
+          "questionCount": 4,
+          "questionTypes": [
+            "Essay"
+          ],
+          "source": "https://drive.google.com/file/d/1CLX2kqpbkDWF2o0SHQ1UCpRM79Zc_XqL/view?usp=drive_link",
+          "createdAt": "3/31/2026, 8:49:14 PM"
+        },
         {
           "id": "VP7O37EE",
           "title": "2024 - 2025 Mid [MCQ]",
