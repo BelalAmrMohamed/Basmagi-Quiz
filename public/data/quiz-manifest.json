@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-31T18:54:06.468Z",
+  "generatedAt": "2026-04-01T13:23:07.323Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1391,6 +1391,68 @@
       "year": 2,
       "term": 2,
       "quizzes": [
+        {
+          "id": "RONUMHZ7",
+          "title": "Probability 1 [MCQ]",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 1 [MCQ].json",
+          "questionCount": 16,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 3:07:04 PM"
+        },
+        {
+          "id": "CDORBSU2",
+          "title": "Probability 1",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 1.json",
+          "questionCount": 20,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "4/1/2026, 3:01:35 PM"
+        },
+        {
+          "id": "EFXYAJ3A",
+          "title": "Probability 2",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 2.json",
+          "questionCount": 16,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 3:10:59 PM"
+        },
+        {
+          "id": "2YSZMIYT",
+          "title": "Probability 3 [MCQ]",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 3 [MCQ].json",
+          "questionCount": 52,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 3:22:15 PM"
+        },
+        {
+          "id": "VM4VFIRA",
+          "title": "Probability 3",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 3.json",
+          "questionCount": 29,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 3:12:07 PM"
+        },
+        {
+          "id": "PAOCFJV5",
+          "title": "Probability 4",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 4.json",
+          "questionCount": 27,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 3:21:22 PM"
+        },
         {
           "id": "77ZZAPDU",
           "title": "أسئلة الإحتمالات من الإمتحانات السابقة",

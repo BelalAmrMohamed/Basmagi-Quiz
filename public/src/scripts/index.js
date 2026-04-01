@@ -52,13 +52,13 @@ Output ONLY the JSON in the following format:
   "questions": [
     {
       "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true:",
-      "correct": 3,
       "options": [
         "$A$ and $B^c$ are independent",
         "$B$ and $A^c$ are independent",
         "$A^c$ and $B^c$ are independent",
         "All of the preceding"
       ],
+      "correct": 3,
       "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\\\cap B^c) = P(A)P(B^c)$."
     },
     {
