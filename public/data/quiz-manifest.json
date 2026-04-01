@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T13:28:17.788Z",
+  "generatedAt": "2026-04-01T19:03:41.633Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1452,6 +1452,17 @@
             "MCQ"
           ],
           "createdAt": "4/1/2026, 3:21:22 PM"
+        },
+        {
+          "id": "EUVMW2VD",
+          "title": "أسئلة متكررة في شيتات السكاشن",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة متكررة في شيتات السكاشن.json",
+          "questionCount": 15,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/1/2026, 9:00:17 PM"
         },
         {
           "id": "77ZZAPDU",

@@ -504,7 +504,6 @@ async function init() {
             await navigator.share({
               files: [file],
               title: "سؤال من الإمتحان",
-              text: "",
             });
           } else {
             // fallback download
