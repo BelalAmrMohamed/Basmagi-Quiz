@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T13:23:07.323Z",
+  "generatedAt": "2026-04-01T13:28:17.788Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1395,7 +1395,7 @@
           "id": "RONUMHZ7",
           "title": "Probability 1 [MCQ]",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 1 [MCQ].json",
-          "questionCount": 16,
+          "questionCount": 45,
           "questionTypes": [
             "MCQ"
           ],
