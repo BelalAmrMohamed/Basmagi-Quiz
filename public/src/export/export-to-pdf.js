@@ -51,6 +51,7 @@ export async function exportToPdf(
   questions,
   userAnswers = [],
   result = {},
+  onProgress = null, // optional (pct: 0–100) => void — called during render
 ) {
   try {
     try {
@@ -206,7 +207,13 @@ export async function exportToPdf(
     // =========================================================
     // CANVAS MEASUREMENT CACHE  (#7 — avoids creating thousands of canvases)
     // =========================================================
-    const CANVAS_DPR = 3;
+    // Use a lower pixel-ratio on mobile/low-end devices to reduce canvas memory
+    // pressure (each 3× canvas uses 9× the RAM of a 1× canvas).
+    const _isMobile =
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (typeof navigator.hardwareConcurrency === "number" &&
+        navigator.hardwareConcurrency <= 4);
+    const CANVAS_DPR = _isMobile ? 2 : 3;
     const mmToPx = (mm) => mm * 3.7795275591 * CANVAS_DPR;
 
     const _mxCache = new Map();
@@ -253,7 +260,15 @@ export async function exportToPdf(
     // =========================================================
     // UNICODE CANVAS RENDERER
     // y = top of the image area. Returns height consumed (mm).
+    //
+    // PERF: A single canvas is reused across all calls instead of
+    // creating one per text block.  jsPDF.addImage() processes the
+    // dataURL synchronously (stores compressed bytes immediately), so
+    // the canvas pixel-buffer is free to be overwritten right after.
     // =========================================================
+    const _uniCanvas = document.createElement("canvas");
+    const _uniCtx = _uniCanvas.getContext("2d");
+
     const renderUnicodeText = (
       text,
       x,
@@ -271,16 +286,16 @@ export async function exportToPdf(
       const lineHpx = pxSize * 1.55;
       const widthPx = mmToPx(maxWidthMm);
       const heightPx = Math.ceil(lines.length * lineHpx + pxSize * 0.4);
-      const cv = document.createElement("canvas");
-      cv.width = widthPx;
-      cv.height = heightPx;
-      const ctx = cv.getContext("2d");
-      ctx.font = `${bold ? "bold " : ""}${pxSize}px Inter, Cairo, Arial, sans-serif`;
-      ctx.direction = rtl ? "rtl" : "ltr";
-      ctx.textAlign = rtl ? "right" : "left";
-      ctx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+
+      // Resize & clear the shared canvas (no new element allocation)
+      _uniCanvas.width = widthPx;
+      _uniCanvas.height = heightPx;
+      _uniCtx.font = `${bold ? "bold " : ""}${pxSize}px Inter, Cairo, Arial, sans-serif`;
+      _uniCtx.direction = rtl ? "rtl" : "ltr";
+      _uniCtx.textAlign = rtl ? "right" : "left";
+      _uniCtx.fillStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
       lines.forEach((line, i) =>
-        ctx.fillText(
+        _uniCtx.fillText(
           line,
           rtl ? widthPx - 1 : 1,
           (i + 1) * lineHpx - pxSize * 0.15,
@@ -288,7 +303,7 @@ export async function exportToPdf(
       );
       const heightMm = heightPx / (CANVAS_DPR * 3.7795275591);
       doc.addImage(
-        cv.toDataURL("image/png"),
+        _uniCanvas.toDataURL("image/png"),
         "PNG",
         x,
         y,
@@ -316,18 +331,29 @@ export async function exportToPdf(
     // =========================================================
     // KATEX → PNG RASTERISER  (Markdown + KaTeX integration)
     //
-    // Renders a LaTeX expression via KaTeX (already loaded on the
-    // app page) then rasterises the DOM element to a PNG via
-    // html2canvas (loaded lazily by loadHtml2Canvas()).
+    // PRIMARY PATH — SVG <foreignObject>
+    //   KaTeX renders its HTML into a hidden div; we measure the
+    //   bounding box with getBoundingClientRect(), then embed the
+    //   same HTML inside an SVG <foreignObject> blob.  The browser's
+    //   native SVG engine rasterises it (no DOM traversal, no
+    //   pixel-by-pixel canvas copy).  ~5–10× faster than html2canvas
+    //   and uses a fraction of the peak memory.
+    //
+    //   Caveats: relies on KaTeX's page-level CSS being applied when
+    //   the browser renders the blob URL Image.  Works reliably in
+    //   Chrome/Edge/Safari.  Firefox requires a same-origin SVG URI.
+    //
+    // FALLBACK PATH — html2canvas
+    //   Used automatically when the SVG path fails (e.g., Firefox
+    //   sandbox restrictions, CSP, or unexpected render errors).
+    //
     // Returns { dataUrl, widthMm, heightMm } or null on failure.
     // =========================================================
     const renderKatexToDataUrl = async (mathStr, displayMode) => {
-      if (typeof window.katex === "undefined" || !window.html2canvas)
-        return null;
+      if (typeof window.katex === "undefined") return null;
+
+      // 1. Render KaTeX HTML into a hidden measurement container
       const container = document.createElement("div");
-      // ── Fix: force LTR so the Arabic page's dir="rtl" is not inherited ───────
-      // Without this, KaTeX renders in an RTL context: "|r| < 1" visually flips
-      // to "1 > |r|", and \frac numerator tokens appear in reverse order.
       container.setAttribute("dir", "ltr");
       Object.assign(container.style, {
         position: "absolute",
@@ -339,33 +365,183 @@ export async function exportToPdf(
         lineHeight: "1",
         color: "#1e293b",
         whiteSpace: "nowrap",
-        direction: "ltr", // belt-and-suspenders: style + attribute
+        direction: "ltr",
         unicodeBidi: "isolate",
+        visibility: "hidden",
       });
       document.body.appendChild(container);
+
       try {
         window.katex.render(mathStr, container, {
           displayMode,
           throwOnError: false,
         });
-        const canvas = await window.html2canvas(container, {
-          backgroundColor: null,
-          scale: CANVAS_DPR,
-          logging: false,
-          useCORS: true,
-        });
+
+        // 2. Measure the rendered element
+        const rect = container.getBoundingClientRect();
+        const rawW = Math.ceil(rect.width) || 60;
+        const rawH = Math.ceil(rect.height) || 24;
+
+        // 3. Collect KaTeX CSS rules needed for the SVG context
+        //    (only the first time — result is cached on the function itself)
+        if (!renderKatexToDataUrl._katexCss) {
+          const sheets = Array.from(document.styleSheets);
+          const katexRules = [];
+          for (const sheet of sheets) {
+            try {
+              const rules = Array.from(sheet.cssRules || []);
+              for (const rule of rules) {
+                if (rule.cssText && rule.cssText.includes(".katex")) {
+                  katexRules.push(rule.cssText);
+                }
+              }
+            } catch {
+              /* cross-origin stylesheet — skip */
+            }
+          }
+          renderKatexToDataUrl._katexCss = katexRules.join("\n");
+        }
+
+        const scaledW = rawW * CANVAS_DPR;
+        const scaledH = rawH * CANVAS_DPR;
+
+        // 4. Build an SVG that embeds the KaTeX HTML with inlined CSS
+        const innerHtml = container.innerHTML;
         document.body.removeChild(container);
+
+        const svgStr = [
+          `<svg xmlns="http://www.w3.org/2000/svg"`,
+          ` width="${scaledW}" height="${scaledH}">`,
+          `<defs><style>`,
+          `* { box-sizing: border-box; }`,
+          renderKatexToDataUrl._katexCss,
+          `</style></defs>`,
+          `<foreignObject width="${scaledW}" height="${scaledH}">`,
+          `<div xmlns="http://www.w3.org/1999/xhtml"`,
+          ` style="font-size:${16 * CANVAS_DPR}px;line-height:1;`,
+          `direction:ltr;unicode-bidi:isolate;`,
+          `background:white;padding:${displayMode ? 6 * CANVAS_DPR : 0}px ${displayMode ? 10 * CANVAS_DPR : 2 * CANVAS_DPR}px;`,
+          `color:#1e293b;white-space:nowrap;">`,
+          innerHtml,
+          `</div></foreignObject>`,
+          `</svg>`,
+        ].join("");
+
+        // 5. Rasterise via Blob URL → Image → canvas
+        const blob = new Blob([svgStr], {
+          type: "image/svg+xml;charset=utf-8",
+        });
+        const blobUrl = URL.createObjectURL(blob);
+
+        const dataUrl = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const cv = document.createElement("canvas");
+              cv.width = scaledW;
+              cv.height = scaledH;
+              const ctx2 = cv.getContext("2d");
+              ctx2.fillStyle = "white";
+              ctx2.fillRect(0, 0, scaledW, scaledH);
+              ctx2.drawImage(img, 0, 0);
+
+              // ── Security Catch ──────────────
+              // If the SVG contains external fonts/links, browser may 'taint' 
+              // the canvas, throwing a SecurityError on toDataURL().
+              const url = cv.toDataURL("image/png");
+
+              // Release pixel buffer immediately
+              cv.width = 0;
+              cv.height = 0;
+              resolve(url);
+            } catch (e) {
+              reject(e);
+            }
+          };
+          img.onerror = () => reject(new Error("SVG render failed"));
+          img.src = blobUrl;
+        }).finally(() => URL.revokeObjectURL(blobUrl));
+
         const PX_PER_MM = CANVAS_DPR * 3.7795275591;
         return {
-          dataUrl: canvas.toDataURL("image/png"),
-          widthMm: canvas.width / PX_PER_MM,
-          heightMm: canvas.height / PX_PER_MM,
+          dataUrl,
+          widthMm: rawW / 3.7795275591,
+          heightMm: rawH / 3.7795275591,
         };
-      } catch (err) {
+      } catch (svgErr) {
+        // Remove container if still in DOM (SVG path failed before removeChild)
         if (document.body.contains(container))
           document.body.removeChild(container);
-        console.warn("[PDF] KaTeX render error:", mathStr, err);
-        return null;
+
+        // ── FALLBACK: html2canvas ──────────────────────────────────────
+        // If SVG path fails, we use html2canvas to rasterise the DOM element.
+        try {
+          await loadHtml2Canvas();
+        } catch (loadErr) {
+          console.error("[PDF] Failed to load html2canvas fallback:", loadErr.message);
+          return null;
+        }
+
+        if (!window.html2canvas) {
+          console.warn(
+            "[PDF] KaTeX SVG path failed, html2canvas not available:",
+            mathStr,
+            svgErr,
+          );
+          return null;
+        }
+        console.warn(
+          "[PDF] KaTeX SVG path failed (likely Tainted Canvas), falling back to html2canvas:",
+          svgErr.message,
+        );
+
+        const fb = document.createElement("div");
+        fb.setAttribute("dir", "ltr");
+        Object.assign(fb.style, {
+          position: "absolute",
+          left: "-9999px",
+          top: "0",
+          background: "white",
+          padding: displayMode ? "6px 10px" : "0 2px",
+          fontSize: "16px",
+          lineHeight: "1",
+          color: "#1e293b",
+          whiteSpace: "nowrap",
+          direction: "ltr",
+          unicodeBidi: "isolate",
+        });
+        document.body.appendChild(fb);
+        try {
+          window.katex.render(mathStr, fb, {
+            displayMode,
+            throwOnError: false,
+          });
+          const canvas = await window.html2canvas(fb, {
+            backgroundColor: null,
+            scale: CANVAS_DPR,
+            logging: false,
+            useCORS: true,
+          });
+          document.body.removeChild(fb);
+          const PX_PER_MM = CANVAS_DPR * 3.7795275591;
+          const result = {
+            dataUrl: canvas.toDataURL("image/png"),
+            widthMm: canvas.width / PX_PER_MM,
+            heightMm: canvas.height / PX_PER_MM,
+          };
+          // Release fallback canvas pixel-buffer
+          canvas.width = 0;
+          canvas.height = 0;
+          return result;
+        } catch (fbErr) {
+          if (document.body.contains(fb)) document.body.removeChild(fb);
+          console.warn(
+            "[PDF] KaTeX fallback render also failed:",
+            mathStr,
+            fbErr,
+          );
+          return null;
+        }
       }
     };
 
@@ -2358,20 +2534,24 @@ export async function exportToPdf(
     // MATH PRE-RENDERING  (Markdown + KaTeX integration)
     //
     // Render all LaTeX expressions to PNG images BEFORE the main
-    // layout pass so that calcSegmentsHeight() — which determines
-    // page breaks — has the correct image dimensions.
-    // Mirrors the imageCache parallel-pre-load pattern above.
+    // layout pass so that calcSegmentsHeight() has correct dims.
     //
-    // Approach: generation-time rendering.  window.katex is already
-    // loaded synchronously on the app page (quiz.html, summary.html,
-    // create-quiz.html).  html2canvas rasterises the KaTeX HTML into
-    // a PNG that jsPDF's text-mode pipeline can embed via addImage().
+    // PERF: Instead of Promise.all (all at once → simultaneous large
+    // canvases → OOM on mobile), we use a concurrency-limited queue
+    // so at most KATEX_CONCURRENCY renders are in-flight at once.
+    // The SVG path (primary) is much lighter than html2canvas, so
+    // KATEX_CONCURRENCY=6 is fine on desktop; reduce to 3 on mobile.
     // =========================================================
-    // mathImageCache was declared above (before wrapInlineRuns) so all closures
-    // that reference it are already in scope.  Populate it now.
     if (typeof window.katex !== "undefined") {
       try {
-        await loadHtml2Canvas();
+        // Only load html2canvas if the SVG path is unavailable/unsupported.
+        // We attempt the SVG path first; html2canvas becomes the fallback
+        // inside renderKatexToDataUrl itself.  We still try to load it
+        // lazily so it is available if needed without blocking startup.
+        loadHtml2Canvas().catch(() => {
+          /* non-fatal — html2canvas fallback simply won't be available */
+        });
+
         const uniqueMath = new Map();
         const mathTextFields = (q) =>
           [q.q, q.explanation, q.answer, ...(q.options || [])].filter(Boolean);
@@ -2382,12 +2562,24 @@ export async function exportToPdf(
             }
           }
         }
-        await Promise.all(
-          [...uniqueMath.values()].map(async ({ key, expr, displayMode }) => {
-            const result = await renderKatexToDataUrl(expr, displayMode);
-            if (result) mathImageCache.set(key, result);
-          }),
-        );
+
+        // Concurrency-limited render queue
+        const KATEX_CONCURRENCY = _isMobile ? 3 : 6;
+        const mathQueue = [...uniqueMath.values()];
+        for (let qi = 0; qi < mathQueue.length; qi += KATEX_CONCURRENCY) {
+          const batch = mathQueue.slice(qi, qi + KATEX_CONCURRENCY);
+          await Promise.all(
+            batch.map(async ({ key, expr, displayMode }) => {
+              const res = await renderKatexToDataUrl(expr, displayMode);
+              if (res) mathImageCache.set(key, res);
+            }),
+          );
+          // Yield to UI thread between batches on mobile
+          if (_isMobile && qi + KATEX_CONCURRENCY < mathQueue.length) {
+            await new Promise((r) => setTimeout(r, 0));
+          }
+        }
+
         if (mathImageCache.size > 0)
           console.log(
             `[PDF] Pre-rendered ${mathImageCache.size} math expression(s)`,
@@ -2398,11 +2590,46 @@ export async function exportToPdf(
     }
 
     // =========================================================
-    // RENDER ALL QUESTIONS
+    // RENDER ALL QUESTIONS  — chunked for UI responsiveness
+    //
+    // The jsPDF draw calls are synchronous CPU work.  On a 50-question
+    // quiz they block the main thread for hundreds of milliseconds,
+    // freezing scroll / animations and triggering ANR dialogs on mobile.
+    //
+    // Fix: after every RENDER_CHUNK questions we `await setTimeout(0)`
+    // to hand control back to the browser event loop.  This keeps the
+    // tab responsive and lets a progress bar update between chunks.
+    //
+    // RENDER_CHUNK = 5 is a balance between throughput and latency;
+    // use 3 on mobile where each question involves more canvas work.
     // =========================================================
-    for (const [index, question] of questions.entries()) {
-      await renderQuestion(question, index);
+    const RENDER_CHUNK = _isMobile ? 3 : 5;
+    const totalQ = questions.length;
+
+    for (let qi = 0; qi < totalQ; qi++) {
+      await renderQuestion(questions[qi], qi);
+
+      const isChunkEnd = (qi + 1) % RENDER_CHUNK === 0;
+      const isLast = qi === totalQ - 1;
+
+      if (isChunkEnd || isLast) {
+        // Report progress (0–90 % reserved for question rendering;
+        // the final 10 % covers CTA page + save).
+        const pct = Math.round(((qi + 1) / totalQ) * 90);
+        if (typeof onProgress === "function") onProgress(pct);
+
+        // Yield to the browser event loop so it can process paint /
+        // input events and avoid "page unresponsive" warnings.
+        await new Promise((r) => setTimeout(r, 0));
+      }
     }
+
+    // ── Free cached image data (no longer needed after rendering) ──────
+    // dataUrl strings can be several hundred KB each.  Clearing the
+    // caches here lets the GC reclaim that memory before jsPDF compresses
+    // and serialises the PDF (another memory-intensive operation).
+    mathImageCache.clear();
+    imageCache.clear();
 
     // =========================================================
     // FINAL CTA PAGE
@@ -2463,6 +2690,15 @@ export async function exportToPdf(
     // =========================================================
     // SAVE
     // =========================================================
+    if (typeof onProgress === "function") onProgress(100);
+
+    // Release the shared Unicode canvas pixel-buffer and the
+    // measurement canvas cache so the GC can reclaim RAM before
+    // the browser writes the PDF blob to disk.
+    _uniCanvas.width = 0;
+    _uniCanvas.height = 0;
+    _mxCache.clear();
+
     const filename = `${sanitizeText(config.title || "quiz")}.pdf`;
     doc.save(filename);
     console.log(`PDF exported: ${filename}`);
