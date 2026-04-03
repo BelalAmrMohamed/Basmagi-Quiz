@@ -1,0 +1,70 @@
+{
+  "meta": {
+    "id": "OLN5F6QY",
+    "title": "Introduction",
+    "createdAt": "4/3/2026, 2:17:16 PM",
+    "path": "quizzes/Computer Science/1/2/Digital Logic and Design/Introduction.json"
+  },
+  "stats": {
+    "questionCount": 6,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which of the following is the binary representation of the decimal number $25_{10}$?",
+      "options": [
+        "11011",
+        "11001",
+        "10101",
+        "11101"
+      ],
+      "correct": 1,
+      "explanation": "$25$ in binary is calculated by successive division by 2:\n* $25 / 2 = 12$ remainder **1**\n* $12 / 2 = 6$ remainder **0**\n* $6 / 2 = 3$ remainder **0**\n* $3 / 2 = 1$ remainder **1**\n* $1 / 2 = 0$ remainder **1**\nReading remainders bottom-up gives $11001_2$."
+    },
+    {
+      "q": "According to De Morgan's Laws, the expression $\\overline{A \\cdot B}$ is equivalent to:",
+      "options": [
+        "$\\overline{A} \\cdot \\overline{B}$",
+        "$\\overline{A} + \\overline{B}$",
+        "$A + B$",
+        "$\\overline{A + B}$"
+      ],
+      "correct": 1,
+      "explanation": "De Morgan's First Law states that the complement of a product is equal to the sum of the complements: $\\overline{A \\cdot B} = \\overline{A} + \\overline{B}$."
+    },
+    {
+      "q": "In Digital Logic, which universal gate can be used to implement any other logic gate (AND, OR, NOT)?",
+      "options": [
+        "AND",
+        "OR",
+        "NAND",
+        "XOR"
+      ],
+      "correct": 2,
+      "explanation": "NAND and NOR gates are known as **Universal Gates**. Any boolean function can be implemented using only NAND gates."
+    },
+    {
+      "q": "What is the output of an XOR gate if the inputs are $A=1$ and $B=1$?",
+      "options": [
+        "0",
+        "1"
+      ],
+      "correct": 0,
+      "explanation": "The XOR (Exclusive OR) gate outputs $1$ only if the inputs are different. Since both inputs are $1$, the output is $0$."
+    },
+    {
+      "q": "Define a **Combinational Logic Circuit** and provide one example.",
+      "answer": "A combinational logic circuit is a circuit where the output is a pure function of the present inputs only, with no dependence on past states (no memory). \n\n**Example:** An Adder (Half-Adder or Full-Adder), Multiplexer, or Decoder.",
+      "explanation": "Unlike sequential circuits (like flip-flops), combinational circuits do not utilize feedback loops or storage elements to maintain state."
+    },
+    {
+      "q": "Simplify the following Boolean expression using Boolean Algebra identities: $F = A \\cdot B + A \\cdot \\overline{B}$",
+      "answer": "$F = A(B + \\overline{B}) = A(1) = A$",
+      "explanation": "By using the distributive law, we factor out $A$. Since $B + \\overline{B} = 1$ (Complement Law), the expression simplifies to $A$."
+    }
+  ]
+}

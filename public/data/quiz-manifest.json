@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-01T19:03:41.633Z",
+  "generatedAt": "2026-04-03T12:19:28.469Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -20,6 +20,27 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        }
+      ]
+    },
+    {
+      "id": "CAO62E2A",
+      "name": "Digital Logic and Design",
+      "faculty": "Computer Science",
+      "year": 1,
+      "term": 2,
+      "quizzes": [
+        {
+          "id": "OLN5F6QY",
+          "title": "Introduction",
+          "path": "/data/quizzes/Computer Science/1/2/Digital Logic and Design/Introduction.json",
+          "questionCount": 6,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "4/3/2026, 2:17:16 PM"
         }
       ]
     },
@@ -104,6 +125,26 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        }
+      ]
+    },
+    {
+      "id": "D5PMFRY5",
+      "name": "Technical Writing",
+      "faculty": "Computer Science",
+      "year": 1,
+      "term": 2,
+      "quizzes": [
+        {
+          "id": "OLN4F6QY",
+          "title": "Introduction",
+          "path": "/data/quizzes/Computer Science/1/2/Technical Writing/Introduction.json",
+          "questionCount": 7,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/3/2026, 2:18:44 PM"
         }
       ]
     },
@@ -1570,7 +1611,7 @@
         {
           "id": "AI7Y6NOP",
           "title": "Lecture 1 Quiz",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 Quiz.json",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 quiz.json",
           "questionCount": 32,
           "questionTypes": [
             "MCQ"
@@ -1827,16 +1868,6 @@
       "term": 2,
       "quizzes": [
         {
-          "id": "TJL3MPD5",
-          "title": "new badge",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/new badge.json",
-          "questionCount": 15,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "2026-03-19 - 20:37"
-        },
-        {
           "id": "4OBRHDOR",
           "title": "Test Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/test-quiz.json",
@@ -1853,7 +1884,7 @@
           "id": "BRPEW4J6",
           "title": "Markdown & LaTeX Stress Test Quiz",
           "path": "/data/quizzes/Computer Science/2/2/Website demo/Testing Features/Markdown_LaTeX_Stress_Test_Quiz.json",
-          "questionCount": 10,
+          "questionCount": 14,
           "questionTypes": [
             "Essay",
             "MCQ",
