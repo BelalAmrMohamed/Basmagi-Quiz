@@ -66,6 +66,52 @@ function escapeHTML(input) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * extractCategoryFromPath — derives the quiz category from a manifest path.
+ *
+ * Path structure:
+ *   quizzes/[Faculty]/[Year]/[Term]/[Subject]/[...subfolders]/[quiz].json
+ *
+ * This function handles both local paths and encoded DB paths (/api/quiz-data?path=...).
+ * The "Category" is the part of the path that identifies the subject and subfolders,
+ * appearing after the Faculty/Year/Term segments.
+ *
+ * @param  {string|null|undefined} path - The `config.path` value.
+ * @returns {string} Category string, or "" if the path is absent / malformed.
+ */
+
+function extractCategoryFromPath(path) {
+  if (!path) return "";
+
+  let rawPath = path;
+
+  // Decode DB paths: /api/quiz-data?path=quizzes%2F...
+  // URLSearchParams matches the exact approach used in quizManifest.js.
+  try {
+    const qIdx = rawPath.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+      const p = params.get("path");
+      if (p) rawPath = decodeURIComponent(p);
+    }
+  } catch (_) {
+    /* ignore malformed query strings */
+  }
+
+  // Match the canonical structure: skip Faculty / Year / Term, then capture
+  // everything from Subject onward (including optional subfolders + filename).
+  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
+  if (match) {
+    const segments = match[1].split("/");
+    // Drop the filename (last segment); join the rest as the category.
+    // A subject-only path yields ["Subject", "file.json"] → ["Subject"] → "Subject".
+    const parts = segments.slice(0, -1);
+    if (parts.length > 0) return parts.join(" / ");
+  }
+
+  return "";
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const scoreHeader = document.getElementById("scoreHeader");
   const scoreDisplay = document.getElementById("scoreDisplay");
@@ -360,6 +406,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   renderReview(container, questions, result.userAnswers);
+
+  // Remove loading skeletons now that real content is rendered
+  document.getElementById("scoreHeaderSkeleton")?.remove();
+  document.getElementById("reviewSkeleton")?.remove();
+
+  // ── Perfect-Score Certificate ──────────────────────────────────────────────
+  if (questions.length > 10 && actualPercentage === 100) {
+    // Short delay so the page renders first
+    setTimeout(() => {
+      launchConfetti();
+      showCertificate(
+        userName,
+        config.title,
+        config.category || extractCategoryFromPath(config.path),
+      );
+    }, 800);
+
+    // Inject a persistent button so the user can reopen the certificate
+    // at any time after closing the modal.
+    const certReopenBtn = document.createElement("button");
+    certReopenBtn.id = "reopenCertBtn";
+    certReopenBtn.className = "nav-btn primary cert-reopen-btn";
+    certReopenBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/></svg>' +
+      "<span>عرض الشهادة — View Certificate</span>";
+    certReopenBtn.addEventListener("click", () => {
+      showCertificate(
+        userName,
+        config.title,
+        config.category || extractCategoryFromPath(config.path),
+      );
+    });
+    scoreHeader && scoreHeader.appendChild(certReopenBtn);
+  }
 
   // ── UX 2.5: Review Card Stagger Animation ─────────────────────────────────
   // Set --stagger on each rendered card so the CSS animation-delay kicks in.
@@ -659,87 +739,6 @@ function renderHeader(
       </div>
     </div>
 
-    <style>
-      /* ── Score Header Layout ────────────────────────────────────── */
-      .score-header-inner {
-        display: flex;
-        align-items: flex-start;
-        gap: 28px;
-        flex-wrap: wrap;
-      }
-
-      /* ── Greeting ───────────────────────────────────────────────── */
-      .score-greeting {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0 0 12px;
-        line-height: 1.4;
-      }
-
-      /* ── Score Detail Table ─────────────────────────────────────── */
-      /*   Mirrors the results-detail pattern used in export-to-quiz  */
-      /*   and export-to-html for consistent look across the app.      */
-      .score-detail-table {
-        border-radius: 10px;
-        border: 1px solid var(--border-color, rgba(255,255,255,0.1));
-        overflow: hidden;
-        margin: 14px 0;
-        min-width: 240px;
-        max-width: 360px;
-        background: var(--card-bg, rgba(255,255,255,0.03));
-      }
-
-      .sdt-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 16px;
-        padding: 9px 16px;
-        font-size: 13.5px;
-        border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.07));
-      }
-
-      .sdt-last  { border-bottom: none; }
-
-      .sdt-highlight {
-        background: var(--card-answered, rgba(102,126,234,0.12));
-      }
-
-      .sdt-label {
-        color: var(--text-muted, #94a3b8);
-        font-weight: 500;
-        white-space: nowrap;
-      }
-
-      .sdt-value {
-        color: var(--text-primary, #f1f5f9);
-        font-weight: 600;
-        text-align: left;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .sdt-highlight .sdt-label  { color: var(--info-text,   #93c5fd); }
-      .sdt-highlight .sdt-value  { color: var(--text-primary, #e2e8f0); font-size: 14.5px; }
-
-      .sdt-pass    { color: var(--success, #10b981) !important; }
-      .sdt-fail    { color: var(--error,   #ef4444) !important; }
-      .sdt-correct { color: var(--success, #10b981) !important; }
-      .sdt-wrong   { color: var(--error,   #ef4444) !important; }
-      .sdt-skipped { color: var(--text-muted, #94a3b8) !important; }
-      .sdt-pct     { color: var(--text-muted, #94a3b8); font-size: 12px; font-weight: 500; }
-
-      .sdt-stars       { color: #f59e0b; font-size: 1.05em; letter-spacing: 1px; }
-      .sdt-star-empty  { opacity: 0.3; }
-
-      /* ── Responsive: stack on narrow screens ────────────────────── */
-      @media (max-width: 480px) {
-        .score-header-inner { flex-direction: column; align-items: center; text-align: center; }
-        .score-detail-table { max-width: 100%; min-width: 0; width: 100%; }
-        .sdt-value          { text-align: right; }
-      }
-    </style>
   `;
 
   if (scoreDisplay) scoreDisplay.textContent = `${mcqCorrect} / ${mcqTotal}`;
@@ -881,4 +880,370 @@ function renderReview(container, questions, userAnswers) {
   });
 
   container.innerHTML = html;
+}
+
+// ─── Confetti Burst ────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.createElement("canvas");
+  Object.assign(canvas.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: "9998",
+  });
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext("2d");
+  const COUNT = 80;
+  const COLORS = [
+    "#6366f1",
+    "#8b5cf6",
+    "#f59e0b",
+    "#10b981",
+    "#ef4444",
+    "#3b82f6",
+    "#fbbf24",
+    "#a78bfa",
+  ];
+
+  const particles = Array.from({ length: COUNT }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * 60,
+    vx: (Math.random() - 0.5) * 6,
+    vy: 2 + Math.random() * 5,
+    rot: Math.random() * 360,
+    vrot: (Math.random() - 0.5) * 8,
+    w: 6 + Math.random() * 8,
+    h: 3 + Math.random() * 5,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    opacity: 1,
+  }));
+
+  let start = null;
+  const DURATION = 3500;
+
+  function draw(ts) {
+    if (!start) start = ts;
+    const elapsed = ts - start;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    let allGone = true;
+    for (const p of particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.12; // gravity
+      p.rot += p.vrot;
+      p.opacity = Math.max(0, 1 - elapsed / DURATION);
+      if (p.y < canvas.height + 20) allGone = false;
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate((p.rot * Math.PI) / 180);
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+
+    if (elapsed < DURATION && !allGone) {
+      requestAnimationFrame(draw);
+    } else {
+      canvas.remove();
+    }
+  }
+  requestAnimationFrame(draw);
+}
+
+// ─── Certificate ───────────────────────────────────────────────────────────────
+// Fully canvas-drawn: avoids html2canvas RTL/Arabic rendering bugs.
+
+async function showCertificate(name, quizTitle, quizCategory) {
+  const overlay = document.getElementById("certificateOverlay");
+  if (!overlay) return;
+
+  // Build the canvas once; reuse it for preview + download
+  const certCanvas = await drawCertificateCanvas(name, quizTitle, quizCategory);
+
+  // Inject as <img> into the preview wrapper
+  const previewWrap = document.getElementById("certPreviewWrap");
+  if (previewWrap) {
+    previewWrap.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = certCanvas.toDataURL("image/png");
+    img.alt = "Certificate preview";
+    img.style.cssText =
+      "width:100%;height:auto;display:block;border-radius:8px;";
+    previewWrap.appendChild(img);
+  }
+
+  overlay.style.display = "flex";
+
+  // ── Download PNG ────────────────────────────────────────────────────────────
+  document.getElementById("certDownloadBtn")?.addEventListener(
+    "click",
+    () => {
+      const link = document.createElement("a");
+      link.href = certCanvas.toDataURL("image/png");
+      link.download = `certificate-${(name || "student").replace(/\s+/g, "_")}.png`;
+      link.click();
+    },
+    { once: true },
+  );
+
+  // ── Close ───────────────────────────────────────────────────────────────────
+  document
+    .getElementById("certCloseBtn")
+    ?.addEventListener("click", closeCertificate);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeCertificate();
+  });
+}
+
+function closeCertificate() {
+  const overlay = document.getElementById("certificateOverlay");
+  if (!overlay) return;
+  overlay.classList.add("closing");
+  overlay.addEventListener(
+    "animationend",
+    () => {
+      overlay.style.display = "none";
+      overlay.classList.remove("closing");
+    },
+    { once: true },
+  );
+}
+
+// ── Canvas certificate renderer ─────────────────────────────────────────────
+// All drawing is done via the Canvas 2D API so Arabic text is natively shaped
+// and joined by the browser's text renderer — no html2canvas quirks.
+async function drawCertificateCanvas(name, quizTitle, quizCategory) {
+  await document.fonts.ready;
+
+  const W = 1200,
+    H = 820;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // ── Background ──────────────────────────────────────────────────────────────
+  ctx.fillStyle = "#fffdf5";
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Outer border ────────────────────────────────────────────────────────────
+  ctx.strokeStyle = "#b8860b";
+  ctx.lineWidth = 7;
+  ctx.strokeRect(6, 6, W - 12, H - 12);
+
+  ctx.strokeStyle = "#d4a017";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(22, 22, W - 44, H - 44);
+  ctx.strokeRect(28, 28, W - 56, H - 56);
+
+  // ── Corner diamonds ─────────────────────────────────────────────────────────
+  const corners = [
+    [40, 40],
+    [W - 40, 40],
+    [40, H - 40],
+    [W - 40, H - 40],
+  ];
+  ctx.fillStyle = "#b8860b";
+  for (const [cx, cy] of corners) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillRect(-5, -5, 10, 10);
+    ctx.restore();
+  }
+
+  // ── Watermark logo ───────────────────────────────────────────────────────────
+  await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      ctx.save();
+      ctx.globalAlpha = 0.07;
+      const s = 260;
+      ctx.drawImage(img, (W - s) / 2, (H - s) / 2, s, s);
+      ctx.restore();
+      resolve();
+    };
+    img.onerror = resolve;
+    img.crossOrigin = "anonymous";
+    img.src = "favicon.png";
+  });
+
+  // ── Gold seal ───────────────────────────────────────────────────────────────
+  const sx = W / 2,
+    sy = 118,
+    sr = 52;
+
+  // Rays
+  ctx.strokeStyle = "#b8860b";
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4;
+    ctx.beginPath();
+    ctx.moveTo(sx + Math.cos(a) * (sr + 3), sy + Math.sin(a) * (sr + 3));
+    ctx.lineTo(sx + Math.cos(a) * (sr + 12), sy + Math.sin(a) * (sr + 12));
+    ctx.stroke();
+  }
+
+  // Circle fill + outline
+  ctx.fillStyle = "#fdf6e3";
+  ctx.beginPath();
+  ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#b8860b";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 5-point star
+  _drawStar(ctx, sx, sy - 8, 5, 30, 13, "#d4a017");
+
+  // Platform Arabic label inside seal
+  ctx.fillStyle = "#7c3f00";
+  ctx.font = 'bold 14px "Amiri", serif';
+  ctx.textAlign = "center";
+  ctx.direction = "ltr"; // canvas text direction
+  ctx.fillText("بصمجي", sx, sy + 36);
+
+  // ── Horizontal divider (top) ─────────────────────────────────────────────────
+  _gradLine(ctx, W, 195, 2);
+
+  // ── Main title ───────────────────────────────────────────────────────────────
+  ctx.fillStyle = "#7c3f00";
+  ctx.font = 'bold 58px "Playfair Display", "Amiri", Georgia, serif';
+  ctx.textAlign = "center";
+  ctx.fillText("Certificate of Excellence", W / 2, 270);
+
+  // ── Divider (under title) ────────────────────────────────────────────────────
+  _gradLine(ctx, W, 295, 1.5);
+
+  // ── Body ────────────────────────────────────────────────────────────────────
+  ctx.fillStyle = "#8a5a30";
+  ctx.font = '22px "Amiri", Georgia, serif';
+  ctx.fillText("This certifies that", W / 2, 348);
+
+  // Name
+  ctx.fillStyle = "#1a0a00";
+  ctx.font = 'bold italic 52px "Amiri", Georgia, serif';
+  ctx.fillText(name, W / 2, 420);
+
+  // Underline for name
+  const nm = ctx.measureText(name);
+  const nw = Math.min(nm.width + 60, W - 200);
+  ctx.strokeStyle = "rgba(184,134,11,0.45)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - nw / 2, 432);
+  ctx.lineTo(W / 2 + nw / 2, 432);
+  ctx.stroke();
+
+  ctx.fillStyle = "#8a5a30";
+  ctx.font = '22px "Amiri", Georgia, serif';
+  ctx.fillText("has successfully completed", W / 2, 476);
+
+  // Quiz title (with wrapping)
+  ctx.fillStyle = "#1a0a00";
+  ctx.font = 'bold 34px "Amiri", Georgia, serif';
+  let titleBottom = _wrapText(ctx, quizTitle, W / 2, 530, W - 220, 44);
+
+  // Category
+  if (quizCategory) {
+    ctx.fillStyle = "#8a5a30";
+    ctx.font = '18px "Amiri", Georgia, serif';
+    titleBottom = Math.max(titleBottom, 540);
+    ctx.fillText(`Category: ${quizCategory}`, W / 2, titleBottom + 38);
+    titleBottom += 38;
+  }
+
+  // Score line
+  ctx.fillStyle = "#7c3f00";
+  ctx.font = '20px "Amiri", Georgia, serif';
+  ctx.fillText("with a perfect score of 100%", W / 2, titleBottom + 54);
+
+  // ── Divider (footer) ─────────────────────────────────────────────────────────
+  _gradLine(ctx, W, H - 115, 1);
+
+  // ── Footer ───────────────────────────────────────────────────────────────────
+  const dateStr = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Left: date
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#4a2810";
+  ctx.font = 'bold 17px "Amiri", Georgia, serif';
+  ctx.fillText(dateStr, 90, H - 80);
+  ctx.fillStyle = "#b8860b";
+  ctx.font = '13px "Amiri", Georgia, serif';
+  ctx.fillText("Issue Date", 90, H - 60);
+
+  // Right: platform name (Arabic) + author
+  ctx.textAlign = "right";
+  ctx.direction = "ltr";
+  ctx.fillStyle = "#4a2810";
+  ctx.font = 'bold 22px "Amiri", serif';
+  ctx.fillText("إمتحانات بصمجي", W - 90, H - 77);
+  ctx.fillStyle = "#8a5a30";
+  ctx.font = '14px "Amiri", Georgia, serif';
+
+  return canvas;
+}
+
+// ── Private helpers ────────────────────────────────────────────────────────────
+function _drawStar(ctx, cx, cy, spikes, outer, inner, color) {
+  let rot = (Math.PI / 2) * 3;
+  const step = Math.PI / spikes;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - outer);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(cx + Math.cos(rot) * outer, cy + Math.sin(rot) * outer);
+    rot += step;
+    ctx.lineTo(cx + Math.cos(rot) * inner, cy + Math.sin(rot) * inner);
+    rot += step;
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function _gradLine(ctx, W, y, lw) {
+  const g = ctx.createLinearGradient(0, 0, W, 0);
+  g.addColorStop(0, "transparent");
+  g.addColorStop(0.2, "#b8860b");
+  g.addColorStop(0.8, "#b8860b");
+  g.addColorStop(1, "transparent");
+  ctx.strokeStyle = g;
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(80, y);
+  ctx.lineTo(W - 80, y);
+  ctx.stroke();
+}
+
+// Wraps text at maxWidth, returns Y of the last line drawn.
+function _wrapText(ctx, text, x, y, maxWidth, lineH) {
+  const words = text.split(" ");
+  let line = "",
+    curY = y;
+  for (const word of words) {
+    const test = line + (line ? " " : "") + word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, curY);
+      line = word;
+      curY += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, curY);
+  return curY;
 }

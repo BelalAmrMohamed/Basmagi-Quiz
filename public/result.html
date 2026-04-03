@@ -354,6 +354,17 @@
         </div>
 
         <!-- Score Header Card (rendered by result.js) -->
+        <!-- Skeleton shown until JS renders the real content -->
+        <div id="scoreHeaderSkeleton">
+            <div class="skeleton-circle" style="width:180px;height:180px;flex-shrink:0;"></div>
+            <div class="skeleton-header-body">
+                <div class="skeleton-block" style="height:28px;width:60%;border-radius:8px;"></div>
+                <div class="skeleton-block" style="height:20px;width:40%;border-radius:6px;margin-top:4px;"></div>
+                <div class="skeleton-block"
+                    style="height:120px;width:100%;max-width:360px;border-radius:10px;margin-top:8px;"></div>
+                <div class="skeleton-block" style="height:16px;width:50%;border-radius:6px;margin-top:4px;"></div>
+            </div>
+        </div>
         <div id="scoreHeader"></div>
 
         <!-- Score / Back Button Card -->
@@ -376,7 +387,37 @@
     </div>
 
     <!-- Review Section — outside .container so it can be constrained by its own max-width rule -->
+    <div id="reviewSkeleton" style="max-width:1000px;margin:0 auto;padding:0 4px;">
+        <div class="skeleton-block" style="height:88px;border-radius:16px;margin-bottom:16px;"></div>
+        <div class="skeleton-block" style="height:88px;border-radius:16px;margin-bottom:16px;opacity:0.7;"></div>
+        <div class="skeleton-block" style="height:88px;border-radius:16px;margin-bottom:16px;opacity:0.4;"></div>
+    </div>
     <div id="reviewContainer"></div>
+
+    <!-- ── Perfect-Score Certificate Overlay ──────────────────────────────── -->
+    <div id="certificateOverlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="certModalTitle">
+        <div class="cert-modal">
+            <div class="cert-modal-header">
+                <div style="font-size:2.5rem;">🏆</div>
+                <h2 id="certModalTitle">درجة مثالية! — Perfect Score!</h2>
+                <p>لقد أتممت الإختبار بدرجة 100٪ — You aced it with a perfect 100%</p>
+            </div>
+            <!-- Live preview (canvas rendered as <img>) -->
+            <div class="cert-preview-wrap" id="certPreviewWrap"></div>
+            <div class="cert-actions">
+                <button class="cert-btn cert-btn-download" id="certDownloadBtn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" x2="12" y1="15" y2="3" />
+                    </svg>
+                    تحميل PNG
+                </button>
+                <button class="cert-btn cert-btn-close" id="certCloseBtn">إغلاق</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Contact Developer Overlay -->
     <div id="contactDevOverlay" class="contact-overlay" style="display:none;" role="dialog" aria-modal="true"
