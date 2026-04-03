@@ -59,37 +59,24 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
 
   // ── Score summary (only in results mode) ──────────────────────────────────
   if (isResultsMode) {
-    let mcqTotal = 0,
-      mcqCorrect = 0,
-      mcqWrong = 0,
-      mcqSkipped = 0;
-    let essayTotalScore = 0,
-      essayMaxScore = 0;
-    questions.forEach((q, i) => {
-      if (isEssayQuestion(q)) {
-        const userText = userAnswers[i] || "";
-        essayTotalScore += gradeEssay(userText, q.answer);
-        essayMaxScore += 5;
-      } else {
-        mcqTotal++;
-        const ans = userAnswers[i];
-        if (ans === null || ans === undefined) mcqSkipped++;
-        else if (ans === q.correct) mcqCorrect++;
-        else mcqWrong++;
-      }
-    });
-
-    const essayCount = essayMaxScore / 5;
-    const totalScore = mcqCorrect + essayTotalScore;
-    const totalPoss = mcqTotal + essayMaxScore;
-    const percent =
-      totalPoss > 0 ? Math.round((totalScore / totalPoss) * 100) : 0;
-    const passed = percent >= 70;
+    const {
+      mcqCorrect,
+      mcqWrong,
+      mcqSkipped,
+      mcqTotal,
+      essayCount,
+      essayScoreTotal,
+      essayMaxTotal,
+      percentage,
+    } = calculateQuizMetrics(questions, userAnswers);
+    const totalScore = mcqCorrect + essayScoreTotal;
+    const totalPoss = mcqTotal + essayMaxTotal;
+    const passed = percentage >= 70;
     const status = passed ? "✅ Passed" : "❌ Not Passed";
 
     markdown += `## 📊 Your Results\n\n`;
     markdown += `| Metric | Value |\n|--------|-------|\n`;
-    markdown += `| **Overall Score** | ${totalScore} / ${totalPoss} pts (${percent}%) |\n`;
+    markdown += `| **Overall Score** | ${totalScore} / ${totalPoss} pts (${percentage}%) |\n`;
     markdown += `| **Status** | ${status} |\n`;
     markdown += `| **Number of questions** | ${mcqTotal + essayCount} |\n`;
     if (mcqTotal > 0) {
@@ -98,9 +85,9 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
       markdown += `| ⚪ Skipped | ${mcqSkipped} |\n`;
     }
     if (essayCount > 0) {
-      const totalStars = Math.round((essayTotalScore / essayMaxScore) * 5);
+      const totalStars = Math.round((essayScoreTotal / essayMaxTotal) * 5);
       const summaryStars = "★".repeat(totalStars) + "☆".repeat(5 - totalStars);
-      markdown += `| ✏️ Essay Score | ${essayTotalScore} / ${essayMaxScore} pts  ${summaryStars} |\n`;
+      markdown += `| ✏️ Essay Score | ${essayScoreTotal} / ${essayMaxTotal} pts  ${summaryStars} |\n`;
     }
     markdown += `\n---\n\n`;
   } else {

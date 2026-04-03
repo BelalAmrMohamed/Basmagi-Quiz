@@ -148,6 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     essayMaxTotal,
     isEssayOnly,
     percentage,
+    actualPercentage,
   } = calculateQuizMetrics(questions, result.userAnswers);
 
   // displayScore / displayTotal are kept for the legacy scoreDisplay element
@@ -336,6 +337,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     scoreDisplay,
     result,
     percentage,
+    actualPercentage,
     isEssayOnly,
     mcqCorrect,
     mcqWrong,
@@ -458,17 +460,25 @@ function countUp(el, target, duration = 1200) {
 /**
  * renderHeader — builds the score-circle + stats panel inside #scoreHeader.
  *
- * `percentage` and `isEssayOnly` now come directly from calculateQuizMetrics,
- * so the percentage always reflects the correct formula for the quiz type.
+ * `actualPercentage` is the holistic combined score (MCQ + essay) from
+ * calculateQuizMetrics. `percentage` is preserved for the legacy scoreDisplay
+ * count-up animation (MCQ-only view).
  *
- * The .total-score-line shows MCQ score (mcqCorrect / mcqTotal) and is hidden
- * entirely for essay-only quizzes via an inline display:none style.
+ * Layout:
+ *   .score-header-inner
+ *     ├── .score-circle  (hero percentage ring)
+ *     └── .score-header-body
+ *           ├── h2 greeting + .points-pill
+ *           ├── .score-detail-table  ← new results-detail style table
+ *           ├── .time-line
+ *           └── .new-badges-section  (if any badges earned)
  */
 function renderHeader(
   scoreHeader,
   scoreDisplay,
   data,
   percentage,
+  actualPercentage,
   isEssayOnly,
   mcqCorrect,
   mcqWrong,
@@ -482,6 +492,16 @@ function renderHeader(
   const points = data.gamification ? data.gamification.pointsEarned : 0;
   const newBadges = data.gamification ? data.gamification.newBadges : [];
 
+  // Use actualPercentage for the hero circle (holistic); fall back to
+  // percentage for safety in case the metric isn't available yet.
+  const displayPct =
+    actualPercentage !== undefined ? actualPercentage : percentage;
+  const passed = displayPct >= 70;
+
+  const hasMcq = mcqTotal > 0;
+  const hasEssay = essayCount > 0;
+
+  // ── Badges section ─────────────────────────────────────────────────────────
   let badgeHTML = "";
   if (newBadges.length > 0) {
     badgeHTML = `
@@ -501,43 +521,225 @@ function renderHeader(
       </div>`;
   }
 
-  // MCQ row — only show if there are MCQ questions
-  const mcqRow =
-    mcqTotal > 0
-      ? `
-    <div class="score-breakdown">
-      <span class="breakdown-item breakdown-correct"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg> ${mcqCorrect} صحيح</span>
-      <span class="breakdown-item breakdown-wrong"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> ${mcqWrong} خطأ</span>
-      ${mcqSkipped > 0 ? `<span class="breakdown-item breakdown-skipped"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus-icon lucide-minus"><path d="M5 12h14"/></svg> ${mcqSkipped} متخطى</span>` : ""}
-    </div>`
-      : "";
-
-  // Essay row — only show if there are essay questions
-  const essayRow =
-    essayCount > 0
-      ? `
-    <div class="essay-score-row">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg>
-      <span>المقالي: ${essayScoreTotal} / ${essayMaxTotal}</span>
-      ${starRating(Math.round(essayScoreTotal / Math.max(essayCount, 1)), 5)}
-    </div>`
-      : "";
-
+  // ── Score detail table rows (adaptive per quiz type) ───────────────────────
   const userNameHtml = `<span id="result-page-username">${userName}</span>`;
+  let tableRows = "";
+
+  if (hasMcq && hasEssay) {
+    // Mixed quiz — show all breakdowns
+    const mcqPct = mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0;
+    const essayPct =
+      essayMaxTotal > 0
+        ? Math.round((essayScoreTotal / essayMaxTotal) * 100)
+        : 0;
+    const essayStars =
+      "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+      `<span class="sdt-star-empty">${"★".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5))}</span>`;
+    const totalScore = mcqCorrect + essayScoreTotal;
+    const totalPossible = mcqTotal + essayMaxTotal;
+
+    tableRows = `
+      <div class="sdt-row sdt-highlight">
+        <span class="sdt-label">النتيجة الكلية</span>
+        <span class="sdt-value">${displayPct}%</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">المجموع</span>
+        <span class="sdt-value">${totalScore} / ${totalPossible} نقطة</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">الأسئلة الموضوعية</span>
+        <span class="sdt-value">${mcqCorrect} / ${mcqTotal} &nbsp;<span class="sdt-pct">${mcqPct}%</span></span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">خطأ</span>
+        <span class="sdt-value sdt-wrong">${mcqWrong}</span>
+      </div>
+      ${
+        mcqSkipped > 0
+          ? `
+      <div class="sdt-row">
+        <span class="sdt-label">متخطى</span>
+        <span class="sdt-value sdt-skipped">${mcqSkipped}</span>
+      </div>`
+          : ""
+      }
+      <div class="sdt-row">
+        <span class="sdt-label">المقالي</span>
+        <span class="sdt-value">${essayScoreTotal} / ${essayMaxTotal} &nbsp;<span class="sdt-stars">${essayStars}</span></span>
+      </div>
+      <div class="sdt-row sdt-last">
+        <span class="sdt-label">الحالة</span>
+        <span class="sdt-value ${passed ? "sdt-pass" : "sdt-fail"}">${passed ? "✓ ناجح" : "✗ راسب"}</span>
+      </div>`;
+  } else if (hasEssay) {
+    // Essay-only quiz
+    const essayStars =
+      "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+      `<span class="sdt-star-empty">${"★".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5))}</span>`;
+    tableRows = `
+      <div class="sdt-row sdt-highlight">
+        <span class="sdt-label">النتيجة الكلية</span>
+        <span class="sdt-value">${displayPct}%</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">درجة المقالي</span>
+        <span class="sdt-value">${essayScoreTotal} / ${essayMaxTotal} نقطة</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">التقييم</span>
+        <span class="sdt-value sdt-stars">${essayStars}</span>
+      </div>
+      <div class="sdt-row sdt-last">
+        <span class="sdt-label">الحالة</span>
+        <span class="sdt-value ${passed ? "sdt-pass" : "sdt-fail"}">${passed ? "✓ ناجح" : "✗ راسب"}</span>
+      </div>`;
+  } else {
+    // MCQ-only quiz
+    tableRows = `
+      <div class="sdt-row sdt-highlight">
+        <span class="sdt-label">النتيجة</span>
+        <span class="sdt-value">${displayPct}%</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">الإجابات الصحيحة</span>
+        <span class="sdt-value sdt-correct">${mcqCorrect} / ${mcqTotal}</span>
+      </div>
+      <div class="sdt-row">
+        <span class="sdt-label">الإجابات الخاطئة</span>
+        <span class="sdt-value sdt-wrong">${mcqWrong}</span>
+      </div>
+      ${
+        mcqSkipped > 0
+          ? `
+      <div class="sdt-row">
+        <span class="sdt-label">متخطى</span>
+        <span class="sdt-value sdt-skipped">${mcqSkipped}</span>
+      </div>`
+          : ""
+      }
+      <div class="sdt-row sdt-last">
+        <span class="sdt-label">الحالة</span>
+        <span class="sdt-value ${passed ? "sdt-pass" : "sdt-fail"}">${passed ? "✓ ناجح" : "✗ راسب"}</span>
+      </div>`;
+  }
+
+  // ── Assemble the header ────────────────────────────────────────────────────
   if (scoreHeader)
     scoreHeader.innerHTML = `
-    <div class="score-circle ${percentage >= 70 ? "pass" : "fail"}">
-      <span>${percentage}%</span>
+    <div class="score-header-inner">
+      <div class="score-circle ${passed ? "pass" : "fail"}">
+        <span>${displayPct}%</span>
+      </div>
+
+      <div class="score-header-body">
+        <h2 class="score-greeting">
+          ${
+            passed
+              ? `🎉 أحسنت يا ${userNameHtml}!`
+              : `📚 استمر في المذاكرة يا ${userNameHtml}`
+          }
+        </h2>
+
+        <div class="points-pill">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gem"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z"/><path d="M2 9h20"/></svg>
+          +${points} نقطة
+        </div>
+
+        <div class="score-detail-table">
+          ${tableRows}
+        </div>
+
+        <p class="time-line">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          الوقت: ${timeStr}
+        </p>
+
+        ${badgeHTML}
+      </div>
     </div>
-    <div class="stats-text">
-      <h2>${percentage >= 70 ? `أحسنت يا ${userNameHtml}!` : `استمر في المذاكرة يا ${userNameHtml}`}</h2>
-      <div class="points-pill"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gem-icon lucide-gem"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z"/><path d="M2 9h20"/></svg> +${points} نقطة</div>
-      <p class="total-score-line"${isEssayOnly ? ' style="display:none;"' : ""}>النتيجة (بدون المقالي) : <strong>${mcqCorrect} / ${mcqTotal}</strong></p>
-      ${mcqRow}
-      ${essayRow}
-      <p class="time-line"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> الوقت: ${timeStr}</p>
-      ${badgeHTML}
-    </div>
+
+    <style>
+      /* ── Score Header Layout ────────────────────────────────────── */
+      .score-header-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 28px;
+        flex-wrap: wrap;
+      }
+
+      /* ── Greeting ───────────────────────────────────────────────── */
+      .score-greeting {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin: 0 0 12px;
+        line-height: 1.4;
+      }
+
+      /* ── Score Detail Table ─────────────────────────────────────── */
+      /*   Mirrors the results-detail pattern used in export-to-quiz  */
+      /*   and export-to-html for consistent look across the app.      */
+      .score-detail-table {
+        border-radius: 10px;
+        border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+        overflow: hidden;
+        margin: 14px 0;
+        min-width: 240px;
+        max-width: 360px;
+        background: var(--card-bg, rgba(255,255,255,0.03));
+      }
+
+      .sdt-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        padding: 9px 16px;
+        font-size: 13.5px;
+        border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.07));
+      }
+
+      .sdt-last  { border-bottom: none; }
+
+      .sdt-highlight {
+        background: var(--card-answered, rgba(102,126,234,0.12));
+      }
+
+      .sdt-label {
+        color: var(--text-muted, #94a3b8);
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .sdt-value {
+        color: var(--text-primary, #f1f5f9);
+        font-weight: 600;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .sdt-highlight .sdt-label  { color: var(--info-text,   #93c5fd); }
+      .sdt-highlight .sdt-value  { color: var(--text-primary, #e2e8f0); font-size: 14.5px; }
+
+      .sdt-pass    { color: var(--success, #10b981) !important; }
+      .sdt-fail    { color: var(--error,   #ef4444) !important; }
+      .sdt-correct { color: var(--success, #10b981) !important; }
+      .sdt-wrong   { color: var(--error,   #ef4444) !important; }
+      .sdt-skipped { color: var(--text-muted, #94a3b8) !important; }
+      .sdt-pct     { color: var(--text-muted, #94a3b8); font-size: 12px; font-weight: 500; }
+
+      .sdt-stars       { color: #f59e0b; font-size: 1.05em; letter-spacing: 1px; }
+      .sdt-star-empty  { opacity: 0.3; }
+
+      /* ── Responsive: stack on narrow screens ────────────────────── */
+      @media (max-width: 480px) {
+        .score-header-inner { flex-direction: column; align-items: center; text-align: center; }
+        .score-detail-table { max-width: 100%; min-width: 0; width: 100%; }
+        .sdt-value          { text-align: right; }
+      }
+    </style>
   `;
 
   if (scoreDisplay) scoreDisplay.textContent = `${mcqCorrect} / ${mcqTotal}`;

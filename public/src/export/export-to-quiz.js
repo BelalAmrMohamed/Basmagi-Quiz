@@ -15,6 +15,7 @@ import {
   escHtml,
   normalizeLiteralNewlines,
 } from "../shared/markdown.js";
+
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
 
 export async function exportToQuiz(config, questions) {
@@ -41,7 +42,6 @@ export async function exportToQuiz(config, questions) {
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
   <script type="module">
-        const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
         const ICON_CHECK = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>\`;
 
         window.copyCodeBlock = (btn) => {
@@ -1485,6 +1485,7 @@ export async function exportToQuiz(config, questions) {
   </div>
   
   <script>
+  const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
   const questions = ${JSON.stringify(processedQuestions)};
   
   // ── Markdown + KaTeX integration (mirrored from create-quiz) ──
@@ -1503,6 +1504,12 @@ export async function exportToQuiz(config, questions) {
   
   ${gradeEssay.toString()}
   
+  ${calculateQuizMetrics.toString()}
+  
+  const isEssayQuestion = (question) => {
+    return question.answer;
+  };
+
   const quizApp = {
     userAnswers: new Array(questions.length).fill(null),
     submitted: false,
@@ -1593,7 +1600,7 @@ export async function exportToQuiz(config, questions) {
       this.userAnswers.forEach((ans, i) => {
         if (ans !== null) {
           const q = questions[i];
-          if (this.isEssayQuestion(q)) {
+          if (isEssayQuestion(q)) {
             const textarea = document.getElementById(\`essay\${i}\`);
             if (textarea) {
               textarea.value = ans;
@@ -1714,11 +1721,7 @@ export async function exportToQuiz(config, questions) {
           isFlagged ? 'Unflag question' : 'Flag question for review');
       }
     },
-  
-    isEssayQuestion(question) {
-      return question.answer;
-    },
-  
+    
     renderQuestionImage(imageUrl, qIndex) {
       if (!imageUrl) return "";
       return \`
@@ -1778,7 +1781,7 @@ export async function exportToQuiz(config, questions) {
     },
   
     renderQuestion(q, i) {
-      const isEssay = this.isEssayQuestion(q);
+      const isEssay = isEssayQuestion(q);
       const badgeText = isEssay ? "Essay" : "Multiple Choice";
       const badgeClass = isEssay ? "essay" : "";
   
@@ -2005,21 +2008,25 @@ export async function exportToQuiz(config, questions) {
         let essayMaxScore = 0;
   
         questions.forEach((q, i) => {
-          if (this.isEssayQuestion(q)) {
-            const score = this.handleEssaySubmission(i);
-            essayScore += score;
-            essayMaxScore += 5;
+          if (isEssayQuestion(q)) {
+            this.handleEssaySubmission(i);
           } else {
-            mcqTotal++;
-            const isCorrect = this.handleMCQSubmission(q, i);
-            if (isCorrect) mcqCorrect++;
+            this.handleMCQSubmission(q, i);
           }
   
           const exp = document.getElementById(\`exp\${i}\`);
           if (exp) exp.classList.add("show");
         });
+
+        ({
+          mcqCorrect,
+          mcqTotal,
+          essayScoreTotal: essayScore,
+          essayMaxTotal: essayMaxScore,
+          actualPercentage,
+        } = calculateQuizMetrics(questions, this.userAnswers));
   
-        this.showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore);
+        this.showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore, actualPercentage);
         
         submitBtn.classList.remove('loading');
         document.getElementById('reviewBtn').disabled = true;
@@ -2075,10 +2082,14 @@ export async function exportToQuiz(config, questions) {
       return isCorrect;
     },
   
-    showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore) {
+    showResults(mcqCorrect, mcqTotal, essayScore, essayMaxScore, actualPercentage) {
       const totalScore = mcqCorrect + essayScore;
       const totalPossible = mcqTotal + essayMaxScore;
-      const percent = totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0;
+      // Use the pre-computed actualPercentage from calculateQuizMetrics when available;
+      // fall back to local computation for backwards-compatibility (e.g. direct calls).
+      const percent = (actualPercentage !== undefined)
+        ? actualPercentage
+        : (totalPossible > 0 ? Math.round((totalScore / totalPossible) * 100) : 0);
       const passed = percent >= 70;
   
       const hasEssay = essayMaxScore > 0;
@@ -2111,9 +2122,10 @@ export async function exportToQuiz(config, questions) {
         <h2>\${passed ? "🎉 Great Job!" : "📚 Keep Practicing!"}</h2>
         <div class="results-detail">
           \${scoreBreakdown}
-          <p><strong>Percentage:</strong> \${percent}%</p>
-          <p><strong>Status:</strong> \${passed ? "✓ Passed" : "✗ Not Passed"}</p>
-          <p><strong>Time Taken:</strong> \${document.getElementById('timerDisplay').textContent}</p>
+          <p><strong>Overall Score:</strong> <span>\${percent}%</span></p>
+          \${(hasMcq && hasEssay) ? \`<p><strong>MCQ Score:</strong> <span>\${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></p>\` : ""}
+          <p><strong>Status:</strong> <span>\${passed ? "✓ Passed" : "✗ Not Passed"}</span></p>
+          <p><strong>Time Taken:</strong> <span>\${document.getElementById('timerDisplay').textContent}</span></p>
         </div>
         <p style="margin-top:20px;color:var(--text-muted)">Scroll up to review explanations and answers</p>
       \`;
