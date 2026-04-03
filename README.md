@@ -1,23 +1,10 @@
-# Quiz
+# منصة إمتحانات بصمجي
 
 **Interactive Mastery Quiz**
 
-Welcome to the inaugural release of **Quiz**, a sophisticated, beginner-friendly web application designed to elevate your understanding, interactive quiz experience. This release marks the foundation of an educational tool tailored for aspiring web developers, students, and programming enthusiasts. Built with modern web technologies, it combines intuitive design with robust functionality to foster learning in a fun, progressive manner.
+Welcome to the inaugural release of **Basmagi Quiz**, a sophisticated, beginner-friendly web application designed to elevate your understanding, interactive quiz experience. This release marks the foundation of an educational tool tailored for aspiring web developers, students, and programming enthusiasts. Built with modern web technologies, it combines intuitive design with robust functionality to foster learning in a fun, progressive manner.
 
-- **Vercel Link (Productino):** [منصة إمتحانات بصمجي](https://basmagi-quiz.vercel.app/)
-- **GitHub Pages Link (Testing):** [منصة إمتحانات بصمجي](https://belalamrmohamed.github.io/Quiz)
-
-## Table of contents
-
-- [Quiz](#quiz)
-  - [Table of contents](#table-of-contents)
-  - [Key Features](#key-features)
-  - [Live Link](#live-link)
-  - [The `Exam` folder's format](#the-exam-folders-format)
-  - [How quizzes are formatted](#how-quizzes-are-formatted)
-  - [License](LICENSE)
-  - [Acknowledgments](#acknowledgments)
-  - [The purpose of `.nojekyll` :](#the-purpose-of-nojekyll-)
+- **Link:** [منصة إمتحانات بصمجي](https://basmagi-quiz.vercel.app/)
 
 ---
 
@@ -71,23 +58,22 @@ Exams / {faculty [metadata]} / {year [metadata]} / {term [metadata]} / {Courses}
 
 Each quiz is smartly formatted in its own javascript file
 
-```js
-export const questions = [
-  {
-    // The question can have 2, 3, 4 or more options.
-    q: "`MCQ` or `true and false` question text here?",
-    options: ["Option A", "Option B", "Option C", "Option D", "Option E"],
-    correct: 0,
-    explanation: "Explanation goes here. Or it can be empty",
-  },
-  {
-    q: "Essay type question text here?",
-    options: ["The answer to the essay question goes here as a single option."],
-    correct: 0, // Always 0 since the first option is the only one option
-    explanation: "Explanation goes here. Or it can be empty",
-  },
-  // ... rest of the questions
-];
+```json
+{
+  "questions": [
+    {
+      "q": "MCQ or True and False question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D", "Option E"],
+      "correct": 0,
+      "explanation": "Explanation goes here. [Optional] You can remove totally"
+    },
+    {
+      "q": "Essay type question text here?",
+      "answer": "The answer to the essay question goes here as a single option.",
+      "explanation": "Explanation goes here. [Optional] You can remove totally"
+    }
+  ]
+}
 ```
 
 ---
