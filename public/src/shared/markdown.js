@@ -18,9 +18,14 @@
 // JSON round-trips or double-serialisation can leave the literal characters
 // backslash + n in a string instead of a real newline.  The renderer splits
 // on real newlines only, so fix this up before anything else runs.
+//
+// FIX 1: Use a negative lookahead (?![a-zA-Z]) so that LaTeX command names
+// like \neq, \nabla, \nu etc. are NOT treated as newlines.  Only the
+// two-character sequence \n that is NOT immediately followed by an ASCII
+// letter is replaced with a real newline character.
 export function normalizeLiteralNewlines(text) {
   if (!text || !text.includes("\\n")) return text;
-  return text.replace(/\\n/g, "\n");
+  return text.replace(/\\n(?![a-zA-Z])/g, "\n");
 }
 
 // ─── 2. HTML escaping ─────────────────────────────────────────────────────────
@@ -245,22 +250,22 @@ export function _renderMarkdownCore(str) {
     },
   );
 
-  // ── Step 3: Line-by-line block elements ────────────────────────────────────
+  // ── Step 3: Tokenize lines ─────────────────────────────────────────────────
+  // Each raw line is classified into one of: stash | hr | heading | blockquote
+  //   | list | blank | text
+  //
+  // FIX 2: List regexes now allow leading whitespace (\s*) so that indented
+  // bullet/number lines are correctly detected as nested list items.
+  //
+  // FIX 4: Instead of emitting bare lines joined later with <br>, we collect
+  // consecutive text lines into <p> segments and rely on CSS margins for
+  // spacing.  Adjacent text lines (no blank between them) join into the same
+  // paragraph with a space, matching GFM paragraph semantics.
+
   const rawLines = str.split("\n");
-  const outParts = [];
-  let listBuf = [];
-  let listTag = null;
 
-  const flushList = () => {
-    if (listBuf.length) {
-      outParts.push(
-        `<${listTag} class="md-list">${listBuf.join("")}</${listTag}>`,
-      );
-      listBuf = [];
-      listTag = null;
-    }
-  };
-
+  // Helper: escape HTML around stash tokens that appear on the same line as
+  // other text (safety measure; in practice stash tokens are always alone).
   const escapeAroundTokens = (line) => {
     const TOKEN_RE = /(\x00ST\d+\x00)/g;
     return line
@@ -269,92 +274,215 @@ export function _renderMarkdownCore(str) {
       .join("");
   };
 
-  for (const rawLine of rawLines) {
-    if (/\x00ST\d+\x00/.test(rawLine)) {
-      flushList();
-      outParts.push(escapeAroundTokens(rawLine));
-      continue;
+  // Tokenize
+  const lineTokens = rawLines.map((line) => {
+    // Stash placeholder — pass through verbatim (with surrounding text escaped)
+    if (/\x00ST\d+\x00/.test(line)) {
+      return { type: "stash", html: escapeAroundTokens(line) };
     }
-
     // Horizontal rule  ---  ***  ___
-    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(rawLine)) {
-      flushList();
-      outParts.push('<hr class="md-hr">');
-      continue;
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      return { type: "hr" };
     }
-
     // Headings  # … ######
-    const hMatch = rawLine.match(/^(#{1,6})\s+(.+)$/);
+    const hMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (hMatch) {
-      flushList();
-      const lvl = hMatch[1].length;
-      outParts.push(
-        `<h${lvl} class="md-h${lvl}">${applyInline(escHtml(hMatch[2]))}</h${lvl}>`,
-      );
-      continue;
+      return { type: "heading", level: hMatch[1].length, content: hMatch[2] };
     }
-
     // Blockquote  >
-    const bqMatch = rawLine.match(/^>\s*(.*)$/);
+    const bqMatch = line.match(/^>\s*(.*)$/);
     if (bqMatch) {
-      flushList();
-      outParts.push(
-        `<blockquote class="md-blockquote">${applyInline(escHtml(bqMatch[1]))}</blockquote>`,
-      );
-      continue;
+      return { type: "blockquote", content: bqMatch[1] };
     }
-
-    // Unordered list  - / * / +
-    const ulMatch = rawLine.match(/^[-*+]\s+(.+)$/);
+    // FIX 2: Unordered list item — leading spaces captured for indent level
+    const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
     if (ulMatch) {
-      if (listTag === "ol") flushList();
-      listTag = "ul";
-      listBuf.push(`<li>${applyInline(escHtml(ulMatch[1]))}</li>`);
-      continue;
+      return {
+        type: "list",
+        listType: "ul",
+        indent: ulMatch[1].length,
+        content: ulMatch[2],
+      };
     }
-
-    // Ordered list  1.
-    const olMatch = rawLine.match(/^\d+\.\s+(.+)$/);
+    // FIX 2: Ordered list item — leading spaces captured for indent level
+    const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
     if (olMatch) {
-      if (listTag === "ul") flushList();
-      listTag = "ol";
-      listBuf.push(`<li>${applyInline(escHtml(olMatch[1]))}</li>`);
+      return {
+        type: "list",
+        listType: "ol",
+        indent: olMatch[1].length,
+        content: olMatch[2],
+      };
+    }
+    // Blank line
+    if (line.trim() === "") {
+      return { type: "blank" };
+    }
+    // Regular inline text
+    return { type: "text", content: line };
+  });
+
+  // ── Step 4: Group tokens into rendering segments ───────────────────────────
+  // Segments are:
+  //   { type: "para",  html }        — one or more text lines → <p>
+  //   { type: "list",  items }        — one or more list items (nest-aware)
+  //   { type: "block", html }         — single self-contained block element
+
+  const segments = [];
+  let ti = 0;
+
+  while (ti < lineTokens.length) {
+    const tok = lineTokens[ti];
+
+    // ── Blank lines between segments are simply dropped ──────────────────
+    // Paragraph separation is achieved by the segment boundary itself
+    // (each <p> or block element carries its own CSS margin).
+    if (tok.type === "blank") {
+      ti++;
       continue;
     }
 
-    // Empty line → paragraph break
-    if (rawLine.trim() === "") {
-      flushList();
-      outParts.push("<br>");
+    // ── Text lines → paragraph ───────────────────────────────────────────
+    // FIX 4: Consecutive text lines form one <p> (joined with a space).
+    // A blank line ends the paragraph accumulation, creating a new segment
+    // for the next run of text lines.
+    if (tok.type === "text") {
+      const lines = [];
+      while (ti < lineTokens.length && lineTokens[ti].type === "text") {
+        lines.push(applyInline(escHtml(lineTokens[ti].content)));
+        ti++;
+      }
+      segments.push({
+        type: "block",
+        html: `<p class="md-p">${lines.join(" ")}</p>`,
+      });
       continue;
     }
 
-    // Regular text line
-    flushList();
-    outParts.push(applyInline(escHtml(rawLine)));
+    // ── List items → list segment ─────────────────────────────────────────
+    // FIX 3: Blank lines between list items are absorbed as long as the
+    // next non-blank token is also a list item.  This keeps a numbered list
+    // with blank-line-separated entries as a single <ol> instead of
+    // resetting to item 1 for every sub-group.
+    if (tok.type === "list") {
+      const items = [];
+      while (ti < lineTokens.length) {
+        if (lineTokens[ti].type === "list") {
+          items.push(lineTokens[ti]);
+          ti++;
+        } else if (lineTokens[ti].type === "blank") {
+          // Peek ahead past all consecutive blanks
+          let j = ti + 1;
+          while (j < lineTokens.length && lineTokens[j].type === "blank") j++;
+          if (j < lineTokens.length && lineTokens[j].type === "list") {
+            // There is a list item after the blanks — absorb the blanks
+            ti = j;
+          } else {
+            // No more list items ahead — end this list segment
+            break;
+          }
+        } else {
+          // Non-blank, non-list token — end of list
+          break;
+        }
+      }
+      segments.push({ type: "list", items });
+      continue;
+    }
+
+    // ── Block tokens: stash, hr, heading, blockquote ─────────────────────
+    let blockHtml = "";
+    if (tok.type === "stash") {
+      blockHtml = tok.html;
+    } else if (tok.type === "hr") {
+      blockHtml = '<hr class="md-hr">';
+    } else if (tok.type === "heading") {
+      const lvl = tok.level;
+      blockHtml = `<h${lvl} class="md-h${lvl}">${applyInline(escHtml(tok.content))}</h${lvl}>`;
+    } else if (tok.type === "blockquote") {
+      blockHtml = `<blockquote class="md-blockquote">${applyInline(escHtml(tok.content))}</blockquote>`;
+    }
+    segments.push({ type: "block", html: blockHtml });
+    ti++;
   }
 
-  flushList();
+  // ── Step 4b: Nested list renderer ─────────────────────────────────────────
+  // FIX 2: Renders a flat array of list-item tokens into properly nested
+  // <ul>/<ol> elements by tracking indent levels recursively.
+  //
+  // Algorithm: renderLevel() claims items whose indent equals the indent of
+  // the first item it sees.  Any item with a greater indent triggers a
+  // recursive call (sub-list appended inside the current <li>).  Any item
+  // with a smaller indent is left for the caller.  If the list-type changes
+  // at the same indent level the current list is closed and a new one opens.
+  function renderNestedList(items) {
+    if (!items.length) return "";
 
-  // ── Step 4: Join lines — insert <br> only between inline segments ──────────
-  const BLOCK_START = /^<(h[1-6]|ul|ol|blockquote|hr|div|pre|p)[\s>\/]/;
-  const BLOCK_END = /^<\/(h[1-6]|ul|ol|blockquote|div|pre|p)>/;
-  const isBlock = (s) =>
-    s === undefined ||
-    s === "" ||
-    s === "<br>" ||
-    BLOCK_START.test(s) ||
-    BLOCK_END.test(s);
+    function renderLevel(startIdx, levelIndent) {
+      if (startIdx >= items.length || items[startIdx].indent < levelIndent) {
+        return { html: "", nextIdx: startIdx };
+      }
 
+      const firstIndent = items[startIdx].indent;
+      const tag = items[startIdx].listType;
+      let html = `<${tag} class="md-list">`;
+      let i = startIdx;
+
+      while (i < items.length) {
+        const item = items[i];
+
+        // Go back up — shallower item belongs to an ancestor list
+        if (item.indent < firstIndent) break;
+
+        // Same depth but different list type (ul ↔ ol) — close and restart
+        if (item.indent === firstIndent && item.listType !== tag) break;
+
+        // Deeper item without a preceding same-level item — malformed input;
+        // surface it at current level as a safety fallback
+        if (item.indent > firstIndent) break;
+
+        // ── Emit <li> for this item ────────────────────────────────────
+        let liContent = applyInline(escHtml(item.content));
+        i++;
+
+        // If the next item is more indented, it forms a nested sub-list
+        // that is appended inside the current <li> before it is closed.
+        if (i < items.length && items[i].indent > firstIndent) {
+          const sub = renderLevel(i, items[i].indent);
+          liContent += sub.html;
+          i = sub.nextIdx;
+        }
+
+        html += `<li>${liContent}</li>`;
+      }
+
+      html += `</${tag}>`;
+      return { html, nextIdx: i };
+    }
+
+    // Loop in case the top-level items alternate between ul and ol types
+    let result = "";
+    let i = 0;
+    while (i < items.length) {
+      const { html, nextIdx } = renderLevel(i, items[i].indent);
+      result += html;
+      if (nextIdx <= i) break; // safety guard against infinite loop
+      i = nextIdx;
+    }
+    return result;
+  }
+
+  // ── Step 5: Assemble final HTML ────────────────────────────────────────────
   let result = "";
-  for (let i = 0; i < outParts.length; i++) {
-    result += outParts[i];
-    if (!isBlock(outParts[i]) && !isBlock(outParts[i + 1])) {
-      result += "<br>";
+  for (const seg of segments) {
+    if (seg.type === "list") {
+      result += renderNestedList(seg.items);
+    } else {
+      result += seg.html;
     }
   }
 
-  // ── Step 5: Restore stashed blocks ────────────────────────────────────────
+  // ── Step 6: Restore stashed blocks ────────────────────────────────────────
   result = result.replace(/\x00ST(\d+)\x00/g, (_, i) => stash[parseInt(i)]);
 
   return result;
@@ -364,7 +492,7 @@ export function _renderMarkdownCore(str) {
 /**
  * Render a Markdown string to an HTML string.
  * Supports: KaTeX math, GFM tables, fenced code blocks with copy button,
- * headings, blockquotes, lists, bold/italic, links, images.
+ * headings, blockquotes, nested lists, bold/italic, links, images.
  *
  * @param {string} str — Raw Markdown input.
  * @returns {string}   — Safe HTML string ready for innerHTML.
