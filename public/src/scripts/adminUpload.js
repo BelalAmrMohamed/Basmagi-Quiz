@@ -371,6 +371,42 @@ function renderStep1(saved = {}) {
         <input type="text" id="adm-new-subject" placeholder="مثال: Software Engineering" maxlength="80" value="${saved.newSubject || ""}" />
       </div>
 
+      <!-- Year + Term: shown only when creating a new subject (hidden for existing ones, auto-resolved) -->
+      <div id="adm-yearterm-wrap" style="display:none;">
+        <div class="adm-row2">
+          <div class="adm-field">
+            <label for="adm-year">
+              السنة الدراسية
+              <span class="adm-badge adm-badge-choose">اختر</span>
+            </label>
+            <select id="adm-year">
+              <option value="">— اختر السنة —</option>
+              ${Object.entries(YEAR_LABELS)
+                .map(
+                  ([val, lbl]) =>
+                    `<option value="${val}" ${saved.year === val ? "selected" : ""}>${lbl}</option>`,
+                )
+                .join("")}
+            </select>
+          </div>
+          <div class="adm-field">
+            <label for="adm-term">
+              الترم
+              <span class="adm-badge adm-badge-choose">اختر</span>
+            </label>
+            <select id="adm-term">
+              <option value="">— اختر الترم —</option>
+              ${[1, 2]
+                .map(
+                  (val) =>
+                    `<option value="${val}" ${saved.term === String(val) ? "selected" : ""}>${TERM_LABELS[val]}</option>`,
+                )
+                .join("")}
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- Subfolder: from manifest + create new + none -->
       <div class="adm-field">
         <label for="adm-subfolder">
@@ -417,18 +453,11 @@ function renderStep1(saved = {}) {
   const subEl = document.getElementById("adm-subject");
   const folEl = document.getElementById("adm-subfolder");
 
-  // Hidden inputs carry year/term (auto-filled from manifest, not shown to user)
-  const yearHidden = document.createElement("input");
-  yearHidden.type = "hidden";
-  yearHidden.id = "adm-year";
-  yearHidden.value = saved.year || "";
-  document.getElementById("adm-id-wrap").after(yearHidden);
-
-  const termHidden = document.createElement("input");
-  termHidden.type = "hidden";
-  termHidden.id = "adm-term";
-  termHidden.value = saved.term || "";
-  yearHidden.after(termHidden);
+  // Year/Term are now visible <select> elements rendered in the HTML above.
+  // They are exposed only when the admin chooses "➕ إنشاء مادة جديدة";
+  // for existing subjects they are filled programmatically and the wrapper stays hidden.
+  const yearEl = document.getElementById("adm-year");
+  const termEl = document.getElementById("adm-term");
 
   async function refreshQuizId() {
     const { college, subject, year, term, subfolder } = getStep1Values();
@@ -453,29 +482,38 @@ function renderStep1(saved = {}) {
 
   // If college was already saved, populate dependents immediately
   if (saved.college) {
-    populateSubjects(
-      saved.college,
-      subEl,
-      folEl,
-      yearHidden,
-      termHidden,
-      saved,
-    );
+    populateSubjects(saved.college, subEl, folEl, yearEl, termEl, saved);
     refreshQuizId();
   }
 
   colEl.addEventListener("change", () => {
-    populateSubjects(colEl.value, subEl, folEl, yearHidden, termHidden, {});
+    populateSubjects(colEl.value, subEl, folEl, yearEl, termEl, {});
     refreshQuizId();
   });
 
   subEl.addEventListener("change", () => {
     const isNew = subEl.value === "__new__";
+    const yeartermWrap = document.getElementById("adm-yearterm-wrap");
+
     document.getElementById("adm-new-subject-wrap").style.display = isNew
       ? "block"
       : "none";
-    if (!isNew && subEl.value)
-      autoFillYearTerm(colEl.value, subEl.value, yearHidden, termHidden);
+
+    if (isNew) {
+      // Show year/term selects so admin can choose them manually
+      yeartermWrap.style.display = "block";
+      // Reset values so validation catches an empty pick
+      yearEl.value = "";
+      termEl.value = "";
+      yearEl.disabled = false;
+      termEl.disabled = false;
+    } else {
+      // Hide the wrap; auto-fill values silently from the manifest
+      yeartermWrap.style.display = "none";
+      if (subEl.value)
+        autoFillYearTerm(colEl.value, subEl.value, yearEl, termEl);
+    }
+
     populateSubfolders(colEl.value, subEl.value, folEl, {});
     refreshQuizId();
   });
