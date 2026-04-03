@@ -64,8 +64,8 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
       <div
         class="md-rendered${!rendered ? " md-empty" : ""} ltr"
         id="rendered-${id}"
-        onclick="activateMdEditor('${id}')"
-        onkeydown="if(event.key==='Enter'||event.key===' ')activateMdEditor('${id}')"
+        onclick="activateMdEditor(event, '${id}')"
+        onkeydown="if(event.key==='Enter'||event.key===' ')activateMdEditor(event, '${id}')"
         tabindex="0"
         role="button"
         aria-label="انقر للتعديل: ${placeholder.replace(/"/g, "&quot;")}"
@@ -83,7 +83,18 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
 }
 
 /** Switch a markdown editor field into edit mode */
-window.activateMdEditor = function (id) {
+window.activateMdEditor = function (e, id) {
+  // Support both activateMdEditor(id) and activateMdEditor(event, id)
+  if (typeof e === 'string' && !id) {
+    id = e;
+    e = null;
+  }
+  
+  if (e && e.target && e.target.closest && e.target.closest('button')) {
+    e.stopPropagation();
+    return;
+  }
+
   const renderedDiv = document.getElementById(`rendered-${id}`);
   const editPanel = document.getElementById(`editpanel-${id}`);
   const source = document.getElementById(id);
@@ -209,6 +220,29 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function setupEventListeners() {
+  // Close modals on background click
+  document.addEventListener("click", (e) => {
+    // Modal Overlays
+    if (e.target.classList.contains("modal-overlay")) {
+      if (e.target.id === "previewModal" && typeof window.closePreview === "function") {
+        window.closePreview();
+      } else if (e.target.id === "importModal" && typeof window.closeImportModal === "function") {
+        window.closeImportModal();
+      } else {
+        e.target.style.display = "none";
+      }
+    }
+    
+    // Shortcuts Panel
+    const shortcutsPanel = document.getElementById("shortcutsPanel");
+    if (shortcutsPanel && shortcutsPanel.style.display === "block") {
+      // Allow clicking the toggle button without immediately closing it
+      if (!shortcutsPanel.contains(e.target) && !e.target.closest('button[onclick="toggleShortcuts()"]')) {
+        toggleShortcuts();
+      }
+    }
+  });
+
   // Metadata event listeners
   const titleInput = document.getElementById("quizTitle");
   const descInput = document.getElementById("quizDescription");
@@ -288,8 +322,8 @@ function updateCharCount(elementId, current, max) {
 
 function setupKeyboardShortcuts() {
   document.addEventListener("keydown", (e) => {
-    // Ctrl+N: Add new question
-    if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+    // Alt+N: Add new question
+    if (e.altKey && e.key.toLowerCase() === "n") {
       e.preventDefault();
       addQuestion();
     }

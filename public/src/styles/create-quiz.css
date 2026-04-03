@@ -41,6 +41,7 @@ html {
 
 body {
   font-family:
+    "IBM Plex Sans Arabic",
     "Inter",
     -apple-system,
     BlinkMacSystemFont,
@@ -2051,27 +2052,27 @@ body {
 
 @media (max-width: 600px) {
   .modal-card {
-    border-radius: 12px 12px 0 0;
-    max-height: 92vh;
-    margin-top: auto;
-    width: 100%;
+    border-radius: 12px;
+    max-height: 95vh;
+    margin: 10px auto;
+    width: 95%;
   }
 
   .modal-overlay {
-    align-items: flex-end;
-    padding: 0;
+    align-items: center;
+    padding: 10px;
   }
 
   .modal-footer {
-    padding: 14px 16px;
+    padding: 10px 12px;
   }
 
   .modal-body {
-    padding: 16px;
+    padding: 12px;
   }
 
   .modal-header {
-    padding: 16px;
+    padding: 12px;
   }
 
   /* ============================================================================
@@ -2159,10 +2160,6 @@ body {
 
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .modal-card {
-    max-height: 95vh;
   }
 
   .shortcuts-panel {

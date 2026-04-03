@@ -11,7 +11,7 @@ body {
   align-items: center;
   justify-content: center;
   background: var(--color-background);
-  font-family: "Tajawal", "Inter", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Tajawal", "Inter", sans-serif;
   padding: 20px;
 }
 

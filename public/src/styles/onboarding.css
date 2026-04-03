@@ -70,7 +70,7 @@
 
 /* ── 3. Base Body (mobile-first) ────────────────────────────────────────────── */
 body {
-  font-family: "Tajawal", "Inter", sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
   font-size: var(--text-base);
   background: var(--bg-gradient);
   color: var(--text-main);
