@@ -381,12 +381,6 @@ function renderStep1(saved = {}) {
             </label>
             <select id="adm-year">
               <option value="">— اختر السنة —</option>
-              ${Object.entries(YEAR_LABELS)
-                .map(
-                  ([val, lbl]) =>
-                    `<option value="${val}" ${saved.year === val ? "selected" : ""}>${lbl}</option>`,
-                )
-                .join("")}
             </select>
           </div>
           <div class="adm-field">
@@ -396,12 +390,6 @@ function renderStep1(saved = {}) {
             </label>
             <select id="adm-term">
               <option value="">— اختر الترم —</option>
-              ${[1, 2]
-                .map(
-                  (val) =>
-                    `<option value="${val}" ${saved.term === String(val) ? "selected" : ""}>${TERM_LABELS[val]}</option>`,
-                )
-                .join("")}
             </select>
           </div>
         </div>
@@ -500,9 +488,10 @@ function renderStep1(saved = {}) {
       : "none";
 
     if (isNew) {
-      // Show year/term selects so admin can choose them manually
+      // Show year/term selects populated from what this college actually has
       yeartermWrap.style.display = "block";
-      // Reset values so validation catches an empty pick
+      populateYearsForCollege(colEl.value, yearEl);
+      populateTermsForCollegeYear(colEl.value, "", termEl); // all college terms until year is chosen
       yearEl.value = "";
       termEl.value = "";
       yearEl.disabled = false;
@@ -515,6 +504,14 @@ function renderStep1(saved = {}) {
     }
 
     populateSubfolders(colEl.value, subEl.value, folEl, {});
+    refreshQuizId();
+  });
+
+  // When admin picks a year while creating a new subject, narrow terms to that year
+  yearEl.addEventListener("change", () => {
+    if (subEl.value !== "__new__") return;
+    populateTermsForCollegeYear(colEl.value, yearEl.value, termEl);
+    termEl.value = "";
     refreshQuizId();
   });
 
@@ -567,7 +564,67 @@ function populateSubjects(college, subEl, folEl, yearEl, termEl, saved) {
   }
   if (saved.subject === "__new__") {
     document.getElementById("adm-new-subject-wrap").style.display = "block";
+    // Restore the year/term wrap with correctly cascaded options
+    document.getElementById("adm-yearterm-wrap").style.display = "block";
+    populateYearsForCollege(college, yearEl, saved.year || "");
+    populateTermsForCollegeYear(
+      college,
+      saved.year || "",
+      termEl,
+      saved.term || "",
+    );
+    yearEl.disabled = false;
+    termEl.disabled = false;
   }
+}
+
+/**
+ * Fills #adm-year with the unique years that actually exist in the chosen
+ * college's manifest (across all its subjects).  Preserves `selectedYear`
+ * if it is still a valid option.
+ */
+function populateYearsForCollege(college, yearEl, selectedYear = "") {
+  const yearsSet = new Set();
+  for (const subData of Object.values(MANIFEST_TREE[college] || {})) {
+    for (const [y] of subData.yearterm || []) yearsSet.add(y);
+  }
+  const years = [...yearsSet].sort();
+  yearEl.innerHTML = '<option value="">— اختر السنة —</option>';
+  years.forEach((y) => {
+    yearEl.appendChild(
+      Object.assign(document.createElement("option"), {
+        value: y,
+        textContent: YEAR_LABELS[y] || `السنة ${y}`,
+        selected: y === selectedYear,
+      }),
+    );
+  });
+}
+
+/**
+ * Fills #adm-term with the unique terms that exist for the given college and
+ * year in the manifest.  When `year` is empty, all terms in the college are
+ * shown (so the dropdown is never blank before the admin picks a year).
+ * Preserves `selectedTerm` if it is still a valid option.
+ */
+function populateTermsForCollegeYear(college, year, termEl, selectedTerm = "") {
+  const termsSet = new Set();
+  for (const subData of Object.values(MANIFEST_TREE[college] || {})) {
+    for (const [y, t] of subData.yearterm || []) {
+      if (!year || y === year) termsSet.add(t);
+    }
+  }
+  const terms = [...termsSet].sort();
+  termEl.innerHTML = '<option value="">— اختر الترم —</option>';
+  terms.forEach((t) => {
+    termEl.appendChild(
+      Object.assign(document.createElement("option"), {
+        value: t,
+        textContent: TERM_LABELS[t] || `الترم ${t}`,
+        selected: t === selectedTerm,
+      }),
+    );
+  });
 }
 
 function autoFillYearTerm(college, subject, yearEl, termEl) {
