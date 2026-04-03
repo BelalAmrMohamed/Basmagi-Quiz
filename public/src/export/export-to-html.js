@@ -12,6 +12,12 @@ import {
   calculateQuizMetrics,
 } from "../shared/rate-answers.js";
 
+import {
+  renderMarkdown,
+  _renderMarkdownCore,
+  normalizeLiteralNewlines,
+} from "../shared/markdown.js";
+
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
 
 export async function exportToHtml(config, questions, userAnswers = []) {
@@ -130,18 +136,28 @@ export async function exportToHtml(config, questions, userAnswers = []) {
           .code-block { background: #0d0d0d; border: 1px solid #444; border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.88rem; line-height: 1.6; white-space: pre; text-align: left; direction: ltr; }
           .code-block code { background: none; padding: 0; color: #e2e8f0; font-size: inherit; }
           .inline-code { font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.88em; background: rgba(99,102,241,0.15); border: 1px solid #555; border-radius: 4px; padding: 1px 6px; color: #a5b4fc; white-space: nowrap; }
-          .score-block { text-align: center; margin: 0 0 40px; padding: 32px 24px; background: #1e1e1e; border-radius: 16px; border: 1px solid #333; }
+          .score-block { text-align: center; margin: 0 0 40px; padding: 36px 28px 32px; background: #1e1e1e; border-radius: 16px; border: 1px solid #333; }
           .score-circle { width: 130px; height: 130px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: 800; color: #fff; position: relative; letter-spacing: -1px; }
           .score-circle::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 3px solid currentColor; opacity: 0.28; }
           .score-circle.pass { background: linear-gradient(135deg, #34d399, #059669); box-shadow: 0 8px 32px rgba(16,185,129,0.4); color: #fff; }
           .score-circle.fail { background: linear-gradient(135deg, #f87171, #dc2626); box-shadow: 0 8px 32px rgba(239,68,68,0.4); color: #fff; }
-          .score-label { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 20px; }
-          .score-stats { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
-          .stat-pill { padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-          .stat-correct { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); }
-          .stat-wrong   { background: rgba(239,68,68,0.2);  color: #f87171; border: 1px solid rgba(239,68,68,0.4);  }
-          .stat-skipped { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
-          .stat-essay   { background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+          .score-label { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 22px; }
+          /* ── Results Detail Table (mirrors export-to-quiz results-detail) ── */
+          .results-detail { max-width: 380px; margin: 0 auto; background: rgba(255,255,255,0.04); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); text-align: left; overflow: hidden; }
+          .rd-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 18px; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+          .rd-last { border-bottom: none; }
+          .rd-label { color: #94a3b8; font-weight: 500; white-space: nowrap; }
+          .rd-value { color: #e2e8f0; font-weight: 600; text-align: right; }
+          .rd-highlight { background: rgba(102,126,234,0.12); }
+          .rd-highlight .rd-label { color: #a5b4fc; }
+          .rd-highlight .rd-value { color: #c4b5fd; font-size: 15px; }
+          .rd-pass { color: #34d399 !important; }
+          .rd-fail { color: #f87171 !important; }
+          .stars { color: #f59e0b; font-size: 1.05em; letter-spacing: 1px; }
+          /* ── Option Buttons ── */
+          .options-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+          .option { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08); font-size: 0.95rem; color: #c8d3e0; transition: background 0.15s, border-color 0.15s; }
+          .option-letter { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; min-width: 28px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #94a3b8; font-weight: 700; font-size: 12px; flex-shrink: 0; }
           .ltr { direction: ltr; }
           /* ── Markdown CSS Variables Mapping ── */
           :root {
@@ -178,55 +194,66 @@ export async function exportToHtml(config, questions, userAnswers = []) {
 
   // ── Score summary block (only in results mode) ──────────────────────────────
   if (isResultsMode) {
-    let mcqTotal = 0,
-      mcqCorrect = 0,
-      mcqWrong = 0,
-      mcqSkipped = 0;
-    let essayTotalScore = 0,
-      essayMaxScore = 0;
-    processedQuestions.forEach((q, i) => {
-      if (isEssayQuestion(q)) {
-        const userText = userAnswers[i] || "";
-        essayTotalScore += gradeEssay(userText, q.answer);
-        essayMaxScore += 5;
-      } else {
-        mcqTotal++;
-        const ans = userAnswers[i];
-        if (ans === null || ans === undefined) mcqSkipped++;
-        else if (ans === q.correct) mcqCorrect++;
-        else mcqWrong++;
-      }
-    });
-
-    const essayCount = essayMaxScore / 5;
-    const totalScore = mcqCorrect + essayTotalScore;
-    const totalPoss = mcqTotal + essayMaxScore;
-    const percent =
-      totalPoss > 0 ? Math.round((totalScore / totalPoss) * 100) : 0;
-    const passed = percent >= 70;
+    const {
+      mcqCorrect,
+      mcqWrong,
+      mcqSkipped,
+      mcqTotal,
+      essayCount,
+      essayScoreTotal,
+      essayMaxTotal,
+      isEssayOnly,
+      percentage,
+      actualPercentage,
+    } = calculateQuizMetrics(processedQuestions, userAnswers);
+    const totalScore = mcqCorrect + essayScoreTotal;
+    const totalPoss = mcqTotal + essayMaxTotal;
+    // Use actualPercentage (holistic) for the hero circle; fall back to percentage for safety.
+    const displayPct =
+      actualPercentage !== undefined ? actualPercentage : percentage;
+    const passed = displayPct >= 70;
     const circleClass = passed ? "pass" : "fail";
     const label = passed ? "🎉 Great Job!" : "📚 Keep Practicing!";
 
-    let statsHtml = `
-    <div class="stat-pill stat-skipped"> Number of questions: ${mcqTotal + essayCount}</div>
-      <div class="stat-pill stat-correct">✓ Correct: ${mcqCorrect}</div>
-      <div class="stat-pill stat-wrong">✗ Wrong: ${mcqWrong}</div>
-      <div class="stat-pill stat-skipped">⚪ Skipped: ${mcqSkipped}</div>`;
+    // ── Build score breakdown rows (mirrors export-to-quiz results-detail) ──
+    const hasMcq = mcqTotal > 0;
+    const hasEssay = essayCount > 0;
 
-    let scoreInfo = "";
-    if (mcqTotal > 0)
-      scoreInfo += `<div class="stat-pill" style="background:rgba(148,163,184,0.1);color:#cbd5e1;border:1px solid rgba(148,163,184,0.2);font-size:13px">MCQ: ${mcqCorrect}/${mcqTotal}${essayCount > 0 ? ` · ✏️ Essays: ${essayTotalScore} / ${essayMaxScore}` : ""}</div>`;
-    scoreInfo += `<div class="stat-pill stat-correct" style="font-size:14px">Total score: ${totalScore} / ${totalPoss} pts</div>`;
+    let scoreRows = "";
+    if (hasMcq && hasEssay) {
+      const essayStars =
+        "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+        "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
+      scoreRows += `
+        <div class="rd-row"><span class="rd-label">Total Score</span><span class="rd-value">${totalScore} / ${totalPoss} pts</span></div>
+        <div class="rd-row"><span class="rd-label">MCQ</span><span class="rd-value">${mcqCorrect} / ${mcqTotal} correct</span></div>
+        <div class="rd-row"><span class="rd-label">Essays</span><span class="rd-value">${essayScoreTotal} / ${essayMaxTotal} pts &nbsp;<span class="stars">${essayStars}</span></span></div>
+        <div class="rd-row"><span class="rd-label">MCQ Score</span><span class="rd-value">${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></div>`;
+    } else if (hasEssay) {
+      const essayStars =
+        "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+        "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
+      scoreRows += `
+        <div class="rd-row"><span class="rd-label">Essay Score</span><span class="rd-value">${essayScoreTotal} / ${essayMaxTotal} pts</span></div>
+        <div class="rd-row"><span class="rd-label">Rating</span><span class="rd-value stars">${essayStars}</span></div>`;
+    } else {
+      scoreRows += `
+        <div class="rd-row"><span class="rd-label">Score</span><span class="rd-value">${mcqCorrect} / ${mcqTotal} correct</span></div>
+        <div class="rd-row"><span class="rd-label">Wrong</span><span class="rd-value">${mcqWrong}</span></div>
+        <div class="rd-row"><span class="rd-label">Skipped</span><span class="rd-value">${mcqSkipped}</span></div>`;
+    }
+
+    scoreRows += `
+      <div class="rd-row rd-highlight"><span class="rd-label">Overall Score</span><span class="rd-value">${displayPct}%</span></div>
+      <div class="rd-row"><span class="rd-label">Status</span><span class="rd-value ${passed ? "rd-pass" : "rd-fail"}">${passed ? "✓ Passed" : "✗ Not Passed"}</span></div>
+      <div class="rd-row rd-last"><span class="rd-label">Questions</span><span class="rd-value">${mcqTotal + essayCount} total</span></div>`;
 
     htmlContent += `
     <div class="score-block">
-      <div class="score-circle ${circleClass}">${percent}%</div>
+      <div class="score-circle ${circleClass}">${displayPct}%</div>
       <div class="score-label">${label}</div>
-      <div class="score-stats">
-        ${statsHtml}
-      </div>
-      <div class="score-stats" style="margin-top:10px">
-        ${scoreInfo}
+      <div class="results-detail">
+        ${scoreRows}
       </div>
     </div>`;
   }
@@ -271,7 +298,7 @@ export async function exportToHtml(config, questions, userAnswers = []) {
       htmlContent += `<div class="options-list">`;
       q.options.forEach((opt, i) => {
         const letter = String.fromCharCode(65 + i);
-        htmlContent += `<div class="option"><strong>${letter}.</strong> ${renderMarkdown(normalizeLiteralNewlines(opt))}</div>`;
+        htmlContent += `<div class="option"><span class="option-letter">${letter}</span><span>${renderMarkdown(normalizeLiteralNewlines(opt))}</span></div>`;
       });
       htmlContent += `</div>`;
 
