@@ -864,7 +864,7 @@ body {
 .fab-tooltip {
   position: absolute;
   top: 50%;
-  right: 70px;
+  left: 70px;
   transform: translateY(-50%);
   background: var(--color-text-primary);
   color: var(--color-background);
@@ -885,10 +885,10 @@ body {
   content: "";
   position: absolute;
   top: 50%;
-  left: 100%;
+  right: 100%;
   transform: translateY(-50%);
   border: 6px solid transparent;
-  border-left-color: var(--color-text-primary);
+  border-right-color: var(--color-text-primary);
 }
 
 /* Question Validation Indicators */
