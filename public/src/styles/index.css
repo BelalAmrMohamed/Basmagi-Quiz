@@ -2303,3 +2303,92 @@ kbd {
 .shortcuts-close:hover {
   background: var(--color-primary-hover);
 }
+
+/* ============================================================================
+   INLINE CREATE QUIZ MODAL
+   ============================================================================ */
+.create-quiz-inline-modal {
+  padding: 28px;
+  border-radius: 20px;
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  max-width: 550px;
+  width: 90%;
+  transform: translateY(20px);
+  opacity: 0;
+  animation: modalPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.inline-quiz-textarea {
+  flex-shrink: 1;
+  min-height: 100px;
+}
+
+.create-quiz-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.create-quiz-actions .main-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.inline-quiz-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.95rem;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: 1;
+}
+
+#inlineQuizCancel {
+  font-size: 0.85rem !important;
+  background: inherit !important;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  padding: 8px !important;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s;
+  align-self: center;
+}
+
+#inlineQuizCancel:hover {
+  background-color: transparent !important;
+  color: var(--color-text-primary) !important;
+}
+
+@media (max-width: 480px) {
+  .create-quiz-inline-modal {
+    padding: 16px;
+  }
+  .inline-quiz-textarea {
+    height: 15vh !important;
+    min-height: 120px;
+  }
+
+  .inline-quiz-btn {
+    width: 100%;
+    padding: 9px 15px;
+  }
+}
