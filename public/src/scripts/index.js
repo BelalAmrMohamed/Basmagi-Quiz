@@ -77,7 +77,10 @@ Output ONLY the JSON in the following format:
     }
   ]
 }
-\`\`\``;
+\`\`\`
+
+
+`;
 
 /**
  * Recursively count only the actual quiz/exam leaves under a category node.
