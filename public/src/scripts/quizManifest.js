@@ -160,11 +160,28 @@ function buildCompatStructures(subjects) {
 
     for (const quiz of subject.quizzes ?? []) {
       // Determine if this quiz is inside a subfolder by inspecting its path.
-      // Local quiz paths: "../../data/quizzes/College/Year/Term/Subject/[Subfolder/]file.json"
-      // DB quiz paths:    "/api/quiz-data?path=quizzes/College/Year/Term/Subject/[Subfolder/]file.json"
+      //
+      // Local quiz paths (relative):
+      //   "../../data/quizzes/College/Year/Term/Subject/[Subfolder/]file.json"
+      //
+      // DB quiz paths (encoded query parameter):
+      //   "/api/quiz-data?path=quizzes%2FCollege%2FYear%2FTerm%2FSubject%2F[Subfolder%2F]file.json"
+      //
+      // Fix (Bug 1): decode the `path` query-parameter value for DB paths so
+      // the canonical regex can match `/`-separated segments correctly.
+      // Local paths have no `?` and are left untouched.
       let subfolder = null;
       try {
-        const rawPath = quiz.path;
+        let rawPath = quiz.path;
+
+        // Isolate and decode the `path` query-parameter for DB URLs.
+        const qIdx = rawPath.indexOf("?");
+        if (qIdx !== -1) {
+          const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+          const pathParam = params.get("path");
+          if (pathParam) rawPath = decodeURIComponent(pathParam);
+        }
+
         // Extract the canonical part: "quizzes/College/Year/Term/Subject/..."
         const canonicalMatch = rawPath.match(
           /quizzes\/[^/]+\/\d+\/\d+\/[^/]+\/(.+)/,

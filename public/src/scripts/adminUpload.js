@@ -3,9 +3,9 @@
 // Admin quiz upload workflow — 3-step modal.
 //
 // Step 1 — Path selection:
-//   • College    → fixed list from MANIFEST_TREE (read-only, no creation)
-//   • Year       → (auto-populated from manifest for chosen college+subject) Shouldn't be changalbe
-//   • Term       → (auto-populated from manifest for chosen college+subject) Shouldn't be changalbe
+//   • College    → fixed list from live manifest (read-only, no creation)
+//   • Year       → (auto-populated from manifest for chosen college+subject) Shouldn't be changable
+//   • Term       → (auto-populated from manifest for chosen college+subject) Shouldn't be changable
 //   • Subject    → from manifest for selected college + "➕ إنشاء مادة جديدة"
 //   • Subfolder  → existing subfolders from manifest + "➕ إنشاء مجلد فرعي جديد" + none
 //
@@ -18,50 +18,89 @@ import { getToken, isAdminAuthenticated, signOut } from "./adminAuth.js";
 import { showNotification } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
 import { generateQuizId } from "./quizId.js";
+import { getManifest } from "./quizManifest.js";
 
-// ─── Manifest tree (auto-generated from quiz-manifest.json) ──────────────────
+// ─── Manifest tree (populated dynamically from getManifest()) ─────────────────
 // Structure: { college: { subject: { yearterm: [[year,term],...], subfolders: [...] } } }
-// Colleges are FIXED — admins cannot add new ones.
+// Colleges are derived from the live manifest — admins cannot add new ones.
 // Subjects and subfolders CAN be added by admins.
 
-const MANIFEST_TREE = {
-  "Computer Science": {
-    "Artificial Intelligence": { yearterm: [["2", "2"]], subfolders: [] },
-    "Computer Architecture": { yearterm: [["1", "2"]], subfolders: [] },
-    "Computer Network": {
-      yearterm: [["2", "1"]],
-      subfolders: ["أسئلة الدكتورة", "أسئلة بالذكاء الإصطناعي"],
-    },
-    "Data Structures and Algorithms": {
-      yearterm: [["2", "2"]],
-      subfolders: [],
-    },
-    "Database Management Systems": { yearterm: [["2", "2"]], subfolders: [] },
-    "Discrete Structure": { yearterm: [["2", "1"]], subfolders: [] },
-    Electronics: { yearterm: [["1", "2"]], subfolders: [] },
-    "Foundation of IS": { yearterm: [["2", "1"]], subfolders: [] },
-    "Math 2": { yearterm: [["1", "2"]], subfolders: [] },
-    "Object-Oriented Programming": { yearterm: [["2", "1"]], subfolders: [] },
-    "Operatings Systems": {
-      yearterm: [["2", "1"]],
-      subfolders: [
-        "أسئلة الدكتور اللي مش محلولة",
-        "أسئلة الدكتور المحلولة",
-        "إمتحانات جامعة الزقازيق",
-      ],
-    },
-    "Probability and Statistics": {
-      yearterm: [["2", "2"]],
-      subfolders: ["إمتحانات على المحاضرات"],
-    },
-    "Programming 1": { yearterm: [["1", "2"]], subfolders: [] },
-    "Programming 2": { yearterm: [["2", "1"]], subfolders: [] },
-    "Scientific thinking": { yearterm: [["1", "2"]], subfolders: [] },
-    "Server Lab": { yearterm: [["2", "2"]], subfolders: [] },
-    "System Analysis": { yearterm: [["2", "2"]], subfolders: [] },
-    "Website demo": { yearterm: [["2", "2"]], subfolders: [] },
-  },
-};
+let MANIFEST_TREE = {};
+
+/**
+ * Builds the MANIFEST_TREE structure that the Step 1 UI helpers consume.
+ * Derives colleges, subjects, year/term pairs, and subfolders from the merged
+ * subjects array returned by getManifest().
+ *
+ * Subfolder extraction uses the same path-decoding logic as quizManifest.js
+ * so that DB paths (/api/quiz-data?path=quizzes%2F...) are handled correctly.
+ *
+ * @param {Subject[]} subjects
+ * @returns {object} MANIFEST_TREE
+ */
+function buildManifestTree(subjects) {
+  const tree = {};
+
+  for (const subject of subjects) {
+    const college = subject.faculty;
+    const subjectName = subject.name;
+    const year = String(subject.year);
+    const term = String(subject.term);
+
+    if (!college) continue;
+    if (!tree[college]) tree[college] = {};
+
+    if (!tree[college][subjectName]) {
+      tree[college][subjectName] = {
+        yearterm: [[year, term]],
+        subfolders: [],
+      };
+    } else {
+      // Accumulate additional year/term pairs (e.g. if subject spans two terms)
+      const existing = tree[college][subjectName].yearterm;
+      if (!existing.some(([y, t]) => y === year && t === term)) {
+        existing.push([year, term]);
+      }
+    }
+
+    // Extract subfolders from quiz paths.
+    // DB paths are encoded query parameters and must be decoded first.
+    const seenSubfolders = new Set(tree[college][subjectName].subfolders);
+
+    for (const quiz of subject.quizzes ?? []) {
+      try {
+        let rawPath = quiz.path;
+
+        // Decode the `path` query-parameter for DB URLs
+        // e.g. /api/quiz-data?path=quizzes%2FCollege%2F1%2F2%2FSubject%2FSubfolder%2Ffile.json
+        const qIdx = rawPath.indexOf("?");
+        if (qIdx !== -1) {
+          const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+          const pathParam = params.get("path");
+          if (pathParam) rawPath = decodeURIComponent(pathParam);
+        }
+
+        // Match the canonical segment after the subject name
+        const canonicalMatch = rawPath.match(
+          /quizzes\/[^/]+\/\d+\/\d+\/[^/]+\/(.+)/,
+        );
+        if (canonicalMatch) {
+          const rest = canonicalMatch[1]; // e.g. "SubfolderName/file.json" or "file.json"
+          const segments = rest.split("/");
+          if (segments.length > 1) {
+            const subfolder = segments.slice(0, -1).join("/");
+            if (!seenSubfolders.has(subfolder)) {
+              seenSubfolders.add(subfolder);
+              tree[college][subjectName].subfolders.push(subfolder);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+  }
+
+  return tree;
+}
 
 // Year / Term display labels
 const YEAR_LABELS = { 1: "السنة الأولى", 2: "السنة الثانية" };
@@ -218,6 +257,10 @@ function injectStyles() {
     .adm-success h3 { font-size:1.1rem; color:var(--color-text-primary); margin:0 0 5px; }
     .adm-success p  { color:var(--color-text-secondary); font-size:.86rem; margin:3px 0; }
     .adm-success code { background:var(--color-background-secondary); padding:1px 6px; border-radius:4px; font-size:.78rem; }
+
+    /* Loading state for modal */
+    .adm-loading { text-align:center; padding:40px 22px; color:var(--color-text-secondary); font-size:.92rem; }
+    .adm-loading .adm-spinner { border-top-color:var(--color-primary); border-color:var(--color-border); margin:0 auto 12px; display:block; width:24px; height:24px; }
   `;
   document.head.appendChild(s);
 }
@@ -295,7 +338,7 @@ function renderStep1(saved = {}) {
     <div class="adm-body">
       <p class="adm-hint">حدّد موقع الاختبار في مكتبة المنصة</p>
 
-      <!-- College: fixed list, no creation -->
+      <!-- College: fixed list derived from live manifest, no creation -->
       <div class="adm-field">
         <label for="adm-college">
           الكلية / القسم
@@ -304,6 +347,7 @@ function renderStep1(saved = {}) {
         <select id="adm-college">
           <option value="">— اختر الكلية —</option>
           ${Object.keys(MANIFEST_TREE)
+            .sort()
             .map(
               (c) =>
                 `<option value="${c}" ${saved.college === c ? "selected" : ""}>${c}</option>`,
@@ -373,8 +417,7 @@ function renderStep1(saved = {}) {
   const subEl = document.getElementById("adm-subject");
   const folEl = document.getElementById("adm-subfolder");
 
-  // Hidden year/term stored as data attributes on the select (auto from manifest)
-  // We use a hidden select pair to keep the values without showing them
+  // Hidden inputs carry year/term (auto-filled from manifest, not shown to user)
   const yearHidden = document.createElement("input");
   yearHidden.type = "hidden";
   yearHidden.id = "adm-year";
@@ -771,7 +814,16 @@ function normalizeQuizSchema(quiz) {
 }
 
 // ─── Modal lifecycle ──────────────────────────────────────────────────────────
-function openModal(quiz) {
+
+/**
+ * Opens the upload modal.
+ *
+ * Now async: fetches the live merged manifest first, builds MANIFEST_TREE
+ * dynamically from it, then renders Step 1.  A lightweight loading state is
+ * shown in the modal while the manifest is being fetched so the user gets
+ * immediate visual feedback.
+ */
+async function openModal(quiz) {
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
     setTimeout(() => {
@@ -779,12 +831,34 @@ function openModal(quiz) {
     }, 1500);
     return;
   }
+
   injectStyles();
   _quiz = normalizeQuizSchema(quiz);
   _overlay = makeOverlay();
   document.body.appendChild(_overlay);
   document.body.style.overflow = "hidden";
 
+  // Show a loading placeholder while the manifest is fetched
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع إلى قاعدة البيانات")}
+    <div class="adm-loading">
+      <span class="adm-spinner"></span>
+      جارٍ تحميل بيانات المنصة…
+    </div>
+  </div>`;
+  window.__admClose = closeModal;
+
+  // Fetch the live manifest and build the dynamic tree
+  try {
+    const { subjects } = await getManifest();
+    MANIFEST_TREE = buildManifestTree(subjects);
+  } catch (err) {
+    console.error("[adminUpload] Failed to load manifest:", err);
+    // MANIFEST_TREE stays as {} — modal will still open but college list is empty
+    showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
+  }
+
+  // Determine a pre-selected college from the user profile (if it exists in tree)
   let savedCollege = "";
   try {
     const p = userProfile.getProfile();
