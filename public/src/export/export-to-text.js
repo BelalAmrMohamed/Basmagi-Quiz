@@ -4,6 +4,9 @@
 // and exportToText() that copies to clipboard + downloads as .txt.
 // No external libraries used.
 
+// ========= Issues =========
+// Weird overall score
+
 import { showNotification } from "../components/notifications.js";
 
 // Question helpers
@@ -35,46 +38,35 @@ export function buildQuizText(config, questions, userAnswers = []) {
 
   // ── Score summary (results mode only) ─────────────────────────────────────
   if (isResultsMode) {
-    let mcqTotal = 0,
-      mcqCorrect = 0,
-      mcqWrong = 0,
-      mcqSkipped = 0;
-    let essayTotalScore = 0,
-      essayMaxScore = 0;
-
-    questions.forEach((q, i) => {
-      if (isEssayQuestion(q)) {
-        const userText = userAnswers[i] || "";
-        essayTotalScore += gradeEssay(userText, q.answer);
-        essayMaxScore += 5;
-      } else {
-        mcqTotal++;
-        const ans = userAnswers[i];
-        if (ans === null || ans === undefined) mcqSkipped++;
-        else if (ans === q.correct) mcqCorrect++;
-        else mcqWrong++;
-      }
-    });
-
-    const essayCount = essayMaxScore / 5;
-    const totalScore = mcqCorrect + essayTotalScore;
-    const totalPoss = mcqTotal + essayMaxScore;
-    const percent =
-      totalPoss > 0 ? Math.round((totalScore / totalPoss) * 100) : 0;
-    const passed = percent >= 70;
+    const {
+      mcqCorrect,
+      mcqWrong,
+      mcqSkipped,
+      mcqTotal,
+      essayCount,
+      essayScoreTotal,
+      essayMaxTotal,
+      percentage,
+      actualPercentage,
+    } = calculateQuizMetrics(questions, userAnswers);
+    const totalScore = mcqCorrect + essayScoreTotal;
+    const totalPoss = mcqTotal + essayMaxTotal;
+    const passed = percentage >= 60;
 
     text += "=== Your Results ===\n";
-    text += `Overall Score : ${totalScore} / ${totalPoss} pts (${percent}%)\n`;
+    text += `Score : ${totalScore} / ${mcqTotal} (${percentage}%)\n`;
+    text += `Overall Score : ${totalScore} / ${totalPoss} (${actualPercentage}%)\n`;
     text += `Status        : ${passed ? "✅ Passed" : "❌ Not Passed"}\n`;
     text += `Questions     : ${mcqTotal + essayCount}\n`;
+    if (essayCount > 0) {
+      text += `  ✏ Essay     : ${essayScoreTotal} / ${essayMaxTotal} pts\n`;
+    }
     if (mcqTotal > 0) {
       text += `  ✓ Correct   : ${mcqCorrect} / ${mcqTotal}\n`;
       text += `  ✗ Wrong     : ${mcqWrong}\n`;
       text += `  ⚪ Skipped   : ${mcqSkipped}\n`;
     }
-    if (essayCount > 0) {
-      text += `  ✏ Essay     : ${essayTotalScore} / ${essayMaxScore} pts\n`;
-    }
+
     text += "\n" + "─".repeat(40) + "\n\n";
   }
 

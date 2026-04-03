@@ -150,6 +150,18 @@ export function calculateQuizMetrics(questions, userAnswers) {
     percentage = mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0;
   }
 
+  // Comprehensive percentage: combines MCQ correct points + essay score points
+  // against the total possible points across all question types.
+  // Edge cases:
+  //   • Essay-only  → same as `percentage` (no MCQ denominator to skew result)
+  //   • MCQ-only    → same as `percentage` (no essay denominator)
+  //   • Mixed       → holistic view that weights both question types by their point value
+  //   • Empty quiz  → 0 (guarded by totalPossible check)
+  const totalEarned = mcqCorrect + essayScoreTotal;
+  const totalPossible = mcqTotal + essayMaxTotal;
+  const actualPercentage =
+    totalPossible > 0 ? Math.round((totalEarned / totalPossible) * 100) : 0;
+
   return {
     mcqCorrect,
     mcqWrong,
@@ -160,5 +172,6 @@ export function calculateQuizMetrics(questions, userAnswers) {
     essayMaxTotal,
     isEssayOnly,
     percentage,
+    actualPercentage,
   };
 }
