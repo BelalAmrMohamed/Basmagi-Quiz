@@ -6,7 +6,11 @@
 import { showNotification } from "../components/notifications.js";
 
 // `gradeEssay` must be used for essay grading, see export-to-markdown for example usage.
-import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
+import {
+  gradeEssay,
+  isEssayQuestion,
+  calculateQuizMetrics,
+} from "../shared/rate-answers.js";
 
 const userName = localStorage.getItem("username") || "User";
 let docx;

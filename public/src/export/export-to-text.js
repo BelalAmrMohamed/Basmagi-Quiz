@@ -5,7 +5,13 @@
 // No external libraries used.
 
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
+
+// Question helpers
+import {
+  gradeEssay,
+  isEssayQuestion,
+  calculateQuizMetrics,
+} from "../shared/rate-answers.js";
 
 /**
  * Build a plain-text string for the quiz.

@@ -4,11 +4,14 @@
 // No libraries used
 
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
+
+// Question helpers
 import {
-  renderMarkdown,
-  normalizeLiteralNewlines,
-} from "../shared/markdown.js";
+  gradeEssay,
+  isEssayQuestion,
+  calculateQuizMetrics,
+} from "../shared/rate-answers.js";
+
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
 
 export async function exportToHtml(config, questions, userAnswers = []) {

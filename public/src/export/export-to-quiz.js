@@ -4,7 +4,10 @@
 // No libraries used.
 
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay } from "../shared/rate-answers.js";
+
+// Question helpers
+import { gradeEssay, calculateQuizMetrics } from "../shared/rate-answers.js";
+
 import {
   renderMarkdown,
   _renderMarkdownCore,
@@ -1487,16 +1490,6 @@ export async function exportToQuiz(config, questions) {
   // ── Markdown + KaTeX integration (mirrored from create-quiz) ──
   // All functions are serialised from module scope via .toString() so the
   // generated file is self-contained with no build step needed.
-  //
-  // IMPORTANT: _renderMarkdownCore references ICON_COPY and ICON_CHECK at
-  // module scope in markdown.js.  Those names are not captured by .toString(),
-  // so we must declare them here, before the serialised function bodies, so the
-  // non-module <script> context can resolve them without a ReferenceError.
-  // (A ReferenceError in step 2 — fenced code blocks — would cause renderMarkdown
-  // to silently fall back to plain text for every question that contains a code
-  // block, while math still works because it is processed in steps 1 and 3.)
-  const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
-  const ICON_CHECK = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>\`;
 
   ${normalizeLiteralNewlines.toString()}
 
