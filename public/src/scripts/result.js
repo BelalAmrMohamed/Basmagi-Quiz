@@ -13,10 +13,14 @@ import { exportToMarkdown } from "../export/export-to-markdown.js";
 // Notifications
 import { showNotification } from "../components/notifications.js";
 
-// Essay question helpers
-import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
+// Question helpers
+import {
+  gradeEssay,
+  isEssayQuestion,
+  calculateQuizMetrics,
+} from "../shared/rate-answers.js";
 
-// ── Shared Markdown engine (replaces the inline copy of the renderer) ─────────
+// ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
 // normalizeLiteralNewlines: fixes double-serialised \n sequences
 import {
@@ -133,38 +137,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.title = `نتائج إمتحان ${config.title}`;
 
-  // ── Score breakdown ────────────────────────────────────────────────────────
-  const totalQuestions = questions.length;
-  let mcqCorrect = 0,
-    mcqWrong = 0,
-    mcqSkipped = 0,
-    mcqTotal = 0;
-  let essayCount = 0,
-    essayScoreTotal = 0,
-    essayMaxTotal = 0;
+  // ── Score breakdown via centralised metrics calculator ─────────────────────
+  const {
+    mcqCorrect,
+    mcqWrong,
+    mcqSkipped,
+    mcqTotal,
+    essayCount,
+    essayScoreTotal,
+    essayMaxTotal,
+    isEssayOnly,
+    percentage,
+  } = calculateQuizMetrics(questions, result.userAnswers);
 
-  for (let i = 0; i < totalQuestions; i++) {
-    const q = questions[i];
-    const ua = result.userAnswers[i];
-    if (isEssayQuestion(q)) {
-      essayCount++;
-      essayScoreTotal += gradeEssay(ua, getEssayAnswer(q));
-      essayMaxTotal += 5;
-    } else {
-      mcqTotal++;
-      const correctIdx = q.correct ?? q.answer;
-      if (ua === undefined || ua === null) mcqSkipped++;
-      else if (ua === correctIdx) mcqCorrect++;
-      else mcqWrong++;
-    }
-  }
-
+  // displayScore / displayTotal are kept for the legacy scoreDisplay element
+  // and the countUp animation — they are NOT used in the score-circle percentage.
   const displayScore =
     result.score !== undefined ? result.score : mcqCorrect + essayScoreTotal;
   const displayTotal =
     result.total !== undefined ? result.total : mcqTotal + essayMaxTotal;
-  const percentage =
-    displayTotal > 0 ? Math.round((displayScore / displayTotal) * 100) : 0;
 
   // Helper for loading state
   async function withDownloadLoading(buttonEl, asyncFn) {
@@ -344,8 +335,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     scoreHeader,
     scoreDisplay,
     result,
-    displayScore,
-    displayTotal,
+    percentage,
+    isEssayOnly,
     mcqCorrect,
     mcqWrong,
     mcqSkipped,
@@ -377,6 +368,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     .forEach((el, i) => {
       el.style.setProperty("--stagger", Math.min(i, 8));
     });
+
+  // ── Result Cards Filtering ─────────────────────────────────────────────────
+  const filterBar = document.getElementById("filterBar");
+  if (filterBar) {
+    filterBar.addEventListener("click", (e) => {
+      const btn = e.target.closest(".filter-btn");
+      if (!btn) return;
+
+      // Update the active pill highlight
+      filterBar
+        .querySelectorAll(".filter-btn")
+        .forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      const filter = btn.dataset.filter;
+
+      document
+        .querySelectorAll("#reviewContainer .review-card")
+        .forEach((card) => {
+          let visible = true;
+
+          switch (filter) {
+            case "all":
+              visible = true;
+              break;
+            case "correct":
+              visible = card.classList.contains("correct");
+              break;
+            case "wrong":
+              visible = card.classList.contains("wrong");
+              break;
+            case "skipped":
+              visible = card.classList.contains("skipped");
+              break;
+            case "essay":
+              visible = card.classList.contains("essay-card");
+              break;
+            case "mcq":
+              // MCQ & T/F = any card that is NOT an essay card
+              visible = !card.classList.contains("essay-card");
+              break;
+          }
+
+          card.style.display = visible ? "" : "none";
+        });
+    });
+  }
 
   const newBadges = result.gamification ? result.gamification.newBadges : [];
   newBadges.forEach((badge, index) => {
@@ -417,12 +455,21 @@ function countUp(el, target, duration = 1200) {
   requestAnimationFrame(tick);
 }
 
+/**
+ * renderHeader — builds the score-circle + stats panel inside #scoreHeader.
+ *
+ * `percentage` and `isEssayOnly` now come directly from calculateQuizMetrics,
+ * so the percentage always reflects the correct formula for the quiz type.
+ *
+ * The .total-score-line shows MCQ score (mcqCorrect / mcqTotal) and is hidden
+ * entirely for essay-only quizzes via an inline display:none style.
+ */
 function renderHeader(
   scoreHeader,
   scoreDisplay,
   data,
-  displayScore,
-  displayTotal,
+  percentage,
+  isEssayOnly,
   mcqCorrect,
   mcqWrong,
   mcqSkipped,
@@ -431,8 +478,6 @@ function renderHeader(
   essayScoreTotal,
   essayMaxTotal,
 ) {
-  const percentage =
-    displayTotal > 0 ? Math.round((displayScore / displayTotal) * 100) : 0;
   const timeStr = `${Math.floor(data.timeElapsed / 60)}m ${data.timeElapsed % 60}s`;
   const points = data.gamification ? data.gamification.pointsEarned : 0;
   const newBadges = data.gamification ? data.gamification.newBadges : [];
@@ -487,7 +532,7 @@ function renderHeader(
     <div class="stats-text">
       <h2>${percentage >= 70 ? `أحسنت يا ${userNameHtml}!` : `استمر في المذاكرة يا ${userNameHtml}`}</h2>
       <div class="points-pill"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-gem-icon lucide-gem"><path d="M10.5 3 8 9l4 13 4-13-2.5-6"/><path d="M17 3a2 2 0 0 1 1.6.8l3 4a2 2 0 0 1 .013 2.382l-7.99 10.986a2 2 0 0 1-3.247 0l-7.99-10.986A2 2 0 0 1 2.4 7.8l2.998-3.997A2 2 0 0 1 7 3z"/><path d="M2 9h20"/></svg> +${points} نقطة</div>
-      <p class="total-score-line">النتيجة: <strong>${displayScore} / ${displayTotal}</strong></p>
+      <p class="total-score-line"${isEssayOnly ? ' style="display:none;"' : ""}>النتيجة (بدون المقالي) : <strong>${mcqCorrect} / ${mcqTotal}</strong></p>
       ${mcqRow}
       ${essayRow}
       <p class="time-line"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> الوقت: ${timeStr}</p>
@@ -495,8 +540,7 @@ function renderHeader(
     </div>
   `;
 
-  if (scoreDisplay)
-    scoreDisplay.textContent = `${displayScore} / ${displayTotal}`;
+  if (scoreDisplay) scoreDisplay.textContent = `${mcqCorrect} / ${mcqTotal}`;
 }
 
 function renderReview(container, questions, userAnswers) {

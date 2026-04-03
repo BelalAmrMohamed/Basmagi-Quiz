@@ -4,7 +4,7 @@
 // `jsPDF` library used, included in here `loadPdfLib`
 
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
+import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
 
 const currentName = localStorage.getItem("username") || "User";
 

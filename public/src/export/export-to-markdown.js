@@ -3,7 +3,7 @@
 // Deals with the export from both main page and results page
 // No libraries used
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
+import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
 
 const isLocalPath = (url) => {
   if (!url) return false;

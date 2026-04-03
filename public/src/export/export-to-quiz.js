@@ -4,7 +4,7 @@
 // No libraries used.
 
 import { showNotification } from "../components/notifications.js";
-import { gradeEssay } from "../shared/rate-essays.js";
+import { gradeEssay } from "../shared/rate-answers.js";
 import {
   renderMarkdown,
   _renderMarkdownCore,

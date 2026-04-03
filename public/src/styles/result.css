@@ -350,6 +350,65 @@ body {
   line-height: 1.2;
 }
 
+/* ─── Filter Bar ──────────────────────────────────────────────────────────── */
+/*
+ * Pill-button row that sits between the score panel and #reviewContainer.
+ * Uses the same max-width as .container / #reviewContainer (1000 px) and the
+ * same horizontal padding as body so it aligns perfectly with the cards.
+ */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 1000px;
+  margin: 0 auto 20px;
+  padding: 0 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: 100px;
+  border: 1.5px solid var(--color-border, #d1d5db);
+  background: transparent;
+  color: var(--color-text-secondary, #6b7280);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+  /* Prevent the pill from shrinking smaller than its label */
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: var(--color-primary, #6366f1);
+  color: var(--color-primary, #6366f1);
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.filter-btn:focus-visible {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
+}
+
+/* Active / selected state */
+.filter-btn.active {
+  background: var(
+    --gradient-accent,
+    linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)
+  );
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+}
+
 /* ─── Review Cards ────────────────────────────────────────────────────────── */
 #reviewContainer {
   padding: 0; /* centering handled by max-width + margin: auto above */
@@ -785,6 +844,16 @@ body {
   .ans-comparison {
     grid-template-columns: 1fr;
   }
+
+  /* Filter bar wraps naturally on small screens */
+  .filter-bar {
+    gap: 6px;
+  }
+
+  .filter-btn {
+    padding: 7px 14px;
+    font-size: 0.8125rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -816,9 +885,3 @@ body {
     align-items: flex-end;
   }
 }
-
-/*
- * Markdown + KaTeX styles have been moved to:
- *   src/styles/markdown-styles.css
- * Import that file after result.css in result.html.
- */

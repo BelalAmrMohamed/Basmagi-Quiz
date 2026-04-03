@@ -364,6 +364,16 @@
         </div>
     </div>
 
+    <!-- Filter Bar — sits between the score panel and the review cards -->
+    <div id="filterBar" class="filter-bar" role="group" aria-label="تصفية الأسئلة">
+        <button class="filter-btn active" data-filter="all">الكل</button>
+        <button class="filter-btn" data-filter="correct">✓ صح</button>
+        <button class="filter-btn" data-filter="wrong">✗ خطأ</button>
+        <button class="filter-btn" data-filter="skipped">— متخطي</button>
+        <button class="filter-btn" data-filter="essay">📝 مقالي</button>
+        <button class="filter-btn" data-filter="mcq">☑ اختياري</button>
+    </div>
+
     <!-- Review Section — outside .container so it can be constrained by its own max-width rule -->
     <div id="reviewContainer"></div>
 

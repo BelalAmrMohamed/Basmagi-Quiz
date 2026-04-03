@@ -7,7 +7,7 @@ import {
 } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
+import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
 showNotification(
   "الإمتحان بدأ",
   "أسأل الله لك التوفيق والسداد",

@@ -1,10 +1,8 @@
-// public/src/shared/rate-essay.js
-// Global Helper functions for dealing with essay questions
-// Import: import { gradeEssay, isEssayQuestion } from "../shared/rate-essays.js";
+// public/src/shared/rate-answers.js
+// Global Helper functions for rating questions
+// Import: import { gradeEssay, isEssayQuestion, calculateQuizMetrics } from "../shared/rate-answers.js";
 
 // === Helper: Check if Essay Question ===
-// Old format: { q, options: ["answer text"], correct: 0 }
-// New format: { q, answer: "answer text" }
 export const isEssayQuestion = (q) => {
   return !Array.isArray(q.options) && q.answer !== undefined;
 };
@@ -105,4 +103,62 @@ export function gradeEssay(userInput, modelAnswer) {
   if (ratio >= 0.2) return 2;
   if (matched > 0) return 1;
   return 0;
+}
+
+// === Centralised Quiz Metrics Calculator ===
+// Returns a single metrics object used by the result page and any future consumers.
+//
+// Percentage logic:
+//   • Essay-only quiz  → percentage = (essayScoreTotal / essayMaxTotal) * 100
+//   • Mixed / MCQ-only → percentage = (mcqCorrect / mcqTotal) * 100
+//     (essay score is intentionally excluded from the percentage in mixed quizzes)
+export function calculateQuizMetrics(questions, userAnswers) {
+  let mcqCorrect = 0,
+    mcqWrong = 0,
+    mcqSkipped = 0,
+    mcqTotal = 0;
+  let essayCount = 0,
+    essayScoreTotal = 0,
+    essayMaxTotal = 0;
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i];
+    const ua = userAnswers[i];
+
+    if (isEssayQuestion(q)) {
+      essayCount++;
+      essayScoreTotal += gradeEssay(ua, q.answer ?? "");
+      essayMaxTotal += 5;
+    } else {
+      mcqTotal++;
+      const correctIdx = q.correct ?? q.answer;
+      if (ua === undefined || ua === null) mcqSkipped++;
+      else if (ua === correctIdx) mcqCorrect++;
+      else mcqWrong++;
+    }
+  }
+
+  const isEssayOnly = mcqTotal === 0;
+
+  let percentage = 0;
+  if (isEssayOnly) {
+    percentage =
+      essayMaxTotal > 0
+        ? Math.round((essayScoreTotal / essayMaxTotal) * 100)
+        : 0;
+  } else {
+    percentage = mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0;
+  }
+
+  return {
+    mcqCorrect,
+    mcqWrong,
+    mcqSkipped,
+    mcqTotal,
+    essayCount,
+    essayScoreTotal,
+    essayMaxTotal,
+    isEssayOnly,
+    percentage,
+  };
 }
