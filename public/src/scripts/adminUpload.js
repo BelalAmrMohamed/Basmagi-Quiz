@@ -637,12 +637,22 @@ function autoFillYearTerm(college, subject, yearEl, termEl) {
   // Use first known year/term pair for this subject
   const [year, term] = info.yearterm[0] || [];
   if (year) {
+    if (!yearEl.querySelector(`option[value="${year}"]`)) {
+      yearEl.appendChild(
+        new Option(YEAR_LABELS[year] || `السنة ${year}`, year),
+      );
+    }
     yearEl.value = year;
     yearEl.disabled = true;
   } else {
     yearEl.disabled = false;
   }
   if (term) {
+    if (!termEl.querySelector(`option[value="${term}"]`)) {
+      termEl.appendChild(
+        new Option(TERM_LABELS[term] || `الترم ${term}`, term),
+      );
+    }
     termEl.value = term;
     termEl.disabled = true;
   } else {
