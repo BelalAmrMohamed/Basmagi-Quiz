@@ -1037,8 +1037,7 @@ body {
   }
 
   .fab-container {
-    bottom: 20px;
-    left: 20px;
+    display: none !important;
   }
 
   .fab {
