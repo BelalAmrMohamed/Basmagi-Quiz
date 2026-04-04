@@ -46,16 +46,16 @@ export function buildQuizText(config, questions, userAnswers = []) {
       essayCount,
       essayScoreTotal,
       essayMaxTotal,
-      percentage,
-      actualPercentage,
+      percentage: MCQ_percentage,
+      actualPercentage: percentage,
     } = calculateQuizMetrics(questions, userAnswers);
     const totalScore = mcqCorrect + essayScoreTotal;
     const totalPoss = mcqTotal + essayMaxTotal;
     const passed = percentage >= 60;
 
     text += "=== Your Results ===\n";
-    text += `Score : ${totalScore} / ${mcqTotal} (${percentage}%)\n`;
-    text += `Overall Score : ${totalScore} / ${totalPoss} (${actualPercentage}%)\n`;
+    text += `Overall Score : ${totalScore} / ${totalPoss} (${percentage}%)\n`;
+    text += `MCQ Score : ${mcqCorrect} / ${mcqTotal} (${MCQ_percentage}%)\n`;
     text += `Status        : ${passed ? "✅ Passed" : "❌ Not Passed"}\n`;
     text += `Questions     : ${mcqTotal + essayCount}\n`;
     if (essayCount > 0) {

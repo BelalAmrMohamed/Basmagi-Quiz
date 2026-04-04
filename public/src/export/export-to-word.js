@@ -5,6 +5,15 @@
 
 import { showNotification } from "../components/notifications.js";
 
+/* ============= IMPORTANT PENDING UPDATES =============
+1. Update it to support markdown: tables, code blocks, inline code, etc...
+2. Update it to support LaTeX math.
+3. Update it to use the new scoring system (The imported `calculateQuizMetrics` function).
+4. Update it to use the new essay rating system (The imported `gradeEssay` function).
+5. Update it to properly resize for multi-line options, questions, essay-questions, or explanations
+
+There might be more features that I messed, see public/src/export/export-to-html.js for an up to date export format. */
+
 // `gradeEssay` must be used for essay grading, see export-to-markdown for example usage.
 import {
   gradeEssay,

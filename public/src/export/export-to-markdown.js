@@ -67,7 +67,8 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
       essayCount,
       essayScoreTotal,
       essayMaxTotal,
-      percentage,
+      percentage: MCQ_percentage,
+      actualPercentage: percentage,
     } = calculateQuizMetrics(questions, userAnswers);
     const totalScore = mcqCorrect + essayScoreTotal;
     const totalPoss = mcqTotal + essayMaxTotal;
@@ -78,9 +79,8 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
     markdown += `| Metric | Value |\n|--------|-------|\n`;
     markdown += `| **Overall Score** | ${totalScore} / ${totalPoss} pts (${percentage}%) |\n`;
     markdown += `| **Status** | ${status} |\n`;
-    markdown += `| **Number of questions** | ${mcqTotal + essayCount} |\n`;
     if (mcqTotal > 0) {
-      markdown += `| ✓ MCQ Correct | ${mcqCorrect} / ${mcqTotal} |\n`;
+      markdown += `| ✓ MCQ Correct | ${mcqCorrect} / ${mcqTotal} (${MCQ_percentage}%)|\n`;
       markdown += `| ✗ MCQ Wrong | ${mcqWrong} |\n`;
       markdown += `| ⚪ Skipped | ${mcqSkipped} |\n`;
     }
