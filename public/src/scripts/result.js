@@ -80,6 +80,7 @@ function escapeHTML(input) {
  * @returns {string} Category string, or "" if the path is absent / malformed.
  */
 
+// Still broken. Category never shows up.
 function extractCategoryFromPath(path) {
   if (!path) return "";
 
@@ -1110,7 +1111,7 @@ async function drawCertificateCanvas(name, quizTitle, quizCategory) {
   ctx.font = 'bold 14px "Amiri", serif';
   ctx.textAlign = "center";
   ctx.direction = "ltr"; // canvas text direction
-  ctx.fillText("بصمجي", sx, sy + 36);
+  ctx.fillText("شهادة تقدير", sx, sy + 36);
 
   // ── Horizontal divider (top) ─────────────────────────────────────────────────
   _gradLine(ctx, W, 195, 2);
@@ -1158,7 +1159,7 @@ async function drawCertificateCanvas(name, quizTitle, quizCategory) {
     ctx.fillStyle = "#8a5a30";
     ctx.font = '18px "Amiri", Georgia, serif';
     titleBottom = Math.max(titleBottom, 540);
-    ctx.fillText(`Category: ${quizCategory}`, W / 2, titleBottom + 38);
+    ctx.fillText(`Subject: ${quizCategory}`, W / 2, titleBottom + 38);
     titleBottom += 38;
   }
 
