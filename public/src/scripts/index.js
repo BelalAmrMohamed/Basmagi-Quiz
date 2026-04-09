@@ -115,40 +115,28 @@ function formatArabicQuestionCount(count) {
 }
 
 // ============================================================================
-// URL HASH ENCODING UTILITIES (Base64 URL-safe)
+// URL SLUG UTILITIES
+// Literal hyphens in names are double-encoded as "--" so they survive a
+// round-trip:  "Unit 1-A"  →  "Unit-1--A"  →  "Unit 1-A"
 // ============================================================================
-function encodeB64(str) {
-  try {
-    return btoa(
-      encodeURIComponent(str).replace(/%([0-9A-F]{2})/gi, (match, p1) =>
-        String.fromCharCode(parseInt(p1, 16)),
-      ),
-    )
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-  } catch (e) {
-    return encodeURIComponent(str);
-  }
+
+/**
+ * Convert a display name to a URL slug.
+ * Spaces → single "-"; existing literal hyphens → "--"
+ */
+function toSlug(str) {
+  return str.trim().replace(/-/g, "--").replace(/\s+/g, "-");
 }
 
-function decodeB64(str) {
-  try {
-    let base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-    while (base64.length % 4) {
-      base64 += "=";
-    }
-    return decodeURIComponent(
-      Array.prototype.map
-        .call(
-          atob(base64),
-          (c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2),
-        )
-        .join(""),
-    );
-  } catch (e) {
-    return str;
-  }
+/**
+ * Reverse toSlug: single "-" → space; "--" → literal "-"
+ */
+function fromSlug(slug) {
+  // Split on "--" first (literal hyphens), then replace single "-" with space
+  return slug
+    .split("--")
+    .map((part) => part.replace(/-/g, " "))
+    .join("-");
 }
 
 // ============================================================================
@@ -510,56 +498,42 @@ function restoreViewFromURL() {
     return;
   }
 
-  // ── Category / subfolder ──────────────────────────────────────────────────
-  if (hash.startsWith("category/")) {
-    const rawIdentifier = hash.slice("category/".length);
-    let cat = null;
+  // ── Category / subfolder — slug-based routing ─────────────────────────────
+  // URL format: #{categorySlug}  or  #{categorySlug}/{subfolderSlug}/...
+  // Each segment of a categoryTree key (split by "/") was passed through
+  // toSlug() + encodeURIComponent() when the URL was built.
+  //
+  // IMPORTANT: split BEFORE decoding so a literal encoded "/" (%2F) inside a
+  // segment is never mistaken for a path separator.  Then decode each segment
+  // individually so both percent-encoded Arabic (%D8%A3…) and already-decoded
+  // Arabic (أسئلة-الدكتور) resolve to the same slug string.
+  if (categoryTree) {
+    const slugParts = hash
+      .split("/")
+      .filter(Boolean)
+      .map((s) => {
+        try {
+          return decodeURIComponent(s);
+        } catch {
+          return s;
+        }
+      });
+
     let catKey = null;
+    let cat = null;
 
-    if (categoryTree) {
-      // Identifier segments: each part is URI-encoded; b64: prefix means
-      // the segment was additionally Base-64 encoded to shorten Arabic text.
-      const parts = rawIdentifier.split("/").map(decodeURIComponent);
-
-      if (parts.length === 1) {
-        const part = parts[0];
-        if (part.startsWith("b64:")) {
-          catKey = decodeB64(part.slice(4));
-          cat = categoryTree[catKey];
-        } else {
-          // Try resolving by short ID first, then fall back to key name
-          const entryWithId = Object.entries(categoryTree).find(
-            ([k, v]) => v.id === part,
-          );
-          if (entryWithId) {
-            cat = entryWithId[1];
-            catKey = entryWithId[0];
-          } else {
-            catKey = part;
-            cat = categoryTree[catKey];
-          }
-        }
-      } else {
-        // Multi-part: e.g. `[rootId]/b64:[encodedSubfolder]`
-        const rootIdentifier = parts[0];
-        const rootEntry = Object.entries(categoryTree).find(
-          ([k, v]) => v.id === rootIdentifier || k === rootIdentifier,
-        );
-        if (rootEntry) {
-          const rootName = rootEntry[0];
-          let subfolderPath = parts.slice(1).join("/");
-          if (subfolderPath.startsWith("b64:")) {
-            subfolderPath = decodeB64(subfolderPath.slice(4)) || subfolderPath;
-          }
-          catKey = `${rootName}/${subfolderPath}`;
-          cat = categoryTree[catKey];
-        }
+    for (const [key, node] of Object.entries(categoryTree)) {
+      const keyParts = key.split("/");
+      if (keyParts.length !== slugParts.length) continue;
+      if (keyParts.every((part, i) => toSlug(part) === slugParts[i])) {
+        catKey = key;
+        cat = node;
+        break;
       }
     }
 
     if (cat) {
       // Reconstruct ancestor chain so breadcrumb "back" works correctly
-      // e.g. for subfolder_2 ancestors = [root_cat, subfolder_1]
       const ancestors = findCategoryAncestors(catKey, categoryTree);
       navigationStack = [...ancestors]; // pre-load ancestors without re-rendering
       renderCategory(cat); // pushes cat itself and renders content
@@ -1850,48 +1824,29 @@ function renderCategory(category) {
     navigationStack.push(category);
     updateBreadcrumb();
 
-    // ── Obj 4: Update URL hash with category key or ID (to shorten Arabic links) ──
+    // ── Obj 4: Update URL hash using clean slug-based scheme ─────────────────
+    // URL format:  #{categorySlug}  or  #{categorySlug}/{subfolderSlug}/...
+    // Each "/" segment of the categoryTree key is passed through toSlug().
+    // Literal hyphens in names are double-encoded ("--") so they survive a
+    // round-trip; spaces become single "-".
     const catKey = Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
     if (catKey) {
-      let identifier = category.id;
+      const slugPath = catKey.split("/").map(toSlug).join("/");
+      // Encode each segment individually (encodeURIComponent handles Arabic,
+      // Cyrillic, etc.) then rejoin with "/" so the path separator is preserved.
+      // "-" and "--" are ASCII and pass through encodeURIComponent unchanged,
+      // so the space↔hyphen and literal-hyphen↔"--" round-trip is unaffected.
+      const url = `#${slugPath.split("/").map(encodeURIComponent).join("/")}`;
 
-      if (!identifier) {
-        // It's a subcategory. We know catKey is "RootName/Subfolder".
-        const parts = catKey.split("/");
-        const rootName = parts[0];
-        const rootCat = categoryTree[rootName];
-        const subfolderPath = parts.slice(1).join("/");
-
-        if (rootCat && rootCat.id) {
-          // Base64 encode the subfolder part
-          const encodedSubfolder = `b64:${encodeB64(subfolderPath)}`;
-          identifier = `${rootCat.id}/${encodedSubfolder}`;
-        } else {
-          identifier = `b64:${encodeB64(catKey)}`;
-        }
-      }
-
-      // ── Bug 1 Fix: record this navigation in the browser history ─────────────
-      // Use pushState (not window.location.hash) so the back button fires
-      // popstate rather than hashchange. The popstate listener in
-      // DOMContentLoaded then calls restoreViewFromURL() to re-render the
-      // correct view without adding another forward entry.
-      // During popstate restoration only stamp the state — do not push a new
-      // entry, which would break the back/forward stack.
+      // ── Bug 1 Fix: record this navigation in the browser history ───────────
+      // pushState so back fires popstate → restoreViewFromURL(); during popstate
+      // restoration only replaceState so we don't create a phantom entry.
       if (!_isRestoringState) {
-        history.pushState(
-          { view: "category", catHash: identifier },
-          "",
-          `#category/${identifier.split("/").map(encodeURIComponent).join("/")}`,
-        );
+        history.pushState({ view: "category", slugPath }, "", url);
       } else {
-        history.replaceState(
-          { view: "category", catHash: identifier },
-          "",
-          `#category/${identifier.split("/").map(encodeURIComponent).join("/")}`,
-        );
+        history.replaceState({ view: "category", slugPath }, "", url);
       }
     }
     // Update search context when entering a category
