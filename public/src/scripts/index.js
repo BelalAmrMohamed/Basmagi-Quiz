@@ -51,29 +51,26 @@ Output ONLY the JSON in the following format:
 {
   "questions": [
     {
-      "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true:",
+      "q": "If $A$ and $B$ are independent events, which pairs are also independent?\\n\\n| Pair | Independent? |\\n|---|---|\\n| $A$ and $B^c$ | ? |\\n| $A^c$ and $B^c$ | ? |",
       "options": [
-        "$A$ and $B^c$ are independent",
-        "$B$ and $A^c$ are independent",
-        "$A^c$ and $B^c$ are independent",
-        "All of the preceding"
+        "First pair only",
+        "Second pair only",
+        "Neither",
+        "Both"
       ],
       "correct": 3,
-      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\\\cap B^c) = P(A)P(B^c)$."
+      "explanation": "Independence is preserved under complements: $P(A \\\\cap B^c) = P(A) \\\\times P(B^c)$ holds, and so does $P(A^c \\\\cap B^c) = P(A^c) \\\\times P(B^c)$."
     },
     {
       "q": "In C++, a \`const\` member function can modify a \`mutable\` data member.",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0,
-      "explanation": "The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.\\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\\n\`\`\`cpp\\n   class Counter {\\n       mutable int cache_ = 0;    // may be written even in const context\\n   public:\\n       int value() const {\\n           cache_++;              // legal because cache_ is mutable\\n           return cache_;\\n       }\\n   };\\n\`\`\`"
+      "explanation": "The \`mutable\` keyword opts a member out of the \`const\` contract:\\n\`\`\`cpp\\nmutable int cache_ = 0;\\nvoid update() const { cache_++; } // legal\\n\`\`\`"
     },
     {
-      "q": "Write a C++ function template that returns the **larger** of two values.\\nThe function must work for any type that supports \`operator>\`.",
-      "answer": "The function uses \`template\`:\\n\`\`\`cpp\\ntemplate <typename T>\\nT maxOf(T a, T b) {\\n    return (a > b) ? a : b;\\n}\\n\`\`\`",
-      "explanation": "The \`typename T\` template parameter is deduced at the call site,\\nso \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and\\n\`maxOf(std::string(\\"apple\\"), std::string(\\"banana\\"))\` for \`std::string\` —\\nas long as \`operator>\` is defined for the type."
+      "q": "Using the power rule, find $f'(x)$ for $f(x) = x^n$.",
+      "answer": "$$f'(x) = n \\\\times x^{n-1}$$\\n\\n| $f(x)$ | $f'(x)$ |\\n|---|---|\\n| $x^3$ | $3 \\\\times x^2$ |\\n| $x^{1/2}$ | $\\\\frac{1}{2} \\\\times x^{-1/2}$ |",
+      "explanation": "Bring the exponent down and reduce it by one: $f'(x) = n $\\\\times$ x^{n-1}$."
     }
   ]
 }

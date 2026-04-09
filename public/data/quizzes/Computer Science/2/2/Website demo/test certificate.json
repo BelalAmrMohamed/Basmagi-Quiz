@@ -7,72 +7,107 @@
   },
   "stats": {
     "questionCount": 11,
-    "questionTypes": ["Essay", "True/False"]
+    "questionTypes": [
+      "True/False"
+    ]
   },
   "questions": [
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     },
     {
       "q": "In C++, a `const` member function can modify a `mutable` data member.",
-      "options": ["True", "False"],
+      "options": [
+        "True",
+        "False"
+      ],
       "correct": 0,
       "explanation": "The `mutable` keyword explicitly **opts a member out** of the `const` contract.\nThis is intentional and well-defined behaviour, commonly used for internal caches or mutexes:\n```cpp\n   class Counter {\n       mutable int cache_ = 0;    // may be written even in const context\n   public:\n       int value() const {\n           cache_++;              // legal because cache_ is mutable\n           return cache_;\n       }\n   };\n```"
     }

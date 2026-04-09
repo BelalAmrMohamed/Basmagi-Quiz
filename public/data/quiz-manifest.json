@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-04T12:24:28.968Z",
+  "generatedAt": "2026-04-09T20:19:49.940Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1683,6 +1683,100 @@
           "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
           "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
           "createdAt": "3/16/2026, 7:40:39 AM"
+        },
+        {
+          "id": "LAQN7EMG",
+          "title": "Exercise 1",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 1.json",
+          "questionCount": 11,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "I3JGAGNT",
+          "title": "Exercise 2",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 2.json",
+          "questionCount": 31,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "JV6IN5K3",
+          "title": "Exercise 3",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 3.json",
+          "questionCount": 12,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "PM3WWEA3",
+          "title": "Exercise 4",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 4.json",
+          "questionCount": 8,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "DDNKLKVF",
+          "title": "Exercise 5",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 5.json",
+          "questionCount": 22,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "ZJWTKUJC",
+          "title": "Exercise 6",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 6.json",
+          "questionCount": 26,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "VXV2QYW2",
+          "title": "Exercise 7",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 7.json",
+          "questionCount": 19,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "REFN223S",
+          "title": "Mean, Median, And Mode",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Mean, Median, and Mode.json",
+          "questionCount": 41,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 19:41"
+        },
+        {
+          "id": "CXJGZQ5J",
+          "title": "Multiple Choice Questions",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Multiple Choice Questions.json",
+          "questionCount": 38,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-04-09 - 20:19"
         }
       ]
     },
@@ -1873,7 +1967,6 @@
           "path": "/data/quizzes/Computer Science/2/2/Website demo/test certificate.json",
           "questionCount": 11,
           "questionTypes": [
-            "Essay",
             "True/False"
           ],
           "createdAt": "4/3/2026, 10:09:46 PM"
