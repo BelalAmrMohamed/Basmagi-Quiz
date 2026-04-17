@@ -7,10 +7,9 @@
     "sync:quizzes": "node scripts/sync-quizzes.js",
     "sync:quizzes:clean": "node scripts/sync-quizzes.js --delete-synced",
     "dev": "npx http-server public -p 8080 -o",
+    "vercel:dev": "vercel dev ",
     "generate-manifest": "node scripts/generate-quiz-manifest.js",
-    "migrate-quiz-to-json": "node scripts/migrate-quiz-data-to-json.js",
-    "deploy:test": "scripts\\deploy-to-testing.bat",
-    "deploy:prod": "powershell -ExecutionPolicy Bypass -File scripts/deploy-to-Production.ps1"
+    "map-project": "node scripts/map.js"
   },
   "keywords": [
     "examination",
