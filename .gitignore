@@ -5,18 +5,13 @@
 !README.md
 !CHANGELOG.MD
 
-# Visula Studion files
+# Visula Studio files
 .vscode/
 
 # Service Worker cache
 sw-cache/
 
-# Broken file
-scripts/deploy-production.js
-
-# Context quiz (for AI prompts)
-docs/context-quiz.json
-.vercel
+.vercel/
 .env*.local
 
 # Git files
@@ -24,3 +19,9 @@ docs/context-quiz.json
 
 # Node modules
 node_modules/
+
+# Font files and other binary assets that don't need version control
+*.ttf
+*.otf
+*.woff
+*.woff2
