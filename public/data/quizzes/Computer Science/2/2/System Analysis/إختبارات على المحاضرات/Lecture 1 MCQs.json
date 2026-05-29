@@ -1,0 +1,437 @@
+{
+  "meta": {
+    "title": "Lecture 1 MCQs",
+    "id": "QHYBIT4J",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 1 MCQs.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary goal of Systems Analysis and Design?",
+      "explanation": "The main goal of Systems analysis and design is developing application software to support the organisation function.",
+      "options": [
+        "To manage a company's employees",
+        "To develop application software that supports organizational functions",
+        "To design computer hardware",
+        "To create network infrastructure"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the document, which of the following is an example of application software?",
+      "explanation": "Application Software is software designed to process data in an organisation to help users. Examples are spreadsheets, word processor and DBMS.",
+      "options": [
+        "Operating System",
+        "Database Management System (DBMS)",
+        "Firmware",
+        "Device Driver"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which characteristic of a system is defined as the point of contact with its environment?",
+      "explanation": "Interfaces are defined as the point of contact with the environment.",
+      "options": [
+        "Boundary",
+        "Purpose",
+        "Interface",
+        "Constraint"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The process of breaking a large system into smaller, more manageable parts is known as:",
+      "explanation": "Decomposition is the process of breaking the system into smaller components.",
+      "options": [
+        "Modularity",
+        "Coupling",
+        "Cohesion",
+        "Decomposition"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the focus of modularity in system design?",
+      "explanation": "Modularity involves dividing the system into chunks or modules for easier management.",
+      "options": [
+        "Breaking the system into smaller parts",
+        "Organizing the parts into independent modules and defining their interaction",
+        "Measuring the dependency between modules",
+        "Measuring how focused a module is on a single task"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which design characteristic indicates how dependent one module is on another?",
+      "explanation": "Coupling determines to what extent the subsystems are dependent on each other.",
+      "options": [
+        "Cohesion",
+        "Coupling",
+        "Modularity",
+        "Decomposition"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the desired quality for a well-designed software system regarding coupling and cohesion?",
+      "explanation": "While not explicitly spelled out in the slides, it is a foundational software engineering principle that modules should be highly independent (low coupling) and highly focused (high cohesion). Coupling evaluates dependency , while cohesion evaluates if a subsystem performs a single function.",
+      "options": [
+        "High coupling, High cohesion",
+        "High coupling, Low cohesion",
+        "Low coupling, High cohesion",
+        "Low coupling, Low cohesion"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A module that performs many unrelated tasks is an example of:",
+      "explanation": "Cohesion refers to what extent a subsystem performs a single function; performing many unrelated tasks indicates low cohesion.",
+      "options": [
+        "High cohesion",
+        "Low cohesion",
+        "Low coupling",
+        "Good design"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is a System Development Methodology?",
+      "explanation": "System Development Methodology is a standard process followed by an organisation to analyse, design, implement and maintain IS.",
+      "options": [
+        "The physical hardware used to build a system",
+        "A standard process followed by an organization to develop an information system",
+        "A programming language used for development",
+        "The final report delivered to the client"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT listed as a system development methodology in the document?",
+      "explanation": "Prototyping is explicitly listed as an alternative methodology. The others are standard methodologies not explicitly mentioned in the provided text.",
+      "options": [
+        "Waterfall",
+        "Scrum",
+        "Prototyping",
+        "Spiral"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the main output of the Systems Planning and Selection phase?",
+      "explanation": "The outputs for Systems Planning and Selection include a detailed work plan for the selected project.",
+      "options": [
+        "Software Requirements Specification (SRS)",
+        "System design document",
+        "Project plan",
+        "The final product"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "During which phase are technical, economic, and operational feasibility studied?",
+      "explanation": "A feasibility study to determine the economic and organisational impact is conducted during Systems Planning and Selection.",
+      "options": [
+        "Systems Analysis",
+        "Systems Design",
+        "Systems Planning and Selection",
+        "Systems Implementation and Maintenance"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the primary activity in the Systems Analysis phase?",
+      "explanation": "During Systems Analysis, the current system is studied and a proposed replacement system is presented.",
+      "options": [
+        "Writing the actual code",
+        "Designing the system architecture",
+        "Gathering user requirements",
+        "Installing the system for users"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The Software Requirements Specification (SRS) is the main output of which phase?",
+      "explanation": "The output of the analysis phase is a description of the alternative solution proposed by the analysis team.",
+      "options": [
+        "Systems Planning and Selection",
+        "Systems Analysis",
+        "Systems Design",
+        "Systems Implementation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What role does a System Analyst primarily serve?",
+      "explanation": "The system analyst helps system users and managers specify their needs for improving existing systems or creating new ones.",
+      "options": [
+        "The project manager who allocates resources",
+        "The lead programmer who writes the most complex code",
+        "The link or bridge between the business side (users) and the technical side (developers)",
+        "The quality assurance specialist who tests the final product"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is NOT mentioned as a required skill for a systems analyst?",
+      "explanation": "While technical skills require understanding the capabilities and limitations of IT (including programming), \"advanced programming in multiple languages\" is not explicitly listed.",
+      "options": [
+        "Analytical thinking",
+        "Advanced programming in multiple languages",
+        "Communication skills",
+        "Understanding of business processes"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the main output of the Systems Design phase?",
+      "explanation": "The main output of the Systems Design phase includes detailed specifications of all system elements.",
+      "options": [
+        "Project plan",
+        "Software Requirements Specification (SRS)",
+        "System design document",
+        "The final software with all features"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The final phase of the SDLC, which includes writing code, testing, and maintenance, is called:",
+      "explanation": "The final phase is Phase 4: Systems Implementation and Maintenance.",
+      "options": [
+        "Systems Analysis",
+        "Systems Design",
+        "Systems Planning and Selection",
+        "Systems Implementation and Maintenance"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which activity in the final phase involves verifying that the system works correctly?",
+      "explanation": "During the final phase, the system is coded, tested, and installed in the organisation.",
+      "options": [
+        "Implementation",
+        "Operation (Deployment)",
+        "Testing",
+        "Maintenance"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What does 'system goes live' refer to?",
+      "explanation": "This refers to the system being installed in the organisation.",
+      "options": [
+        "The planning phase is complete",
+        "The system is installed for users (Deployment)",
+        "The system design is finished",
+        "The requirements are gathered"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of the maintenance step in the final phase?",
+      "explanation": "In the final phase, the information system is systematically improved.",
+      "options": [
+        "To define the project scope",
+        "To create the system design document",
+        "To fix bugs and add new features",
+        "To gather initial requirements"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What does CASE stand for in the context of systems development?",
+      "explanation": "CASE stands for Computer-aided Software Engineering.",
+      "options": [
+        "Computer-Aided Software Engineering",
+        "Computer-Analyzed System Evaluation",
+        "Comprehensive Application System Environment",
+        "Centralized Automated Software Editor"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is an example of a CASE tool?",
+      "explanation": "CASE tools include diagramming tools.",
+      "options": [
+        "A text editor like Notepad",
+        "A diagramming tool",
+        "An email client",
+        "A web browser"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "CASE tools provide automated support for which part of systems development?",
+      "explanation": "CASE tools provide automated support for some portions of systems development.",
+      "options": [
+        "Only for the planning phase",
+        "Only for the coding phase",
+        "For some portions of systems development",
+        "Only for the maintenance phase"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the student registration system example, which module would be responsible for handling fee payments?",
+      "explanation": "In the university system diagram, components typically include administration and accounting.",
+      "options": [
+        "Registration Module",
+        "Course Module",
+        "Exam Module",
+        "Finance Module"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A system's ______ is the limit on what the system can do.",
+      "explanation": "Constraints are the limit on what a system can do.",
+      "options": [
+        "Purpose",
+        "Interface",
+        "Constraint",
+        "Component"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the course outline, 'Managing the IS Project' is a topic covered in which part?",
+      "explanation": "Managing the IS Project is covered under Part One: Foundations for Systems Development.",
+      "options": [
+        "Part One: Foundations for Systems Development",
+        "Part Two: Systems Planning and Selection",
+        "Part Three: Systems Analysis",
+        "Part Four: Systems Design"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which phase of the SDLC directly follows 'Systems Design'?",
+      "explanation": "Phase 4, Systems Implementation and Maintenance, follows Phase 3, Systems Design.",
+      "options": [
+        "Systems Planning and Selection",
+        "Systems Analysis",
+        "Systems Implementation and Maintenance",
+        "There is no phase after design"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Understanding the organisation's objectives, structure, and processes is crucial for a systems analyst to:",
+      "explanation": "To succeed, the systems analyst has to understand the organisation objectives, structure, and processes.",
+      "options": [
+        "Write better code",
+        "Succeed in developing and maintaining an information system",
+        "Manage the project budget",
+        "Design the user interface"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the document, what are the inputs and outputs considered as?",
+      "explanation": "Inputs and Outputs are listed as characteristics of a system.",
+      "options": [
+        "Core concepts of decomposition",
+        "Parts of the CASE tools",
+        "Characteristics of a system",
+        "The main goal of the SDLC"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Application software is designed to process data in an organization to help users, with examples including spreadsheets and word processors.",
+      "explanation": "Application Software is software designed to process data in an organisation to help users, and examples are spreadsheets and word processors.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In system design, high coupling between modules is considered a sign of a good, well-structured design.",
+      "explanation": "Coupling measures to what extent the subsystems are dependent on each other; high dependency (high coupling) makes a system difficult to manage.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Systems Analysis phase focuses on defining how the system will be built, including its architecture and database design.",
+      "explanation": "Defining how a system will be built (hardware/software specifics) is part of the Logical and Physical Design in the Systems Design phase, not Systems Analysis.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A systems analyst needs strong communication skills to effectively act as a link between users and technical developers.",
+      "explanation": "Interpersonal skills help the analyst in dealing with users and programmers.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The Systems Implementation phase is concerned with identifying existing system problems and defining the project scope.",
+      "explanation": "Identifying problems and defining the scope is done in Phase 1: Systems Planning and Selection.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Maintenance is an activity that only occurs after a system fails and is separate from the standard SDLC phases.",
+      "explanation": "Maintenance is a formal part of Phase 4: Systems Implementation and Maintenance, where the system is systematically improved.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Modularity is the process of breaking a system down into smaller parts to help reduce complexity.",
+      "explanation": "Modularity is dividing the system into chunks or modules for easier management.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Cohesion measures how focused a module is on performing a single, well-defined task.",
+      "explanation": "Cohesion determines to what extent a subsystem performs a single function.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "CASE tools can include diagramming tools, report generators, and code generators to support systems development.",
+      "explanation": "CASE tools include diagramming tools, computer display and report generators, documentation generators, and code generators.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The environment of a system is one of its characteristics and includes all factors outside the system's boundary that can affect it.",
+      "explanation": "Environment is explicitly listed as one of the characteristics of a system.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    }
+  ]
+}

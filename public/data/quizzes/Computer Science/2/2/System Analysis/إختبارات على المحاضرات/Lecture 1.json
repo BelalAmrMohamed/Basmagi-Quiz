@@ -1,0 +1,271 @@
+{
+  "meta": {
+    "id": "3N36LZWK",
+    "title": "Ch 1 - Lec 1 Quiz",
+    "createdAt": "3/28/2026, 9:48:30 PM",
+    "path": "quizzes/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 1.json"
+  },
+  "stats": {
+    "questionCount": 25,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "According to the lecture, what is the **main goal** of Systems Analysis and Design?",
+      "options": [
+        "To manage the hardware infrastructure of an organisation",
+        "To develop application software to support organisational functions",
+        "To train employees on how to use existing software systems",
+        "To design databases for storing organisational data"
+      ],
+      "correct": 1,
+      "explanation": "According to the lecture, the **main goal** of Systems Analysis and Design is **developing application software** to support organisational functions such as **payroll** or **market analysis**.\n\nApplication software is defined as software designed to **process data in an organisation to help users**."
+    },
+    {
+      "q": "Which of the following is the correct definition of a **system** as given in the lecture?",
+      "options": [
+        "A collection of hardware and software tools used to automate business tasks",
+        "A set of inter-related business procedures or components within one business unit for some purpose",
+        "A sequence of phases used to develop and maintain information systems",
+        "A software application designed to process and store organisational data"
+      ],
+      "correct": 1,
+      "explanation": "The lecture defines a **system** as: *'a set of inter-related business procedures or components within one business unit for some purpose.'*\n\nThis definition emphasises three key aspects:\n- **Inter-relation** between components\n- **Business unit** context\n- A clear **purpose**"
+    },
+    {
+      "q": "Which of the following is **not** listed as a characteristic of a system in the lecture?",
+      "options": [
+        "Boundary",
+        "Interfaces",
+        "Redundancy",
+        "Constraints"
+      ],
+      "correct": 2,
+      "explanation": "According to the lecture, the **9 characteristics of a system** are:\n\n1. Components\n2. Interrelated Components\n3. Boundary\n4. Purpose\n5. Environment\n6. Interfaces\n7. Constraints\n8. Inputs\n9. Outputs\n\n**Redundancy** is not listed among them."
+    },
+    {
+      "q": "In the lecture, **Interfaces** are described as:",
+      "options": [
+        "The limits on what a system can do",
+        "The inputs and outputs of a system",
+        "The point of contact between a system and its environment",
+        "The independent modules that make up a system"
+      ],
+      "correct": 2,
+      "explanation": "The lecture explicitly defines **Interfaces** as the *'point of contact with the environment.'*\n\nThis is distinct from:\n- **Constraints** → limits on what the system can do\n- **Inputs/Outputs** → data entering or leaving the system\n- **Modules** → parts of the system (related to modularity)"
+    },
+    {
+      "q": "**Decomposition** in systems design is best described as:",
+      "options": [
+        "Organising system parts into independent, focused modules",
+        "Measuring how much one module depends on another",
+        "Breaking a large system into smaller, manageable parts to reduce complexity",
+        "Ensuring each module performs a single, well-defined task"
+      ],
+      "correct": 2,
+      "explanation": "The lecture defines **Decomposition** as *'the process of breaking a large system into smaller, manageable parts'* with the primary benefit of **reducing complexity**.\n\nNote the distinction from related concepts:\n\n| Concept | Definition |\n|---|---|\n| **Decomposition** | Breaking a system into smaller parts |\n| **Modularity** | Organising those parts into independent modules |\n| **Cohesion** | How focused a module is on a single task |\n| **Coupling** | How dependent modules are on each other |"
+    },
+    {
+      "q": "In the university system example used in the lecture, which module is responsible for managing **fees and payments**?",
+      "options": [
+        "Registration Module",
+        "Exam Module",
+        "Library Module",
+        "Finance Module"
+      ],
+      "correct": 3,
+      "explanation": "According to the lecture's modularity table:\n\n| Module | Responsibility |\n|---|---|\n| Registration Module | Handles student enrollment |\n| Course Module | Manages courses and schedules |\n| Exam Module | Records marks and results |\n| **Finance Module** | **Handles fees and payments** |\n| Library Module | Manages books and borrowing |\n\nThe **Finance Module** is responsible for fees and payments."
+    },
+    {
+      "q": "Which combination represents **good software design** according to the lecture?",
+      "options": [
+        "High coupling + High cohesion",
+        "Low coupling + Low cohesion",
+        "High coupling + Low cohesion",
+        "Low coupling + High cohesion"
+      ],
+      "correct": 3,
+      "explanation": "The lecture explicitly states:\n\n> **Good Software Design has: High Cohesion + Low Coupling**\n\n| Property | Good Design | Bad Design |\n|---|---|---|\n| **Coupling** | Low (modules work independently) | High (modules are highly dependent) |\n| **Cohesion** | High (module is focused on one task) | Low (module does unrelated tasks) |"
+    },
+    {
+      "q": "**Coupling** in systems design measures:",
+      "options": [
+        "How focused a module is on performing a single task",
+        "How much one module depends on another module",
+        "How many sub-modules a system can be divided into",
+        "How well a module interfaces with the system's environment"
+      ],
+      "correct": 1,
+      "explanation": "The lecture defines **Coupling** as a measure of *'how much one module depends on another module.'*\n\n- **High coupling** → modules are highly dependent → ❌ bad design\n- **Low coupling** → modules work independently → ✅ good design\n\nThis is different from **Cohesion**, which measures how focused a module is on a single task."
+    },
+    {
+      "q": "A module in a university system handles student enrollment, course scheduling, fee calculation, and library borrowing all at once. According to the lecture, this module has:",
+      "options": [
+        "High cohesion and low coupling",
+        "High cohesion and high coupling",
+        "Low cohesion and low coupling",
+        "Low cohesion and high coupling"
+      ],
+      "correct": 2,
+      "explanation": "The lecture defines **Cohesion** as how focused a module is on a **single task**.\n\nA module handling enrollment, scheduling, fees, and library borrowing simultaneously is doing **unrelated tasks** — this is the definition of **low cohesion** (bad design).\n\nThe coupling level cannot be determined from this description alone, but the key issue here is **low cohesion**, so option C (low cohesion) is the most directly applicable answer based on the lecture."
+    },
+    {
+      "q": "What is the correct definition of a **System Development Methodology** as stated in the lecture?",
+      "options": [
+        "A set of software tools that provide automated support for systems development",
+        "A series of steps used to mark the phases of development for an information system",
+        "A standard process followed by an organisation to analyse, design, implement and maintain IS",
+        "A feasibility study conducted before starting a software development project"
+      ],
+      "correct": 2,
+      "explanation": "The lecture distinguishes between two related but different terms:\n\n| Term | Definition |\n|---|---|\n| **System Development Methodology** | A **standard process** followed by an organisation to analyse, design, implement and maintain IS |\n| **SDLC** | The **series of steps** used to mark the phases of development for an IS |\n\nOption B is the definition of the **SDLC**, not the methodology."
+    },
+    {
+      "q": "Which of the following correctly lists the **4 phases of the SDLC** in the right order?",
+      "options": [
+        "Analysis → Planning → Design → Implementation",
+        "Planning → Analysis → Design → Implementation",
+        "Design → Planning → Analysis → Implementation",
+        "Planning → Design → Analysis → Implementation"
+      ],
+      "correct": 1,
+      "explanation": "According to the lecture, the **SDLC** consists of 4 phases in this order:\n\n```\nPhase 1: Systems Planning and Selection\n         ↓\nPhase 2: Systems Analysis\n         ↓\nPhase 3: Systems Design\n         ↓\nPhase 4: Systems Implementation and Operation\n```\n\nThe correct order is: **Planning → Analysis → Design → Implementation**."
+    },
+    {
+      "q": "What is the **output** of the Systems Analysis phase (Phase 2) of the SDLC?",
+      "options": [
+        "Project plan",
+        "System design document",
+        "Software Requirements Specification (SRS)",
+        "Feasibility study report"
+      ],
+      "correct": 2,
+      "explanation": "According to the lecture, each SDLC phase produces a specific output:\n\n| Phase | Output |\n|---|---|\n| Phase 1: Planning & Selection | Project plan |\n| **Phase 2: Systems Analysis** | **Software Requirements Specification (SRS)** |\n| Phase 3: Systems Design | System design document |\n| Phase 4: Implementation | Working system |\n\nThe **SRS** captures functional requirements (what the system should do) and non-functional requirements (system constraints)."
+    },
+    {
+      "q": "Which activity belongs to **Phase 1: Systems Planning and Selection** of the SDLC?",
+      "options": [
+        "Gathering user requirements",
+        "Writing the actual code for each module",
+        "Conducting a feasibility study",
+        "Designing the system architecture"
+      ],
+      "correct": 2,
+      "explanation": "According to the lecture, **Phase 1: Systems Planning and Selection** includes:\n- Identifying existing system problems and opportunities\n- Defining project scope and objectives\n- **Conducting a feasibility study** (technical, economic, and operational)\n\nThe other options belong to different phases:\n- Gathering requirements → Phase 2 (Analysis)\n- Writing code → Phase 4 (Implementation)\n- Designing architecture → Phase 3 (Design)"
+    },
+    {
+      "q": "The lecture mentions three types of feasibility studied during **Phase 1** of the SDLC. Which option correctly lists all three?",
+      "options": [
+        "Technical, Financial, and Operational feasibility",
+        "Technical, Economic, and Operational feasibility",
+        "Economic, Legal, and Technical feasibility",
+        "Operational, Functional, and Economic feasibility"
+      ],
+      "correct": 1,
+      "explanation": "According to the lecture, the feasibility study in **Phase 1** covers exactly three types:\n\n1. **Technical feasibility** — Can the technology support the system?\n2. **Economic feasibility** — Is the project cost-justified?\n3. **Operational feasibility** — Will users and the organisation actually use and support the system?\n\nTerms like 'Financial' or 'Legal' are not used in the lecture."
+    },
+    {
+      "q": "In **Phase 4** of the SDLC, what is the correct order of activities as described in the lecture?",
+      "options": [
+        "Testing → Implementation → Deployment → Maintenance",
+        "Implementation → Deployment → Testing → Maintenance",
+        "Implementation → Testing → Deployment → Maintenance",
+        "Deployment → Testing → Implementation → Maintenance"
+      ],
+      "correct": 2,
+      "explanation": "According to the lecture, **Phase 4: Systems Implementation and Maintenance** follows this order:\n\n1. **Implementation** — Developers write the actual code\n2. **Testing** — Verify the system works correctly\n3. **Operation (Deployment)** — Install the system; system goes live\n4. **Maintenance** — Fix bugs, improve performance, add new features\n\nTesting must come before deployment to ensure the system works correctly."
+    },
+    {
+      "q": "Which of the following is **not** listed as a software development methodology in the lecture?",
+      "options": [
+        "Prototyping",
+        "Agile",
+        "DevOps",
+        "Spiral"
+      ],
+      "correct": 2,
+      "explanation": "The lecture lists **5 software development methodologies**:\n\n1. Waterfall\n2. Prototyping\n3. Rapid Application Development (RAD)\n4. Agile\n5. Spiral\n\n**DevOps** is not mentioned in the lecture, although it is a real-world practice in software development."
+    },
+    {
+      "q": "**CASE tools** (Computer-aided Software Engineering) are described in the lecture as:",
+      "options": [
+        "Programming frameworks used to accelerate code writing",
+        "Project management tools for tracking SDLC phases",
+        "Software tools that provide automated support for some portions of systems development",
+        "Hardware devices that assist in testing and deploying information systems"
+      ],
+      "correct": 2,
+      "explanation": "The lecture defines **CASE tools** as *'software tools that provide automated support for some portions of systems development.'*\n\nExamples of CASE tools listed in the lecture include:\n- Diagramming tools\n- Computer display and report generators\n- Documentation generators\n- Code generators"
+    },
+    {
+      "q": "Which of the following is listed as a type of **CASE tool** in the lecture?",
+      "options": [
+        "Version control systems",
+        "Documentation generators",
+        "Project scheduling software",
+        "Network monitoring tools"
+      ],
+      "correct": 1,
+      "explanation": "According to the lecture, **CASE tools** include:\n- Diagramming tools\n- Computer display and report generators\n- **Documentation generators** ✅\n- Code generators\n\nVersion control systems, project scheduling software, and network monitoring tools are not mentioned as CASE tools in this lecture."
+    },
+    {
+      "q": "High coupling between modules is a sign of **good** software design.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n\n| Coupling Level | Meaning | Design Quality |\n|---|---|---|\n| **High coupling** | Modules are highly dependent on each other | ❌ Bad design |\n| **Low coupling** | Modules work independently | ✅ Good design |\n\nGood software design requires **low coupling** combined with **high cohesion**."
+    },
+    {
+      "q": "According to the lecture, **modularity** focuses on how parts of a system are organised and how they interact with each other.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "This statement is **True**.\n\nThe lecture states that **Modularity** involves organising parts into independent modules (chunks) and *'focuses on how parts are organized (interaction between parts).'*\n\nEach module in a modular design performs a specific function, as illustrated by the university system example (Registration, Course, Exam, Finance, Library modules)."
+    },
+    {
+      "q": "The **output** of Phase 1 (Systems Planning and Selection) of the SDLC is a **Software Requirements Specification (SRS)**.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n\n| Phase | Output |\n|---|---|\n| **Phase 1: Planning & Selection** | **Project plan** |\n| Phase 2: Systems Analysis | Software Requirements Specification (SRS) |\n\nThe **SRS** is the output of **Phase 2 (Systems Analysis)**, not Phase 1. Phase 1 produces a **Project plan**."
+    },
+    {
+      "q": "Application software, as defined in the lecture, is designed specifically to **process data in an organisation to help users**.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0,
+      "explanation": "This statement is **True**.\n\nThe lecture defines **Application Software** as *'software designed to process data in an organisation to help users.'*\n\nExamples given in the lecture include:\n- Spreadsheets\n- Word processors\n- DBMS (Database Management Systems)"
+    },
+    {
+      "q": "According to the lecture, the SDLC is a **linear** process that runs from Phase 1 to Phase 4 and then ends completely.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "This statement is **False**.\n\nThe lecture presents the SDLC as a **cycle**, not a linear process. After Phase 4 (Implementation and Operation), the cycle loops back to Phase 1:\n\n```\nPlanning → Analysis → Design → Implementation\n    ↑________________________________|\n```\n\nThis cyclic nature reflects the ongoing nature of information systems, which require continuous maintenance, updates, and re-evaluation."
+    },
+    {
+      "q": "Define **decomposition** and **modularity** as introduced in the lecture, and explain how they work together in system design.",
+      "answer": "**Decomposition** is the process of breaking a large system into smaller, manageable parts to reduce complexity.\n\n**Modularity** is the organisation of those smaller parts into independent modules (chunks), where each module performs a specific function and focuses on how parts interact with each other.\n\n**How they work together:**\n- Decomposition answers *what* to break the system into.\n- Modularity answers *how* to structure and organise those parts.\n\nFor example, the lecture decomposes a university system into: Student Registration, Course Management, Exam & Grades, Finance, and Library. Modularity then organises each of these into an independent module with a clear, focused responsibility — supporting high cohesion and low coupling.",
+      "explanation": "The lecture introduces both concepts under **Important Systems Concepts**. Decomposition reduces complexity by dividing a large system (e.g., a university system) into smaller parts. Modularity then structures those parts so each module has a clear, focused responsibility. Together, they support the principles of **high cohesion** and **low coupling** that characterise good software design."
+    },
+    {
+      "q": "Describe the **four phases of the SDLC** as presented in the lecture, including the key activities and the output of each phase.",
+      "answer": "The lecture presents the SDLC as a **cycle of 4 phases**:\n\n**Phase 1: Systems Planning and Selection**\n- Identify existing problems and opportunities\n- Define project scope and objectives\n- Conduct feasibility study (technical, economic, operational)\n- **Output:** Project plan\n\n**Phase 2: Systems Analysis**\n- Gather user requirements\n- Define functional requirements (what the system should do)\n- Define non-functional requirements (constraints)\n- **Output:** Software Requirements Specification (SRS)\n\n**Phase 3: Systems Design**\n- Design system architecture\n- Database design\n- Interface design\n- Define modules and components\n- **Output:** System design document\n\n**Phase 4: Systems Implementation and Maintenance**\n- **Implementation:** Developers write the code\n- **Testing:** Verify the system works\n- **Operation (Deployment):** System goes live\n- **Maintenance:** Fix bugs, improve performance, add features\n- **Output:** Working, deployed system\n\nAfter Phase 4, the cycle returns to Phase 1 for ongoing review and improvement.",
+      "explanation": "The lecture dedicates a full section to each SDLC phase. A complete answer must cover all four phases, their key activities, and their specific outputs. The cyclic nature of the SDLC is also emphasised in the lecture diagram."
+    }
+  ]
+}

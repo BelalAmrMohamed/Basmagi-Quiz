@@ -1,0 +1,346 @@
+{
+  "meta": {
+    "title": "Lecture 6 Quiz",
+    "id": "JQC5AWJR",
+    "createdAt": "2026-05-29 - 22:01",
+    "path": "quizzes/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 6 Quiz.json"
+  },
+  "stats": {
+    "questionCount": 30,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary goal of the **Analysis Phase** in system development?",
+      "explanation": "The analysis phase is important because every project's requirements and needs must be defined accurately and completely. Based on these requirements, the project will develop a system which meets users' expectations.",
+      "options": [
+        "To design the database schema of the new system",
+        "To define the project requirements and needs accurately and completely",
+        "To write the source code for the proposed system",
+        "To test the system against user expectations"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Systems analysis is best defined as:",
+      "explanation": "Systems analysis is defined as a process of understanding in detail what a system should accomplish.",
+      "options": [
+        "A process of coding a system based on given specifications",
+        "A process of testing a system for bugs and errors",
+        "A process of understanding in detail what a system should accomplish",
+        "A process of deploying a system to production"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The process of analysis can be divided into which two parts?",
+      "explanation": "The process of analysis is divided into two parts: (1) Requirements Determination (finding) and (2) Requirements Structuring (organizing).",
+      "options": [
+        "Functional requirements and non-functional requirements",
+        "Traditional methods and modern methods",
+        "Requirements determination and requirements structuring",
+        "Interviewing and observation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following best describes **Requirements Determination**?",
+      "explanation": "Requirements determination is the process of collecting and discovering what users need from the system. It involves interviewing users and stakeholders, studying existing systems, observing current work processes, and using prototypes or questionnaires.",
+      "options": [
+        "The process of organizing and analyzing collected requirements in a structured form",
+        "The process of collecting and discovering what users need from the system",
+        "The process of classifying requirements as functional or non-functional",
+        "The process of documenting requirements in a formal SRS format"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is **NOT** an activity involved in Requirements Determination?",
+      "explanation": "Grouping related requirements and removing duplicates is an activity of **Requirements Structuring**, not Requirements Determination. Requirements Determination focuses on collecting and discovering needs from users and existing systems.",
+      "options": [
+        "Interviewing users and stakeholders",
+        "Grouping related requirements and removing duplicates",
+        "Studying existing systems",
+        "Using prototypes or questionnaires"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "**Requirements Structuring** involves which of the following activities?\n\n1. Grouping related requirements\n2. Removing duplicates and conflicts\n3. Classifying requirements as functional or non-functional\n4. Documenting them in a formal format like SRS",
+      "explanation": "Requirements Structuring involves all four activities: grouping related requirements, removing duplicates and conflicts, classifying requirements (functional / non-functional), and documenting them in a formal format such as an SRS.",
+      "options": [
+        "1 and 2 only",
+        "1, 2, and 3 only",
+        "All of the above",
+        "3 and 4 only"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The results of requirements determination can be structured according to three essential views. Which of the following table correctly matches each view with its description and example diagrams?\n\n| View | Description | Example Diagrams |\n|---|---|---|\n| Process | Sequence of data movement and handling | Data flow, Use case diagrams |\n| Logic and Timing | Rules for data transformation and triggers | Sequence and activity diagrams |\n| Data | Inherent structure of data | Class and ERD diagrams |",
+      "explanation": "All three views are correctly matched: (1) **Process** — sequence of data movement, represented by data flow and use case diagrams; (2) **Logic and Timing** — rules and triggers for data transformation, represented by sequence and activity diagrams; (3) **Data** — inherent structure of data, represented by class and ERD diagrams.",
+      "options": [
+        "The table is entirely correct",
+        "The Logic and Timing view should use ERD diagrams instead",
+        "The Data view should use use case diagrams instead",
+        "The Process view should use class and ERD diagrams instead"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which type of requirement is represented by the rule that a user must be able to log in to the system?",
+      "explanation": "A login feature is a **functional requirement** — it relates to a specific process or feature that the system must perform and is directly visible to the user.",
+      "options": [
+        "Non-functional requirement",
+        "Functional requirement",
+        "Performance requirement",
+        "Constraint requirement"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Consider the following requirements. Which one is a **non-functional** requirement?\n\n| # | Requirement |\n|---|---|\n| A | The system shall allow users to add a new product |\n| B | The system shall generate monthly sales reports |\n| C | The system shall respond to any user query within 2 seconds |\n| D | The system shall allow users to log in with a username and password |",
+      "explanation": "Requirement **C** (response time of 2 seconds) is a **non-functional** requirement — it relates to performance, describing *how* the system performs rather than *what* it does. Options A, B, and D all describe functions the system must provide.",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which statement about the comparison between functional and non-functional requirements is **FALSE**?\n\n| Aspect | Functional | Non-Functional |\n|---|---|---|\n| Meaning | What the system **does** | How the system **performs** |\n| Focus | Functions, features, and services | Quality, performance, and constraints |\n| User view | Directly visible to users | Usually not directly visible |\n| Example | Login, add product, generate report | Fast response time, high security, easy to use |",
+      "explanation": "Functional requirements **are** directly visible to users (e.g., login, add product, generate report). It is non-functional requirements that are usually **not** directly visible to users. The statement in option B reverses this fact.",
+      "options": [
+        "Non-functional requirements relate to performance and usability",
+        "Functional requirements are usually **not** directly visible to users",
+        "Non-functional requirements focus on quality and constraints",
+        "Functional requirements focus on functions and features"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The two general categories of requirement determination methods are:",
+      "explanation": "Requirement determination methods are classified into two general categories: **Traditional Methods** and **Modern Methods**. Each method has its own advantages and disadvantages.",
+      "options": [
+        "Interviews and observations",
+        "Functional methods and non-functional methods",
+        "Traditional methods and modern methods",
+        "Qualitative methods and quantitative methods"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is a **Traditional** method for gathering requirements?",
+      "explanation": "Form Analysis is a **traditional** method. The five traditional methods are: Interviewing, Surveys and Questionnaires, Observation, Analyzing Documents, and Form Analysis.",
+      "options": [
+        "Joint Application Design (JAD)",
+        "Iterative Prototyping",
+        "CASE Tools",
+        "Form Analysis"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "How many traditional methods for gathering requirements are listed in the lecture?",
+      "explanation": "The lecture lists **5** traditional methods: (1) Interviewing, (2) Surveys and Questionnaires, (3) Observation, (4) Analyzing Documents, and (5) Form Analysis.",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following are classified as **Modern** methods for requirements gathering?\n\n1. Joint Application Design (JAD)\n2. Observation\n3. CASE Tools\n4. Iterative Prototyping",
+      "explanation": "The **modern** methods are: (1) Joint Application Design (JAD), (3) CASE Tools, and (4) Iterative Prototyping. **Observation** is a traditional method, not a modern one.",
+      "options": [
+        "1 and 3 only",
+        "2 and 4 only",
+        "1, 3, and 4 only",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the main advantage of modern requirements gathering methods over traditional ones?",
+      "explanation": "Modern techniques can support effective information collection and structuring while **reducing the amount of time required for analysis**, making them more efficient compared to traditional methods.",
+      "options": [
+        "They are cheaper and require no technology",
+        "They eliminate the need for any user involvement",
+        "They support effective information collection and structuring while reducing the time required for analysis",
+        "They replace the need for any formal documentation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the context of interviews, what is a **closed-ended question**?",
+      "explanation": "A **closed-ended question** restricts the respondent to a limited set of possible answers, producing structured and easily analyzable data. Example: 'How many telephone orders are received per day?'",
+      "options": [
+        "A question where the respondent can answer in any way they choose",
+        "A question that is only asked at the closing stage of an interview",
+        "A question where the respondent has a limited set of answers",
+        "A question that cannot be answered by regular users"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is an example of an **open-ended question** in an interview?",
+      "explanation": "'What are some of the improvements you would like to see in a new system?' is an **open-ended question** — it allows the respondent to answer freely without a restricted set of choices. The other options seek specific, factual answers and are therefore closed-ended.",
+      "options": [
+        "How many telephone orders are received per day?",
+        "How do customers place orders?",
+        "What are some of the improvements you would like to see in a new system?",
+        "What information is missing from the monthly sales report?"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Direct interviewing as a requirements gathering method is best characterized by:",
+      "explanation": "Direct Interview consists of meeting with individuals or small groups to ask questions about their roles, responsibilities, and needs for the proposed system. It has two basic forms of questions: open-ended and closed-ended.",
+      "options": [
+        "Sending forms electronically to a large group of users simultaneously",
+        "Meeting with individuals or small groups to ask questions about their roles, responsibilities, and needs",
+        "Observing users while they perform their daily work tasks silently",
+        "Building a simulation of the system and collecting automated feedback"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is a **disadvantage** of using questionnaires and surveys as a requirements gathering method?",
+      "explanation": "The disadvantages of questionnaires and surveys are: (1) the response rate is often low, and (2) there is no opportunity to clarify unclear points with respondents — unlike in an interview setting.",
+      "options": [
+        "They are very expensive to administer",
+        "They can only be targeted to a small group of respondents",
+        "The response rate is often low and there is no opportunity to clarify unclear points",
+        "Responses are difficult to tabulate and analyze"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following correctly lists the **advantages** of questionnaires and surveys?\n\n| Advantage |\n|---|\n| Responses can be easily tabulated and analyzed |\n| Less expensive than other methods |\n| Can be targeted to mass respondents |\n| Respondents complete it at their own time |",
+      "explanation": "All listed items are correct advantages of questionnaires and surveys: they allow responses to be easily tabulated and analyzed, they are less expensive, they can target mass respondents, and respondents can complete them at their own convenient time.",
+      "options": [
+        "Only the first two rows are advantages",
+        "Only the last two rows are advantages",
+        "All rows are advantages",
+        "None of the rows are advantages"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Iterative Prototyping** is best described as:",
+      "explanation": "Prototyping is an **iterative process** involving analysts and users whereby a rudimentary version of an information system is built and rebuilt according to user feedback. It can replace the SDLC or augment it.",
+      "options": [
+        "A one-time build of the full system before receiving any user feedback",
+        "An iterative process where a rudimentary system version is built and rebuilt based on user feedback",
+        "A process of writing detailed technical documentation before coding begins",
+        "A final-stage testing method applied after full system development"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the lecture, which of the following does prototyping simulate?",
+      "explanation": "Prototyping simulates **user interface elements** such as menus, buttons, icons, windows, and dialogue sequences — either in a static or dynamic way.",
+      "options": [
+        "Menus, buttons, icons, windows, and dialogue sequences",
+        "Database schemas, SQL queries, and stored procedures",
+        "Network configurations and server infrastructure",
+        "Unit tests, integration tests, and deployment pipelines"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the purpose of **Throw-away Prototyping**?",
+      "explanation": "Throw-away Prototyping is built quickly to clarify unclear system requirements or to help users choose between different design options. Once uncertainties are resolved, the prototype is **discarded**, and the insights gained are used to define the final system requirements.",
+      "options": [
+        "To gradually build the prototype until it becomes the final production system",
+        "To replace the entire Software Development Life Cycle (SDLC)",
+        "To quickly clarify unclear requirements or help users choose between design options, then discard it",
+        "To conduct performance and load testing on the final system"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In which of the following situations is prototyping **most helpful**?\n\n1. Users are not sure what they need, especially in new systems\n2. A **large** number of users and stakeholders are involved\n3. The system design is complex and needs a clear model\n4. There have been communication problems between users and system analysts",
+      "explanation": "According to the lecture, prototyping is helpful when: (1) users are not sure what they need, (2) only a **small** number of users/stakeholders are involved, (3) system design is complex, and (4) there have been communication problems. Condition 2 in the question incorrectly states 'large number,' making it false.",
+      "options": [
+        "1, 2, and 3 only",
+        "1, 3, and 4 only",
+        "2, 3, and 4 only",
+        "All of the above"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which statement correctly differentiates **Throwaway Prototyping** from **Evolutionary Prototyping**?\n\n| Aspect | Throwaway | Evolutionary |\n|---|---|---|\n| Main purpose | Clarify requirements | Gradually build the final system |\n| End result | Prototype is discarded | Prototype is continuously improved |\n| System completeness | Incomplete | Complete over time |\n| When used | Requirements are unclear | Requirements evolve gradually |",
+      "explanation": "The key difference is the **end result**: Throwaway prototyping is discarded after its purpose (clarifying requirements) is achieved. Evolutionary prototyping is continuously modified and enhanced based on user feedback until it becomes the final working system.",
+      "options": [
+        "Throwaway prototyping results in a complete working system while evolutionary prototyping is discarded",
+        "Evolutionary prototyping is used when requirements are fully known upfront",
+        "Throwaway prototyping is discarded after clarifying requirements, while evolutionary prototyping is continuously improved into the final system",
+        "Both approaches result in the prototype being discarded at the end"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, what are the **three deliverables** expected from the Analysis Phase?",
+      "explanation": "The three deliverables of the Analysis Phase are: (1) a Survey/Questionnaire for collecting requirements, (2) an initial SRS document, and (3) an Iterative Prototype created using a tool like Figma.",
+      "options": [
+        "Design document, source code, and test cases",
+        "Survey/questionnaire, SRS document, and iterative prototype using Figma",
+        "Use case diagrams, class diagrams, and ERD diagrams",
+        "Interview transcripts, database schema, and deployment plan"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which sections must be included in the **SRS (Software Requirements Specification)** document as part of the Analysis Phase deliverables?",
+      "explanation": "According to the lecture, the initial SRS document must include: (1) Introduction, (2) Scope, (3) Functional Requirements, (4) Non-Functional Requirements, and (5) Use Cases.",
+      "options": [
+        "Introduction, Scope, Functional Requirements, Non-Functional Requirements, and Use Cases",
+        "Introduction, Database Design, Source Code, and Test Cases",
+        "Scope, Class Diagrams, ERD Diagrams, and Deployment Plan",
+        "Functional Requirements, Unit Tests, Integration Tests, and Acceptance Tests"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which diagramming tools are associated with the **Process** view in requirements structuring?",
+      "explanation": "The **Process** view focuses on the sequence of data movement and handling operations within the system. It is represented using **Data Flow Diagrams** and **Use Case Diagrams**.",
+      "options": [
+        "Class diagrams and ERD diagrams",
+        "Sequence diagrams and activity diagrams",
+        "Data flow diagrams and use case diagrams",
+        "Flowcharts and Gantt charts"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which diagramming tools are used to represent the **Logic and Timing** view in requirements modeling?",
+      "explanation": "The **Logic and Timing** view addresses the rules by which data are transformed and manipulated and what triggers data transformation. It is represented using **Sequence Diagrams** and **Activity Diagrams**.",
+      "options": [
+        "ERD diagrams and class diagrams",
+        "Sequence diagrams and activity diagrams",
+        "Data flow diagrams and use case diagrams",
+        "Bar charts and pie charts"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The **Data** view in requirements structuring focuses on:",
+      "explanation": "The **Data** view focuses on the inherent structure of data independent of how or when they are processed. It is typically represented using **Class Diagrams** and **Entity-Relationship Diagrams (ERDs)**.",
+      "options": [
+        "The sequence of events that trigger data processing in the system",
+        "The inherent structure of data independent of how or when they are processed",
+        "The user interface flow and navigation experience",
+        "The performance metrics of data transactions and throughput"
+      ],
+      "correct": 1
+    }
+  ]
+}
