@@ -18,3 +18,9 @@ scripts/deploy-production.js
 docs/context-quiz.json
 .vercel
 .env*.local
+
+# Git files
+.git/
+
+# Node modules
+node_modules/
