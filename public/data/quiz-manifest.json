@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-31T17:38:36.390Z",
+  "generatedAt": "2026-05-31T17:40:05.734Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1596,17 +1596,6 @@
           ],
           "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link",
           "createdAt": "3/30/2026, 4:19:27 PM"
-        },
-        {
-          "id": "W6QAT73F",
-          "title": "2025   2026 Final الحكومية الترم الأول",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Final الحكومية الترم الأول.json",
-          "questionCount": 16,
-          "questionTypes": [
-            "Essay",
-            "MCQ"
-          ],
-          "createdAt": "2026-05-31 - 17:29"
         },
         {
           "id": "6RXW5ZRZ",
