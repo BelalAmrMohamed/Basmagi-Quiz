@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-31T17:27:40.175Z",
+  "generatedAt": "2026-05-31T17:38:36.390Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1598,6 +1598,17 @@
           "createdAt": "3/30/2026, 4:19:27 PM"
         },
         {
+          "id": "W6QAT73F",
+          "title": "2025   2026 Final الحكومية الترم الأول",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Final الحكومية الترم الأول.json",
+          "questionCount": 16,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "2026-05-31 - 17:29"
+        },
+        {
           "id": "6RXW5ZRZ",
           "title": "2025 - 2026 Summer Final (دكتور تاني)",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Summer Final (دكتور تاني).json",
@@ -1685,6 +1696,26 @@
           "createdAt": "3/16/2026, 7:40:39 AM"
         },
         {
+          "id": "NZ3LIAK3",
+          "title": "تدريب من آخر شيت سي",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/أسئلة عن ال Interface.json",
+          "questionCount": 7,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-05-31 - 16:51"
+        },
+        {
+          "id": "CPKZRJRR",
+          "title": "أسئلة من آخر شيت",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/أسئلة من آخر شيت.json",
+          "questionCount": 10,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-05-31 - 17:38"
+        },
+        {
           "id": "2QVMHIRC",
           "title": "اختبار على المحاضرة من Claude",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/اختبار على المحاضرة من Claude.json",
@@ -1693,16 +1724,6 @@
             "MCQ"
           ],
           "createdAt": "2026-05-31 - 17:27"
-        },
-        {
-          "id": "NZ3LIAK3",
-          "title": "تدريب من آخر شيت سي",
-          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/تدريب من آخر شيت سي.json",
-          "questionCount": 7,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "2026-05-31 - 16:51"
         },
         {
           "id": "LAQN7EMG",

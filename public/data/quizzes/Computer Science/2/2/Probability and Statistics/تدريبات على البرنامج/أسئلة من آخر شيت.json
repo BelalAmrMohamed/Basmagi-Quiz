@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "أسئلة من آخر شيت",
+    "id": "CPKZRJRR",
+    "createdAt": "2026-05-31 - 17:38",
+    "path": "quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/أسئلة من آخر شيت.json"
+  },
+  "stats": {
+    "questionCount": 10,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "How would you use the drop-down menus in SPSS to generate a frequency table?",
+      "explanation": "In SPSS, to generate a frequency table, navigate to **Analyze → Descriptive Statistics → Frequencies**. This opens the Frequencies dialog where you can select variables and produce frequency output.",
+      "options": [
+        "Open the Output Viewer and click: Save As; Pie Chart",
+        "Click on: Analyze; Descriptive Statistics; Frequencies",
+        "Click on: Graphs; Frequencies; Pearson",
+        "Open the Variable Viewer and recode the value labels"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The command that allows reverse coding and makes data entry much more efficient in SPSS is:",
+      "explanation": "**Value Labels** in SPSS allow you to assign text labels to numeric codes (e.g., 1 = Male, 2 = Female), enabling reverse coding and making data entry significantly more efficient.",
+      "options": [
+        "Value Labels",
+        "Data View",
+        "Variable View",
+        "Edit"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How is a variable name different from a variable label in SPSS?",
+      "explanation": "In SPSS, a **variable name** is a short identifier (max 64 characters, no spaces) used internally, while a **variable label** is a longer, more descriptive text that appears in output to clarify what the variable represents.",
+      "options": [
+        "It is longer and more detailed.",
+        "It is abstract and unspecific.",
+        "It refers to codes rather than variables.",
+        "It is shorter and less detailed."
+      ],
+      "correct": 3
+    },
+    {
+      "q": "When should the type of measure (nominal, ordinal, scale) be defined in SPSS?",
+      "explanation": "The measurement level should **always** be defined in SPSS regardless of variable type, because SPSS uses this information to determine appropriate statistical procedures and chart types automatically.",
+      "options": [
+        "When you intend to graph nominal variables",
+        "When you intend to graph ordinal variables",
+        "When you intend to graph interval variables",
+        "At all times"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "How would you use the drop-down menus in SPSS to generate a histogram? *(Method 1)*",
+      "explanation": "One way to generate a histogram in SPSS is via **Analyze → Descriptive Statistics → Frequencies → Charts → Histogram**. This embeds the histogram request within the Frequencies procedure.",
+      "options": [
+        "Open the Output Viewer and click: Save As; Pie Chart",
+        "Click on: Analyze; Descriptive Statistics; Frequencies; Charts; Histogram",
+        "Click on: Graphs; Frequencies; Pearson",
+        "Open the Variable Viewer and recode the value labels"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How would you use the drop-down menus in SPSS to generate a histogram? *(Method 2)*",
+      "explanation": "A second way to generate a histogram in SPSS is directly through **Graphs → Legacy Dialogs → Histogram**, which provides a dedicated histogram dialog independent of the Frequencies procedure.",
+      "options": [
+        "Open the Output Viewer and click: Save As; Pie Chart",
+        "Click on: Analyze; Descriptive Statistics; Frequencies",
+        "Click on: Graphs; Legacy Dialogs; Histogram",
+        "Open the Variable Viewer and recode the value labels"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "SPSS uses the term **'Scale'** to refer to which level(s) of data?",
+      "explanation": "In SPSS, the measurement level **Scale** encompasses both **interval** and **ratio** level data — i.e., continuous numeric data where arithmetic operations are meaningful. Nominal and ordinal data are kept as separate categories.",
+      "options": [
+        "Categorical data.",
+        "Both nominal and ordinal level data.",
+        "Both interval and ratio level data.",
+        "All of these choices."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In SPSS, which view contains the definitions of each variable in your data set?",
+      "explanation": "**Variable View** in SPSS is where you define each variable's properties, including its name, type, width, decimals, label, value labels, missing values, and measurement level.",
+      "options": [
+        "Variable View",
+        "Data View",
+        "Data",
+        "File"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In SPSS, which view is arranged in a spreadsheet format that contains variables in columns and cases in rows?",
+      "explanation": "**Data View** in SPSS presents the dataset in a spreadsheet grid where each **column** represents a variable and each **row** represents a case (observation).",
+      "options": [
+        "Variable View",
+        "Data View",
+        "Data",
+        "File"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In SPSS, which feature allows reverse coding and makes data entry much more efficient?",
+      "explanation": "**Value Labels** allow you to map numeric codes to meaningful text (e.g., 1 = \"Agree\", 5 = \"Strongly Disagree\"), which supports reverse coding and streamlines data entry by letting users enter numbers instead of full text.",
+      "options": [
+        "Variable View",
+        "Data View",
+        "Value Label",
+        "Insert Data"
+      ],
+      "correct": 2
+    }
+  ]
+}
