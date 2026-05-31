@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-29T22:07:02.952Z",
+  "generatedAt": "2026-05-31T17:27:40.175Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1683,6 +1683,26 @@
           "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
           "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
           "createdAt": "3/16/2026, 7:40:39 AM"
+        },
+        {
+          "id": "2QVMHIRC",
+          "title": "اختبار على المحاضرة من Claude",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/اختبار على المحاضرة من Claude.json",
+          "questionCount": 16,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-05-31 - 17:27"
+        },
+        {
+          "id": "NZ3LIAK3",
+          "title": "تدريب من آخر شيت سي",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/تدريبات على البرنامج/تدريب من آخر شيت سي.json",
+          "questionCount": 7,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-05-31 - 16:51"
         },
         {
           "id": "LAQN7EMG",
