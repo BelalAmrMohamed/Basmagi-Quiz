@@ -1,0 +1,324 @@
+{
+  "meta": {
+    "title": "2024 2025 Part Of Final",
+    "id": "BLL3FIXQ",
+    "createdAt": "2026-06-04 - 15:57",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Part of Final.json"
+  },
+  "stats": {
+    "questionCount": 28,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the final state of the stack after `Push(x)`, `Push(y)`, `Push(z)`, `Pop()`, `Top()`, `Pop()`?",
+      "explanation": "After Push(x), Push(y), Push(z): stack is [x, y, z] (z on top). Pop() removes z → [x, y]. Top() peeks y (no removal) → [x, y]. Pop() removes y → [x]. Final state: x remains.",
+      "options": [
+        "x",
+        "y",
+        "z",
+        "Empty stack"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the time complexity of the `Empty()` operation in a full stack?",
+      "explanation": "`Empty()` simply checks whether the stack size or top pointer equals zero — a constant-time operation regardless of how many elements are in the stack.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(\\log n)$",
+        "false"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Removes and returns the **first added** key from a Stack, we use ..........",
+      "explanation": "A stack is LIFO (Last In, First Out). Removing the *first* added element (bottom of the stack) is not a standard stack operation and is therefore not allowed.",
+      "options": [
+        "`Key Pop()`",
+        "`pop(Key)`",
+        "`Key Top()`",
+        "not allowed"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In a **linked list queue**, how many pointers are changed during `Dequeue()`?",
+      "explanation": "Dequeue removes the front node. Only the `head` (front) pointer needs to be updated to point to the next node — a single pointer change.",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In an **array-based queue**, what happens when the write index exceeds the array size and there are free locations available?",
+      "explanation": "Array-based queues use a **circular buffer**. When the write index reaches the end of the array, it wraps around and starts from index 0, reusing freed locations.",
+      "options": [
+        "It starts from 0 again",
+        "The queue resizes",
+        "An error occurs",
+        "The read index resets"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In an **array-based queue**, the queue is empty when .......",
+      "explanation": "The queue is empty when the read index equals the write index, meaning no elements are waiting to be dequeued.",
+      "options": [
+        "write = 0",
+        "read = 0",
+        "read = write",
+        "size = 0"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a **linked list queue**, which method is used for `Dequeue()`?",
+      "explanation": "`Dequeue()` removes the element at the front of the queue, which corresponds to `PopFront()` on the underlying linked list.",
+      "options": [
+        "`PushFront()`",
+        "`PopFront()`",
+        "`TopFront()`",
+        "c and b"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which term describes nodes sharing the same parent?",
+      "explanation": "Nodes that share the same parent node are called **siblings**.",
+      "options": [
+        "Ancestors",
+        "Descendants",
+        "Siblings",
+        "Leaves"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "....... is the maximum depth of a subtree node and the farthest leaf.",
+      "explanation": "**Tree height** is defined as the length of the longest path from a node down to the farthest leaf in its subtree.",
+      "options": [
+        "Tree level",
+        "Tree height",
+        "Tree degree",
+        "Tree size"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which traversal visits nodes in the order: **Left subtree → Root → Right subtree**?",
+      "explanation": "**In-order** traversal follows Left → Root → Right. For a BST, this visits nodes in sorted (ascending) order.",
+      "options": [
+        "In-order",
+        "Pre-order",
+        "Post-order",
+        "Level-order"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the correct order of lines for the **Post-order (Depth-first)** algorithm?\n\n| Label | Line |\n|---|---|\n| a | `PostOrderTraversal(tree.left)` |\n| b | `Print(tree.key)` |\n| c | `if tree = nil:` |\n| d | `PostOrderTraversal(tree.right)` |\n| e | `return` |",
+      "explanation": "Post-order is Left → Right → Root. The correct pseudocode order is: (c) check nil, (e) return if nil, (a) recurse left, (d) recurse right, (b) print root.",
+      "options": [
+        "c, e, d, b, a",
+        "c, e, b, a, d",
+        "c, e, a, b, d",
+        "c, e, a, d, b"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In **pre-order** traversal, when is the root node processed?",
+      "explanation": "**Pre-order** traversal processes the root *before* visiting any of its children: Root → Left → Right.",
+      "options": [
+        "After its left subtree",
+        "Before its children",
+        "After its right subtree",
+        "After its children"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What **data structure** is used to implement **level-order** traversal?",
+      "explanation": "Level-order traversal uses a **Queue** (not listed among the options), so the correct answer is 'None of the above'.",
+      "options": [
+        "Linked List",
+        "Stack",
+        "Array",
+        "None of the above"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the output of the **PreOrderTraversal** in the following tree?\n\n```\n        A\n       / \\\n      B   E\n     / \\ / \\\n    C  D F   I\n            / \\\n           G   K\n```",
+      "explanation": "Pre-order: Root → Left → Right. Starting at A: visit A, go left to B, visit B, go left to C, visit C (leaf), go right to D, visit D (leaf), back to A go right to E, visit E, go left to F, visit F (leaf), go right to I, visit I, go left to G, visit G (leaf), go right to K, visit K (leaf). Result: A, B, C, D, E, F, I, G, K.",
+      "options": [
+        "C, B, D, A, F, E, G, I, K",
+        "C, D, B, F, G, K, I, E, A",
+        "A, B, E, C, D, F, I, G, K",
+        "A, B, C, D, E, F, I, G, K"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the **size** of the tree in the previous question?\n\n```\n        A\n       / \\\n      B   E\n     / \\ / \\\n    C  D F   I\n            / \\\n           G   K\n```",
+      "explanation": "The size of a tree is the total number of nodes. Counting: A, B, C, D, E, F, I, G, K = **9 nodes**.",
+      "options": [
+        "3",
+        "8",
+        "9",
+        "1"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the previous tree, what is the **level** of node \"I\"?\n\n```\n        A          ← Level 1\n       / \\\n      B   E        ← Level 2\n     / \\ / \\\n    C  D F   I     ← Level 3\n            / \\\n           G   K   ← Level 4\n```",
+      "explanation": "Assuming the root A is at level 1: A=1, B/E=2, C/D/F/I=3, G/K=4. Node I is at **level 3**.",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which term refers to a **collection of trees**?",
+      "explanation": "A **Forest** is formally defined as a set (collection) of disjoint trees.",
+      "options": [
+        "Forest",
+        "Hierarchy",
+        "Graph",
+        "Heap"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "For **binary tree** implementation, a node contains:",
+      "explanation": "A binary tree node stores its value (`key`) and pointers to its `left` and `right` children.",
+      "options": [
+        "key, children",
+        "key, parent, children",
+        "key, left, right",
+        "key, sibling"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In **LevelTraversal**, when does the traversal terminate/stop?",
+      "explanation": "Level-order traversal stops when the queue becomes empty, which means all reachable nodes have been visited.",
+      "options": [
+        "All leaf nodes are visited",
+        "The root node is dequeued",
+        "The queue is empty",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the height of a **complete binary tree** with $n$ nodes?",
+      "explanation": "A complete binary tree is balanced. Each level doubles the number of nodes, so the height is $\\lfloor \\log_2 n \\rfloor = O(\\log n)$.",
+      "options": [
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(n \\log n)$",
+        "$O(1)$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "For a node at index $i$ in an array (1-indexed), what is its **left child's** index?",
+      "explanation": "In a 1-indexed array representation of a binary tree: left child = $2i$, right child = $2i+1$, parent = $\\lfloor i/2 \\rfloor$.",
+      "options": [
+        "$2i$",
+        "$2i+1$",
+        "$i/2$",
+        "$i+1$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which operation replaces the root with the last leaf during **ExtractMax**?",
+      "explanation": "During ExtractMax: (1) swap root with the last leaf, (2) remove the last leaf, (3) call **SiftDown** on the new root to restore the heap property by moving it down to its correct position.",
+      "options": [
+        "SiftDown",
+        "SiftUp",
+        "Swap",
+        "Remove"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the time complexity of the **Insert** operation in a binary heap?",
+      "explanation": "Inserting into a binary heap places the new element at the end and calls SiftUp. SiftUp traverses at most the height of the tree, which is $O(\\log n)$.",
+      "options": [
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(n \\log n)$",
+        "$O(1)$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": ".......... is the maximum number of elements in the heap.",
+      "explanation": "**Capacity** (or maxSize) defines the maximum number of elements the heap's underlying array can hold, while **size** tracks the current number of elements.",
+      "options": [
+        "size",
+        "capacity",
+        "maxSize",
+        "length"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of the loop in the `SiftUp(i)` pseudocode?",
+      "explanation": "`SiftUp` repeatedly swaps a node with its parent as long as the node's priority is greater than its parent's, moving it **upward** until the max-heap property is restored.",
+      "options": [
+        "To move the node down until the heap property is restored",
+        "To move the node up until the heap property is restored",
+        "To delete all children of the node",
+        "To resize the array"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which node replaces the root during the **ExtractMax** operation to maintain completeness?",
+      "explanation": "To maintain the **complete binary tree** property, the last element in the array (the rightmost leaf at the last level) replaces the root when ExtractMax is called.",
+      "options": [
+        "The largest child of the root",
+        "The rightmost leaf in the last level",
+        "The leftmost leaf in the last level",
+        "A randomly chosen leaf"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which step is **not** part of maintaining completeness during `Remove(i)`?",
+      "explanation": "The standard `Remove(i)` procedure swaps with the last leaf, removes it, then calls SiftUp or SiftDown as needed. Setting priority to infinity is **not** a standard step in this process.",
+      "options": [
+        "Swapping the target node with the last leaf",
+        "Setting the target node's priority to infinity",
+        "Calling SiftUp on the target node",
+        "Extracting the modified node via ExtractMax"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which statement about a **complete binary tree** is **false**?",
+      "explanation": "In a complete binary tree, the last level is filled from **left to right** (not right to left). All other statements are true.",
+      "options": [
+        "All levels except the last are fully filled",
+        "The last level is filled from right to left",
+        "It can be stored efficiently in an array",
+        "Its height is $O(\\log n)$"
+      ],
+      "correct": 1
+    }
+  ]
+}

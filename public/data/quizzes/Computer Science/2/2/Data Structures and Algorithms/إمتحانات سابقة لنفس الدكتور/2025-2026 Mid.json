@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "title": "2025 2026 Mid",
+    "id": "AYPS2FSA",
+    "createdAt": "2026-06-04 - 15:57",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Mid.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Array of integers with the following: $\\text{array\\_addr} = 2000$, $\\text{first\\_index} = 10$. What is the logical index $i$ for the element at physical address $2060$?",
+      "explanation": "Using the formula: $\\text{physical\\_addr} = \\text{array\\_addr} + (i - \\text{first\\_index}) \\times \\text{elem\\_size}$\n\nAssuming $\\text{elem\\_size} = 4$ bytes (integers):\n$$2060 = 2000 + (i - 10) \\times 4$$\n$$60 = (i - 10) \\times 4$$\n$$i - 10 = 15 \\Rightarrow i = 25$$",
+      "options": [
+        "$i = 15$",
+        "$i = 20$",
+        "$i = 25$",
+        "$i = 30$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the time complexity to access an arbitrary element in a full array containing $n$ elements?",
+      "explanation": "Arrays support direct (random) access via index calculation in constant time: $\\text{addr} = \\text{base} + i \\times \\text{elem\\_size}$. No traversal is needed, so access is $O(1)$.",
+      "options": [
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(1)$",
+        "$O(n^2)$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a 2D array with 6 columns (0-based index), what is the formula to find the offset for the element at row 3, column 4?",
+      "explanation": "For row-major order with 0-based indexing and $c$ columns:\n$$\\text{offset} = \\text{elem\\_size} \\times (\\text{row} \\times c + \\text{col}) = \\text{elem\\_size} \\times (3 \\times 6 + 4) = \\text{elem\\_size} \\times 22$$",
+      "options": [
+        "$\\text{elem\\_size} \\times (3 \\times 6 + 4)$",
+        "$\\text{elem\\_size} \\times ((3-1) \\times 6 + (4-1))$",
+        "$\\text{elem\\_size} \\times ((4) \\times 6 + (3))$",
+        "$\\text{elem\\_size} \\times (3 + 6 \\times 4)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the time complexity of removing an element from the beginning of an array?",
+      "explanation": "Removing from the beginning of an array requires shifting all remaining $n-1$ elements one position to the left to fill the gap, resulting in $O(n)$ time complexity.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the time complexity of adding an element to the end of a **full** array?",
+      "explanation": "A static (fixed-size) array cannot grow beyond its allocated capacity. Adding an element to an already full array is not allowed — there is no available space.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "Not allowed",
+        "$O(\\log n)$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In an Array, which pair of operations both require $O(n)$ time?",
+      "explanation": "Both adding to the beginning and removing from the middle require shifting elements:\n- **Add to beginning**: shift all $n$ elements right → $O(n)$\n- **Remove from middle**: shift all subsequent elements left → $O(n)$\n\nAdding/removing from the end is $O(1)$ (no shifting needed).",
+      "options": [
+        "Adding to the beginning and removing from the middle",
+        "Adding to the end and removing from the end",
+        "Adding to the middle and removing from the end",
+        "Removing from the beginning and adding to the end"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Why does `PopBack()` in a singly-linked list **with** a tail pointer **NOT** run in $O(1)$ time?",
+      "explanation": "Even with a tail pointer, after removing the last node we need to update `tail` to point to the second-to-last node. In a singly-linked list there is no `prev` pointer, so we must traverse from `head` to find that node — an $O(n)$ operation.",
+      "options": [
+        "Because the tail pointer must be securely deleted from memory.",
+        "Because finding the new tail requires traversing the list from the head.",
+        "Because the list must be completely copied to avoid memory leaks.",
+        "Because singly-linked lists do not allow backward traversal under any circumstances."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a singly-linked list, what is the time complexity of `PushFront(Key)`?",
+      "explanation": "`PushFront` creates a new node, sets its `next` to the current `head`, and updates `head` to the new node. All steps are constant-time pointer operations → $O(1)$.",
+      "options": [
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(1)$",
+        "$O(n^2)$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "When executing `PopFront()` on a singly-linked list, which operation updates the head?",
+      "explanation": "`PopFront()` removes the first node by advancing the head pointer to the next node:\n```\nhead = head.next\n```\nThis effectively unlinks the old first node from the list in $O(1)$ time.",
+      "options": [
+        "`head = tail`",
+        "`head.next = head`",
+        "`head = nil`",
+        "`head = head.next`"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In a singly-linked list, what is the time complexity of `AddAfter(Node, Key)`?",
+      "explanation": "Given a direct reference to the node, `AddAfter` only requires:\n1. Creating a new node\n2. Setting `newNode.next = node.next`\n3. Setting `node.next = newNode`\n\nAll pointer operations are constant time → $O(1)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a doubly-linked list **WITH** a tail pointer, what is the time complexity of `PopBack()`?",
+      "explanation": "With a doubly-linked list and a tail pointer, `PopBack()` is $O(1)$:\n- Access last node directly via `tail`\n- Find the new tail via `tail.prev` (available in doubly-linked list)\n- Update `tail = tail.prev` and set `tail.next = nil`\n\nNo traversal needed.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(\\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the correct order for the following code of `bool Find(key)` function in a linked list?\n\n```\n1: while curr != nil and not isFound:\n2: curr = head\n3: else: curr = curr.next\n4: return isFound\n5: if curr.key == Key: isFound = True\n6: isFound = False\n```",
+      "explanation": "The correct logical order is:\n```\nisFound = False          // 6: initialize flag\ncurr = head             // 2: start at head\nwhile curr != nil and not isFound:  // 1: loop condition\n    if curr.key == Key: isFound = True  // 5: check key\n    else: curr = curr.next  // 3: advance pointer\nreturn isFound          // 4: return result\n```\nOrder: **6, 2, 1, 5, 3, 4**",
+      "options": [
+        "2, 6, 1, 3, 5, 4",
+        "6, 2, 1, 5, 3, 4",
+        "6, 2, 1, 3, 5, 4",
+        "2, 1, 6, 5, 3, 4"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If `head == tail` and `head != nil`, what is the state of the linked list?",
+      "explanation": "When `head == tail` and both are non-nil, the head and tail point to the same single node. This means the list contains exactly one element.",
+      "options": [
+        "Exactly one node",
+        "Empty",
+        "Full",
+        "Circular"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How do you check if a singly-linked list is \"full\"?",
+      "explanation": "A singly-linked list is a dynamic data structure — nodes are allocated on the heap as needed. There is no fixed capacity, so there is generally no concept of \"full\" (unless memory is exhausted). You cannot check fullness the way you would with a static array.",
+      "options": [
+        "`numElements = array size`",
+        "`tail = array size`",
+        "`tail = n`",
+        "You generally cannot"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In a stack with array implementation, `Empty()` simply checks if:",
+      "explanation": "In an array-based stack, a counter `numElements` (or `top` index) tracks the number of elements. `Empty()` returns `true` when `numElements == 0`, indicating no elements are in the stack.",
+      "options": [
+        "`head == nil`",
+        "`numElements == 0`",
+        "`array_addr == 0`",
+        "`tail == nil`"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following operations takes $O(n)$ time in a typical Stack implementation?",
+      "explanation": "All standard stack operations — `Push()`, `Pop()`, and `Top()` — operate on the top of the stack and run in $O(1)$ time. None of them require traversing the structure.",
+      "options": [
+        "`Push()`",
+        "`Pop()`",
+        "`Top()`",
+        "None of the above"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "During `AddBefore(node, key)` in a doubly-linked list, `node2.next` is assigned to point to:",
+      "explanation": "In `AddBefore(node, key)`, a new node (`node2`) is inserted before `node`:\n```\nnode2.next = node       // node2 points forward to node\nnode2.prev = node.prev  // node2 points back to node's previous\nnode.prev.next = node2  // previous node points to node2\nnode.prev = node2       // node points back to node2\n```\nSo `node2.next` is set to `node`.",
+      "options": [
+        "`node`",
+        "`node.prev`",
+        "`node.next`",
+        "`head`"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Stack operations are known as:",
+      "explanation": "A Stack follows the **LIFO** (Last In, First Out) principle — the last element pushed onto the stack is the first one to be popped off.",
+      "options": [
+        "LIFO",
+        "FIFO",
+        "LOFI",
+        "LIPO"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If an array-based stack holds elements `[a, b, d, e]` and `Pop()` is called, what is the updated sequence of elements left in the stack?",
+      "explanation": "In a stack (LIFO), `Pop()` removes the **last inserted** (top) element. In `[a, b, d, e]`, element `e` is on top. After `Pop()`, the remaining stack is `[a, b, d]`.",
+      "options": [
+        "`[a, b, d]`",
+        "`[b, d, e]`",
+        "`[a, d, e]`",
+        "`[a, b, e]`"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "When implementing a Stack using a singly-linked list, we use:",
+      "explanation": "A stack requires $O(1)$ `Push` and `Pop`. Using `PushFront` (insert at head) and `PopFront` (remove from head) both run in $O(1)$ on a singly-linked list. A tail pointer is unnecessary since we never operate on the back of the list.",
+      "options": [
+        "`PushFront` without a tail pointer",
+        "`PushFront` with a tail pointer",
+        "`PushBack` without a tail pointer",
+        "`PushBack` with a tail pointer"
+      ],
+      "correct": 0
+    }
+  ]
+}

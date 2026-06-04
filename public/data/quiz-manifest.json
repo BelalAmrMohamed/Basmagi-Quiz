@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T12:33:23.657Z",
+  "generatedAt": "2026-06-04T15:57:37.464Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1280,39 +1280,6 @@
       "term": 2,
       "quizzes": [
         {
-          "id": "EMUKKIAQ",
-          "title": "2021 - 2022 Final",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/2021 - 2022 Final.json",
-          "questionCount": 25,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
-          "createdAt": "3/30/2026, 6:56:51 AM"
-        },
-        {
-          "id": "OULCHDXH",
-          "title": "2023 - 2024 Summer Final",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/2023 - 2024 Summer Final.json",
-          "questionCount": 25,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
-          "createdAt": "3/29/2026, 10:26:24 PM"
-        },
-        {
-          "id": "YJR3KXHJ",
-          "title": "2025 Mid",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/2025 Mid.json",
-          "questionCount": 20,
-          "questionTypes": [
-            "MCQ",
-            "True/False"
-          ],
-          "createdAt": "3/29/2026, 10:21:35 PM"
-        },
-        {
           "id": "WBXQKRLD",
           "title": "Introduction To Data Structure",
           "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Introduction to Data Structure.json",
@@ -1335,19 +1302,9 @@
           "createdAt": "2026-03-01 - 20:37"
         },
         {
-          "id": "4RIEMSHZ",
-          "title": "Mid   حاسبات الحكومية",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Mid - حاسبات الحكومية.json",
-          "questionCount": 10,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "2026-06-04 - 12:33"
-        },
-        {
           "id": "NU6S33IP",
           "title": "أسئلة متكررة - توقعات الإمتحان",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات الإمتحان.json",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات إمتحان الميد.json",
           "questionCount": 15,
           "questionTypes": [
             "MCQ"
@@ -1355,13 +1312,65 @@
           "createdAt": "3/30/2026, 7:40:36 AM"
         },
         {
-          "id": "WN76SKHW",
-          "title": "توقعات أسئلة",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/توقعات أسئلة.json",
-          "questionCount": 9,
+          "id": "EMUKKIAQ",
+          "title": "2021 - 2022 Final",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2021-2022 Final.json",
+          "questionCount": 25,
           "questionTypes": [
             "MCQ",
             "True/False"
+          ],
+          "createdAt": "3/30/2026, 6:56:51 AM"
+        },
+        {
+          "id": "OULCHDXH",
+          "title": "2023 - 2024 Summer Final",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2023-2024 Summer Final.json",
+          "questionCount": 25,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/29/2026, 10:26:24 PM"
+        },
+        {
+          "id": "YJR3KXHJ",
+          "title": "2025 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Mid.json",
+          "questionCount": 20,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "3/29/2026, 10:21:35 PM"
+        },
+        {
+          "id": "BLL3FIXQ",
+          "title": "2024 2025 Part Of Final",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Part of Final.json",
+          "questionCount": 28,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-06-04 - 15:57"
+        },
+        {
+          "id": "AYPS2FSA",
+          "title": "2025 2026 Mid",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Mid.json",
+          "questionCount": 20,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-06-04 - 15:57"
+        },
+        {
+          "id": "4RIEMSHZ",
+          "title": "Mid - حاسبات الحكومية",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/Mid - حاسبات الحكومية.json",
+          "questionCount": 10,
+          "questionTypes": [
+            "MCQ"
           ],
           "createdAt": "2026-06-04 - 12:33"
         }
