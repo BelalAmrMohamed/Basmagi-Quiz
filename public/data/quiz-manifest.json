@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T16:45:07.440Z",
+  "generatedAt": "2026-06-04T18:14:56.352Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1355,16 +1355,16 @@
           "createdAt": "2026-06-04 - 15:57"
         },
         {
-          "id": "YNEURDY2",
-          "title": "2025 2026 Final",
-          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Final.json",
+          "id": "EPAHYLUZ",
+          "title": "2025 2026 Final   دكتورة مختلفة   من يومين",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Final - دكتورة مختلفة - من يومين.json",
           "questionCount": 26,
           "questionTypes": [
             "Essay",
             "MCQ",
             "True/False"
           ],
-          "createdAt": "2026-06-04 - 16:45"
+          "createdAt": "2026-06-04 - 18:14"
         },
         {
           "id": "AYPS2FSA",
