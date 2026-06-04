@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "id": "KZAL47JR",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/Mid - حاسبات الحكومية.json",
+    "title": "إمتحان مجهول",
+    "createdAt": "6/4/2026, 2:17:24 PM"
+  },
+  "stats": {
+    "questionCount": 10,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "............ is a contiguous area of memory consisting of equal-size elements",
+      "correct": 2,
+      "options": [
+        "Stack",
+        "Queue",
+        "Array",
+        "All of above"
+      ],
+      "explanation": "An **Array** is a contiguous area of memory consisting of equal-size elements, allowing direct index-based access."
+    },
+    {
+      "q": "The Function of adding an element to a stack is called",
+      "correct": 2,
+      "options": [
+        "AddElem(key)",
+        "Enqueue(key)",
+        "Push(key)",
+        "Pop(key)"
+      ],
+      "explanation": "**Push(key)** is the standard stack operation for adding (inserting) an element onto the top of the stack."
+    },
+    {
+      "q": "............ have a constant-time access",
+      "correct": 1,
+      "options": [
+        "Stack",
+        "Array",
+        "Queue",
+        "LinkedList"
+      ],
+      "explanation": "**Arrays** provide $O(1)$ constant-time access to any element via direct index calculation: `address = base + index × element_size`."
+    },
+    {
+      "q": "The complexity of adding an element to the middle of an array is........",
+      "correct": 1,
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "explanation": "Inserting into the middle of an array requires shifting all subsequent elements, resulting in $O(n)$ time complexity in the worst case."
+    },
+    {
+      "q": "The following code is for ........ function\n\n```\nnode ← new node\nnode.key ← key\nnode.next = nil\nif tail = nil:\n    head ← tail ← node\nelse:\n    tail.next ← node\n    tail ← node\n```",
+      "correct": 0,
+      "options": [
+        "PushBack(key)",
+        "PushFront(key)",
+        "PopBack(key)",
+        "PopFront(key)"
+      ],
+      "explanation": "This code appends a new node at the **end** of a linked list by updating `tail.next` and advancing `tail` to the new node — which is exactly **PushBack(key)**."
+    },
+    {
+      "q": "Which of the following does not allow homogeneous data elements?",
+      "correct": 0,
+      "options": [
+        "Stack",
+        "Array",
+        "Queue",
+        "LinkedList"
+      ],
+      "explanation": "A **Stack** is an abstract data type that does not inherently require homogeneous (same-type) elements, unlike an Array which by definition stores elements of the same type contiguously."
+    },
+    {
+      "q": "Each stack operation is ..........",
+      "correct": 0,
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "explanation": "All fundamental stack operations — **Push**, **Pop**, and **Top/Peek** — run in $O(1)$ constant time because they only operate on the top of the stack."
+    },
+    {
+      "q": "Stacks operations known as..............",
+      "correct": 1,
+      "options": [
+        "FIFO",
+        "FILO",
+        "MILO",
+        "None of above"
+      ],
+      "explanation": "Stacks follow the **FILO** (First In, Last Out) principle — also known as LIFO (Last In, First Out). The first element pushed is the last one to be popped."
+    },
+    {
+      "q": "PushBack(Key) in a single linked list without a tail is .....",
+      "correct": 1,
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "explanation": "Without a tail pointer, **PushBack** must traverse the entire list to find the last node before appending, resulting in $O(n)$ time complexity."
+    },
+    {
+      "q": "To return the most recently-added key in a stack, we use the........ function",
+      "correct": 0,
+      "options": [
+        "KeyTop(key)",
+        "KeyPop(key)",
+        "Push(key)",
+        "Pop(key)"
+      ],
+      "explanation": "**KeyTop(key)** (also known as Peek or Top) returns the most recently added element at the top of the stack **without removing it**."
+    }
+  ]
+}

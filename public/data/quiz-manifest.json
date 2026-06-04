@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-31T20:24:47.454Z",
+  "generatedAt": "2026-06-04T11:28:09.098Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1227,6 +1227,16 @@
           "createdAt": "3/31/2026, 8:22:03 PM"
         },
         {
+          "id": "N7RINRBX",
+          "title": "Essays on Machine Learning",
+          "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/Essays_on_Machine_Learning.json",
+          "questionCount": 3,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "5/7/2026, 6:24:29 AM"
+        },
+        {
           "id": "XOZPTJYP",
           "title": "Final 2020 2021",
           "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/Final 2020-2021.json",
@@ -1249,6 +1259,16 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "KJYPJWKK",
+          "title": "Quiz on Machine Learning",
+          "path": "/data/quizzes/Computer Science/2/2/Artificial Intelligence/Quiz_on_Machine_Learning.json",
+          "questionCount": 40,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "5/7/2026, 6:16:46 AM"
         }
       ]
     },
@@ -1313,6 +1333,16 @@
             "MCQ"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "KZAL47JR",
+          "title": "إمتحان مجهول",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/Mid - حاسبات الحكومية.json",
+          "questionCount": 10,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "6/4/2026, 2:17:24 PM"
         },
         {
           "id": "NU6S33IP",
@@ -1495,6 +1525,17 @@
           "createdAt": "4/1/2026, 3:21:22 PM"
         },
         {
+          "id": "LNGQXLDW",
+          "title": "Statistics 1",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Statistics_1.json",
+          "questionCount": 44,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "6/2/2026, 7:54:22 AM"
+        },
+        {
           "id": "EUVMW2VD",
           "title": "أسئلة متكررة في شيتات السكاشن",
           "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/أسئلة متكررة في شيتات السكاشن.json",
@@ -1629,6 +1670,39 @@
           ],
           "source": "https://drive.google.com/file/d/1Bg3ZFoHs2dH4qJnZvx9wqdT78nyled_P/view?usp=drive_link",
           "createdAt": "3/30/2026, 5:02:17 PM"
+        },
+        {
+          "id": "3HVTJ2UD",
+          "title": "2025-2026 Lotus Mid (د. حسام رضوان)",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025-2026_Lotus_Mid_د_حسام_رضوان.json",
+          "questionCount": 10,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/13/2026, 6:14:13 PM"
+        },
+        {
+          "id": "HIPWRNXI",
+          "title": "2025-2026 Mid and Oral (د. حسام رضوان) - حاسبات المنيا الأهلية",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025-2026_Mid_and_Oral_د_حسام_رضوان_-_حاسبات_المنيا_الأهلية.json",
+          "questionCount": 17,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "4/23/2026, 8:35:03 PM"
+        },
+        {
+          "id": "N6QFXNCX",
+          "title": "2025 - 2026 Lotus Final من شوية",
+          "path": "/data/quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025_-_2026_Lotus_Final_من_شوية.json",
+          "questionCount": 28,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "6/1/2026, 12:23:00 PM"
         },
         {
           "id": "AI7Y6NOP",
@@ -1862,6 +1936,17 @@
           "createdAt": "3/24/2026, 9:47:55 PM"
         },
         {
+          "id": "CSCLTWBQ",
+          "title": "2024-2025 Mid.pdf",
+          "path": "/data/quizzes/Computer Science/2/2/Server Lab/2024-2025_Midpdf.json",
+          "questionCount": 8,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "createdAt": "6/3/2026, 6:52:13 PM"
+        },
+        {
           "id": "FA7VQHDF",
           "title": "AI Introduction To Server Lab",
           "path": "/data/quizzes/Computer Science/2/2/Server Lab/AI Introduction to Server Lab.json",
@@ -1872,6 +1957,16 @@
             "True/False"
           ],
           "createdAt": "2026-03-01 - 20:37"
+        },
+        {
+          "id": "T2EHAC6I",
+          "title": "ملخص الخطوات",
+          "path": "/data/quizzes/Computer Science/2/2/Server Lab/ملخص_الخطوات.json",
+          "questionCount": 9,
+          "questionTypes": [
+            "Essay"
+          ],
+          "createdAt": "6/3/2026, 7:26:20 PM"
         }
       ]
     },
@@ -2067,6 +2162,16 @@
       "year": 2,
       "term": 2,
       "quizzes": [
+        {
+          "id": "VGNZV4MH",
+          "title": "Technical Writing",
+          "path": "/data/quizzes/Computer Science/2/2/Website demo/Technical_Writing.json",
+          "questionCount": 8,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "4/3/2026, 2:40:09 PM"
+        },
         {
           "id": "2URNKTJH",
           "title": "test certificate",
