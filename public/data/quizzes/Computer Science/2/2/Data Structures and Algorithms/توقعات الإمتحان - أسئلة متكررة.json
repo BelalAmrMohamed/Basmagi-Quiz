@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "title": "توقعات الإمتحان   أسئلة متكررة",
+    "id": "JJAPZW5R",
+    "createdAt": "2026-06-06 - 16:30",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/توقعات الإمتحان - أسئلة متكررة.json"
+  },
+  "stats": {
+    "questionCount": 13,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Stack operations are known as …",
+      "explanation": "A Stack follows **LIFO** (Last In, First Out) — the last element pushed is the first to be popped. **LILO** (Last In, Last Out) is another way to express the same concept. FIFO describes a Queue, not a Stack.",
+      "options": [
+        "FIFO",
+        "LILO",
+        "MILO",
+        "None of the above"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "`PushBack(Key)` in a single linked list **without a tail** is …",
+      "explanation": "Without a tail pointer, you must traverse the entire list to reach the last node before appending. This traversal visits every node, giving a time complexity of $O(n)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "………… is a contiguous area of memory consisting of equal-size elements.",
+      "explanation": "An **Array** stores elements in contiguous memory locations, and each element occupies the same fixed size. This is what allows $O(1)$ random access via index arithmetic.",
+      "options": [
+        "Stack",
+        "LinkedList",
+        "Array",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the access time required to retrieve the element located at position $(5, 9)$ in a **7-row and 12-column** array?",
+      "explanation": "For row-major order, the formula is:\n$$\\text{addr} = \\text{arr\\_addr} + \\text{elem\\_size} \\times ((\\text{row} - 1) \\times \\text{num\\_cols} + (\\text{col} - 1))$$\nSubstituting row $= 5$, col $= 9$, num_cols $= 12$:\n$$= \\text{arr\\_addr} + \\text{elem\\_size} \\times ((5-1) \\times 12 + (9-1))$$",
+      "options": [
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times ((5-1) \\times 12 + (9-1))$",
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times ((5-1) \\times 7 + (9-1))$",
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times (5 \\times 9)$",
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times ((7-1) \\times 12 + (5-1))$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The complexity of adding **two elements** to the end of an array is …",
+      "explanation": "Adding a fixed number of elements (here, 2) to the end of an array with available capacity is a constant-time operation. $O(2)$ simplifies to $O(1)$ in Big-O notation since constants are dropped.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(2)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the Queue implementation with an array, the Queue is **empty** when …",
+      "explanation": "In a circular array-based Queue, `read` is the index of the next element to dequeue and `write` is where the next element will be enqueued. When `read = write`, there are no elements between them — the Queue is **empty**.",
+      "options": [
+        "$\\text{read} = 0$",
+        "$\\text{write} = 0$",
+        "$\\text{read} = \\text{write}$",
+        "$\\text{read} < \\text{write}$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "To **return** the most recently-added key in a stack, we use the ………… function.",
+      "explanation": "`KeyTop()` (also known as `Top()` or `Peek()`) returns the key of the top element **without removing it**. `Pop()` removes the top element, `Push(key)` adds one, and `KeyPop()` is not a standard operation.",
+      "options": [
+        "`KeyTop()`",
+        "`KeyPop()`",
+        "`Push(key)`",
+        "`Pop()`"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "…………… is indexed by contiguous integers.",
+      "explanation": "An **Array** is the data structure defined by indexing via contiguous integers (e.g., indices 0, 1, 2, …, n−1), enabling direct $O(1)$ access. Stacks and Queues are abstract data types that don't inherently require integer indexing.",
+      "options": [
+        "Stack",
+        "Queue",
+        "Array",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Enqueue is implemented using the ………… function.",
+      "explanation": "A Queue follows FIFO. **Enqueue** adds an element to the **back/tail** of the queue, which corresponds to `PushBack(Key)` in a linked list implementation.",
+      "options": [
+        "`AddAfter(Key)`",
+        "`AddBefore(Key)`",
+        "`PushFront(Key)`",
+        "`PushBack(Key)`"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "The drawback of dynamic arrays is that some space is wasted.",
+      "explanation": "**True.** Dynamic arrays (e.g., `std::vector`) over-allocate capacity to amortize the cost of resizing. For example, when the array doubles in size, up to half of the allocated memory may be unused at any given time — this is the space trade-off.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The correct order for the following lines in the `PushBack(key)` function is …\n\n| Label | Line |\n|---|---|\n| a | `node.next ← nil` |\n| b | `node.key ← key` |\n| c | `node.next ← head` |\n| d | `head ← tail ← node` |\n| e | `if tail = nil:` |\n| f | `Else:` |\n| g | `tail.next ← node` |\n| h | `node ← new node` |\n| i | `tail ← node` |",
+      "explanation": "The correct order is **h → b → a → e → d → f → g → i**:\n1. `h`: Allocate a new node\n2. `b`: Set its key\n3. `a`: Set `node.next ← nil` (it will be the last node)\n4. `e`: Check if the list is empty (`tail = nil`)\n5. `d`: If empty, both `head` and `tail` point to the new node\n6. `f`: Else (list is not empty)\n7. `g`: Link current tail to the new node\n8. `i`: Update `tail` to the new node\n\nNote: Options **a** and **d** are identical — the answer is **a** (index 0).",
+      "options": [
+        "h, b, a, e, d, f, g, i",
+        "h, b, c, e, d, f, g, i",
+        "h, b, a, e, d, f, i, g",
+        "h, b, a, e, d, f, g, i"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following does **NOT** allow heterogeneous data elements?",
+      "explanation": "An **Array** stores elements of a single, fixed data type in contiguous memory — it does **not** allow heterogeneous (mixed-type) data. Stacks, Queues, and Linked Lists are abstract structures that can be implemented to hold any type, including heterogeneous data.",
+      "options": [
+        "Stack",
+        "Array",
+        "Queue",
+        "LinkedList"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Access time for the **10th element** in a single-dimensional Array is equal to …",
+      "explanation": "The general formula for 1D array element access is:\n$$\\text{addr}(i) = \\text{arr\\_addr} + \\text{elem\\_size} \\times (i - \\text{first\\_index})$$\nFor the 10th element ($i = 10$):\n$$= \\text{arr\\_addr} + \\text{elem\\_size} \\times (10 - \\text{first\\_index})$$\nOption b uses $i$ (a variable) instead of the specific value 10, option c incorrectly multiplies the base address, and option d omits `elem_size`.",
+      "options": [
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times (10 - \\text{first\\_index})$",
+        "$\\text{arr\\_addr} + \\text{elem\\_size} \\times (i - \\text{first\\_index})$",
+        "$\\text{arr\\_addr} \\times (10 - \\text{first\\_index})$",
+        "$\\text{arr\\_addr} + (10 - \\text{first\\_index})$"
+      ],
+      "correct": 0
+    }
+  ]
+}

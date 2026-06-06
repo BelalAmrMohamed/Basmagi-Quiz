@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-04T18:14:56.352Z",
+  "generatedAt": "2026-06-06T16:30:34.428Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1385,6 +1385,28 @@
             "MCQ"
           ],
           "createdAt": "2026-06-04 - 12:33"
+        },
+        {
+          "id": "JJAPZW5R",
+          "title": "توقعات الإمتحان   أسئلة متكررة",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/توقعات الإمتحان - أسئلة متكررة.json",
+          "questionCount": 13,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "2026-06-06 - 16:30"
+        },
+        {
+          "id": "SJ6Z6L3D",
+          "title": "شيت كيرلس",
+          "path": "/data/quizzes/Computer Science/2/2/Data Structures and Algorithms/شيت كيرلس.json",
+          "questionCount": 78,
+          "questionTypes": [
+            "MCQ",
+            "True/False"
+          ],
+          "createdAt": "2026-06-06 - 16:30"
         }
       ]
     },
