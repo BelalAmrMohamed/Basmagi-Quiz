@@ -1,0 +1,62 @@
+/* ==========================================================
+   BASMAGI - LIQUID METAL TITLE
+   Scope: .advanced-liquid-metal-animations ONLY
+   ========================================================== */
+
+.advanced-liquid-metal-animations {
+    position: relative;
+    display: inline-block;
+
+    font-family: inherit;
+    font-weight: 900;
+    line-height: 1.25;
+
+    /* Responsive sizing (optional) */
+    font-size: clamp(2.4rem, 5vw, 5.5rem);
+
+    /* Liquid metal text */
+    color: transparent;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            115deg,
+            #ffffff 0%,
+            #d7d7d7 10%,
+            #ffffff 20%,
+            #7f7f7f 32%,
+            #ffffff 45%,
+            #bdbdbd 58%,
+            #ffffff 72%,
+            #9c9c9c 84%,
+            #ffffff 100%
+        );
+
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    animation:
+        basmagi-liquid-metal-flow 8s linear infinite;
+
+    isolation: isolate;
+    user-select: none;
+}
+
+/* background metal movement */
+@keyframes basmagi-liquid-metal-flow {
+    from {
+        background-position: 0% 50%;
+    }
+
+    to {
+        background-position: 250% 50%;
+    }
+}
+
+/* optional hover enhancement */
+.advanced-liquid-metal-animations:hover {
+    filter:
+        drop-shadow(0 0 10px rgba(255,255,255,0.15))
+        drop-shadow(0 0 25px rgba(255,255,255,0.08));
+}
