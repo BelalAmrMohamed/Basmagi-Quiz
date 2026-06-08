@@ -58,13 +58,11 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/styles/dashboard.css">
+    <link rel="stylesheet" href="src/styles/advanced-link-transition-animation.css">
     <link rel="stylesheet" href="src/components/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications.css">
 
     <script type="module" src="src/shared/theme-controller.js"></script>
-
-    <!-- Canvas Animation Script - Only loads if user enabled animations -->
-    <script type="module" src="src/shared/canvas-animation.js"></script>
 </head>
 
 <body>
@@ -272,7 +270,7 @@
     <div class="container">
         <div class="header">
             <h1>لوحة تحكم المستخدم</h1>
-            <p>تتبع تقدمك وإنجازاتك</p>
+            <p class="advanced-link-transition-animation">تتبع تقدمك وإنجازاتك</p>
         </div>
 
         <!-- Enhanced Stats Grid -->
@@ -375,8 +373,8 @@
         <footer class="watermark" role="contentinfo">
             <p>
                 صُنع بواسطة
-                <a href="https://portfolio-of-belal.vercel.app/" target="_blank" rel="noopener noreferrer"
-                    aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">
+                <a class="advanced-link-transition-animation" href="https://portfolio-of-belal.vercel.app/"
+                    target="_blank" rel="noopener noreferrer" aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">
                     بلال عمرو
                 </a>
             </p>
@@ -454,6 +452,9 @@
 
     <script type="module" src="src/scripts/dashboard.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
+    <script type="module" src="src/shared/canvas-animation.js"></script>
+    <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
+
     <script type="module">
         import { initPWA } from "./src/scripts/pwa-manager.js";
         document.addEventListener("DOMContentLoaded", () => initPWA());

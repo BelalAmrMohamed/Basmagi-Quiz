@@ -158,6 +158,7 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/styles/index.css">
+    <link rel="stylesheet" href="src/styles/advanced-link-transition-animation.css">
     <link rel="stylesheet" href="src/components/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications.css">
     <link rel="stylesheet" href="src/styles/search.css">
@@ -165,7 +166,6 @@
 
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
-    <link rel="modulepreload" href="src/shared/canvas-animation.js">
     <link rel="modulepreload" href="src/scripts/index.js">
     <link rel="modulepreload" href="src/components/side-menu.js">
 
@@ -406,7 +406,7 @@
                 <h1 id="pageTitle">منصة إمتحانات بصمجي</h1>
 
                 <!-- Value-proposition subtitle -->
-                <p class="header-subtitle">
+                <p class="header-subtitle advanced-link-transition-animation">
                     طوِّر معرفتك من خلال الاختبارات التفاعلية المصممة لتحفيزك على التميز
                 </p>
 
@@ -570,8 +570,8 @@
         <footer class="watermark" role="contentinfo">
             <p>
                 صُنع بواسطة
-                <a href="https://portfolio-of-belal.vercel.app/" target="_blank" rel="noopener noreferrer"
-                    aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">
+                <a class="advanced-link-transition-animation" href="https://portfolio-of-belal.vercel.app/"
+                    target="_blank" rel="noopener noreferrer" aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">
                     بلال عمرو
                 </a>
             </p>
@@ -695,6 +695,7 @@
     <!-- Scripts -->
     <script type="module" src="src/shared/theme-controller.js"></script>
     <script type="module" src="src/shared/canvas-animation.js"></script>
+    <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
     <script type="module" src="src/scripts/index.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
     <script type="module">
