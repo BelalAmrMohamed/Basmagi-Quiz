@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-10T15:59:47.157Z",
+  "generatedAt": "2026-06-10T16:32:14.187Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1525,6 +1525,26 @@
             "MCQ"
           ],
           "createdAt": "2026-06-10 - 15:59"
+        },
+        {
+          "id": "S6ASBQEG",
+          "title": "DEPI Exam 2   From Drive",
+          "path": "/data/quizzes/Computer Science/2/2/DEPI English Exams/DEPI Exam 2 - from drive.json",
+          "questionCount": 30,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-06-10 - 16:32"
+        },
+        {
+          "id": "5Z7TBKAE",
+          "title": "DEPI Exam 3   From Drive",
+          "path": "/data/quizzes/Computer Science/2/2/DEPI English Exams/DEPI Exam 3 - from drive.json",
+          "questionCount": 26,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-06-10 - 16:32"
         }
       ]
     },
