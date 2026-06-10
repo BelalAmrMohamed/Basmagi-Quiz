@@ -14,443 +14,443 @@
   "questions": [
     {
       "q": "What is the main goal of Machine Learning?",
-      "correct": 1,
+      "explanation": "The core objective of Machine Learning is to develop algorithms that allow computers to identify patterns and make decisions or predictions based on empirical data.",
       "options": [
         "Creating hardware",
         "Learning from data",
         "Designing websites",
         "Managing networks"
       ],
-      "explanation": "The core objective of Machine Learning is to develop algorithms that allow computers to identify patterns and make decisions or predictions based on empirical data."
+      "correct": 1
     },
     {
       "q": "In Machine Learning, the symbol $x$ usually represents:",
-      "correct": 2,
+      "explanation": "In mathematical modeling, $x$ typically denotes the input features or independent variables used by the model to generate a prediction.",
       "options": [
         "Output",
         "Error",
         "Input feature",
         "Accuracy"
       ],
-      "explanation": "In mathematical modeling, $x$ typically denotes the input features or independent variables used by the model to generate a prediction."
+      "correct": 2
     },
     {
       "q": "Which type of learning uses labeled data?",
-      "correct": 2,
+      "explanation": "Supervised Learning involves training a model on a dataset where each input is paired with the correct output label.",
       "options": [
         "Reinforcement Learning",
         "Unsupervised Learning",
         "Supervised Learning",
         "Semi-random Learning"
       ],
-      "explanation": "Supervised Learning involves training a model on a dataset where each input is paired with the correct output label."
+      "correct": 2
     },
     {
       "q": "Which of the following is an example of regression?",
-      "correct": 1,
+      "explanation": "Regression is used when the target variable is continuous. Predicting temperature (a numerical value) is a classic regression task.",
       "options": [
         "Spam detection",
         "Predicting temperature",
         "Image classification",
         "Clustering customers"
       ],
-      "explanation": "Regression is used when the target variable is continuous. Predicting temperature (a numerical value) is a classic regression task."
+      "correct": 1
     },
     {
       "q": "Classification problems produce:",
-      "correct": 2,
+      "explanation": "Classification is a type of supervised learning where the output is a discrete label or category, such as \"Yes/No\" or \"Spam/Ham\".",
       "options": [
         "Continuous values",
         "Random values",
         "Discrete categories",
         "Noise"
       ],
-      "explanation": "Classification is a type of supervised learning where the output is a discrete label or category, such as \"Yes/No\" or \"Spam/Ham\"."
+      "correct": 2
     },
     {
       "q": "Which learning type groups similar data together?",
-      "correct": 1,
+      "explanation": "Clustering is an unsupervised learning method used to group data points based on their inherent similarities or patterns.",
       "options": [
         "Regression",
         "Clustering",
         "Classification",
         "Prediction"
       ],
-      "explanation": "Clustering is an unsupervised learning method used to group data points based on their inherent similarities or patterns."
+      "correct": 1
     },
     {
       "q": "Which algorithm is commonly used in clustering?",
-      "correct": 0,
+      "explanation": "K-Means is a popular unsupervised algorithm that partitions data into $K$ clusters by minimizing the distance between points and their respective cluster centers.",
       "options": [
         "K-Means",
         "Logistic Regression",
         "Naive Bayes",
         "Linear Regression"
       ],
-      "explanation": "K-Means is a popular unsupervised algorithm that partitions data into $K$ clusters by minimizing the distance between points and their respective cluster centers."
+      "correct": 0
     },
     {
       "q": "Reinforcement Learning focuses on:",
-      "correct": 1,
+      "explanation": "Reinforcement Learning involves an agent that learns to make decisions by performing actions in an environment to maximize a cumulative reward.",
       "options": [
         "Predicting prices",
         "Maximizing reward",
         "Cleaning data",
         "Reducing dimensions"
       ],
-      "explanation": "Reinforcement Learning involves an agent that learns to make decisions by performing actions in an environment to maximize a cumulative reward."
+      "correct": 1
     },
     {
       "q": "A dataset used for training a model is called:",
-      "correct": 2,
+      "explanation": "The training set is the specific subset of data used to teach the model's parameters.",
       "options": [
         "Validation set",
         "Test set",
         "Training set",
         "Output set"
       ],
-      "explanation": "The training set is the specific subset of data used to teach the model's parameters."
+      "correct": 2
     },
     {
       "q": "One complete pass over the dataset is called:",
-      "correct": 1,
+      "explanation": "An epoch is reached when the learning algorithm has seen the entire training dataset once.",
       "options": [
         "Iteration",
         "Epoch",
         "Loop",
         "Batch"
       ],
-      "explanation": "An epoch is reached when the learning algorithm has seen the entire training dataset once."
+      "correct": 1
     },
     {
       "q": "Which process handles missing values and noisy data?",
-      "correct": 1,
+      "explanation": "Data preprocessing involves cleaning and transforming raw data (e.g., handling missing values, scaling, or noise reduction) before it is fed into a model.",
       "options": [
         "Deployment",
         "Data preprocessing",
         "Prediction",
         "Clustering"
       ],
-      "explanation": "Data preprocessing involves cleaning and transforming raw data (e.g., handling missing values, scaling, or noise reduction) before it is fed into a model."
+      "correct": 1
     },
     {
       "q": "Which of the following is NOT a data quality issue?",
-      "correct": 3,
+      "explanation": "Compilation refers to the process of translating code into machine language; it is a programming concept rather than a data quality issue.",
       "options": [
         "Noise",
         "Inconsistency",
         "Missing values",
         "Compilation"
       ],
-      "explanation": "Compilation refers to the process of translating code into machine language; it is a programming concept rather than a data quality issue."
+      "correct": 3
     },
     {
       "q": "Feature selection helps to:",
-      "correct": 1,
+      "explanation": "By removing irrelevant or redundant features, feature selection reduces model complexity and helps prevent overfitting.",
       "options": [
         "Increase hardware size",
         "Avoid overfitting",
         "Remove labels",
         "Create databases"
       ],
-      "explanation": "By removing irrelevant or redundant features, feature selection reduces model complexity and helps prevent overfitting."
+      "correct": 1
     },
     {
       "q": "Which feature selection method is independent of the model?",
-      "correct": 2,
+      "explanation": "Filter methods use statistical properties of the data to select features independently of any specific machine learning algorithm.",
       "options": [
         "Wrapper",
         "Embedded",
         "Filter",
         "Recursive"
       ],
-      "explanation": "Filter methods use statistical properties of the data to select features independently of any specific machine learning algorithm."
+      "correct": 2
     },
     {
       "q": "Pearson correlation coefficient belongs to:",
-      "correct": 1,
+      "explanation": "The Pearson correlation coefficient is a statistical metric used in filter methods to measure the linear relationship between features and the target.",
       "options": [
         "Wrapper methods",
         "Filter methods",
         "Embedded methods",
         "Clustering methods"
       ],
-      "explanation": "The Pearson correlation coefficient is a statistical metric used in filter methods to measure the linear relationship between features and the target."
+      "correct": 1
     },
     {
       "q": "Which method may require huge computations?",
-      "correct": 1,
+      "explanation": "Wrapper methods are computationally expensive because they evaluate feature subsets by repeatedly training and testing a specific model.",
       "options": [
         "Filter",
         "Wrapper",
         "K-Means",
         "PCA"
       ],
-      "explanation": "Wrapper methods are computationally expensive because they evaluate feature subsets by repeatedly training and testing a specific model."
+      "correct": 1
     },
     {
       "q": "Lasso regression is an example of:",
-      "correct": 2,
+      "explanation": "Embedded methods perform feature selection as part of the model training process. Lasso regression uses $L_1$ regularization to penalize and zero out less important coefficients.",
       "options": [
         "Filter method",
         "Clustering",
         "Embedded method",
         "Classification"
       ],
-      "explanation": "Embedded methods perform feature selection as part of the model training process. Lasso regression uses $L_1$ regularization to penalize and zero out less important coefficients."
+      "correct": 2
     },
     {
       "q": "Which step comes after model training?",
-      "correct": 2,
+      "explanation": "Once a model is trained, it must be evaluated using metrics (like accuracy or RMSE) on a separate test set to check its performance.",
       "options": [
         "Data collection",
         "Feature extraction",
         "Model evaluation",
         "Deployment"
       ],
-      "explanation": "Once a model is trained, it must be evaluated using metrics (like accuracy or RMSE) on a separate test set to check its performance."
+      "correct": 2
     },
     {
       "q": "Overfitting occurs when:",
-      "correct": 2,
+      "explanation": "Overfitting happens when a model learns the training data too well, including its noise and outliers, leading to poor performance on new data.",
       "options": [
         "Training error is high",
         "Generalization error is low",
         "Model learns noise",
         "Dataset is small only"
       ],
-      "explanation": "Overfitting happens when a model learns the training data too well, including its noise and outliers, leading to poor performance on new data."
+      "correct": 2
     },
     {
       "q": "Underfitting happens when the model:",
-      "correct": 1,
+      "explanation": "Underfitting occurs when a model is too simple to capture the underlying structure or patterns of the data.",
       "options": [
         "Fits data too well",
         "Cannot learn enough patterns",
         "Learns noise",
         "Uses too much data"
       ],
-      "explanation": "Underfitting occurs when a model is too simple to capture the underlying structure or patterns of the data."
+      "correct": 1
     },
     {
       "q": "Generalization refers to:",
-      "correct": 1,
+      "explanation": "Generalization is the model's ability to provide accurate predictions for new, unseen data that was not part of the training set.",
       "options": [
         "Memorizing training data",
         "Performing well on new data",
         "Reducing dimensions",
         "Cleaning datasets"
       ],
-      "explanation": "Generalization is the model's ability to provide accurate predictions for new, unseen data that was not part of the training set."
+      "correct": 1
     },
     {
       "q": "Which metric measures overall classifier correctness?",
-      "correct": 2,
+      "explanation": "Accuracy is defined as the ratio of correctly predicted observations to the total observations: $\\text{Accuracy} = \\frac{TP + TN}{TP + TN + FP + FN}$.",
       "options": [
         "Recall",
         "Precision",
         "Accuracy",
         "F1-score"
       ],
-      "explanation": "Accuracy is defined as the ratio of correctly predicted observations to the total observations: $\\text{Accuracy} = \\frac{TP + TN}{TP + TN + FP + FN}$."
+      "correct": 2
     },
     {
       "q": "Precision is calculated using:",
-      "correct": 0,
+      "explanation": "Precision measures the accuracy of positive predictions: $\\text{Precision} = \\frac{TP}{TP + FP}$.",
       "options": [
         "TP / (TP + FP)",
         "TP / P",
         "TN / N",
         "FP / N"
       ],
-      "explanation": "Precision measures the accuracy of positive predictions: $\\text{Precision} = \\frac{TP}{TP + FP}$."
+      "correct": 0
     },
     {
       "q": "Recall is also known as:",
-      "correct": 1,
+      "explanation": "Recall, also called Sensitivity or True Positive Rate, measures the proportion of actual positives that were correctly identified.",
       "options": [
         "Specificity",
         "Sensitivity",
         "Error rate",
         "Accuracy"
       ],
-      "explanation": "Recall, also called Sensitivity or True Positive Rate, measures the proportion of actual positives that were correctly identified."
+      "correct": 1
     },
     {
       "q": "False Positive Rate measures:",
-      "correct": 2,
+      "explanation": "The False Positive Rate (FPR) measures the ratio of negative instances that were incorrectly classified as positive: $\\text{FPR} = \\frac{FP}{FP + TN}$.",
       "options": [
         "Correct positive predictions",
         "Wrong negative predictions",
         "Wrong positive predictions",
         "Correct negative predictions"
       ],
-      "explanation": "The False Positive Rate (FPR) measures the ratio of negative instances that were incorrectly classified as positive: $\\text{FPR} = \\frac{FP}{FP + TN}$."
+      "correct": 2
     },
     {
       "q": "Softmax is mainly used for:",
-      "correct": 1,
+      "explanation": "The Softmax function turns a vector of numbers into a probability distribution, which is essential for multi-class classification problems.",
       "options": [
         "Binary classification",
         "Multi-class classification",
         "Clustering",
         "Regression"
       ],
-      "explanation": "The Softmax function turns a vector of numbers into a probability distribution, which is essential for multi-class classification problems."
+      "correct": 1
     },
     {
       "q": "In Softmax, probabilities of all classes must equal:",
-      "correct": 3,
+      "explanation": "Because Softmax produces a valid probability distribution, the sum of the probabilities for all possible classes is always $1$.",
       "options": [
         "0",
         "10",
         "100",
         "1"
       ],
-      "explanation": "Because Softmax produces a valid probability distribution, the sum of the probabilities for all possible classes is always $1$."
+      "correct": 3
     },
     {
       "q": "Logistic Regression is mainly used for:",
-      "correct": 1,
+      "explanation": "Despite its name, Logistic Regression is a classification algorithm used to predict the probability of a categorical target variable, typically binary (0 or 1).",
       "options": [
         "Clustering",
         "Binary classification",
         "Image enhancement",
         "Dimension reduction"
       ],
-      "explanation": "Despite its name, Logistic Regression is a classification algorithm used to predict the probability of a categorical target variable, typically binary (0 or 1)."
+      "correct": 1
     },
     {
       "q": "Which algorithm is supervised?",
-      "correct": 2,
+      "explanation": "Decision Trees are supervised learning algorithms used for both classification and regression tasks.",
       "options": [
         "K-Means",
         "PCA",
         "Decision Tree",
         "Hierarchical Clustering"
       ],
-      "explanation": "Decision Trees are supervised learning algorithms used for both classification and regression tasks."
+      "correct": 2
     },
     {
       "q": "Which algorithm is unsupervised?",
-      "correct": 3,
+      "explanation": "K-Means is an unsupervised learning algorithm because it finds clusters in data without using predefined labels.",
       "options": [
         "Random Forest",
         "Logistic Regression",
         "SVM",
         "K-Means"
       ],
-      "explanation": "K-Means is an unsupervised learning algorithm because it finds clusters in data without using predefined labels."
+      "correct": 3
     },
     {
       "q": "The hypothesis function is represented as:",
-      "correct": 0,
+      "explanation": "In many machine learning frameworks (e.g., Abu-Mostafa's Learning from Data), $g$ represents the final hypothesis chosen by the algorithm from the hypothesis set $H$.",
       "options": [
         "g",
         "x",
         "y",
         "P"
       ],
-      "explanation": "In many machine learning frameworks (e.g., Abu-Mostafa's Learning from Data), $g$ represents the final hypothesis chosen by the algorithm from the hypothesis set $H$."
+      "correct": 0
     },
     {
       "q": "The unknown ideal target function is represented as:",
-      "correct": 2,
+      "explanation": "In standard machine learning theory, $f$ denotes the unknown target function $f: X \\to Y$ that the model seeks to approximate.",
       "options": [
         "h",
         "P",
         "f",
         "D"
       ],
-      "explanation": "In standard machine learning theory, $f$ denotes the unknown target function $f: X \\to Y$ that the model seeks to approximate."
+      "correct": 2
     },
     {
       "q": "Which of the following improves model accuracy by scaling data?",
-      "correct": 0,
+      "explanation": "Data normalization scales numerical features to a standard range (e.g., 0 to 1), preventing features with larger scales from dominating the model.",
       "options": [
         "Data normalization",
         "Data duplication",
         "Data deletion",
         "Data clustering"
       ],
-      "explanation": "Data normalization scales numerical features to a standard range (e.g., 0 to 1), preventing features with larger scales from dominating the model."
+      "correct": 0
     },
     {
       "q": "Which learning type uses a small amount of labeled data with large unlabeled data?",
-      "correct": 1,
+      "explanation": "Semi-supervised learning combines a small amount of labeled data with a large amount of unlabeled data during training.",
       "options": [
         "Supervised",
         "Semi-supervised",
         "Reinforcement",
         "Regression"
       ],
-      "explanation": "Semi-supervised learning combines a small amount of labeled data with a large amount of unlabeled data during training."
+      "correct": 1
     },
     {
       "q": "A confusion matrix is used in:",
-      "correct": 2,
+      "explanation": "A confusion matrix is a table used to evaluate the performance of a classification model by showing actual vs. predicted classes.",
       "options": [
         "Regression",
         "Clustering",
         "Classification evaluation",
         "Dimension reduction"
       ],
-      "explanation": "A confusion matrix is a table used to evaluate the performance of a classification model by showing actual vs. predicted classes."
+      "correct": 2
     },
     {
       "q": "What does TP stand for?",
-      "correct": 1,
+      "explanation": "TP stands for True Positive, which occurs when the model correctly predicts the positive class.",
       "options": [
         "Total Prediction",
         "True Positive",
         "Target Precision",
         "Training Performance"
       ],
-      "explanation": "TP stands for True Positive, which occurs when the model correctly predicts the positive class."
+      "correct": 1
     },
     {
       "q": "Which algorithm can be used for both classification and regression?",
-      "correct": 0,
+      "explanation": "Decision Trees (specifically CART - Classification and Regression Trees) are versatile and can handle both categorical and numerical targets.",
       "options": [
         "Decision Tree",
         "PCA",
         "K-Means",
         "GMM"
       ],
-      "explanation": "Decision Trees (specifically CART - Classification and Regression Trees) are versatile and can handle both categorical and numerical targets."
+      "correct": 0
     },
     {
       "q": "Which process deploys the trained model into real scenarios?",
-      "correct": 2,
+      "explanation": "Model deployment is the final stage of the machine learning pipeline where the model is integrated into a production environment.",
       "options": [
         "Validation",
         "Data collection",
         "Model deployment",
         "Data cleansing"
       ],
-      "explanation": "Model deployment is the final stage of the machine learning pipeline where the model is integrated into a production environment."
+      "correct": 2
     },
     {
       "q": "Which issue occurs when duplicate records exist in data?",
-      "correct": 1,
+      "explanation": "Duplicate records are redundant data points that can bias the model toward certain observations, often categorized as invalid duplicate items.",
       "options": [
         "Missing value",
         "Invalid duplicate item",
         "Noise injection",
         "Overfitting"
       ],
-      "explanation": "Duplicate records are redundant data points that can bias the model toward certain observations, often categorized as invalid duplicate items."
+      "correct": 1
     },
     {
       "q": "Which of the following is a common application of Machine Learning?",
-      "correct": 0,
+      "explanation": "Voice recognition (or Speech-to-Text) is a primary application of Deep Learning and NLP, enabling computers to understand human speech.",
       "options": [
         "Voice recognition",
         "Manual calculations",
         "Paper printing",
         "Keyboard repair"
       ],
-      "explanation": "Voice recognition (or Speech-to-Text) is a primary application of Deep Learning and NLP, enabling computers to understand human speech."
+      "correct": 0
     }
   ]
 }

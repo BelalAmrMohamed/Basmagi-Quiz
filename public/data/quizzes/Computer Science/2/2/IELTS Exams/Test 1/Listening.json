@@ -1,0 +1,33 @@
+{
+  "meta": {
+    "title": "Listening",
+    "id": "OFNPJ4BQ",
+    "createdAt": "2026-06-10 - 21:08",
+    "path": "quizzes/Computer Science/2/2/IELTS Exams/Test 1/Listening.json",
+    "lang": "en"
+  },
+  "stats": {
+    "questionCount": 4,
+    "questionTypes": ["Essay"]
+  },
+  "questions": [
+    {
+      "q": "**Test 1 – Listening – Part 1**\nWrite **ONE WORD ONLY** for each answer.\n\nThe Junction restaurant is recommended for people who are especially keen on ___.",
+      "video": "./assets/quiz-media/TEST_1/Part_1.mp4",
+      "explanation": "The Junction is described as particularly good for people keen on fish.",
+      "answer": "fish"
+    },
+    {
+      "q": "**Test 1 – Listening – Part 1**\nWrite **ONE WORD ONLY** for each answer.\n\nAt The Junction, the ___ is a good place for a drink.",
+      "audio": "./assets/quiz-media/TEST_1/Recording.mp3",
+      "explanation": "The roof at The Junction is noted as a good spot for drinks.",
+      "answer": "roof"
+    },
+    {
+      "q": "**Test 1 – Listening – Part 1**\nWrite **ONE WORD ONLY** for each answer.\n\nPaloma (located in Bow Street, next to the cinema) serves ___ food, which is good for sharing.",
+      "image": "./assets/quiz-media/2_2_AI_Mid.jpg",
+      "explanation": "Paloma is recommended for its Spanish cuisine, which is suited to sharing.",
+      "answer": "Spanish"
+    }
+  ]
+}

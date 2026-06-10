@@ -33,6 +33,39 @@ function computeStats(questions) {
   };
 }
 
+/** Copy optional per-question fields used by large-format / language exams. */
+function copyOptionalQuestionFields(q, out) {
+  if (q.image?.trim()) out.image = q.image.trim();
+  if (q.audio?.trim()) out.audio = q.audio.trim();
+  if (q.video?.trim()) out.video = q.video.trim();
+  if (q.passage?.trim()) out.passage = q.passage.trim();
+  if (q.lang?.trim()) out.lang = q.lang.trim();
+  if (q.explanation?.trim()) out.explanation = q.explanation.trim();
+}
+
+/** Normalize a single question to the canonical schema. */
+function sanitizeQuestion(q) {
+  const out = {};
+  if (q.q) out.q = q.q;
+  copyOptionalQuestionFields(q, out);
+
+  if (Array.isArray(q.options) && q.options.length === 1) {
+    out.answer = q.options[0] || q.answer || "";
+  } else if (Array.isArray(q.options) && q.options.length > 1) {
+    out.options = q.options;
+    if (q.correct !== undefined && q.correct !== null)
+      out.correct = q.correct;
+  } else if (q.answer !== undefined) {
+    out.answer = q.answer;
+  } else if (Array.isArray(q.options)) {
+    out.options = q.options;
+    if (q.correct !== undefined && q.correct !== null)
+      out.correct = q.correct;
+  }
+
+  return out;
+}
+
 // ─── Schema migration ─────────────────────────────────────────────────────────
 /**
  * Migrate a quiz object (any old format) to the new canonical schema.
@@ -40,17 +73,24 @@ function computeStats(questions) {
  * Does NOT set meta.path or meta.id — caller handles those.
  */
 function migrateQuiz(raw) {
+  const oldMeta = raw.meta || raw.metadata || {};
+  const questions = (raw.questions || []).map(sanitizeQuestion);
+
   // Already new format?
   if (raw.meta && raw.questions && !raw.title && !raw.metadata) {
-    return raw; // already migrated, enrich in place
+    const meta = { ...raw.meta };
+    if (oldMeta.lang?.trim()) meta.lang = oldMeta.lang.trim();
+    return {
+      meta,
+      stats: computeStats(questions),
+      questions,
+    };
   }
 
   const meta = {};
-  const questions = raw.questions || [];
 
   // --- title ---
   // Old formats: raw.title, raw.meta.title, raw.metadata.title
-  const oldMeta = raw.meta || raw.metadata || {};
   meta.title =
     (typeof raw.title === "string" && raw.title.trim()) ||
     (typeof oldMeta.title === "string" && oldMeta.title.trim()) ||
@@ -74,34 +114,12 @@ function migrateQuiz(raw) {
   // --- preserve id and createdAt ---
   if (oldMeta.id) meta.id = oldMeta.id;
   if (oldMeta.createdAt) meta.createdAt = oldMeta.createdAt;
-
-  // --- migrate essay questions ---
-  // Old: essay as 1-option MCQ { q, options: ["answer"], correct: 0 }
-  // New: essay as { q, answer }
-  const migratedQuestions = questions.map((q) => {
-    const out = {};
-    if (q.q) out.q = q.q;
-    if (q.image && q.image.trim()) out.image = q.image;
-    if (q.explanation && q.explanation.trim()) out.explanation = q.explanation;
-
-    if (Array.isArray(q.options) && q.options.length === 1) {
-      // Essay: single option was used to store the answer
-      out.answer = q.options[0] || q.answer || "";
-    } else if (Array.isArray(q.options) && q.options.length > 1) {
-      out.options = q.options;
-      if (q.correct !== undefined && q.correct !== null)
-        out.correct = q.correct;
-    } else if (q.answer !== undefined) {
-      out.answer = q.answer;
-    }
-
-    return out;
-  });
+  if (oldMeta.lang?.trim()) meta.lang = oldMeta.lang.trim();
 
   return {
     meta,
-    stats: computeStats(migratedQuestions),
-    questions: migratedQuestions,
+    stats: computeStats(questions),
+    questions,
   };
 }
 
@@ -302,6 +320,7 @@ async function build(examsDir, repoRoot) {
         if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
         if (quizObj.meta.createdAt)
           quizEntry.createdAt = quizObj.meta.createdAt;
+        if (quizObj.meta.lang) quizEntry.lang = quizObj.meta.lang;
 
         const subject = subjectsMap.get(metadata.courseKey);
         if (subject) {

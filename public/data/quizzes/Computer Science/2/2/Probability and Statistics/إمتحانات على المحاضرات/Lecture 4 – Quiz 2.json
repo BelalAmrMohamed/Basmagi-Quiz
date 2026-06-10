@@ -15,88 +15,88 @@
   "questions": [
     {
       "q": "In a binomial experiment with $n = 30$ and $p = 0.5$, the mean equals the variance.",
+      "explanation": "For a binomial distribution, $\\mu = np$ and $\\sigma^2 = npq$. Here, $\\mu = 30(0.5) = 15$ and $\\sigma^2 = 30(0.5)(0.5) = 7.5$. Since $15 \\neq 7.5$, the statement is false.",
       "options": [
         "TRUE",
         "FALSE"
       ],
-      "correct": 1,
-      "explanation": "For a binomial distribution, $\\mu = np$ and $\\sigma^2 = npq$. Here, $\\mu = 30(0.5) = 15$ and $\\sigma^2 = 30(0.5)(0.5) = 7.5$. Since $15 \\neq 7.5$, the statement is false."
+      "correct": 1
     },
     {
       "q": "The Poisson distribution requires two parameters to fully describe it.",
+      "explanation": "The Poisson distribution is a single-parameter distribution, defined entirely by its mean rate $\\lambda$ (or $\\mu$).",
       "options": [
         "TRUE",
         "FALSE"
       ],
-      "correct": 1,
-      "explanation": "The Poisson distribution is a single-parameter distribution, defined entirely by its mean rate $\\lambda$ (or $\\mu$)."
+      "correct": 1
     },
     {
       "q": "For a binomial distribution, $P(X = x) + P(X = n - x) = 1$ for all valid $x$.",
+      "explanation": "This is false. The sum of probabilities for *all* possible values of $x$ (from $0$ to $n$) equals $1$, but the sum of any two specific outcomes is not necessarily $1$ unless those are the only two possible outcomes.",
       "options": [
         "TRUE",
         "FALSE"
       ],
-      "correct": 1,
-      "explanation": "This is false. The sum of probabilities for *all* possible values of $x$ (from $0$ to $n$) equals $1$, but the sum of any two specific outcomes is not necessarily $1$ unless those are the only two possible outcomes."
+      "correct": 1
     },
     {
       "q": "If $X$ follows a Poisson distribution with $\\lambda = 7$, then the standard deviation of $X$ is approximately 2.646.",
+      "explanation": "In a Poisson distribution, the variance $\\sigma^2 = \\lambda$. Therefore, the standard deviation $\\sigma = \\sqrt{\\lambda} = \\sqrt{7} \\approx 2.64575$, which rounds to $2.646$.",
       "options": [
         "TRUE",
         "FALSE"
       ],
-      "correct": 0,
-      "explanation": "In a Poisson distribution, the variance $\\sigma^2 = \\lambda$. Therefore, the standard deviation $\\sigma = \\sqrt{\\lambda} = \\sqrt{7} \\approx 2.64575$, which rounds to $2.646$."
+      "correct": 0
     },
     {
       "q": "A binomial distribution with a very large $n$ and a very small $p$ can be approximated by a Poisson distribution with $\\mu = np$.",
+      "explanation": "This is a standard approximation. When $n \\ge 20$ and $p \\le 0.05$ (or $n \\ge 100$ and $np \\le 10$), the Poisson distribution provides a very close approximation to the Binomial.",
       "options": [
         "TRUE",
         "FALSE"
       ],
-      "correct": 0,
-      "explanation": "This is a standard approximation. When $n \\ge 20$ and $p \\le 0.05$ (or $n \\ge 100$ and $np \\le 10$), the Poisson distribution provides a very close approximation to the Binomial."
+      "correct": 0
     },
     {
       "q": "In a binomial experiment, the probability of exactly $x$ successes in $n$ trials is: $$P(X = x) = \\text{__________________________}$$",
-      "answer": "$$P(X = x) = \\binom{n}{x} p^x q^{n-x}$$ where $q = 1 - p$.",
-      "explanation": "The formula represents the number of ways to choose $x$ successes out of $n$ trials, multiplied by the probability of $x$ successes and $n-x$ failures."
+      "explanation": "The formula represents the number of ways to choose $x$ successes out of $n$ trials, multiplied by the probability of $x$ successes and $n-x$ failures.",
+      "answer": "$$P(X = x) = \\binom{n}{x} p^x q^{n-x}$$ where $q = 1 - p$."
     },
     {
       "q": "For a binomial random variable with $n = 40$ and $p = 0.25$, the mean $\\mu =$ ______ and the variance $\\sigma^2 =$ ______.",
-      "answer": "$\\mu = 10$, $\\sigma^2 = 7.5$",
-      "explanation": "Calculation:\n* $\\mu = np = 40 \\times 0.25 = 10$\n* $\\sigma^2 = npq = 40 \\times 0.25 \\times 0.75 = 7.5$"
+      "explanation": "Calculation:\n* $\\mu = np = 40 \\times 0.25 = 10$\n* $\\sigma^2 = npq = 40 \\times 0.25 \\times 0.75 = 7.5$",
+      "answer": "$\\mu = 10$, $\\sigma^2 = 7.5$"
     },
     {
       "q": "The Poisson probability formula is $P(X = x) =$ ______, where $e \\approx$ ______. ",
-      "answer": "$$P(X = x) = \\frac{e^{-\\lambda} \\lambda^x}{x!}$$, $e \\approx 2.718$",
-      "explanation": "The Poisson formula calculates the probability of a given number of events occurring in a fixed interval of time or space."
+      "explanation": "The Poisson formula calculates the probability of a given number of events occurring in a fixed interval of time or space.",
+      "answer": "$$P(X = x) = \\frac{e^{-\\lambda} \\lambda^x}{x!}$$, $e \\approx 2.718$"
     },
     {
       "q": "In a Poisson distribution, the mean and the ______________ are equal to each other, both equal to $\\lambda$.",
-      "answer": "**Variance**",
-      "explanation": "A unique property of the Poisson distribution is that its mean ($E[X]$) and variance ($Var[X]$) are identical."
+      "explanation": "A unique property of the Poisson distribution is that its mean ($E[X]$) and variance ($Var[X]$) are identical.",
+      "answer": "**Variance**"
     },
     {
       "q": "If a binomial experiment has $n = 12$, $p = 0.6$, and $q = $ ______, then the standard deviation $\\sigma = $ ______.",
-      "answer": "$q = 0.4$, $\\sigma \\approx 1.697$",
-      "explanation": "Calculation:\n* $q = 1 - p = 1 - 0.6 = 0.4$\n* $\\sigma = \\sqrt{npq} = \\sqrt{12 \\times 0.6 \\times 0.4} = \\sqrt{2.88} \\approx 1.697$"
+      "explanation": "Calculation:\n* $q = 1 - p = 1 - 0.6 = 0.4$\n* $\\sigma = \\sqrt{npq} = \\sqrt{12 \\times 0.6 \\times 0.4} = \\sqrt{2.88} \\approx 1.697$",
+      "answer": "$q = 0.4$, $\\sigma \\approx 1.697$"
     },
     {
       "q": "Problem 1: A smartphone app sends push notifications. $p = 0.78$, $n = 20$.\n(a) Identify distribution.\n(b) Calculate mean.\n(c) Calculate standard deviation.\n(d) Find $P(X=15)$.",
-      "answer": "(a) **Binomial Distribution** with $n = 20$ and $p = 0.78$.\n(b) $\\mu = np = 20 \\times 0.78 = \\mathbf{15.6}$\n(c) $\\sigma = \\sqrt{npq} = \\sqrt{20 \\times 0.78 \\times 0.22} = \\sqrt{3.432} \\approx \\mathbf{1.853}$\n(d) $P(X=15) = \\binom{20}{15} (0.78)^{15} (0.22)^5 = 15504 \\times 0.02096 \\times 0.000051 \\approx \\mathbf{0.01657}$",
-      "explanation": "The scenario fits a Binomial model because there are a fixed number of independent trials ($n=20$), two outcomes (delivered or not), and a constant probability."
+      "explanation": "The scenario fits a Binomial model because there are a fixed number of independent trials ($n=20$), two outcomes (delivered or not), and a constant probability.",
+      "answer": "(a) **Binomial Distribution** with $n = 20$ and $p = 0.78$.\n(b) $\\mu = np = 20 \\times 0.78 = \\mathbf{15.6}$\n(c) $\\sigma = \\sqrt{npq} = \\sqrt{20 \\times 0.78 \\times 0.22} = \\sqrt{3.432} \\approx \\mathbf{1.853}$\n(d) $P(X=15) = \\binom{20}{15} (0.78)^{15} (0.22)^5 = 15504 \\times 0.02096 \\times 0.000051 \\approx \\mathbf{0.01657}$"
     },
     {
       "q": "Problem 2: A cybersecurity system logs an average of 6 intrusion attempts per hour.\n(a) Distribution and reasons.\n(b) $P(X=4)$ in one hour.\n(c) $P(X \\le 1)$ in one hour.\n(d) Prob of 4 attempts in 30 minutes.",
-      "answer": "(a) **Poisson Distribution**. Reasons: 1. Events occur independently. 2. Average rate (6/hr) is constant.\n(b) $P(X=4) = \\frac{e^{-6} 6^4}{4!} = \\frac{0.002479 \\times 1296}{24} = \\mathbf{0.133866}$\n(c) $P(X \\le 1) = P(0) + P(1) = e^{-6}(\\frac{6^0}{0!} + \\frac{6^1}{1!}) = 0.002479 \\times (1 + 6) = \\mathbf{0.017353}$\n(d) For 30 mins, $\\lambda = 3$. $P(X=4) = \\frac{e^{-3} 3^4}{4!} = \\frac{0.04979 \\times 81}{24} = \\mathbf{0.16804}$",
-      "explanation": "The Poisson distribution is ideal for modeling the number of arrivals (attempts) over a continuous time interval."
+      "explanation": "The Poisson distribution is ideal for modeling the number of arrivals (attempts) over a continuous time interval.",
+      "answer": "(a) **Poisson Distribution**. Reasons: 1. Events occur independently. 2. Average rate (6/hr) is constant.\n(b) $P(X=4) = \\frac{e^{-6} 6^4}{4!} = \\frac{0.002479 \\times 1296}{24} = \\mathbf{0.133866}$\n(c) $P(X \\le 1) = P(0) + P(1) = e^{-6}(\\frac{6^0}{0!} + \\frac{6^1}{1!}) = 0.002479 \\times (1 + 6) = \\mathbf{0.017353}$\n(d) For 30 mins, $\\lambda = 3$. $P(X=4) = \\frac{e^{-3} 3^4}{4!} = \\frac{0.04979 \\times 81}{24} = \\mathbf{0.16804}$"
     },
     {
       "q": "Bonus Question: 200 packets/sec, $p=0.008$ of corruption.\n(i) Why Poisson approximation?\n(ii) $P(X=3)$ using Poisson.",
-      "answer": "(i) The Poisson approximation is appropriate because $n$ is large ($200$) and $p$ is small ($0.008$), making the binomial calculation tedious while the Poisson provides a very accurate shortcut.\n(ii) $\\lambda = np = 200 \\times 0.008 = 1.6$.\n$P(X=3) = \\frac{e^{-1.6} 1.6^3}{3!} = \\frac{0.2019 \\times 4.096}{6} \\approx \\mathbf{0.1378}$",
-      "explanation": "Using the Poisson approximation simplifies calculating probabilities for rare events in large populations."
+      "explanation": "Using the Poisson approximation simplifies calculating probabilities for rare events in large populations.",
+      "answer": "(i) The Poisson approximation is appropriate because $n$ is large ($200$) and $p$ is small ($0.008$), making the binomial calculation tedious while the Poisson provides a very accurate shortcut.\n(ii) $\\lambda = np = 200 \\times 0.008 = 1.6$.\n$P(X=3) = \\frac{e^{-1.6} 1.6^3}{3!} = \\frac{0.2019 \\times 4.096}{6} \\approx \\mathbf{0.1378}$"
     }
   ]
 }

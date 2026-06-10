@@ -15,366 +15,366 @@
   "questions": [
     {
       "q": "If you want to insert multiple rows into the Orders table at once, which command should you use?",
+      "explanation": "In standard SQL and most modern dialects (like MySQL or PostgreSQL), you can insert multiple rows by providing multiple comma-separated value lists within a single `INSERT INTO` statement.",
       "options": [
         "INSERT ALL INTO Orders VALUES (...), (...);",
         "INSERT INTO Orders VALUES (...), (...);",
         "INSERT INTO Orders VALUES (...) AND (...) AND (...);",
         "INSERT INTO Orders (...);"
       ],
-      "correct": 1,
-      "explanation": "In standard SQL and most modern dialects (like MySQL or PostgreSQL), you can insert multiple rows by providing multiple comma-separated value lists within a single `INSERT INTO` statement."
+      "correct": 1
     },
     {
       "q": "DDL refers to.........",
+      "explanation": "DDL stands for Data Definition Language, which includes commands like `CREATE`, `ALTER`, and `DROP` used to define the database structure.",
       "options": [
         "Kind of constraints",
         "Database definition language",
         "Data definition language",
         "Alter"
       ],
-      "correct": 2,
-      "explanation": "DDL stands for Data Definition Language, which includes commands like `CREATE`, `ALTER`, and `DROP` used to define the database structure."
+      "correct": 2
     },
     {
       "q": "Which SQL command is used to delete table to recycle bin?",
+      "explanation": "In Oracle Database, the `DROP TABLE` command moves a table to the recycle bin by default, allowing it to be recovered later unless the `PURGE` clause is used.",
       "options": [
         "Drop",
         "Delete",
         "Truncate",
         "Alter"
       ],
-      "correct": 0,
-      "explanation": "In Oracle Database, the `DROP TABLE` command moves a table to the recycle bin by default, allowing it to be recovered later unless the `PURGE` clause is used."
+      "correct": 0
     },
     {
       "q": "In SQL, which command is used to modify data in an existing table?",
+      "explanation": "The `UPDATE` command is a DML (Data Manipulation Language) statement used to modify existing records in a table.",
       "options": [
         "Update",
         "Modify",
         "Alter",
         "Insert into"
       ],
-      "correct": 0,
-      "explanation": "The `UPDATE` command is a DML (Data Manipulation Language) statement used to modify existing records in a table."
+      "correct": 0
     },
     {
       "q": "All the following are considered a group function except.......",
+      "explanation": "`MOD` is a scalar (single-row) function used to find the remainder of a division. `AVG`, `VARIANCE`, and `COUNT` are aggregate (group) functions that operate on sets of rows.",
       "options": [
         "AVG",
         "Mod",
         "Variance",
         "Count"
       ],
-      "correct": 1,
-      "explanation": "`MOD` is a scalar (single-row) function used to find the remainder of a division. `AVG`, `VARIANCE`, and `COUNT` are aggregate (group) functions that operate on sets of rows."
+      "correct": 1
     },
     {
       "q": "After execution the following command `LPAD (25500, 6, '#')`, the result becomes.......",
+      "explanation": "The `LPAD` function pads the left side of a string with a specific character until it reaches the specified length. Padding '25500' (length 5) to length 6 with '#' results in '#25500'.",
       "options": [
         "25500#",
         "#25500",
         "25500",
         "#####25500"
       ],
-      "correct": 1,
-      "explanation": "The `LPAD` function pads the left side of a string with a specific character until it reaches the specified length. Padding '25500' (length 5) to length 6 with '#' results in '#25500'."
+      "correct": 1
     },
     {
       "q": "After execution the following command `TRUNC (30.548, 2)`, the result becomes.....",
+      "explanation": "The `TRUNC` function truncates a number to a specified number of decimal places without rounding. Truncating 30.548 to 2 places results in 30.54.",
       "options": [
         "30.55",
         "30.54",
         "31",
         "30"
       ],
-      "correct": 1,
-      "explanation": "The `TRUNC` function truncates a number to a specified number of decimal places without rounding. Truncating 30.548 to 2 places results in 30.54."
+      "correct": 1
     },
     {
       "q": "Database increases data redundancy, this statement is.......",
+      "explanation": "One of the primary purposes of a Database Management System (DBMS) is to **reduce** or control data redundancy through normalization.",
       "options": [
         "True",
         "False",
         "False sometimes",
         "True sometimes"
       ],
-      "correct": 1,
-      "explanation": "One of the primary purposes of a Database Management System (DBMS) is to **reduce** or control data redundancy through normalization."
+      "correct": 1
     },
     {
       "q": "Hobby field is called......... attribute",
+      "explanation": "A 'Hobby' field is typically considered multi-valued because a single individual (entity) can have multiple hobbies.",
       "options": [
         "Single",
         "Multi-valued",
         "Derived",
         "Assurance"
       ],
-      "correct": 1,
-      "explanation": "A 'Hobby' field is typically considered multi-valued because a single individual (entity) can have multiple hobbies."
+      "correct": 1
     },
     {
       "q": "DBA is the person who creates all the meta data information, this statement is........",
+      "explanation": "The Database Administrator (DBA) is responsible for defining the schema, which constitutes the metadata (data about data) of the database.",
       "options": [
         "True",
         "False",
         "False sometimes",
         "True sometimes"
       ],
-      "correct": 0,
-      "explanation": "The Database Administrator (DBA) is responsible for defining the schema, which constitutes the metadata (data about data) of the database."
+      "correct": 0
     },
     {
       "q": "In SQL, Select Count, one needs to specify the........name",
+      "explanation": "When using `COUNT()`, you typically specify a column name or `*` to count the number of entries/rows.",
       "options": [
         "Column",
         "Row",
         "Insert",
         "Alter"
       ],
-      "correct": 0,
-      "explanation": "When using `COUNT()`, you typically specify a column name or `*` to count the number of entries/rows."
+      "correct": 0
     },
     {
       "q": "Which command is used to change the structure of a table in SQL?",
+      "explanation": "The `ALTER TABLE` statement is used to add, delete, or modify columns in an existing table, thereby changing its structure.",
       "options": [
         "Alter",
         "Update",
         "Modify",
         "Describe"
       ],
-      "correct": 0,
-      "explanation": "The `ALTER TABLE` statement is used to add, delete, or modify columns in an existing table, thereby changing its structure."
+      "correct": 0
     },
     {
       "q": "In DFD, the field is called.........",
+      "explanation": "In the context of data modeling related to database fields, the field corresponds to an **Attribute**.",
       "options": [
         "Attribute",
         "Entity",
         "Constraints",
         "All of the previous"
       ],
-      "correct": 0,
-      "explanation": "In the context of data modeling related to database fields, the field corresponds to an **Attribute**."
+      "correct": 0
     },
     {
       "q": "To add new rows, we can use......... statements.",
+      "explanation": "DML (Data Manipulation Language) includes the `INSERT` command, which is used to add new rows to a table.",
       "options": [
         "DDL",
         "DML",
         "DCL",
         "ACL"
       ],
-      "correct": 1,
-      "explanation": "DML (Data Manipulation Language) includes the `INSERT` command, which is used to add new rows to a table."
+      "correct": 1
     },
     {
       "q": "From the advantage of Database is.....",
+      "explanation": "Data sharing is a core advantage of a DBMS, allowing multiple users and applications to access the same data simultaneously.",
       "options": [
         "Schema definition",
         "Data sharing",
         "Routine maintenance",
         "None of the previous"
       ],
-      "correct": 1,
-      "explanation": "Data sharing is a core advantage of a DBMS, allowing multiple users and applications to access the same data simultaneously."
+      "correct": 1
     },
     {
       "q": "Which command is used to create and assign a constant value to a variable?",
+      "explanation": "In SQL*Plus (often associated with these types of exams), the `DEFINE` command is used to create a substitution variable and assign a value to it.",
       "options": [
         "Const",
         "Define",
         "Set",
         "Const Define"
       ],
-      "correct": 1,
-      "explanation": "In SQL*Plus (often associated with these types of exams), the `DEFINE` command is used to create a substitution variable and assign a value to it."
+      "correct": 1
     },
     {
       "q": "The next functions are not used with number except......",
+      "explanation": "`TRUNC` can be used with numeric values. `SUBSTR` and `INSTR` are character functions used for string manipulation.",
       "options": [
         "Substr",
         "Trunc",
         "Instr",
         "None of the previous"
       ],
-      "correct": 1,
-      "explanation": "`TRUNC` can be used with numeric values. `SUBSTR` and `INSTR` are character functions used for string manipulation."
+      "correct": 1
     },
     {
       "q": "After execution the following command `ROUND (55.555, 2)`, the result becomes...",
+      "explanation": "The `ROUND` function rounds to the nearest specified decimal place. Since the third decimal is 5, the second decimal is rounded up from 5 to 6.",
       "options": [
         "55.56",
         "55.55",
         "55",
         "55.555"
       ],
-      "correct": 0,
-      "explanation": "The `ROUND` function rounds to the nearest specified decimal place. Since the third decimal is 5, the second decimal is rounded up from 5 to 6."
+      "correct": 0
     },
     {
       "q": "After execution the following command `ROUND (55.555, 0)`, the result becomes.",
+      "explanation": "Rounding 55.555 to 0 decimal places (the nearest integer) results in 56 because the first decimal digit is 5.",
       "options": [
         "56",
         "55.6",
         "55",
         "55.5"
       ],
-      "correct": 0,
-      "explanation": "Rounding 55.555 to 0 decimal places (the nearest integer) results in 56 because the first decimal digit is 5."
+      "correct": 0
     },
     {
       "q": "After execution the following command `TRUNC (28.747, -1)`, the result becomes.",
+      "explanation": "Using a negative precision with `TRUNC` truncates digits to the left of the decimal point. `-1` truncates to the tens place, turning 28 into 20.",
       "options": [
         "20",
         "30",
         "28.74",
         "29"
       ],
-      "correct": 0,
-      "explanation": "Using a negative precision with `TRUNC` truncates digits to the left of the decimal point. `-1` truncates to the tens place, turning 28 into 20."
+      "correct": 0
     },
     {
       "q": "What does `COUNT()` function returns?",
+      "explanation": "The `COUNT()` function returns the number of rows that match a specified criterion.",
       "options": [
         "Average value",
         "Largest value",
         "Number of columns",
         "Number of rows"
       ],
-      "correct": 3,
-      "explanation": "The `COUNT()` function returns the number of rows that match a specified criterion."
+      "correct": 3
     },
     {
       "q": "Which of the following must be enclosed in single quotes (' ')?",
+      "explanation": "In SQL, string literals (text values) must be enclosed in single quotes.",
       "options": [
         "Column Aliases",
         "Field name",
         "Record",
         "String Value"
       ],
-      "correct": 3,
-      "explanation": "In SQL, string literals (text values) must be enclosed in single quotes."
+      "correct": 3
     },
     {
       "q": "An example of duties DBA is........",
+      "explanation": "While DBAs do manage users and oversee data, 'Schema definition' is a fundamental technical responsibility defining the structural backbone of the database.",
       "options": [
         "Management of Data",
         "Schema definition",
         "Management of user",
         "None of previous"
       ],
-      "correct": 1,
-      "explanation": "While DBAs do manage users and oversee data, 'Schema definition' is a fundamental technical responsibility defining the structural backbone of the database."
+      "correct": 1
     },
     {
       "q": "Null is the same as zero or a blank space, this statement is.....",
+      "explanation": "`NULL` represents a lack of value or an unknown value, which is distinct from a numerical zero or an empty string (blank space).",
       "options": [
         "True",
         "False",
         "True sometimes",
         "False sometimes"
       ],
-      "correct": 1,
-      "explanation": "`NULL` represents a lack of value or an unknown value, which is distinct from a numerical zero or an empty string (blank space)."
+      "correct": 1
     },
     {
       "q": "SQL statements are case-sensitive, this statement is...",
+      "explanation": "SQL keywords (like `SELECT`, `FROM`) and identifiers (in many systems) are case-insensitive, although the data contained within the database is case-sensitive.",
       "options": [
         "False",
         "True",
         "True sometimes",
         "False sometimes"
       ],
-      "correct": 0,
-      "explanation": "SQL keywords (like `SELECT`, `FROM`) and identifiers (in many systems) are case-insensitive, although the data contained within the database is case-sensitive."
+      "correct": 0
     },
     {
       "q": "We can use 'where' clause in INSERT INTO statement, this statement is..",
+      "explanation": "A standard `INSERT INTO ... VALUES` statement does not support a `WHERE` clause. A `WHERE` clause is only used in `INSERT INTO ... SELECT` statements to filter the source data.",
       "options": [
         "False",
         "True",
         "True sometimes",
         "False sometimes"
       ],
-      "correct": 0,
-      "explanation": "A standard `INSERT INTO ... VALUES` statement does not support a `WHERE` clause. A `WHERE` clause is only used in `INSERT INTO ... SELECT` statements to filter the source data."
+      "correct": 0
     },
     {
       "q": "......... means validity of the data.",
+      "explanation": "Data Integrity refers to the accuracy, consistency, and overall validity of data stored in the database.",
       "options": [
         "Data Integrity",
         "Control Redundancy",
         "Data Sharing",
         "Data Independence"
       ],
-      "correct": 0,
-      "explanation": "Data Integrity refers to the accuracy, consistency, and overall validity of data stored in the database."
+      "correct": 0
     },
     {
       "q": "We can sort data by using the column's numeric position, this statement is...",
+      "explanation": "SQL allows the `ORDER BY` clause to reference columns by their position in the `SELECT` list (e.g., `ORDER BY 2` to sort by the second column).",
       "options": [
         "True",
         "False",
         "True sometimes",
         "False sometimes"
       ],
-      "correct": 0,
-      "explanation": "SQL allows the `ORDER BY` clause to reference columns by their position in the `SELECT` list (e.g., `ORDER BY 2` to sort by the second column)."
+      "correct": 0
     },
     {
       "q": "Write the suitable SQL command to: Display Flight_ID of all companies which their price less than the price of company whose name is \"AA\".\n\nNote: Table named **Airport** contains fields (`Flight_ID`, `Company_Name`, and `Price`)",
-      "answer": "```sql\nSELECT Flight_ID \nFROM Airport \nWHERE Price < (SELECT Price FROM Airport WHERE Company_Name = 'AA');\n```",
-      "explanation": "This requires a subquery to first find the price of company 'AA', which is then used in the outer query's `WHERE` clause."
+      "explanation": "This requires a subquery to first find the price of company 'AA', which is then used in the outer query's `WHERE` clause.",
+      "answer": "```sql\nSELECT Flight_ID \nFROM Airport \nWHERE Price < (SELECT Price FROM Airport WHERE Company_Name = 'AA');\n```"
     },
     {
       "q": "Write the suitable SQL command to: Modify the price in the table by increasing all values of it by 1000?",
-      "answer": "```sql\nUPDATE Airport \nSET Price = Price + 1000;\n```",
-      "explanation": "The `UPDATE` statement is used to change data, and the `SET` clause performs the arithmetic operation on the column."
+      "explanation": "The `UPDATE` statement is used to change data, and the `SET` clause performs the arithmetic operation on the column.",
+      "answer": "```sql\nUPDATE Airport \nSET Price = Price + 1000;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Retrieve all data from the table and sort it according to price (from large to small).",
-      "answer": "```sql\nSELECT * \nFROM Airport \nORDER BY Price DESC;\n```",
-      "explanation": "The `ORDER BY` clause with the `DESC` keyword sorts the result set in descending order (largest to smallest)."
+      "explanation": "The `ORDER BY` clause with the `DESC` keyword sorts the result set in descending order (largest to smallest).",
+      "answer": "```sql\nSELECT * \nFROM Airport \nORDER BY Price DESC;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Retrieve all columns from table where the company name (case-insensitively) matches \"cairo airlines\"? [I do not need to know how \" cairo airlines\" is written in the table].",
-      "answer": "```sql\nSELECT * \nFROM Airport \nWHERE LOWER(Company_Name) = 'cairo airlines';\n```",
-      "explanation": "Using the `LOWER()` function (or `UPPER()`) on the column allows for a case-insensitive comparison against a lowercase string literal."
+      "explanation": "Using the `LOWER()` function (or `UPPER()`) on the column allows for a case-insensitive comparison against a lowercase string literal.",
+      "answer": "```sql\nSELECT * \nFROM Airport \nWHERE LOWER(Company_Name) = 'cairo airlines';\n```"
     },
     {
       "q": "Write the suitable SQL command to: Change the datatype of the company name in the table to VARCHAR (15)?",
-      "answer": "```sql\nALTER TABLE Airport \nMODIFY Company_Name VARCHAR(15);\n```",
-      "explanation": "The `ALTER TABLE` command combined with `MODIFY` (in Oracle) or `ALTER COLUMN ... TYPE` (in PostgreSQL/Standard SQL) changes a column's definition."
+      "explanation": "The `ALTER TABLE` command combined with `MODIFY` (in Oracle) or `ALTER COLUMN ... TYPE` (in PostgreSQL/Standard SQL) changes a column's definition.",
+      "answer": "```sql\nALTER TABLE Airport \nMODIFY Company_Name VARCHAR(15);\n```"
     },
     {
       "q": "Write the suitable SQL command to: Concatenate the first three characters of each name with their price, separated by a ' of ' (without using \"+\" or \" \").",
-      "answer": "```sql\nSELECT SUBSTR(Company_Name, 1, 3) || ' of ' || Price \nFROM Airport;\n```",
-      "explanation": "In many SQL dialects like Oracle, `||` is the concatenation operator. `SUBSTR` extracts the first three characters."
+      "explanation": "In many SQL dialects like Oracle, `||` is the concatenation operator. `SUBSTR` extracts the first three characters.",
+      "answer": "```sql\nSELECT SUBSTR(Company_Name, 1, 3) || ' of ' || Price \nFROM Airport;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Display company names after replaced first three characters from each name by 'XYZ'.",
-      "answer": "```sql\nSELECT 'XYZ' || SUBSTR(Company_Name, 4) \nFROM Airport;\n```",
-      "explanation": "This selects the literal string 'XYZ' and concatenates it with the remainder of the company name starting from the 4th character."
+      "explanation": "This selects the literal string 'XYZ' and concatenates it with the remainder of the company name starting from the 4th character.",
+      "answer": "```sql\nSELECT 'XYZ' || SUBSTR(Company_Name, 4) \nFROM Airport;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Find and display the position of the first occurrence of the letter 'e' in each name.",
-      "answer": "```sql\nSELECT INSTR(Company_Name, 'e') \nFROM Airport;\n```",
-      "explanation": "The `INSTR` function returns the numeric position of a character or substring within a string."
+      "explanation": "The `INSTR` function returns the numeric position of a character or substring within a string.",
+      "answer": "```sql\nSELECT INSTR(Company_Name, 'e') \nFROM Airport;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Find company name whose price are odd numbers.",
-      "answer": "```sql\nSELECT Company_Name \nFROM Airport \nWHERE MOD(Price, 2) <> 0;\n```",
-      "explanation": "The `MOD` function returns the remainder of a division. If `Price % 2` is not 0, the number is odd."
+      "explanation": "The `MOD` function returns the remainder of a division. If `Price % 2` is not 0, the number is odd.",
+      "answer": "```sql\nSELECT Company_Name \nFROM Airport \nWHERE MOD(Price, 2) <> 0;\n```"
     },
     {
       "q": "Write the suitable SQL command to: Find and display names that contain the substring 'son' (case-insensitive).",
-      "answer": "```sql\nSELECT Company_Name \nFROM Airport \nWHERE LOWER(Company_Name) LIKE '%son%';\n```",
-      "explanation": "The `LIKE` operator with `%` wildcards searches for a pattern, and `LOWER()` ensures the search is case-insensitive."
+      "explanation": "The `LIKE` operator with `%` wildcards searches for a pattern, and `LOWER()` ensures the search is case-insensitive.",
+      "answer": "```sql\nSELECT Company_Name \nFROM Airport \nWHERE LOWER(Company_Name) LIKE '%son%';\n```"
     },
     {
       "q": "Write the suitable SQL command to: Rename the name of table to Airport_New.",
-      "answer": "```sql\nRENAME Airport TO Airport_New;\n```",
-      "explanation": "In Oracle, the `RENAME` command provides a direct way to change a table's name. Alternatively, `ALTER TABLE Airport RENAME TO Airport_New` is standard."
+      "explanation": "In Oracle, the `RENAME` command provides a direct way to change a table's name. Alternatively, `ALTER TABLE Airport RENAME TO Airport_New` is standard.",
+      "answer": "```sql\nRENAME Airport TO Airport_New;\n```"
     }
   ]
 }

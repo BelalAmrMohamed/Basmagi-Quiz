@@ -16,132 +16,132 @@
   "questions": [
     {
       "q": "If $A$ and $B$ are independent events, then $P(A|B) = $",
+      "explanation": "By definition of independence, the occurrence of event $B$ provides no information about the occurrence of event $A$. Therefore, $P(A|B) = P(A)$.",
       "options": [
         "$P(B|A)$",
         "$P(A)$",
         "$P(B)$",
         "None of them"
       ],
-      "correct": 1,
-      "explanation": "By definition of independence, the occurrence of event $B$ provides no information about the occurrence of event $A$. Therefore, $P(A|B) = P(A)$."
+      "correct": 1
     },
     {
       "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ cannot occur, the events $A$ and $B$ are said to be:",
+      "explanation": "Events are mutually exclusive (or disjoint) if they cannot occur at the same time. If $A$ occurring means $B$ cannot occur, then $A \\cap B = \\emptyset$, meaning they are mutually exclusive.",
       "options": [
         "Independent",
         "Mutually exclusive",
         "$A \\subset B$",
         "None of them"
       ],
-      "correct": 1,
-      "explanation": "Events are mutually exclusive (or disjoint) if they cannot occur at the same time. If $A$ occurring means $B$ cannot occur, then $A \\cap B = \\emptyset$, meaning they are mutually exclusive."
+      "correct": 1
     },
     {
       "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true:",
+      "explanation": "If two events are independent, their complements are also independent of each other and of the original events. Thus, all listed pairs are independent.",
       "options": [
         "$A$ and $B$ are independent",
         "$B$ and $A^c$ are independent",
         "$A^c$ and $B^c$ are independent",
         "All of preceding"
       ],
-      "correct": 3,
-      "explanation": "If two events are independent, their complements are also independent of each other and of the original events. Thus, all listed pairs are independent."
+      "correct": 3
     },
     {
       "q": "A code consists of a digit chosen from 0 to 5 followed by a letter of the alphabet. What is the probability the code is a specific valid combination (e.g., 5Z)?",
+      "explanation": "There are 6 possible digits (0, 1, 2, 3, 4, 5) and 26 possible letters. The total number of unique codes is $6 \\times 26 = 156$. The probability of any one specific valid code is $\\frac{1}{156}$.",
       "options": [
         "$\\frac{1}{260}$",
         "$\\frac{1}{156}$",
         "$\\frac{1}{182}$",
         "None of them"
       ],
-      "correct": 1,
-      "explanation": "There are 6 possible digits (0, 1, 2, 3, 4, 5) and 26 possible letters. The total number of unique codes is $6 \\times 26 = 156$. The probability of any one specific valid code is $\\frac{1}{156}$."
+      "correct": 1
     },
     {
       "q": "For a continuous random variable $X$ with a probability density function \n$f(x) = \\begin{cases} kx^{3}, & 0 \\le x \\le 2 \\\\ 0, & o.w. \\end{cases}$, then the value of $k$ is:",
+      "explanation": "To be a valid PDF, the integral over the range must equal 1:\n$$\\int_{0}^{2} kx^3 dx = 1 \\Rightarrow k \\left[ \\frac{x^4}{4} \\right]_0^2 = 1 \\Rightarrow k \\left( \\frac{16}{4} \\right) = 1 \\Rightarrow 4k = 1 \\Rightarrow k = \\frac{1}{4}$$",
       "options": [
         "$\\frac{1}{2}$",
         "$\\frac{1}{4}$",
         "$\\frac{1}{3}$",
         "$\\frac{1}{16}$"
       ],
-      "correct": 1,
-      "explanation": "To be a valid PDF, the integral over the range must equal 1:\n$$\\int_{0}^{2} kx^3 dx = 1 \\Rightarrow k \\left[ \\frac{x^4}{4} \\right]_0^2 = 1 \\Rightarrow k \\left( \\frac{16}{4} \\right) = 1 \\Rightarrow 4k = 1 \\Rightarrow k = \\frac{1}{4}$$"
+      "correct": 1
     },
     {
       "q": "The value of $k$ when the probability mass function is given by \n$P(x) = \\begin{cases} \\frac{x}{k}, & x = 1, 2, 3, 4 \\\\ 0, & o.w. \\end{cases}$ is:",
+      "explanation": "The sum of probabilities for a PMF must equal 1:\n$$\\sum_{x=1}^{4} \\frac{x}{k} = 1 \\Rightarrow \\frac{1+2+3+4}{k} = 1 \\Rightarrow \\frac{10}{k} = 1 \\Rightarrow k = 10$$",
       "options": [
         "15",
         "10",
         "$\\frac{1}{10}$",
         "$\\frac{1}{15}$"
       ],
-      "correct": 1,
-      "explanation": "The sum of probabilities for a PMF must equal 1:\n$$\\sum_{x=1}^{4} \\frac{x}{k} = 1 \\Rightarrow \\frac{1+2+3+4}{k} = 1 \\Rightarrow \\frac{10}{k} = 1 \\Rightarrow k = 10$$"
+      "correct": 1
     },
     {
       "q": "The cumulative distribution function for the random variable $X$ for \n$f(x) = \\begin{cases} 2x, & 0 \\le x < 1 \\\\ 0, & o.w. \\end{cases}$ is given by:",
+      "explanation": "The CDF $F(x)$ is the integral of the PDF from the lower bound to $x$:\n$$F(x) = \\int_{0}^{x} 2t dt = [t^2]_0^x = x^2$$",
       "options": [
         "$1 - x$",
         "$x - 1$",
         "$x^2$",
         "None of them"
       ],
-      "correct": 2,
-      "explanation": "The CDF $F(x)$ is the integral of the PDF from the lower bound to $x$:\n$$F(x) = \\int_{0}^{x} 2t dt = [t^2]_0^x = x^2$$"
+      "correct": 2
     },
     {
       "q": "If the variance of $x$ is $v(x) = 3$, then $v(3x - 5) = $",
+      "explanation": "Using the variance property $Var(ax + b) = a^2 Var(x)$:\n$$v(3x - 5) = 3^2 \\times v(x) = 9 \\times 3 = 27$$",
       "options": [
         "$\\frac{1}{3}$",
         "3",
         "27",
         "$\\frac{1}{27}$"
       ],
-      "correct": 2,
-      "explanation": "Using the variance property $Var(ax + b) = a^2 Var(x)$:\n$$v(3x - 5) = 3^2 \\times v(x) = 9 \\times 3 = 27$$"
+      "correct": 2
     },
     {
       "q": "$E(ax + b) = $",
+      "explanation": "By the linearity of expectation, $E(ax + b) = aE(x) + E(b)$. Since the expectation of a constant is the constant itself, $E(ax + b) = aE(x) + b$.",
       "options": [
         "$a^2 E(x + b)$",
         "$a E(x)$",
         "$a E(x) + b$",
         "None of them"
       ],
-      "correct": 2,
-      "explanation": "By the linearity of expectation, $E(ax + b) = aE(x) + E(b)$. Since the expectation of a constant is the constant itself, $E(ax + b) = aE(x) + b$."
+      "correct": 2
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n- $(a)$ $P(A^c)$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n\n- $(b)$ $P(A \\cap B)$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n\n- $(c)$ $P(A^c \\cap B)$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n\n- $(d)$ $P(A \\cap B^c)$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n\n- $(e)$ $P(A \\cup B)^c$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     },
     {
       "q": "Given $P(A) = 0.2$, $P(B) = 0.3$, and $P(A \\cup B) = 0.4$, determine the following probabilities:\n\n- $(f)$ $P(A^c \\cup B)$",
-      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$",
-      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability."
+      "explanation": "These calculations use fundamental probability axioms: the complement rule, the inclusion-exclusion principle for unions, and the definition of set differences in probability.",
+      "answer": "$P(A^c \\cup B) = P(A^c) + P(B) - P(A^c \\cap B) = 0.8 + 0.3 - 0.2 = 0.9$"
     }
   ]
 }

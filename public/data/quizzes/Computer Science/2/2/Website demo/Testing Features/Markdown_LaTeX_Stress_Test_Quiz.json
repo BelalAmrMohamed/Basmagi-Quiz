@@ -17,34 +17,34 @@
   "questions": [
     {
       "q": "What does the following **Markdown** render as?\n> `**Hello World**`",
-      "correct": 3,
+      "explanation": "The `>` symbol creates a **blockquote**, and the backticks create `inline code` inside it. The `**...**` inside backticks is *not* rendered — it's treated as literal characters.",
       "options": [
         "Plain text: `**Hello World**`",
         "Bold text: **Hello World**",
         "Italic text: *Hello World*",
         "A blockquote with inline code"
       ],
-      "explanation": "The `>` symbol creates a **blockquote**, and the backticks create `inline code` inside it. The `**...**` inside backticks is *not* rendered — it's treated as literal characters."
+      "correct": 3
     },
     {
       "q": "What is the result of the following integral?\n$$\\int_0^1 x^2 \\, dx$$",
-      "correct": 2,
+      "explanation": "Using the **Power Rule** for integration:",
       "options": [
         "$\\frac{1}{4}$",
         "$\\frac{1}{2}$",
         "$\\frac{1}{3}$",
         "$1$"
       ],
-      "explanation": "Using the **Power Rule** for integration:"
+      "correct": 2
     },
     {
       "q": "Which of the following are valid Markdown emphasis syntaxes? ***(Select all that apply)***",
-      "answer": "A, B, C, D",
-      "explanation": "All four are valid:"
+      "explanation": "All four are valid:",
+      "answer": "A, B, C, D"
     },
     {
       "q": "Euler's Identity is often called the most beautiful equation in mathematics. Is the following statement true or false?\n> $e^{i\\pi} + 1 = 0$ contains **five** fundamental mathematical constants.",
-      "correct": 0,
+      "explanation": "Yes — it contains exactly **five** constants:",
       "options": [
         "True",
         "False",
@@ -54,109 +54,109 @@
         "$1$ — the multiplicative identity",
         "$0$ — the additive identity"
       ],
-      "explanation": "Yes — it contains exactly **five** constants:"
+      "correct": 0
     },
     {
       "q": "What does this code print?\n```cpp\n#include <iostream>\n#include <cmath>\nint main() {\ndouble x = 9.0;\nstd::cout << std::sqrt(x) << std::endl;\nreturn 0;\n}\n```",
-      "correct": 2,
+      "explanation": "`std::sqrt(9.0)` computes $\\sqrt{9} = 3$. The mathematical relationship is:",
       "options": [
         "`9`",
         "`4.5`",
         "`3`",
         "Compiler error"
       ],
-      "explanation": "`std::sqrt(9.0)` computes $\\sqrt{9} = 3$. The mathematical relationship is:"
+      "correct": 2
     },
     {
       "q": "A matrix $A$ is invertible if and only if:",
-      "correct": 1,
+      "explanation": "A square matrix $A$ is **invertible** (non-singular) if and only if its determinant is non-zero:",
       "options": [
         "$\\det(A) = 1$",
         "$\\det(A) \\neq 0$",
         "$A$ is a square matrix",
         "$A^T = A$"
       ],
-      "explanation": "A square matrix $A$ is **invertible** (non-singular) if and only if its determinant is non-zero:"
+      "correct": 1
     },
     {
       "q": "True or False: The following Python snippet runs without error.\n```python\ndata = {\"key\": [1, 2, 3]}\nprint(data[\"key\"][4])\n```",
-      "correct": 1,
+      "explanation": "This raises an `IndexError` at runtime. The list `[1, 2, 3]` has valid indices $0, 1, 2$. Accessing index $4$ is out of bounds.",
       "options": [
         "True",
         "False"
       ],
-      "explanation": "This raises an `IndexError` at runtime. The list `[1, 2, 3]` has valid indices $0, 1, 2$. Accessing index $4$ is out of bounds."
+      "correct": 1
     },
     {
       "q": "Write a LaTeX expression for the **Quadratic Formula**.",
-      "answer": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
-      "explanation": "The quadratic formula solves any equation of the form $ax^2 + bx + c = 0$:"
+      "explanation": "The quadratic formula solves any equation of the form $ax^2 + bx + c = 0$:",
+      "answer": "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}"
     },
     {
       "q": "Which Big-O complexity describes **binary search**?",
-      "correct": 2,
+      "explanation": "Binary search **halves** the search space each step. If we start with $n$ elements:",
       "options": [
         "$O(n)$",
         "$O(n^2)$",
         "$O(\\log n)$",
         "$O(n \\log n)$"
       ],
-      "explanation": "Binary search **halves** the search space each step. If we start with $n$ elements:"
+      "correct": 2
     },
     {
       "q": "What is the **sum of an infinite geometric series** $\\sum_{n=0}^{\\infty} ar^n$ when $|r| < 1$?",
-      "correct": 1,
+      "explanation": "For $|r| < 1$, the infinite geometric series converges:",
       "options": [
         "$\\frac{a}{1+r}$",
         "$\\frac{a}{1-r}$",
         "$\\frac{r}{1-a}$",
         "The series diverges"
       ],
-      "explanation": "For $|r| < 1$, the infinite geometric series converges:"
+      "correct": 1
     },
     {
       "q": "Which symbol represents 'not equal' in LaTeX? Test: $\\neq$.",
-      "correct": 0,
+      "explanation": "In KaTeX/LaTeX, `\\neq` is the standard command for $\\neq$. If it renders as a newline followed by `eq`, the renderer is broken.",
       "options": [
         "$\\neq$",
         "$\\not=$",
         "$\\ne$",
         "All of the above"
       ],
-      "explanation": "In KaTeX/LaTeX, `\\neq` is the standard command for $\\neq$. If it renders as a newline followed by `eq`, the renderer is broken."
+      "correct": 0
     },
     {
       "q": "Review the following hierarchical structure:\n* **Coefficient of Variation (C.V.)**:\n    * Sample Variance ($s^2$) = $\\frac{\\sum(x_i - \\bar{x})^2}{n-1} = \\frac{(5-12)^2 + (7-12)^2 + (8-12)^2 + (15-12)^2 + (25-12)^2}{4} = \\frac{49+25+16+9+169}{4} = \\frac{268}{4} = 67$\n    * Standard Deviation ($s$) = $\\sqrt{67} \\approx 8.185$\n    * $C.V. = (\\frac{s}{\\bar{x}}) \\times 100 = (\\frac{8.185}{12}) \\times 100 \\approx 68.21\\%$\n\nDoes the above render as a nested list?",
-      "correct": 0,
+      "explanation": "Nested lists in Markdown require 4 spaces or a tab. The current renderer fails to detect these indents.",
       "options": [
         "Yes",
         "No, only the first bullet appears",
         "No, it's all one line",
         "It's not a list at all"
       ],
-      "explanation": "Nested lists in Markdown require 4 spaces or a tab. The current renderer fails to detect these indents."
+      "correct": 0
     },
     {
       "q": "What is the result of the following steps?\n\n1. $\\lambda = 1.2$.\n\n\n2. The formula is $P(X=k) = \\frac{e^{-\\lambda} \\lambda^k}{k!}$.\n\n\n3. $P(X=2) = \\frac{e^{-1.2} (1.2)^2}{2!} = \\frac{0.3012 \\times 1.44}{2} \\approx 0.2169$\n\nAre these numbered correctly as 1, 2, 3?",
-      "correct": 0,
+      "explanation": "If there are double empty lines between items, the renderer restarts the list count unless it's handled properly.",
       "options": [
         "Yes, 1, 2, 3",
         "No, they are all 1",
         "No, the numbers are missing",
         "No, it's just one paragraph"
       ],
-      "explanation": "If there are double empty lines between items, the renderer restarts the list count unless it's handled properly."
+      "correct": 0
     },
     {
       "q": "Test of Newline Handling:\nLine 1\nLine 2 (Single newline)\n\nLine 3 (Double newline)\n\n\nLine 4 (Triple newline)\n\nHow many distinct paragraphs/lines should be visible?",
-      "correct": 0,
+      "explanation": "Standard Markdown (GFM) treats a single newline as a space (usually) and double/triple as paragraph breaks. The current renderer forces `<br>` in weird ways.",
       "options": [
         "Line 1 and 2 on same paragraph, others separate",
         "All on one line",
         "Each on a new line",
         "Depends on the renderer"
       ],
-      "explanation": "Standard Markdown (GFM) treats a single newline as a space (usually) and double/triple as paragraph breaks. The current renderer forces `<br>` in weird ways."
+      "correct": 0
     }
   ]
 }

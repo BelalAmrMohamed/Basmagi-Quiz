@@ -39,7 +39,7 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 import { initPWA } from "./pwa-manager.js";
 
 // AI Prompt for converting files to JSON quiz format
-const AI_PROMPT_TEXT = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
+const General_Purpose_AI_Prompt = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
 
 Please ensure the following:
 - Preserve the original wording of all questions without rephrasing to maintain content integrity. But use math notations and tables when needed properly.
@@ -1377,7 +1377,7 @@ Explanation: The \`typename T\` template parameter is deduced at the call site, 
   if (copyPromptBtn) {
     copyPromptBtn.onclick = (e) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(AI_PROMPT_TEXT).then(() => {
+      navigator.clipboard.writeText(General_Purpose_AI_Prompt).then(() => {
         showNotification(
           "تم نسخ البرومبت",
           "يمكنك الآن لصقه في أي ذكاء اصطناعي",

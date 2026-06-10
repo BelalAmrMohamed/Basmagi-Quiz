@@ -157,6 +157,15 @@ function isImageRequest(request) {
   );
 }
 
+// Helper: Check if request is for audio/video media (should bypass cache to prevent stale media on reload)
+function isMediaRequest(request) {
+  return (
+    request.destination === "audio" ||
+    request.destination === "video" ||
+    /\.(mp3|mp4|wav|webm|ogg|m4a|aac|mov|ogv)$/i.test(new URL(request.url).pathname)
+  );
+}
+
 // Helper: Check if request is for external resource
 function isExternalRequest(request) {
   const url = new URL(request.url);
@@ -294,6 +303,17 @@ self.addEventListener("fetch", (event) => {
   } else if (isStaticQuizRequest(request)) {
     event.respondWith(
       networkFirstWithFallbackStrategy(request, STATIC_QUIZ_CACHE),
+    );
+  } else if (isMediaRequest(request)) {
+    // Network-only for audio/video media to prevent stale cache issues on page reload
+    // Media files should always be fetched fresh to ensure latest version is played
+    event.respondWith(
+      fetch(request).catch(() => {
+        return new Response("Media unavailable offline", {
+          status: 503,
+          statusText: "Service Unavailable",
+        });
+      }),
     );
   } else if (isImageRequest(request)) {
     // Cache-first strategy for images

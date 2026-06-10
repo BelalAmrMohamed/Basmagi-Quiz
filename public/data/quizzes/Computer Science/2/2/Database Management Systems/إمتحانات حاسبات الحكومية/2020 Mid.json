@@ -15,148 +15,148 @@
   "questions": [
     {
       "q": "DBMS enables users to",
+      "explanation": "A Database Management System (DBMS) is a collection of programs that enables users to create and maintain a database. It facilitates defining (specifying data types), constructing (storing data), and manipulating (querying and updating) the database for various users.",
       "options": [
         "create and maintain a database.",
         "sharing databases among various users and applications",
         "facilitate the processes of defining, constructing, manipulating.",
         "All of the above"
       ],
-      "correct": 3,
-      "explanation": "A Database Management System (DBMS) is a collection of programs that enables users to create and maintain a database. It facilitates defining (specifying data types), constructing (storing data), and manipulating (querying and updating) the database for various users."
+      "correct": 3
     },
     {
       "q": "The main characteristics of the database approach versus the file-processing approach are:",
+      "explanation": "The primary characteristics of the database approach are its self-describing nature (meta-data), program-data independence (insulation), and support of **multiple** views and **multi-user** transaction processing. Options C and D are incorrect because they mention 'single' views/users.",
       "options": [
         "Self-describing nature of a database system",
         "Insulation between programs and data, and data abstraction",
         "Support of single views of the data",
         "Sharing of data and single user transaction processing"
       ],
-      "correct": 0,
-      "explanation": "The primary characteristics of the database approach are its self-describing nature (meta-data), program-data independence (insulation), and support of **multiple** views and **multi-user** transaction processing. Options C and D are incorrect because they mention 'single' views/users."
+      "correct": 0
     },
     {
       "q": "The characteristic that allows program-data independence and program-operation independence is called",
+      "explanation": "Data abstraction is the characteristic that allows program-data and program-operation independence by providing a conceptual representation of data without including the implementation details.",
       "options": [
         "Data abstraction",
         "Conceptual representation",
         "An operation",
         "All of the above"
       ],
-      "correct": 0,
-      "explanation": "Data abstraction is the characteristic that allows program-data and program-operation independence by providing a conceptual representation of data without including the implementation details."
+      "correct": 0
     },
     {
       "q": "The DBMS must include software to ensure that several users trying to update the same data do so in a controlled manner. This is called:",
+      "explanation": "Concurrency control software is used by the DBMS to ensure that multiple users can access and update the same data simultaneously without causing inconsistencies.",
       "options": [
         "Data Security",
         "concurrency control",
         "A transaction.",
         "All of the above"
       ],
-      "correct": 1,
-      "explanation": "Concurrency control software is used by the DBMS to ensure that multiple users can access and update the same data simultaneously without causing inconsistencies."
+      "correct": 1
     },
     {
       "q": "__________ include engineers, scientists, business analysts, and others who thoroughly familiarize themselves with the facilities of the DBMS in order to implement their own applications to meet their requirements.",
+      "explanation": "Sophisticated end users are professionals who are well-acquainted with the DBMS capabilities and use them to develop complex applications or perform detailed analysis.",
       "options": [
         "Naive Users",
         "parametric end users",
         "Sophisticated end users",
         "Casual end users"
       ],
-      "correct": 2,
-      "explanation": "Sophisticated end users are professionals who are well-acquainted with the DBMS capabilities and use them to develop complex applications or perform detailed analysis."
+      "correct": 2
     },
     {
       "q": "Casual end users occasionally access the database, but they may need different information each time. They use a sophisticated database query interface to specify their requests.",
+      "explanation": "Casual end users access the database periodically and use high-level query languages to retrieve different sets of information based on their current needs.",
       "options": [
         "Naive Users",
         "parametric end users",
         "Sophisticated end users",
         "Casual end users"
       ],
-      "correct": 3,
-      "explanation": "Casual end users access the database periodically and use high-level query languages to retrieve different sets of information based on their current needs."
+      "correct": 3
     },
     {
       "q": "A DBMS should provide a __________ which the DBA uses to create accounts and to specify account restrictions.",
+      "explanation": "The security and authorization subsystem allows the Database Administrator (DBA) to manage user accounts, passwords, and permissions (restrictions) to ensure data security.",
       "options": [
         "persistent storage",
         "security and authorization subsystem",
         "buffering or caching module",
         "backup and recovery subsystem"
       ],
-      "correct": 1,
-      "explanation": "The security and authorization subsystem allows the Database Administrator (DBA) to manage user accounts, passwords, and permissions (restrictions) to ensure data security."
+      "correct": 1
     },
     {
       "q": "The __________ module of the DBMS is responsible for choosing an efficient query execution plan for each query based on the existing storage structures.",
+      "explanation": "The query processing and optimization module analyzes a user's query and determines the most efficient way (the 'plan') to retrieve or update the data.",
       "options": [
         "query processing and optimization",
         "backup and recovery",
         "buffering or caching",
         "All of the above"
       ],
-      "correct": 0,
-      "explanation": "The query processing and optimization module analyzes a user's query and determines the most efficient way (the 'plan') to retrieve or update the data."
+      "correct": 0
     },
     {
       "q": "__________ models provide concepts that are close to the way many users perceive data.",
+      "explanation": "High-level (or conceptual) data models use concepts that are intuitive to human users, such as entities and relationships, rather than computer storage details.",
       "options": [
         "physical data",
         "conceptual data",
         "Low level",
         "High level"
       ],
-      "correct": 3,
-      "explanation": "High-level (or conceptual) data models use concepts that are intuitive to human users, such as entities and relationships, rather than computer storage details."
+      "correct": 3
     },
     {
       "q": "provide concepts that may be easily understood by end users but that are not too far removed from the way data is organized in computer storage.",
+      "explanation": "Implementation (or representational) data models, such as the Relational model, provide a balance by being user-friendly while remaining map-able to the physical storage structure.",
       "options": [
         "implementation data models",
         "physical data models",
         "conceptual data models",
         "All of the above."
       ],
-      "correct": 0,
-      "explanation": "Implementation (or representational) data models, such as the Relational model, provide a balance by being user-friendly while remaining map-able to the physical storage structure."
+      "correct": 0
     },
     {
       "q": "Define the following terms based on your understanding: \n- database catalog\n- program-data independence\n- user view\n- DBA\n- end user\n- meta-data.",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- database catalog",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- program-data independence",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- user view",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- DBA",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- end user",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     },
     {
       "q": "Define the following terms based on your understanding: \n\n- meta-data",
-      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data).",
-      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence."
+      "explanation": "These are fundamental concepts in Database Systems that distinguish a DBMS from traditional file systems. The catalog stores meta-data, which enables the abstraction required for program-data independence.",
+      "answer": "Information that describes the structure, types, and constraints of the data stored in the database (data about data)."
     }
   ]
 }

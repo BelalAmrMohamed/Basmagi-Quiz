@@ -36,6 +36,7 @@ let timeRemaining = 0;
 let viewMode = "grid";
 let autoSubmitTimeout = null;
 let quizStyle = "pagination"; // "pagination" | "vertical"
+let quizBaseUrl = null; // directory URL of the loaded quiz JSON file
 
 // === Performance: Debounce helpers ===
 let renderNavDebounce = null;
@@ -125,19 +126,285 @@ const escapeHtml = (unsafe) => {
 // === Helper: Get the model answer for an essay question ===
 const getEssayAnswer = (q) => q.answer ?? "";
 
+// === Text direction / language helpers ===
+const ARABIC_CHAR_RE =
+  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+const RTL_LANG_CODES = new Set(["ar", "fa", "ur", "he", "ps", "ku"]);
+
+const detectTextDirection = (text, explicitLang) => {
+  if (explicitLang) {
+    const code = String(explicitLang).toLowerCase().slice(0, 2);
+    return RTL_LANG_CODES.has(code) ? "rtl" : "ltr";
+  }
+  const str = String(text || "");
+  const arabicCount = (str.match(ARABIC_CHAR_RE) || []).length;
+  const latinCount = (str.match(/[a-zA-Z]/g) || []).length;
+  return arabicCount > latinCount ? "rtl" : "ltr";
+};
+
+const getAlignClass = (text, explicitLang) => {
+  const dir = detectTextDirection(text, explicitLang);
+  return dir === "rtl" ? "text-rtl" : "text-ltr";
+};
+
+const getQuestionLang = (q) => q?.lang || metaData?.lang || null;
+
+const isLargeFormatQuestion = (q) =>
+  !!(
+    q?.passage ||
+    q?.audio ||
+    q?.video ||
+    (q?.q && String(q.q).length > 400)
+  );
+
+const MEDIA_SKELETON_HTML = `
+  <div class="media-skeleton" aria-hidden="true">
+    <div class="skeleton-block skeleton-media"></div>
+    <span class="media-skeleton-label">جاري التحميل…</span>
+  </div>`;
+
+// Build candidate URLs for a media path (site-root assets, then quiz-folder).
+const getMediaUrlCandidates = (url) => {
+  const trimmed = String(url || "").trim();
+  if (!trimmed) return [];
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return [trimmed];
+
+  const candidates = [];
+  const add = (candidate) => {
+    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+  };
+
+  try {
+    if (trimmed.startsWith("/")) {
+      add(new URL(trimmed, window.location.origin).href);
+      return candidates;
+    }
+
+    // Convention: ./assets/… lives under public/assets/ (site root)
+    if (/^\.\/assets\//i.test(trimmed) || /^assets\//i.test(trimmed)) {
+      const sitePath = trimmed.replace(/^\.\//, "/");
+      add(new URL(sitePath, window.location.origin).href);
+    }
+
+    // Quiz-folder relative: co-located media (e.g. Test 1/Recording.mp3)
+    if (quizBaseUrl) {
+      add(new URL(trimmed, quizBaseUrl).href);
+      const fileName = trimmed.split("/").pop();
+      if (fileName && fileName !== trimmed) {
+        add(new URL(fileName, quizBaseUrl).href);
+      }
+    }
+
+    add(new URL(trimmed, window.location.href).href);
+  } catch {
+    add(trimmed);
+  }
+
+  return candidates;
+};
+
+const resolveMediaUrl = (url) => getMediaUrlCandidates(url)[0] || "";
+
+const getMediaMimeType = (url) => {
+  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  const types = {
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    m4a: "audio/mp4",
+    aac: "audio/aac",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogv: "video/ogg",
+    mov: "video/quicktime",
+  };
+  return types[ext] || "";
+};
+
+const renderMediaElement = (tag, className, mediaUrl) => {
+  const src = resolveMediaUrl(mediaUrl);
+  // Add cache-busting parameter to prevent stale service worker cache on initial load
+  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const mime = getMediaMimeType(src);
+  const typeAttr = mime ? ` type="${escapeHtml(mime)}"` : "";
+  const candidates = escapeHtml(JSON.stringify(getMediaUrlCandidates(mediaUrl)));
+  const raw = escapeHtml(mediaUrl);
+  const fallback =
+    tag === "audio"
+      ? "متصفحك لا يدعم تشغيل الصوت."
+      : "متصفحك لا يدعم تشغيل الفيديو.";
+  const playsinline = tag === "video" ? " playsinline" : "";
+  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHtml(srcWithCacheBust)}" data-media-raw="${raw}" data-media-candidates="${candidates}">
+        <source src="${escapeHtml(srcWithCacheBust)}"${typeAttr} />
+        ${fallback}
+      </${tag}>`;
+};
+
 // === Helper: Render Question Image ===
 const renderQuestionImage = (imageUrl) => {
   if (!imageUrl) return "";
+  const src = resolveMediaUrl(imageUrl);
+  // Add cache-busting parameter to prevent stale service worker cache on initial load
+  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const candidates = escapeHtml(JSON.stringify(getMediaUrlCandidates(imageUrl)));
   return `
-    <div class="question-image-container">
-      <img 
-        src="${escapeHtml(imageUrl)}" 
-        alt="Question context image" 
+    <div class="media-container question-image-container">
+      ${MEDIA_SKELETON_HTML}
+      <img
+        src="${escapeHtml(srcWithCacheBust)}"
+        alt="Question context image"
         class="question-image"
-        onerror="this.parentElement.style.display='none'"
+        data-media-raw="${escapeHtml(imageUrl)}"
+        data-media-candidates="${candidates}"
       />
     </div>
   `;
+};
+
+const renderQuestionAudio = (audioUrl) => {
+  if (!audioUrl) return "";
+  return `
+    <div class="media-container question-media-container question-audio-container">
+      ${MEDIA_SKELETON_HTML}
+      ${renderMediaElement("audio", "question-audio", audioUrl)}
+    </div>
+  `;
+};
+
+const renderQuestionVideo = (videoUrl) => {
+  if (!videoUrl) return "";
+  return `
+    <div class="media-container question-media-container question-video-container">
+      ${MEDIA_SKELETON_HTML}
+      ${renderMediaElement("video", "question-video", videoUrl)}
+    </div>
+  `;
+};
+
+const renderQuestionMedia = (q) =>
+  [
+    renderQuestionImage(q.image),
+    renderQuestionAudio(q.audio),
+    renderQuestionVideo(q.video),
+  ].join("");
+
+const renderReadingPassage = (passage, alignClass) => {
+  if (!passage) return "";
+  return `
+    <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
+      ${renderMarkdown(normalizeLiteralNewlines(passage))}
+    </div>
+  `;
+};
+
+const applyMediaSrc = (media, url) => {
+  // Add cache-busting to each candidate URL to bypass stale service worker cache
+  const urlWithCacheBust = url ? `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}` : url;
+  media.src = urlWithCacheBust;
+  const source = media.querySelector("source");
+  if (source) source.src = urlWithCacheBust;
+  if (media.tagName !== "IMG") media.load();
+};
+
+const initMediaSkeletons = (root = document) => {
+  root.querySelectorAll(".media-container").forEach((container) => {
+    const media = container.querySelector("img, audio, video");
+    const skeleton = container.querySelector(".media-skeleton");
+    if (!media || !skeleton) return;
+
+    let candidates = [];
+    try {
+      candidates = JSON.parse(media.dataset.mediaCandidates || "[]");
+    } catch {
+      candidates = getMediaUrlCandidates(media.dataset.mediaRaw || media.src);
+    }
+    if (!candidates.length) candidates = [media.src];
+
+    // Find current candidate index by comparing base URLs (without cache-bust param)
+    const currentUrl = media.src;
+    const currentBaseUrl = currentUrl ? currentUrl.split('?')[0] : '';
+    let candidateIdx = Math.max(
+      0,
+      candidates.findIndex((url) => url === currentBaseUrl || url === currentUrl),
+    );
+
+    const reveal = () => {
+      skeleton.classList.add("media-skeleton--hidden");
+      media.classList.add("media-loaded");
+    };
+
+    const showError = () => {
+      skeleton.classList.remove("media-skeleton--hidden");
+      skeleton.classList.add("media-skeleton--error");
+      skeleton.innerHTML =
+        '<span class="media-error">تعذّر تحميل الوسائط. تحقق من المسار أو الرابط.</span>';
+      console.warn(`[Media] Failed to load all candidates for: ${media.dataset.mediaRaw}`);
+    };
+
+    const tryNextCandidate = () => {
+      candidateIdx += 1;
+      if (candidateIdx < candidates.length) {
+        console.log(`[Media] Trying candidate ${candidateIdx}: ${candidates[candidateIdx]}`);
+        applyMediaSrc(media, candidates[candidateIdx]);
+        return true;
+      }
+      showError();
+      return false;
+    };
+
+    if (media.tagName === "IMG") {
+      const onLoad = () => reveal();
+      const onError = () => {
+        if (!tryNextCandidate()) return;
+        media.addEventListener("load", onLoad, { once: true });
+        media.addEventListener("error", onError, { once: true });
+      };
+      if (media.complete && media.naturalWidth > 0) {
+        reveal();
+      } else {
+        media.addEventListener("load", onLoad, { once: true });
+        media.addEventListener("error", onError, { once: true });
+      }
+      return;
+    }
+
+    // Audio/Video specific handling
+    const onMediaReady = () => {
+      if (media.readyState >= 1) reveal();
+    };
+    const onMediaError = () => {
+      console.warn(`[Media] Error loading: ${media.src}`);
+      if (!tryNextCandidate()) return;
+      // Reset listeners for next candidate
+      media.addEventListener("loadedmetadata", onMediaReady, { once: true });
+      media.addEventListener("canplay", onMediaReady, { once: true });
+      media.addEventListener("error", onMediaError, { once: true });
+    };
+
+    media.addEventListener("loadedmetadata", onMediaReady, { once: true });
+    media.addEventListener("loadeddata", onMediaReady, { once: true });
+    media.addEventListener("canplay", onMediaReady, { once: true });
+    media.addEventListener("error", onMediaError, { once: true });
+    
+    // Initial check
+    onMediaReady();
+
+    // Catch late metadata (innerHTML can finish loading before listeners attach)
+    requestAnimationFrame(() => {
+      if (!skeleton.classList.contains("media-skeleton--hidden")) onMediaReady();
+    });
+    
+    // Increased timeout to handle slow network connections better
+    setTimeout(() => {
+      if (
+        !skeleton.classList.contains("media-skeleton--hidden") &&
+        !skeleton.classList.contains("media-skeleton--error") &&
+        media.readyState >= 1
+      ) {
+        reveal();
+      }
+    }, 500);
+  });
 };
 
 // === Gamification Stats ===
@@ -196,10 +463,13 @@ async function loadExamModule(config) {
     const res = await fetch(quizUrl.href);
     if (!res.ok) throw new Error(`Failed to load quiz: ${res.status}`);
     const data = await res.json();
-    module = { questions: data.questions || [] };
+    module = { questions: data.questions || [], meta: data.meta || {} };
   } else {
     const loaded = await import(quizUrl.href);
-    module = { questions: loaded.questions || [] };
+    module = {
+      questions: loaded.questions || [],
+      meta: loaded.meta || {},
+    };
   }
 
   // Cache it
@@ -337,6 +607,10 @@ async function init() {
       questions = userQuiz.questions.map((q) => {
         const out = { q: q.q };
         if (q.image) out.image = q.image;
+        if (q.audio) out.audio = q.audio;
+        if (q.video) out.video = q.video;
+        if (q.passage) out.passage = q.passage;
+        if (q.lang) out.lang = q.lang;
         if (q.explanation) out.explanation = q.explanation;
         // Normalize essay: old 1-option → new answer field
         if (Array.isArray(q.options) && q.options.length === 1) {
@@ -354,6 +628,7 @@ async function init() {
       metaData = {
         title: userQuiz.meta?.title || userQuiz.title,
         category: "Your Quiz",
+        lang: userQuiz.meta?.lang || null,
       };
     } else {
       // === LOGIC FOR STANDARD EXAM (Original Code) ===
@@ -369,6 +644,10 @@ async function init() {
       // Use optimized loader with caching
       const module = await loadExamModule(config);
       questions = module.questions;
+      quizBaseUrl = new URL(
+        "./",
+        new URL(config.path, window.location.origin),
+      ).href;
 
       const parts = config.path.replace(/\\/g, "/").split("/");
       const filename = parts[parts.length - 1] || "";
@@ -378,6 +657,7 @@ async function init() {
       metaData = {
         title: config.title || fallbackTitle,
         category: parts[parts.length - 2] || "",
+        lang: module.meta?.lang || null,
       };
     }
 
@@ -812,18 +1092,26 @@ function buildVerticalQuestionCard(q, idx) {
     </div>
   `;
 
+  const qLang = getQuestionLang(q);
+  const alignClass = getAlignClass(q.q, qLang);
+  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
+  const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
+  const passageClass =
+    !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
+
   const header = `
     <div class="question-header">
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
-    ${renderQuestionImage(q.image)}
-    <h2 class="question-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
+    ${renderQuestionMedia(q)}
+    ${renderReadingPassage(q.passage, passageAlignClass)}
+    <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
   `;
 
   if (isEssay) {
     return `
-      <div class="question-card vertical-question-card" data-question-index="${idx}" id="q-${idx}">
+      <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
         ${header}
         <div class="essay-container">
           <label for="essayInput-${idx}" class="essay-label">Your Answer:</label>
@@ -847,8 +1135,9 @@ function buildVerticalQuestionCard(q, idx) {
         if (i === correctIdx) optionClass += " correct";
         if (isSelected && i !== correctIdx) optionClass += " wrong";
       }
+      const optAlign = getAlignClass(opt, qLang);
       return `
-        <div class="${optionClass}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
+        <div class="${optionClass} ${optAlign}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
           <input type="radio" name="answer-${idx}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
           <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
         </div>`;
@@ -856,7 +1145,7 @@ function buildVerticalQuestionCard(q, idx) {
     .join("");
 
   return `
-    <div class="question-card vertical-question-card" data-question-index="${idx}" id="q-${idx}">
+    <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
       ${header}
       <div class="options-grid">${optionsHtml}</div>
       <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${userSelected === undefined ? "disabled" : ""}>Check Answer</button>
@@ -885,6 +1174,7 @@ function renderAllQuestionsVertical() {
     .join("");
   els.questionContainer.classList.remove("loading");
   els.questionContainer.classList.add("vertical-style");
+  initMediaSkeletons(els.questionContainer);
 }
 
 // === Core: Render Question ===
@@ -961,18 +1251,26 @@ function renderQuestion() {
     </div>
   `;
 
+  const qLang = getQuestionLang(q);
+  const alignClass = getAlignClass(q.q, qLang);
+  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
+  const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
+  const passageClass =
+    !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
+
   const questionHeaderHTML = `
     <div class="question-header">
       <div class="question-number">سؤال ${currentIdx + 1} من ${questions.length}</div>
       ${actionButtons}
     </div>
-    ${renderQuestionImage(q.image)}
-    <h2 class="question-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
+    ${renderQuestionMedia(q)}
+    ${renderReadingPassage(q.passage, passageAlignClass)}
+    <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
   `;
 
   if (isEssay) {
     els.questionContainer.innerHTML = `
-      <div class="question-card">
+      <div class="question-card${largeClass}">
         ${questionHeaderHTML}
         <div class="essay-container">
           <label for="essayInput" class="essay-label">Your Answer:</label>
@@ -1010,12 +1308,13 @@ function renderQuestion() {
     `;
   } else {
     els.questionContainer.innerHTML = `
-      <div class="question-card">
+      <div class="question-card${largeClass}">
         ${questionHeaderHTML}
         <div class="options-grid">
           ${q.options
             .map((opt, i) => {
               const isSelected = userSelected === i;
+              const optAlign = getAlignClass(opt, qLang);
               let optionClass = "option-row";
               if (isSelected) optionClass += " selected";
               if (isLocked) {
@@ -1025,7 +1324,7 @@ function renderQuestion() {
               }
 
               return `
-              <div class="${optionClass}" ${
+              <div class="${optionClass} ${optAlign}" ${
                 isLocked ? "" : `onclick="window.handleSelect(${i})"`
               }>
                 <input type="radio" name="answer" ${
@@ -1051,6 +1350,8 @@ function renderQuestion() {
     `;
   }
 
+  els.questionContainer.classList.remove("loading");
+  initMediaSkeletons(els.questionContainer);
   updateNav();
 }
 
@@ -1424,6 +1725,7 @@ function resetQuizState() {
   lockedQuestions = {};
   timeElapsed = 0;
   timeRemaining = 0;
+  quizBaseUrl = null;
 }
 
 init();

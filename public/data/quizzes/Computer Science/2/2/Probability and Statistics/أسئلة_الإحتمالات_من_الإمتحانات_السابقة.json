@@ -16,168 +16,168 @@
   "questions": [
     {
       "q": "Define: Mutually exclusive events; Independent events; Probability Axioms.",
-      "answer": "**Mutually Exclusive Events:**\nTwo events $A$ and $B$ are mutually exclusive (disjoint) if they cannot occur at the same time, i.e., $A \\cap B = \\emptyset$, which means $P(A \\cap B) = 0$.\n\n**Independent Events:**\nTwo events $A$ and $B$ are independent if the occurrence of one does not affect the probability of the other, i.e., $P(A \\cap B) = P(A) \\times P(B)$.\n\n- **Probability Axioms (Kolmogorov's Axioms):**\n\n* Axiom 1: For any event $A$, $P(A) \\ge 0$.\n* Axiom 2: $P(S) = 1$, where $S$ is the sample space.\n* Axiom 3: For mutually exclusive events $A_1, A_2, \\dots$: $P(A_1 \\cup A_2 \\cup \\dots) = P(A_1) + P(A_2) + \\dots$",
-      "explanation": "These are fundamental definitions in probability theory. Mutually exclusive events share no outcomes. Independent events have no influence on each other's probability. The three Kolmogorov axioms form the foundation of modern probability theory: non-negativity, normalization, and countable additivity."
+      "explanation": "These are fundamental definitions in probability theory. Mutually exclusive events share no outcomes. Independent events have no influence on each other's probability. The three Kolmogorov axioms form the foundation of modern probability theory: non-negativity, normalization, and countable additivity.",
+      "answer": "**Mutually Exclusive Events:**\nTwo events $A$ and $B$ are mutually exclusive (disjoint) if they cannot occur at the same time, i.e., $A \\cap B = \\emptyset$, which means $P(A \\cap B) = 0$.\n\n**Independent Events:**\nTwo events $A$ and $B$ are independent if the occurrence of one does not affect the probability of the other, i.e., $P(A \\cap B) = P(A) \\times P(B)$.\n\n- **Probability Axioms (Kolmogorov's Axioms):**\n\n* Axiom 1: For any event $A$, $P(A) \\ge 0$.\n* Axiom 2: $P(S) = 1$, where $S$ is the sample space.\n* Axiom 3: For mutually exclusive events $A_1, A_2, \\dots$: $P(A_1 \\cup A_2 \\cup \\dots) = P(A_1) + P(A_2) + \\dots$"
     },
     {
       "q": "A sample of four electronic components is taken from the output of a production line. The probabilities of the various outcomes are calculated to be:\n\n**$P(0 \\text{ defectives}) = 0.6$**\n**$P(1 \\text{ defective}) = 0.2$**\n**$P(2 \\text{ defectives}) = 0.04$**\n**$P(3 \\text{ defectives}) = 0.03$**\n**$P(4 \\text{ defectives}) = 0.01$**\n\n**i) What is the probability of at least three defective?**",
-      "answer": "$$P(\\text{at least 3 defectives}) = P(3 \\text{ defectives}) + P(4 \\text{ defectives})$$\n$$= 0.03 + 0.01 = 0.04$$",
-      "explanation": "'At least three defective' means 3 or more defectives. So we sum $P(X = 3)$ and $P(X = 4)$: $0.03 + 0.01 = 0.04$."
+      "explanation": "'At least three defective' means 3 or more defectives. So we sum $P(X = 3)$ and $P(X = 4)$: $0.03 + 0.01 = 0.04$.",
+      "answer": "$$P(\\text{at least 3 defectives}) = P(3 \\text{ defectives}) + P(4 \\text{ defectives})$$\n$$= 0.03 + 0.01 = 0.04$$"
     },
     {
       "q": "Using the same probabilities as Question 2:\n    **ii) What is the probability of at most one defective?**",
-      "answer": "$$P(\\text{at most 1 defective}) = P(0 \\text{ defectives}) + P(1 \\text{ defective})$$\n$$= 0.6 + 0.2 = 0.8$$",
-      "explanation": "'At most one defective' means 0 or 1 defective. So we sum $P(X = 0)$ and $P(X = 1)$: $0.6 + 0.2 = 0.8$."
+      "explanation": "'At most one defective' means 0 or 1 defective. So we sum $P(X = 0)$ and $P(X = 1)$: $0.6 + 0.2 = 0.8$.",
+      "answer": "$$P(\\text{at most 1 defective}) = P(0 \\text{ defectives}) + P(1 \\text{ defective})$$\n$$= 0.6 + 0.2 = 0.8$$"
     },
     {
       "q": "Prove that $f(x) = \\binom{n}{x} p^x q^{n-x}$ ; $x = 0, 1, 2, \\dots, n$ is a mass function; find the moment generating function and $\\sigma$.",
-      "answer": "1. Proof that $f(x)$ is a mass function:\n\n**$f(x) \\ge 0$ for all $x$, since $p, q \\ge 0$ and $\\binom{n}{x} \\ge 0$.**\n**$\\sum_{x=0}^{n} \\binom{n}{x} p^x q^{n-x} = (p + q)^n = (p + (1-p))^n = 1^n = 1$ (by the Binomial Theorem)**\nSo $f(x)$ is a valid probability mass function.\n\n**Moment Generating Function (MGF):**\n$$M(t) = E[e^{tX}] = \\sum_{x=0}^{n} e^{tx} \\binom{n}{x} p^x q^{n-x}$$\n$$= \\sum_{x=0}^{n} \\binom{n}{x} (pe^t)^x q^{n-x} = (pe^t + q)^n$$\n\n**Standard Deviation ($\\sigma$):**\nFor the Binomial distribution:\nMean: $\\mu = np$\nVariance: $\\sigma^2 = npq$\nStandard Deviation: $\\sigma = \\sqrt{npq}$",
-      "explanation": "This is the Binomial distribution. The proof uses the Binomial Theorem. The MGF is derived by replacing $p$ with $pe^t$ in the binomial expansion. The variance follows from the second moment of the distribution."
+      "explanation": "This is the Binomial distribution. The proof uses the Binomial Theorem. The MGF is derived by replacing $p$ with $pe^t$ in the binomial expansion. The variance follows from the second moment of the distribution.",
+      "answer": "1. Proof that $f(x)$ is a mass function:\n\n**$f(x) \\ge 0$ for all $x$, since $p, q \\ge 0$ and $\\binom{n}{x} \\ge 0$.**\n**$\\sum_{x=0}^{n} \\binom{n}{x} p^x q^{n-x} = (p + q)^n = (p + (1-p))^n = 1^n = 1$ (by the Binomial Theorem)**\nSo $f(x)$ is a valid probability mass function.\n\n**Moment Generating Function (MGF):**\n$$M(t) = E[e^{tX}] = \\sum_{x=0}^{n} e^{tx} \\binom{n}{x} p^x q^{n-x}$$\n$$= \\sum_{x=0}^{n} \\binom{n}{x} (pe^t)^x q^{n-x} = (pe^t + q)^n$$\n\n**Standard Deviation ($\\sigma$):**\nFor the Binomial distribution:\nMean: $\\mu = np$\nVariance: $\\sigma^2 = npq$\nStandard Deviation: $\\sigma = \\sqrt{npq}$"
     },
     {
       "q": "Prove that $f(x) = \\frac{1}{b-a}$ for $a < x < b$ is a density function and find $E(x^7)$.",
-      "answer": "1. Proof that $f(x) = \\frac{1}{b-a}$ is a density function:\n\n**$f(x) = \\frac{1}{b-a} > 0$ for all $x \\in (a, b)$, since $b > a$.**\n**$\\int_{a}^{b} \\frac{1}{b-a} dx = \\left[ \\frac{x}{b-a} \\right]_{a}^{b} = \\frac{b-a}{b-a} = 1$**\nSo $f(x)$ is a valid probability density function (Uniform distribution on $[a, b]$).\n\n**Finding $E(x^7)$:**\n$$E(x^7) = \\int_{a}^{b} x^7 \\left(\\frac{1}{b-a}\\right) dx = \\frac{1}{b-a} \\left[ \\frac{x^8}{8} \\right]_{a}^{b} = \\frac{b^8 - a^8}{8(b-a)}$$",
-      "explanation": "This is the Uniform distribution on $[a, b]$. The proof requires showing non-negativity and that the integral over the support equals 1. $E(x^7)$ is computed by integrating $x^7 \\times f(x)$ over $[a, b]$."
+      "explanation": "This is the Uniform distribution on $[a, b]$. The proof requires showing non-negativity and that the integral over the support equals 1. $E(x^7)$ is computed by integrating $x^7 \\times f(x)$ over $[a, b]$.",
+      "answer": "1. Proof that $f(x) = \\frac{1}{b-a}$ is a density function:\n\n**$f(x) = \\frac{1}{b-a} > 0$ for all $x \\in (a, b)$, since $b > a$.**\n**$\\int_{a}^{b} \\frac{1}{b-a} dx = \\left[ \\frac{x}{b-a} \\right]_{a}^{b} = \\frac{b-a}{b-a} = 1$**\nSo $f(x)$ is a valid probability density function (Uniform distribution on $[a, b]$).\n\n**Finding $E(x^7)$:**\n$$E(x^7) = \\int_{a}^{b} x^7 \\left(\\frac{1}{b-a}\\right) dx = \\frac{1}{b-a} \\left[ \\frac{x^8}{8} \\right]_{a}^{b} = \\frac{b^8 - a^8}{8(b-a)}$$"
     },
     {
       "q": "If $A \\subset B$, Then $P(A|B) =$",
-      "correct": 3,
+      "explanation": "By definition, $P(A|B) = \\frac{P(A \\cap B)}{P(B)}$. Because $A \\subset B$, the intersection $A \\cap B = A$. Therefore, the equation simplifies to $\\frac{P(A)}{P(B)}$.",
       "options": [
         "$P(B|A)$1",
         "$P(A)$",
         "$P(B)$",
         "None of them"
       ],
-      "explanation": "By definition, $P(A|B) = \\frac{P(A \\cap B)}{P(B)}$. Because $A \\subset B$, the intersection $A \\cap B = A$. Therefore, the equation simplifies to $\\frac{P(A)}{P(B)}$."
+      "correct": 3
     },
     {
       "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ cannot occur, the events $A$ and $B$ are said to be:",
-      "correct": 1,
+      "explanation": "Events are mutually exclusive when they cannot occur simultaneously, meaning their intersection is empty ($A \\cap B = \\emptyset$) and $P(A \\cap B) = 0$.",
       "options": [
         "Independent",
         "Mutually exclusive",
         "$A \\subset B$",
         "$B \\subset A$"
       ],
-      "explanation": "Events are mutually exclusive when they cannot occur simultaneously, meaning their intersection is empty ($A \\cap B = \\emptyset$) and $P(A \\cap B) = 0$."
+      "correct": 1
     },
     {
       "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true:",
-      "correct": 3,
+      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\cap B^c) = P(A)P(B^c)$.",
       "options": [
         "$A$ and $B^c$ are independent",
         "$B$ and $A^c$ are independent",
         "$A^c$ and $B^c$ are independent",
         "All of the preceding"
       ],
-      "explanation": "If $A$ and $B$ are independent, their complements are also independent of the original events and each other. For example, $P(A \\cap B^c) = P(A)P(B^c)$."
+      "correct": 3
     },
     {
       "q": "A code consists of a digit chosen from $0$ to $6$ followed by a letter of the alphabet. What is the probability the code is `6Z`?",
-      "correct": 2,
+      "explanation": "There are 7 possible digits ($0, 1, 2, 3, 4, 5, 6$) and 26 letters. The probability of picking the specific digit '6' is $\\frac{1}{7}$ and the letter 'Z' is $\\frac{1}{26}$. Multiplying these independent probabilities gives $\\frac{1}{7} \\times \\frac{1}{26} = \\frac{1}{182}$.",
       "options": [
         "$1/260$",
         "$1/156$",
         "$1/182$",
         "None of them"
       ],
-      "explanation": "There are 7 possible digits ($0, 1, 2, 3, 4, 5, 6$) and 26 letters. The probability of picking the specific digit '6' is $\\frac{1}{7}$ and the letter 'Z' is $\\frac{1}{26}$. Multiplying these independent probabilities gives $\\frac{1}{7} \\times \\frac{1}{26} = \\frac{1}{182}$."
+      "correct": 2
     },
     {
       "q": "For a continuous random variable $X$ with a probability density function $f(x) = k(x^3 + 1)$ for $0 \\le x \\le 1$, then the value of $k$ is:",
-      "correct": 3,
+      "explanation": "The total area under the density function must equal 1.\n$$\\int_{0}^{1} k(x^3 + 1) dx = k\\left[ \\frac{x^4}{4} + x \\right]_{0}^{1} = k\\left( \\frac{1}{4} + 1 \\right) = \\frac{5k}{4} = 1$$\nSolving for $k$ gives $\\frac{4}{5}$.",
       "options": [
         "$1/2$",
         "$5/4$",
         "$1/3$",
         "$4/5$"
       ],
-      "explanation": "The total area under the density function must equal 1.\n$$\\int_{0}^{1} k(x^3 + 1) dx = k\\left[ \\frac{x^4}{4} + x \\right]_{0}^{1} = k\\left( \\frac{1}{4} + 1 \\right) = \\frac{5k}{4} = 1$$\nSolving for $k$ gives $\\frac{4}{5}$."
+      "correct": 3
     },
     {
       "q": "The value of $k$ when the probability mass function is given by $P(x) = \\frac{2x}{k}$ for $x \\in \\{1, 2, 3, 4\\}$ is:",
-      "correct": 1,
+      "explanation": "The sum of probabilities for all possible values of $x$ must equal 1.\n$$\\sum_{x=1}^{4} \\frac{2x}{k} = \\frac{2(1) + 2(2) + 2(3) + 2(4)}{k} = \\frac{20}{k} = 1$$\nTherefore, $k = 20$.",
       "options": [
         "$10$",
         "$20$",
         "$1/10$",
         "$1/20$"
       ],
-      "explanation": "The sum of probabilities for all possible values of $x$ must equal 1.\n$$\\sum_{x=1}^{4} \\frac{2x}{k} = \\frac{2(1) + 2(2) + 2(3) + 2(4)}{k} = \\frac{20}{k} = 1$$\nTherefore, $k = 20$."
+      "correct": 1
     },
     {
       "q": "The cumulative distribution function for the random variable $X$ for $f(x) = \\lambda e^{-\\lambda x}$ for $0 \\le x < \\infty$ is given by:",
-      "correct": 2,
+      "explanation": "The CDF is the integral of the PDF from $0$ to $x$:\n$$F(x) = \\int_{0}^{x} \\lambda e^{-\\lambda t} dt = \\left[ -e^{-\\lambda t} \\right]_{0}^{x} = 1 - e^{-\\lambda x}$$",
       "options": [
         "$e^{-x}$",
         "$e^{-x-1}$",
         "$1 - e^{-\\lambda x}$",
         "$4/5$"
       ],
-      "explanation": "The CDF is the integral of the PDF from $0$ to $x$:\n$$F(x) = \\int_{0}^{x} \\lambda e^{-\\lambda t} dt = \\left[ -e^{-\\lambda t} \\right]_{0}^{x} = 1 - e^{-\\lambda x}$$"
+      "correct": 2
     },
     {
       "q": "If $f(x) = 2 e^{-2x}$ for $0 \\le x < \\infty$, then the value of $x$ such that $P(X > x) = 0.1$ is:",
-      "correct": 0,
+      "explanation": "The tail probability $P(X > x) = 0.1$ implies:\n$$\\int_{x}^{\\infty} 2e^{-2t} dt = e^{-2x} = 0.1$$\nTaking the natural log of both sides: $-2x = \\ln(0.1) \\approx -2.302$. Dividing by $-2$ gives $x \\approx 1.15$.",
       "options": [
         "$1.15$",
         "$2.3$",
         "$-2.3$",
         "None of them"
       ],
-      "explanation": "The tail probability $P(X > x) = 0.1$ implies:\n$$\\int_{x}^{\\infty} 2e^{-2t} dt = e^{-2x} = 0.1$$\nTaking the natural log of both sides: $-2x = \\ln(0.1) \\approx -2.302$. Dividing by $-2$ gives $x \\approx 1.15$."
+      "correct": 0
     },
     {
       "q": "If the variance of $x$ is $v(x) = \\frac{1}{3}$, then $v\\left(\\frac{x}{3} - 5\\right) =$",
-      "correct": 3,
+      "explanation": "Variance follows the property $v(ax + b) = a^2 \\cdot v(x)$. Here, $a = \\frac{1}{3}$, so the variance is $\\left(\\frac{1}{3}\\right)^2 \\cdot v(x) = \\frac{1}{9} \\cdot \\frac{1}{3} = \\frac{1}{27}$.",
       "options": [
         "$1/3$",
         "$3$",
         "$27$",
         "$1/27$"
       ],
-      "explanation": "Variance follows the property $v(ax + b) = a^2 \\cdot v(x)$. Here, $a = \\frac{1}{3}$, so the variance is $\\left(\\frac{1}{3}\\right)^2 \\cdot v(x) = \\frac{1}{9} \\cdot \\frac{1}{3} = \\frac{1}{27}$."
+      "correct": 3
     },
     {
       "q": "$E(ax + b) =$",
-      "correct": 2,
+      "explanation": "By the linearity of expectation, the constant $a$ can be pulled out and the constant $b$ is added separately.",
       "options": [
         "$a E(x + b)$",
         "$a E(x)$",
         "$a E(x) + b$",
         "None of them"
       ],
-      "explanation": "By the linearity of expectation, the constant $a$ can be pulled out and the constant $b$ is added separately."
+      "correct": 2
     },
     {
       "q": "A company producing electric relays has three manufacturing plants producing $50\\%$, $30\\%$, and $20\\%$, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are $0.02$, $0.05$, and $0.01$, respectively.\n    **a) If a relay is selected at random from the output of the company, what is the probability that it is defective?**",
-      "answer": "$0.027$",
-      "explanation": "Using the total probability rule:\n$$P(D) = P(D|P_1)P(P_1) + P(D|P_2)P(P_2) + P(D|P_3)P(P_3)$$\n$$= (0.50 \\times 0.02) + (0.30 \\times 0.05) + (0.20 \\times 0.01) = 0.01 + 0.015 + 0.002 = 0.027$$"
+      "explanation": "Using the total probability rule:\n$$P(D) = P(D|P_1)P(P_1) + P(D|P_2)P(P_2) + P(D|P_3)P(P_3)$$\n$$= (0.50 \\times 0.02) + (0.30 \\times 0.05) + (0.20 \\times 0.01) = 0.01 + 0.015 + 0.002 = 0.027$$",
+      "answer": "$0.027$"
     },
     {
       "q": "Using the scenario from Question 16:\n    **b) If a relay selected at random is found to be defective, what is the probability that it was manufactured by plant 2?**",
-      "answer": "$0.556$",
-      "explanation": "Using Bayes' Theorem:\n$$P(P_2 | D) = \\frac{P(D | P_2) P(P_2)}{P(D)} = \\frac{0.05 \\times 0.30}{0.027} = \\frac{0.015}{0.027} \\approx 0.556$$"
+      "explanation": "Using Bayes' Theorem:\n$$P(P_2 | D) = \\frac{P(D | P_2) P(P_2)}{P(D)} = \\frac{0.05 \\times 0.30}{0.027} = \\frac{0.015}{0.027} \\approx 0.556$$",
+      "answer": "$0.556$"
     },
     {
       "q": "When Farid plays chess against his favorite computer program, he wins with probability $0.60$.\n    **a) What is the probability that Farid wins 6 games, if he plays 10 games?**",
-      "answer": "$$P(X = 6) = \\binom{10}{6} (0.60)^6 (0.40)^4 \\approx 0.2508$$",
-      "explanation": "This follows a binomial distribution: $P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k}$."
+      "explanation": "This follows a binomial distribution: $P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k}$.",
+      "answer": "$$P(X = 6) = \\binom{10}{6} (0.60)^6 (0.40)^4 \\approx 0.2508$$"
     },
     {
       "q": "Using the scenario from Question 18:\n    **b) What is the probability that Farid wins 2 games at most, if he plays 10 games?**",
-      "answer": "$$P(X \\le 2) = P(X = 0) + P(X = 1) + P(X = 2) \\approx 0.012$$",
-      "explanation": "This is the cumulative sum of probabilities for 0, 1, and 2 wins under the Binomial distribution."
+      "explanation": "This is the cumulative sum of probabilities for 0, 1, and 2 wins under the Binomial distribution.",
+      "answer": "$$P(X \\le 2) = P(X = 0) + P(X = 1) + P(X = 2) \\approx 0.012$$"
     },
     {
       "q": "Fares makes mistakes in class according to a Poisson process with an average rate of $\\lambda = 1.2$ mistakes per class.\n    **a) What is the probability that Fares makes 2 mistakes during one class?**",
-      "answer": "$0.216$",
-      "explanation": "Using the Poisson PMF $P(X=x) = \\frac{e^{-\\lambda} \\lambda^x}{x!}$. For $x=2$:\n$$P(X=2) = \\frac{e^{-1.2} (1.2)^2}{2!} \\approx 0.216$$"
+      "explanation": "Using the Poisson PMF $P(X=x) = \\frac{e^{-\\lambda} \\lambda^x}{x!}$. For $x=2$:\n$$P(X=2) = \\frac{e^{-1.2} (1.2)^2}{2!} \\approx 0.216$$",
+      "answer": "$0.216$"
     },
     {
       "q": "Using the scenario from Question 20:\n    **b) What is the probability that Fares makes one mistake at least during one class?**",
-      "answer": "$0.699$",
-      "explanation": "Using the complement rule:\n$$P(X \\ge 1) = 1 - P(X = 0) = 1 - e^{-1.2} \\approx 1 - 0.301 = 0.699$$"
+      "explanation": "Using the complement rule:\n$$P(X \\ge 1) = 1 - P(X = 0) = 1 - e^{-1.2} \\approx 1 - 0.301 = 0.699$$",
+      "answer": "$0.699$"
     },
     {
       "q": "If $P(A) = 0.2$, $P(B) = 0.3$ and $P(A \\cup B) = 0.4$, Determine the following probabilities:\n    **a. $P(A^c)$**\n    **b. $P(A \\cap B)$**\n    **c. $P(A^c \\cap B)$**\n    **d. $P(A \\cap B^c)$**\n    **e. $P((A \\cup B)^c)$**\n    **f. $P(A^c \\cup B)$**",
@@ -185,28 +185,28 @@
     },
     {
       "q": "The following data for two tests is given:\n    $X: 9, 5, 3, 7, 11$\n    $Y: 5, 6, 1, 9, 9$\n    **a) Compute the correlation coefficient $r$.**",
-      "answer": "$r \\approx 0.715$",
-      "explanation": "The Pearson correlation coefficient $r$ measures the linear association between $X$ and $Y$. Using the formula:\n$$r = \\frac{n\\sum xy - (\\sum x)(\\sum y)}{\\sqrt{[n\\sum x^2 - (\\sum x)^2][n\\sum y^2 - (\\sum y)^2]}}$$\nWith $n=5$, $\\sum x=35$, $\\sum y=30$, $\\sum x^2=285$, $\\sum y^2=224$, and $\\sum xy=240$:\n$$r = \\frac{5(240) - (35)(30)}{\\sqrt{[5(285) - 35^2][5(224) - 30^2]}} = \\frac{1200 - 1050}{\\sqrt{[1425 - 1225][1120 - 900]}}$$\n$$r = \\frac{150}{\\sqrt{200 \\times 220}} = \\frac{150}{\\sqrt{44000}} \\approx 0.715$$\nThis indicates a moderately strong positive linear relationship."
+      "explanation": "The Pearson correlation coefficient $r$ measures the linear association between $X$ and $Y$. Using the formula:\n$$r = \\frac{n\\sum xy - (\\sum x)(\\sum y)}{\\sqrt{[n\\sum x^2 - (\\sum x)^2][n\\sum y^2 - (\\sum y)^2]}}$$\nWith $n=5$, $\\sum x=35$, $\\sum y=30$, $\\sum x^2=285$, $\\sum y^2=224$, and $\\sum xy=240$:\n$$r = \\frac{5(240) - (35)(30)}{\\sqrt{[5(285) - 35^2][5(224) - 30^2]}} = \\frac{1200 - 1050}{\\sqrt{[1425 - 1225][1120 - 900]}}$$\n$$r = \\frac{150}{\\sqrt{200 \\times 220}} = \\frac{150}{\\sqrt{44000}} \\approx 0.715$$\nThis indicates a moderately strong positive linear relationship.",
+      "answer": "$r \\approx 0.715$"
     },
     {
       "q": "Using the data from Question 23, find the equation of the line of best fit.",
-      "answer": "$Y = 0.75 + 0.75X$",
-      "explanation": "The line of best fit is represented by $Y = a + bX$.\n\nA. Slope ($b$):\n$$b = \\frac{n\\sum xy - \\sum x \\sum y}{n\\sum x^2 - (\\sum x)^2} = \\frac{150}{200} = 0.75$$\nB. Intercept ($a$):\n$$\\bar{x} = \\frac{35}{5} = 7, \\quad \\bar{y} = \\frac{30}{5} = 6$$\n$$a = \\bar{y} - b\\bar{x} = 6 - (0.75 \\times 7) = 6 - 5.25 = 0.75$$\nThus, the equation is $Y = 0.75 + 0.75X$."
+      "explanation": "The line of best fit is represented by $Y = a + bX$.\n\nA. Slope ($b$):\n$$b = \\frac{n\\sum xy - \\sum x \\sum y}{n\\sum x^2 - (\\sum x)^2} = \\frac{150}{200} = 0.75$$\nB. Intercept ($a$):\n$$\\bar{x} = \\frac{35}{5} = 7, \\quad \\bar{y} = \\frac{30}{5} = 6$$\n$$a = \\bar{y} - b\\bar{x} = 6 - (0.75 \\times 7) = 6 - 5.25 = 0.75$$\nThus, the equation is $Y = 0.75 + 0.75X$.",
+      "answer": "$Y = 0.75 + 0.75X$"
     },
     {
       "q": "If the probability density function for a continuous random variable $X$ is $f(x) = 2x$ for $0 \\le x < 1$, find the cumulative distribution function (CDF).",
-      "answer": "$F(x) = x^2$ for $0 \\le x < 1$",
-      "explanation": "The CDF $F(x)$ is found by integrating the PDF from the lower bound to $x$:\n$$F(x) = \\int_{0}^{x} 2t \\, dt = [t^2]_0^x = x^2$$\nFor $x < 0$, $F(x) = 0$, and for $x \\ge 1$, $F(x) = 1$."
+      "explanation": "The CDF $F(x)$ is found by integrating the PDF from the lower bound to $x$:\n$$F(x) = \\int_{0}^{x} 2t \\, dt = [t^2]_0^x = x^2$$\nFor $x < 0$, $F(x) = 0$, and for $x \\ge 1$, $F(x) = 1$.",
+      "answer": "$F(x) = x^2$ for $0 \\le x < 1$"
     },
     {
       "q": "An introductory biology student wishes to determine the relationship between temperature ($X$) and heart rate ($Y$) in the common leopard frog.\n    Data:\n    $X \\text{ (}^\\circ\\text{C)}: 2, 4, 6, 8, 10, 12, 14, 16, 18$\n    $Y \\text{ (bpm)}: 5, 11, 11, 14, 22, 23, 32, 29, 32$\n    Compute the correlation coefficient $r$.",
-      "answer": "$r \\approx 0.963$",
-      "explanation": "Using the Pearson correlation formula with $n=9$:\n$\\sum X = 90$, $\\sum Y = 179$, $\\sum X^2 = 1140$, $\\sum Y^2 = 4365$, $\\sum XY = 2216$.\n$$r = \\frac{9(2216) - (90)(179)}{\\sqrt{[9(1140) - 90^2][9(4365) - 179^2]}}$$\n$$r = \\frac{19944 - 16110}{\\sqrt{[10260 - 8100][39285 - 32041]}} = \\frac{3834}{\\sqrt{2160 \\times 7244}} \\approx 0.969$$\n_(Note: Minor rounding differences may occur depending on intermediate step precision; the result indicates a very strong positive correlation)._"
+      "explanation": "Using the Pearson correlation formula with $n=9$:\n$\\sum X = 90$, $\\sum Y = 179$, $\\sum X^2 = 1140$, $\\sum Y^2 = 4365$, $\\sum XY = 2216$.\n$$r = \\frac{9(2216) - (90)(179)}{\\sqrt{[9(1140) - 90^2][9(4365) - 179^2]}}$$\n$$r = \\frac{19944 - 16110}{\\sqrt{[10260 - 8100][39285 - 32041]}} = \\frac{3834}{\\sqrt{2160 \\times 7244}} \\approx 0.969$$\n_(Note: Minor rounding differences may occur depending on intermediate step precision; the result indicates a very strong positive correlation)._",
+      "answer": "$r \\approx 0.963$"
     },
     {
       "q": "Using the regression equation $\\hat{Y} = 2.139 + 1.775X$ from the frog heart rate study, predict the heart rate when the temperature is $20^\\circ\\text{C}$.",
-      "answer": "$37.639 \\text{ bpm}$",
-      "explanation": "Substitute $X = 20$ into the linear regression equation:\n$$\\hat{Y} = 2.139 + 1.775(20)$$\n$$\\hat{Y} = 2.139 + 35.5 = 37.639$$"
+      "explanation": "Substitute $X = 20$ into the linear regression equation:\n$$\\hat{Y} = 2.139 + 1.775(20)$$\n$$\\hat{Y} = 2.139 + 35.5 = 37.639$$",
+      "answer": "$37.639 \\text{ bpm}$"
     },
     {
       "q": "Find the least-squares line ($Y = a + bX$) for a dataset where $n=5$, $\\sum x = 15$, $\\sum y = 100$, $\\sum x^2 = 55$, and $\\sum xy = 340$.",
@@ -214,8 +214,8 @@
     },
     {
       "q": "Find the Geometric Mean (G.M), Arithmetic Mean (A.M), Median, Mode, Standard Deviation ($\\sigma$), and Coefficient of Variation (C.V) for the following set: $25, 8, 15, 5, 7$.",
-      "answer": "1. **Sorted Data:** $5, 7, 8, 15, 25$ ($n = 5$). 2. **Arithmetic Mean (A.M):** $\\text{A.M} = \\frac{5 + 7 + 8 + 15 + 25}{5} = \\frac{60}{5} = 12$. 3. **Geometric Mean (G.M):** $\\text{G.M} = (5 \\times 7 \\times 8 \\times 15 \\times 25)^{1/5} = (105000)^{1/5} \\approx 10.23$. 4. **Median:** The middle value of the sorted data is $8$. 5. **Mode:** All values appear once, so the data is amodal (no mode). 6. **Standard Deviation ($\\sigma$):** \\* $\\sum x^2 = 25 + 49 + 64 + 225 + 625 = 988$.\n\n- $\\sigma^2 = \\frac{\\sum x^2}{n} - (\\text{A.M})^2 = \\frac{988}{5} - 12^2 = 197.6 - 144 = 53.6$.\n- $\\sigma = \\sqrt{53.6} \\approx 7.32$.\n\n**7. **Coefficient of Variation (C.V):** $\\text{C.V} = \\frac{\\sigma}{\\text{A.M}} \\times 100 = \\frac{7.32}{12} \\times 100 \\approx 61\\%$.**",
-      "explanation": "A.M is the standard average, while G.M is the $n$-th root of the product. The Median is the central value of a sorted list, and the Standard Deviation measures the spread of data. C.V expresses that spread as a percentage of the mean."
+      "explanation": "A.M is the standard average, while G.M is the $n$-th root of the product. The Median is the central value of a sorted list, and the Standard Deviation measures the spread of data. C.V expresses that spread as a percentage of the mean.",
+      "answer": "1. **Sorted Data:** $5, 7, 8, 15, 25$ ($n = 5$). 2. **Arithmetic Mean (A.M):** $\\text{A.M} = \\frac{5 + 7 + 8 + 15 + 25}{5} = \\frac{60}{5} = 12$. 3. **Geometric Mean (G.M):** $\\text{G.M} = (5 \\times 7 \\times 8 \\times 15 \\times 25)^{1/5} = (105000)^{1/5} \\approx 10.23$. 4. **Median:** The middle value of the sorted data is $8$. 5. **Mode:** All values appear once, so the data is amodal (no mode). 6. **Standard Deviation ($\\sigma$):** \\* $\\sum x^2 = 25 + 49 + 64 + 225 + 625 = 988$.\n\n- $\\sigma^2 = \\frac{\\sum x^2}{n} - (\\text{A.M})^2 = \\frac{988}{5} - 12^2 = 197.6 - 144 = 53.6$.\n- $\\sigma = \\sqrt{53.6} \\approx 7.32$.\n\n**7. **Coefficient of Variation (C.V):** $\\text{C.V} = \\frac{\\sigma}{\\text{A.M}} \\times 100 = \\frac{7.32}{12} \\times 100 \\approx 61\\%$.**"
     },
     {
       "q": "A sample of 49 cars had a mean time on the dealer's lot of 70 days. Assume the population standard deviation is 7 days. Find the best point estimate of the population mean and the 95% confidence interval. (Given: $z_{0.025} = 1.96$).",
@@ -235,13 +235,13 @@
     },
     {
       "q": "If $A \\subset B$, then $P(B|A) =$.",
-      "correct": 2,
       "options": [
         "$P(A|B)$",
         "$P(A)$",
         "$P(B)$",
         "None of them"
-      ]
+      ],
+      "correct": 2
     },
     {
       "q": "A code consists of a digit chosen from $0$ to $7$ followed by a letter of the alphabet. What is the probability the code is `7Z`?.",
@@ -297,63 +297,63 @@
     },
     {
       "q": "If A and B are two events such that $P(B) = 1/3$ and $P(A \\cap B) = 1/3$, what will be $P(A|B)$?",
-      "correct": 3,
       "options": [
         "1/4",
         "1/2",
         "1/3",
         "None of them"
-      ]
+      ],
+      "correct": 3
     },
     {
       "q": "A code consists of a digit chosen from 0 to 6 followed by a letter of the alphabet. What is the probability the code is 6Z?",
-      "correct": 2,
       "options": [
         "1/360",
         "1/456",
         "1/182",
         "None of them"
-      ]
+      ],
+      "correct": 2
     },
     {
       "q": "If $A \\subset B$, then $P(A^c | B) =$",
-      "correct": 1,
       "options": [
         "$\\frac{P(A \\cap B)}{P(A|B)}$",
         "$1 - P(A|B)$",
         "$\\frac{P(B|A)P(A)}{P(B)}$",
         "0"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "The value of $k$ when the probability mass function is given by $P(x) = \\frac{2x}{k}$ for $x = 1, 2, 3, 4$ is",
-      "correct": 1,
       "options": [
         "10",
         "20",
         "1/10",
         "1/20"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If the variance of x $v(x) = 3$, then $v(\\frac{x}{3} - 5) =$",
-      "correct": 2,
       "options": [
         "27",
         "3",
         "1/3",
         "1/27"
-      ]
+      ],
+      "correct": 2
     },
     {
       "q": "In Exton school, 60% of the boys play baseball and 24% play both baseball and football. What percent of those that play baseball also play football?",
-      "correct": 0,
       "options": [
         "40%",
         "60%",
         "80%",
         "24%"
-      ]
+      ],
+      "correct": 0
     },
     {
       "q": "Problem: A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.\n    **a) If a relay is selected at random, what is the probability that it is defective?**",
@@ -417,33 +417,33 @@
     },
     {
       "q": "If $A \\subset B$ then $P(A^c | B) =$",
-      "correct": 3,
       "options": [
         "1",
         "$P(A | B)$",
         "$P(B | A)$",
         "none of them"
-      ]
+      ],
+      "correct": 3
     },
     {
       "q": "The value of $k$ when the probability mass function is given by, $P(x) = \\frac{2x}{k}$ for $x = 1, 2, 3, 4$ is",
-      "correct": 1,
       "options": [
         "10",
         "20",
         "1/10",
         "1/20"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If the variance of $x$, $v(x) = 3$, then $v(3x - 5) =$",
-      "correct": 2,
       "options": [
         "1/3",
         "3",
         "27",
         "1/27"
-      ]
+      ],
+      "correct": 2
     },
     {
       "q": "If A and B are any two events such that $P(A)=1/3$, $P(B)=3/4$, $P(A \\cup B)=11/12$. Find $P(A \\cap B')$?",
@@ -479,163 +479,163 @@
     },
     {
       "q": "If $V(x) = 3$, then $V(\\frac{x}{3} - 3)$ = ...",
-      "correct": 0,
       "options": [
         "1/3",
         "-2",
         "1",
         "1/9"
-      ]
+      ],
+      "correct": 0
     },
     {
       "q": "For a continuous random variable X with a probability density function  \n    $$f(x) = \\begin{cases} k x^3 & 0 \\le x \\le 2 \\\\ 0 & \\text{o.w.} \\end{cases}$$  \n    then the value of $k$ is",
-      "correct": 1,
       "options": [
         "16",
         "1/4",
         "4",
         "1/16"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "The value of $k$ when the probability mass function is given by:  \n    $$P(x) = \\begin{cases} \\frac{x}{k} & x = 1, 2, 3, 4 \\\\ 0 & \\text{o.w.} \\end{cases}$$",
-      "correct": 1,
       "options": [
         "15",
         "10",
         "1/10",
         "1/15"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.\n    **i) If a relay is selected at random from the output of the company, what is the probability that it is defective?**",
-      "correct": 0,
       "options": [
         "0.027",
         "0.05",
         "0.002",
         "None of them"
-      ]
+      ],
+      "correct": 0
     },
     {
       "q": "A company producing electric relays has three manufacturing plants producing 50%, 30%, and 20%, respectively, of its product. Suppose that the probabilities that a relay manufactured by these plants is defective are 0.02, 0.05, and 0.01, respectively.\n    **ii) If a relay selected at random is found to be defective, what is the probability that it was manufactured by plant 2?**",
-      "correct": 3,
       "options": [
         "0.65",
         "0.22",
         "0.88",
         "None of them"
-      ]
+      ],
+      "correct": 3
     },
     {
       "q": "If $A \\subset B$, then $P(A^c | B)$ = ...",
-      "correct": 2,
       "options": [
         "$1 - P(B|A^c)$",
         "$P(A)$",
         "$1 - \\frac{P(A)}{P(B)}$",
         "None of them"
-      ]
+      ],
+      "correct": 2
     },
     {
       "q": "If $P(A) = 0.5$, and $P(B|A) = 1/3$, then $P(B^c|A)$ = ...",
-      "correct": 1,
       "options": [
         "1/3",
         "2/3",
         "0.5",
         "None of them"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If $A = B$, Then $P(A|B)$ = ...",
-      "correct": 1,
       "options": [
         "$P(B|A)$",
         "$P(A)$",
         "$P(B)$",
         "None of them"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If the knowledge that an event A has occurred implies that a second event B cannot occur, the events A and B are said to be",
-      "correct": 1,
       "options": [
         "Independent",
         "Mutually exclusive",
         "$A \\subset B$",
         "$B \\subset A$"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If A and B be independent events in a sample space S, then which of the following statement(s) are true",
-      "correct": 3,
       "options": [
         "A and $B^c$ are independent",
         "B and $A^c$ are independent",
         "$A^c$ and $B^c$ are independent",
         "All of preceding"
-      ]
+      ],
+      "correct": 3
     },
     {
       "q": "A code consists of a digit chosen from 0 to 5 followed by a letter of the alphabet. What is the probability the code is 5Z?",
-      "correct": 1,
       "options": [
         "1/260",
         "1/156",
         "1/182",
         "None of them"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "If A and B are mutually exclusive events, then $P(B|A)$ = ...",
-      "correct": 3,
       "options": [
         "$1 - P(A)$",
         "$P(B)$",
         "$P(A)$",
         "0"
-      ]
+      ],
+      "correct": 3
     },
     {
       "q": "If A and B are independent events, Then $P(A|B)$ = ...",
-      "correct": 1,
       "options": [
         "$P(B|A)$",
         "$P(A)$",
         "$P(B)$",
         "None of them"
-      ]
+      ],
+      "correct": 1
     },
     {
       "q": "The bag contains 5 red marbles, 4 green marbles and 1 blue marble. A marble is chosen at random from the bag and not replaced; then a second marble is chosen. What is the probability both marbles are green?",
-      "correct": 0,
       "options": [
         "2/15",
         "1/4",
         "0.5",
         "4/10"
-      ]
+      ],
+      "correct": 0
     },
     {
       "q": "In Exton School, 60% of the boys play baseball and 24% of the boys play baseball and football. What percent of those that play baseball also play football?",
-      "correct": 0,
       "options": [
         "0.4",
         "0.6",
         "0.24",
         "4"
-      ]
+      ],
+      "correct": 0
     },
     {
       "q": "If $B \\subset A$, then $P(A|B)$ = ...",
-      "correct": 0,
       "options": [
         "1",
         "$P(A)$",
         "$\\frac{P(A)}{P(B)}$",
         "0"
-      ]
+      ],
+      "correct": 0
     }
   ]
 }

@@ -16,256 +16,256 @@
   "questions": [
     {
       "q": "According to the lecture, what is the **main focus** of project management in information systems development?",
+      "explanation": "According to the lecture, **project management** focuses on two key outcomes:\n\n1. Ensuring system development projects meet customer **expectations**.\n2. Ensuring systems are delivered within **budget** and time **constraints**.\n\nIt is not focused on technical architecture or training alone.",
       "options": [
         "To design the technical architecture of the system",
         "To ensure projects meet customer expectations and are delivered within budget and time constraints",
         "To train the development team on programming languages",
         "To document all system requirements before development begins"
       ],
-      "correct": 1,
-      "explanation": "According to the lecture, **project management** focuses on two key outcomes:\n\n1. Ensuring system development projects meet customer **expectations**.\n2. Ensuring systems are delivered within **budget** and time **constraints**.\n\nIt is not focused on technical architecture or training alone."
+      "correct": 1
     },
     {
       "q": "In the SDLC model described in the lecture, the four **project management process phases** form an **outer ring** around the SDLC inner phases. Which of the following correctly lists those outer-ring phases in order?",
+      "explanation": "The lecture describes the project management process as an **outer ring** surrounding the SDLC inner phases, consisting of four phases in order:\n\n1. **Project Initiation**\n2. **Project Planning**\n3. **Project Execution**\n4. **Project Closedown**\n\nThe inner SDLC phases (Planning & Selection, Analysis, Design, Implementation) are distinct from these outer project management phases.",
       "options": [
         "Initiation → Planning → Execution → Closedown",
         "Planning → Analysis → Design → Implementation",
         "Initiation → Analysis → Execution → Closing",
         "Selection → Planning → Monitoring → Delivery"
       ],
-      "correct": 0,
-      "explanation": "The lecture describes the project management process as an **outer ring** surrounding the SDLC inner phases, consisting of four phases in order:\n\n1. **Project Initiation**\n2. **Project Planning**\n3. **Project Execution**\n4. **Project Closedown**\n\nThe inner SDLC phases (Planning & Selection, Analysis, Design, Implementation) are distinct from these outer project management phases."
+      "correct": 0
     },
     {
       "q": "According to the lecture, a **project** is best defined as:",
+      "explanation": "The lecture defines a **project** as:\n\n> A planned undertaking of related **activities**, having a **start** and an **end**, to reach an **objective**.\n\nThis distinguishes a project from ongoing operational work (which has no defined end) and from documents like the project charter.",
       "options": [
         "An ongoing set of operational tasks performed daily by an organization",
         "A planned undertaking of related activities, having a start and an end, to reach an objective",
         "A collection of software modules organized into a system",
         "A formal document that authorizes the existence of a system development effort"
       ],
-      "correct": 1,
-      "explanation": "The lecture defines a **project** as:\n\n> A planned undertaking of related **activities**, having a **start** and an **end**, to reach an **objective**.\n\nThis distinguishes a project from ongoing operational work (which has no defined end) and from documents like the project charter."
+      "correct": 1
     },
     {
       "q": "The lecture describes the **project manager** as a systems analyst with a diverse skill set. Which of the following is **NOT** listed as a responsibility of the project manager?",
+      "explanation": "According to the lecture, the **project manager** is responsible for:\n- Initiating, planning, executing, and closing down a project.\n- Leadership, management, customer relations, technical problem solving, conflict management, team management, and risk management.\n\nWriting source code is **not** listed as a project manager responsibility — that is the role of developers.",
       "options": [
         "Initiating and planning the project",
         "Executing and closing down the project",
         "Writing the source code for all system modules",
         "Managing conflict within the project team"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture, the **project manager** is responsible for:\n- Initiating, planning, executing, and closing down a project.\n- Leadership, management, customer relations, technical problem solving, conflict management, team management, and risk management.\n\nWriting source code is **not** listed as a project manager responsibility — that is the role of developers."
+      "correct": 2
     },
     {
       "q": "According to the lecture's table of project manager activities, which activity specifically involves **'managing the project team for effective team performance'** and includes peer evaluations and team building?",
+      "explanation": "The lecture's activity table defines **Team management** as:\n\n> Managing the project team for effective team performance.\n\nSkills include: communication within and between teams, **peer evaluations**, conflict resolution, **team building**, and self-management.\n\nThis is distinct from **Conflict management**, which focuses specifically on keeping conflict at an appropriate level, not overall team performance.",
       "options": [
         "Leadership",
         "Conflict management",
         "Team management",
         "Risk and change management"
       ],
-      "correct": 2,
-      "explanation": "The lecture's activity table defines **Team management** as:\n\n> Managing the project team for effective team performance.\n\nSkills include: communication within and between teams, **peer evaluations**, conflict resolution, **team building**, and self-management.\n\nThis is distinct from **Conflict management**, which focuses specifically on keeping conflict at an appropriate level, not overall team performance."
+      "correct": 2
     },
     {
       "q": "According to the lecture, which activity in the project manager's skill set involves **'environmental scanning'** and **'risk and opportunity identification'**?",
+      "explanation": "The lecture's table lists **Risk and change management** as the activity that involves:\n- **Environmental scanning**\n- Risk and opportunity **identification and assessment**\n- Forecasting\n- Resource redeployment\n\nThis is the activity specifically focused on identifying and managing risks and day-to-day changes throughout the project.",
       "options": [
         "Conflict management",
         "Technical problem solving",
         "Customer relations",
         "Risk and change management"
       ],
-      "correct": 3,
-      "explanation": "The lecture's table lists **Risk and change management** as the activity that involves:\n- **Environmental scanning**\n- Risk and opportunity **identification and assessment**\n- Forecasting\n- Resource redeployment\n\nThis is the activity specifically focused on identifying and managing risks and day-to-day changes throughout the project."
+      "correct": 3
     },
     {
       "q": "The **main focus** of the **Initiation Phase** in the project management process is:",
+      "explanation": "According to the lecture, the **Initiation Phase** has a main focus of **'Define the project'** and includes:\n- Defining project **objectives**\n- Identifying **stakeholders**\n- **Feasibility analysis**\n- Creating a **project charter**\n\nThe other options describe the Planning Phase (detailed plan/WBS), Execution Phase (implement the plan), and Closing Phase (finish and evaluate).",
       "options": [
         "Implement the plan and coordinate the team",
         "Develop a detailed plan including WBS and cost estimation",
         "Define the project through objectives, stakeholders, feasibility, and a project charter",
         "Finalize delivery, documentation, and performance evaluation"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture, the **Initiation Phase** has a main focus of **'Define the project'** and includes:\n- Defining project **objectives**\n- Identifying **stakeholders**\n- **Feasibility analysis**\n- Creating a **project charter**\n\nThe other options describe the Planning Phase (detailed plan/WBS), Execution Phase (implement the plan), and Closing Phase (finish and evaluate)."
+      "correct": 2
     },
     {
       "q": "Which phase of the project management process includes **Work Breakdown Structure (WBS) creation**, time estimation, cost estimation, and schedule development?",
+      "explanation": "The lecture specifies that the **Planning Phase** (Main Focus: Develop detailed plan) includes:\n- **Work Breakdown Structure (WBS)** creation\n- **Time estimation**\n- **Cost estimation**\n- **Schedule development**\n\nThese activities produce the detailed project plan that guides execution.",
       "options": [
         "Initiation Phase",
         "Planning Phase",
         "Execution Phase",
         "Closing Phase"
       ],
-      "correct": 1,
-      "explanation": "The lecture specifies that the **Planning Phase** (Main Focus: Develop detailed plan) includes:\n- **Work Breakdown Structure (WBS)** creation\n- **Time estimation**\n- **Cost estimation**\n- **Schedule development**\n\nThese activities produce the detailed project plan that guides execution."
+      "correct": 1
     },
     {
       "q": "A feasibility study is conducted **before** the system is constructed.",
+      "explanation": "This statement is **True**.\n\nAccording to the lecture, the **feasibility study** takes place **before** the system is constructed. It is a critical step conducted by the project manager to determine whether the project is viable — both **technically** and **economically** — within the given constraints.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 0,
-      "explanation": "This statement is **True**.\n\nAccording to the lecture, the **feasibility study** takes place **before** the system is constructed. It is a critical step conducted by the project manager to determine whether the project is viable — both **technically** and **economically** — within the given constraints."
+      "correct": 0
     },
     {
       "q": "The lecture identifies five dimensions of feasibility. Which of the following correctly matches each dimension to its question?",
+      "explanation": "According to the lecture, the five feasibility dimensions are:\n\n| Dimension | Key Question |\n|---|---|\n| **Technical** | Do we have the technology and skills? |\n| **Economic** | Do the benefits justify the cost? |\n| **Legal** | Is it allowed by law? |\n| **Operational** | Will people/users use and accept it? |\n| **Schedule** | Can we finish it on time? |\n\nOption B correctly maps **Economic** and **Operational**. The other options swap definitions.",
       "options": [
         "Technical = Can we finish on time? / Schedule = Do we have the technology?",
         "Economic = Do the benefits justify the cost? / Operational = Will users accept it?",
         "Legal = Do the benefits justify the cost? / Economic = Is it allowed by law?",
         "Operational = Do we have the technology? / Technical = Will users accept it?"
       ],
-      "correct": 1,
-      "explanation": "According to the lecture, the five feasibility dimensions are:\n\n| Dimension | Key Question |\n|---|---|\n| **Technical** | Do we have the technology and skills? |\n| **Economic** | Do the benefits justify the cost? |\n| **Legal** | Is it allowed by law? |\n| **Operational** | Will people/users use and accept it? |\n| **Schedule** | Can we finish it on time? |\n\nOption B correctly maps **Economic** and **Operational**. The other options swap definitions."
+      "correct": 1
     },
     {
       "q": "The **Legal** dimension of a feasibility study asks: *'Do the benefits justify the cost?'*",
+      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n- **Legal** feasibility asks: *'Is it allowed by law?'*\n- **Economic** feasibility asks: *'Do the benefits justify the cost?'*\n\nThe two dimensions are distinct — confusing them is a common error.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 1,
-      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n- **Legal** feasibility asks: *'Is it allowed by law?'*\n- **Economic** feasibility asks: *'Do the benefits justify the cost?'*\n\nThe two dimensions are distinct — confusing them is a common error."
+      "correct": 1
     },
     {
       "q": "According to the lecture, what is a **System Service Request (SSR)**?",
+      "explanation": "The lecture defines a **System Service Request (SSR)** as:\n\n> A formal request submitted to the IT department to **develop a new system**, **enhance an existing system**, or **solve a system problem**.\n\nThe other options describe:\n- Option A → **Project Charter**\n- Option C → **Project Workbook**\n- Option D → **Project Charter** (also)",
       "options": [
         "A formal document that authorizes a project manager to allocate resources",
         "A formal request submitted to the IT department to develop a new system, enhance an existing system, or solve a system problem",
         "A repository for all project correspondence, inputs, and deliverables",
         "A short document that describes project objectives for internal and external stakeholders"
       ],
-      "correct": 1,
-      "explanation": "The lecture defines a **System Service Request (SSR)** as:\n\n> A formal request submitted to the IT department to **develop a new system**, **enhance an existing system**, or **solve a system problem**.\n\nThe other options describe:\n- Option A → **Project Charter**\n- Option C → **Project Workbook**\n- Option D → **Project Charter** (also)"
+      "correct": 1
     },
     {
       "q": "In the Pine Valley Furniture SSR example from the lecture, what **type of request** did Juanita Lopez submit?",
+      "explanation": "According to the lecture's SSR example for Pine Valley Furniture, Juanita Lopez checked the box for **New System**.\n\nThe SSR form offered three request types:\n- [X] **New System** ✅\n- [ ] System Enhancement\n- [ ] System Error Correction\n\nHer problem statement also confirms this: she requested *'a completely new information system'* to handle purchasing transactions.",
       "options": [
         "System Enhancement",
         "System Error Correction",
         "New System",
         "System Replacement"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture's SSR example for Pine Valley Furniture, Juanita Lopez checked the box for **New System**.\n\nThe SSR form offered three request types:\n- [X] **New System** ✅\n- [ ] System Enhancement\n- [ ] System Error Correction\n\nHer problem statement also confirms this: she requested *'a completely new information system'* to handle purchasing transactions."
+      "correct": 2
     },
     {
       "q": "In the Pine Valley Furniture SSR example, what was the **urgency level** selected by Juanita Lopez?",
+      "explanation": "According to the lecture's SSR example, Juanita Lopez selected:\n\n> [X] **Business losses can be tolerated until new system installed**\n\nThis indicates a non-emergency situation where the current system is inadequate but operations can continue temporarily. The *'Immediate'* option was not selected.",
       "options": [
         "Immediate — Operations are impaired or opportunity lost",
         "Problems exist, but can be worked around",
         "Business losses can be tolerated until new system installed",
         "No urgency — future planning only"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture's SSR example, Juanita Lopez selected:\n\n> [X] **Business losses can be tolerated until new system installed**\n\nThis indicates a non-emergency situation where the current system is inadequate but operations can continue temporarily. The *'Immediate'* option was not selected."
+      "correct": 2
     },
     {
       "q": "According to the lecture, which of the following is **not** listed as a required element of a **Project Charter**?",
+      "explanation": "The lecture lists the following contents of a **Project Charter**:\n- Project title and date of authorization\n- Project manager name and contact info\n- Customer name and contact info\n- Project start and completion dates\n- Project description and objectives\n- Key assumptions or approach\n- Key stakeholders, roles, and responsibilities\n\n**Detailed source code documentation** is not part of the project charter — it belongs to technical documentation produced during development.",
       "options": [
         "Project title and date of authorization",
         "Project manager name and contact information",
         "Detailed source code documentation",
         "Key stakeholders, roles, and responsibilities"
       ],
-      "correct": 2,
-      "explanation": "The lecture lists the following contents of a **Project Charter**:\n- Project title and date of authorization\n- Project manager name and contact info\n- Customer name and contact info\n- Project start and completion dates\n- Project description and objectives\n- Key assumptions or approach\n- Key stakeholders, roles, and responsibilities\n\n**Detailed source code documentation** is not part of the project charter — it belongs to technical documentation produced during development."
+      "correct": 2
     },
     {
       "q": "A **Project Charter** is described in the lecture as a *long, detailed technical document* prepared only for internal stakeholders.",
+      "explanation": "This statement is **False**.\n\nAccording to the lecture, a **Project Charter** is:\n- A **short, high-level** document (not long or detailed)\n- Prepared for **both internal and external stakeholders** (not internal only)\n\nIts purpose is to authorize the project and provide the project manager with authority to allocate resources and execute the project.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 1,
-      "explanation": "This statement is **False**.\n\nAccording to the lecture, a **Project Charter** is:\n- A **short, high-level** document (not long or detailed)\n- Prepared for **both internal and external stakeholders** (not internal only)\n\nIts purpose is to authorize the project and provide the project manager with authority to allocate resources and execute the project."
+      "correct": 1
     },
     {
       "q": "In the Pine Valley Furniture Project Charter example, who is listed as the **Project Manager**?",
+      "explanation": "According to the Pine Valley Furniture Project Charter example in the lecture:\n\n| Role | Person |\n|---|---|\n| **Project Manager** | **Jim Woo** (jwoo@pvf.com) |\n| Project Sponsor | Jackie Judson |\n| CIO | Alex Datta |\n| Director, Purchasing | Sal Divario |\n\nJim Woo's responsibility is listed as *'Plan, Monitor, Execute Project'*.",
       "options": [
         "Jackie Judson",
         "Alex Datta",
         "Jim Woo",
         "Sal Divario"
       ],
-      "correct": 2,
-      "explanation": "According to the Pine Valley Furniture Project Charter example in the lecture:\n\n| Role | Person |\n|---|---|\n| **Project Manager** | **Jim Woo** (jwoo@pvf.com) |\n| Project Sponsor | Jackie Judson |\n| CIO | Alex Datta |\n| Director, Purchasing | Sal Divario |\n\nJim Woo's responsibility is listed as *'Plan, Monitor, Execute Project'*."
+      "correct": 2
     },
     {
       "q": "According to the lecture, which of the following best describes a **Project Workbook**?",
+      "explanation": "The lecture defines a **Project Workbook** as:\n\n> An online or hard-copy **repository** for all project correspondence, inputs, outputs, deliverables, procedures, and standards.\n\nIt is used for:\n- Performing **project audits**\n- Orienting **new team members**\n- Communicating with **management and customers**\n- Identifying **future projects**\n- Performing **post-project reviews**",
       "options": [
         "A Gantt chart used to schedule project tasks and milestones",
         "A formal document that authorizes the existence of a project",
         "An online or hard-copy repository for all project correspondence, inputs, outputs, deliverables, procedures, and standards",
         "A request form submitted to the IT department to initiate system development"
       ],
-      "correct": 2,
-      "explanation": "The lecture defines a **Project Workbook** as:\n\n> An online or hard-copy **repository** for all project correspondence, inputs, outputs, deliverables, procedures, and standards.\n\nIt is used for:\n- Performing **project audits**\n- Orienting **new team members**\n- Communicating with **management and customers**\n- Identifying **future projects**\n- Performing **post-project reviews**"
+      "correct": 2
     },
     {
       "q": "The lecture states that a Project Workbook can be stored as a collection of online documents using tools such as Google Docs, Dropbox, or SharePoint.",
+      "explanation": "This statement is **True**.\n\nAccording to the lecture, the **Project Workbook** can be stored as a *'collection of online documents'* using:\n- **Google Docs**\n- **Dropbox**\n- **SharePoint**\n- An intranet website\n- Or some other shared and secure online document repository.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 0,
-      "explanation": "This statement is **True**.\n\nAccording to the lecture, the **Project Workbook** can be stored as a *'collection of online documents'* using:\n- **Google Docs**\n- **Dropbox**\n- **SharePoint**\n- An intranet website\n- Or some other shared and secure online document repository."
+      "correct": 0
     },
     {
       "q": "The lecture lists the Project Workbook as being used during which phases of the project?",
+      "explanation": "According to the lecture, the **Project Workbook** is used during:\n- **Planning**\n- **Execution**\n- **Monitoring**\n- **Closing**\n\nIt serves as a reference throughout the project lifecycle, not just at the start or end.",
       "options": [
         "Initiation and Planning only",
         "Execution and Closing only",
         "Planning, Execution, Monitoring, and Closing",
         "All four SDLC inner phases only"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture, the **Project Workbook** is used during:\n- **Planning**\n- **Execution**\n- **Monitoring**\n- **Closing**\n\nIt serves as a reference throughout the project lifecycle, not just at the start or end."
+      "correct": 2
     },
     {
       "q": "According to the lecture, what are the **three deliverables** produced during the project initiation/planning stage?",
+      "explanation": "The lecture explicitly lists the three deliverables as:\n\n1. **SSR** (System Service Request)\n2. **Charter** (Project Charter)\n3. **Workbook** (Project Workbook — including a shared link for the project manager and all team members)\n\nThese represent the formal outputs of the initiation and early planning stages.",
       "options": [
         "WBS, Gantt Chart, Risk Register",
         "SSR, Charter, Workbook",
         "Feasibility Study, Project Plan, Test Report",
         "Project Charter, System Design, Implementation Plan"
       ],
-      "correct": 1,
-      "explanation": "The lecture explicitly lists the three deliverables as:\n\n1. **SSR** (System Service Request)\n2. **Charter** (Project Charter)\n3. **Workbook** (Project Workbook — including a shared link for the project manager and all team members)\n\nThese represent the formal outputs of the initiation and early planning stages."
+      "correct": 1
     },
     {
       "q": "Compare and contrast the **System Service Request (SSR)** and the **Project Charter** as described in the lecture. What is the purpose of each, who initiates it, and what does each contain?",
-      "answer": "**System Service Request (SSR):**\n- **Purpose:** A formal request submitted *to* the IT department to develop a new system, enhance an existing system, or solve a system problem.\n- **Initiated by:** A user or department (e.g., Juanita Lopez from Purchasing at Pine Valley Furniture).\n- **Contains:** Name and contact of the requestor, a problem statement, liaison and sponsor information, type of request (new/enhancement/error correction), urgency level, and the service request description.\n\n**Project Charter:**\n- **Purpose:** A formal document that *authorizes* the existence of a project and gives the project manager authority to allocate resources and execute the project.\n- **Initiated by:** The organization/management, typically after the SSR is approved.\n- **Contains:** Project title and authorization date, project manager and customer contact info, start/completion dates, project description and objectives, key assumptions, and stakeholders with roles and responsibilities.\n\n**Key Distinction:**\nThe SSR is the *input* — the request that triggers a project. The Project Charter is the *output* of the initiation phase — the authorization document that officially launches the project. The SSR asks *'Should we do this?'* while the Charter says *'We are doing this.'*",
-      "explanation": "The lecture introduces both documents in the context of the project initiation phase. The **SSR** is described as a formal request form with a problem statement and urgency level (illustrated by the Pine Valley Furniture purchasing example). The **Project Charter** is described as a short, high-level authorization document for both internal and external stakeholders (illustrated by the Customer Tracking System example). Together, they mark the formal beginning of a project lifecycle."
+      "explanation": "The lecture introduces both documents in the context of the project initiation phase. The **SSR** is described as a formal request form with a problem statement and urgency level (illustrated by the Pine Valley Furniture purchasing example). The **Project Charter** is described as a short, high-level authorization document for both internal and external stakeholders (illustrated by the Customer Tracking System example). Together, they mark the formal beginning of a project lifecycle.",
+      "answer": "**System Service Request (SSR):**\n- **Purpose:** A formal request submitted *to* the IT department to develop a new system, enhance an existing system, or solve a system problem.\n- **Initiated by:** A user or department (e.g., Juanita Lopez from Purchasing at Pine Valley Furniture).\n- **Contains:** Name and contact of the requestor, a problem statement, liaison and sponsor information, type of request (new/enhancement/error correction), urgency level, and the service request description.\n\n**Project Charter:**\n- **Purpose:** A formal document that *authorizes* the existence of a project and gives the project manager authority to allocate resources and execute the project.\n- **Initiated by:** The organization/management, typically after the SSR is approved.\n- **Contains:** Project title and authorization date, project manager and customer contact info, start/completion dates, project description and objectives, key assumptions, and stakeholders with roles and responsibilities.\n\n**Key Distinction:**\nThe SSR is the *input* — the request that triggers a project. The Project Charter is the *output* of the initiation phase — the authorization document that officially launches the project. The SSR asks *'Should we do this?'* while the Charter says *'We are doing this.'*"
     },
     {
       "q": "The **Execution Phase** of the project management process includes which of the following activities?",
+      "explanation": "According to the lecture, the **Execution Phase** (Main Focus: Implement the plan) includes:\n- **Team coordination**\n- **Monitoring progress**\n- **Conflict resolution**\n- **Quality management**\n\nThe other options describe:\n- Option A → **Planning Phase**\n- Option B → **Initiation Phase**\n- Option D → **Closing Phase**",
       "options": [
         "Creating the WBS, estimating costs, and developing a schedule",
         "Defining objectives, identifying stakeholders, and conducting feasibility analysis",
         "Team coordination, monitoring progress, conflict resolution, and quality management",
         "Final delivery, documentation, and performance evaluation"
       ],
-      "correct": 2,
-      "explanation": "According to the lecture, the **Execution Phase** (Main Focus: Implement the plan) includes:\n- **Team coordination**\n- **Monitoring progress**\n- **Conflict resolution**\n- **Quality management**\n\nThe other options describe:\n- Option A → **Planning Phase**\n- Option B → **Initiation Phase**\n- Option D → **Closing Phase**"
+      "correct": 2
     },
     {
       "q": "The **feasibility study** is conducted by the **customer**, not the project manager.",
+      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n\n> A feasibility study is conducted by the **project manager**.\n\nIt is a critical step the project manager performs to determine whether the project is viable — both technically and economically — before the system is constructed. The customer submits the **SSR**, but the feasibility study is the project manager's responsibility.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 1,
-      "explanation": "This statement is **False**.\n\nAccording to the lecture:\n\n> A feasibility study is conducted by the **project manager**.\n\nIt is a critical step the project manager performs to determine whether the project is viable — both technically and economically — before the system is constructed. The customer submits the **SSR**, but the feasibility study is the project manager's responsibility."
+      "correct": 1
     },
     {
       "q": "Define the concept of a **deliverable** as used in the lecture, and explain how deliverables relate to the SDLC phases and the project management process.",
-      "answer": "**Deliverable** is defined in the lecture as:\n\n> The final product in each **phase** of the SDLC.\n\nDeliverables represent the tangible outputs produced at the end of each phase, which can be reviewed and approved before moving to the next phase. They serve as checkpoints that confirm work has been completed.\n\n**Relationship to the SDLC and project management:**\n- Each of the four SDLC inner phases (Planning & Selection, Analysis, Design, Implementation) produces one or more deliverables.\n- The project management process tracks, manages, and ensures the quality of these deliverables across all phases.\n- In the initiation/planning stage specifically, the lecture lists three key deliverables: the **SSR**, the **Project Charter**, and the **Project Workbook**.\n- Deliverables also serve as inputs to the **Project Workbook**, which archives all project outputs for auditing, communication, and reference.",
-      "explanation": "The lecture introduces **deliverables** as a core concept under project management, specifically linking them to SDLC phases. The lecture also provides concrete examples of deliverables (SSR, Charter, Workbook) and explains how the Project Workbook serves as a repository for all deliverables throughout the project."
+      "explanation": "The lecture introduces **deliverables** as a core concept under project management, specifically linking them to SDLC phases. The lecture also provides concrete examples of deliverables (SSR, Charter, Workbook) and explains how the Project Workbook serves as a repository for all deliverables throughout the project.",
+      "answer": "**Deliverable** is defined in the lecture as:\n\n> The final product in each **phase** of the SDLC.\n\nDeliverables represent the tangible outputs produced at the end of each phase, which can be reviewed and approved before moving to the next phase. They serve as checkpoints that confirm work has been completed.\n\n**Relationship to the SDLC and project management:**\n- Each of the four SDLC inner phases (Planning & Selection, Analysis, Design, Implementation) produces one or more deliverables.\n- The project management process tracks, manages, and ensures the quality of these deliverables across all phases.\n- In the initiation/planning stage specifically, the lecture lists three key deliverables: the **SSR**, the **Project Charter**, and the **Project Workbook**.\n- Deliverables also serve as inputs to the **Project Workbook**, which archives all project outputs for auditing, communication, and reference."
     }
   ]
 }

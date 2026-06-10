@@ -15,276 +15,276 @@
   "questions": [
     {
       "q": "Which of the following represents the number of elements currently stored in a dynamic array?",
+      "explanation": "In a dynamic array, **size** refers to the number of elements currently in the array, while **capacity** refers to the total amount of space allocated in memory.",
       "options": [
         "arr",
         "capacity",
         "size",
         "All of above"
       ],
-      "correct": 2,
-      "explanation": "In a dynamic array, **size** refers to the number of elements currently in the array, while **capacity** refers to the total amount of space allocated in memory."
+      "correct": 2
     },
     {
       "q": "The access time for the $10^{th}$ element in a single-dimensional array is calculated as:",
+      "explanation": "To find the address of the $n^{th}$ element, the formula is: \n$$Address = BaseAddress + (Offset \\times ElementSize)$$\nWhere the offset is determined by the target position minus the starting index of the array.",
       "options": [
         "$arr\\_addr + elem\\_size \\times (10 - first\\_index)$",
         "$first\\_index + 10$",
         "$arr\\_addr + elem\\_size \\times (9 - first\\_index)$",
         "$arr\\_addr + 10$"
       ],
-      "correct": 0,
-      "explanation": "To find the address of the $n^{th}$ element, the formula is: \n$$Address = BaseAddress + (Offset \\times ElementSize)$$\nWhere the offset is determined by the target position minus the starting index of the array."
+      "correct": 0
     },
     {
       "q": "What is the access time required to retrieve the element located at position $(5, 9)$ in a 7-row and 12-column array?",
+      "explanation": "In row-major order for a 2D array, the formula to find the offset is: \n$$((row - 1) \\times total\\_columns) + (column - 1)$$\nGiven row 5 and column 9 in a 12-column grid, the calculation is $((5-1) \\times 12) + (9-1)$.",
       "options": [
         "$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 12 + (9 - 1))$",
         "$arr\\_addr + elem\\_size \\times ((5 - 1) \\times 7 + (9 - 1))$",
         "$arr\\_addr + elem\\_size \\times (5 \\times 9)$$",
         "$arr\\_addr + elem\\_size \\times ((7 - 1) \\times 12 + (5 - 1))$"
       ],
-      "correct": 0,
-      "explanation": "In row-major order for a 2D array, the formula to find the offset is: \n$$((row - 1) \\times total\\_columns) + (column - 1)$$\nGiven row 5 and column 9 in a 12-column grid, the calculation is $((5-1) \\times 12) + (9-1)$."
+      "correct": 0
     },
     {
       "q": "What is the time complexity of adding three elements to the end of a dynamic array (assuming capacity is sufficient)?",
+      "explanation": "Adding an element to the end of an array is a constant time operation, $$O(1)$$. Adding a fixed number of elements (like 3) remains $$O(1)$$ because the time does not scale with the total size of the array ($n$).",
       "options": [
         "$O(3)$ ",
         "$O(n)$ ",
         "$O(1)$ ",
         "$O(n^2)$"
       ],
-      "correct": 2,
-      "explanation": "Adding an element to the end of an array is a constant time operation, $$O(1)$$. Adding a fixed number of elements (like 3) remains $$O(1)$$ because the time does not scale with the total size of the array ($n$)."
+      "correct": 2
     },
     {
       "q": "Arrange the following lines in the correct order to implement a `PushBack(key)` function for a Singly Linked List with a tail pointer:\n\n| ID | Code |\n|---|---|\n| a | `node.next = nil` |\n| b | `node ← new node` |\n| c | `tail.next ← node` |\n| d | `node.key ← key` |\n| e | `if tail == nil:` |\n| f | `tail ← node` |\n| g | `else:` |\n| h | `head ← node ← tail ← node` |",
+      "explanation": "The correct logic is:\n1. Initialize: Create node (**b**), set key (**d**), and set next to null (**a**).\n2. Check for empty list: If tail is null (**e**), then both head and tail point to the new node (**h**).\n3. Otherwise: Use the `else` block (**g**), link current tail to new node (**c**), then update tail pointer to new node (**f**).",
       "options": [
         "b, d, a, c, e, f, g, h",
         "b, d, a, c, e, g, h, f",
         "b, d, a, e, h, g, c, f",
         "b, d, a, e, c, g, f, h"
       ],
-      "correct": 2,
-      "explanation": "The correct logic is:\n1. Initialize: Create node (**b**), set key (**d**), and set next to null (**a**).\n2. Check for empty list: If tail is null (**e**), then both head and tail point to the new node (**h**).\n3. Otherwise: Use the `else` block (**g**), link current tail to new node (**c**), then update tail pointer to new node (**f**)."
+      "correct": 2
     },
     {
       "q": "What is the time complexity to find element e's position in a Priority Queue (Linked List based)?",
+      "explanation": "In a linked list, searching for a specific element requires a linear scan from the head to the target position, resulting in $$O(n)$$ complexity.",
       "options": [
         "$O(1)$ ",
         "$O(n)$ ",
         "$O(n \\log n)$ ",
         "$O(n^2)$"
       ],
-      "correct": 1,
-      "explanation": "In a linked list, searching for a specific element requires a linear scan from the head to the target position, resulting in $$O(n)$$ complexity."
+      "correct": 1
     },
     {
       "q": "Which operation is used to set the value of an element at index $i$ in a dynamic array?",
+      "explanation": "The `Set(index, value)` operation specifically targets an existing index to update its stored value.",
       "options": [
         "Get(i)",
         "Set(i, val)",
         "PushBack(val)",
         "insert(i)"
       ],
-      "correct": 1,
-      "explanation": "The `Set(index, value)` operation specifically targets an existing index to update its stored value."
+      "correct": 1
     },
     {
       "q": "What happens if the `tail` variable is already pointing to a node when the `PushFront(key)` function is executed?",
+      "explanation": "`PushFront` adds a node to the beginning of the list. Since the list was not empty, the `tail` remains pointing to the same last node it was previously pointing to.",
       "options": [
         "The tail variable is updated to point to the new node",
         "The tail variable is not updated",
         "The tail variable is set to None",
         "The tail variable is deleted from memory"
       ],
-      "correct": 1,
-      "explanation": "`PushFront` adds a node to the beginning of the list. Since the list was not empty, the `tail` remains pointing to the same last node it was previously pointing to."
+      "correct": 1
     },
     {
       "q": "`Find(Key)` in a singly linked list with a tail is....",
+      "explanation": "A tail pointer allows $$O(1)$$ access to the last element, but finding a specific key still requires traversing the list from the head, which is an $$O(n)$$ operation.",
       "options": [
         "$O(1)$",
         "$O(n)$",
         "$O(n \\log n)$",
         "$O(n^2)$"
       ],
-      "correct": 1,
-      "explanation": "A tail pointer allows $$O(1)$$ access to the last element, but finding a specific key still requires traversing the list from the head, which is an $$O(n)$$ operation."
+      "correct": 1
     },
     {
       "q": "`AddAfter(Node, Key)` in a singly linked list with a tail is....",
+      "explanation": "If you already have a pointer to the specific node, inserting a new node immediately after it only involves updating two pointers, which is a constant time $$O(1)$$ operation.",
       "options": [
         "$O(1)$",
         "$O(n)$",
         "$O(n \\log n)$",
         "$O(n^2)$"
       ],
-      "correct": 0,
-      "explanation": "If you already have a pointer to the specific node, inserting a new node immediately after it only involves updating two pointers, which is a constant time $$O(1)$$ operation."
+      "correct": 0
     },
     {
       "q": "`Erase(Key)` in a single linked list with a tail is....",
+      "explanation": "To erase a specific key, you must first locate it (which takes $$O(n)$$) and also locate its predecessor to update the pointers. Therefore, the overall complexity is $$O(n)$$.",
       "options": [
         "$O(1)$",
         "$O(n)$",
         "$O(n \\log n)$",
         "$O(n^2)$"
       ],
-      "correct": 1,
-      "explanation": "To erase a specific key, you must first locate it (which takes $$O(n)$$) and also locate its predecessor to update the pointers. Therefore, the overall complexity is $$O(n)$$."
+      "correct": 1
     },
     {
       "q": "`TopBack()` in a single Linked List with a tail is....",
+      "explanation": "`TopBack` returns the last element. With a tail pointer, this is a direct access operation taking $$O(1)$$ time.",
       "options": [
         "$O(1)$",
         "$O(n)$",
         "$O(n \\log n)$",
         "$O(n^2)$"
       ],
-      "correct": 0,
-      "explanation": "`TopBack` returns the last element. With a tail pointer, this is a direct access operation taking $$O(1)$$ time."
+      "correct": 0
     },
     {
       "q": "Arrange the following lines in the correct order for a `Find(key)` function in a Linked List:\n\n| ID | Code |\n|---|---|\n| a | `p = head` |\n| b | `if head is null:` |\n| c | `while p is not null:` |\n| d | `if p.key == key:` |\n| e | `p = p.next` |\n| f | `return null` |\n| g | `return p` |\n| h | `return null` |",
+      "explanation": "The logic follows: Check if empty (**b**) and return null if so (**f**). Initialize pointer to head (**a**). Enter loop while pointer isn't null (**c**). Check if key matches (**d**); if so, return pointer (**g**). Otherwise, move to next node (**e**). If the loop finishes without a match, return null (**h**).",
       "options": [
         "b, f, a, c, d, g, e, h",
         "f, b, a, c, d, g, e, h",
         "b, a, f, c, d, g, e, h",
         "f, a, b, c, d, g, e, h"
       ],
-      "correct": 0,
-      "explanation": "The logic follows: Check if empty (**b**) and return null if so (**f**). Initialize pointer to head (**a**). Enter loop while pointer isn't null (**c**). Check if key matches (**d**); if so, return pointer (**g**). Otherwise, move to next node (**e**). If the loop finishes without a match, return null (**h**)."
+      "correct": 0
     },
     {
       "q": "removing and returning the **first added** key is known as....",
+      "explanation": "A Stack follows LIFO (Last-In-First-Out). You can only remove the *most recently* added item via `Pop()`. Accessing or removing the *first* added item (the bottom) is not a standard Stack operation.",
       "options": [
         "Key Pop()",
         "Key Enqueue()",
         "Key Top()",
         "Not allowed"
       ],
-      "correct": 3,
-      "explanation": "A Stack follows LIFO (Last-In-First-Out). You can only remove the *most recently* added item via `Pop()`. Accessing or removing the *first* added item (the bottom) is not a standard Stack operation."
+      "correct": 3
     },
     {
       "q": "Stack operations are known as....",
+      "explanation": "Stacks use LIFO, meaning the last element added is the first one to be removed.",
       "options": [
         "FIFO (First-In-First-Out)",
         "LIFO (Last-In-First-Out)",
         "MILO (Middle-In-Last-Out)",
         "None of the above"
       ],
-      "correct": 1,
-      "explanation": "Stacks use LIFO, meaning the last element added is the first one to be removed."
+      "correct": 1
     },
     {
       "q": "`PushBack(Key)` in a singly linked list **without** a tail is....",
+      "explanation": "Without a tail pointer, you must traverse from the head through all $n$ nodes to reach the end, making the operation $$O(n)$$.",
       "options": [
         "$O(1)$",
         "$O(n)$",
         "$O(n \\log n)$",
         "$O(n^2)$"
       ],
-      "correct": 1,
-      "explanation": "Without a tail pointer, you must traverse from the head through all $n$ nodes to reach the end, making the operation $$O(n)$$."
+      "correct": 1
     },
     {
       "q": "To return and remove the most recently added key in a *stack*, we use .... function.",
+      "explanation": "`Pop()` is the standard operation to remove and return the top (most recent) element of a stack.",
       "options": [
         "Key Top()",
         "Pop(key)",
         "Push(key)",
         "Pop()"
       ],
-      "correct": 3,
-      "explanation": "`Pop()` is the standard operation to remove and return the top (most recent) element of a stack."
+      "correct": 3
     },
     {
       "q": "`Stack's` operation `Push()` is implemented using Linked List .... function.",
+      "explanation": "In a singly linked list, `PushFront` is always $$O(1)$$. `PushBack` is only $$O(1)$$ if a tail pointer exists. Therefore, `PushFront` is the most reliable way to implement a Stack's Push.",
       "options": [
         "PushBack(key)",
         "PushFront(key)",
         "PopBack()",
         "Both a and b"
       ],
-      "correct": 1,
-      "explanation": "In a singly linked list, `PushFront` is always $$O(1)$$. `PushBack` is only $$O(1)$$ if a tail pointer exists. Therefore, `PushFront` is the most reliable way to implement a Stack's Push."
+      "correct": 1
     },
     {
       "q": "A Queue's `Enqueue` operation is implemented using which function?",
+      "explanation": "`Enqueue` adds elements to the back of the queue, which corresponds to the `PushBack` operation in a list.",
       "options": [
         "AddAfter(Key)",
         "AddBefore(Key)",
         "PushFront(Key)",
         "PushBack(key)"
       ],
-      "correct": 3,
-      "explanation": "`Enqueue` adds elements to the back of the queue, which corresponds to the `PushBack` operation in a list."
+      "correct": 3
     },
     {
       "q": "The `Dequeue` operation in a Queue is implemented using which function?",
+      "explanation": "`Dequeue` typically involves looking at the front element (`TopFront`) and then removing it (`PopFront`). In many implementations, these are combined or used sequentially.",
       "options": [
         "TopFront()",
         "PopFront()",
         "PushBack(key)",
         "Both a and b"
       ],
-      "correct": 3,
-      "explanation": "`Dequeue` typically involves looking at the front element (`TopFront`) and then removing it (`PopFront`). In many implementations, these are combined or used sequentially."
+      "correct": 3
     },
     {
       "q": "What happens when the size of a dynamic array exceeds its current capacity?",
+      "explanation": "Dynamic arrays handle growth by allocating a new block of memory (usually double the size), copying the old elements to the new block, and then deleting the old block.",
       "options": [
         "The program crashes",
         "The array is automatically resized in place",
         "A new, larger array is allocated, and the elements are copied over",
         "The excess elements are automatically removed"
       ],
-      "correct": 2,
-      "explanation": "Dynamic arrays handle growth by allocating a new block of memory (usually double the size), copying the old elements to the new block, and then deleting the old block."
+      "correct": 2
     },
     {
       "q": "In a Queue implementation using an array, the Queue is considered empty when:",
+      "explanation": "When the `read` pointer (front) and `write` pointer (rear) are at the same position, it indicates there are no elements currently in the queue.",
       "options": [
         "read = 0",
         "write = 0",
         "read = write",
         "read < write"
       ],
-      "correct": 2,
-      "explanation": "When the `read` pointer (front) and `write` pointer (rear) are at the same position, it indicates there are no elements currently in the queue."
+      "correct": 2
     },
     {
       "q": "What is the overall time complexity of the `Insert(e)` operation in a priority queue implemented as a **sorted array**?",
+      "explanation": "While finding the correct position can be done in $$O(\\log n)$$ using binary search, shifting the existing elements to make room for the new element takes $$O(n)$$ in the worst case.",
       "options": [
         "$O(1)$",
         "$O(\\log n)$",
         "$O(n)$",
         "$O(n \\log n)$"
       ],
-      "correct": 2,
-      "explanation": "While finding the correct position can be done in $$O(\\log n)$$ using binary search, shifting the existing elements to make room for the new element takes $$O(n)$$ in the worst case."
+      "correct": 2
     },
     {
       "q": "In a dynamic array, when does the 'index out of range' error message typically appear?",
+      "explanation": "An index is valid only if it is within the range of elements actually stored ($0$ to $size - 1$). Therefore, an index less than 0 or greater than/equal to size is out of range.",
       "options": [
         "When the index provided is less than 0",
         "When the index provided is greater than or equal to the capacity",
         "When the index is greater than or equal to the size",
         "Both a or c"
       ],
-      "correct": 3,
-      "explanation": "An index is valid only if it is within the range of elements actually stored ($0$ to $size - 1$). Therefore, an index less than 0 or greater than/equal to size is out of range."
+      "correct": 3
     },
     {
       "q": "One of the drawbacks of dynamic arrays is that some memory space is wasted due to over-allocation.",
+      "explanation": "This is True. To ensure amortized $$O(1)$$ insertions, dynamic arrays allocate more capacity than is immediately needed, leading to 'wasted' or unused memory overhead.",
       "options": [
         "True",
         "False"
       ],
-      "correct": 0,
-      "explanation": "This is True. To ensure amortized $$O(1)$$ insertions, dynamic arrays allocate more capacity than is immediately needed, leading to 'wasted' or unused memory overhead."
+      "correct": 0
     }
   ]
 }
