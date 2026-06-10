@@ -80,7 +80,7 @@ Output ONLY the JSON in the following format:
 `;
 
 // Specialized English AI Prompt for language-focused quizzes
-const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full markdown, tables, code blocks, LaTeX notation, audio references, video references, paragraph contexts, and supports language-specific fields like 'lang' and 'difficulty'.
+const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full markdown, tables, code blocks, LaTeX notation, audio references, video references, paragraph contexts, and supports language-specific field: 'lang'.
 
 Please ensure the following:
 - Preserve exact wording from original materials for language precision

@@ -743,6 +743,62 @@ export async function exportToQuiz(config, questions) {
     to   { opacity: 1; transform: scale(1); }
   }
 
+  /* ── Reading Passage ──────────────────────────────────────────── */
+  .reading-passage {
+    margin-bottom: 22px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--gradient-start);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .passage-content {
+    color: var(--text-primary);
+    font-size: 15px;
+  }
+
+  /* ── Media Containers ────────────────────────────────────────── */
+  .question-media-container {
+    margin-bottom: 22px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-secondary);
+    padding: 8px;
+  }
+
+  .question-audio-container {
+    display: flex;
+    align-items: center;
+    min-height: 60px;
+    justify-content: center;
+  }
+
+  .question-video-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 240px;
+  }
+
+  .question-audio,
+  .question-video {
+    width: 100%;
+    max-width: 100%;
+    border-radius: var(--radius-sm);
+  }
+
+  .question-audio {
+    height: 40px;
+  }
+
+  .question-video {
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
   /* ── Options ─────────────────────────────────────────────────── */
   .options {
     display: flex;
@@ -1737,6 +1793,47 @@ export async function exportToQuiz(config, questions) {
         </div>
       \`;
     },
+
+    renderQuestionAudio(audioUrl, qIndex) {
+      if (!audioUrl) return "";
+      return \`
+        <div class="question-media-container question-audio-container">
+          <audio controls preload="metadata" class="question-audio" id="audio\${qIndex}">
+            <source src="\${this.escapeHTML(audioUrl)}" />
+            Your browser doesn't support audio playback.
+          </audio>
+        </div>
+      \`;
+    },
+
+    renderQuestionVideo(videoUrl, qIndex) {
+      if (!videoUrl) return "";
+      return \`
+        <div class="question-media-container question-video-container">
+          <video controls preload="metadata" playsinline class="question-video" id="video\${qIndex}">
+            <source src="\${this.escapeHTML(videoUrl)}" />
+            Your browser doesn't support video playback.
+          </video>
+        </div>
+      \`;
+    },
+
+    renderReadingPassage(passage) {
+      if (!passage) return "";
+      return \`
+        <div class="reading-passage" role="region" aria-label="Reading passage">
+          <div class="passage-content">\${renderMarkdown(normalizeLiteralNewlines(passage))}</div>
+        </div>
+      \`;
+    },
+
+    renderQuestionMedia(q, qIndex) {
+      return [
+        this.renderQuestionImage(q.image, qIndex),
+        this.renderQuestionAudio(q.audio, qIndex),
+        this.renderQuestionVideo(q.video, qIndex),
+      ].join("");
+    },
   
     setupImageLoading() {
       document.querySelectorAll('.question-image').forEach(img => {
@@ -1842,8 +1939,9 @@ export async function exportToQuiz(config, questions) {
             </div>
           </div>
           
-          \${this.renderQuestionImage(q.image, i)}
+          \${this.renderReadingPassage(q.passage)}
           <div class="question-text">\${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+          \${this.renderQuestionMedia(q, i)}
           \${optionsHtml}
           \${explanationHtml}
         </div>

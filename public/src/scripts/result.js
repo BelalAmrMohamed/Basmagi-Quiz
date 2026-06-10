@@ -36,13 +36,137 @@ if (!result) window.location.href = "/";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getEssayAnswer = (q) => q.answer ?? "";
 
+// ── Language & Text Direction Helpers ─────────────────────────────────────────
+const ARABIC_CHAR_RE =
+  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
+const RTL_LANG_CODES = new Set(["ar", "fa", "ur", "he", "ps", "ku"]);
+
+const detectTextDirection = (text, explicitLang) => {
+  if (explicitLang) {
+    const code = String(explicitLang).toLowerCase().slice(0, 2);
+    return RTL_LANG_CODES.has(code) ? "rtl" : "ltr";
+  }
+  const str = String(text || "");
+  const arabicCount = (str.match(ARABIC_CHAR_RE) || []).length;
+  const latinCount = (str.match(/[a-zA-Z]/g) || []).length;
+  return arabicCount > latinCount ? "rtl" : "ltr";
+};
+
+const getAlignClass = (text, explicitLang) => {
+  const dir = detectTextDirection(text, explicitLang);
+  return dir === "rtl" ? "text-rtl" : "text-ltr";
+};
+
+const getQuestionLang = (q) => q?.lang || null;
+
+// ── Media Helper Functions ────────────────────────────────────────────────────
+const getMediaUrlCandidates = (url) => {
+  const trimmed = String(url || "").trim();
+  if (!trimmed) return [];
+  if (/^(https?:|data:|blob:)/i.test(trimmed)) return [trimmed];
+
+  const candidates = [];
+  const add = (candidate) => {
+    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+  };
+
+  try {
+    if (trimmed.startsWith("/")) {
+      add(new URL(trimmed, window.location.origin).href);
+      return candidates;
+    }
+
+    // Convention: ./assets/… lives under public/assets/ (site root)
+    if (/^\.\/assets\//i.test(trimmed) || /^assets\//i.test(trimmed)) {
+      const sitePath = trimmed.replace(/^\.\//, "/");
+      add(new URL(sitePath, window.location.origin).href);
+    }
+
+    add(new URL(trimmed, window.location.href).href);
+  } catch {
+    add(trimmed);
+  }
+
+  return candidates;
+};
+
+const resolveMediaUrl = (url) => getMediaUrlCandidates(url)[0] || "";
+
+const getMediaMimeType = (url) => {
+  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
+  const types = {
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    m4a: "audio/mp4",
+    aac: "audio/aac",
+    mp4: "video/mp4",
+    webm: "video/webm",
+    ogv: "video/ogg",
+    mov: "video/quicktime",
+  };
+  return types[ext] || "";
+};
+
+const renderMediaElement = (tag, className, mediaUrl) => {
+  const src = resolveMediaUrl(mediaUrl);
+  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const mime = getMediaMimeType(src);
+  const typeAttr = mime ? ` type="${escapeHTML(mime)}"` : "";
+  const fallback =
+    tag === "audio"
+      ? "Your browser doesn't support audio playback."
+      : "Your browser doesn't support video playback.";
+  const playsinline = tag === "video" ? " playsinline" : "";
+  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHTML(srcWithCacheBust)}">
+    <source src="${escapeHTML(srcWithCacheBust)}"${typeAttr} />
+    ${fallback}
+  </${tag}>`;
+};
+
 const renderQuestionImage = (imageUrl) => {
   if (!imageUrl) return "";
+  const src = resolveMediaUrl(imageUrl);
+  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
   return `
-    <div class="question-image-container">
-      <img src="${escapeHTML(imageUrl)}" alt="Question image"
+    <div class="media-container question-image-container">
+      <img src="${escapeHTML(srcWithCacheBust)}" alt="Question image"
            class="question-image" onerror="this.parentElement.style.display='none'"/>
     </div>`;
+};
+
+const renderQuestionAudio = (audioUrl) => {
+  if (!audioUrl) return "";
+  return `
+    <div class="media-container question-media-container question-audio-container">
+      ${renderMediaElement("audio", "question-audio", audioUrl)}
+    </div>
+  `;
+};
+
+const renderQuestionVideo = (videoUrl) => {
+  if (!videoUrl) return "";
+  return `
+    <div class="media-container question-media-container question-video-container">
+      ${renderMediaElement("video", "question-video", videoUrl)}
+    </div>
+  `;
+};
+
+const renderQuestionMedia = (q) =>
+  [
+    renderQuestionImage(q.image),
+    renderQuestionAudio(q.audio),
+    renderQuestionVideo(q.video),
+  ].join("");
+
+const renderReadingPassage = (passage, alignClass) => {
+  if (!passage) return "";
+  return `
+    <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
+      ${renderMarkdown(normalizeLiteralNewlines(passage))}
+    </div>
+  `;
 };
 
 const starRating = (score, max = 5) =>
@@ -788,6 +912,7 @@ function renderReview(container, questions, userAnswers) {
         ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
         : "";
 
+      const alignClass = getAlignClass(q.q, getQuestionLang(q));
       html += `
         <div class="review-card essay-card">
           <div class="review-header">
@@ -797,8 +922,9 @@ function renderReview(container, questions, userAnswers) {
               <span class="essay-score-badge ${scoreLabelClass}">${stars} ${scoreLabel} (${score}/5)</span>
             </div>
           </div>
-          <p class="q-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
-          ${renderQuestionImage(q.image)}
+          ${renderReadingPassage(q.passage, alignClass)}
+          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
               <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> Your Answer:</small>
@@ -844,14 +970,16 @@ function renderReview(container, questions, userAnswers) {
         ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
         : "";
 
+      const alignClass = getAlignClass(q.q, getQuestionLang(q));
       html += `
         <div class="review-card ${statusClass}">
           <div class="review-header">
             <span class="q-num">#${index + 1}</span>
             <span class="status-icon status-${statusClass}">${statusIcon}</span>
           </div>
-          <p class="q-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
-          ${renderQuestionImage(q.image)}
+          ${renderReadingPassage(q.passage, alignClass)}
+          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          ${renderQuestionMedia(q)}
           <div class="ans-comparison">
             <div class="ans-box ${isCorrect ? "ans-correct" : isSkipped ? "ans-skipped" : "ans-wrong"}">
               <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> Your Answer:</small>

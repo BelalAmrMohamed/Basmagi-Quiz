@@ -713,6 +713,64 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+/* ─── Reading Passage ─────────────────────────────────────────────────────── */
+.reading-passage {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  background: var(--color-background-secondary);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--color-text-secondary);
+}
+
+.passage-content {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+/* ─── Media Containers (Audio/Video) ──────────────────────────────────────── */
+.media-container {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-background-secondary);
+  padding: 8px;
+}
+
+.question-media-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+.question-audio-container {
+  min-height: 60px;
+}
+
+.question-video-container {
+  min-height: 280px;
+}
+
+.question-audio,
+.question-video {
+  width: 100%;
+  max-width: 100%;
+  border-radius: 8px;
+  background: var(--color-background);
+}
+
+.question-audio {
+  height: 40px;
+}
+
+.question-video {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
 /* ─── Watermark Footer ────────────────────────────────────────────────────── */
 .watermark {
   text-align: center;
