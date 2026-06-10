@@ -79,6 +79,87 @@ Output ONLY the JSON in the following format:
 
 `;
 
+// Specialized English AI Prompt for language-focused quizzes
+const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full markdown, tables, code blocks, LaTeX notation, audio references, video references, paragraph contexts, and supports language-specific fields like 'lang' and 'difficulty'.
+
+Please ensure the following:
+- Preserve exact wording from original materials for language precision
+- Add pronunciation guides or phonetic notation for difficult words
+- Include contextual usage examples and common collocations
+- Output only the finalized JSON array without additional commentary
+
+Output ONLY the JSON in the following format:
+\`\`\`json
+{
+  "questions": [
+    {
+      "q": "Choose the correct form: 'She ___ to the gym every Monday.'",
+      "options": ["goes", "go", "went", "is going"],
+      "correct": 0,
+      "audio": "https://example.com/audio/present-simple.mp3",
+      "explanation": "Present simple is used for habitual actions. Third person singular takes 'goes'.",
+      "lang": "en"
+    },
+    {
+      "passage": "Read the following passage and answer the question below:\\n\\n\\"Despite the heavy rain, the match continued as scheduled. The players were drenched but determined to finish the game. Spectators huddled under umbrellas, cheering loudly.\\"",
+      "q": "What is the meaning of the phrasal verb 'put up with'? Select the synonym.",
+      "options": ["tolerate", "delay", "construct", "display"],
+      "video": "https://example.com/video/present-simple.mp4",
+      "correct": 0,
+      "explanation": "'Put up with' means to tolerate or endure something unpleasant. Common in British English.",
+      "lang": "en"
+    },
+    {
+      "q": "Listen to the audio and identify the stressed syllable in the word 'present'.",
+      "options": ["First syllable (PRE-sent)", "Second syllable (pre-SENT)"],
+      "correct": 0,
+      "explanation": "As a noun, 'present' is stressed on the first syllable (PRE-sent). As a verb, it's pre-SENT.",
+      "lang": "en"
+    }
+  ]
+}
+\`\`\`
+`;
+
+// Specialized Math AI Prompt for mathematics and problem-solving quizzes
+const Math_Specializing_Prompt = `You are an advanced mathematics educator and assessment specialist with deep expertise in creating rigorous mathematical quizzes. Your task is to convert mathematical content into structured JSON quiz arrays for our e-learning platform. The platform fully supports LaTeX math notation (both inline and display), tables, code blocks for algorithms, markdown formatting, and multiple question types.
+
+Please ensure the following:
+- Preserve mathematical accuracy and original problem wording
+- Use proper LaTeX notation for all mathematical expressions (wrap in \\$ for inline, \\$\\$ for display)
+- Include step-by-step explanations using mathematical notation
+- Provide derivations and proofs where applicable
+- Include relevant formulas in explanation tables
+- Distinguish between computational and conceptual questions
+- Mark conceptual difficulty appropriately
+- Output only the finalized JSON array without additional text
+
+Output ONLY the JSON in the following format:
+\`\`\`json
+{
+  "questions": [
+    {
+      "q": "Calculate the limit: $$\\\\lim_{x \\\\to 0} \\\\frac{\\\\sin(x)}{x}$$",
+      "options": ["0", "1", "∞", "undefined"],
+      "correct": 1,
+      "explanation": "This is a fundamental limit in calculus. Using L'Hôpital's rule or Taylor series: $$\\\\sin(x) \\\\approx x - \\\\frac{x^3}{6} + ...$$ Thus $$\\\\lim_{x \\\\to 0} \\\\frac{\\\\sin(x)}{x} = 1$$"
+    },
+    {
+      "q": "Solve the differential equation: $\\\\frac{dy}{dx} + 2y = e^{-x}$",
+      "answer": "Solution: $y = e^{-x}(x + C)$ where $C$ is an arbitrary constant.\\n\\nMethod: This is a first-order linear ODE. Using integrating factor $\\\\mu(x) = e^{2x}$:\\n$$e^{2x}\\\\frac{dy}{dx} + 2e^{2x}y = e^{x}$$\\n$$\\\\frac{d}{dx}[e^{2x}y] = e^{x}$$\\n$$e^{2x}y = e^{x} + C$$\\n$$y = e^{-x}(e^{x} + C) = e^{-x}(x + C)$$",
+      "explanation": "Integrating factor method transforms the ODE into an exact differential form."
+    },
+    {
+      "q": "Compute the eigenvalues of matrix $A = \\\\begin{pmatrix} 4 & 2 \\\\ 1 & 3 \\\\end{pmatrix}$",
+      "options": ["λ₁ = 2, λ₂ = 5", "λ₁ = 1, λ₂ = 6", "λ₁ = 3, λ₂ = 4", "λ₁ = 2, λ₂ = 3"],
+      "correct": 0,
+      "explanation": "The characteristic polynomial is $\\\\det(A - \\\\lambda I) = (4-\\\\lambda)(3-\\\\lambda) - 2 = \\\\lambda^2 - 7\\\\lambda + 10 = (\\\\lambda - 2)(\\\\lambda - 5) = 0$. Thus $\\\\lambda_1 = 2, \\\\lambda_2 = 5$."
+    }
+  ]
+}
+\`\`\`
+`;
+
 /**
  * Recursively count only the actual quiz/exam leaves under a category node.
  * Subfolders are never counted as quizzes themselves — we recurse into them.
@@ -1217,6 +1298,182 @@ async function handleUserQuizzesDrop(files) {
   }
 }
 
+/**
+ * Open a prompt selection modal to choose between different AI prompts
+ * (General Purpose, English Specializing, Math Specializing)
+ */
+function openPromptSelectionModal() {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "promptSelectionTitle");
+  overlay.style.cssText = `
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.6);
+  `;
+
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card prompt-selection-modal";
+  
+  // Ensure modal pop-in style exists
+  if (!document.getElementById("modal-pop-in-style")) {
+    const style = document.createElement("style");
+    style.id = "modal-pop-in-style";
+    style.textContent = `
+      @keyframes modalPopIn {
+        to { transform: translateY(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  modalCard.innerHTML = `
+    <h2 id="promptSelectionTitle" style="margin-bottom: 16px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; color: var(--color-text-primary);">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-wand2" style="color: var(--color-primary);"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M3 21c0-1.1.9-2 2-2h14c1.1 0 2 .9 2 2"/><path d="M14.5 4c1.1 0 2 .9 2 2v3c0 1-1 2-2 2"/><circle cx="9" cy="9" r="5"/></svg>
+      اختر البرومبت
+    </h2>
+    <p style="margin-bottom: 20px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">اختر النموذج الأنسب لنوع الامتحان الذي تريد إنشاءه</p>
+    
+    <div class="prompt-buttons-container" style="display: flex; flex-direction: column; gap: 12px;">
+      <button type="button" class="prompt-btn prompt-btn-general" data-prompt="general" style="padding: 14px 16px; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background-secondary); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb" style="flex-shrink: 0;"><path d="M15 12c0 1.657-1.343 3-3 3s-3-1.343-3-3"/><path d="M9 17H7a2 2 0 0 0-2 2v2h12v-2a2 2 0 0 0-2-2h-2"/><path d="M12 21v1"/><path d="M9 12h6"/></svg>
+          <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 1rem;">الاستخدام العام</div>
+            <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 2px;">تحويل أي نوع امتحان إلى JSON</div>
+          </div>
+        </div>
+      </button>
+      
+      <button type="button" class="prompt-btn prompt-btn-english" data-prompt="english" style="padding: 14px 16px; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background-secondary); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open" style="flex-shrink: 0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 1rem;">اللغة الإنجليزية</div>
+            <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 2px;">تخصص في امتحانات اللغة الإنجليزية</div>
+          </div>
+        </div>
+      </button>
+      
+      <button type="button" class="prompt-btn prompt-btn-math" data-prompt="math" style="padding: 14px 16px; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background-secondary); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-function-square" style="flex-shrink: 0;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M9 17c0-1 1-4 3-5m0 0c2-1 3-4 3-5s-1-3-3-3-3 1-3 3m0 0c-1 2-2 3-2 5"/></svg>
+          <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 1rem;">الرياضيات والعلوم</div>
+            <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 2px;">تخصص في المعادلات والمسائل الحسابية</div>
+          </div>
+        </div>
+      </button>
+    </div>
+    
+    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end;">
+      <button type="button" id="promptSelectionCancel" style="padding: 10px 16px; background: transparent; border: 1.5px solid var(--color-border); border-radius: 8px; color: var(--color-text-secondary); font-family: inherit; cursor: pointer; transition: all 0.2s;">إغلاق</button>
+    </div>
+  `;
+
+  overlay.appendChild(modalCard);
+  document.body.appendChild(overlay);
+
+  const promptButtons = modalCard.querySelectorAll(".prompt-btn");
+  const cancelBtn = modalCard.querySelector("#promptSelectionCancel");
+
+  // Close modal function — MUST be defined before being referenced
+  const close = () => {
+    overlay.style.opacity = "0";
+    overlay.style.transition = "opacity 0.2s";
+    modalCard.style.transform = "translateY(10px)";
+    modalCard.style.transition = "transform 0.2s";
+    setTimeout(() => overlay.remove(), 200);
+  };
+
+  // Handle button hover effects and click handlers
+  promptButtons.forEach((btn) => {
+    btn.onmouseover = () => {
+      btn.style.borderColor = "var(--color-primary)";
+      btn.style.background = "var(--color-background)";
+      btn.style.transform = "translateX(-4px)";
+    };
+    btn.onmouseout = () => {
+      btn.style.borderColor = "var(--color-border)";
+      btn.style.background = "var(--color-background-secondary)";
+      btn.style.transform = "translateX(0)";
+    };
+
+    // Copy prompt on click
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      let promptText = "";
+      const promptType = btn.getAttribute("data-prompt");
+
+      if (promptType === "general") {
+        promptText = General_Purpose_AI_Prompt;
+      } else if (promptType === "english") {
+        promptText = English_Specializing_Prompt;
+      } else if (promptType === "math") {
+        promptText = Math_Specializing_Prompt;
+      }
+
+      try {
+        await navigator.clipboard.writeText(promptText);
+        close();
+        const promptLabel = {
+          general: "البرومبت العام",
+          english: "برومبت اللغة الإنجليزية",
+          math: "برومبت الرياضيات",
+        }[promptType];
+        showNotification(
+          "تم نسخ البرومبت",
+          `تم نسخ ${promptLabel}، يمكنك الآن لصقه في أي ذكاء اصطناعي`,
+          "success",
+        );
+      } catch (err) {
+        console.error("Clipboard copy error:", err);
+        showNotification(
+          "خطأ في النسخ",
+          "فشل نسخ البرومبت. حاول مرة أخرى.",
+          "error",
+        );
+      }
+    };
+  });
+
+  // Handle cancel button
+  cancelBtn.onmouseover = () => {
+    cancelBtn.style.background = "var(--color-background-secondary)";
+    cancelBtn.style.color = "var(--color-text-primary)";
+  };
+  cancelBtn.onmouseout = () => {
+    cancelBtn.style.background = "transparent";
+    cancelBtn.style.color = "var(--color-text-secondary)";
+  };
+  cancelBtn.onclick = close;
+
+  // Close on escape key
+  const escHandler = (e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+      document.removeEventListener("keydown", escHandler);
+    }
+  };
+  document.addEventListener("keydown", escHandler);
+
+  // Close on overlay click
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      close();
+      document.removeEventListener("keydown", escHandler);
+    }
+  });
+
+  // Auto-focus first button
+  setTimeout(() => {
+    promptButtons[0]?.focus();
+  }, 50);
+}
+
 function createInlineCreateQuizCard() {
   const card = document.createElement("div");
   card.className = "exam-card user-create-quiz-card";
@@ -1377,13 +1634,7 @@ Explanation: The \`typename T\` template parameter is deduced at the call site, 
   if (copyPromptBtn) {
     copyPromptBtn.onclick = (e) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(General_Purpose_AI_Prompt).then(() => {
-        showNotification(
-          "تم نسخ البرومبت",
-          "يمكنك الآن لصقه في أي ذكاء اصطناعي",
-          "success",
-        );
-      });
+      openPromptSelectionModal();
     };
     copyPromptBtn.onmouseover = () => {
       copyPromptBtn.style.borderColor = "var(--color-primary)";

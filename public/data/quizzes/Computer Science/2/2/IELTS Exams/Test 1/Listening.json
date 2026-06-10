@@ -8,10 +8,13 @@
   },
   "stats": {
     "questionCount": 4,
-    "questionTypes": ["Essay"]
+    "questionTypes": [
+      "Essay"
+    ]
   },
   "questions": [
     {
+      "passage": "The errors in this JSON are identical to the previous set regarding string formatting. Because you are using mathematical expressions (LaTeX) that contain backslashes and multi-line structures, the JSON becomes invalid without proper escaping.",
       "q": "**Test 1 – Listening – Part 1**\nWrite **ONE WORD ONLY** for each answer.\n\nThe Junction restaurant is recommended for people who are especially keen on ___.",
       "video": "./assets/quiz-media/TEST_1/Part_1.mp4",
       "explanation": "The Junction is described as particularly good for people keen on fish.",
