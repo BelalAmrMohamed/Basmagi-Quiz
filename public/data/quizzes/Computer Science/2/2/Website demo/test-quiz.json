@@ -7,24 +7,38 @@
     "source": "https://www.w3schools.com/CPP/default.asp"
   },
   "stats": {
-    "questionCount": 15,
-    "questionTypes": ["Essay", "MCQ", "True/False"]
+    "questionCount": 16,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
   },
   "questions": [
     {
-      "passage": "Long reading comprehension text here…",
       "q": "What is the main idea of the passage?",
+      "image": "https://example.com/diagram.png",
       "audio": "https://example.com/listening-exercise.mp3",
       "video": "https://example.com/listening-video.mp4",
-      "image": "https://example.com/diagram.png",
+      "passage": "Long reading comprehension text here…",
       "lang": "en",
-      "options": ["A", "B", "C", "D"],
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
       "correct": 0
     },
     {
       "q": "What is 2 + 2?",
       "explanation": "Basic arithmetic: 2 + 2 = 4.",
-      "options": ["3", "4", "5", "22"],
+      "options": [
+        "3",
+        "4",
+        "5",
+        "22"
+      ],
       "correct": 1
     },
     {
@@ -59,7 +73,12 @@
     {
       "q": "If `A ⊂ B`, Then `P(A|B)` =",
       "explanation": "Since A ⊂ B, we know A ∩ B = A. By the definition of conditional probability: P(A|B) = P(A ∩ B) / P(B) = P(A) / P(B). This expression P(A)/P(B) does not match any of the listed options, so the correct answer is 'None of them'.",
-      "options": ["P(B|A)", "P(A)", "P(B)", "None of them"],
+      "options": [
+        "P(B|A)",
+        "P(A)",
+        "P(B)",
+        "None of them"
+      ],
       "correct": 3
     },
     {
@@ -87,13 +106,23 @@
     {
       "q": "Which sorting algorithm has the best average-case and worst-case time complexity of O(n log n)?",
       "explanation": "Merge Sort guarantees O(n log n) in ALL cases (best, average, and worst).\n\nComparison:\n| Algorithm | Best | Average | Worst |\n|---|---|---|---|\n| Bubble Sort | O(n) | O(n²) | O(n²) |\n| Quick Sort | O(n log n) | O(n log n) | O(n²) |\n| Merge Sort | O(n log n) | O(n log n) | O(n log n) |\n| Insertion Sort | O(n) | O(n²) | O(n²) |\n\nQuick Sort has O(n²) worst case (when pivot is always the smallest/largest element).",
-      "options": ["Bubble Sort", "Quick Sort", "Merge Sort", "Insertion Sort"],
+      "options": [
+        "Bubble Sort",
+        "Quick Sort",
+        "Merge Sort",
+        "Insertion Sort"
+      ],
       "correct": 2
     },
     {
       "q": "What is the value of `x` after this Python code runs?\n```\nx = 0\nfor i in range(1, 6):\n    if i % 2 == 0:\n        x += i\nprint(x)\n```",
       "explanation": "`range(1, 6)` produces: 1, 2, 3, 4, 5\n\nOnly even numbers are added (`i % 2 == 0`):\n- i=1: odd, skip\n- i=2: even → x = 0 + 2 = 2\n- i=3: odd, skip\n- i=4: even → x = 2 + 4 = 6\n- i=5: odd, skip\n\nFinal value: x = **6**",
-      "options": ["6", "9", "15", "12"],
+      "options": [
+        "6",
+        "9",
+        "15",
+        "12"
+      ],
       "correct": 0
     },
     {
@@ -122,7 +151,10 @@
     {
       "q": "Short Q: what is `null == undefined` in JavaScript?",
       "explanation": "In JavaScript, `null == undefined` is `true` due to the loose equality (`==`) rules. Both are considered \"nullish\" values.\n\nHowever, `null === undefined` is `false` because strict equality also checks type.",
-      "options": ["true", "false"],
+      "options": [
+        "true",
+        "false"
+      ],
       "correct": 0
     },
     {

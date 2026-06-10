@@ -19,11 +19,3 @@ sw-cache/
 
 # Node modules
 node_modules/
-
-# Font files and other binary assets that don't need version control
-*.ttf
-*.otf
-*.woff
-*.woff2
-
-*.rar
