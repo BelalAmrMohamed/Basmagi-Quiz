@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-06T16:30:34.428Z",
+  "generatedAt": "2026-06-10T15:59:47.157Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -1506,6 +1506,25 @@
             "MCQ"
           ],
           "createdAt": "3/30/2026, 7:32:06 PM"
+        }
+      ]
+    },
+    {
+      "id": "XFCPRF5C",
+      "name": "DEPI English Exams",
+      "faculty": "Computer Science",
+      "year": 2,
+      "term": 2,
+      "quizzes": [
+        {
+          "id": "Q5AJTFS4",
+          "title": "DEPI English Exam 1",
+          "path": "/data/quizzes/Computer Science/2/2/DEPI English Exams/DEPI English Exam 1.json",
+          "questionCount": 39,
+          "questionTypes": [
+            "MCQ"
+          ],
+          "createdAt": "2026-06-10 - 15:59"
         }
       ]
     },

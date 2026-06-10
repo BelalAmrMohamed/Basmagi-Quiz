@@ -1,7 +1,7 @@
 {
   "liveServer.settings.port": 5508,
   "liveServer.settings.root": "/public",
-  "editor.formatOnSave": false,
-  "editor.formatOnPaste": false,
-  "editor.formatOnType": false
+  // "editor.formatOnSave": false,
+  // "editor.formatOnPaste": false,
+  // "editor.formatOnType": false
 }
