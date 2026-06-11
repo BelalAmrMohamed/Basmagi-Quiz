@@ -1,0 +1,276 @@
+{
+  "meta": {
+    "title": "3  Writing",
+    "id": "JJRSGDHB",
+    "createdAt": "2026-06-11 - 13:27",
+    "path": "quizzes/Computer Science/2/2/IELTS Exams/Cambridge IELTS 2019/Test 1/3- Writing.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which activity had the **highest** number of participants throughout the entire period from 2000 to 2020?",
+      "passage": "**Writing Task 1 – Graph Description**\n\nThe graph below gives information on the numbers of participants for different activities at one social centre in Melbourne, Australia for the period 2000 to 2020.\n\n| Activity | 2000 | 2005 | 2010 | 2015 | 2020 |\n|---|---|---|---|---|---|\n| Film club | ~63 | ~61 | ~61 | ~61 | ~65 |\n| Martial arts | ~35 | ~27 | ~35 | ~33 | ~40 |\n| Amateur dramatics | ~29 | ~20 | ~19 | ~19 | ~5 |\n| Table tennis | ~15 | ~21 | ~35 | ~52 | ~52 |\n| Musical performances | ~1 | ~1 | ~10 | ~20 | ~20 |\n\n*(Approximate values read from graph)*",
+      "lang": "en",
+      "explanation": "Film club consistently maintained the highest number of participants, hovering around 60–65 throughout 2000–2020. This is a key 'overview' point in an IELTS Task 1 response.",
+      "options": [
+        "Martial arts",
+        "Film club",
+        "Table tennis",
+        "Amateur dramatics"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which activity showed the **most dramatic increase** in participants between 2000 and 2020?",
+      "passage": "**Writing Task 1 – Graph Description**\n\nRefer to the line graph showing participant numbers at a Melbourne social centre from 2000 to 2020.",
+      "lang": "en",
+      "explanation": "Table tennis rose from approximately 15 participants in 2000 to around 52 in 2020 — an increase of roughly 37 participants, making it the most dramatic upward trend. In Task 1, identifying the most significant trend is essential for a high band score.",
+      "options": [
+        "Musical performances",
+        "Film club",
+        "Table tennis",
+        "Martial arts"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which activity experienced an **overall decline** in participation over the period?",
+      "passage": "**Writing Task 1 – Graph Description**\n\nRefer to the line graph showing participant numbers at a Melbourne social centre from 2000 to 2020.",
+      "lang": "en",
+      "explanation": "Amateur dramatics declined from approximately 29 participants in 2000 to just 5 in 2020, showing a clear downward trend. Recognising contrasting trends (rise vs. fall) is a key Task 1 skill.",
+      "options": [
+        "Table tennis",
+        "Musical performances",
+        "Amateur dramatics",
+        "Martial arts"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which sentence **best** describes a gradual upward trend in formal academic English?",
+      "passage": "**Writing Task 1 – Academic Vocabulary**\n\nIn IELTS Writing Task 1, you are expected to describe trends using precise academic language.",
+      "lang": "en",
+      "explanation": "Option B uses formal academic vocabulary ('rose steadily', 'approximately', 'around') and includes specific data points — both essential for Band 7+ in Task 1. Options A, C, and D are too informal or imprecise.",
+      "options": [
+        "Table tennis went up a lot from 2000 to 2020.",
+        "The number of table tennis participants rose steadily from approximately 15 in 2000 to around 52 in 2020.",
+        "More and more people did table tennis between 2000 and 2020.",
+        "Table tennis got bigger and bigger over the years shown."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which word correctly fills the blank?",
+      "passage": "**Writing Task 1 – Language Focus: Trend Vocabulary**\n\nChoose the correct verb or phrase to complete this Task 1 sentence:\n\n*'The number of film club participants remained _______ at around 60–65 throughout the period.'*",
+      "lang": "en",
+      "explanation": "'Remained relatively stable' is the correct choice because the film club line shows little change (approximately 60–65) across the 20-year period. 'Relatively stable' is a precise and formal collocation for describing flat trends in Task 1.",
+      "options": [
+        "relatively stable",
+        "dramatically fluctuating",
+        "steadily decreasing",
+        "sharply increasing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is the **best overview statement** for this graph?",
+      "passage": "**Writing Task 1 – Structure and Organisation**\n\nA well-structured IELTS Task 1 response typically includes:\n- An **introduction** (paraphrase the question)\n- An **overview** (main trends, no data)\n- **Detail paragraphs** (specific figures and comparisons)",
+      "lang": "en",
+      "explanation": "An overview should identify the **most significant trends** without specific figures. Option B correctly highlights the dominant activity (film club), the biggest riser (table tennis), and the biggest faller (amateur dramatics). Option A is a detail statement. Option C is just a description of the graph. Option D only refers to the final year.",
+      "options": [
+        "Film club had 63 participants in 2000 and 65 in 2020, while table tennis rose from 15 to 52.",
+        "Overall, film club was the most popular activity throughout, while table tennis showed the greatest growth and amateur dramatics declined significantly.",
+        "The graph shows five activities at a social centre in Melbourne from 2000 to 2020.",
+        "In 2020, table tennis and film club were the two most popular activities."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the grammatically **correct** comparative sentence:",
+      "passage": "**Writing Task 1 – Grammar Focus: Comparing Data**\n\nComparatives and superlatives are frequently needed in Task 1 to compare activities.",
+      "lang": "en",
+      "explanation": "'More popular **than**' is the correct comparative structure for two-syllable+ adjectives. 'As' is used in 'as … as' equality structures. 'Popularer' is incorrect (must use 'more popular'). 'Has more popular' is a grammar error — the correct auxiliary for past comparison is 'was'.",
+      "options": [
+        "Table tennis was more popular than musical performances in 2020.",
+        "Table tennis was more popular as musical performances in 2020.",
+        "Table tennis was popularer than musical performances in 2020.",
+        "Table tennis has more popular than musical performances in 2020."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which phonetic transcription correctly represents the word **'participants'**? *(IPA notation)*",
+      "passage": "**Writing Task 1 – Pronunciation Guide**\n\nSeveral words frequently used in graph descriptions can be mispronounced by IELTS candidates.",
+      "lang": "en",
+      "explanation": "The correct IPA transcription is /pɑːˈtɪsɪpənts/. The stress falls on the **second syllable**: par-**TI**-ci-pants. Common errors include stressing the first syllable or mispronouncing the unstressed vowels as full vowels rather than schwa /ə/.",
+      "options": [
+        "/pɑːˈtɪsɪpənts/",
+        "/ˈpɑːtɪsɪpænts/",
+        "/pəˈtɪsɪpənts/",
+        "/ˌpɑːtɪˈsɪpənts/"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What type of essay does this Task 2 prompt require?",
+      "passage": "**Writing Task 2 – Discussion Essay**\n\n*Some people think that competition at work, at school and in daily life is a good thing. Others believe that we should try to cooperate more, rather than competing against each other.*\n\n*Discuss both these views and give your own opinion.*",
+      "lang": "en",
+      "explanation": "The instruction *'Discuss both these views and give your own opinion'* signals a **discussion essay**. This requires you to: (1) present arguments FOR competition, (2) present arguments FOR cooperation, and (3) clearly state and support your personal view. Misidentifying the essay type leads to Task Achievement penalties.",
+      "options": [
+        "Problem and solution essay",
+        "Discussion essay (both views + opinion)",
+        "Advantages and disadvantages essay",
+        "Cause and effect essay"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which is the **most effective introduction** for this discussion essay?",
+      "passage": "**Writing Task 2 – Essay Structure**\n\n*Some people think that competition at work, at school and in daily life is a good thing. Others believe that we should try to cooperate more, rather than competing against each other.*",
+      "lang": "en",
+      "explanation": "Option B is the strongest introduction because it: (1) contextualises the issue, (2) accurately paraphrases **both** views using sophisticated vocabulary ('rivalry drives individuals to excel', 'working together yields greater collective benefits'), and (3) clearly signals the essay structure. Options A, C, and D lack academic register, fail to paraphrase adequately, or are too simplistic.",
+      "options": [
+        "Competition and cooperation are two different things. This essay will talk about both of them.",
+        "In today's society, the debate between embracing competition and fostering cooperation is increasingly relevant. While some argue that rivalry drives individuals to excel, others contend that working together yields greater collective benefits. This essay will examine both perspectives before presenting my own view.",
+        "I think competition is very important because it makes people work hard. But cooperation is also good.",
+        "Competition means trying to win. Cooperation means working together. Both have good and bad points."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which word is the best **synonym** for 'competition' in a formal academic context?",
+      "passage": "**Writing Task 2 – Vocabulary in Context**\n\nIn IELTS Task 2, lexical resource is assessed on your range, accuracy, and appropriacy of vocabulary.",
+      "lang": "en",
+      "explanation": "'Rivalry' (/ˈraɪvəlri/) is the most appropriate academic synonym for 'competition' in the context of work, school, and daily life. 'Fighting' and 'battle' imply physical conflict. 'Argument' refers specifically to verbal disagreement. Using synonyms like 'rivalry', 'contention', or 'competitive spirit' demonstrates strong lexical resource.",
+      "options": [
+        "fighting",
+        "rivalry",
+        "argument",
+        "battle"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which sentence correctly uses a **concessive** linking device to present the opposing view?",
+      "passage": "**Writing Task 2 – Coherence and Cohesion**\n\nCohesive devices (linking words) are essential for connecting ideas logically in Task 2.",
+      "lang": "en",
+      "explanation": "'Although' introduces a **concessive clause**, acknowledging the merit of one idea while contrasting it with another. This is a hallmark of sophisticated academic writing. Option A lacks connection. Option B uses 'so' incorrectly (it implies competition makes cooperation unnecessary — a logical error). Option D uses 'because' illogically.",
+      "options": [
+        "Competition is beneficial. Cooperation is also beneficial.",
+        "Competition is beneficial, so cooperation is unnecessary.",
+        "Although competition can motivate individuals to reach their potential, it may simultaneously foster unhealthy stress and inequality.",
+        "Competition is beneficial because cooperation is important."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is the **strongest argument** in favour of competition?",
+      "passage": "**Writing Task 2 – Argument Development (Competition)**\n\n*'Some people think that competition at work, at school and in daily life is a good thing.'*",
+      "lang": "en",
+      "explanation": "Option B presents a developed, specific argument with a **clear claim** ('encourages individuals to strive for excellence') and **reasoning** ('driving innovation and higher standards'). It also broadens the scope to multiple domains. Options A and D are underdeveloped. Option C argues against competition, which is the opposite view.",
+      "options": [
+        "Competition is good because everyone likes to win.",
+        "Competition encourages individuals to strive for excellence, driving innovation and higher standards across industries and academic institutions.",
+        "Competition means that some people lose, which is not always fair.",
+        "At school, students who compete get better grades than students who do not."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which example **best supports** the argument that cooperation leads to greater achievements?",
+      "passage": "**Writing Task 2 – Argument Development (Cooperation)**\n\n*'Others believe that we should try to cooperate more, rather than competing against each other.'*",
+      "lang": "en",
+      "explanation": "Option B provides a **specific, credible real-world example** (COVID-19 vaccines / global collaboration) that directly supports the claim. Using concrete examples is essential for Band 7+ Task Achievement. Options A and C are vague. Option D contains an inappropriate and imprecise generalisation ('not smart enough').",
+      "options": [
+        "People who cooperate are usually nicer than people who compete.",
+        "Scientific breakthroughs such as the development of COVID-19 vaccines were achieved through unprecedented global collaboration among researchers, demonstrating that cooperation can solve problems beyond the reach of individual rivalry.",
+        "Cooperating means sharing ideas, which can sometimes be useful.",
+        "In schools, group work helps students who are not smart enough to work alone."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which conclusion is **most appropriate** for a discussion essay on competition vs. cooperation?",
+      "passage": "**Writing Task 2 – Conclusion Writing**\n\nA strong Task 2 conclusion should: restate your opinion clearly, summarise both views briefly, and **not** introduce new ideas.",
+      "lang": "en",
+      "explanation": "Option B is strongest because it: (1) acknowledges the merit of competition ('undeniably fosters individual ambition'), (2) clearly states a personal position weighted towards cooperation, and (3) justifies the view with a broader societal perspective. Option A is too extreme. Option C is indecisive. Option D is a mere summary with no opinion.",
+      "options": [
+        "In conclusion, I believe cooperation is the only answer. Competition should be banned in schools and workplaces.",
+        "In conclusion, while competition undeniably fosters individual ambition and drives progress, I believe that a balance weighted towards cooperation ultimately leads to more equitable and sustainable outcomes for society as a whole.",
+        "In conclusion, both competition and cooperation are good. We need more research to decide which is better.",
+        "In conclusion, this essay has discussed competition and cooperation. There are many points on both sides."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the grammatically **correct** conditional sentence for an IELTS essay:",
+      "passage": "**Writing Task 2 – Grammar: Conditionals in Arguments**\n\nConditional sentences are frequently used in IELTS essays to speculate about outcomes.",
+      "lang": "en",
+      "explanation": "Option B uses the **first conditional** correctly: *If + present simple → will + base verb*. This expresses a real or likely future condition. The first conditional is appropriate when arguing about plausible outcomes. Options A, C, and D mix tenses incorrectly, resulting in grammatical errors that would lower your GRA (Grammatical Range and Accuracy) score.",
+      "options": [
+        "If students will cooperate more, they would achieve better results.",
+        "If students cooperate more, they will likely achieve better collective results.",
+        "If students cooperated more, they will achieve better results.",
+        "If students would cooperate more, they achieve better results."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which sentence contains a **spelling or word form error**?",
+      "passage": "**Writing Task 2 – Spelling and Word Forms**\n\nSpelling errors and incorrect word forms are penalised under Lexical Resource in IELTS Task 2.",
+      "lang": "en",
+      "explanation": "'Competion' in Option B is a spelling error — the correct spelling is **'competition'** (/ˌkɒmpəˈtɪʃən/). Note the word form: *compete* (verb) → *competition* (noun) → *competitive* (adjective) → *competitor* (noun). Mastering these word families is essential for the Lexical Resource band descriptor.",
+      "options": [
+        "Cooperation fosters a sense of community and shared responsibility.",
+        "Competion between businesses often leads to lower prices for consumers.",
+        "Rivalry can be both motivating and destructive depending on the context.",
+        "Collaboration is increasingly valued in modern workplaces."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A candidate describes the graph accurately but uses very limited vocabulary and simple sentence structures throughout. Which **two** criteria will be most affected?",
+      "passage": "**Task 1 & Task 2 – IELTS Writing Band Descriptors**\n\nIELTS Writing is marked on four criteria:\n\n| Criterion | Task 1 Name | Task 2 Name |\n|---|---|---|\n| Content | Task Achievement | Task Response |\n| Organisation | Coherence & Cohesion | Coherence & Cohesion |\n| Vocabulary | Lexical Resource | Lexical Resource |\n| Grammar | Grammatical Range & Accuracy | Grammatical Range & Accuracy |",
+      "lang": "en",
+      "explanation": "Using 'limited vocabulary' directly impacts **Lexical Resource**, and 'simple sentence structures' impacts **Grammatical Range & Accuracy**. Task Achievement may remain adequate if the content is accurate. Coherence & Cohesion relates to organisation and linking — not vocabulary or grammar complexity per se.",
+      "options": [
+        "Task Achievement and Coherence & Cohesion",
+        "Lexical Resource and Grammatical Range & Accuracy",
+        "Task Achievement and Grammatical Range & Accuracy",
+        "Coherence & Cohesion and Lexical Resource"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A candidate spends 35 minutes on Task 1 and only 25 minutes on Task 2. What is the **most likely consequence**?",
+      "passage": "**Writing Task 1 – Time Management**\n\nThe IELTS Writing paper lasts **60 minutes** in total:\n- Task 1: recommended 20 minutes (minimum 150 words)\n- Task 2: recommended 40 minutes (minimum 250 words)\n\nTask 2 carries **twice the marks** of Task 1.",
+      "lang": "en",
+      "explanation": "Task 2 is **weighted twice as heavily** as Task 1 in the final Writing band score. Spending too long on Task 1 leaves insufficient time for the longer, more valuable essay, which is likely to be underdeveloped, lack a conclusion, or contain more errors under time pressure. Good time management is a critical test-taking strategy.",
+      "options": [
+        "Their overall Writing score will improve because Task 1 is very detailed.",
+        "Their overall Writing score will suffer most because Task 2 carries double the weighting and they had insufficient time to develop their essay fully.",
+        "Their Task 2 score will improve because they had a strong Task 1 warm-up.",
+        "There will be no consequence because both tasks are marked independently."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which introduction **best paraphrases** the Task 1 prompt?",
+      "passage": "**Writing Task 1 – Paraphrasing the Introduction**\n\nThe original prompt reads:\n*'The graph below gives information on the numbers of participants for different activities at one social centre in Melbourne, Australia for the period 2000 to 2020.'*\n\nIn Task 1, you must **paraphrase** the prompt in your introduction — do NOT copy it word for word.",
+      "lang": "en",
+      "explanation": "Option B is the best paraphrase: 'line graph' (instead of 'graph'), 'illustrates' (instead of 'gives information on'), 'participation levels' (instead of 'numbers of participants'), 'community centre' (instead of 'social centre'), and 'twenty-year period' (instead of '2000 to 2020' only). It uses synonyms and restructures the sentence. Option A copies the original. Options C and D are too vague.",
+      "options": [
+        "The graph below gives information on the numbers of participants for different activities at one social centre in Melbourne, Australia for the period 2000 to 2020.",
+        "The line graph illustrates how participation levels in five activities at a community centre in Melbourne changed over a twenty-year period from 2000 to 2020.",
+        "This graph is about participants in activities in Melbourne between 2000 and 2020.",
+        "The chart shows what activities people did at a centre in Australia."
+      ],
+      "correct": 1
+    }
+  ]
+}
