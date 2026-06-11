@@ -238,6 +238,45 @@ function extractCategoryFromPath(path) {
   return "";
 }
 
+// === Breadcrumb Logic ===
+function updateBreadcrumb(meta, els) {
+  if (!els.breadcrumb || !meta.path) return;
+
+  const parts = meta.path.split("/");
+  let courseName = "";
+  let intermediate = [];
+
+  const quizzesIdx = parts.indexOf("quizzes");
+  if (quizzesIdx !== -1 && quizzesIdx + 4 < parts.length) {
+    courseName = parts[quizzesIdx + 4];
+    if (quizzesIdx + 5 < parts.length - 1) {
+      intermediate = parts.slice(quizzesIdx + 5, parts.length - 1);
+    }
+  } else if (parts.length >= 3) {
+    courseName = parts[parts.length - 2];
+  }
+
+  if (!courseName) courseName = meta.category || extractCategoryFromPath(meta.path) || "";
+
+  const isMobile = window.innerWidth <= 768;
+  const limit = isMobile ? 40 : 60;
+
+  let breadcrumbText = "";
+
+  if (intermediate.length > 0) {
+    const fullString = `${courseName} → ${intermediate.join(" → ")}`;
+    if (fullString.length > limit) {
+      breadcrumbText = `${courseName} → ... `;
+    } else {
+      breadcrumbText = fullString;
+    }
+  } else {
+    breadcrumbText = `${courseName} `;
+  }
+
+  els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const scoreHeader = document.getElementById("scoreHeader");
   const scoreDisplay = document.getElementById("scoreDisplay");
@@ -253,6 +292,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const exportJsonBtn = document.getElementById("exportJsonBtn");
   const exportSourceBtn = document.getElementById("exportSourceBtn");
 
+  const els = {
+    breadcrumb: document.getElementById("quizBreadcrumb"),
+    dateBadge: document.getElementById("dateBadge"),
+    quizDate: document.getElementById("quizDate"),
+    quizDescription: document.getElementById("quizDescription"),
+    quizSource: document.getElementById("quizSource"),
+  };
+
   let examList = [];
   try {
     const manifest = await getManifest();
@@ -266,6 +313,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     title: result.examTitle || "User Quiz",
     description: "Custom user-created quiz",
     source: result.source,
+    createdAt: result.createdAt,
     path: null,
   };
 
@@ -279,6 +327,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (res.ok) {
           const data = await res.json();
           questions = data.questions || [];
+          if (data.meta) {
+              if (data.meta.createdAt) config.createdAt = data.meta.createdAt;
+              if (data.meta.description) config.description = data.meta.description;
+              if (data.meta.source) config.source = data.meta.source;
+          }
         }
       } else {
         const loaded = await import(quizUrl.href);
@@ -503,6 +556,42 @@ document.addEventListener("DOMContentLoaded", async () => {
      of the `...` so they actually get displayed correctly */
   document.getElementById("quiz-title").textContent =
     title.length > limit ? `${title.substring(0, limit)}...` : title;
+
+  // A. Date Formatting
+  if (config.createdAt && els.quizDate && els.dateBadge) {
+    let dateStr = config.createdAt;
+    if (dateStr.includes(",")) {
+      dateStr = dateStr.split(",")[0];
+    } else if (dateStr.includes(" - ")) {
+      dateStr = dateStr.split(" - ")[0];
+    } else if (dateStr.includes(" ")) {
+      dateStr = dateStr.split(" ")[0];
+    }
+
+    els.quizDate.textContent = dateStr;
+    els.dateBadge.style.display = "flex";
+    els.dateBadge.style.alignItems = "center";
+  } else if (els.dateBadge) {
+    els.dateBadge.style.display = "none";
+  }
+
+  // B & C. Dynamic Breadcrumb Title
+  if (config.path && els.breadcrumb) {
+    updateBreadcrumb(config, els);
+    window.addEventListener("resize", () => updateBreadcrumb(config, els));
+  }
+
+  // D. Description
+  if (config.description && els.quizDescription) {
+    els.quizDescription.textContent = config.description;
+    els.quizDescription.style.display = "block";
+  }
+
+  // E. Source
+  if (config.source && els.quizSource) {
+    els.quizSource.textContent = `Source: ${config.source}`;
+    els.quizSource.style.display = "block";
+  }
 
   renderHeader(
     scoreHeader,

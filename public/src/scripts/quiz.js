@@ -7,7 +7,11 @@ import {
 } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
-import { gradeEssay, isEssayQuestion, isAnswerCorrect } from "../shared/rate-answers.js";
+import {
+  gradeEssay,
+  isEssayQuestion,
+  isAnswerCorrect,
+} from "../shared/rate-answers.js";
 showNotification(
   "الإمتحان بدأ",
   "أسأل الله لك التوفيق والسداد",
@@ -62,6 +66,11 @@ const els = {
   viewToggle: document.getElementById("viewToggle"),
   viewIcon: document.getElementById("viewIcon"),
   viewText: document.getElementById("viewText"),
+  breadcrumb: document.getElementById("quizBreadcrumb"),
+  dateBadge: document.getElementById("dateBadge"),
+  quizDate: document.getElementById("quizDate"),
+  quizDescription: document.getElementById("quizDescription"),
+  quizSource: document.getElementById("quizSource"),
 };
 
 // === Global handlers ===
@@ -150,12 +159,7 @@ const getAlignClass = (text, explicitLang) => {
 const getQuestionLang = (q) => q?.lang || metaData?.lang || null;
 
 const isLargeFormatQuestion = (q) =>
-  !!(
-    q?.passage ||
-    q?.audio ||
-    q?.video ||
-    (q?.q && String(q.q).length > 400)
-  );
+  !!(q?.passage || q?.audio || q?.video || (q?.q && String(q.q).length > 400));
 
 const MEDIA_SKELETON_HTML = `
   <div class="media-skeleton" aria-hidden="true">
@@ -171,7 +175,8 @@ const getMediaUrlCandidates = (url) => {
 
   const candidates = [];
   const add = (candidate) => {
-    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+    if (candidate && !candidates.includes(candidate))
+      candidates.push(candidate);
   };
 
   try {
@@ -224,10 +229,14 @@ const getMediaMimeType = (url) => {
 const renderMediaElement = (tag, className, mediaUrl) => {
   const src = resolveMediaUrl(mediaUrl);
   // Add cache-busting parameter to prevent stale service worker cache on initial load
-  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const srcWithCacheBust = src
+    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+    : "";
   const mime = getMediaMimeType(src);
   const typeAttr = mime ? ` type="${escapeHtml(mime)}"` : "";
-  const candidates = escapeHtml(JSON.stringify(getMediaUrlCandidates(mediaUrl)));
+  const candidates = escapeHtml(
+    JSON.stringify(getMediaUrlCandidates(mediaUrl)),
+  );
   const raw = escapeHtml(mediaUrl);
   const fallback =
     tag === "audio"
@@ -245,8 +254,12 @@ const renderQuestionImage = (imageUrl) => {
   if (!imageUrl) return "";
   const src = resolveMediaUrl(imageUrl);
   // Add cache-busting parameter to prevent stale service worker cache on initial load
-  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
-  const candidates = escapeHtml(JSON.stringify(getMediaUrlCandidates(imageUrl)));
+  const srcWithCacheBust = src
+    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+    : "";
+  const candidates = escapeHtml(
+    JSON.stringify(getMediaUrlCandidates(imageUrl)),
+  );
   return `
     <div class="media-container question-image-container">
       ${MEDIA_SKELETON_HTML}
@@ -299,7 +312,9 @@ const renderReadingPassage = (passage, alignClass) => {
 
 const applyMediaSrc = (media, url) => {
   // Add cache-busting to each candidate URL to bypass stale service worker cache
-  const urlWithCacheBust = url ? `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}` : url;
+  const urlWithCacheBust = url
+    ? `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+    : url;
   media.src = urlWithCacheBust;
   const source = media.querySelector("source");
   if (source) source.src = urlWithCacheBust;
@@ -322,10 +337,12 @@ const initMediaSkeletons = (root = document) => {
 
     // Find current candidate index by comparing base URLs (without cache-bust param)
     const currentUrl = media.src;
-    const currentBaseUrl = currentUrl ? currentUrl.split('?')[0] : '';
+    const currentBaseUrl = currentUrl ? currentUrl.split("?")[0] : "";
     let candidateIdx = Math.max(
       0,
-      candidates.findIndex((url) => url === currentBaseUrl || url === currentUrl),
+      candidates.findIndex(
+        (url) => url === currentBaseUrl || url === currentUrl,
+      ),
     );
 
     const reveal = () => {
@@ -338,13 +355,17 @@ const initMediaSkeletons = (root = document) => {
       skeleton.classList.add("media-skeleton--error");
       skeleton.innerHTML =
         '<span class="media-error">تعذّر تحميل الوسائط. تحقق من المسار أو الرابط.</span>';
-      console.warn(`[Media] Failed to load all candidates for: ${media.dataset.mediaRaw}`);
+      console.warn(
+        `[Media] Failed to load all candidates for: ${media.dataset.mediaRaw}`,
+      );
     };
 
     const tryNextCandidate = () => {
       candidateIdx += 1;
       if (candidateIdx < candidates.length) {
-        console.log(`[Media] Trying candidate ${candidateIdx}: ${candidates[candidateIdx]}`);
+        console.log(
+          `[Media] Trying candidate ${candidateIdx}: ${candidates[candidateIdx]}`,
+        );
         applyMediaSrc(media, candidates[candidateIdx]);
         return true;
       }
@@ -385,15 +406,16 @@ const initMediaSkeletons = (root = document) => {
     media.addEventListener("loadeddata", onMediaReady, { once: true });
     media.addEventListener("canplay", onMediaReady, { once: true });
     media.addEventListener("error", onMediaError, { once: true });
-    
+
     // Initial check
     onMediaReady();
 
     // Catch late metadata (innerHTML can finish loading before listeners attach)
     requestAnimationFrame(() => {
-      if (!skeleton.classList.contains("media-skeleton--hidden")) onMediaReady();
+      if (!skeleton.classList.contains("media-skeleton--hidden"))
+        onMediaReady();
     });
-    
+
     // Increased timeout to handle slow network connections better
     setTimeout(() => {
       if (
@@ -437,6 +459,45 @@ function toggleView() {
   }
 
   renderMenuNavigation();
+}
+
+// === Breadcrumb Logic ===
+function updateBreadcrumb(meta) {
+  if (!els.breadcrumb || !meta.path) return;
+
+  const parts = meta.path.split("/");
+  let courseName = "";
+  let intermediate = [];
+
+  const quizzesIdx = parts.indexOf("quizzes");
+  if (quizzesIdx !== -1 && quizzesIdx + 4 < parts.length) {
+    courseName = parts[quizzesIdx + 4];
+    if (quizzesIdx + 5 < parts.length - 1) {
+      intermediate = parts.slice(quizzesIdx + 5, parts.length - 1);
+    }
+  } else if (parts.length >= 3) {
+    courseName = parts[parts.length - 2];
+  }
+
+  if (!courseName) courseName = meta.category || "";
+
+  const isMobile = window.innerWidth <= 768;
+  const limit = isMobile ? 40 : 60;
+
+  let breadcrumbText = "";
+
+  if (intermediate.length > 0) {
+    const fullString = `${courseName} → ${intermediate.join(" → ")}`;
+    if (fullString.length > limit) {
+      breadcrumbText = `${courseName} → ... `;
+    } else {
+      breadcrumbText = fullString;
+    }
+  } else {
+    breadcrumbText = `${courseName} `;
+  }
+
+  els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
 }
 
 // === OPTIMIZED: Load exam JSON with caching ===
@@ -629,6 +690,10 @@ async function init() {
         title: userQuiz.meta?.title || userQuiz.title,
         category: "Your Quiz",
         lang: userQuiz.meta?.lang || null,
+        createdAt: userQuiz.meta?.createdAt || null,
+        path: userQuiz.meta?.path || null,
+        description: userQuiz.meta?.description || null,
+        source: userQuiz.meta?.source || null,
       };
     } else {
       // === LOGIC FOR STANDARD EXAM (Original Code) ===
@@ -644,10 +709,8 @@ async function init() {
       // Use optimized loader with caching
       const module = await loadExamModule(config);
       questions = module.questions;
-      quizBaseUrl = new URL(
-        "./",
-        new URL(config.path, window.location.origin),
-      ).href;
+      quizBaseUrl = new URL("./", new URL(config.path, window.location.origin))
+        .href;
 
       const parts = config.path.replace(/\\/g, "/").split("/");
       const filename = parts[parts.length - 1] || "";
@@ -658,6 +721,10 @@ async function init() {
         title: config.title || fallbackTitle,
         category: parts[parts.length - 2] || "",
         lang: module.meta?.lang || null,
+        createdAt: module.meta?.createdAt || null,
+        path: module.meta?.path || null,
+        description: module.meta?.description || null,
+        source: module.meta?.source || null,
       };
     }
 
@@ -671,6 +738,42 @@ async function init() {
     // Update Title UI
     if (els.title) {
       els.title.textContent = metaData.title || "Quiz";
+    }
+
+    // A. Date Formatting
+    if (metaData.createdAt && els.quizDate && els.dateBadge) {
+      let dateStr = metaData.createdAt;
+      if (dateStr.includes(",")) {
+        dateStr = dateStr.split(",")[0];
+      } else if (dateStr.includes(" - ")) {
+        dateStr = dateStr.split(" - ")[0];
+      } else if (dateStr.includes(" ")) {
+        dateStr = dateStr.split(" ")[0];
+      }
+
+      els.quizDate.textContent = dateStr;
+      els.dateBadge.style.display = "flex";
+      els.dateBadge.style.alignItems = "center";
+    } else if (els.dateBadge) {
+      els.dateBadge.style.display = "none";
+    }
+
+    // B & C. Dynamic Breadcrumb Title
+    if (metaData.path && els.breadcrumb) {
+      updateBreadcrumb(metaData);
+      window.addEventListener("resize", () => updateBreadcrumb(metaData));
+    }
+
+    // D. Description
+    if (metaData.description && els.quizDescription) {
+      els.quizDescription.textContent = metaData.description;
+      els.quizDescription.style.display = "block";
+    }
+
+    // E. Source
+    if (metaData.source && els.quizSource) {
+      els.quizSource.textContent = `Source: ${metaData.source}`;
+      els.quizSource.style.display = "block";
     }
 
     // Setup Timer
@@ -1231,9 +1334,10 @@ function renderQuestion() {
       // Check if answer is correct (handles both single and array)
       if (Array.isArray(correctIdx)) {
         // Multiple correct answers: user's answer must match exactly
-        isCorrect = Array.isArray(userSelected) && 
-                   userSelected.length === correctIdx.length &&
-                   correctIdx.every(idx => userSelected.includes(idx));
+        isCorrect =
+          Array.isArray(userSelected) &&
+          userSelected.length === correctIdx.length &&
+          correctIdx.every((idx) => userSelected.includes(idx));
       } else {
         // Single correct answer
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
@@ -1318,7 +1422,7 @@ function renderQuestion() {
   } else {
     const isMultiple = Array.isArray(q.correct);
     const userSelected = userAnswers[currentIdx];
-    
+
     els.questionContainer.innerHTML = `
       <div class="question-card${largeClass}">
         ${questionHeaderHTML}
@@ -1327,18 +1431,19 @@ function renderQuestion() {
             .map((opt, i) => {
               let isSelected = false;
               if (isMultiple) {
-                isSelected = Array.isArray(userSelected) && userSelected.includes(i);
+                isSelected =
+                  Array.isArray(userSelected) && userSelected.includes(i);
               } else {
                 isSelected = userSelected === i;
               }
-              
+
               const optAlign = getAlignClass(opt, qLang);
               let optionClass = "option-row";
               if (isSelected) optionClass += " selected";
               if (isLocked) {
                 optionClass += " locked";
                 // Check if this is a correct option
-                const isCorrectOption = isMultiple 
+                const isCorrectOption = isMultiple
                   ? Array.isArray(q.correct) && q.correct.includes(i)
                   : i === q.correct;
                 if (isCorrectOption) optionClass += " correct";
@@ -1383,10 +1488,10 @@ function renderQuestion() {
 // === Event Handlers ===
 function handleSelect(index) {
   if (lockedQuestions[currentIdx]) return;
-  
+
   const q = questions[currentIdx];
   const isMultiple = Array.isArray(q.correct);
-  
+
   if (isMultiple) {
     // Multiple selection: toggle the checkbox
     if (!Array.isArray(userAnswers[currentIdx])) {
@@ -1403,7 +1508,7 @@ function handleSelect(index) {
     // Single selection: replace with new answer
     userAnswers[currentIdx] = index;
   }
-  
+
   saveStateDebounced();
   renderQuestion();
   renderMenuNavigationDebounced();

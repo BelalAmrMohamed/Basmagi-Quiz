@@ -297,7 +297,26 @@
         <div class="header">
             <div class="header-top">
                 <div class="header-title-section">
-                    <h1 id="quizTitle">...جاري التحميل</h1>
+                    <div class="title-date-container" style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <h1 id="quizTitle" style="margin-bottom: 0;">...جاري التحميل</h1>
+                        <div class="date-badge" id="dateBadge" style="display: none; padding: 4px 10px; font-size: 0.8rem;">
+                            <svg class="date-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14"
+                                height="14" style="margin-inline-end: 4px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span id="quizDate"></span>
+                        </div>
+                    </div>
+                    
+                    <div id="quizDescription" style="display: none; color: var(--color-text-secondary, #6b7280); font-size: 0.95rem; margin-bottom: 8px;"></div>
+                    
+                    <div class="breadcrumb-container" style="margin-bottom: 4px;">
+                        <div class="breadcrumb" id="quizBreadcrumb" style="margin-bottom: 0;"></div>
+                    </div>
+
+                    <div id="quizSource" style="display: none; font-size: 0.85rem; color: var(--color-text-secondary, #6b7280); margin-bottom: 8px; opacity: 0.8;"></div>
+
                     <div class="header-subtitle">
                         <div class="timer-badge" id="timerBadge">
                             <svg class="timer-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

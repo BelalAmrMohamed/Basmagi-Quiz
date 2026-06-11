@@ -332,25 +332,55 @@
     <div class="container">
         <!-- Page Header -->
         <div class="header">
+            <div class="header-top">
+                <div class="header-title-section">
+                    <div class="title-date-container">
+                        <h1>
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                style="display:inline-block;vertical-align:middle;width:2rem;height:2rem; margin-inline-end: 8px;"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-party-popper-icon lucide-party-popper">
+                                <path d="M5.8 11.3 2 22l10.7-3.79" />
+                                <path d="M4 3h.01" />
+                                <path d="M22 8h.01" />
+                                <path d="M15 2h.01" />
+                                <path d="M22 20h.01" />
+                                <path
+                                    d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
+                                <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" />
+                                <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" />
+                                <path
+                                    d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" />
+                            </svg><span>اكتمل الإختبار</span>
+                        </h1>
 
-            <!-- This is Oddly arranged Because of mix between rlt element `اكتمل الإختبار` 
-             and ltr element (#quiz-title), but this arrangement works -->
-            <h1 style="direction: ltr !important;"><svg xmlns="http://www.w3.org/2000/svg"
-                    style="display:inline-block;vertical-align:middle;width:2rem;height:2rem;" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-party-popper-icon lucide-party-popper">
-                    <path d="M5.8 11.3 2 22l10.7-3.79" />
-                    <path d="M4 3h.01" />
-                    <path d="M22 8h.01" />
-                    <path d="M15 2h.01" />
-                    <path d="M22 20h.01" />
-                    <path
-                        d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" />
-                    <path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" />
-                    <path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" />
-                    <path
-                        d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" />
-                </svg>اكتمل الإختبار<br><span id="quiz-title"></span></h1>
+                        <div class="quiz-title-row">
+                            <h1 id="quiz-title"></h1>
+                            <div class="date-badge" id="dateBadge"
+                                style="display: none; padding: 4px 10px; font-size: 0.8rem;">
+                                <svg class="date-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14"
+                                    height="14" style="margin-inline-end: 4px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span id="quizDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="quizDescription"
+                        style="display: none; color: var(--color-text-secondary, #6b7280); font-size: 0.95rem; margin-bottom: 8px;">
+                    </div>
+
+                    <div class="breadcrumb-container" style="margin-bottom: 4px;">
+                        <div class="breadcrumb" id="quizBreadcrumb" style="margin-bottom: 0;"></div>
+                    </div>
+
+                    <div id="quizSource"
+                        style="display: none; font-size: 0.85rem; color: var(--color-text-secondary, #6b7280); margin-bottom: 8px; opacity: 0.8;">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Score Header Card (rendered by result.js) -->

@@ -47,7 +47,7 @@ body {
   padding: 48px;
   margin-bottom: 40px;
   border: 1px solid var(--color-border-light);
-  text-align: center;
+  text-align: left;
   position: relative;
   overflow: hidden;
 }
@@ -71,9 +71,20 @@ body {
 }
 
 /* ─── Quiz Title ───────────────────────────────────────────────────── */
+.title-container {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
 
 #quiz-title {
   font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  display: block;
+  text-align: left;
 }
 
 /* ─── Score Header Card ───────────────────────────────────────────────────── */
@@ -320,6 +331,38 @@ body {
   height: 16px;
 }
 
+.date-badge {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border, #ccc);
+  background: var(--color-background-secondary, #f9fafb);
+  white-space: nowrap;
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 8px;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.quiz-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  direction: ltr;
+  justify-content: flex-start;
+}
+
 .badge-grid {
   display: flex;
   gap: 10px;
@@ -351,11 +394,6 @@ body {
 }
 
 /* ─── Filter Bar ──────────────────────────────────────────────────────────── */
-/*
- * Pill-button row that sits between the score panel and #reviewContainer.
- * Uses the same max-width as .container / #reviewContainer (1000 px) and the
- * same horizontal padding as body so it aligns perfectly with the cards.
- */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -383,7 +421,6 @@ body {
     border-color 0.18s ease,
     color 0.18s ease,
     box-shadow 0.18s ease;
-  /* Prevent the pill from shrinking smaller than its label */
   white-space: nowrap;
 }
 
@@ -411,7 +448,7 @@ body {
 
 /* ─── Review Cards ────────────────────────────────────────────────────────── */
 #reviewContainer {
-  padding: 0; /* centering handled by max-width + margin: auto above */
+  padding: 0;
 }
 
 .review-card {
@@ -676,7 +713,6 @@ body {
   font-size: 0.9375rem;
   border-left: 4px solid var(--color-primary, #6366f1);
   border: 1px solid var(--color-border-light);
-  border-left: 4px solid var(--color-primary, #6366f1);
 }
 
 .explanation strong {
@@ -903,7 +939,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  /* Filter bar wraps naturally on small screens */
   .filter-bar {
     gap: 6px;
   }
@@ -963,7 +998,6 @@ body {
 }
 
 /* ─── Score Header Detail Table ───────────────────────────────────────────── */
-
 .score-header-inner {
   display: flex;
   align-items: flex-start;
@@ -1061,7 +1095,6 @@ body {
 }
 
 /* ─── Skeleton Loader ─────────────────────────────────────────────────────── */
-
 @keyframes skeleton-shimmer {
   0% {
     background-position: -600px 0;
@@ -1116,7 +1149,6 @@ body {
 }
 
 /* ─── Certificate Overlay ─────────────────────────────────────────────────── */
-
 #certificateOverlay {
   position: fixed;
   inset: 0;
@@ -1154,7 +1186,6 @@ body {
   box-shadow:
     var(--shadow-xl),
     0 0 50px rgba(99, 102, 241, 0.25);
-  /* Smaller than before — max 520 px so it fits on every screen */
   max-width: 520px;
   width: 100%;
   padding: 24px 20px 20px;
@@ -1196,14 +1227,13 @@ body {
   font-size: 0.875rem;
 }
 
-/* Preview: the canvas renders at 1200×820 — we shrink it to fit the modal */
 .cert-preview-wrap {
   width: 100%;
   border-radius: 10px;
   border: 1px solid var(--color-border);
   overflow: hidden;
   background: #fffdf5;
-  line-height: 0; /* collapse whitespace around img */
+  line-height: 0;
 }
 
 .cert-preview-wrap img {
@@ -1284,7 +1314,6 @@ body {
 }
 
 /* ─── Re-open Certificate Button ─────────────────────────────────────────── */
-/* Rendered only when questions.length > 10 && actualPercentage === 100       */
 .cert-reopen-btn {
   display: inline-flex;
   align-items: center;

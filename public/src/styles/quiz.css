@@ -1,4 +1,9 @@
-/* src/styles/quiz.css */
+/* ==========================================================================
+   src/styles/quiz.css
+   Unified Quiz Application - Core Examination Layout
+   ========================================================================== */
+
+/* ─── 1. Global Resets & Foundations ────────────────────────────────────── */
 * {
   margin: 0;
   padding: 0;
@@ -25,18 +30,26 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   /*
-   * DO NOT use padding shorthand here — it would override padding-right set by
-   * side-menu.css (80px for collapsed sidebar) regardless of stylesheet load order.
-   * Set only the three sides that index.css owns; side-menu.css owns padding-right.
+   * PROTECT GLOBAL SIDEBAR: DO NOT use padding shorthand here.
+   * It would override padding-right set by side-menu.css (80px for collapsed sidebar).
+   * Set only the three sides owned by this layout view.
    */
   padding-top: 40px;
   padding-bottom: 40px;
-  padding-left: 24px; /* physical left — the non-sidebar side */
+  padding-left: 24px; /* Physical left side opposite the sidebar */
   position: relative;
   overflow-x: hidden;
 }
 
-/* Gamification Stats Bar */
+/* ─── 2. Container Layout ───────────────────────────────────────────────── */
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── 3. Gamification Stats Bar ─────────────────────────────────────────── */
 .stats-bar {
   position: fixed;
   top: 0;
@@ -57,7 +70,6 @@ body {
   align-items: center;
   gap: 32px;
   flex: 1;
-
   direction: ltr;
 }
 
@@ -100,7 +112,7 @@ body {
   font-size: 1.25rem;
 }
 
-/* Menu Navigation */
+/* ─── 4. Sidebar Menu & Navigation ──────────────────────────────────────── */
 .menu-nav-header {
   font-size: 0.875rem;
   font-weight: 700;
@@ -137,7 +149,7 @@ body {
   align-items: center;
 }
 
-/* Grid View */
+/* Grid View Navigation */
 .menu-nav-grid {
   margin-bottom: 15px;
 }
@@ -191,7 +203,7 @@ body {
   line-height: 1;
 }
 
-/* List View */
+/* List View Navigation */
 .menu-nav-list {
   margin-bottom: 15px;
 }
@@ -263,7 +275,7 @@ body {
   opacity: 1;
 }
 
-/* Action Buttons */
+/* Global Actions */
 .action-btn {
   display: flex;
   align-items: center;
@@ -271,15 +283,7 @@ body {
   font-weight: 600;
 }
 
-/* Container */
-.container {
-  max-width: 1000px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
-}
-
-/* Header */
+/* ─── 5. Examination Page Header ─────────────────────────────────────────── */
 .header {
   border-radius: 20px;
   box-shadow: var(--shadow-xl);
@@ -312,8 +316,6 @@ body {
 .header-title-section {
   flex: 1;
   min-width: 0;
-
-  /* Start from left, because most quiz titles are English */
   text-align: left;
   direction: ltr;
 }
@@ -326,6 +328,14 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.breadcrumb {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #6b7280);
+  margin-bottom: 8px;
+  font-weight: 500;
+  opacity: 0.85;
 }
 
 .header-subtitle {
@@ -356,6 +366,19 @@ body {
   height: 16px;
 }
 
+.date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border, #ccc);
+  background: var(--color-background-secondary, #f9fafb);
+}
+
 .finish-btn {
   background: var(--gradient-warm);
   color: white;
@@ -374,7 +397,7 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Progress */
+/* ─── 6. Exam Completion Progress ───────────────────────────────────────── */
 .progress-section {
   margin-top: 20px;
   padding-top: 20px;
@@ -415,7 +438,7 @@ body {
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
 }
 
-/* Question Card */
+/* ─── 7. Interactive Question Cards ────────────────────────────────────── */
 .question-card {
   border-radius: 16px;
   padding: 28px;
@@ -451,7 +474,7 @@ body {
   margin-bottom: 20px;
 }
 
-/* Dynamic text alignment — applied per question/option by quiz.js */
+/* Dynamic Direction Utilities */
 .text-ltr {
   direction: ltr;
   text-align: left;
@@ -462,7 +485,7 @@ body {
   text-align: right;
 }
 
-/* Long reading passages (explicit `passage` field or very long question text) */
+/* Reading Comprehension Passages */
 .reading-passage,
 .question-text--passage {
   max-height: min(420px, 55vh);
@@ -495,7 +518,7 @@ body {
   max-height: min(480px, 60vh);
 }
 
-/* Question Image & Media */
+/* ─── 8. Media Containers & Skeletons ───────────────────────────────────── */
 .question-image-container,
 .question-media-container {
   margin-bottom: 20px;
@@ -530,7 +553,7 @@ body {
   opacity: 1;
 }
 
-/* Media loading skeleton — overlays media until loaded */
+/* Media Shimmer Skeletons */
 .media-skeleton {
   position: absolute;
   inset: 0;
@@ -597,7 +620,7 @@ body {
   text-align: center;
 }
 
-/* Audio player */
+/* Audio Player Elements */
 .question-audio-container .question-audio {
   display: block;
   width: 100%;
@@ -612,7 +635,7 @@ body {
   min-height: 52px;
 }
 
-/* Video player */
+/* Video Player Elements */
 .question-video-container .question-video {
   display: block;
   width: 100%;
@@ -632,7 +655,7 @@ body {
   height: 180px;
 }
 
-/* Theme-aware native media controls */
+/* Native Theme Controls Adaptation */
 [data-theme="dark"] .question-audio,
 [data-theme="dark-slate"] .question-audio,
 [data-theme="dark"] .question-video,
@@ -645,7 +668,7 @@ body {
   background: var(--color-surface);
 }
 
-/* Action Buttons */
+/* Card Actions */
 .question-actions {
   display: flex;
   gap: 8px;
@@ -671,7 +694,7 @@ body {
   transform: scale(1.1);
 }
 
-/* Essay */
+/* ─── 9. Free Text & Essay Workspace ────────────────────────────────────── */
 .essay-container {
   display: flex;
   flex-direction: column;
@@ -730,7 +753,7 @@ body {
   font-weight: 500;
 }
 
-/* Options */
+/* ─── 10. Multiple Choice Selection Options ──────────────────────────────── */
 .options-grid {
   display: flex;
   flex-direction: column;
@@ -784,7 +807,7 @@ body {
   opacity: 0.75;
 }
 
-/* Check Answer Button */
+/* Submission CTA Controls */
 .check-answer-btn {
   background: var(--gradient-accent);
   color: white;
@@ -814,7 +837,7 @@ body {
   display: none;
 }
 
-/* Feedback */
+/* ─── 11. Instant Evaluation Feedback ───────────────────────────────────── */
 .feedback {
   margin-top: 18px;
   padding: 16px 20px;
@@ -827,10 +850,7 @@ body {
   direction: ltr;
 }
 
-/* Two-column grid: [icon col] [explanation body col]
-   Column 1 (auto): the ::before status icon — naturally sized.
-   Column 2 (1fr):  the explanation body — claims all remaining space.
-   min-width: 0 on col 2 prevents grid blowout on long unbreakable tokens. */
+/* Complex Two-column Layout: [status icon] [explanation framework] */
 .feedback.show {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -839,17 +859,15 @@ body {
   gap: 0 12px;
 }
 
-/* Icon column */
 .feedback::before {
   grid-column: 1;
   grid-row: 1;
   font-size: 1.4rem;
   line-height: 1.4;
   align-self: start;
-  margin-top: 0.1em; /* optical alignment with the first text line */
+  margin-top: 0.1em;
 }
 
-/* Explanation body column */
 .feedback > div,
 .feedback-body {
   grid-column: 2;
@@ -858,10 +876,9 @@ body {
   text-align: left;
   overflow-wrap: break-word;
   word-break: break-word;
-  margin-top: 0 !important; /* neutralise inline style="margin-top:8px" */
+  margin-top: 0 !important;
 }
 
-/* <strong> score line (essay feedback) also sits in the body column */
 .feedback > strong {
   grid-column: 2;
   grid-row: 1;
@@ -876,7 +893,6 @@ body {
   content: "✗";
 }
 
-/* Essay feedback: single-column flex (no side icon) */
 .feedback.essay-feedback.show {
   display: flex;
   flex-direction: column;
@@ -884,7 +900,7 @@ body {
   gap: 8px;
 }
 
-/* Navigation */
+/* Footer Navigation Controls */
 .navigation {
   display: flex;
   justify-content: space-between;
@@ -915,7 +931,7 @@ body {
   opacity: 0.5;
 }
 
-/* Loading */
+/* Core System Asynchronous Loading Indicator */
 .loading {
   text-align: center;
   padding: 40px 28px;
@@ -927,7 +943,7 @@ body {
   animation: dots 1.5s infinite;
 }
 
-/* Responsive */
+/* ─── 12. Responsive Breakpoint Adaptations ─────────────────────────────── */
 @media (max-width: 768px) {
   body {
     padding: 60px 12px 16px 12px;
@@ -936,6 +952,7 @@ body {
   .loading {
     padding: 0px;
   }
+
   .stats-bar {
     padding: 0 12px;
   }
@@ -1044,10 +1061,7 @@ body {
     padding: 18px;
   }
 
-  /* ── Issue 3: Stack icon above explanation on narrow screens ── */
-  /* Collapse the two-column grid to a single column so the status
-     icon moves ABOVE the explanation body instead of sitting beside
-     it and consuming ~40 px of scarce horizontal space. */
+  /* Structural Shift: Stack Status Elements Vertically on Mobile Viewports */
   .feedback.show {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
@@ -1055,7 +1069,6 @@ body {
     padding: 14px;
   }
 
-  /* Icon: row 1, full width, slightly larger for legibility */
   .feedback::before {
     grid-column: 1;
     grid-row: 1;
@@ -1063,7 +1076,6 @@ body {
     margin-top: 0;
   }
 
-  /* Body: row 2, full width */
   .feedback > div,
   .feedback-body,
   .feedback > strong {
@@ -1072,10 +1084,7 @@ body {
   }
 }
 
-/* ─── Markdown Overflow Containment ─────────────────────────── */
-/* Every element that receives renderMarkdown() output opts in to
-   overflow-wrap so long tokens, URLs, and KaTeX never escape their
-   container. min-width: 0 is essential for Flexbox / Grid children. */
+/* ─── 13. Markdown Text Containment Controls ────────────────────────────── */
 .question-text,
 .option-label,
 .feedback,
@@ -1087,15 +1096,12 @@ body {
   min-width: 0;
 }
 
-/* Generic markdown root utility — apply to any future renderMarkdown() host */
 .md-content {
   width: 100%;
   overflow-x: hidden;
 }
 
-/* ─── Lucide Icon Sizing ─────────────────────────────────────── */
-
-/* Stat bar icons */
+/* ─── 14. Lucide & Vector Icon Infrastructure ───────────────────────────── */
 .stat-icon i,
 .stat-icon svg {
   width: 18px;
@@ -1103,7 +1109,6 @@ body {
   display: block;
 }
 
-/* Mini-badge icons inside the grid nav cells */
 .mini-badge i,
 .mini-badge svg {
   width: 8px;
@@ -1112,7 +1117,6 @@ body {
   vertical-align: middle;
 }
 
-/* List-view bookmark / flag icons */
 .menu-nav-icon i,
 .menu-nav-icon svg {
   width: 14px;
@@ -1122,7 +1126,6 @@ body {
   pointer-events: none;
 }
 
-/* Bookmark / flag action buttons on the question card */
 .bookmark-btn i,
 .bookmark-btn svg,
 .flag-btn i,
@@ -1133,7 +1136,6 @@ body {
   pointer-events: none;
 }
 
-/* Flag count in menu nav header */
 .menu-flag-count i,
 .menu-flag-count svg {
   width: 12px;
@@ -1143,7 +1145,7 @@ body {
   margin-right: 2px;
 }
 
-/* Vertical quiz style: all questions in one scrollable page */
+/* ─── 15. Scrollable Single-Page Layout Style ───────────────────────────── */
 #questionContainer.vertical-style {
   display: flex;
   flex-direction: column;
@@ -1153,32 +1155,20 @@ body {
 
 #questionContainer.vertical-style .vertical-question-card {
   scroll-margin-top: 80px;
-
   margin-top: 0px;
   margin-bottom: 0px;
 }
 
-/* Direction helper used by the renderer for code blocks and math */
 .ltr {
   direction: ltr;
 }
-
-/* All of the markdown css are supposed to exist in markdown.css only
-But I found these different styles that I didn't find in markdown.css so I decided to leave them, because I'm afraid they might break something */
 
 .math-block,
 .katex-display {
   overflow-y: hidden;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   GFM TABLE STYLES (Issue 4)
-   The JS parser wraps every table in:
-     <div class="md-table-wrapper"><table class="md-table">…</table></div>
-   The wrapper is the scroll container; the table grows to natural width.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── Cells ─────────────────────────────────────────────────────────────────── */
+/* GFM Markdown Table Styles */
 .md-table th,
 .md-table td {
   border: 1px solid var(--color-border);
@@ -1190,23 +1180,7 @@ But I found these different styles that I didn't find in markdown.css so I decid
   background: var(--color-primary-light, rgba(99, 102, 241, 0.08));
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   UX ENHANCEMENT 2.1 — Option Row Micro-interactions
-   ─────────────────────────────────────────────────────────────────────────
-   Rules here only add: @keyframes, animation, ::after / ::before, and a
-   position/overflow context block for .check-answer-btn so its shimmer
-   pseudo-element can clip correctly.
-   No existing selector's layout properties are modified.
-   All timing and easing values consume tokens from themes.css.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ── 1. Keyframes ────────────────────────────────────────────────────────── */
-
-/*
- * option-select
- * Triggered when an option row receives the .selected class.
- * Starts slightly compressed; --ease-spring drives the overshoot back to 1.
- */
+/* ─── 16. Option Interactions & Micro-animations ───────────────────────── */
 @keyframes option-select {
   from {
     transform: scale(0.96);
@@ -1216,11 +1190,6 @@ But I found these different styles that I didn't find in markdown.css so I decid
   }
 }
 
-/*
- * reveal-correct
- * Played on the .correct option row once the card is locked and the
- * correct answer slides into the user's view.
- */
 @keyframes reveal-correct {
   from {
     transform: translateX(-8px);
@@ -1232,11 +1201,6 @@ But I found these different styles that I didn't find in markdown.css so I decid
   }
 }
 
-/*
- * shimmer-sweep
- * Shared by both the hover single-pass and the .is-loading infinite loop.
- * Uses transform only (GPU-composited, no layout cost).
- */
 @keyframes shimmer-sweep {
   from {
     transform: translateX(-150%) skewX(-15deg);
@@ -1246,12 +1210,6 @@ But I found these different styles that I didn't find in markdown.css so I decid
   }
 }
 
-/*
- * glow-pulse
- * Pulses the drop-shadow on .progress-fill when progress ≥ 80 %.
- * Shadow values are inlined because box-shadow cannot reference CSS vars
- * inside calc(), but the timing tokens are still fully token-driven.
- */
 @keyframes glow-pulse {
   0%,
   100% {
@@ -1264,24 +1222,15 @@ But I found these different styles that I didn't find in markdown.css so I decid
   }
 }
 
-/* ── 2. Option row — selection bounce ────────────────────────────────────── */
-
 .option-row.selected {
   animation: option-select var(--duration-fast) var(--ease-spring) both;
 }
-
-/* ── 3. Option row — correct-answer reveal (post-lock) ───────────────────── */
 
 .option-row.correct {
   animation: reveal-correct var(--duration-base) var(--ease-out-expo) both;
 }
 
-/* ── 4. Check-answer button — shimmer pseudo-element setup ───────────────── */
-/*
- * A separate rule block adds only the stacking context needed for ::after
- * to clip and position correctly. The existing .check-answer-btn block is
- * left byte-for-byte identical.
- */
+/* Shimmer Button Stacking Context Setup */
 .check-answer-btn {
   position: relative;
   overflow: hidden;
@@ -1298,37 +1247,28 @@ But I found these different styles that I didn't find in markdown.css so I decid
     90deg,
     transparent 0%,
     rgba(255, 255, 255, 0.28) 50%,
-    transparent 100%
+    transparent 100__
   );
   transform: translateX(-150%) skewX(-15deg);
   pointer-events: none;
   opacity: 0;
 }
 
-/* Hover: single forward sweep — skipped when disabled or grading */
 .check-answer-btn:not(:disabled):not(.is-loading):hover::after {
   opacity: 1;
   animation: shimmer-sweep var(--duration-base) var(--ease-out-expo) forwards;
 }
-
-/* ── 5. Check-answer button — .is-loading (essay grading in flight) ──────── */
 
 .check-answer-btn.is-loading {
   cursor: wait;
   pointer-events: none;
 }
 
-/* Infinite shimmer bar while the AI grading request is in flight */
 .check-answer-btn.is-loading::after {
   opacity: 1;
   animation: shimmer-sweep calc(var(--duration-base) * 5) linear infinite;
 }
 
-/* ── 6. Progress fill — near-complete glow pulse (≥ 80 %) ───────────────── */
-/*
- * The existing `transition: width` on .progress-fill still runs as normal;
- * CSS transitions and animations are independent compositing layers.
- */
 .progress-fill.progress-near-complete {
   animation: glow-pulse calc(var(--duration-slow) * 3) var(--ease-spring)
     infinite;

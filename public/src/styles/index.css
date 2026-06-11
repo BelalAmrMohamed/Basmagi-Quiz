@@ -1436,10 +1436,14 @@ Container
   }
 
   #breadcrumb {
-    top: 16px;
-    left: 16px;
+    top: 12px;
+    left: 12px;
     padding: 8px 14px;
     gap: 6px;
+  }
+
+  .header-badge{
+    display: none;
   }
 }
 
@@ -1511,8 +1515,8 @@ Container
   }
 
   #breadcrumb {
-    top: 12px;
-    left: 12px;
+    top: 10px;
+    left: 10px;
     padding: 6px 12px;
     font-size: 0.8rem;
     gap: 4px;
