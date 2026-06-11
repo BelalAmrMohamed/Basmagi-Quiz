@@ -8,13 +8,15 @@ export const isEssayQuestion = (q) => {
 };
 
 // === Helper: Check if answer is correct (handles single value or array) ===
-export const isAnswerCorrect = (userAnswer, correctValue) => {
+export function isAnswerCorrect(userAnswer, correctValue) {
   if (userAnswer === undefined || userAnswer === null) return false;
   if (Array.isArray(correctValue)) {
-    return correctValue.includes(userAnswer);
+    if (!Array.isArray(userAnswer)) return false;
+    if (userAnswer.length !== correctValue.length) return false;
+    return correctValue.every(c => userAnswer.includes(c));
   }
   return userAnswer === correctValue;
-};
+}
 
 export function gradeEssay(userInput, modelAnswer) {
   const normalize = (s) =>

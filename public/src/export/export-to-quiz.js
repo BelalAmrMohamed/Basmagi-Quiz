@@ -1560,6 +1560,8 @@ export async function exportToQuiz(config, questions) {
   
   ${gradeEssay.toString()}
   
+  ${isAnswerCorrect.toString()}
+  
   ${calculateQuizMetrics.toString()}
   
   const isEssayQuestion = (question) => {
@@ -1654,7 +1656,7 @@ export async function exportToQuiz(config, questions) {
   
     restoreUIState() {
       this.userAnswers.forEach((ans, i) => {
-        if (ans !== null) {
+        if (ans !== null && (!Array.isArray(ans) || ans.length > 0)) {
           const q = questions[i];
           if (isEssayQuestion(q)) {
             const textarea = document.getElementById(\`essay\${i}\`);
@@ -1666,9 +1668,13 @@ export async function exportToQuiz(config, questions) {
             const card = document.getElementById(\`q\${i}\`);
             if (card) {
               card.classList.add('answered');
+              const isMultiple = Array.isArray(q.correct);
               const buttons = card.querySelectorAll('.option-btn');
               buttons.forEach((btn, j) => {
-                btn.classList.toggle('selected', j === ans);
+                const isSelected = isMultiple ? Array.isArray(ans) && ans.includes(j) : j === ans;
+                btn.classList.toggle('selected', isSelected);
+                const checkbox = btn.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = isSelected;
               });
             }
           }
@@ -1903,9 +1909,13 @@ export async function exportToQuiz(config, questions) {
           <div class="essay-score" id="essayScore\${i}"></div>
         \`;
       } else {
+        const isMultiple = Array.isArray(q.correct);
         optionsHtml = \`<div class="options">\${
           q.options.map((opt, j) => {
             const letter = String.fromCharCode(65 + j);
+            const prefix = isMultiple 
+              ? '<input type="checkbox" class="export-checkbox" disabled style="pointer-events: none; margin-right: 12px; transform: scale(1.2); accent-color: var(--gradient-start);">' 
+              : \`<span class="option-letter">\${letter}</span>\`;
             return \`
               <button 
                 class="option-btn" 
@@ -1914,7 +1924,7 @@ export async function exportToQuiz(config, questions) {
                 onkeydown="quizApp.handleOptionKeydown(event, \${i}, \${j})"
                 aria-label="Option \${letter}: \${this.escapeHTML(opt)}"
               >
-                <span class="option-letter">\${letter}</span>
+                \${prefix}
                 <span>\${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
               </button>
             \`;
@@ -1951,24 +1961,52 @@ export async function exportToQuiz(config, questions) {
     selectAnswer(qIndex, optIndex) {
       if (this.submitted) return;
   
-      this.userAnswers[qIndex] = optIndex;
+      const q = questions[qIndex];
+      const isMultiple = Array.isArray(q.correct);
       const card = document.getElementById(\`q\${qIndex}\`);
-      card.classList.add("answered");
-  
-      const buttons = card.querySelectorAll(".option-btn");
-      buttons.forEach((btn, i) => {
-        btn.classList.remove('selected', 'selecting');
-        if (i === optIndex) {
-          btn.classList.add("selected", "selecting");
-          setTimeout(() => btn.classList.remove('selecting'), 400);
+      
+      if (isMultiple) {
+        if (!Array.isArray(this.userAnswers[qIndex])) {
+          this.userAnswers[qIndex] = [];
         }
-      });
+        const ansArray = this.userAnswers[qIndex];
+        const idx = ansArray.indexOf(optIndex);
+        if (idx > -1) {
+          ansArray.splice(idx, 1);
+        } else {
+          ansArray.push(optIndex);
+        }
+        
+        card.classList.toggle("answered", ansArray.length > 0);
+        
+        const btn = document.getElementById(\`btn\${qIndex}_\${optIndex}\`);
+        const isSelected = idx === -1;
+        btn.classList.toggle('selected', isSelected);
+        btn.classList.add('selecting');
+        setTimeout(() => btn.classList.remove('selecting'), 400);
+        
+        const checkbox = btn.querySelector('input[type="checkbox"]');
+        if (checkbox) checkbox.checked = isSelected;
+        
+        this.announceToScreenReader(\`Option \${String.fromCharCode(65 + optIndex)} \${isSelected ? 'selected' : 'unselected'}\`);
+      } else {
+        this.userAnswers[qIndex] = optIndex;
+        card.classList.add("answered");
+    
+        const buttons = card.querySelectorAll(".option-btn");
+        buttons.forEach((btn, i) => {
+          btn.classList.remove('selected', 'selecting');
+          if (i === optIndex) {
+            btn.classList.add("selected", "selecting");
+            setTimeout(() => btn.classList.remove('selecting'), 400);
+          }
+        });
+        this.announceToScreenReader(\`Option \${String.fromCharCode(65 + optIndex)} selected\`);
+      }
   
       this.updateProgress();
       this.updateNavButton(qIndex);
       this.saveProgress();
-      
-      this.announceToScreenReader(\`Option \${String.fromCharCode(65 + optIndex)} selected\`);
     },
   
     handleEssayInput(qIndex, value) {
@@ -1992,7 +2030,7 @@ export async function exportToQuiz(config, questions) {
     },
   
     updateProgress() {
-      const answered = this.userAnswers.filter(a => a !== null).length;
+      const answered = this.userAnswers.filter(a => a !== null && (!Array.isArray(a) || a.length > 0)).length;
       const total = questions.length;
       const percent = (answered / total) * 100;
   
@@ -2010,7 +2048,9 @@ export async function exportToQuiz(config, questions) {
     updateNavButton(qIndex) {
       const navBtn = document.getElementById(\`nav\${qIndex}\`);
       if (navBtn) {
-        navBtn.classList.toggle("answered", this.userAnswers[qIndex] !== null);
+        const val = this.userAnswers[qIndex];
+        const isAnswered = val !== null && (!Array.isArray(val) || val.length > 0);
+        navBtn.classList.toggle("answered", isAnswered);
         navBtn.classList.toggle("flagged", this.flaggedQuestions.has(qIndex));
         navBtn.classList.toggle("current", this.currentQuestion === qIndex);
       }
@@ -2040,14 +2080,14 @@ export async function exportToQuiz(config, questions) {
       const flagged = [];
       
       this.userAnswers.forEach((ans, i) => {
-        if (ans === null) unanswered.push(i + 1);
+        if (ans === null || (Array.isArray(ans) && ans.length === 0)) unanswered.push(i + 1);
       });
       
       this.flaggedQuestions.forEach(i => flagged.push(i + 1));
       
       let summaryHTML = '<div class="review-summary">';
       // summaryHTML += '<h3>Quiz Review</h3>';
-      summaryHTML += \`<p><strong>Answered:</strong> \${this.userAnswers.filter(a => a !== null).length}/\${questions.length}</p>\`;
+      summaryHTML += \`<p><strong>Answered:</strong> \${this.userAnswers.filter(a => a !== null && (!Array.isArray(a) || a.length > 0)).length}/\${questions.length}</p>\`;
       
       if (unanswered.length > 0) {
         summaryHTML += \`<p class="warning">⚠️ <strong>Unanswered:</strong> Questions \${unanswered.join(', ')}</p>\`;
@@ -2075,7 +2115,7 @@ export async function exportToQuiz(config, questions) {
       if (this.submitted) return;
   
       // Always show confirmation before submitting
-      const unanswered = this.userAnswers.filter(a => a === null).length;
+      const unanswered = this.userAnswers.filter(a => a === null || (Array.isArray(a) && a.length === 0)).length;
       
       let message = '<p>Are you sure you want to submit your quiz?</p>';
       if (unanswered > 0) {
