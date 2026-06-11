@@ -170,7 +170,7 @@ function buildCompatStructures(subjects) {
       // Fix (Bug 1): decode the `path` query-parameter value for DB paths so
       // the canonical regex can match `/`-separated segments correctly.
       // Local paths have no `?` and are left untouched.
-      let subfolder = null;
+      let folderSegments = [];
       try {
         let rawPath = quiz.path;
 
@@ -190,28 +190,36 @@ function buildCompatStructures(subjects) {
           const rest = canonicalMatch[1]; // e.g., "SubfolderName/file.json" or just "file.json"
           const segments = rest.split("/");
           if (segments.length > 1) {
-            subfolder = segments.slice(0, -1).join("/");
+            folderSegments = segments.slice(0, -1);
           }
         }
       } catch (_) {}
 
       let examCategoryKey = key;
 
-      if (subfolder) {
-        const subKey = `${key}/${subfolder}`;
-        if (!categoryTree[subKey]) {
-          categoryTree[subKey] = {
-            name: subfolder,
-            path: [key, subfolder],
-            parent: key,
-            subcategories: [],
-            exams: [],
-          };
-          if (!categoryTree[key].subcategories.includes(subKey)) {
-            categoryTree[key].subcategories.push(subKey);
+      if (folderSegments.length > 0) {
+        let currentParentKey = key;
+        let currentPathArr = [...categoryTree[key].path];
+
+        for (const segment of folderSegments) {
+          const subKey = `${currentParentKey}/${segment}`;
+          currentPathArr.push(segment);
+
+          if (!categoryTree[subKey]) {
+            categoryTree[subKey] = {
+              name: segment,
+              path: [...currentPathArr],
+              parent: currentParentKey,
+              subcategories: [],
+              exams: [],
+            };
+            if (!categoryTree[currentParentKey].subcategories.includes(subKey)) {
+              categoryTree[currentParentKey].subcategories.push(subKey);
+            }
           }
+          currentParentKey = subKey;
         }
-        examCategoryKey = subKey;
+        examCategoryKey = currentParentKey;
       }
 
       const examEntry = {

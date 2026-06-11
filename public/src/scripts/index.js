@@ -80,13 +80,13 @@ Output ONLY the JSON in the following format:
 `;
 
 // Specialized English AI Prompt for language-focused quizzes
-const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full markdown, tables, code blocks, LaTeX notation, audio references, video references, paragraph contexts, and supports language-specific field: 'lang'.
-
+const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full Markdown, tables, code blocks, LaTeX notation, audio and video references, paragraph contexts, and the language-specific field 'lang'.
 Please ensure the following:
 - Preserve exact wording from original materials for language precision
 - Add pronunciation guides or phonetic notation for difficult words
 - Include contextual usage examples and common collocations
 - Output only the finalized JSON array without additional commentary
+- The "correct" object can store a 0-based integer for the correct option, or an array of integers if there are multiple correct options. 
 
 Output ONLY the JSON in the following format:
 \`\`\`json
@@ -110,10 +110,9 @@ Output ONLY the JSON in the following format:
       "lang": "en"
     },
     {
-      "q": "Listen to the audio and identify the stressed syllable in the word 'present'.",
-      "options": ["First syllable (PRE-sent)", "Second syllable (pre-SENT)"],
-      "correct": 0,
-      "explanation": "As a noun, 'present' is stressed on the first syllable (PRE-sent). As a verb, it's pre-SENT.",
+      "q": "My __ brother's wife is Sara - she is my aunt.",
+      "answer": "maternal",
+      "explanation": "We need the possessive form of 'dad'. The possessive is formed by adding apostrophe + s: dad's.",
       "lang": "en"
     }
   ]
