@@ -7,6 +7,15 @@ export const isEssayQuestion = (q) => {
   return !Array.isArray(q.options) && q.answer !== undefined;
 };
 
+// === Helper: Check if answer is correct (handles single value or array) ===
+export const isAnswerCorrect = (userAnswer, correctValue) => {
+  if (userAnswer === undefined || userAnswer === null) return false;
+  if (Array.isArray(correctValue)) {
+    return correctValue.includes(userAnswer);
+  }
+  return userAnswer === correctValue;
+};
+
 export function gradeEssay(userInput, modelAnswer) {
   const normalize = (s) =>
     String(s || "")
@@ -133,7 +142,7 @@ export function calculateQuizMetrics(questions, userAnswers) {
       mcqTotal++;
       const correctIdx = q.correct ?? q.answer;
       if (ua === undefined || ua === null) mcqSkipped++;
-      else if (ua === correctIdx) mcqCorrect++;
+      else if (isAnswerCorrect(ua, correctIdx)) mcqCorrect++;
       else mcqWrong++;
     }
   }

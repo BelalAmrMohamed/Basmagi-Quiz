@@ -6,7 +6,7 @@
 import { showNotification } from "../components/notifications.js";
 
 // Question helpers
-import { gradeEssay, calculateQuizMetrics } from "../shared/rate-answers.js";
+import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../shared/rate-answers.js";
 
 import {
   renderMarkdown,
@@ -2162,7 +2162,13 @@ export async function exportToQuiz(config, questions) {
   
     handleMCQSubmission(q, qIndex) {
       const userAns = this.userAnswers[qIndex];
-      const isCorrect = userAns === q.correct;
+      // Handle both single correct answer and multiple correct answers (array)
+      const isAnswerCorrect = (ans, correct) => {
+        if (ans === undefined || ans === null) return false;
+        if (Array.isArray(correct)) return correct.includes(ans);
+        return ans === correct;
+      };
+      const isCorrect = isAnswerCorrect(userAns, q.correct);
   
       const card = document.getElementById(\`q\${qIndex}\`);
       const buttons = card.querySelectorAll(".option-btn");
@@ -2170,7 +2176,9 @@ export async function exportToQuiz(config, questions) {
       buttons.forEach((btn, k) => {
         btn.classList.add("disabled");
         btn.disabled = true;
-        if (k === q.correct) {
+        // Handle both single and array of correct answers
+        const isCorrectOption = Array.isArray(q.correct) ? q.correct.includes(k) : k === q.correct;
+        if (isCorrectOption) {
           btn.classList.add("correct");
         } else if (k === userAns && !isCorrect) {
           btn.classList.add("wrong");

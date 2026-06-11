@@ -18,6 +18,7 @@ import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
+  isAnswerCorrect,
 } from "../shared/rate-answers.js";
 
 // ── Shared Markdown engine ─────────
@@ -947,8 +948,22 @@ function renderReview(container, questions, userAnswers) {
         </div>`;
     } else {
       const correctIdx = q.correct ?? q.answer;
-      const isSkipped = userAns === undefined || userAns === null;
-      const isCorrect = !isSkipped && userAns === correctIdx;
+      const isMultiple = Array.isArray(correctIdx);
+      const isSkipped = userAns === undefined || userAns === null || (isMultiple && Array.isArray(userAns) && userAns.length === 0);
+      
+      // For multi-select: user must have selected exactly the correct set
+      let isCorrect;
+      if (isSkipped) {
+        isCorrect = false;
+      } else if (isMultiple) {
+        isCorrect = Array.isArray(userAns)
+          && userAns.length === correctIdx.length
+          && correctIdx.every(idx => userAns.includes(idx));
+      } else {
+        isCorrect = isAnswerCorrect(userAns, correctIdx);
+      }
+      
+
       const statusClass = isCorrect
         ? "correct"
         : isSkipped
@@ -960,12 +975,28 @@ function renderReview(container, questions, userAnswers) {
           ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-minus-icon lucide-circle-minus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
 
-      const userText = isSkipped
-        ? "<em>Skipped</em>"
-        : renderMarkdown(normalizeLiteralNewlines(q.options[userAns]));
-      const correctText = renderMarkdown(
-        normalizeLiteralNewlines(q.options[correctIdx]),
-      );
+      let userText;
+      if (isSkipped) {
+        userText = "<em>Skipped</em>";
+      } else if (isMultiple && Array.isArray(userAns)) {
+        userText = userAns
+          .map(i => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
+          .map(html => `<div class="ans-multi-item">${html}</div>`)
+          .join("");
+      } else {
+        userText = renderMarkdown(normalizeLiteralNewlines(q.options[userAns]));
+      }
+      
+      // Correct answer text — render each correct option as a separate item
+      let correctText;
+      if (isMultiple) {
+        correctText = correctIdx
+          .map(i => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
+          .map(html => `<div class="ans-multi-item">${html}</div>`)
+          .join("");
+      } else {
+        correctText = renderMarkdown(normalizeLiteralNewlines(q.options[correctIdx]));
+      }
       const explanationText = q.explanation
         ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
         : "";

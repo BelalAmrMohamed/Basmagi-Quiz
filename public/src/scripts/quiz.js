@@ -7,7 +7,7 @@ import {
 } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
-import { gradeEssay, isEssayQuestion } from "../shared/rate-answers.js";
+import { gradeEssay, isEssayQuestion, isAnswerCorrect } from "../shared/rate-answers.js";
 showNotification(
   "الإمتحان بدأ",
   "أسأل الله لك التوفيق والسداد",
@@ -935,7 +935,7 @@ function createGridItem(q, idx) {
     statusClass = "current";
   } else if (isLocked) {
     const correctIdx = q.correct ?? q.answer;
-    const isCorrect = userAnswers[idx] === correctIdx;
+    const isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
     statusClass = isCorrect ? "correct" : "wrong";
     statusIcon = isCorrect ? "✓" : "✗";
   } else if (isAnswered) {
@@ -1019,7 +1019,7 @@ function createListItem(q, idx) {
     statusClass = "current";
   } else if (isLocked) {
     const correctIdx = q.correct ?? q.answer;
-    const isCorrect = userAnswers[idx] === correctIdx;
+    const isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
     statusClass = isCorrect ? "correct" : "wrong";
     statusIcon = isCorrect ? "✓" : "✗";
   } else if (isAnswered) {
@@ -1228,7 +1228,16 @@ function renderQuestion() {
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
       feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
-      isCorrect = userSelected === correctIdx;
+      // Check if answer is correct (handles both single and array)
+      if (Array.isArray(correctIdx)) {
+        // Multiple correct answers: user's answer must match exactly
+        isCorrect = Array.isArray(userSelected) && 
+                   userSelected.length === correctIdx.length &&
+                   correctIdx.every(idx => userSelected.includes(idx));
+      } else {
+        // Single correct answer
+        isCorrect = isAnswerCorrect(userSelected, correctIdx);
+      }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
       feedbackText = `<div class="feedback-body"><strong>Explanation: </strong>${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
@@ -1307,27 +1316,43 @@ function renderQuestion() {
       </div>
     `;
   } else {
+    const isMultiple = Array.isArray(q.correct);
+    const userSelected = userAnswers[currentIdx];
+    
     els.questionContainer.innerHTML = `
       <div class="question-card${largeClass}">
         ${questionHeaderHTML}
         <div class="options-grid">
           ${q.options
             .map((opt, i) => {
-              const isSelected = userSelected === i;
+              let isSelected = false;
+              if (isMultiple) {
+                isSelected = Array.isArray(userSelected) && userSelected.includes(i);
+              } else {
+                isSelected = userSelected === i;
+              }
+              
               const optAlign = getAlignClass(opt, qLang);
               let optionClass = "option-row";
               if (isSelected) optionClass += " selected";
               if (isLocked) {
                 optionClass += " locked";
-                if (i === correctIdx) optionClass += " correct";
-                if (isSelected && i !== correctIdx) optionClass += " wrong";
+                // Check if this is a correct option
+                const isCorrectOption = isMultiple 
+                  ? Array.isArray(q.correct) && q.correct.includes(i)
+                  : i === q.correct;
+                if (isCorrectOption) optionClass += " correct";
+                if (isSelected && !isCorrectOption) optionClass += " wrong";
               }
+
+              const inputType = isMultiple ? "checkbox" : "radio";
+              const inputName = isMultiple ? `answer-${i}` : "answer";
 
               return `
               <div class="${optionClass} ${optAlign}" ${
                 isLocked ? "" : `onclick="window.handleSelect(${i})"`
               }>
-                <input type="radio" name="answer" ${
+                <input type="${inputType}" name="${inputName}" ${
                   isSelected ? "checked" : ""
                 } 
                        ${isLocked ? "disabled" : ""} aria-label="Option ${
@@ -1342,7 +1367,7 @@ function renderQuestion() {
           isLocked || !showCheckButton ? "hidden" : ""
         }"
                 id="checkBtn" onclick="window.checkAnswer()"
-                ${userSelected === undefined ? "disabled" : ""}>
+                ${userSelected === undefined || (isMultiple && (!Array.isArray(userSelected) || userSelected.length === 0)) ? "disabled" : ""}>
           Check Answer
         </button>
         <div class="${feedbackClass}">${feedbackText}</div>
@@ -1358,7 +1383,27 @@ function renderQuestion() {
 // === Event Handlers ===
 function handleSelect(index) {
   if (lockedQuestions[currentIdx]) return;
-  userAnswers[currentIdx] = index;
+  
+  const q = questions[currentIdx];
+  const isMultiple = Array.isArray(q.correct);
+  
+  if (isMultiple) {
+    // Multiple selection: toggle the checkbox
+    if (!Array.isArray(userAnswers[currentIdx])) {
+      userAnswers[currentIdx] = [];
+    }
+    const answerArray = userAnswers[currentIdx];
+    const idx = answerArray.indexOf(index);
+    if (idx > -1) {
+      answerArray.splice(idx, 1);
+    } else {
+      answerArray.push(index);
+    }
+  } else {
+    // Single selection: replace with new answer
+    userAnswers[currentIdx] = index;
+  }
+  
   saveStateDebounced();
   renderQuestion();
   renderMenuNavigationDebounced();
@@ -1443,7 +1488,7 @@ async function finish(skipconfirmationNotification) {
       essayMaxScore += 5;
     } else {
       const correctIdx = q.correct ?? q.answer;
-      if (userAnswers[i] === correctIdx) correctCount++;
+      if (isAnswerCorrect(userAnswers[i], correctIdx)) correctCount++;
     }
   });
 
@@ -1572,7 +1617,10 @@ function checkAnswer() {
     const textarea = document.getElementById("essayInput");
     if (!textarea || !textarea.value.trim()) return;
   } else {
-    if (userAnswers[currentIdx] === undefined) return;
+    const userAnswer = userAnswers[currentIdx];
+    if (userAnswer === undefined) return;
+    // For multiple choice, ensure answer exists (could be empty array)
+    if (Array.isArray(userAnswer) && userAnswer.length === 0) return;
   }
 
   lockedQuestions[currentIdx] = true;
