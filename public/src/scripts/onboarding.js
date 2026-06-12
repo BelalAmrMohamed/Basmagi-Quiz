@@ -144,12 +144,6 @@ function updateProgress() {
 
   prevBtn.style.visibility = currentStep === 0 ? "hidden" : "visible";
   nextBtn.textContent = currentStep === totalSteps ? "ابدأ رحلتك 🚀" : "التالي";
-
-  // Skip is available from step 1 (after name is entered) onward.
-  // Unset fields (faculty/year/term) will be saved as "All".
-  if (skipBtn) {
-    skipBtn.style.display = currentStep >= 1 ? "" : "none";
-  }
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
@@ -432,12 +426,7 @@ async function saveAndRedirect() {
   }
 }
 
-async function skipOnboarding() {
-  if (
-    confirm(
-      "هل أنت متأكد من تخطي الإعداد؟ يمكنك تعديل بياناتك لاحقاً من الإعدادات.",
-    )
-  ) {
+function skipOnboarding() {
     // Default any fields the user hasn't filled in yet to "All"
     if (!state.faculty) state.faculty = "All";
     if (!state.year) state.year = "All";
@@ -483,7 +472,6 @@ async function skipOnboarding() {
     } else {
       window.location.href = "/";
     }
-  }
 }
 
 // Start
