@@ -13,15 +13,7 @@ html {
 }
 
 body {
-  font-family:
-    "IBM Plex Sans Arabic",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -102,7 +94,7 @@ body {
 
 .stats-text {
   text-align: right;
-  direction: rtl;
+  /* direction: rtl; */
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -351,6 +343,11 @@ body {
   margin-bottom: 8px;
   font-weight: 500;
   opacity: 0.85;
+}
+
+.breadcrumb-container{
+  margin-bottom: 4px; 
+  direction: ltr;
 }
 
 .quiz-title-row {

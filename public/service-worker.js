@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v4.1.2";
+const CACHE_VERSION = "basmagi-v5.0.0";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -162,7 +162,9 @@ function isMediaRequest(request) {
   return (
     request.destination === "audio" ||
     request.destination === "video" ||
-    /\.(mp3|mp4|wav|webm|ogg|m4a|aac|mov|ogv)$/i.test(new URL(request.url).pathname)
+    /\.(mp3|mp4|wav|webm|ogg|m4a|aac|mov|ogv)$/i.test(
+      new URL(request.url).pathname,
+    )
   );
 }
 

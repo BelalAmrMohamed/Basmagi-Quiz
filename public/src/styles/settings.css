@@ -16,16 +16,7 @@ html {
 }
 
 body {
-  font-family:
-    "IBM Plex Sans Arabic",
-    "Tajawal",
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "SF Pro Display",
-    "Segoe UI",
-    Roboto,
-    sans-serif;
+  font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
