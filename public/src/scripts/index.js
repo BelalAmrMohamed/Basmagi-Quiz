@@ -465,11 +465,8 @@ async function initApp() {
   try {
     const hasVisited = localStorage.getItem("first_visit_complete");
     const storedUsername = localStorage.getItem("username");
-    const isDefaultName = !storedUsername || storedUsername === "User";
 
-    if (!hasVisited || isDefaultName) {
-      if (isDefaultName) localStorage.removeItem("first_visit_complete");
-
+    if (!hasVisited) {
       // Save intended path for onboarding redirect preservation
       if (window.location.hash) {
         sessionStorage.setItem("intended_redirect_hash", window.location.hash);
