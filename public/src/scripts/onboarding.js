@@ -208,7 +208,7 @@ function renderStep() {
   if (currentStep === 1) renderFacultyStep();
   if (currentStep === 2) renderYearStep();
   if (currentStep === 3) renderTermStep();
-  if (currentStep === 5) renderCoursesStep();
+  if (currentStep === 4) renderCoursesStep();
   if (currentStep === 6) renderWelcomeStep();
 
   updateProgress();
@@ -427,51 +427,47 @@ async function saveAndRedirect() {
 }
 
 function skipOnboarding() {
-    // Default any fields the user hasn't filled in yet to "All"
-    if (!state.faculty) state.faculty = "All";
-    if (!state.year) state.year = "All";
-    if (!state.term) state.term = "All";
+  // Default any fields the user hasn't filled in yet to "All"
+  if (!state.faculty) state.faculty = "All";
+  if (!state.year) state.year = "All";
+  if (!state.term) state.term = "All";
 
-    // Auto-subscribe courses that match the profile the user DID set.
-    // If any field is "All" this produces no matches, which is correct —
-    // the user can always manage subscriptions later from settings.
-    if (
-      state.faculty !== "All" &&
-      state.year !== "All" &&
-      state.term !== "All"
-    ) {
-      filterCourses(categoryTree, {
-        faculty: state.faculty,
-        year: state.year,
-        term: state.term,
-      }).forEach((c) => {
-        if (!state.subscribedCourses.includes(c.id)) {
-          state.subscribedCourses.push(c.id);
-        }
-      });
-    }
-
-    userProfile.setUsername(state.username);
-    userProfile.updateAcademicInfo({
+  // Auto-subscribe courses that match the profile the user DID set.
+  // If any field is "All" this produces no matches, which is correct —
+  // the user can always manage subscriptions later from settings.
+  if (state.faculty !== "All" && state.year !== "All" && state.term !== "All") {
+    filterCourses(categoryTree, {
       faculty: state.faculty,
       year: state.year,
       term: state.term,
+    }).forEach((c) => {
+      if (!state.subscribedCourses.includes(c.id)) {
+        state.subscribedCourses.push(c.id);
+      }
     });
-    userProfile.setQuizStyle(state.quizStyle);
-    userProfile.setDefaultQuizMode(state.defaultMode);
-    userProfile.setSubscribedCourses(state.subscribedCourses);
+  }
 
-    clearDraft();
-    localStorage.setItem("first_visit_complete", "true");
+  userProfile.setUsername(state.username);
+  userProfile.updateAcademicInfo({
+    faculty: state.faculty,
+    year: state.year,
+    term: state.term,
+  });
+  userProfile.setQuizStyle(state.quizStyle);
+  userProfile.setDefaultQuizMode(state.defaultMode);
+  userProfile.setSubscribedCourses(state.subscribedCourses);
 
-    // Restore preserved redirect
-    const preservedHash = sessionStorage.getItem("intended_redirect_hash");
-    if (preservedHash) {
-      sessionStorage.removeItem("intended_redirect_hash");
-      window.location.href = `index.html${preservedHash}`;
-    } else {
-      window.location.href = "/";
-    }
+  clearDraft();
+  localStorage.setItem("first_visit_complete", "true");
+
+  // Restore preserved redirect
+  const preservedHash = sessionStorage.getItem("intended_redirect_hash");
+  if (preservedHash) {
+    sessionStorage.removeItem("intended_redirect_hash");
+    window.location.href = `index.html${preservedHash}`;
+  } else {
+    window.location.href = "/";
+  }
 }
 
 // Start
