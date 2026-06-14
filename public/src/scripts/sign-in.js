@@ -66,12 +66,20 @@ async function initSupabase() {
         data: { session },
       } = await supabaseClient.auth.getSession();
       if (session) {
+        if (!isAdminAuthenticated()) {
+          const { signInWithSupabase } = await import("./adminAuth.js");
+          await signInWithSupabase(session.access_token);
+        }
         redirectToApp();
       }
 
       // Listen for changes
-      supabaseClient.auth.onAuthStateChange((event, session) => {
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (event === "SIGNED_IN" && session) {
+          if (!isAdminAuthenticated()) {
+             const { signInWithSupabase } = await import("./adminAuth.js");
+             await signInWithSupabase(session.access_token);
+          }
           redirectToApp();
         }
       });
@@ -244,6 +252,11 @@ if (emailForm) {
       });
 
       if (error) throw error;
+      
+      if (!isAdminAuthenticated()) {
+        const { signInWithSupabase } = await import("./adminAuth.js");
+        await signInWithSupabase(data.session.access_token);
+      }
       redirectToApp();
     } catch (err) {
       showError("email", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
@@ -304,3 +317,41 @@ function clearError(tab) {
   errEl.textContent = "";
   errEl.style.display = "none";
 }
+
+// ── Footer Links (Privacy Policy & Terms of Service) ──────────────────────────
+(function appendFooterLinks() {
+  const container = document.querySelector(".signin-card") || document.body;
+  const footer = document.createElement("div");
+  footer.style.marginTop = "24px";
+  footer.style.display = "flex";
+  footer.style.justifyContent = "center";
+  footer.style.gap = "16px";
+  footer.style.fontSize = "0.85rem";
+  
+  const privacyLink = document.createElement("a");
+  privacyLink.href = "/privacy-policy.html";
+  privacyLink.textContent = "سياسة الخصوصية";
+  privacyLink.style.color = "var(--color-text-tertiary, #6b7280)";
+  privacyLink.style.textDecoration = "none";
+  privacyLink.style.transition = "color 0.2s";
+  privacyLink.onmouseover = () => privacyLink.style.color = "var(--color-primary, #6366f1)";
+  privacyLink.onmouseout = () => privacyLink.style.color = "var(--color-text-tertiary, #6b7280)";
+  
+  const separator = document.createElement("span");
+  separator.textContent = "•";
+  separator.style.color = "var(--color-border, #e5e7eb)";
+  
+  const termsLink = document.createElement("a");
+  termsLink.href = "/terms-of-service.html";
+  termsLink.textContent = "شروط الخدمة";
+  termsLink.style.color = "var(--color-text-tertiary, #6b7280)";
+  termsLink.style.textDecoration = "none";
+  termsLink.style.transition = "color 0.2s";
+  termsLink.onmouseover = () => termsLink.style.color = "var(--color-primary, #6366f1)";
+  termsLink.onmouseout = () => termsLink.style.color = "var(--color-text-tertiary, #6b7280)";
+
+  footer.appendChild(privacyLink);
+  footer.appendChild(separator);
+  footer.appendChild(termsLink);
+  container.appendChild(footer);
+})();

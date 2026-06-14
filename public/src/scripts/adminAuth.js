@@ -75,6 +75,48 @@ export async function signIn(adminId) {
 }
 
 /**
+ * Authenticates with the server using a Supabase access token.
+ * On success the JWT is stored in sessionStorage.
+ *
+ * @param {string} supabaseToken
+ * @returns {boolean} true if successful, false otherwise
+ */
+export async function signInWithSupabase(supabaseToken) {
+  let res;
+  try {
+    res = await fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ supabaseToken }),
+    });
+  } catch (networkErr) {
+    console.error("Network error authenticating with Supabase token");
+    return false;
+  }
+
+  let body = {};
+  try {
+    body = await res.json();
+  } catch (_) {}
+
+  if (!res.ok) {
+    console.warn(body.error || "Failed to authenticate as admin via Supabase");
+    return false;
+  }
+
+  const { token } = body;
+  if (!token || typeof token !== "string") {
+    return false;
+  }
+
+  _token = token;
+  try {
+    sessionStorage.setItem(SESSION_KEY, token);
+  } catch (_) {}
+  return true;
+}
+
+/**
  * Returns the current JWT or null if not authenticated.
  * Always checks sessionStorage as a fallback in case the module
  * was re-imported after navigation.

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سياسة الخصوصية — بصمجي</title>
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --bg-color: #fafbfc;
+            --surface-color: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Support dark mode preference if set */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --surface-color: #1e293b;
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+                --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        /* Support data-theme attribute if set by the parent page */
+        html[data-theme="dark"] :root,
+        html[data-theme="dark-slate"] :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif;
+            line-height: 1.8;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        ul {
+            margin-right: 25px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/favicon.png" alt="بصمجي" class="logo">
+            <h1>سياسة الخصوصية</h1>
+            <p class="subtitle">تاريخ آخر تحديث: 14 يونيو 2026</p>
+        </div>
+
+        <p>مرحباً بكم في منصة <strong>بصمجي</strong>. نحن نلتزم بحماية خصوصيتكم وأمن بياناتكم الشخصية. توضح هذه سياسة كيفية جمع واستخدام وحماية معلوماتكم عند استخدامكم لمنصتنا.</p>
+
+        <h2>1. المعلومات التي نجمعها</h2>
+        <p>نقوم بجمع المعلومات التالية لتقديم خدماتنا وتحسينها:</p>
+        <ul>
+            <li><strong>بيانات الحساب:</strong> مثل البريد الإلكتروني والاسم عند تسجيل الدخول أو إنشاء حساب.</li>
+            <li><strong>بيانات الاستخدام:</strong> تفاصيل حول تفاعلكم مع الاختبارات والأسئلة والنتائج المحققة.</li>
+            <li><strong>بيانات التوثيق:</strong> معلومات الجلسة ورموز الدخول لتأمين حساباتكم.</li>
+        </ul>
+
+        <h2>2. كيف نستخدم معلوماتكم</h2>
+        <p>نستخدم البيانات التي نجمعها للأغراض التالية:</p>
+        <ul>
+            <li>تقديم وتشغيل وصيانة منصة الاختبارات.</li>
+            <li>تحسين تجربة الاستخدام وتطوير ميزات جديدة.</li>
+            <li>توثيق وحماية حسابات المستخدمين ومنع الوصول غير المصرح به.</li>
+            <li>التواصل معكم بخصوص حساباتكم أو التحديثات المهمة للمنصة.</li>
+        </ul>
+
+        <h2>3. مشاركة البيانات والجهات الخارجية</h2>
+        <p>نحن لا نبيع أو نؤجر معلوماتكم الشخصية لأطراف خارجية. قد نشارك البيانات فقط في الحالات التالية:</p>
+        <ul>
+            <li>مزوّدو الخدمات المعتمدون مثل قاعدة البيانات (Supabase) لتخزين البيانات والتوثيق.</li>
+            <li>الالتزام بالقوانين والأنظمة والطلبات القانونية الحكومية.</li>
+        </ul>
+
+        <h2>4. أمان البيانات</h2>
+        <p>نحن نطبق إجراءات أمنية وتقنية صارمة لحماية بياناتكم من الوصول غير المصرح به أو التغيير أو الإفصاح أو الإتلاف. ومع ذلك، يرجى تذكر أنه لا توجد طريقة نقل عبر الإنترنت أو تخزين إلكتروني آمنة بنسبة 100٪.</p>
+
+        <h2>5. حقوقكم</h2>
+        <p>حقكم في الوصول إلى بياناتكم الشخصية أو تعديلها أو حذفها مكفول بالكامل. يمكنك مراجعة وتحديث بياناتك الشخصية من خلال إعدادات حسابك أو بالتواصل معنا مباشرة.</p>
+
+        <h2>6. التعديلات على سياسة الخصوصية</h2>
+        <p>قد نقوم بتحديث سياسة الخصوصية هذه من وقت لآخر. سنقوم بإخطاركم بأي تغييرات جوهرية عن طريق نشر السياسة الجديدة على هذه الصفحة وتحديث تاريخ "آخر تحديث".</p>
+
+        <div class="footer">
+            <a href="/sign-in.html" class="btn">العودة لتسجيل الدخول</a>
+        </div>
+    </div>
+    
+    <script>
+        // Apply theme preferences dynamically
+        (function() {
+            const theme = localStorage.getItem("quiz_theme_pref") || "light";
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
+</body>
+</html>

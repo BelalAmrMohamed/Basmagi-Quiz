@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شروط الخدمة — بصمجي</title>
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --bg-color: #fafbfc;
+            --surface-color: #ffffff;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Support dark mode preference if set */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --surface-color: #1e293b;
+                --text-primary: #f8fafc;
+                --text-secondary: #94a3b8;
+                --border-color: #334155;
+                --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            }
+        }
+
+        /* Support data-theme attribute if set by the parent page */
+        html[data-theme="dark"] :root,
+        html[data-theme="dark-slate"] :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif;
+            line-height: 1.8;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .logo {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        ul {
+            margin-right: 25px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/favicon.png" alt="بصمجي" class="logo">
+            <h1>شروط الخدمة</h1>
+            <p class="subtitle">تاريخ آخر تحديث: 14 يونيو 2026</p>
+        </div>
+
+        <p>مرحباً بكم في منصة <strong>بصمجي</strong>. باستخدامكم لموقعنا وخدماتنا، فإنكم توافقون على الالتزام بالشروط والأحكام التالية. يرجى قراءتها بعناية.</p>
+
+        <h2>1. قبول الشروط</h2>
+        <p>بمجرد وصولك إلى منصة بصمجي أو استخدامها بأي شكل من الأشكال، فإنك تقر بأنك قرأت هذه الشروط وفهمتها وتوافق على الالتزام بها بالكامل.</p>
+
+        <h2>2. حسابات المستخدمين وأمنها</h2>
+        <p>للوصول إلى ميزات معينة، قد يُطلب منك تسجيل الدخول أو إدخال رمز وصول:</p>
+        <ul>
+            <li>تتحمل المسؤولية الكاملة عن سرية بيانات حسابك ورمز الدخول الخاص بك.</li>
+            <li>توافق على إخطارنا فوراً بأي استخدام غير مصرح به لحسابك.</li>
+            <li>نحتفظ بالحق في تعليق أو إلغاء الحسابات في حال انتهاك هذه الشروط.</li>
+        </ul>
+
+        <h2>3. الاستخدام المقبول للمنصة</h2>
+        <p>يجب استخدام المنصة فقط للأغراض التعليمية والشخصية المخصصة لها. يُحظر تماماً:</p>
+        <ul>
+            <li>محاولة اختراق أو تخريب أو تعطيل عمل المنصة أو خوادمها.</li>
+            <li>استخدام أي أدوات آلية (كالبوتات أو برامج كشط البيانات) لجمع المحتوى من المنصة.</li>
+            <li>إعادة نشر أو توزيع أسئلة أو اختبارات المنصة دون إذن خطي مسبق.</li>
+        </ul>
+
+        <h2>4. الملكية الفكرية</h2>
+        <p>جميع المحتويات المتوفرة على منصة بصمجي (بما في ذلك الأسئلة، النصوص، التصاميم، الشعارات، البرمجيات، والأكواد) هي ملكية فكرية محمية ولا يجوز نسخها أو استخدامها لأغراض تجارية دون إذننا.</p>
+
+        <h2>5. إخلاء المسؤولية</h2>
+        <p>تُقدم الخدمات على منصة بصمجي "كما هي" دون أي ضمانات من أي نوع، صريحة أو ضمنية. نحن لا نضمن عدم انقطاع الخدمة أو خلوها من الأخطاء، ونبذل قصارى جهدنا لضمان دقة وتوافر المنصة.</p>
+
+        <h2>6. التعديل على الشروط</h2>
+        <p>نحتفظ بالحق في تعديل أو تحديث شروط الخدمة هذه في أي وقت. يعتبر استمرارك في استخدام المنصة بعد نشر أي تغييرات موافقة منك على الشروط الجديدة.</p>
+
+        <div class="footer">
+            <a href="/sign-in.html" class="btn">العودة لتسجيل الدخول</a>
+        </div>
+    </div>
+    
+    <script>
+        // Apply theme preferences dynamically
+        (function() {
+            const theme = localStorage.getItem("quiz_theme_pref") || "light";
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
+</body>
+</html>
