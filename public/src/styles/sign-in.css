@@ -60,11 +60,40 @@ body::before {
 }
 
 /* Logo / icon */
+.signin-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 .signin-icon {
-  text-align: center;
-  margin-bottom: 8px;
-  font-size: 2.8rem;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--color-surface);
+  position: relative;
+  color: var(--color-primary);
+}
+
+.signin-icon::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ff8a00, #e52e71);
+  z-index: -1;
+  opacity: 0.8;
+}
+
+.signin-icon svg {
+  color: inherit;
+}
+
+.signin-icon .lock-icon {
+  stroke: url(#lock-gradient);
 }
 
 .signin-title {
@@ -79,7 +108,41 @@ body::before {
   text-align: center;
   font-size: 0.88rem;
   color: var(--color-text-secondary);
-  margin: 0 0 32px;
+  margin: 0 0 24px;
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  background: var(--color-background);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 24px;
+  gap: 4px;
+}
+
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.tab-btn.active {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .field-label {
@@ -107,6 +170,11 @@ body::before {
   letter-spacing: 0.08em;
 }
 
+.email-input-ltr {
+  text-align: left;
+  letter-spacing: normal;
+}
+
 .field-input:focus {
   border-color: var(--color-primary);
   outline: none;
@@ -116,6 +184,11 @@ body::before {
 .field-input::placeholder {
   letter-spacing: normal;
   color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.email-input-ltr::placeholder {
+  text-align: left;
 }
 
 .field-wrapper {
@@ -146,7 +219,7 @@ body::before {
 .signin-btn {
   width: 100%;
   padding: 14px;
-  background: var(--gradient-accent);
+  background: linear-gradient(135deg, #4f46e5, #c026d3);
   color: white;
   border: none;
   border-radius: 12px;
@@ -163,15 +236,65 @@ body::before {
   justify-content: center;
   gap: 8px;
   letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
 }
 .signin-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 6px 20px 0 rgba(79, 70, 229, 0.5);
 }
 .signin-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  color: var(--color-text-tertiary);
+  font-size: 0.8rem;
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--color-border);
+}
+.divider span {
+  padding: 0 10px;
+}
+
+/* SSO Buttons */
+.sso-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.sso-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sso-btn:hover {
+  background: var(--color-surface);
+  border-color: var(--color-text-tertiary);
+  color: var(--color-text-primary);
 }
 
 /* Spinner */
@@ -240,6 +363,16 @@ body::before {
 /* Dark theme hint for input */
 [data-theme="dark"] .field-input,
 [data-theme="dark-slate"] .field-input {
+  background: var(--color-background-secondary);
+}
+
+[data-theme="dark"] .tabs-container,
+[data-theme="dark-slate"] .tabs-container {
+  background: var(--color-background-secondary);
+}
+
+[data-theme="dark"] .sso-btn,
+[data-theme="dark-slate"] .sso-btn {
   background: var(--color-background-secondary);
 }
 

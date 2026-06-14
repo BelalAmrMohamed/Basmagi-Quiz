@@ -1,118 +1,306 @@
 // =============================================================================
 // public/src/scripts/sign-in.js
 // Sign-in page logic.
-//
-// On load:
-//   1. If a token already exists in sessionStorage AND it's not expired,
-//      redirect straight to index.html (no need to sign in again).
-//   2. Otherwise render the sign-in form normally.
-//
-// On submit:
-//   Call signIn() → store JWT in sessionStorage → redirect to index.html.
 // =============================================================================
 
 import { signIn, isAdminAuthenticated, getToken } from "./adminAuth.js";
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const form = document.getElementById("signinForm");
-const input = document.getElementById("adminIdInput");
-const submitBtn = document.getElementById("submitBtn");
-const spinner = document.getElementById("spinner");
-const btnText = document.getElementById("btnText");
-const errorMsg = document.getElementById("errorMsg");
-const toggleBtn = document.getElementById("toggleBtn");
-const eyeIcon = document.getElementById("eyeIcon");
-const eyeOffIcon = document.getElementById("eyeOffIcon");
+// Forms & Tabs
+const tabAccessCode = document.getElementById("tabAccessCode");
+const tabEmail = document.getElementById("tabEmail");
+const accessCodeForm = document.getElementById("accessCodeForm");
+const emailForm = document.getElementById("emailForm");
+const pageTitle = document.getElementById("pageTitle");
+const pageSubtitle = document.getElementById("pageSubtitle");
 
-// ── Helper: decode JWT expiry without a library ───────────────────────────────
+// Access Code UI
+const inputAccessCode = document.getElementById("adminIdInput");
+const submitBtnAccessCode = document.getElementById("submitBtnAccessCode");
+const spinnerAccessCode = document.getElementById("spinnerAccessCode");
+const btnTextAccessCode = document.getElementById("btnTextAccessCode");
+const errorMsgAccessCode = document.getElementById("errorMsgAccessCode");
+const toggleBtnAccessCode = document.getElementById("toggleBtnAccessCode");
+const eyeIconAccessCode = document.getElementById("eyeIconAccessCode");
+const eyeOffIconAccessCode = document.getElementById("eyeOffIconAccessCode");
+
+// Email UI
+const inputEmail = document.getElementById("emailInput");
+const inputEmailPassword = document.getElementById("emailPasswordInput");
+const submitBtnEmail = document.getElementById("submitBtnEmail");
+const spinnerEmail = document.getElementById("spinnerEmail");
+const btnTextEmail = document.getElementById("btnTextEmail");
+const errorMsgEmail = document.getElementById("errorMsgEmail");
+const toggleBtnEmail = document.getElementById("toggleBtnEmail");
+const eyeIconEmail = document.getElementById("eyeIconEmail");
+const eyeOffIconEmail = document.getElementById("eyeOffIconEmail");
+const btnMicrosoft = document.getElementById("btnMicrosoft");
+const btnGoogle = document.getElementById("btnGoogle");
+
+let supabaseClient = null;
+
+// ── Helper: get redirect URL ──────────────────────────────────────────────────
+function getRedirectUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const redirectPath = params.get("redirect");
+  return redirectPath ? decodeURIComponent(redirectPath) : "/";
+}
+
+function redirectToApp() {
+  window.location.href = getRedirectUrl();
+}
+
+// ── Initialize Supabase ───────────────────────────────────────────────────────
+async function initSupabase() {
+  try {
+    const res = await fetch("/api/env");
+    const data = await res.json();
+    if (data.supabaseUrl && data.supabaseAnonKey) {
+      supabaseClient = window.supabase.createClient(
+        data.supabaseUrl,
+        data.supabaseAnonKey,
+      );
+
+      // Check existing session
+      const {
+        data: { session },
+      } = await supabaseClient.auth.getSession();
+      if (session) {
+        redirectToApp();
+      }
+
+      // Listen for changes
+      supabaseClient.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          redirectToApp();
+        }
+      });
+    }
+  } catch (err) {
+    console.error("Failed to initialize Supabase:", err);
+  }
+}
+
+// ── On page load: Tab routing & existing sessions ────────────────────────────
+(function init() {
+  // 1. Tab Routing based on URL query parameter or path fallback
+  const path = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get("tab");
+
+  if (tab === "email" || path.endsWith("/email")) {
+    switchTab("email");
+  } else if (tab === "access-code" || path.endsWith("/access-code")) {
+    switchTab("access-code");
+  } else {
+    // Default
+    switchTab("access-code");
+  }
+
+  // 2. Admin Check
+  if (isAdminAuthenticated()) {
+    const token = getToken();
+    if (token && !isTokenExpired(token)) {
+      redirectToApp();
+      return;
+    }
+    // Expired
+    import("./adminAuth.js").then(({ signOut }) => signOut());
+  }
+
+  // 3. Supabase Check
+  initSupabase();
+})();
+
 function isTokenExpired(token) {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    // exp is in seconds; add a 30-second buffer for clock skew
     return Date.now() / 1000 > payload.exp - 30;
   } catch (_) {
-    return true; // treat malformed tokens as expired
+    return true;
   }
 }
 
-// ── On page load: check for existing valid session ────────────────────────────
-(function checkExistingSession() {
-  if (!isAdminAuthenticated()) return; // no token at all
+// ── Tab Switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  // Reset UI
+  tabAccessCode.classList.remove("active");
+  tabEmail.classList.remove("active");
+  accessCodeForm.style.display = "none";
+  emailForm.style.display = "none";
+  clearError("access-code");
+  clearError("email");
 
-  const token = getToken();
-  if (token && !isTokenExpired(token)) {
-    // Already authenticated and token is still valid — go straight to the app
-    redirectToApp();
-    return;
+  // Get current search params, set tab, and keep other parameters (like redirect)
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", tab);
+
+  // If the pathname currently has /email or /access-code (legacy paths),
+  // clean it up to just the base pathname.
+  let base = window.location.pathname;
+  if (base.endsWith("/email")) {
+    base = base.slice(0, -6);
+  } else if (base.endsWith("/access-code")) {
+    base = base.slice(0, -12);
   }
 
-  // Token is expired — clear it and let the user sign in again
-  import("./adminAuth.js").then(({ signOut }) => signOut());
-})();
+  const newUrl = `${base}?${params.toString()}${window.location.hash}`;
+  window.history.replaceState({}, "", newUrl);
 
-// ── Show/hide password ────────────────────────────────────────────────────────
-if (toggleBtn) {
+  if (tab === "email") {
+    tabEmail.classList.add("active");
+    emailForm.style.display = "block";
+    pageSubtitle.textContent = "تسجيل الدخول باستخدام البريد الإلكتروني";
+  } else {
+    tabAccessCode.classList.add("active");
+    accessCodeForm.style.display = "block";
+    pageSubtitle.textContent = "أدخل رمز الدخول للمتابعة";
+  }
+}
+
+tabAccessCode.addEventListener("click", () => switchTab("access-code"));
+tabEmail.addEventListener("click", () => switchTab("email"));
+
+// ── Show/hide password toggles ───────────────────────────────────────────────
+function setupPasswordToggle(toggleBtn, inputEl, eyeIcon, eyeOffIcon) {
+  if (!toggleBtn) return;
   toggleBtn.addEventListener("click", () => {
-    const showing = input.type === "text";
-    input.type = showing ? "password" : "text";
+    const showing = inputEl.type === "text";
+    inputEl.type = showing ? "password" : "text";
     eyeIcon.style.display = showing ? "" : "none";
     eyeOffIcon.style.display = showing ? "none" : "";
-    input.focus();
+    inputEl.focus();
   });
 }
 
-// ── Form submit ───────────────────────────────────────────────────────────────
-if (form) {
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+setupPasswordToggle(
+  toggleBtnAccessCode,
+  inputAccessCode,
+  eyeIconAccessCode,
+  eyeOffIconAccessCode,
+);
+setupPasswordToggle(
+  toggleBtnEmail,
+  inputEmailPassword,
+  eyeIconEmail,
+  eyeOffIconEmail,
+);
 
-    const adminId = input.value.trim();
+// ── Forms Submission ─────────────────────────────────────────────────────────
+
+// Admin Access Code Submit
+if (accessCodeForm) {
+  accessCodeForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const adminId = inputAccessCode.value.trim();
     if (!adminId) {
-      showError("الرجاء إدخال رمز الدخول");
-      input.focus();
+      showError("access-code", "الرجاء إدخال رمز الدخول");
+      inputAccessCode.focus();
       return;
     }
 
-    setLoading(true);
-    clearError();
+    setLoading("access-code", true);
+    clearError("access-code");
 
     try {
       await signIn(adminId);
       redirectToApp();
     } catch (err) {
-      showError(err.message || "فشل تسجيل الدخول. تحقق من الرمز وحاول مجددًا.");
-      input.select();
+      showError(
+        "access-code",
+        err.message || "فشل تسجيل الدخول. تحقق من الرمز وحاول مجددًا.",
+      );
+      inputAccessCode.select();
     } finally {
-      setLoading(false);
+      setLoading("access-code", false);
     }
   });
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function redirectToApp() {
-  window.location.href = "/";
-}
+// Email Form Submit
+if (emailForm) {
+  emailForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!supabaseClient) {
+      showError("email", "تعذر الاتصال بخدمة المصادقة.");
+      return;
+    }
 
-function setLoading(on) {
-  if (!submitBtn) return;
-  submitBtn.disabled = on;
-  if (spinner) spinner.style.display = on ? "block" : "none";
-  if (btnText) btnText.textContent = on ? "جارٍ التحقق..." : "تسجيل الدخول";
-}
+    const email = inputEmail.value.trim();
+    const password = inputEmailPassword.value.trim();
 
-function showError(msg) {
-  if (!errorMsg) return;
-  errorMsg.textContent = "⚠️ " + msg;
-  errorMsg.style.display = "flex";
-  // Re-trigger shake animation
-  errorMsg.style.animation = "none";
-  requestAnimationFrame(() => {
-    errorMsg.style.animation = "";
+    if (!email || !password) {
+      showError("email", "الرجاء إدخال البريد الإلكتروني وكلمة المرور");
+      return;
+    }
+
+    setLoading("email", true);
+    clearError("email");
+
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+      redirectToApp();
+    } catch (err) {
+      showError("email", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      inputEmailPassword.select();
+    } finally {
+      setLoading("email", false);
+    }
   });
 }
 
-function clearError() {
-  if (!errorMsg) return;
-  errorMsg.textContent = "";
-  errorMsg.style.display = "none";
+// SSO Providers
+async function handleSSO(provider) {
+  if (!supabaseClient) return;
+  try {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: window.location.origin + getRedirectUrl(),
+      },
+    });
+    if (error) throw error;
+  } catch (err) {
+    showError("email", "فشل تسجيل الدخول بواسطة " + provider);
+  }
+}
+
+if (btnGoogle) btnGoogle.addEventListener("click", () => handleSSO("google"));
+if (btnMicrosoft)
+  btnMicrosoft.addEventListener("click", () => handleSSO("azure"));
+
+// ── UI Helpers ────────────────────────────────────────────────────────────────
+function setLoading(tab, on) {
+  if (tab === "access-code") {
+    submitBtnAccessCode.disabled = on;
+    spinnerAccessCode.style.display = on ? "block" : "none";
+    btnTextAccessCode.textContent = on ? "جارٍ التحقق..." : "تسجيل الدخول";
+  } else {
+    submitBtnEmail.disabled = on;
+    spinnerEmail.style.display = on ? "block" : "none";
+    btnTextEmail.textContent = on ? "جارٍ التحقق..." : "تسجيل الدخول";
+  }
+}
+
+function showError(tab, msg) {
+  const errEl = tab === "access-code" ? errorMsgAccessCode : errorMsgEmail;
+  if (!errEl) return;
+  errEl.textContent = "⚠️ " + msg;
+  errEl.style.display = "flex";
+  errEl.style.animation = "none";
+  requestAnimationFrame(() => {
+    errEl.style.animation = "";
+  });
+}
+
+function clearError(tab) {
+  const errEl = tab === "access-code" ? errorMsgAccessCode : errorMsgEmail;
+  if (!errEl) return;
+  errEl.textContent = "";
+  errEl.style.display = "none";
 }
