@@ -309,10 +309,30 @@
         <!-- Footer -->
         <div class="footer">
             <span class="footer-note">© 2026 منصة إمتحانات بصمجي ، بلال عمرو محمد. جميع الحقوق محفوظة.</span>
-            <a href="/sign-in.html" class="btn">العودة لتسجيل الدخول</a>
+            <a href="/sign-in.html" class="btn" id="back-btn">العودة لتسجيل الدخول</a>
         </div>
 
     </div>
+
+    <script>
+        // Handle dynamic back redirection
+        const backBtn = document.getElementById('back-btn');
+        if (backBtn) {
+            const referrer = document.referrer;
+            if (referrer && referrer.startsWith(window.location.origin)) {
+                // If referrer is from the same site, change text and redirect there
+                backBtn.textContent = 'العودة للصفحة السابقة';
+                backBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = referrer;
+                    }
+                });
+            }
+        }
+    </script>
 </body>
 
 </html>
