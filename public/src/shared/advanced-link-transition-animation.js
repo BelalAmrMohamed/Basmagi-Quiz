@@ -69,9 +69,10 @@ function processLink(link) {
 
   link.innerHTML = "";
   link.classList.add("ready");
-  link.style.display = "inline-flex";
+  link.style.display = "inline-block";
   link.style.direction = "rtl";
-  link.style.alignItems = "flex-start";
+  link.style.verticalAlign = "-12px";
+  link.style.alignItems = "baseline";
 
   let globalGi = 0;
 
@@ -80,7 +81,7 @@ function processLink(link) {
       const sp = document.createElement("span");
       const lh = parseFloat(getComputedStyle(link).lineHeight);
       const spH = isFinite(lh) ? lh + "px" : "1.35em";
-      sp.style.cssText = `display:inline-block;width:0.25em;flex-shrink:0;height:${spH};overflow:hidden;`;
+      sp.style.cssText = `display:inline-block;width:0.25em;flex-shrink:0;height:${spH};overflow:hidden;vertical-align:baseline;`;
       link.appendChild(sp);
       globalGi++;
     }
@@ -89,7 +90,7 @@ function processLink(link) {
     const { word, slotInfos } = wd;
     const wordWrap = document.createElement("span");
     wordWrap.style.cssText =
-      "display:inline-flex;direction:rtl;align-items:flex-start;flex-shrink:0;overflow:hidden;";
+      "display:inline-flex;direction:rtl;align-items:baseline;flex-shrink:0;overflow:hidden;";
     link.appendChild(wordWrap);
     const computedLH = parseFloat(getComputedStyle(link).lineHeight);
     const slotH = isFinite(computedLH)

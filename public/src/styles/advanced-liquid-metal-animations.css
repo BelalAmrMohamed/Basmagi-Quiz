@@ -60,3 +60,33 @@
         drop-shadow(0 0 10px rgba(255,255,255,0.15))
         drop-shadow(0 0 25px rgba(255,255,255,0.08));
 }
+
+/* ==========================================================
+   LIGHT MODE OVERRIDES (HIGH LEGIBILITY)
+   ========================================================== */
+html[data-theme="light"] .advanced-liquid-metal-animations,
+:root:not([data-theme="dark"]):not([data-theme="dark-slate"]) .advanced-liquid-metal-animations {
+    background:
+        linear-gradient(
+            115deg,
+            #1e293b 0%,    /* Dark steel base */
+            #64748b 10%,   /* Chrome reflection */
+            #0f172a 20%,   /* Deep shadow */
+            #94a3b8 32%,   /* High reflection */
+            #1e293b 45%,   /* Dark steel base */
+            #475569 58%,   /* Medium shadow */
+            #0f172a 72%,   /* Deep shadow */
+            #cbd5e1 84%,   /* Bright reflection highlight */
+            #1e293b 100%
+        );
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+html[data-theme="light"] .advanced-liquid-metal-animations:hover,
+:root:not([data-theme="dark"]):not([data-theme="dark-slate"]) .advanced-liquid-metal-animations:hover {
+    filter:
+        drop-shadow(0 0 10px rgba(99, 102, 241, 0.2))
+        drop-shadow(0 0 25px rgba(99, 102, 241, 0.1));
+}
