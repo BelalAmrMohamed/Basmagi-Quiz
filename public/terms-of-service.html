@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,43 +8,11 @@
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+
     <style>
-        :root {
-            --bg-color: #fafbfc;
-            --surface-color: #ffffff;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --border-color: #e5e7eb;
-            --primary-color: #6366f1;
-            --primary-hover: #4f46e5;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Support dark mode preference if set */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #0f172a;
-                --surface-color: #1e293b;
-                --text-primary: #f8fafc;
-                --text-secondary: #94a3b8;
-                --border-color: #334155;
-                --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            }
-        }
-
-        /* Support data-theme attribute if set by the parent page */
-        html[data-theme="dark"] :root,
-        html[data-theme="dark-slate"] :root {
-            --bg-color: #0f172a;
-            --surface-color: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border-color: #334155;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
@@ -51,161 +20,293 @@
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: "IBM Plex Sans Arabic", "Tajawal", sans-serif;
-            line-height: 1.8;
-            padding: 40px 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            background-color: #ffffff;
+            color: #1a1a2e;
+            font-family: "IBM Plex Sans Arabic", "Noto Naskh Arabic", serif;
+            line-height: 1.9;
+            padding: 60px 24px 80px;
         }
 
-        .container {
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: var(--shadow);
-            animation: fadeIn 0.4s ease-out;
+        .page-wrapper {
+            max-width: 780px;
+            margin: 0 auto;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* ── Official Header ── */
         .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 20px;
+            padding-bottom: 36px;
+            margin-bottom: 44px;
+            border-bottom: 1.5px solid #1a1a2e;
         }
 
-        .logo {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 15px;
+        .logo-mark {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 18px;
         }
 
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--text-primary);
+        .brand-name {
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            color: #4b4e6d;
+            text-transform: uppercase;
             margin-bottom: 10px;
         }
 
-        .subtitle {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
+        h1 {
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            line-height: 1.35;
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 28px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .doc-meta span {
+            font-size: 0.82rem;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 3px 10px;
+        }
+
+        /* ── Intro paragraph ── */
+        .intro {
+            font-size: 1.05rem;
+            color: #374151;
+            margin-bottom: 40px;
+            padding: 20px 24px;
+            border-right: 3px solid #1a1a2e;
+            background-color: #f9fafb;
+        }
+
+        /* ── Sections ── */
+        .section {
+            margin-bottom: 42px;
         }
 
         h2 {
-            font-size: 1.3rem;
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 1.15rem;
             font-weight: 700;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            color: var(--primary-color);
+            color: #1a1a2e;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .section-num {
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: #9ca3af;
+            font-family: "IBM Plex Sans Arabic", sans-serif;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
         }
 
         p {
-            color: var(--text-secondary);
+            color: #374151;
             font-size: 1rem;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             text-align: justify;
         }
 
         ul {
-            margin-right: 25px;
-            margin-bottom: 20px;
-            color: var(--text-secondary);
+            margin-right: 20px;
+            margin-bottom: 0;
+            color: #374151;
         }
 
         li {
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            font-size: 1rem;
         }
 
+        li::marker {
+            color: #1a1a2e;
+        }
+
+        /* ── Footer ── */
         .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
+            margin-top: 56px;
+            padding-top: 28px;
+            border-top: 1.5px solid #1a1a2e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-note {
+            font-size: 0.82rem;
+            color: #9ca3af;
         }
 
         .btn {
             display: inline-block;
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 24px;
-            border-radius: 10px;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            padding: 10px 26px;
+            border-radius: 6px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95rem;
-            transition: background-color 0.2s, transform 0.1s;
+            font-size: 0.9rem;
+            font-family: "IBM Plex Sans Arabic", sans-serif;
+            letter-spacing: 0.02em;
+            transition: background-color 0.18s, transform 0.1s;
         }
 
         .btn:hover {
-            background-color: var(--primary-hover);
+            background-color: #2d2f4a;
             transform: translateY(-1px);
         }
 
         .btn:active {
             transform: translateY(0);
         }
+
+        /* ── Print ── */
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .btn {
+                display: none;
+            }
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            body {
+                padding: 36px 18px 60px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <div class="container">
+    <div class="page-wrapper">
+
+        <!-- Header -->
         <div class="header">
-            <img src="/favicon.png" alt="بصمجي" class="logo">
+            <img src="/favicon.png" alt="بصمجي" class="logo-mark" />
+            <div class="brand-name">منصة إمتحانات بصمجي</div>
             <h1>شروط الخدمة</h1>
-            <p class="subtitle">تاريخ آخر تحديث: 14 يونيو 2026</p>
+            <div class="doc-meta">
+                <span>آخر تحديث: 14 يونيو 2026</span>
+                <span>الإصدار: 1.0</span>
+            </div>
         </div>
 
-        <p>مرحباً بكم في منصة <strong>بصمجي</strong>. باستخدامكم لموقعنا وخدماتنا، فإنكم توافقون على الالتزام بالشروط والأحكام التالية. يرجى قراءتها بعناية.</p>
+        <!-- Intro -->
+        <p class="intro">
+            مرحباً بكم في منصة <strong>بصمجي</strong>. باستخدامكم لموقعنا وخدماتنا، فإنكم توافقون على الالتزام
+            بالشروط والأحكام التالية. يرجى قراءتها بعناية.
+        </p>
 
-        <h2>1. قبول الشروط</h2>
-        <p>بمجرد وصولك إلى منصة بصمجي أو استخدامها بأي شكل من الأشكال، فإنك تقر بأنك قرأت هذه الشروط وفهمتها وتوافق على الالتزام بها بالكامل.</p>
+        <!-- Section 1 -->
+        <div class="section">
+            <h2>
+                قبول الشروط
+                <span class="section-num">المادة الأولى</span>
+            </h2>
+            <p>بمجرد وصولك إلى منصة بصمجي أو استخدامها بأي شكل من الأشكال، فإنك تقر بأنك قرأت هذه الشروط وفهمتها
+                وتوافق على الالتزام بها بالكامل.</p>
+        </div>
 
-        <h2>2. حسابات المستخدمين وأمنها</h2>
-        <p>للوصول إلى ميزات معينة، قد يُطلب منك تسجيل الدخول أو إدخال رمز وصول:</p>
-        <ul>
-            <li>تتحمل المسؤولية الكاملة عن سرية بيانات حسابك ورمز الدخول الخاص بك.</li>
-            <li>توافق على إخطارنا فوراً بأي استخدام غير مصرح به لحسابك.</li>
-            <li>نحتفظ بالحق في تعليق أو إلغاء الحسابات في حال انتهاك هذه الشروط.</li>
-        </ul>
+        <!-- Section 2 -->
+        <div class="section">
+            <h2>
+                حسابات المستخدمين وأمنها
+                <span class="section-num">المادة الثانية</span>
+            </h2>
+            <p>للوصول إلى ميزات معينة، قد يُطلب منك تسجيل الدخول أو إدخال رمز وصول:</p>
+            <ul>
+                <li>تتحمل المسؤولية الكاملة عن سرية بيانات حسابك ورمز الدخول الخاص بك.</li>
+                <li>توافق على إخطارنا فوراً بأي استخدام غير مصرح به لحسابك.</li>
+                <li>نحتفظ بالحق في تعليق أو إلغاء الحسابات في حال انتهاك هذه الشروط.</li>
+            </ul>
+        </div>
 
-        <h2>3. الاستخدام المقبول للمنصة</h2>
-        <p>يجب استخدام المنصة فقط للأغراض التعليمية والشخصية المخصصة لها. يُحظر تماماً:</p>
-        <ul>
-            <li>محاولة اختراق أو تخريب أو تعطيل عمل المنصة أو خوادمها.</li>
-            <li>استخدام أي أدوات آلية (كالبوتات أو برامج كشط البيانات) لجمع المحتوى من المنصة.</li>
-            <li>إعادة نشر أو توزيع أسئلة أو اختبارات المنصة دون إذن خطي مسبق.</li>
-        </ul>
+        <!-- Section 3 -->
+        <div class="section">
+            <h2>
+                الاستخدام المقبول للمنصة
+                <span class="section-num">المادة الثالثة</span>
+            </h2>
+            <p>يجب استخدام المنصة فقط للأغراض التعليمية والشخصية المخصصة لها. يُحظر تماماً:</p>
+            <ul>
+                <li>محاولة اختراق أو تخريب أو تعطيل عمل المنصة أو خوادمها.</li>
+                <li>استخدام أي أدوات آلية (كالبوتات أو برامج كشط البيانات) لجمع المحتوى من المنصة.</li>
+                <li>إعادة نشر أو توزيع أسئلة أو اختبارات المنصة دون إذن خطي مسبق.</li>
+            </ul>
+        </div>
 
-        <h2>4. الملكية الفكرية</h2>
-        <p>جميع المحتويات المتوفرة على منصة بصمجي (بما في ذلك الأسئلة، النصوص، التصاميم، الشعارات، البرمجيات، والأكواد) هي ملكية فكرية محمية ولا يجوز نسخها أو استخدامها لأغراض تجارية دون إذننا.</p>
+        <!-- Section 4 -->
+        <div class="section">
+            <h2>
+                الملكية الفكرية
+                <span class="section-num">المادة الرابعة</span>
+            </h2>
+            <p>جميع المحتويات المتوفرة على منصة بصمجي (بما في ذلك الأسئلة، النصوص، التصاميم، الشعارات، البرمجيات،
+                والأكواد) هي ملكية فكرية محمية ولا يجوز نسخها أو استخدامها لأغراض تجارية دون إذننا.</p>
+        </div>
 
-        <h2>5. إخلاء المسؤولية</h2>
-        <p>تُقدم الخدمات على منصة بصمجي "كما هي" دون أي ضمانات من أي نوع، صريحة أو ضمنية. نحن لا نضمن عدم انقطاع الخدمة أو خلوها من الأخطاء، ونبذل قصارى جهدنا لضمان دقة وتوافر المنصة.</p>
+        <!-- Section 5 -->
+        <div class="section">
+            <h2>
+                إخلاء المسؤولية
+                <span class="section-num">المادة الخامسة</span>
+            </h2>
+            <p>تُقدم الخدمات على منصة بصمجي "كما هي" دون أي ضمانات من أي نوع، صريحة أو ضمنية. نحن لا نضمن عدم
+                انقطاع الخدمة أو خلوها من الأخطاء، ونبذل قصارى جهدنا لضمان دقة وتوافر المنصة.</p>
+        </div>
 
-        <h2>6. التعديل على الشروط</h2>
-        <p>نحتفظ بالحق في تعديل أو تحديث شروط الخدمة هذه في أي وقت. يعتبر استمرارك في استخدام المنصة بعد نشر أي تغييرات موافقة منك على الشروط الجديدة.</p>
+        <!-- Section 6 -->
+        <div class="section">
+            <h2>
+                التعديل على الشروط
+                <span class="section-num">المادة السادسة</span>
+            </h2>
+            <p>نحتفظ بالحق في تعديل أو تحديث شروط الخدمة هذه في أي وقت. يعتبر استمرارك في استخدام المنصة بعد نشر أي
+                تغييرات موافقة منك على الشروط الجديدة.</p>
+        </div>
 
+        <!-- Footer -->
         <div class="footer">
+            <span class="footer-note">© 2026 منصة إمتحانات بصمجي ، بلال عمرو محمد. جميع الحقوق محفوظة.</span>
             <a href="/sign-in.html" class="btn">العودة لتسجيل الدخول</a>
         </div>
+
     </div>
-    
-    <script>
-        // Apply theme preferences dynamically
-        (function() {
-            const theme = localStorage.getItem("quiz_theme_pref") || "light";
-            document.documentElement.setAttribute("data-theme", theme);
-        })();
-    </script>
 </body>
+
 </html>
