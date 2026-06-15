@@ -1,173 +1,197 @@
+/* ============================================================
+   sign-in.css  —  Corporate split-screen redesign
+   Palette:
+     White          #FFFFFF  — form panel background
+     Navy           #0D1B3E  — brand panel background
+     Navy Mid       #132347  — brand panel accent layer
+     Ink            #0A0E1A  — primary text
+     Slate          #4A5568  — secondary text
+     Mist           #8A94A6  — tertiary / placeholder text
+     Border         #E2E6EE  — dividers, input borders
+     Ice            #F5F7FA  — input fill
+     Indigo         #3B4FD8  — CTA / accent
+     Indigo Hover   #2D3FB8  — CTA hover
+     Indigo Light   rgba(59,79,216,0.08) — focus ring
+     Error          #C53030  — error text
+     Error Light    #FFF5F5  — error background
+   ============================================================ */
+
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+/* ── Reset & Base ─────────────────────────────────────────── */
+
+html,
 body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
+  font-size: 16px;
+  color: #0A0E1A;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Split-screen shell ───────────────────────────────────── */
+
+.split-screen {
+  display: flex;
   min-height: 100vh;
+  /* RTL: form on the left visually = right in the DOM order,
+     but we keep the DOM order form-first and use flex-direction for visual */
+  flex-direction: row-reverse; /* brand panel appears on the right visually */
+}
+
+/* ── Shared panel base ────────────────────────────────────── */
+
+.panel {
+  flex: 1;
+  min-height: 100vh;
+}
+
+/* ── LEFT PANEL — Form ────────────────────────────────────── */
+
+.panel-form {
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-background);
-  font-family: "IBM Plex Sans Arabic", "Tajawal", "Inter", sans-serif;
-  padding: 20px;
+  padding: 48px 40px;
+  /* Subtle right-side border separating form from brand panel */
+  border-left: 1px solid #E2E6EE;
 }
 
-/* Subtle animated background (reuses canvas-animation pattern) */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background:
-    radial-gradient(
-      ellipse at 20% 50%,
-      var(--color-primary-light) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse at 80% 20%,
-      rgba(124, 58, 237, 0.08) 0%,
-      transparent 50%
-    );
-  pointer-events: none;
-  z-index: 0;
-}
-
-.signin-card {
-  position: relative;
-  z-index: 1;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 20px;
-  padding: 40px 36px;
+.form-inner {
   width: 100%;
-  max-width: 420px;
-  box-shadow: var(--shadow-xl);
-  animation: slideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 400px;
+  animation: fadeSlideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes slideUp {
+@keyframes fadeSlideUp {
   from {
-    transform: translateY(24px);
     opacity: 0;
+    transform: translateY(20px);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* Logo / icon */
-.signin-icon-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
+/* ── Brand mark (small, inside form panel) ────────────────── */
 
-.signin-icon {
+.brand-mark {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 16px;
-  background: var(--color-surface);
-  position: relative;
-  color: var(--color-primary);
+  gap: 10px;
+  margin-bottom: 40px;
 }
 
-.signin-icon::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #ff8a00, #e52e71);
-  z-index: -1;
-  opacity: 0.8;
+.brand-mark img {
+  border-radius: 8px;
+  display: block;
 }
 
-.signin-icon svg {
-  color: inherit;
+.brand-mark-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0A0E1A;
+  letter-spacing: -0.01em;
 }
 
-.signin-icon .lock-icon {
-  stroke: url(#lock-gradient);
-}
+/* ── Headings ─────────────────────────────────────────────── */
 
 .signin-title {
-  text-align: center;
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--color-text-primary);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0A0E1A;
   margin: 0 0 6px;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .signin-subtitle {
-  text-align: center;
-  font-size: 0.88rem;
-  color: var(--color-text-secondary);
-  margin: 0 0 24px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: #4A5568;
+  margin: 0 0 28px;
+  line-height: 1.5;
 }
 
-/* Tabs */
+/* ── Tabs ─────────────────────────────────────────────────── */
+
 .tabs-container {
   display: flex;
-  background: var(--color-background);
-  border-radius: 12px;
-  padding: 6px;
-  margin-bottom: 24px;
-  gap: 4px;
+  background: #F5F7FA;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+  gap: 3px;
+  border: 1px solid #E2E6EE;
 }
 
 .tab-btn {
   flex: 1;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: #8A94A6;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 9px 12px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  white-space: nowrap;
 }
 
 .tab-btn:hover {
-  color: var(--color-text-primary);
+  color: #0A0E1A;
 }
 
 .tab-btn.active {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  box-shadow: var(--shadow-sm);
+  background: #ffffff;
+  color: #0A0E1A;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
+
+/* ── Field labels ─────────────────────────────────────────── */
 
 .field-label {
   display: block;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  margin-bottom: 8px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #4A5568;
+  margin-bottom: 7px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+
+.field-wrapper {
+  position: relative;
+  margin-bottom: 20px;
 }
 
 .field-input {
   width: 100%;
-  padding: 13px 16px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 12px;
-  font-size: 1rem;
-  background: var(--color-background);
-  color: var(--color-text-primary);
+  padding: 12px 16px;
+  border: 1.5px solid #E2E6EE;
+  border-radius: 9px;
+  font-size: 0.95rem;
   font-family: inherit;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+  background: #F5F7FA;
+  color: #0A0E1A;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
   direction: ltr;
   text-align: center;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  outline: none;
 }
 
 .email-input-ltr {
@@ -176,14 +200,14 @@ body::before {
 }
 
 .field-input:focus {
-  border-color: var(--color-primary);
-  outline: none;
-  box-shadow: 0 0 0 4px var(--color-primary-light);
+  border-color: #3B4FD8;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 79, 216, 0.12);
 }
 
 .field-input::placeholder {
   letter-spacing: normal;
-  color: var(--color-text-tertiary);
+  color: #B0B8C4;
   text-align: center;
 }
 
@@ -191,86 +215,138 @@ body::before {
   text-align: left;
 }
 
-.field-wrapper {
-  position: relative;
-  margin-bottom: 24px;
-}
+/* ── Password toggle ──────────────────────────────────────── */
 
-/* Show/hide password toggle */
 .toggle-visibility {
   position: absolute;
-  left: 14px;
+  left: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--color-text-tertiary);
+  color: #8A94A6;
   cursor: pointer;
   padding: 4px;
   display: flex;
   align-items: center;
-  transition: color 0.2s;
-}
-.toggle-visibility:hover {
-  color: var(--color-primary);
+  transition: color 0.18s ease;
+  outline: none;
 }
 
-/* Submit button */
+.toggle-visibility:hover {
+  color: #3B4FD8;
+}
+
+/* ── Submit button ────────────────────────────────────────── */
+
 .signin-btn {
   width: 100%;
-  padding: 14px;
-  background: linear-gradient(135deg, #4f46e5, #c026d3);
-  color: white;
+  padding: 13px 20px;
+  background: #3B4FD8;
+  color: #ffffff;
   border: none;
-  border-radius: 12px;
-  font-size: 1.05rem;
-  font-weight: 800;
+  border-radius: 9px;
+  font-size: 0.95rem;
+  font-weight: 700;
   font-family: inherit;
   cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s,
-    opacity 0.2s;
+  transition: background 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+  letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px rgba(59, 79, 216, 0.28);
+  outline: none;
 }
+
 .signin-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px 0 rgba(79, 70, 229, 0.5);
+  background: #2D3FB8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(59, 79, 216, 0.36);
 }
+
+.signin-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(59, 79, 216, 0.28);
+}
+
 .signin-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Divider */
+/* ── Spinner ──────────────────────────────────────────────── */
+
+.spinner {
+  display: none;
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Error message ────────────────────────────────────────── */
+
+.error-msg {
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  background: #FFF5F5;
+  color: #C53030;
+  border: 1px solid #FED7D7;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 14px;
+  line-height: 1.45;
+  animation: shakeX 0.38s ease;
+}
+
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+
 .divider {
   display: flex;
   align-items: center;
-  text-align: center;
-  margin: 24px 0;
-  color: var(--color-text-tertiary);
-  font-size: 0.8rem;
+  margin: 22px 0;
+  color: #8A94A6;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
+
 .divider::before,
 .divider::after {
   content: "";
   flex: 1;
-  border-bottom: 1px solid var(--color-border);
-}
-.divider span {
-  padding: 0 10px;
+  border-bottom: 1px solid #E2E6EE;
 }
 
-/* SSO Buttons */
+.divider span {
+  padding: 0 12px;
+}
+
+/* ── SSO buttons ──────────────────────────────────────────── */
+
 .sso-buttons {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .sso-btn {
@@ -279,105 +355,198 @@ body::before {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--color-border);
-  background: var(--color-background);
-  border-radius: 10px;
+  padding: 11px 14px;
+  border: 1.5px solid #E2E6EE;
+  background: #ffffff;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
-  color: var(--color-text-secondary);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  color: #4A5568;
   font-family: inherit;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  outline: none;
 }
 
 .sso-btn:hover {
-  background: var(--color-surface);
-  border-color: var(--color-text-tertiary);
-  color: var(--color-text-primary);
+  background: #F5F7FA;
+  border-color: #B0B8C4;
+  color: #0A0E1A;
 }
 
-/* Spinner */
-.spinner {
-  display: none;
-  width: 18px;
-  height: 18px;
-  border: 2.5px solid rgba(255, 255, 255, 0.4);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* ── Form footer (back link + legal links) ────────────────── */
 
-/* Error message */
-.error-msg {
-  display: none;
+.form-footer {
+  margin-top: 32px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  background: var(--color-error-light, #fee2e2);
-  color: var(--color-error, #dc2626);
-  border: 1px solid currentColor;
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  margin-top: 16px;
-  animation: shakeX 0.4s ease;
-}
-@keyframes shakeX {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-6px);
-  }
-  40% {
-    transform: translateX(6px);
-  }
-  60% {
-    transform: translateX(-4px);
-  }
-  80% {
-    transform: translateX(4px);
-  }
+  gap: 12px;
 }
 
 .back-link {
-  display: block;
-  text-align: center;
-  margin-top: 24px;
-  font-size: 0.88rem;
-  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+  color: #8A94A6;
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color 0.18s ease;
+  font-weight: 500;
 }
+
 .back-link:hover {
-  color: var(--color-primary);
+  color: #3B4FD8;
 }
 
-/* Dark theme hint for input */
-[data-theme="dark"] .field-input,
-[data-theme="dark-slate"] .field-input {
-  background: var(--color-background-secondary);
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
 }
 
-[data-theme="dark"] .tabs-container,
-[data-theme="dark-slate"] .tabs-container {
-  background: var(--color-background-secondary);
+.footer-link {
+  color: #B0B8C4;
+  text-decoration: none;
+  transition: color 0.18s ease;
+  font-weight: 500;
 }
 
-[data-theme="dark"] .sso-btn,
-[data-theme="dark-slate"] .sso-btn {
-  background: var(--color-background-secondary);
+.footer-link:hover {
+  color: #3B4FD8;
 }
 
-@media (max-width: 480px) {
-  .signin-card {
-    padding: 28px 20px;
+.footer-sep {
+  color: #D1D5DC;
+  font-size: 0.7rem;
+}
+
+/* ── RIGHT PANEL — Brand wall ─────────────────────────────── */
+
+.panel-brand {
+  background: #0D1B3E;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Subtle dot-grid texture */
+.brand-grid {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+}
+
+/* Radial glow behind the logo */
+.brand-wall {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  gap: 0;
+}
+
+.brand-glow {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 79, 216, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.brand-logo-img {
+  position: relative;
+  z-index: 1;
+  width: 220px;
+  height: 220px;
+  object-fit: contain;
+  display: block;
+  /* Slightly lift the image — a faint white outline ring */
+  filter: drop-shadow(0 0 32px rgba(59, 79, 216, 0.5)) drop-shadow(0 2px 24px rgba(0,0,0,0.4));
+  margin-bottom: 32px;
+}
+
+.brand-tagline {
+  position: relative;
+  z-index: 1;
+  font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+
+.brand-sub {
+  position: relative;
+  z-index: 1;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── Responsive: collapse to stacked on mobile ────────────── */
+
+@media (max-width: 768px) {
+  .split-screen {
+    flex-direction: column;
+  }
+
+  /* Show a compact brand bar at the top on mobile */
+  .panel-brand {
+    min-height: 200px;
+    flex: none;
+  }
+
+  .brand-logo-img {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 16px;
+  }
+
+  .brand-glow {
+    width: 220px;
+    height: 220px;
+  }
+
+  .brand-tagline {
+    font-size: 1rem;
+  }
+
+  .panel-form {
+    border-left: none;
+    border-top: 1px solid #E2E6EE;
+    padding: 36px 24px 48px;
+    min-height: unset;
+  }
+
+  .brand-mark {
+    display: none; /* redundant on mobile — brand panel shows it */
+  }
+}
+
+@media (max-width: 400px) {
+  .panel-form {
+    padding: 28px 18px 40px;
+  }
+
+  .tabs-container {
+    gap: 2px;
+  }
+
+  .tab-btn {
+    font-size: 0.82rem;
+    padding: 8px 8px;
   }
 }

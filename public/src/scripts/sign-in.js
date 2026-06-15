@@ -6,6 +6,7 @@
 import { signIn, isAdminAuthenticated, getToken } from "./adminAuth.js";
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
+
 // Forms & Tabs
 const tabAccessCode = document.getElementById("tabAccessCode");
 const tabEmail = document.getElementById("tabEmail");
@@ -40,6 +41,7 @@ const btnGoogle = document.getElementById("btnGoogle");
 let supabaseClient = null;
 
 // ── Helper: get redirect URL ──────────────────────────────────────────────────
+
 function getRedirectUrl() {
   const params = new URLSearchParams(window.location.search);
   const redirectPath = params.get("redirect");
@@ -51,6 +53,7 @@ function redirectToApp() {
 }
 
 // ── Initialize Supabase ───────────────────────────────────────────────────────
+
 async function initSupabase() {
   try {
     const res = await fetch("/api/env");
@@ -73,12 +76,12 @@ async function initSupabase() {
         redirectToApp();
       }
 
-      // Listen for changes
+      // Listen for auth state changes
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (event === "SIGNED_IN" && session) {
           if (!isAdminAuthenticated()) {
-             const { signInWithSupabase } = await import("./adminAuth.js");
-             await signInWithSupabase(session.access_token);
+            const { signInWithSupabase } = await import("./adminAuth.js");
+            await signInWithSupabase(session.access_token);
           }
           redirectToApp();
         }
@@ -89,9 +92,10 @@ async function initSupabase() {
   }
 }
 
-// ── On page load: Tab routing & existing sessions ────────────────────────────
+// ── On page load: tab routing & session checks ───────────────────────────────
+
 (function init() {
-  // 1. Tab Routing based on URL query parameter or path fallback
+  // 1. Tab routing — URL query param or path fallback
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const tab = params.get("tab");
@@ -101,22 +105,21 @@ async function initSupabase() {
   } else if (tab === "access-code" || path.endsWith("/access-code")) {
     switchTab("access-code");
   } else {
-    // Default
     switchTab("access-code");
   }
 
-  // 2. Admin Check
+  // 2. Admin session check
   if (isAdminAuthenticated()) {
     const token = getToken();
     if (token && !isTokenExpired(token)) {
       redirectToApp();
       return;
     }
-    // Expired
+    // Token expired — sign out silently
     import("./adminAuth.js").then(({ signOut }) => signOut());
   }
 
-  // 3. Supabase Check
+  // 3. Supabase session check
   initSupabase();
 })();
 
@@ -129,9 +132,9 @@ function isTokenExpired(token) {
   }
 }
 
-// ── Tab Switching ─────────────────────────────────────────────────────────────
+// ── Tab switching ─────────────────────────────────────────────────────────────
+
 function switchTab(tab) {
-  // Reset UI
   tabAccessCode.classList.remove("active");
   tabEmail.classList.remove("active");
   accessCodeForm.style.display = "none";
@@ -139,21 +142,15 @@ function switchTab(tab) {
   clearError("access-code");
   clearError("email");
 
-  // Get current search params, set tab, and keep other parameters (like redirect)
   const params = new URLSearchParams(window.location.search);
   params.set("tab", tab);
 
-  // If the pathname currently has /email or /access-code (legacy paths),
-  // clean it up to just the base pathname.
+  // Strip legacy path segments
   let base = window.location.pathname;
-  if (base.endsWith("/email")) {
-    base = base.slice(0, -6);
-  } else if (base.endsWith("/access-code")) {
-    base = base.slice(0, -12);
-  }
+  if (base.endsWith("/email")) base = base.slice(0, -6);
+  else if (base.endsWith("/access-code")) base = base.slice(0, -12);
 
-  const newUrl = `${base}?${params.toString()}${window.location.hash}`;
-  window.history.replaceState({}, "", newUrl);
+  window.history.replaceState({}, "", `${base}?${params.toString()}${window.location.hash}`);
 
   if (tab === "email") {
     tabEmail.classList.add("active");
@@ -169,7 +166,8 @@ function switchTab(tab) {
 tabAccessCode.addEventListener("click", () => switchTab("access-code"));
 tabEmail.addEventListener("click", () => switchTab("email"));
 
-// ── Show/hide password toggles ───────────────────────────────────────────────
+// ── Password visibility toggles ───────────────────────────────────────────────
+
 function setupPasswordToggle(toggleBtn, inputEl, eyeIcon, eyeOffIcon) {
   if (!toggleBtn) return;
   toggleBtn.addEventListener("click", () => {
@@ -181,22 +179,11 @@ function setupPasswordToggle(toggleBtn, inputEl, eyeIcon, eyeOffIcon) {
   });
 }
 
-setupPasswordToggle(
-  toggleBtnAccessCode,
-  inputAccessCode,
-  eyeIconAccessCode,
-  eyeOffIconAccessCode,
-);
-setupPasswordToggle(
-  toggleBtnEmail,
-  inputEmailPassword,
-  eyeIconEmail,
-  eyeOffIconEmail,
-);
+setupPasswordToggle(toggleBtnAccessCode, inputAccessCode, eyeIconAccessCode, eyeOffIconAccessCode);
+setupPasswordToggle(toggleBtnEmail, inputEmailPassword, eyeIconEmail, eyeOffIconEmail);
 
-// ── Forms Submission ─────────────────────────────────────────────────────────
+// ── Form submission — Access Code ─────────────────────────────────────────────
 
-// Admin Access Code Submit
 if (accessCodeForm) {
   accessCodeForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -214,10 +201,7 @@ if (accessCodeForm) {
       await signIn(adminId);
       redirectToApp();
     } catch (err) {
-      showError(
-        "access-code",
-        err.message || "فشل تسجيل الدخول. تحقق من الرمز وحاول مجددًا.",
-      );
+      showError("access-code", err.message || "فشل تسجيل الدخول. تحقق من الرمز وحاول مجددًا.");
       inputAccessCode.select();
     } finally {
       setLoading("access-code", false);
@@ -225,7 +209,8 @@ if (accessCodeForm) {
   });
 }
 
-// Email Form Submit
+// ── Form submission — Email ───────────────────────────────────────────────────
+
 if (emailForm) {
   emailForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -246,13 +231,9 @@ if (emailForm) {
     clearError("email");
 
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      
+
       if (!isAdminAuthenticated()) {
         const { signInWithSupabase } = await import("./adminAuth.js");
         await signInWithSupabase(data.session.access_token);
@@ -267,15 +248,14 @@ if (emailForm) {
   });
 }
 
-// SSO Providers
+// ── SSO ───────────────────────────────────────────────────────────────────────
+
 async function handleSSO(provider) {
   if (!supabaseClient) return;
   try {
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo: window.location.origin + getRedirectUrl(),
-      },
+      options: { redirectTo: window.location.origin + getRedirectUrl() },
     });
     if (error) throw error;
   } catch (err) {
@@ -284,10 +264,10 @@ async function handleSSO(provider) {
 }
 
 if (btnGoogle) btnGoogle.addEventListener("click", () => handleSSO("google"));
-if (btnMicrosoft)
-  btnMicrosoft.addEventListener("click", () => handleSSO("azure"));
+if (btnMicrosoft) btnMicrosoft.addEventListener("click", () => handleSSO("azure"));
 
-// ── UI Helpers ────────────────────────────────────────────────────────────────
+// ── UI helpers ────────────────────────────────────────────────────────────────
+
 function setLoading(tab, on) {
   if (tab === "access-code") {
     submitBtnAccessCode.disabled = on;
@@ -305,6 +285,7 @@ function showError(tab, msg) {
   if (!errEl) return;
   errEl.textContent = "⚠️ " + msg;
   errEl.style.display = "flex";
+  // Re-trigger shake animation
   errEl.style.animation = "none";
   requestAnimationFrame(() => {
     errEl.style.animation = "";
@@ -317,41 +298,3 @@ function clearError(tab) {
   errEl.textContent = "";
   errEl.style.display = "none";
 }
-
-// ── Footer Links (Privacy Policy & Terms of Service) ──────────────────────────
-(function appendFooterLinks() {
-  const container = document.querySelector(".signin-card") || document.body;
-  const footer = document.createElement("div");
-  footer.style.marginTop = "24px";
-  footer.style.display = "flex";
-  footer.style.justifyContent = "center";
-  footer.style.gap = "16px";
-  footer.style.fontSize = "0.85rem";
-  
-  const privacyLink = document.createElement("a");
-  privacyLink.href = "/privacy-policy.html";
-  privacyLink.textContent = "سياسة الخصوصية";
-  privacyLink.style.color = "var(--color-text-tertiary, #6b7280)";
-  privacyLink.style.textDecoration = "none";
-  privacyLink.style.transition = "color 0.2s";
-  privacyLink.onmouseover = () => privacyLink.style.color = "var(--color-primary, #6366f1)";
-  privacyLink.onmouseout = () => privacyLink.style.color = "var(--color-text-tertiary, #6b7280)";
-  
-  const separator = document.createElement("span");
-  separator.textContent = "•";
-  separator.style.color = "var(--color-border, #e5e7eb)";
-  
-  const termsLink = document.createElement("a");
-  termsLink.href = "/terms-of-service.html";
-  termsLink.textContent = "شروط الخدمة";
-  termsLink.style.color = "var(--color-text-tertiary, #6b7280)";
-  termsLink.style.textDecoration = "none";
-  termsLink.style.transition = "color 0.2s";
-  termsLink.onmouseover = () => termsLink.style.color = "var(--color-primary, #6366f1)";
-  termsLink.onmouseout = () => termsLink.style.color = "var(--color-text-tertiary, #6b7280)";
-
-  footer.appendChild(privacyLink);
-  footer.appendChild(separator);
-  footer.appendChild(termsLink);
-  container.appendChild(footer);
-})();
