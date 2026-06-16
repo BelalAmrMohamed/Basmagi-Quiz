@@ -307,13 +307,34 @@
         .table-wrap {
             border: 1px solid var(--border);
             border-radius: 10px;
-            overflow: hidden;
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.875rem;
+            table-layout: fixed;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 34%;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            width: 30%;
+        }
+
+        th:nth-child(3),
+        td:nth-child(3) {
+            width: 18%;
+        }
+
+        th:nth-child(4),
+        td:nth-child(4) {
+            width: 18%;
         }
 
         thead {
@@ -352,6 +373,10 @@
             color: var(--gold-light);
             direction: ltr;
             unicode-bidi: plaintext;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 0;
         }
 
         .td-date {
@@ -401,10 +426,7 @@
     <!-- TOP NAV -->
     <nav class="topnav">
         <div class="topnav-logo">
-            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="28" height="28" rx="6" fill="rgba(212,168,64,0.15)" />
-                <path d="M8 20L14 8L20 20M10.5 16H17.5" stroke="#D4A840" stroke-width="1.8" stroke-linecap="round" />
-            </svg>
+            <img src="favicon.png" alt="Logo" width="28" height="28">
             منصة إمتحانات بصمجي
         </div>
         <div class="topnav-actions">
