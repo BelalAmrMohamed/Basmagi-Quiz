@@ -110,28 +110,38 @@
             background: rgba(192, 57, 43, 0.25);
         }
 
-        /* STATUS MESSAGE */
-        .status-bar {
-            margin: 16px 24px 0;
-            padding: 10px 16px;
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            padding: 10px 20px;
             border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            display: none;
+            font-size: 0.88rem;
+            font-weight: 600;
             border: 1px solid;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 9999;
+            white-space: nowrap;
         }
 
-        .status-bar.success {
-            display: block;
-            background: rgba(39, 174, 96, 0.12);
-            border-color: rgba(39, 174, 96, 0.4);
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            background: rgba(39, 174, 96, 0.15);
+            border-color: rgba(39, 174, 96, 0.5);
             color: #58D68D;
         }
 
-        .status-bar.error {
-            display: block;
-            background: rgba(192, 57, 43, 0.12);
-            border-color: rgba(192, 57, 43, 0.4);
+        .toast.error {
+            background: rgba(192, 57, 43, 0.15);
+            border-color: rgba(192, 57, 43, 0.5);
             color: #E74C3C;
         }
 
@@ -403,8 +413,8 @@
         </div>
     </nav>
 
-    <!-- STATUS MESSAGE -->
-    <div id="statusMessage" class="status-bar"></div>
+    <!-- TOAST -->
+    <div id="statusMessage" class="toast"></div>
 
     <!-- MAIN GRID -->
     <div class="main-grid">
@@ -480,11 +490,15 @@
             };
         }
 
+        let toastTimer = null;
         function showMessage(msg, isError = false) {
             const el = document.getElementById('statusMessage');
             el.textContent = msg;
-            el.className = `status-bar ${isError ? 'error' : 'success'}`;
-            setTimeout(() => { el.style.display = 'none'; }, 5000);
+            el.className = `toast ${isError ? 'error' : 'success'}`;
+            void el.offsetWidth;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3500);
         }
 
         async function loadData() {
@@ -516,7 +530,7 @@
                         <td class="td-email">${admin.email}</td>
                         <td class="td-email">${admin.added_by}</td>
                         <td class="td-date">${date}</td>
-                        <td><button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005; إزالة</button></td>
+                        <td><button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005;&nbsp;إزالة</button></td>
                     `;
                         tbody.appendChild(tr);
                     });
