@@ -85,12 +85,12 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
 /** Switch a markdown editor field into edit mode */
 window.activateMdEditor = function (e, id) {
   // Support both activateMdEditor(id) and activateMdEditor(event, id)
-  if (typeof e === 'string' && !id) {
+  if (typeof e === "string" && !id) {
     id = e;
     e = null;
   }
-  
-  if (e && e.target && e.target.closest && e.target.closest('button')) {
+
+  if (e && e.target && e.target.closest && e.target.closest("button")) {
     e.stopPropagation();
     return;
   }
@@ -224,20 +224,29 @@ function setupEventListeners() {
   document.addEventListener("click", (e) => {
     // Modal Overlays
     if (e.target.classList.contains("modal-overlay")) {
-      if (e.target.id === "previewModal" && typeof window.closePreview === "function") {
+      if (
+        e.target.id === "previewModal" &&
+        typeof window.closePreview === "function"
+      ) {
         window.closePreview();
-      } else if (e.target.id === "importModal" && typeof window.closeImportModal === "function") {
+      } else if (
+        e.target.id === "importModal" &&
+        typeof window.closeImportModal === "function"
+      ) {
         window.closeImportModal();
       } else {
         e.target.style.display = "none";
       }
     }
-    
+
     // Shortcuts Panel
     const shortcutsPanel = document.getElementById("shortcutsPanel");
     if (shortcutsPanel && shortcutsPanel.style.display === "block") {
       // Allow clicking the toggle button without immediately closing it
-      if (!shortcutsPanel.contains(e.target) && !e.target.closest('button[onclick="toggleShortcuts()"]')) {
+      if (
+        !shortcutsPanel.contains(e.target) &&
+        !e.target.closest('button[onclick="toggleShortcuts()"]')
+      ) {
         toggleShortcuts();
       }
     }
@@ -1552,14 +1561,19 @@ function loadDraftFromLocalStorage() {
       // Restore Phase 2 fields
       if (data.meta) {
         if (data.meta.privacy) {
-          const pubRadio = document.querySelector('input[name="quizPrivacy"][value="public"]');
-          const privRadio = document.querySelector('input[name="quizPrivacy"][value="private"]');
-          if (data.meta.privacy === 'private' && privRadio) {
+          const pubRadio = document.querySelector(
+            'input[name="quizPrivacy"][value="public"]',
+          );
+          const privRadio = document.querySelector(
+            'input[name="quizPrivacy"][value="private"]',
+          );
+          if (data.meta.privacy === "private" && privRadio) {
             privRadio.checked = true;
           } else if (pubRadio) {
             pubRadio.checked = true;
           }
-          if (typeof togglePrivacySettings === 'function') togglePrivacySettings();
+          if (typeof togglePrivacySettings === "function")
+            togglePrivacySettings();
         }
         if (data.meta.password) {
           const passEl = document.getElementById("quizPassword");
@@ -1569,23 +1583,37 @@ function loadDraftFromLocalStorage() {
           const emailsEl = document.getElementById("quizAllowedEmails");
           if (emailsEl) emailsEl.value = data.meta.allowedEmails.join("\n");
         }
-        if (data.meta.lang) {
-          const langEl = document.getElementById("quizLang");
-          if (langEl) langEl.value = data.meta.lang;
+        const langEl = document.getElementById("quizLang");
+        if (langEl)
+          langEl.value =
+            data.meta.lang && data.meta.lang !== "empty"
+              ? data.meta.lang
+              : "empty";
+
+        const viewValue =
+          data.meta.view && data.meta.view !== "empty"
+            ? data.meta.view
+            : "empty";
+        const viewRadio = document.querySelector(
+          `input[name="quizView"][value="${viewValue}"]`,
+        );
+        if (viewRadio) {
+          viewRadio.checked = true;
+          if (typeof updateOptionCards === "function")
+            updateOptionCards(viewRadio);
         }
-        if (data.meta.view) {
-          const viewRadio = document.querySelector(`input[name="quizView"][value="${data.meta.view}"]`);
-          if (viewRadio) {
-            viewRadio.checked = true;
-            if (typeof updateOptionCards === 'function') updateOptionCards(viewRadio);
-          }
-        }
-        if (data.meta.mode) {
-          const modeRadio = document.querySelector(`input[name="quizMode"][value="${data.meta.mode}"]`);
-          if (modeRadio) {
-            modeRadio.checked = true;
-            if (typeof updateOptionCards === 'function') updateOptionCards(modeRadio);
-          }
+
+        const modeValue =
+          data.meta.mode && data.meta.mode !== "empty"
+            ? data.meta.mode
+            : "empty";
+        const modeRadio = document.querySelector(
+          `input[name="quizMode"][value="${modeValue}"]`,
+        );
+        if (modeRadio) {
+          modeRadio.checked = true;
+          if (typeof updateOptionCards === "function")
+            updateOptionCards(modeRadio);
         }
       }
 
@@ -1640,14 +1668,19 @@ function loadQuizFromLocalStorage(quizId) {
       // Restore Phase 2 fields
       if (quiz.meta) {
         if (quiz.meta.privacy) {
-          const pubRadio = document.querySelector('input[name="quizPrivacy"][value="public"]');
-          const privRadio = document.querySelector('input[name="quizPrivacy"][value="private"]');
-          if (quiz.meta.privacy === 'private' && privRadio) {
+          const pubRadio = document.querySelector(
+            'input[name="quizPrivacy"][value="public"]',
+          );
+          const privRadio = document.querySelector(
+            'input[name="quizPrivacy"][value="private"]',
+          );
+          if (quiz.meta.privacy === "private" && privRadio) {
             privRadio.checked = true;
           } else if (pubRadio) {
             pubRadio.checked = true;
           }
-          if (typeof togglePrivacySettings === 'function') togglePrivacySettings();
+          if (typeof togglePrivacySettings === "function")
+            togglePrivacySettings();
         }
         if (quiz.meta.password) {
           const passEl = document.getElementById("quizPassword");
@@ -1657,23 +1690,37 @@ function loadQuizFromLocalStorage(quizId) {
           const emailsEl = document.getElementById("quizAllowedEmails");
           if (emailsEl) emailsEl.value = quiz.meta.allowedEmails.join("\n");
         }
-        if (quiz.meta.lang) {
-          const langEl = document.getElementById("quizLang");
-          if (langEl) langEl.value = quiz.meta.lang;
+        const langEl = document.getElementById("quizLang");
+        if (langEl)
+          langEl.value =
+            quiz.meta.lang && quiz.meta.lang !== "empty"
+              ? quiz.meta.lang
+              : "empty";
+
+        const viewValue =
+          quiz.meta.view && quiz.meta.view !== "empty"
+            ? quiz.meta.view
+            : "empty";
+        const viewRadio = document.querySelector(
+          `input[name="quizView"][value="${viewValue}"]`,
+        );
+        if (viewRadio) {
+          viewRadio.checked = true;
+          if (typeof updateOptionCards === "function")
+            updateOptionCards(viewRadio);
         }
-        if (quiz.meta.view) {
-          const viewRadio = document.querySelector(`input[name="quizView"][value="${quiz.meta.view}"]`);
-          if (viewRadio) {
-            viewRadio.checked = true;
-            if (typeof updateOptionCards === 'function') updateOptionCards(viewRadio);
-          }
-        }
-        if (quiz.meta.mode) {
-          const modeRadio = document.querySelector(`input[name="quizMode"][value="${quiz.meta.mode}"]`);
-          if (modeRadio) {
-            modeRadio.checked = true;
-            if (typeof updateOptionCards === 'function') updateOptionCards(modeRadio);
-          }
+
+        const modeValue =
+          quiz.meta.mode && quiz.meta.mode !== "empty"
+            ? quiz.meta.mode
+            : "empty";
+        const modeRadio = document.querySelector(
+          `input[name="quizMode"][value="${modeValue}"]`,
+        );
+        if (modeRadio) {
+          modeRadio.checked = true;
+          if (typeof updateOptionCards === "function")
+            updateOptionCards(modeRadio);
         }
       }
 
@@ -1738,26 +1785,35 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   if (quizToSave.source?.trim()) meta.source = quizToSave.source.trim();
 
   // Read Phase 2 fields
-  const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value || "public";
+  const privacyVal =
+    document.querySelector('input[name="quizPrivacy"]:checked')?.value ||
+    "public";
   meta.privacy = privacyVal;
-  
+
   if (privacyVal === "private") {
     const pwd = document.getElementById("quizPassword")?.value?.trim();
     if (pwd) meta.password = pwd;
-    
+
     const emailsRaw = document.getElementById("quizAllowedEmails")?.value || "";
-    const emails = emailsRaw.split("\n").map(e => e.trim()).filter(e => e);
+    const emails = emailsRaw
+      .split("\n")
+      .map((e) => e.trim())
+      .filter((e) => e);
     if (emails.length > 0) meta.allowedEmails = emails;
   }
-  
+
   const langVal = document.getElementById("quizLang")?.value;
-  if (langVal) meta.lang = langVal;
-  
-  const viewVal = document.querySelector('input[name="quizView"]:checked')?.value;
-  if (viewVal) meta.view = viewVal;
-  
-  const modeVal = document.querySelector('input[name="quizMode"]:checked')?.value;
-  if (modeVal) meta.mode = modeVal;
+  if (langVal && langVal !== "empty") meta.lang = langVal;
+
+  const viewVal = document.querySelector(
+    'input[name="quizView"]:checked',
+  )?.value;
+  if (viewVal && viewVal !== "empty") meta.view = viewVal;
+
+  const modeVal = document.querySelector(
+    'input[name="quizMode"]:checked',
+  )?.value;
+  if (modeVal && modeVal !== "empty") meta.mode = modeVal;
 
   return {
     meta,
@@ -1870,26 +1926,36 @@ window.exportQuiz = function () {
           const exportMeta = {
             title: quizData.title,
             description: quizData.description,
-            source: quizData.source
+            source: quizData.source,
           };
-          
-          const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value || "public";
+
+          const privacyVal =
+            document.querySelector('input[name="quizPrivacy"]:checked')
+              ?.value || "public";
           exportMeta.privacy = privacyVal;
           if (privacyVal === "private") {
             const pwd = document.getElementById("quizPassword")?.value?.trim();
             if (pwd) exportMeta.password = pwd;
-            
-            const emailsRaw = document.getElementById("quizAllowedEmails")?.value || "";
-            const emails = emailsRaw.split("\n").map(e => e.trim()).filter(e => e);
+
+            const emailsRaw =
+              document.getElementById("quizAllowedEmails")?.value || "";
+            const emails = emailsRaw
+              .split("\n")
+              .map((e) => e.trim())
+              .filter((e) => e);
             if (emails.length > 0) exportMeta.allowedEmails = emails;
           }
-          
+
           const langVal = document.getElementById("quizLang")?.value;
-          if (langVal) exportMeta.lang = langVal;
-          const viewVal = document.querySelector('input[name="quizView"]:checked')?.value;
-          if (viewVal) exportMeta.view = viewVal;
-          const modeVal = document.querySelector('input[name="quizMode"]:checked')?.value;
-          if (modeVal) exportMeta.mode = modeVal;
+          if (langVal && langVal !== "empty") exportMeta.lang = langVal;
+          const viewVal = document.querySelector(
+            'input[name="quizView"]:checked',
+          )?.value;
+          if (viewVal && viewVal !== "empty") exportMeta.view = viewVal;
+          const modeVal = document.querySelector(
+            'input[name="quizMode"]:checked',
+          )?.value;
+          if (modeVal && modeVal !== "empty") exportMeta.mode = modeVal;
 
           const payload = await buildJsonQuizExport(
             exportMeta.title,
@@ -1897,7 +1963,7 @@ window.exportQuiz = function () {
             exportMeta.source,
             exportQuestions,
           );
-          
+
           Object.assign(payload.meta, exportMeta);
 
           const safeFilename = (quizData.title || "quiz")
@@ -2176,38 +2242,40 @@ window.closePreview = function () {
   modal.style.display = "none";
 };
 
-window.updateShortcutsModal = function(show) {
+window.updateShortcutsModal = function (show) {
   const modal = document.getElementById("shortcutsModal");
   if (!modal) return;
   modal.style.display = show ? "flex" : "none";
-}
+};
 
 // ============================================================================
 // PHASE 2: NEW UI HANDLERS
 // ============================================================================
 
-window.togglePrivacySettings = function() {
-  const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value;
-  const privateSection = document.getElementById('privateSettingsSection');
+window.togglePrivacySettings = function () {
+  const privacyVal = document.querySelector(
+    'input[name="quizPrivacy"]:checked',
+  )?.value;
+  const privateSection = document.getElementById("privateSettingsSection");
   if (privateSection) {
-    if (privacyVal === 'private') {
-      privateSection.style.display = 'block';
+    if (privacyVal === "private") {
+      privateSection.style.display = "block";
     } else {
-      privateSection.style.display = 'none';
+      privateSection.style.display = "none";
     }
   }
 };
 
-window.updateOptionCards = function(radioInput) {
+window.updateOptionCards = function (radioInput) {
   const name = radioInput.name;
   const cards = document.querySelectorAll(`input[name="${name}"]`);
-  cards.forEach(card => {
-    const parent = card.closest('.option-card');
+  cards.forEach((card) => {
+    const parent = card.closest(".option-card");
     if (parent) {
       if (card.checked) {
-        parent.classList.add('selected');
+        parent.classList.add("selected");
       } else {
-        parent.classList.remove('selected');
+        parent.classList.remove("selected");
       }
     }
   });

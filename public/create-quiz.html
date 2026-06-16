@@ -453,15 +453,16 @@
                 <h2><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-lock-icon lucide-lock">
-                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg> إعدادات الخصوصية والوصول</h2>
-                
+
                 <div class="form-group">
                     <label>حالة الاختبار</label>
                     <div class="option-cards">
                         <label class="option-card selected">
-                            <input type="radio" name="quizPrivacy" value="public" checked onchange="togglePrivacySettings()">
+                            <input type="radio" name="quizPrivacy" value="public" checked
+                                onchange="togglePrivacySettings()">
                             <div class="option-card-content">
                                 <div class="option-card-title">عام (Public)</div>
                                 <div class="option-card-desc">متاح لجميع الطلاب</div>
@@ -477,20 +478,22 @@
                     </div>
                 </div>
 
-                <div id="privateSettingsSection" style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
+                <div id="privateSettingsSection"
+                    style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
                     <div class="form-group">
                         <label for="quizPassword">كلمة المرور (اختياري)</label>
                         <input type="text" id="quizPassword" class="ltr" placeholder="أدخل كلمة المرور..."
                             aria-describedby="passwordHelp">
                         <small id="passwordHelp">إذا تم تعيينها، يمكن لأي شخص يمتلك كلمة المرور الدخول للاختبار</small>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="quizAllowedEmails">قائمة البريد الإلكتروني المسموح (اختياري)</label>
                         <textarea id="quizAllowedEmails" rows="3" class="ltr"
                             placeholder="student1@example.com&#10;student2@example.com"
                             aria-describedby="emailsHelp"></textarea>
-                        <small id="emailsHelp">أدخل كل بريد إلكتروني في سطر منفصل. هؤلاء الطلاب يمكنهم الدخول بدون كلمة مرور بعد تسجيل الدخول.</small>
+                        <small id="emailsHelp">أدخل كل بريد إلكتروني في سطر منفصل. هؤلاء الطلاب يمكنهم الدخول بدون كلمة
+                            مرور بعد تسجيل الدخول.</small>
                     </div>
                 </div>
             </div>
@@ -500,8 +503,9 @@
                 <h2><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         class="lucide lucide-settings-icon lucide-settings">
-                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-                        <circle cx="12" cy="12" r="3"/>
+                        <path
+                            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                        <circle cx="12" cy="12" r="3" />
                     </svg> الإعدادات الافتراضية للاختبار</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
                     تحدد هذه الخيارات كيفية عرض الاختبار للطلاب افتراضياً
@@ -510,6 +514,7 @@
                 <div class="form-group">
                     <label for="quizLang">لغة الاختبار</label>
                     <select id="quizLang" class="form-control">
+                        <option value="empty">بدون لغة (Empty)</option>
                         <option value="en">الإنجليزية (English)</option>
                         <option value="ar">العربية (Arabic)</option>
                     </select>
@@ -519,7 +524,15 @@
                     <label>طريقة العرض</label>
                     <div class="option-cards">
                         <label class="option-card selected">
-                            <input type="radio" name="quizView" value="pagination" checked onchange="updateOptionCards(this)">
+                            <input type="radio" name="quizView" value="empty" checked
+                                onchange="updateOptionCards(this)">
+                            <div class="option-card-content">
+                                <div class="option-card-title">إعدادات الطالب (Student Settings)</div>
+                                <div class="option-card-desc">اترك الإختيار لما يحبّه الطالب ويختاره في الإعدادات</div>
+                            </div>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="quizView" value="pagination" onchange="updateOptionCards(this)">
                             <div class="option-card-content">
                                 <div class="option-card-title">صفحات (Pagination)</div>
                                 <div class="option-card-desc">سؤال واحد في كل صفحة</div>
@@ -539,7 +552,15 @@
                     <label>نمط الاختبار</label>
                     <div class="option-cards">
                         <label class="option-card selected">
-                            <input type="radio" name="quizMode" value="practice" checked onchange="updateOptionCards(this)">
+                            <input type="radio" name="quizMode" value="empty" checked
+                                onchange="updateOptionCards(this)">
+                            <div class="option-card-content">
+                                <div class="option-card-title">إعدادات الطالب (Student Settings)</div>
+                                <div class="option-card-desc">اترك الإختيار لما يحبّه الطالب ويختاره في الإعدادات</div>
+                            </div>
+                        </label>
+                        <label class="option-card">
+                            <input type="radio" name="quizMode" value="practice" onchange="updateOptionCards(this)">
                             <div class="option-card-content">
                                 <div class="option-card-title">تدريب (Practice)</div>
                                 <div class="option-card-desc">إظهار الإجابات الصحيحة فوراً</div>
@@ -559,7 +580,7 @@
                                 <div class="option-card-desc">إخفاء الإجابات حتى النهاية</div>
                             </div>
                         </label>
-                        <label class="option-card" style="grid-column: 1 / -1;">
+                        <label class="option-card">
                             <input type="radio" name="quizMode" value="timed_exam" onchange="updateOptionCards(this)">
                             <div class="option-card-content">
                                 <div class="option-card-title">امتحان مؤقت (Timed Exam)</div>
