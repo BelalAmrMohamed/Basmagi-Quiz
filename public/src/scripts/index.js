@@ -845,7 +845,8 @@ function renderLandingScreen() {
   // Subtitle
   const subtitleEl = document.createElement("p");
   subtitleEl.className = "landing-subtitle";
-  subtitleEl.textContent = "منصة مجانية بالكامل — إختبر نفسك في مواد الكلية وجهّز نفسك للإمتحان.";
+  subtitleEl.textContent =
+    "منصة مجانية بالكامل — إختبر نفسك في مواد الكلية وجهّز نفسك للإمتحان.";
 
   // Feature pills
   const features = document.createElement("div");
@@ -931,12 +932,12 @@ function initLandingParticles(canvas) {
 
   const PARTICLE_COUNT = 45;
   const COLORS = [
-    "rgba(99,102,241,0.55)",  // indigo
-    "rgba(139,92,246,0.50)",  // violet
-    "rgba(236,72,153,0.45)",  // pink
-    "rgba(16,185,129,0.45)",  // emerald
-    "rgba(245,158,11,0.40)",  // amber
-    "rgba(59,130,246,0.45)",  // blue
+    "rgba(99,102,241,0.55)", // indigo
+    "rgba(139,92,246,0.50)", // violet
+    "rgba(236,72,153,0.45)", // pink
+    "rgba(16,185,129,0.45)", // emerald
+    "rgba(245,158,11,0.40)", // amber
+    "rgba(59,130,246,0.45)", // blue
   ];
 
   const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
@@ -1224,14 +1225,6 @@ function handleUserQuizSearchResults(results) {
 
     const actionsBar = document.createElement("div");
     actionsBar.className = "user-quiz-search-actions";
-
-    const createBtn = document.createElement("a");
-    createBtn.href = "create-quiz.html";
-    createBtn.textContent = "➕ إنشاء اختبار جديد";
-    createBtn.className = "btn user-quiz-create-btn";
-    createBtn.setAttribute("aria-label", "إنشاء اختبار جديد");
-
-    actionsBar.appendChild(createBtn);
     container.appendChild(actionsBar);
 
     if (!results || results.length === 0) {
@@ -1609,15 +1602,6 @@ function renderUserQuizzesView() {
     const actionsBar = document.createElement("div");
     actionsBar.className = "user-quiz-search-actions";
 
-    const createBtn = document.createElement("a");
-    createBtn.href = "create-quiz.html";
-    createBtn.textContent = "➕ إنشاء اختبار جديد";
-    createBtn.className = "btn user-quiz-create-btn";
-    createBtn.setAttribute("aria-label", "إنشاء اختبار جديد");
-    createBtn.setAttribute("title", "صفحة إنشاء امتحان");
-
-    actionsBar.appendChild(createBtn);
-
     if (!isAdminAuthenticated()) {
       const adminSignInBtn = document.createElement("a");
       adminSignInBtn.href = "sign-in.html";
@@ -1820,7 +1804,7 @@ function openPromptSelectionModal() {
 
   const modalCard = document.createElement("div");
   modalCard.className = "modal-card prompt-selection-modal";
-  
+
   // Ensure modal pop-in style exists
   if (!document.getElementById("modal-pop-in-style")) {
     const style = document.createElement("style");

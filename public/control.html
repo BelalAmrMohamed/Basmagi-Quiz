@@ -154,7 +154,7 @@
 
 <script>
     const API_URL = '/api/admin-control';
-    const token = sessionStorage.getItem('adminToken');
+    const token = sessionStorage.getItem('__bq_adm');
 
     if (!token) {
         window.location.href = '/sign-in.html';
@@ -269,7 +269,7 @@
     };
 
     function logout() {
-        sessionStorage.removeItem('adminToken');
+        sessionStorage.removeItem('__bq_adm');
         window.location.href = '/sign-in.html';
     }
 

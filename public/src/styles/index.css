@@ -1433,7 +1433,7 @@ Container
     gap: 6px;
   }
 
-  .header-badge{
+  .header-badge {
     display: none;
   }
 }
@@ -1973,23 +1973,6 @@ Container
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 20px;
-}
-
-.user-quiz-create-btn {
-  display: inline-block;
-  padding: 12px 24px;
-  background: var(--gradient-success);
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.2s;
-  margin-left: auto;
-}
-
-.user-quiz-create-btn:hover {
-  transform: translateY(-2px);
 }
 
 /* ============================================================================
