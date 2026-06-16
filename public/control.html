@@ -1,281 +1,607 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة تحكم المالك - بصمجي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+
+        :root {
+            --gold: #D4A840;
+            --gold-light: #F0C860;
+            --gold-dark: #A07820;
+            --gold-dim: rgba(212, 168, 64, 0.15);
+            --gold-dim2: rgba(212, 168, 64, 0.08);
+            --bg: #0A0A0A;
+            --bg-card: #111111;
+            --bg-card2: #161616;
+            --border: rgba(212, 168, 64, 0.25);
+            --border-strong: rgba(212, 168, 64, 0.5);
+            --text: #F0E8D0;
+            --text-muted: #8A7A5A;
+            --text-dim: #5A4A30;
+            --danger: #C0392B;
+            --danger-hover: #922B21;
+            --circuit-color: rgba(212, 168, 64, 0.06);
         }
-        h1 {
-            border-bottom: 2px solid #3B4FD8;
-            padding-bottom: 10px;
-            color: #3B4FD8;
+
+        body {
+            font-family: 'Cairo', 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 168, 64, 0.07) 0%, transparent 70%),
+                linear-gradient(90deg, var(--circuit-color) 1px, transparent 1px),
+                linear-gradient(0deg, var(--circuit-color) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            min-height: 100vh;
+            color: var(--text);
         }
-        .section {
-            margin-bottom: 40px;
+
+        /* TOP NAV */
+        .topnav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 28px;
+            background: rgba(10, 10, 10, 0.95);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(8px);
         }
-        .section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: #4A5568;
+
+        .topnav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gold);
+            letter-spacing: 0.5px;
         }
-        .form-group {
+
+        .topnav-logo svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .topnav-actions {
             display: flex;
             gap: 10px;
-            margin-bottom: 15px;
         }
-        input[type="text"], input[type="email"] {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #3B4FD8;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
+
+        .btn-nav {
+            padding: 8px 18px;
+            border-radius: 6px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border-strong);
+            background: var(--gold-dim);
+            color: var(--gold-light);
+        }
+
+        .btn-nav:hover {
+            background: rgba(212, 168, 64, 0.25);
+            border-color: var(--gold);
+        }
+
+        .btn-nav.danger {
+            border-color: rgba(192, 57, 43, 0.5);
+            background: rgba(192, 57, 43, 0.12);
+            color: #E74C3C;
+        }
+
+        .btn-nav.danger:hover {
+            background: rgba(192, 57, 43, 0.25);
+        }
+
+        /* STATUS MESSAGE */
+        .status-bar {
+            margin: 16px 24px 0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: none;
+            border: 1px solid;
+        }
+
+        .status-bar.success {
+            display: block;
+            background: rgba(39, 174, 96, 0.12);
+            border-color: rgba(39, 174, 96, 0.4);
+            color: #58D68D;
+        }
+
+        .status-bar.error {
+            display: block;
+            background: rgba(192, 57, 43, 0.12);
+            border-color: rgba(192, 57, 43, 0.4);
+            color: #E74C3C;
+        }
+
+        /* MAIN GRID */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px 24px 40px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* CARD */
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            opacity: 0.7;
+        }
+
+        .panel-header {
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 0.5px;
+        }
+
+        .panel-body {
+            padding: 20px 22px;
+        }
+
+        /* ACCESS CODE */
+        .code-display-box {
+            background: var(--bg-card2);
+            border: 1px solid var(--border-strong);
+            border-radius: 10px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .code-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        #currentCodeDisplay {
+            font-family: 'Courier New', monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--gold-light);
+            letter-spacing: 1.5px;
+            word-break: break-all;
+        }
+
+        .btn-copy {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border-strong);
+            background: var(--gold-dim);
+            color: var(--gold);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1rem;
-            transition: background 0.3s;
+            transition: all 0.2s;
         }
-        button:hover {
-            background-color: #2D3FB8;
+
+        .btn-copy:hover {
+            background: rgba(212, 168, 64, 0.25);
         }
-        button.btn-danger {
-            background-color: #e53e3e;
+
+        /* INPUT */
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 14px;
         }
-        button.btn-danger:hover {
-            background-color: #c53030;
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg-card2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+            outline: none;
         }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus {
+            border-color: var(--gold);
+        }
+
+        input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .search-row input {
+            flex: 1;
+        }
+
+        .btn-primary {
+            padding: 10px 22px;
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold));
+            color: #1A1000;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* TABLE */
+        .table-wrap {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            font-size: 0.875rem;
         }
-        th, td {
-            text-align: right;
-            padding: 12px;
-            border-bottom: 1px solid #eee;
+
+        thead {
+            background: rgba(212, 168, 64, 0.08);
         }
+
         th {
-            background-color: #f8fafc;
-            color: #4a5568;
+            padding: 11px 14px;
+            text-align: right;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.82rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
         }
-        .message {
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            display: none;
+
+        td {
+            padding: 11px 14px;
+            text-align: right;
+            border-bottom: 1px solid rgba(212, 168, 64, 0.08);
+            color: var(--text);
+            vertical-align: middle;
         }
-        .message.success {
-            background-color: #c6f6d5;
-            color: #22543d;
-            display: block;
+
+        tbody tr:last-child td {
+            border-bottom: none;
         }
-        .message.error {
-            background-color: #fed7d7;
-            color: #742a2a;
-            display: block;
+
+        tbody tr:hover {
+            background: rgba(212, 168, 64, 0.04);
         }
-        .logout-btn {
-            background-color: #718096;
-            float: left;
+
+        .td-email {
+            font-family: 'Courier New', monospace;
+            font-size: 0.82rem;
+            color: var(--gold-light);
+            direction: ltr;
+            unicode-bidi: plaintext;
         }
-        .logout-btn:hover {
-            background-color: #4a5568;
+
+        .td-date {
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            white-space: nowrap;
         }
-        #currentCodeDisplay {
-            font-family: monospace;
-            background: #edf2f7;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 1.2rem;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            display: inline-block;
+
+        .btn-remove {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            background: rgba(192, 57, 43, 0.12);
+            border: 1px solid rgba(192, 57, 43, 0.35);
+            border-radius: 6px;
+            color: #E74C3C;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-remove:hover {
+            background: rgba(192, 57, 43, 0.25);
+            border-color: rgba(192, 57, 43, 0.6);
+        }
+
+        .empty-row td {
+            color: var(--text-dim);
+            text-align: center;
+            padding: 24px;
+        }
+
+        @media (max-width: 780px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
 
-<div class="container">
-    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
-    <h1>لوحة تحكم المالك</h1>
-    <div id="statusMessage" class="message"></div>
+    <!-- TOP NAV -->
+    <nav class="topnav">
+        <div class="topnav-logo">
+            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="28" height="28" rx="6" fill="rgba(212,168,64,0.15)" />
+                <path d="M8 20L14 8L20 20M10.5 16H17.5" stroke="#D4A840" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            منصة الاختبارات
+        </div>
+        <div class="topnav-actions">
+            <button class="btn-nav" onclick="window.location.href='/'">عودة للرئيسية</button>
+            <button class="btn-nav danger" onclick="logout()">تسجيل الخروج</button>
+        </div>
+    </nav>
 
-    <div class="section">
-        <h2>رمز الدخول السري (Access Code)</h2>
-        <div>الرمز الحالي: <span id="currentCodeDisplay">جاري التحميل...</span></div>
-        <form id="changeCodeForm" class="form-group">
-            <input type="text" id="newCodeInput" placeholder="أدخل رمز الدخول الجديد (4 أحرف أو أرقام على الأقل)" required minlength="4">
-            <button type="submit">تغيير الرمز</button>
-        </form>
+    <!-- STATUS MESSAGE -->
+    <div id="statusMessage" class="status-bar"></div>
+
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+        <!-- LEFT: ADMINS -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">إدارة المشرفين</div>
+            </div>
+            <div class="panel-body">
+                <div class="search-row">
+                    <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد">
+                    <button class="btn-primary" onclick="submitAddAdmin()">بحث</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>البريد الإلكتروني</th>
+                                <th>أُضيف بواسطة</th>
+                                <th>تاريخ الانضمام</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminsTableBody">
+                            <tr class="empty-row">
+                                <td colspan="4">جاري التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: ACCESS CODE -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">إدارة رمز الدخول</div>
+            </div>
+            <div class="panel-body">
+                <div class="code-display-box">
+                    <div>
+                        <div class="code-label">رمز الدخول السري الحالي:</div>
+                        <div id="currentCodeDisplay">جاري التحميل...</div>
+                    </div>
+                    <button class="btn-copy" onclick="copyCode()" title="نسخ">
+                        &#10697;
+                    </button>
+                </div>
+                <div class="field-group">
+                    <input type="text" id="newCodeInput"
+                        placeholder="أدخل رمز الدخول الجديد (4 أحرف أو أرقام على الأقل)" minlength="4">
+                    <button class="btn-primary" style="width:100%; padding:12px;" onclick="submitChangeCode()">تحديث
+                        الرمز</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="section">
-        <h2>إدارة المشرفين (Admins)</h2>
-        <form id="addAdminForm" class="form-group">
-            <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد" required>
-            <button type="submit">إضافة مشرف</button>
-        </form>
+    <script>
+        const API_URL = '/api/admin-control';
+        const token = sessionStorage.getItem('__bq_adm');
 
-        <table>
-            <thead>
-                <tr>
-                    <th>البريد الإلكتروني</th>
-                    <th>أُضيف بواسطة</th>
-                    <th>تاريخ الإضافة</th>
-                    <th>إجراء</th>
-                </tr>
-            </thead>
-            <tbody id="adminsTableBody">
-                <tr><td colspan="4">جاري التحميل...</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+        if (!token) {
+            window.location.href = '/sign-in.html';
+        }
 
-<script>
-    const API_URL = '/api/admin-control';
-    const token = sessionStorage.getItem('__bq_adm');
+        function getHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
 
-    if (!token) {
-        window.location.href = '/sign-in.html';
-    }
+        function showMessage(msg, isError = false) {
+            const el = document.getElementById('statusMessage');
+            el.textContent = msg;
+            el.className = `status-bar ${isError ? 'error' : 'success'}`;
+            setTimeout(() => { el.style.display = 'none'; }, 5000);
+        }
 
-    function getHeaders() {
-        return {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        };
-    }
+        async function loadData() {
+            try {
+                const res = await fetch(API_URL, { headers: getHeaders() });
+                const data = await res.json();
 
-    function showMessage(msg, isError = false) {
-        const el = document.getElementById('statusMessage');
-        el.textContent = msg;
-        el.className = `message ${isError ? 'error' : 'success'}`;
-        setTimeout(() => { el.style.display = 'none'; }, 5000);
-    }
-
-    async function loadData() {
-        try {
-            const res = await fetch(API_URL, { headers: getHeaders() });
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                    alert('غير مصرح لك بالدخول إلى هذه الصفحة.');
-                    window.location.href = '/sign-in.html';
-                    return;
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        alert('غير مصرح لك بالدخول إلى هذه الصفحة.');
+                        window.location.href = '/sign-in.html';
+                        return;
+                    }
+                    throw new Error(data.error || 'فشل تحميل البيانات');
                 }
-                throw new Error(data.error || 'فشل تحميل البيانات');
-            }
 
-            document.getElementById('currentCodeDisplay').textContent = data.accessCode;
+                document.getElementById('currentCodeDisplay').textContent = data.accessCode;
 
-            const tbody = document.getElementById('adminsTableBody');
-            tbody.innerHTML = '';
-            
-            if (data.admins.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4">لا يوجد مشرفين</td></tr>';
-            } else {
-                data.admins.forEach(admin => {
-                    const tr = document.createElement('tr');
-                    const date = new Date(admin.created_at).toLocaleDateString('ar-EG');
-                    tr.innerHTML = `
-                        <td>${admin.email}</td>
-                        <td>${admin.added_by}</td>
-                        <td>${date}</td>
-                        <td><button class="btn-danger" onclick="removeAdmin('${admin.email}')">إزالة</button></td>
+                const tbody = document.getElementById('adminsTableBody');
+                tbody.innerHTML = '';
+
+                if (data.admins.length === 0) {
+                    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">لا يوجد مشرفين</td></tr>';
+                } else {
+                    data.admins.forEach(admin => {
+                        const tr = document.createElement('tr');
+                        const date = new Date(admin.created_at).toLocaleDateString('ar-EG');
+                        tr.innerHTML = `
+                        <td class="td-email">${admin.email}</td>
+                        <td class="td-email">${admin.added_by}</td>
+                        <td class="td-date">${date}</td>
+                        <td><button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005; إزالة</button></td>
                     `;
-                    tbody.appendChild(tr);
-                });
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                showMessage(err.message, true);
             }
-        } catch (err) {
-            showMessage(err.message, true);
         }
-    }
 
-    document.getElementById('changeCodeForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const newCode = document.getElementById('newCodeInput').value;
-        try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ action: 'change_code', newCode })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            showMessage('تم تغيير رمز الدخول بنجاح');
-            document.getElementById('newCodeInput').value = '';
-            loadData();
-        } catch (err) {
-            showMessage(err.message, true);
+        async function submitChangeCode() {
+            const newCode = document.getElementById('newCodeInput').value.trim();
+            if (!newCode || newCode.length < 4) {
+                showMessage('يجب أن يكون الرمز 4 أحرف على الأقل', true);
+                return;
+            }
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ action: 'change_code', newCode })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                showMessage('تم تغيير رمز الدخول بنجاح');
+                document.getElementById('newCodeInput').value = '';
+                loadData();
+            } catch (err) {
+                showMessage(err.message, true);
+            }
         }
-    });
 
-    document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('newAdminEmail').value;
-        try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ action: 'add_admin', email })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            showMessage('تم إضافة المشرف بنجاح');
-            document.getElementById('newAdminEmail').value = '';
-            loadData();
-        } catch (err) {
-            showMessage(err.message, true);
+        async function submitAddAdmin() {
+            const email = document.getElementById('newAdminEmail').value.trim();
+            if (!email) {
+                showMessage('يرجى إدخال البريد الإلكتروني', true);
+                return;
+            }
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ action: 'add_admin', email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                showMessage('تم إضافة المشرف بنجاح');
+                document.getElementById('newAdminEmail').value = '';
+                loadData();
+            } catch (err) {
+                showMessage(err.message, true);
+            }
         }
-    });
 
-    window.removeAdmin = async function(email) {
-        if (!confirm(`هل أنت متأكد من إزالة المشرف ${email}؟`)) return;
-        try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: getHeaders(),
-                body: JSON.stringify({ action: 'remove_admin', email })
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error);
-            showMessage('تم إزالة المشرف بنجاح');
-            loadData();
-        } catch (err) {
-            showMessage(err.message, true);
+        window.removeAdmin = async function (email) {
+            if (!confirm(`هل أنت متأكد من إزالة المشرف ${email}؟`)) return;
+            try {
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify({ action: 'remove_admin', email })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                showMessage('تم إزالة المشرف بنجاح');
+                loadData();
+            } catch (err) {
+                showMessage(err.message, true);
+            }
+        };
+
+        function copyCode() {
+            const code = document.getElementById('currentCodeDisplay').textContent;
+            if (navigator.clipboard && code !== 'جاري التحميل...') {
+                navigator.clipboard.writeText(code).then(() => showMessage('تم نسخ الرمز'));
+            }
         }
-    };
 
-    function logout() {
-        sessionStorage.removeItem('__bq_adm');
-        window.location.href = '/sign-in.html';
-    }
+        function logout() {
+            sessionStorage.removeItem('__bq_adm');
+            window.location.href = '/sign-in.html';
+        }
 
-    // Initial load
-    loadData();
-</script>
+        loadData();
+    </script>
 
 </body>
+
 </html>
