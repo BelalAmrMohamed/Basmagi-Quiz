@@ -303,99 +303,98 @@
             transform: translateY(0);
         }
 
-        /* TABLE */
-        .table-wrap {
+        /* ADMIN LIST */
+        .admin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 2px;
+        }
+
+        .admin-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .admin-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .admin-list::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 4px;
+        }
+
+        .admin-card {
+            background: var(--bg-card2);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            overflow-x: auto;
+            border-radius: 8px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: border-color 0.2s;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.875rem;
-            table-layout: fixed;
+        .admin-card:hover {
+            border-color: var(--border-strong);
         }
 
-        th:nth-child(1),
-        td:nth-child(1) {
-            width: 34%;
+        .admin-info {
+            flex: 1;
+            min-width: 0;
         }
 
-        th:nth-child(2),
-        td:nth-child(2) {
-            width: 30%;
-        }
-
-        th:nth-child(3),
-        td:nth-child(3) {
-            width: 18%;
-        }
-
-        th:nth-child(4),
-        td:nth-child(4) {
-            width: 18%;
-        }
-
-        thead {
-            background: rgba(212, 168, 64, 0.08);
-        }
-
-        th {
-            padding: 11px 14px;
-            text-align: right;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.82rem;
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
-        }
-
-        td {
-            padding: 11px 14px;
-            text-align: right;
-            border-bottom: 1px solid rgba(212, 168, 64, 0.08);
-            color: var(--text);
-            vertical-align: middle;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        tbody tr:hover {
-            background: rgba(212, 168, 64, 0.04);
-        }
-
-        .td-email {
+        .admin-email {
             font-family: 'Courier New', monospace;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
             color: var(--gold-light);
             direction: ltr;
             unicode-bidi: plaintext;
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 0;
+            display: block;
+            margin-bottom: 4px;
         }
 
-        .td-date {
+        .admin-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .admin-meta-item {
+            font-size: 0.76rem;
             color: var(--text-muted);
-            font-size: 0.82rem;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .meta-dot {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            display: inline-block;
         }
 
         .btn-remove {
+            flex-shrink: 0;
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 5px 12px;
-            background: rgba(192, 57, 43, 0.12);
-            border: 1px solid rgba(192, 57, 43, 0.35);
+            padding: 6px 12px;
+            background: rgba(192, 57, 43, 0.1);
+            border: 1px solid rgba(192, 57, 43, 0.3);
             border-radius: 6px;
             color: #E74C3C;
             font-family: 'Cairo', sans-serif;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -403,14 +402,138 @@
         }
 
         .btn-remove:hover {
-            background: rgba(192, 57, 43, 0.25);
-            border-color: rgba(192, 57, 43, 0.6);
+            background: rgba(192, 57, 43, 0.22);
+            border-color: rgba(192, 57, 43, 0.55);
         }
 
-        .empty-row td {
-            color: var(--text-dim);
+        .admin-empty {
             text-align: center;
-            padding: 24px;
+            color: var(--text-dim);
+            padding: 32px 0;
+            font-size: 0.9rem;
+        }
+
+        /* CONFIRM MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            backdrop-filter: blur(3px);
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            padding: 28px 28px 22px;
+            width: 90%;
+            max-width: 380px;
+            position: relative;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            border-radius: 14px 14px 0 0;
+            background: linear-gradient(90deg, transparent, #E74C3C, transparent);
+        }
+
+        .modal-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(192, 57, 43, 0.12);
+            border: 1px solid rgba(192, 57, 43, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin: 0 auto 16px;
+            color: #E74C3C;
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .modal-body {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 22px;
+            line-height: 1.6;
+        }
+
+        .modal-email {
+            color: var(--gold-light);
+            font-family: 'Courier New', monospace;
+            font-size: 0.82rem;
+            word-break: break-all;
+            display: block;
+            margin-top: 6px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid;
+        }
+
+        .btn-cancel {
+            background: var(--gold-dim);
+            border-color: var(--border-strong);
+            color: var(--gold-light);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(212, 168, 64, 0.22);
+        }
+
+        .btn-confirm-del {
+            background: rgba(192, 57, 43, 0.15);
+            border-color: rgba(192, 57, 43, 0.4);
+            color: #E74C3C;
+        }
+
+        .btn-confirm-del:hover {
+            background: rgba(192, 57, 43, 0.28);
         }
 
         @media (max-width: 780px) {
@@ -451,22 +574,8 @@
                     <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد">
                     <button class="btn-primary" onclick="submitAddAdmin()">إضافة</button>
                 </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>البريد الإلكتروني</th>
-                                <th>أُضيف بواسطة</th>
-                                <th>تاريخ الانضمام</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminsTableBody">
-                            <tr class="empty-row">
-                                <td colspan="4">جاري التحميل...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="admin-list" id="adminsTableBody">
+                    <div class="admin-empty">جاري التحميل...</div>
                 </div>
             </div>
         </div>
@@ -495,6 +604,22 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- CONFIRM MODAL -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <div class="modal-icon">&#9888;</div>
+            <div class="modal-title">تأكيد الإزالة</div>
+            <div class="modal-body">
+                هل أنت متأكد من إزالة هذا المشرف؟ لا يمكن التراجع عن هذا الإجراء.
+                <span class="modal-email" id="modalEmail"></span>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
+                <button class="btn-confirm-del" id="modalConfirmBtn">إزالة</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -539,22 +664,28 @@
 
                 document.getElementById('currentCodeDisplay').textContent = data.accessCode;
 
-                const tbody = document.getElementById('adminsTableBody');
-                tbody.innerHTML = '';
+                const list = document.getElementById('adminsTableBody');
+                list.innerHTML = '';
 
                 if (data.admins.length === 0) {
-                    tbody.innerHTML = '<tr class="empty-row"><td colspan="4">لا يوجد مشرفين</td></tr>';
+                    list.innerHTML = '<div class="admin-empty">لا يوجد مشرفين</div>';
                 } else {
                     data.admins.forEach(admin => {
-                        const tr = document.createElement('tr');
                         const date = new Date(admin.created_at).toLocaleDateString('ar-EG');
-                        tr.innerHTML = `
-                        <td class="td-email">${admin.email}</td>
-                        <td class="td-email">${admin.added_by}</td>
-                        <td class="td-date">${date}</td>
-                        <td><button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005;&nbsp;إزالة</button></td>
+                        const card = document.createElement('div');
+                        card.className = 'admin-card';
+                        card.innerHTML = `
+                        <div class="admin-info">
+                            <span class="admin-email">${admin.email}</span>
+                            <div class="admin-meta">
+                                <span class="admin-meta-item">أُضيف بواسطة: ${admin.added_by}</span>
+                                <span class="meta-dot"></span>
+                                <span class="admin-meta-item">${date}</span>
+                            </div>
+                        </div>
+                        <button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005;&nbsp;إزالة</button>
                     `;
-                        tbody.appendChild(tr);
+                        list.appendChild(card);
                     });
                 }
             } catch (err) {
@@ -606,22 +737,35 @@
             }
         }
 
-        window.removeAdmin = async function (email) {
-            if (!confirm(`هل أنت متأكد من إزالة المشرف ${email}؟`)) return;
-            try {
-                const res = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: getHeaders(),
-                    body: JSON.stringify({ action: 'remove_admin', email })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                showMessage('تم إزالة المشرف بنجاح');
-                loadData();
-            } catch (err) {
-                showMessage(err.message, true);
-            }
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+
+        window.removeAdmin = function (email) {
+            document.getElementById('modalEmail').textContent = email;
+            const modal = document.getElementById('confirmModal');
+            modal.classList.add('show');
+            document.getElementById('modalConfirmBtn').onclick = async function () {
+                closeModal();
+                try {
+                    const res = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: getHeaders(),
+                        body: JSON.stringify({ action: 'remove_admin', email })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    showMessage('تم إزالة المشرف بنجاح');
+                    loadData();
+                } catch (err) {
+                    showMessage(err.message, true);
+                }
+            };
         };
+
+        document.getElementById('confirmModal').addEventListener('click', function (e) {
+            if (e.target === this) closeModal();
+        });
 
         function copyCode() {
             const code = document.getElementById('currentCodeDisplay').textContent;
