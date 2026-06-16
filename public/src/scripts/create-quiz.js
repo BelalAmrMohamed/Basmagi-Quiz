@@ -1549,6 +1549,46 @@ function loadDraftFromLocalStorage() {
         if (srcEl) srcEl.value = source;
       }
 
+      // Restore Phase 2 fields
+      if (data.meta) {
+        if (data.meta.privacy) {
+          const pubRadio = document.querySelector('input[name="quizPrivacy"][value="public"]');
+          const privRadio = document.querySelector('input[name="quizPrivacy"][value="private"]');
+          if (data.meta.privacy === 'private' && privRadio) {
+            privRadio.checked = true;
+          } else if (pubRadio) {
+            pubRadio.checked = true;
+          }
+          if (typeof togglePrivacySettings === 'function') togglePrivacySettings();
+        }
+        if (data.meta.password) {
+          const passEl = document.getElementById("quizPassword");
+          if (passEl) passEl.value = data.meta.password;
+        }
+        if (data.meta.allowedEmails && Array.isArray(data.meta.allowedEmails)) {
+          const emailsEl = document.getElementById("quizAllowedEmails");
+          if (emailsEl) emailsEl.value = data.meta.allowedEmails.join("\n");
+        }
+        if (data.meta.lang) {
+          const langEl = document.getElementById("quizLang");
+          if (langEl) langEl.value = data.meta.lang;
+        }
+        if (data.meta.view) {
+          const viewRadio = document.querySelector(`input[name="quizView"][value="${data.meta.view}"]`);
+          if (viewRadio) {
+            viewRadio.checked = true;
+            if (typeof updateOptionCards === 'function') updateOptionCards(viewRadio);
+          }
+        }
+        if (data.meta.mode) {
+          const modeRadio = document.querySelector(`input[name="quizMode"][value="${data.meta.mode}"]`);
+          if (modeRadio) {
+            modeRadio.checked = true;
+            if (typeof updateOptionCards === 'function') updateOptionCards(modeRadio);
+          }
+        }
+      }
+
       if (data.questions && data.questions.length > 0) {
         const { questions, maxId } = normalizeQuestionsWithIds(data.questions);
         quizData.questions = questions;
@@ -1596,6 +1636,46 @@ function loadQuizFromLocalStorage(quizId) {
       quizData.source = quiz.meta?.source || quiz.source || "";
       document.getElementById("quizSource").value = quizData.source;
       updateCharCount("sourceCharCount", quizData.source.length, 500);
+
+      // Restore Phase 2 fields
+      if (quiz.meta) {
+        if (quiz.meta.privacy) {
+          const pubRadio = document.querySelector('input[name="quizPrivacy"][value="public"]');
+          const privRadio = document.querySelector('input[name="quizPrivacy"][value="private"]');
+          if (quiz.meta.privacy === 'private' && privRadio) {
+            privRadio.checked = true;
+          } else if (pubRadio) {
+            pubRadio.checked = true;
+          }
+          if (typeof togglePrivacySettings === 'function') togglePrivacySettings();
+        }
+        if (quiz.meta.password) {
+          const passEl = document.getElementById("quizPassword");
+          if (passEl) passEl.value = quiz.meta.password;
+        }
+        if (quiz.meta.allowedEmails && Array.isArray(quiz.meta.allowedEmails)) {
+          const emailsEl = document.getElementById("quizAllowedEmails");
+          if (emailsEl) emailsEl.value = quiz.meta.allowedEmails.join("\n");
+        }
+        if (quiz.meta.lang) {
+          const langEl = document.getElementById("quizLang");
+          if (langEl) langEl.value = quiz.meta.lang;
+        }
+        if (quiz.meta.view) {
+          const viewRadio = document.querySelector(`input[name="quizView"][value="${quiz.meta.view}"]`);
+          if (viewRadio) {
+            viewRadio.checked = true;
+            if (typeof updateOptionCards === 'function') updateOptionCards(viewRadio);
+          }
+        }
+        if (quiz.meta.mode) {
+          const modeRadio = document.querySelector(`input[name="quizMode"][value="${quiz.meta.mode}"]`);
+          if (modeRadio) {
+            modeRadio.checked = true;
+            if (typeof updateOptionCards === 'function') updateOptionCards(modeRadio);
+          }
+        }
+      }
 
       if (quiz.questions && quiz.questions.length > 0) {
         const { questions, maxId } = normalizeQuestionsWithIds(quiz.questions);
@@ -1656,6 +1736,28 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   if (quizToSave.description?.trim())
     meta.description = quizToSave.description.trim();
   if (quizToSave.source?.trim()) meta.source = quizToSave.source.trim();
+
+  // Read Phase 2 fields
+  const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value || "public";
+  meta.privacy = privacyVal;
+  
+  if (privacyVal === "private") {
+    const pwd = document.getElementById("quizPassword")?.value?.trim();
+    if (pwd) meta.password = pwd;
+    
+    const emailsRaw = document.getElementById("quizAllowedEmails")?.value || "";
+    const emails = emailsRaw.split("\n").map(e => e.trim()).filter(e => e);
+    if (emails.length > 0) meta.allowedEmails = emails;
+  }
+  
+  const langVal = document.getElementById("quizLang")?.value;
+  if (langVal) meta.lang = langVal;
+  
+  const viewVal = document.querySelector('input[name="quizView"]:checked')?.value;
+  if (viewVal) meta.view = viewVal;
+  
+  const modeVal = document.querySelector('input[name="quizMode"]:checked')?.value;
+  if (modeVal) meta.mode = modeVal;
 
   return {
     meta,
@@ -1765,12 +1867,38 @@ window.exportQuiz = function () {
           exportToMarkdown(config, exportQuestions);
           break;
         case "json": {
+          const exportMeta = {
+            title: quizData.title,
+            description: quizData.description,
+            source: quizData.source
+          };
+          
+          const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value || "public";
+          exportMeta.privacy = privacyVal;
+          if (privacyVal === "private") {
+            const pwd = document.getElementById("quizPassword")?.value?.trim();
+            if (pwd) exportMeta.password = pwd;
+            
+            const emailsRaw = document.getElementById("quizAllowedEmails")?.value || "";
+            const emails = emailsRaw.split("\n").map(e => e.trim()).filter(e => e);
+            if (emails.length > 0) exportMeta.allowedEmails = emails;
+          }
+          
+          const langVal = document.getElementById("quizLang")?.value;
+          if (langVal) exportMeta.lang = langVal;
+          const viewVal = document.querySelector('input[name="quizView"]:checked')?.value;
+          if (viewVal) exportMeta.view = viewVal;
+          const modeVal = document.querySelector('input[name="quizMode"]:checked')?.value;
+          if (modeVal) exportMeta.mode = modeVal;
+
           const payload = await buildJsonQuizExport(
-            quizData.title,
-            quizData.description,
-            quizData.source,
+            exportMeta.title,
+            exportMeta.description,
+            exportMeta.source,
             exportQuestions,
           );
+          
+          Object.assign(payload.meta, exportMeta);
 
           const safeFilename = (quizData.title || "quiz")
             .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")
@@ -2046,6 +2174,43 @@ window.previewQuiz = function () {
 window.closePreview = function () {
   const modal = document.getElementById("previewModal");
   modal.style.display = "none";
+};
+
+window.updateShortcutsModal = function(show) {
+  const modal = document.getElementById("shortcutsModal");
+  if (!modal) return;
+  modal.style.display = show ? "flex" : "none";
+}
+
+// ============================================================================
+// PHASE 2: NEW UI HANDLERS
+// ============================================================================
+
+window.togglePrivacySettings = function() {
+  const privacyVal = document.querySelector('input[name="quizPrivacy"]:checked')?.value;
+  const privateSection = document.getElementById('privateSettingsSection');
+  if (privateSection) {
+    if (privacyVal === 'private') {
+      privateSection.style.display = 'block';
+    } else {
+      privateSection.style.display = 'none';
+    }
+  }
+};
+
+window.updateOptionCards = function(radioInput) {
+  const name = radioInput.name;
+  const cards = document.querySelectorAll(`input[name="${name}"]`);
+  cards.forEach(card => {
+    const parent = card.closest('.option-card');
+    if (parent) {
+      if (card.checked) {
+        parent.classList.add('selected');
+      } else {
+        parent.classList.remove('selected');
+      }
+    }
+  });
 };
 
 // ============================================================================

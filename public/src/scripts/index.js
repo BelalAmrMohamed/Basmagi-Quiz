@@ -24,7 +24,7 @@ import { exportToPptx } from "../export/export-to-pptx.js";
 import { exportToMarkdown } from "../export/export-to-markdown.js";
 import { buildQuizText } from "../export/export-to-text.js";
 import { createUploadButton } from "./adminUpload.js";
-import { isAdminAuthenticated, hasAdminSessionHint } from "./adminAuth.js";
+import { isAdminAuthenticated, hasAdminSessionHint, signOut } from "./adminAuth.js";
 
 // Helper utilities
 import { getSubscribedCourses } from "../shared/filterUtils.js";
@@ -1602,14 +1602,53 @@ function renderUserQuizzesView() {
     const actionsBar = document.createElement("div");
     actionsBar.className = "user-quiz-search-actions";
 
-    if (!isAdminAuthenticated()) {
+    if (isAdminAuthenticated()) {
+      const adminSignOutBtn = document.createElement("button");
+      adminSignOutBtn.type = "button";
+      adminSignOutBtn.textContent = "🚪 تسجيل الخروج";
+      adminSignOutBtn.className = "btn";
+      adminSignOutBtn.setAttribute("aria-label", "تسجيل خروج المشرف");
+      adminSignOutBtn.style.cssText = `display: inline-block;
+        padding: 10px 18px;
+        background: var(--color-error-light, #fed7d7);
+        border: 1.5px solid var(--color-error, #f56565);
+        color: var(--color-error, #c53030);
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-left: 10px;`;
+      adminSignOutBtn.onmouseover = () => {
+        adminSignOutBtn.style.background = "var(--color-error, #e53e3e)";
+        adminSignOutBtn.style.color = "#ffffff";
+      };
+      adminSignOutBtn.onmouseout = () => {
+        adminSignOutBtn.style.background = "var(--color-error-light, #fed7d7)";
+        adminSignOutBtn.style.color = "var(--color-error, #c53030)";
+      };
+      adminSignOutBtn.onclick = () => {
+        signOut();
+        window.location.reload();
+      };
+      actionsBar.appendChild(adminSignOutBtn);
+    } else {
       const adminSignInBtn = document.createElement("a");
       adminSignInBtn.href = "sign-in.html";
       adminSignInBtn.textContent = "🔐 دخول المشرفين";
       adminSignInBtn.className = "btn";
       adminSignInBtn.setAttribute("aria-label", "لوحة دخول المشرفين");
-      adminSignInBtn.style.cssText =
-        "display: inline-block;       padding: 10px 18px;       background: var(--color-background-secondary);       border: 1.5px solid var(--color-border);       color: var(--color-text-secondary);       text-decoration: none;       border-radius: 8px;       font-weight: 600;       font-size: 0.88rem;       transition: all 0.2s;       margin-left: 10px;";
+      adminSignInBtn.style.cssText = `display: inline-block;
+        padding: 10px 18px;
+        background: var(--color-background-secondary);
+        border: 1.5px solid var(--color-border);
+        color: var(--color-text-secondary);
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        margin-left: 10px;`;
       adminSignInBtn.onmouseover = () => {
         adminSignInBtn.style.borderColor = "var(--color-primary)";
         adminSignInBtn.style.color = "var(--color-primary)";

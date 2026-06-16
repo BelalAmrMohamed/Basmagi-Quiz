@@ -1969,7 +1969,7 @@ Container
 .user-quiz-search-actions {
   grid-column: 1 / -1;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 20px;
@@ -2054,6 +2054,10 @@ Container
   .term-btn {
     padding: 16px 20px;
     font-size: 1.1rem;
+  }
+
+  .watermark p {
+    font-size: small;
   }
 }
 

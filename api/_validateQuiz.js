@@ -14,15 +14,27 @@ const ALLOWED_META_KEYS = new Set([
   "description",
   "source",
   "path",
-  "author",
   "createdAt",
+  "author",
+  "author_email",
+  // Phase 2 — access control & default settings
+  "privacy",
+  "password",
+  "allowedEmails",
+  "lang",
+  "view",
+  "mode",
 ]);
 
 const ALLOWED_STATS_KEYS = new Set(["questionCount", "questionTypes"]);
 
 const ALLOWED_QUESTION_KEYS = new Set([
   "q",
+  "passage",
   "image",
+  "audio",
+  "video",
+  "lang",
   "options",
   "correct",
   "explanation",
@@ -150,6 +162,43 @@ export function validateQuizPayload(raw) {
     if (meta.author.length > 100) {
       throw new Error("INVALID_META_FIELD: author exceeds 100 characters");
     }
+  }
+
+  // meta.author_email — optional string
+  if (meta.author_email !== undefined) {
+    if (typeof meta.author_email !== "string") {
+      throw new Error("INVALID_META_FIELD: author_email must be a string");
+    }
+    if (meta.author_email.length > 150) {
+      throw new Error("INVALID_META_FIELD: author exceeds 150 characters");
+    }
+  }
+
+  // Phase 2 new fields validation
+  if (meta.privacy !== undefined && typeof meta.privacy !== "string") {
+    throw new Error("INVALID_META_FIELD: privacy must be a string");
+  }
+  if (meta.password !== undefined && typeof meta.password !== "string") {
+    throw new Error("INVALID_META_FIELD: password must be a string");
+  }
+  if (meta.allowedEmails !== undefined && !Array.isArray(meta.allowedEmails)) {
+    throw new Error("INVALID_META_FIELD: allowedEmails must be an array");
+  }
+  if (meta.lang !== undefined && typeof meta.lang !== "string") {
+    throw new Error("INVALID_META_FIELD: lang must be a string");
+  }
+  if (meta.view !== undefined && typeof meta.view !== "string") {
+    throw new Error("INVALID_META_FIELD: view must be a string");
+  }
+  if (meta.mode !== undefined && typeof meta.mode !== "string") {
+    throw new Error("INVALID_META_FIELD: mode must be a string");
+  }
+
+  // Sanitize allowedEmails if present
+  if (Array.isArray(meta.allowedEmails)) {
+    meta.allowedEmails = meta.allowedEmails.filter(
+      (email) => typeof email === "string" && email.trim() !== "",
+    );
   }
 
   // ── 5. Validate questions ───────────────────────────────────────────────────

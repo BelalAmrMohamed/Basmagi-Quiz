@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-11T13:27:21.004Z",
+  "generatedAt": "2026-06-16T15:48:14.009Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -2482,56 +2482,10 @@
       "term": 2,
       "quizzes": [
         {
-          "id": "VGNZV4MH",
-          "title": "Technical Writing",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/Technical_Writing.json",
-          "questionCount": 8,
-          "questionTypes": [
-            "MCQ"
-          ],
-          "createdAt": "4/3/2026, 2:40:09 PM"
-        },
-        {
-          "id": "2URNKTJH",
-          "title": "test certificate",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/test certificate.json",
-          "questionCount": 11,
-          "questionTypes": [
-            "True/False"
-          ],
-          "createdAt": "4/3/2026, 10:09:46 PM"
-        },
-        {
-          "id": "4OBRHDOR",
-          "title": "Test Quiz",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/test-quiz.json",
-          "questionCount": 16,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
-          "source": "https://www.w3schools.com/CPP/default.asp",
-          "createdAt": "2026-03-01 - 20:37"
-        },
-        {
-          "id": "BRPEW4J6",
-          "title": "Markdown & LaTeX Stress Test Quiz",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/Testing Features/Markdown_LaTeX_Stress_Test_Quiz.json",
-          "questionCount": 14,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
-          "author": "بلال",
-          "createdAt": "3/14/2026, 7:19:36 AM"
-        },
-        {
           "id": "3SVMT2U3",
-          "title": "Website Demo",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/Website Demo.json",
-          "questionCount": 5,
+          "title": "منصة إمتحانات بصمجي",
+          "path": "/data/quizzes/Computer Science/2/2/Website demo/منصة إمتحانات بصمجي.json",
+          "questionCount": 11,
           "questionTypes": [
             "Essay",
             "MCQ",
@@ -2540,19 +2494,6 @@
           "description": "Basmagi Quiz Platform Demo",
           "source": "https://www.w3schools.com/CPP/default.asp",
           "createdAt": "2026-03-01 - 20:37"
-        },
-        {
-          "id": "F3A3IZB6",
-          "title": "C Plus Plus Quiz",
-          "path": "/data/quizzes/Computer Science/2/2/Website demo/أسئلة الدكتور/C_Plus_Plus_Quiz.json",
-          "questionCount": 15,
-          "questionTypes": [
-            "Essay",
-            "MCQ",
-            "True/False"
-          ],
-          "author": "Imported",
-          "createdAt": "2026-03-13 - 08:48"
         }
       ]
     }
