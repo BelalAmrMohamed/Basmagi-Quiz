@@ -777,7 +777,7 @@ async function init() {
     }
 
     // Setup Timer
-    if (quizMode === "timed") {
+    if (quizMode === "timed" || quizMode === "timed_exam") {
       timeRemaining = questions.length * 30;
     }
 
@@ -1167,7 +1167,7 @@ function buildVerticalQuestionCard(q, idx) {
   const userSelected = userAnswers[idx];
   const isBookmarked = gameEngine.isBookmarked(examId, idx);
   const isFlagged = gameEngine.isFlagged(examId, idx);
-  const showCheckButton = quizMode !== "exam";
+  const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
   let feedbackClass = "feedback";
   let feedbackText = "";
   const explanationText =
@@ -1314,7 +1314,7 @@ function renderQuestion() {
   const userSelected = userAnswers[currentIdx];
   const isBookmarked = gameEngine.isBookmarked(examId, currentIdx);
   const isFlagged = gameEngine.isFlagged(examId, currentIdx);
-  const showCheckButton = quizMode !== "exam";
+  const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
 
   let feedbackClass = "feedback";
   let feedbackText = "";
@@ -1615,7 +1615,7 @@ async function finish(skipconfirmationNotification) {
     essayQuestions: essayQuestions,
     userAnswers,
     timeElapsed:
-      quizMode === "timed"
+      quizMode === "timed" || quizMode === "timed_exam"
         ? questions.length * 30 - timeRemaining
         : timeElapsed,
     mode: quizMode,
@@ -1673,14 +1673,14 @@ async function restart(skipconfirmationNotification) {
   timeElapsed = 0;
 
   // 6. Reset Timed Mode Logic
-  if (quizMode === "timed") {
+  if (quizMode === "timed" || quizMode === "timed_exam") {
     timeRemaining = questions.length * 30;
   }
 
   // 7. Reset UI
   if (els.timer) {
     els.timer.style.color = "";
-    if (quizMode === "timed") {
+    if (quizMode === "timed" || quizMode === "timed_exam") {
       const mins = Math.floor(timeRemaining / 60)
         .toString()
         .padStart(2, "0");
@@ -1762,7 +1762,7 @@ function updateNav() {
 
 // === OPTIMIZED: Debounced save state ===
 function saveStateDebounced() {
-  if (quizMode === "timed") return;
+  if (quizMode === "timed" || quizMode === "timed_exam") return;
 
   if (saveStateDebounce) clearTimeout(saveStateDebounce);
   saveStateDebounce = setTimeout(() => {
@@ -1800,7 +1800,7 @@ function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
 
   timerInterval = setInterval(() => {
-    if (quizMode === "timed") {
+    if (quizMode === "timed" || quizMode === "timed_exam") {
       timeRemaining--;
       if (timeRemaining <= 0) {
         clearInterval(timerInterval);
