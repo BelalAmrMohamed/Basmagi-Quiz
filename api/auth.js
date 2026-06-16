@@ -23,39 +23,57 @@ export default async function handler(req, res) {
 
   const { adminId, supabaseToken } = req.body || {};
 
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+
   // 1. Supabase Token Auth
   if (supabaseToken) {
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
-    
     const { data: { user }, error } = await supabase.auth.getUser(supabaseToken);
     
     if (error || !user || !user.email) {
       return res.status(401).json({ error: "فشل التحقق من الحساب" });
     }
     
-    const adminEmails = (process.env.ADMIN_EMAILS || "ma5432333444@gmail.com")
+    const userEmail = user.email.toLowerCase();
+
+    // Check if user is an owner
+    const ownerEmails = (process.env.OWNER_EMAILS || "")
       .split(',')
-      .map(e => e.trim().toLowerCase());
+      .map(e => e.trim().toLowerCase())
+      .filter(e => e);
       
-    if (!adminEmails.includes(user.email.toLowerCase())) {
-      // Return 403 but since this might be called implicitly, just say unauthorized
+    let isAuthorized = ownerEmails.includes(userEmail);
+
+    // If not owner, check if user is an admin in the database
+    if (!isAuthorized) {
+      const { data: adminData } = await supabase
+        .from('admin_users')
+        .select('email')
+        .eq('email', userEmail)
+        .single();
+        
+      if (adminData) {
+        isAuthorized = true;
+      }
+    }
+      
+    if (!isAuthorized) {
       return res.status(403).json({ error: "هذا الحساب ليس لديه صلاحيات المشرف" });
     }
     
-    // Issue a short-lived JWT — role claim only, zero personal data
-    const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET, {
-      expiresIn: "4h",
-      algorithm: "HS256",
-    });
+    // Issue a short-lived JWT
+    const token = jwt.sign(
+      { role: "admin", email: userEmail, isOwner: ownerEmails.includes(userEmail) },
+      process.env.JWT_SECRET,
+      { expiresIn: "4h", algorithm: "HS256" }
+    );
 
     return res.status(200).json({ token });
   }
 
   // 2. Secret Key Auth
-  // Reject obviously bad inputs immediately (before timing-sensitive comparison)
   if (!adminId || typeof adminId !== "string" || adminId.length > 500) {
     setTimeout(
       () => res.status(400).json({ error: "فشل تسجيل الدخول" }),
@@ -64,11 +82,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Fetch the expected ADMIN_SECRET from the database
+  const { data: settingData, error: settingError } = await supabase
+    .from('app_settings')
+    .select('value')
+    .eq('key', 'ADMIN_SECRET')
+    .single();
+
+  const expectedSecret = settingData?.value || process.env.ADMIN_SECRET || "";
+
   // Timing-safe comparison — prevents brute-force timing oracles.
-  // Both sides are hashed to the same length before comparison.
   const provided = createHash("sha256").update(adminId.trim()).digest();
   const expected = createHash("sha256")
-    .update(process.env.ADMIN_SECRET || "")
+    .update(expectedSecret)
     .digest();
 
   let authorized = false;
@@ -87,7 +113,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Issue a short-lived JWT — role claim only, zero personal data
+  // Issue a short-lived JWT
   const token = jwt.sign({ role: "admin" }, process.env.JWT_SECRET, {
     expiresIn: "4h",
     algorithm: "HS256",

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المالك - بصمجي</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            border-bottom: 2px solid #3B4FD8;
+            padding-bottom: 10px;
+            color: #3B4FD8;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #4A5568;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="email"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #3B4FD8;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #2D3FB8;
+        }
+        button.btn-danger {
+            background-color: #e53e3e;
+        }
+        button.btn-danger:hover {
+            background-color: #c53030;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            text-align: right;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background-color: #f8fafc;
+            color: #4a5568;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background-color: #c6f6d5;
+            color: #22543d;
+            display: block;
+        }
+        .message.error {
+            background-color: #fed7d7;
+            color: #742a2a;
+            display: block;
+        }
+        .logout-btn {
+            background-color: #718096;
+            float: left;
+        }
+        .logout-btn:hover {
+            background-color: #4a5568;
+        }
+        #currentCodeDisplay {
+            font-family: monospace;
+            background: #edf2f7;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <button class="logout-btn" onclick="logout()">تسجيل الخروج</button>
+    <h1>لوحة تحكم المالك</h1>
+    <div id="statusMessage" class="message"></div>
+
+    <div class="section">
+        <h2>رمز الدخول السري (Access Code)</h2>
+        <div>الرمز الحالي: <span id="currentCodeDisplay">جاري التحميل...</span></div>
+        <form id="changeCodeForm" class="form-group">
+            <input type="text" id="newCodeInput" placeholder="أدخل رمز الدخول الجديد (4 أحرف أو أرقام على الأقل)" required minlength="4">
+            <button type="submit">تغيير الرمز</button>
+        </form>
+    </div>
+
+    <div class="section">
+        <h2>إدارة المشرفين (Admins)</h2>
+        <form id="addAdminForm" class="form-group">
+            <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد" required>
+            <button type="submit">إضافة مشرف</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>البريد الإلكتروني</th>
+                    <th>أُضيف بواسطة</th>
+                    <th>تاريخ الإضافة</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="adminsTableBody">
+                <tr><td colspan="4">جاري التحميل...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const API_URL = '/api/admin-control';
+    const token = sessionStorage.getItem('adminToken');
+
+    if (!token) {
+        window.location.href = '/sign-in.html';
+    }
+
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    function showMessage(msg, isError = false) {
+        const el = document.getElementById('statusMessage');
+        el.textContent = msg;
+        el.className = `message ${isError ? 'error' : 'success'}`;
+        setTimeout(() => { el.style.display = 'none'; }, 5000);
+    }
+
+    async function loadData() {
+        try {
+            const res = await fetch(API_URL, { headers: getHeaders() });
+            const data = await res.json();
+
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                    alert('غير مصرح لك بالدخول إلى هذه الصفحة.');
+                    window.location.href = '/sign-in.html';
+                    return;
+                }
+                throw new Error(data.error || 'فشل تحميل البيانات');
+            }
+
+            document.getElementById('currentCodeDisplay').textContent = data.accessCode;
+
+            const tbody = document.getElementById('adminsTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.admins.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">لا يوجد مشرفين</td></tr>';
+            } else {
+                data.admins.forEach(admin => {
+                    const tr = document.createElement('tr');
+                    const date = new Date(admin.created_at).toLocaleDateString('ar-EG');
+                    tr.innerHTML = `
+                        <td>${admin.email}</td>
+                        <td>${admin.added_by}</td>
+                        <td>${date}</td>
+                        <td><button class="btn-danger" onclick="removeAdmin('${admin.email}')">إزالة</button></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        } catch (err) {
+            showMessage(err.message, true);
+        }
+    }
+
+    document.getElementById('changeCodeForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newCode = document.getElementById('newCodeInput').value;
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ action: 'change_code', newCode })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            showMessage('تم تغيير رمز الدخول بنجاح');
+            document.getElementById('newCodeInput').value = '';
+            loadData();
+        } catch (err) {
+            showMessage(err.message, true);
+        }
+    });
+
+    document.getElementById('addAdminForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('newAdminEmail').value;
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ action: 'add_admin', email })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            showMessage('تم إضافة المشرف بنجاح');
+            document.getElementById('newAdminEmail').value = '';
+            loadData();
+        } catch (err) {
+            showMessage(err.message, true);
+        }
+    });
+
+    window.removeAdmin = async function(email) {
+        if (!confirm(`هل أنت متأكد من إزالة المشرف ${email}؟`)) return;
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({ action: 'remove_admin', email })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            showMessage('تم إزالة المشرف بنجاح');
+            loadData();
+        } catch (err) {
+            showMessage(err.message, true);
+        }
+    };
+
+    function logout() {
+        sessionStorage.removeItem('adminToken');
+        window.location.href = '/sign-in.html';
+    }
+
+    // Initial load
+    loadData();
+</script>
+
+</body>
+</html>

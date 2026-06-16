@@ -320,6 +320,63 @@ body {
   80%       { transform: translateX(3px); }
 }
 
+/* ── Success message ──────────────────────────────────────── */
+
+.success-msg {
+  display: none;
+  align-items: flex-start;
+  gap: 8px;
+  background: #F0FFF4;
+  color: #2F855A;
+  border: 1px solid #C6F6D5;
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 14px;
+  line-height: 1.45;
+}
+
+/* ── OTP Actions & Link Button ────────────────────────────── */
+
+.otp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 0.8rem;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #3B4FD8;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+  text-decoration: underline;
+  transition: color 0.18s ease;
+  font-family: inherit;
+}
+
+.link-btn:hover {
+  color: #2D3FB8;
+}
+
+.link-btn:disabled {
+  color: #8A94A6;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.otp-input-ltr {
+  text-align: center;
+  letter-spacing: 0.5em;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
 /* ── Divider ──────────────────────────────────────────────── */
 
 .divider {

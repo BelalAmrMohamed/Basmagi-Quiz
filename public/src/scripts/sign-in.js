@@ -26,16 +26,24 @@ const eyeIconAccessCode = document.getElementById("eyeIconAccessCode");
 const eyeOffIconAccessCode = document.getElementById("eyeOffIconAccessCode");
 
 // Email UI
+const emailStep = document.getElementById("emailStep");
+const otpStep = document.getElementById("otpStep");
 const inputEmail = document.getElementById("emailInput");
-const inputEmailPassword = document.getElementById("emailPasswordInput");
+const inputOtp = document.getElementById("otpInput");
 const submitBtnEmail = document.getElementById("submitBtnEmail");
 const spinnerEmail = document.getElementById("spinnerEmail");
 const btnTextEmail = document.getElementById("btnTextEmail");
+const submitBtnOtp = document.getElementById("submitBtnOtp");
+const spinnerOtp = document.getElementById("spinnerOtp");
+const btnTextOtp = document.getElementById("btnTextOtp");
+const resendOtpBtn = document.getElementById("resendOtpBtn");
+const changeEmailBtn = document.getElementById("changeEmailBtn");
 const errorMsgEmail = document.getElementById("errorMsgEmail");
-const toggleBtnEmail = document.getElementById("toggleBtnEmail");
-const eyeIconEmail = document.getElementById("eyeIconEmail");
-const eyeOffIconEmail = document.getElementById("eyeOffIconEmail");
-const btnMicrosoft = document.getElementById("btnMicrosoft");
+const successMsgEmail = document.getElementById("successMsgEmail");
+const ssoDivider = document.getElementById("ssoDivider");
+const ssoButtonsContainer = document.getElementById("ssoButtonsContainer");
+
+const btnGitHub = document.getElementById("btnGitHub");
 const btnGoogle = document.getElementById("btnGoogle");
 
 let supabaseClient = null;
@@ -166,8 +174,6 @@ function switchTab(tab) {
 tabAccessCode.addEventListener("click", () => switchTab("access-code"));
 tabEmail.addEventListener("click", () => switchTab("email"));
 
-// ── Password visibility toggles ───────────────────────────────────────────────
-
 function setupPasswordToggle(toggleBtn, inputEl, eyeIcon, eyeOffIcon) {
   if (!toggleBtn) return;
   toggleBtn.addEventListener("click", () => {
@@ -180,7 +186,6 @@ function setupPasswordToggle(toggleBtn, inputEl, eyeIcon, eyeOffIcon) {
 }
 
 setupPasswordToggle(toggleBtnAccessCode, inputAccessCode, eyeIconAccessCode, eyeOffIconAccessCode);
-setupPasswordToggle(toggleBtnEmail, inputEmailPassword, eyeIconEmail, eyeOffIconEmail);
 
 // ── Form submission — Access Code ─────────────────────────────────────────────
 
@@ -209,7 +214,9 @@ if (accessCodeForm) {
   });
 }
 
-// ── Form submission — Email ───────────────────────────────────────────────────
+// ── Form submission — Email (OTP Flow) ────────────────────────────────────────
+
+let currentEmailForOtp = "";
 
 if (emailForm) {
   emailForm.addEventListener("submit", async (e) => {
@@ -220,18 +227,57 @@ if (emailForm) {
     }
 
     const email = inputEmail.value.trim();
-    const password = inputEmailPassword.value.trim();
-
-    if (!email || !password) {
-      showError("email", "الرجاء إدخال البريد الإلكتروني وكلمة المرور");
+    if (!email) {
+      showError("email", "الرجاء إدخال البريد الإلكتروني");
       return;
     }
 
     setLoading("email", true);
     clearError("email");
+    clearSuccess("email");
 
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      if (error) throw error;
+
+      currentEmailForOtp = email;
+      showSuccess("email", "تم إرسال رمز التحقق إلى بريدك الإلكتروني.");
+      
+      // Switch to OTP step
+      emailStep.style.display = "none";
+      ssoDivider.style.display = "none";
+      ssoButtonsContainer.style.display = "none";
+      otpStep.style.display = "block";
+      inputOtp.focus();
+
+    } catch (err) {
+      console.error(err);
+      showError("email", err.message || "حدث خطأ أثناء إرسال رمز التحقق.");
+    } finally {
+      setLoading("email", false);
+    }
+  });
+}
+
+if (submitBtnOtp) {
+  submitBtnOtp.addEventListener("click", async () => {
+    const otp = inputOtp.value.trim();
+    if (!otp || otp.length < 6) {
+      showError("email", "الرجاء إدخال رمز تحقق صحيح مكون من 6 أرقام");
+      return;
+    }
+
+    setLoading("otp", true);
+    clearError("email");
+    clearSuccess("email");
+
+    try {
+      const { data, error } = await supabaseClient.auth.verifyOtp({
+        email: currentEmailForOtp,
+        token: otp,
+        type: 'email'
+      });
+      
       if (error) throw error;
 
       if (!isAdminAuthenticated()) {
@@ -239,12 +285,49 @@ if (emailForm) {
         await signInWithSupabase(data.session.access_token);
       }
       redirectToApp();
+
     } catch (err) {
-      showError("email", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
-      inputEmailPassword.select();
+      console.error(err);
+      showError("email", "رمز التحقق غير صحيح أو منتهي الصلاحية.");
+      inputOtp.select();
     } finally {
-      setLoading("email", false);
+      setLoading("otp", false);
     }
+  });
+}
+
+if (resendOtpBtn) {
+  resendOtpBtn.addEventListener("click", async () => {
+    if (!currentEmailForOtp) return;
+    
+    clearError("email");
+    clearSuccess("email");
+    
+    try {
+      resendOtpBtn.disabled = true;
+      const { error } = await supabaseClient.auth.signInWithOtp({ email: currentEmailForOtp });
+      if (error) throw error;
+      
+      showSuccess("email", "تمت إعادة إرسال رمز التحقق.");
+      setTimeout(() => { resendOtpBtn.disabled = false; }, 30000); // Prevent spamming
+    } catch (err) {
+      console.error(err);
+      showError("email", "حدث خطأ أثناء إعادة إرسال الرمز.");
+      resendOtpBtn.disabled = false;
+    }
+  });
+}
+
+if (changeEmailBtn) {
+  changeEmailBtn.addEventListener("click", () => {
+    otpStep.style.display = "none";
+    emailStep.style.display = "block";
+    ssoDivider.style.display = "flex";
+    ssoButtonsContainer.style.display = "flex";
+    inputOtp.value = "";
+    clearError("email");
+    clearSuccess("email");
+    inputEmail.focus();
   });
 }
 
@@ -264,7 +347,7 @@ async function handleSSO(provider) {
 }
 
 if (btnGoogle) btnGoogle.addEventListener("click", () => handleSSO("google"));
-if (btnMicrosoft) btnMicrosoft.addEventListener("click", () => handleSSO("azure"));
+if (btnGitHub) btnGitHub.addEventListener("click", () => handleSSO("github"));
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
 
@@ -273,10 +356,14 @@ function setLoading(tab, on) {
     submitBtnAccessCode.disabled = on;
     spinnerAccessCode.style.display = on ? "block" : "none";
     btnTextAccessCode.textContent = on ? "جارٍ التحقق..." : "تسجيل الدخول";
-  } else {
+  } else if (tab === "email") {
     submitBtnEmail.disabled = on;
     spinnerEmail.style.display = on ? "block" : "none";
-    btnTextEmail.textContent = on ? "جارٍ التحقق..." : "تسجيل الدخول";
+    btnTextEmail.textContent = on ? "جارٍ الإرسال..." : "إرسال رمز التحقق";
+  } else if (tab === "otp") {
+    submitBtnOtp.disabled = on;
+    spinnerOtp.style.display = on ? "block" : "none";
+    btnTextOtp.textContent = on ? "جارٍ التحقق..." : "تأكيد رمز التحقق";
   }
 }
 
@@ -297,4 +384,18 @@ function clearError(tab) {
   if (!errEl) return;
   errEl.textContent = "";
   errEl.style.display = "none";
+}
+
+function showSuccess(tab, msg) {
+  const succEl = tab === "access-code" ? null : successMsgEmail;
+  if (!succEl) return;
+  succEl.textContent = "✅ " + msg;
+  succEl.style.display = "flex";
+}
+
+function clearSuccess(tab) {
+  const succEl = tab === "access-code" ? null : successMsgEmail;
+  if (!succEl) return;
+  succEl.textContent = "";
+  succEl.style.display = "none";
 }
