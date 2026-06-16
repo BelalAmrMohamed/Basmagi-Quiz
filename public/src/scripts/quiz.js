@@ -1838,20 +1838,6 @@ function stopTimer() {
 }
 
 // ============================================================================
-// Bug 2 Fix — safeReplaceState
-// Any history.replaceState call inside quiz.js MUST go through this helper.
-// It updates the state object only and NEVER touches the URL string, so query
-// parameters (?id=…&type=…) are preserved at all times.  If we were to pass a
-// bare pathname such as "quiz.html" the params would be stripped and pressing
-// the back button from the results page would return to a param-less URL that
-// shows the "Exam not found" error.
-// ============================================================================
-function safeReplaceState(stateObj) {
-  // Preserve the full URL (pathname + search + hash) — only update state.
-  history.replaceState(stateObj, "", window.location.href);
-}
-
-// ============================================================================
 // Bug 2 Fix — resetQuizState
 // Cleans up all in-flight timers and resets every module-level variable to its
 // initial value so that init() can be safely called again (e.g. when the user

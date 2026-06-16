@@ -105,6 +105,15 @@ export default async function handler(req, res) {
     delete cleanQuiz.meta.author; // don't store undefined/empty
   }
 
+  // Hash password if present
+  if (cleanQuiz.meta.password) {
+    const crypto = await import("crypto");
+    cleanQuiz.meta.password = crypto
+      .createHash("sha256")
+      .update(cleanQuiz.meta.password)
+      .digest("hex");
+  }
+
   // ── 5. Duplicate check ─────────────────────────────────────────────────────
   const { data: existing } = await supabase
     .from("quizzes")

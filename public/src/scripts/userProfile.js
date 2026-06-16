@@ -20,7 +20,7 @@ const DEFAULT_PROFILE = {
   term: "All",
   subscribedCourseIds: [],
   quizStyle: "pagination", // "pagination" | "vertical"
-  defaultQuizMode: "practice", // "practice" | "timed" | "exam"
+  defaultQuizMode: "practice", // "practice" | "timed" | "exam" | "timed_exam"
 };
 
 export class UserProfileManager {
@@ -128,14 +128,19 @@ export class UserProfileManager {
   }
 
   /**
-   * Get/set default quiz mode: "practice" | "timed" | "exam"
+   * Get/set default quiz mode: "practice" | "timed" | "exam" | "timed_exam"
    */
   getDefaultQuizMode() {
     return this.profile.defaultQuizMode || DEFAULT_PROFILE.defaultQuizMode;
   }
 
   setDefaultQuizMode(mode) {
-    if (mode === "practice" || mode === "timed" || mode === "exam") {
+    if (
+      mode === "practice" ||
+      mode === "timed" ||
+      mode === "exam" ||
+      mode === "timed_exam"
+    ) {
       this.profile.defaultQuizMode = mode;
       this.saveProfile();
       return true;
