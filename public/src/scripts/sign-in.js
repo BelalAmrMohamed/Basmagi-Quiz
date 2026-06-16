@@ -237,7 +237,13 @@ if (emailForm) {
     clearSuccess("email");
 
     try {
-      const { error } = await supabaseClient.auth.signInWithOtp({ email });
+      const redirectDest = window.location.origin + "/sign-in.html?redirect=" + encodeURIComponent(getRedirectUrl());
+      const { error } = await supabaseClient.auth.signInWithOtp({ 
+        email,
+        options: {
+          emailRedirectTo: redirectDest
+        }
+      });
       if (error) throw error;
 
       currentEmailForOtp = email;
@@ -305,7 +311,13 @@ if (resendOtpBtn) {
     
     try {
       resendOtpBtn.disabled = true;
-      const { error } = await supabaseClient.auth.signInWithOtp({ email: currentEmailForOtp });
+      const redirectDest = window.location.origin + "/sign-in.html?redirect=" + encodeURIComponent(getRedirectUrl());
+      const { error } = await supabaseClient.auth.signInWithOtp({ 
+        email: currentEmailForOtp,
+        options: {
+          emailRedirectTo: redirectDest
+        }
+      });
       if (error) throw error;
       
       showSuccess("email", "تمت إعادة إرسال رمز التحقق.");
@@ -336,9 +348,10 @@ if (changeEmailBtn) {
 async function handleSSO(provider) {
   if (!supabaseClient) return;
   try {
+    const redirectDest = window.location.origin + "/sign-in.html?redirect=" + encodeURIComponent(getRedirectUrl());
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin + getRedirectUrl() },
+      options: { redirectTo: redirectDest },
     });
     if (error) throw error;
   } catch (err) {
