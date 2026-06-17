@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "title": "منصة إمتحانات بصمجي",
+    "id": "3SVMT2U3",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/2/Website demo/منصة إمتحانات بصمجي.json",
+    "description": "Basmagi Quiz Platform Demo",
+    "source": "https://www.w3schools.com/CPP/default.asp",
+    "author": "بلال عمرو محمد",
+    "author_email": "belalamrofficial@gmail.com"
+  },
+  "stats": {
+    "questionCount": 11,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "المنصة تدعم أسئلة صح **وخطأ**",
+      "lang": "ar",
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة تدعم أسئلة متعددة الإختيارات ، بأي عدد من الإختيارات",
+      "lang": "ar",
+      "options": [
+        "الإختيار الأول",
+        "**_الإختيار الثاني_**",
+        "الإختيار الثالث"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة تدعم أسئلة مقالية ذات نظام تصحيح ذكي قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة.\n\nهذه هي الإجابة الصحيحة ، اختر النظام بطريقتك:\n\n```\nنظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة\n```",
+      "lang": "ar",
+      "answer": "نظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة"
+    },
+    {
+      "q": "If it's an English Quiz, you can wrap your passage beautfully. The platform also supports markdown features. Like this awesome `code block`:\n```csharp\nusing System;\n\nclass Program\n{\n    static void Main(string[] args)\n    {\n        Console.WriteLine(\"Hello, World!\");\n    }\n}\n```",
+      "passage": "## This is **Bold** Text\n\nThis is *Italic* Text\n\n## This is a Heading\n\n### This is a smaller Heading\n\n#### This is an even smaller Heading\n\n##### This is an even smaller Heading\n\n###### This is an even smaller Heading\n\nThis is a blockquote:\n\n> This is a blockquote\n\nThis is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
+      "lang": "en",
+      "options": [
+        "Cool! ^_^",
+        "It's not cool ;("
+      ],
+      "correct": 0
+    },
+    {
+      "q": "It also Supports advanced LaTeX math notations, because it uses the KaTeX library to render them!\n\nWhat is the result of the next advanced equation?\n\n$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
+      "lang": "en",
+      "options": [
+        "$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
+        "$$\\frac{n(n+1)}{2}$$",
+        "$$\\sum_{i=1}^{n} i = \\frac{n(n-1)}{2}$$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The website also supports images, this image shows a star network topology\n\nAnd the Website also supports defining the language of the whole quiz, or for each question individually.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/8/84/Star_Topology.png",
+      "lang": "en",
+      "explanation": "This is a Star Topology where all devices connect to a central hub or switch.",
+      "options": [
+        "Bus Topology",
+        "Star Topology",
+        "Ring Topology",
+        "Mesh Topology"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة أيضا تدعم ملفات الصوت ، أليس هذا رائع!",
+      "audio": "https://server10.mp3quran.net/minsh/001.mp3",
+      "lang": "ar",
+      "explanation": "نعم إنه كذلك، ورائع بالفعل",
+      "options": [
+        "صحيح",
+        "خطأ"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The website also supports videos",
+      "video": "./assets/quiz-media/TEST_1/Part_1.mp4",
+      "lang": "en",
+      "explanation": "Yes it's **True**, it is **cool**",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Basmagi Quiz Platform supports Youtube videos too!",
+      "video": "https://www.youtube.com/watch?v=WsY9rVET_XM",
+      "lang": "en",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What about so many options in a quiz? The platform can handle it.\n\nWhich programming language is primarily used for Front-End Styling?",
+      "lang": "en",
+      "options": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "PHP",
+        "Python",
+        "Java",
+        "C++",
+        "Ruby",
+        "Swift",
+        "Go"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الإمتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الإمتحان. أليست ميزة رائعة؟",
+      "lang": "ar",
+      "options": [
+        "نعم",
+        "لا"
+      ],
+      "correct": 0
+    }
+  ]
+}
