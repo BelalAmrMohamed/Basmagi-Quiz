@@ -46,6 +46,14 @@ let quizBaseUrl = null; // directory URL of the loaded quiz JSON file
 let renderNavDebounce = null;
 let saveStateDebounce = null;
 
+// Bug 2 Fix: track which question card was last interacted with so that
+// renderAllQuestionsVertical() only rebuilds that specific card instead of
+// replacing every card (which would reset all media playback).
+let lastChangedIdx = null;
+
+// Bug 3 Fix: media timestamps loaded from saved state, applied after first render.
+let pendingMediaTimestamps = null;
+
 // === DOM Elements (cached references) ===
 const els = {
   title: document.getElementById("quizTitle"),
@@ -84,6 +92,7 @@ window.nextQuestion = () => nav(1);
 window.handleSelectForQuestion = (qIdx, optIdx) => {
   if (lockedQuestions[qIdx]) return;
   userAnswers[qIdx] = optIdx;
+  lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   saveStateDebounced();
   renderQuestion();
   renderMenuNavigationDebounced();
@@ -100,6 +109,7 @@ window.checkAnswerForQuestion = (qIdx) => {
   } else {
     if (userAnswers[qIdx] === undefined) return;
   }
+  lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   lockedQuestions[qIdx] = true;
   saveStateDebounced();
   renderQuestion();
@@ -284,8 +294,38 @@ const renderQuestionAudio = (audioUrl) => {
   `;
 };
 
+// Bug 4 Fix: detect YouTube URLs and extract the video ID.
+const YOUTUBE_RE =
+  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+
+const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
+
+const getYouTubeVideoId = (url) => {
+  const m = String(url || "").match(YOUTUBE_RE);
+  return m ? m[1] : null;
+};
+
 const renderQuestionVideo = (videoUrl) => {
   if (!videoUrl) return "";
+
+  // Bug 4 Fix: render a YouTube iframe instead of a <video> element.
+  if (isYouTubeUrl(videoUrl)) {
+    const videoId = getYouTubeVideoId(videoUrl);
+    const embedSrc = `https://www.youtube.com/embed/${videoId}`;
+    return `
+      <div class="media-container question-media-container question-video-container">
+        <iframe
+          class="question-video youtube-embed"
+          src="${escapeHtml(embedSrc)}"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          loading="lazy"
+        ></iframe>
+      </div>
+    `;
+  }
+
   return `
     <div class="media-container question-media-container question-video-container">
       ${MEDIA_SKELETON_HTML}
@@ -794,6 +834,8 @@ async function init() {
           userAnswers = state.userAnswers || {};
           lockedQuestions = state.lockedQuestions || {};
           timeElapsed = state.timeElapsed || 0;
+          // Bug 3 Fix: store media timestamps to be applied after the first render
+          pendingMediaTimestamps = state.mediaTimestamps || null;
         } else {
           localStorage.removeItem(`quiz_state_${examId}`);
         }
@@ -804,6 +846,8 @@ async function init() {
     updateGamificationStats();
     renderMenuNavigation();
     renderQuestion();
+    // Bug 3 Fix: apply any saved media timestamps after the first render
+    applyPendingMediaTimestamps();
     startTimer();
 
     // Global handlers
@@ -1037,8 +1081,15 @@ function createGridItem(q, idx) {
   if (isCurrent) {
     statusClass = "current";
   } else if (isLocked) {
-    const correctIdx = q.correct ?? q.answer;
-    const isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
+    let isCorrect;
+    if (isEssayQuestion(q)) {
+      // Bug 1 Fix: grade essay by score (≥3/5), not by exact string match
+      const essayScore = gradeEssay(userAnswers[idx], getEssayAnswer(q));
+      isCorrect = essayScore >= 3;
+    } else {
+      const correctIdx = q.correct ?? q.answer;
+      isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
+    }
     statusClass = isCorrect ? "correct" : "wrong";
     statusIcon = isCorrect ? "✓" : "✗";
   } else if (isAnswered) {
@@ -1121,8 +1172,15 @@ function createListItem(q, idx) {
   if (isCurrent) {
     statusClass = "current";
   } else if (isLocked) {
-    const correctIdx = q.correct ?? q.answer;
-    const isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
+    let isCorrect;
+    if (isEssayQuestion(q)) {
+      // Bug 1 Fix: grade essay by score (≥3/5), not by exact string match
+      const essayScore = gradeEssay(userAnswers[idx], getEssayAnswer(q));
+      isCorrect = essayScore >= 3;
+    } else {
+      const correctIdx = q.correct ?? q.answer;
+      isCorrect = isAnswerCorrect(userAnswers[idx], correctIdx);
+    }
     statusClass = isCorrect ? "correct" : "wrong";
     statusIcon = isCorrect ? "✓" : "✗";
   } else if (isAnswered) {
@@ -1257,6 +1315,36 @@ function buildVerticalQuestionCard(q, idx) {
   `;
 }
 
+// Bug 2 Fix: helper that replaces the question container HTML while preserving
+// media playback state (currentTime + paused/playing) in pagination mode.
+function setQuestionHTML(html) {
+  // Snapshot all currently-playing media elements before the DOM is replaced
+  const mediaStates = [];
+  els.questionContainer.querySelectorAll("audio, video").forEach((el) => {
+    mediaStates.push({
+      baseUrl: (el.src || "").split("?")[0],
+      time: el.currentTime,
+      paused: el.paused,
+    });
+  });
+
+  els.questionContainer.innerHTML = html;
+
+  // Restore timestamps on the newly-inserted media elements
+  if (mediaStates.length) {
+    els.questionContainer.querySelectorAll("audio, video").forEach((el, i) => {
+      const state = mediaStates[i];
+      if (!state || state.time <= 0) return;
+      const restore = () => {
+        el.currentTime = state.time;
+        if (!state.paused) el.play().catch(() => {});
+      };
+      if (el.readyState >= 1) restore();
+      else el.addEventListener("loadedmetadata", restore, { once: true });
+    });
+  }
+}
+
 function renderAllQuestionsVertical() {
   if (!els.questionContainer || !questions.length) return;
 
@@ -1272,6 +1360,50 @@ function renderAllQuestionsVertical() {
   if (els.progressText)
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
+  // Bug 2 Fix: if we know which card changed, only rebuild that card.
+  // This leaves all other cards (and their media elements) completely
+  // untouched so audio/video playback is never interrupted.
+  if (
+    lastChangedIdx !== null &&
+    document.getElementById(`q-${lastChangedIdx}`)
+  ) {
+    const targetIdx = lastChangedIdx;
+    lastChangedIdx = null;
+
+    const existingCard = document.getElementById(`q-${targetIdx}`);
+
+    // Preserve any media timestamps on the card being replaced
+    const mediaStates = [];
+    existingCard.querySelectorAll("audio, video").forEach((el) => {
+      mediaStates.push({ time: el.currentTime, paused: el.paused });
+    });
+
+    const temp = document.createElement("div");
+    temp.innerHTML = buildVerticalQuestionCard(questions[targetIdx], targetIdx);
+    const newCard = temp.firstElementChild;
+    existingCard.replaceWith(newCard);
+
+    // Restore media timestamps on the rebuilt card
+    if (mediaStates.length) {
+      newCard.querySelectorAll("audio, video").forEach((el, i) => {
+        const state = mediaStates[i];
+        if (!state || state.time <= 0) return;
+        const restore = () => {
+          el.currentTime = state.time;
+          if (!state.paused) el.play().catch(() => {});
+        };
+        if (el.readyState >= 1) restore();
+        else el.addEventListener("loadedmetadata", restore, { once: true });
+      });
+    }
+
+    initMediaSkeletons(newCard);
+    return;
+  }
+
+  lastChangedIdx = null;
+
+  // Full (first) render
   els.questionContainer.innerHTML = questions
     .map((q, idx) => buildVerticalQuestionCard(q, idx))
     .join("");
@@ -1382,7 +1514,7 @@ function renderQuestion() {
   `;
 
   if (isEssay) {
-    els.questionContainer.innerHTML = `
+    setQuestionHTML(`
       <div class="question-card${largeClass}">
         ${questionHeaderHTML}
         <div class="essay-container">
@@ -1418,12 +1550,13 @@ function renderQuestion() {
         }
         <div class="${feedbackClass}">${feedbackText}</div>
       </div>
-    `;
+    `);
   } else {
     const isMultiple = Array.isArray(q.correct);
     const userSelected = userAnswers[currentIdx];
 
-    els.questionContainer.innerHTML = `
+    els.questionContainer.classList.remove("loading");
+    setQuestionHTML(`
       <div class="question-card${largeClass}">
         ${questionHeaderHTML}
         <div class="options-grid">
@@ -1477,7 +1610,7 @@ function renderQuestion() {
         </button>
         <div class="${feedbackClass}">${feedbackText}</div>
       </div>
-    `;
+    `);
   }
 
   els.questionContainer.classList.remove("loading");
@@ -1510,6 +1643,7 @@ function handleSelect(index) {
   }
 
   saveStateDebounced();
+  lastChangedIdx = currentIdx; // Bug 2 Fix: tag for targeted pagination re-render
   renderQuestion();
   renderMenuNavigationDebounced();
   maybeAutoSubmit();
@@ -1766,7 +1900,39 @@ function saveStateDebounced() {
 
   if (saveStateDebounce) clearTimeout(saveStateDebounce);
   saveStateDebounce = setTimeout(() => {
-    const state = { currentIdx, userAnswers, timeElapsed, lockedQuestions };
+    // Bug 3 Fix: capture current media timestamps so they survive a page reload.
+    const mediaTimestamps = {};
+    if (quizStyle === "vertical") {
+      els.questionContainer
+        .querySelectorAll(".vertical-question-card")
+        .forEach((card) => {
+          const idx = parseInt(card.dataset.questionIndex, 10);
+          if (isNaN(idx)) return;
+          card.querySelectorAll("audio, video").forEach((el, i) => {
+            if (el.currentTime > 0) {
+              if (!mediaTimestamps[idx]) mediaTimestamps[idx] = [];
+              mediaTimestamps[idx][i] = el.currentTime;
+            }
+          });
+        });
+    } else {
+      els.questionContainer
+        .querySelectorAll("audio, video")
+        .forEach((el, i) => {
+          if (el.currentTime > 0) {
+            if (!mediaTimestamps[currentIdx]) mediaTimestamps[currentIdx] = [];
+            mediaTimestamps[currentIdx][i] = el.currentTime;
+          }
+        });
+    }
+
+    const state = {
+      currentIdx,
+      userAnswers,
+      timeElapsed,
+      lockedQuestions,
+      mediaTimestamps,
+    };
     localStorage.setItem(`quiz_state_${examId}`, JSON.stringify(state));
     // NOTE: Do NOT call history.replaceState here (neither directly nor via
     // safeReplaceState).  This function only persists quiz progress to
@@ -1775,6 +1941,41 @@ function saveStateDebounced() {
     // has been altered by another module, replaceState would stamp the
     // already-wrong URL into history and make it permanent.
   }, 300); // Wait 300ms before saving
+}
+
+// Bug 3 Fix: apply media timestamps that were saved before a page reload.
+// Called once after the very first renderQuestion() in init().
+function applyPendingMediaTimestamps() {
+  if (!pendingMediaTimestamps || !Object.keys(pendingMediaTimestamps).length)
+    return;
+
+  const timestamps = pendingMediaTimestamps;
+  pendingMediaTimestamps = null;
+
+  const applyToElement = (el, time) => {
+    if (time <= 0) return;
+    const restore = () => {
+      el.currentTime = time;
+    };
+    if (el.readyState >= 1) restore();
+    else el.addEventListener("loadedmetadata", restore, { once: true });
+  };
+
+  if (quizStyle === "vertical") {
+    Object.entries(timestamps).forEach(([idxStr, times]) => {
+      const card = document.getElementById(`q-${idxStr}`);
+      if (!card) return;
+      card.querySelectorAll("audio, video").forEach((el, i) => {
+        if (Array.isArray(times) && times[i] > 0) applyToElement(el, times[i]);
+      });
+    });
+  } else {
+    const times = timestamps[currentIdx];
+    if (!times) return;
+    els.questionContainer.querySelectorAll("audio, video").forEach((el, i) => {
+      if (Array.isArray(times) && times[i] > 0) applyToElement(el, times[i]);
+    });
+  }
 }
 
 // ── Bug 2 Fix: popstate listener ─────────────────────────────────────────────

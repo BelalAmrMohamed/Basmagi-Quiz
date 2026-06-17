@@ -549,6 +549,11 @@ body {
   transition: opacity 0.35s ease;
 }
 
+.question-image-container.resizable-media .question-image {
+  height: 100%;
+  object-fit: contain;
+}
+
 .question-image.media-loaded {
   opacity: 1;
 }
@@ -646,6 +651,13 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
+.question-video-container.resizable-media .question-video,
+.question-video-container.resizable-media .youtube-embed {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
 .question-video-container .media-skeleton {
   min-height: 200px;
 }
@@ -653,6 +665,31 @@ body {
 .question-video-container .skeleton-media {
   max-width: 100%;
   height: 180px;
+}
+
+/* YouTube Embeds — iframes have no intrinsic size, so without an explicit
+   height they default to ~150px. Force a responsive 16:9 box instead. */
+.question-video-container .youtube-embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 200px;
+  max-height: min(420px, 55vh);
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.question-card--large .question-video-container .youtube-embed {
+  max-height: min(480px, 60vh);
+}
+
+@media (max-width: 768px) {
+  .question-video-container .youtube-embed {
+    max-height: min(280px, 45vh);
+  }
 }
 
 /* Native Theme Controls Adaptation */
@@ -666,6 +703,63 @@ body {
 .question-audio::-webkit-media-controls-panel,
 .question-video::-webkit-media-controls-panel {
   background: var(--color-surface);
+}
+
+/* ─── 8b. User-Resizable Media ──────────────────────────────────────────── */
+/* `.media-container` is the existing wrapper the JS already renders around
+   every image / audio / video / YouTube iframe. We turn it into the resize
+   boundary directly (native `resize` requires overflow != visible, which it
+   already has) rather than introducing an extra wrapper element. */
+.media-container.resizable-media {
+  resize: both;
+  max-width: 100%;
+}
+
+.media-container.resizable-media > img,
+.media-container.resizable-media > audio,
+.media-container.resizable-media > video,
+.media-container.resizable-media > iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.question-audio-container.resizable-media {
+  resize: vertical;
+  min-height: 52px;
+  max-height: 160px;
+}
+
+.question-image-container.resizable-media,
+.question-video-container.resizable-media {
+  min-height: 160px;
+}
+
+/* Small visual affordance in the corner so users notice media is resizable.
+   The native resize handle already renders here; this just adds a subtle
+   hint that doesn't interfere with it. */
+.media-container.resizable-media::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 2px;
+  inset-block-end: 2px;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 50%, var(--color-border) 50%);
+  border-radius: 0 0 4px 0;
+  opacity: 0.7;
+  z-index: 3;
+}
+
+.media-container.resizable-media:hover::after {
+  opacity: 1;
+}
+
+/* The OS-level resize cursor/handle is always anchored bottom-right; keep
+   the box's internal flow LTR so the handle stays where users expect it
+   even on this RTL page. */
+[dir="rtl"] .media-container.resizable-media {
+  direction: ltr;
 }
 
 /* Card Actions */
