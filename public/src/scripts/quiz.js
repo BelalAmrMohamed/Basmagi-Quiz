@@ -335,11 +335,17 @@ const renderQuestionVideo = (videoUrl, resizeKey) => {
   `;
 };
 
+// Fix B: each media element is wrapped in .media-center-wrap (display:flex;
+//         justify-content:center) so it is always horizontally centered
+//         regardless of LTR/RTL page direction or the current container width.
+const wrapMedia = (html) =>
+  html ? `<div class="media-center-wrap">${html}</div>` : "";
+
 const renderQuestionMedia = (q, resizeKey) =>
   [
-    renderQuestionImage(q.image, resizeKey),
-    renderQuestionAudio(q.audio, resizeKey),
-    renderQuestionVideo(q.video, resizeKey),
+    wrapMedia(renderQuestionImage(q.image, resizeKey)),
+    wrapMedia(renderQuestionAudio(q.audio, resizeKey)),
+    wrapMedia(renderQuestionVideo(q.video, resizeKey)),
   ].join("");
 
 const renderReadingPassage = (passage, alignClass) => {
@@ -520,6 +526,21 @@ const saveMediaSizeDebounced = (resizeKey, width, height) => {
   );
 };
 
+// ── initMediaResize ───────────────────────────────────────────────────────────
+// Fix A: Aspect-ratio-locked resizing via custom corner drag handles.
+//         The original aspect ratio is captured the first time a drag starts
+//         (or from the saved size). All four handles produce proportional
+//         scaling so the media is never distorted.
+//
+// Fix B: Media is centered by its .media-center-wrap flex parent. The
+//         container does NOT default to 100% width once a saved/dragged size
+//         is applied — it becomes exactly <n>px wide and the flex parent
+//         keeps it centered.
+//
+// Fix C: Dragging any handle resizes symmetrically from the center: the
+//         container width grows/shrinks by 2× the pointer delta so both sides
+//         move equally. Because the flex parent is justify-content:center the
+//         visual center never shifts.
 const initMediaResize = (root = document) => {
   root
     .querySelectorAll(".media-container[data-resize-key]")
@@ -529,29 +550,127 @@ const initMediaResize = (root = document) => {
       container.classList.add("resizable-media");
 
       const resizeKey = container.dataset.resizeKey;
+
+      // ── Inject four corner handles (if not already present) ────────────
+      const corners = ["nw", "ne", "sw", "se"];
+      corners.forEach((dir) => {
+        if (container.querySelector(`.resize-handle--${dir}`)) return;
+        const handle = document.createElement("div");
+        handle.className = `resize-handle resize-handle--${dir}`;
+        handle.setAttribute("aria-hidden", "true");
+        container.appendChild(handle);
+      });
+
+      // ── Restore saved size ─────────────────────────────────────────────
       const saved = loadSavedMediaSize(resizeKey);
       if (saved) {
         container.style.width = `${saved.width}px`;
         container.style.height = `${saved.height}px`;
       }
 
-      // ResizeObserver fires for both user drag-resize and programmatic
-      // changes; debounce-persist whatever size the box ends up at.
-      if (typeof ResizeObserver !== "undefined") {
-        const observer = new ResizeObserver((entries) => {
-          for (const entry of entries) {
-            const { width, height } = entry.contentRect;
-            if (width > 0 && height > 0) {
-              saveMediaSizeDebounced(
-                resizeKey,
-                Math.round(width),
-                Math.round(height),
-              );
+      // ── Drag-resize logic ──────────────────────────────────────────────
+      container.querySelectorAll(".resize-handle").forEach((handle) => {
+        handle.addEventListener("pointerdown", (eDown) => {
+          eDown.preventDefault();
+          eDown.stopPropagation();
+          handle.setPointerCapture(eDown.pointerId);
+          handle.classList.add("is-active");
+          document.body.classList.add("is-resizing-media");
+
+          // Capture the dimensions at drag-start so we can compute deltas.
+          const startW = container.offsetWidth;
+          const startH = container.offsetHeight;
+          const startX = eDown.clientX;
+          const startY = eDown.clientY;
+
+          // Fix A: lock the aspect ratio from the natural media size or the
+          //         current rendered size (whichever is available first).
+          const mediaEl = container.querySelector("img, video, iframe, audio");
+          let aspectRatio =
+            mediaEl instanceof HTMLImageElement && mediaEl.naturalWidth > 0
+              ? mediaEl.naturalWidth / mediaEl.naturalHeight
+              : mediaEl instanceof HTMLVideoElement && mediaEl.videoWidth > 0
+                ? mediaEl.videoWidth / mediaEl.videoHeight
+                : startH > 0
+                  ? startW / startH
+                  : 16 / 9; // sane fallback for iframes / audio
+
+          // Audio players are 1-D (height is fixed by the browser chrome).
+          const isAudio = container.classList.contains(
+            "question-audio-container",
+          );
+
+          // Minimum dimensions
+          const minW = isAudio ? 200 : 120;
+          const minH = isAudio ? 52 : 80;
+          // Maximum = parent width (so it never overflows the card)
+          const maxW = container.parentElement
+            ? container.parentElement.clientWidth
+            : window.innerWidth;
+
+          const onMove = (eMove) => {
+            // Fix C: symmetric resize — treat each pointer pixel as 2px of
+            //         total width change so both visual edges move equally.
+            const dxRaw = eMove.clientX - startX;
+            const dyRaw = eMove.clientY - startY;
+
+            // Determine sign based on which corner is being dragged.
+            const isRight =
+              handle.classList.contains("resize-handle--ne") ||
+              handle.classList.contains("resize-handle--se");
+            const isBottom =
+              handle.classList.contains("resize-handle--sw") ||
+              handle.classList.contains("resize-handle--se");
+
+            const dx = isRight ? dxRaw : -dxRaw;
+            const dy = isBottom ? dyRaw : -dyRaw;
+
+            if (isAudio) {
+              // Audio: only change width; height stays fixed.
+              const newW = Math.max(minW, Math.min(maxW, startW + dx * 2));
+              container.style.width = `${newW}px`;
+              saveMediaSizeDebounced(resizeKey, Math.round(newW), startH);
+              return;
             }
-          }
+
+            // Fix A: use whichever axis moved more to drive the scale, then
+            //         compute the other dimension from the locked ratio.
+            const scaleByX = (startW + dx * 2) / startW;
+            const scaleByY = (startH + dy * 2) / startH;
+            // Pick the axis that results in a larger area (feels more natural)
+            const scale = Math.abs(dx) >= Math.abs(dy) ? scaleByX : scaleByY;
+
+            let newW = Math.max(minW, Math.min(maxW, startW * scale));
+            let newH = newW / aspectRatio;
+
+            // Clamp height too.
+            if (newH < minH) {
+              newH = minH;
+              newW = newH * aspectRatio;
+            }
+
+            container.style.width = `${newW}px`;
+            container.style.height = `${newH}px`;
+            saveMediaSizeDebounced(
+              resizeKey,
+              Math.round(newW),
+              Math.round(newH),
+            );
+          };
+
+          const onUp = () => {
+            handle.classList.remove("is-active");
+            document.body.classList.remove("is-resizing-media");
+            handle.removeEventListener("pointermove", onMove);
+            handle.removeEventListener("pointerup", onUp);
+            handle.removeEventListener("pointercancel", onUp);
+          };
+
+          handle.addEventListener("pointermove", onMove);
+          handle.addEventListener("pointerup", onUp);
+          handle.addEventListener("pointercancel", onUp);
         });
-        observer.observe(container);
-      }
+      });
     });
 };
 

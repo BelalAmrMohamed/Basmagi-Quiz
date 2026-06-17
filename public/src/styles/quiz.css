@@ -519,8 +519,13 @@ body {
 }
 
 /* ─── 8. Media Containers & Skeletons ───────────────────────────────────── */
-.question-image-container,
-.question-media-container {
+/* Centers the resizable media box within the question card, regardless of
+   page direction (LTR/RTL) or how far the user has shrunk it. Each media
+   helper (image/audio/video/YouTube) renders its `.media-container` inside
+   one of these. */
+.media-center-wrap {
+  display: flex;
+  justify-content: center;
   margin-bottom: 20px;
 }
 
@@ -534,6 +539,12 @@ body {
   border-radius: 12px;
   overflow: hidden;
   min-height: 52px;
+  width: 100%;
+  max-width: 100%;
+  /* Fix B: default alignment is centered; flex parent (.media-center-wrap)
+     handles the horizontal centering so we never dock to one edge. */
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .question-image {
@@ -706,13 +717,22 @@ body {
 }
 
 /* ─── 8b. User-Resizable Media ──────────────────────────────────────────── */
-/* `.media-container` is the existing wrapper the JS already renders around
-   every image / audio / video / YouTube iframe. We turn it into the resize
-   boundary directly (native `resize` requires overflow != visible, which it
-   already has) rather than introducing an extra wrapper element. */
+/* Native CSS `resize` only ever gives a single bottom-corner handle and has
+   no way to anchor the resize to the center, so resizing is implemented
+   with four custom corner handles + JS pointer-drag logic (see
+   initMediaResize in quiz.js). Dragging any handle grows/shrinks the box
+   symmetrically from its center, so it never drifts toward one edge. */
+/* Fix B+C: when a user has set an explicit size, the container should be
+   exactly that wide (not 100%) so the centering flex parent can truly center
+   it.  We switch to `width: fit-content` as the base; JS sets an explicit px
+   width after the user drags a handle. */
 .media-container.resizable-media {
-  resize: both;
   max-width: 100%;
+  touch-action: none;
+  /* Fix C: centering is handled by .media-center-wrap (display:flex;
+     justify-content:center). The container must NOT be 100% wide once the
+     user shrinks it — otherwise it stays glued to the left edge. */
+  width: fit-content;
 }
 
 .media-container.resizable-media > img,
@@ -724,42 +744,83 @@ body {
 }
 
 .question-audio-container.resizable-media {
-  resize: vertical;
   min-height: 52px;
-  max-height: 160px;
+  max-height: 200px;
 }
 
 .question-image-container.resizable-media,
 .question-video-container.resizable-media {
-  min-height: 160px;
+  min-height: 120px;
 }
 
-/* Small visual affordance in the corner so users notice media is resizable.
-   The native resize handle already renders here; this just adds a subtle
-   hint that doesn't interfere with it. */
-.media-container.resizable-media::after {
+.resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.resize-handle::before {
   content: "";
   position: absolute;
-  inset-inline-end: 2px;
-  inset-block-end: 2px;
-  width: 12px;
-  height: 12px;
-  pointer-events: none;
-  background: linear-gradient(135deg, transparent 50%, var(--color-border) 50%);
-  border-radius: 0 0 4px 0;
-  opacity: 0.7;
-  z-index: 3;
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary, #6366f1);
+  border: 2px solid var(--color-background, #fff);
+  border-radius: 50%;
+  box-shadow: var(--shadow-sm);
 }
 
-.media-container.resizable-media:hover::after {
+.media-container.resizable-media:hover .resize-handle,
+.media-container.resizable-media:focus-within .resize-handle,
+.resize-handle.is-active {
   opacity: 1;
 }
 
-/* The OS-level resize cursor/handle is always anchored bottom-right; keep
-   the box's internal flow LTR so the handle stays where users expect it
-   even on this RTL page. */
-[dir="rtl"] .media-container.resizable-media {
-  direction: ltr;
+.resize-handle--nw {
+  top: -8px;
+  left: -8px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--ne {
+  top: -8px;
+  right: -8px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--sw {
+  bottom: -8px;
+  left: -8px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--se {
+  bottom: -8px;
+  right: -8px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--nw::before,
+.resize-handle--ne::before,
+.resize-handle--sw::before,
+.resize-handle--se::before {
+  top: 3px;
+  left: 3px;
+}
+
+/* While actively dragging, suppress text selection / image-drag ghosting
+   across the whole page so the resize gesture feels solid. */
+body.is-resizing-media {
+  user-select: none;
+  cursor: nwse-resize;
+}
+
+body.is-resizing-media .media-container.resizable-media {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
 }
 
 /* Card Actions */
