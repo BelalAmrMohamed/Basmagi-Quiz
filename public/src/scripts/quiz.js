@@ -260,7 +260,7 @@ const renderMediaElement = (tag, className, mediaUrl) => {
 };
 
 // === Helper: Render Question Image ===
-const renderQuestionImage = (imageUrl) => {
+const renderQuestionImage = (imageUrl, resizeKey) => {
   if (!imageUrl) return "";
   const src = resolveMediaUrl(imageUrl);
   // Add cache-busting parameter to prevent stale service worker cache on initial load
@@ -271,7 +271,7 @@ const renderQuestionImage = (imageUrl) => {
     JSON.stringify(getMediaUrlCandidates(imageUrl)),
   );
   return `
-    <div class="media-container question-image-container">
+    <div class="media-container question-image-container" data-resize-key="${escapeHtml(resizeKey)}-image">
       ${MEDIA_SKELETON_HTML}
       <img
         src="${escapeHtml(srcWithCacheBust)}"
@@ -284,10 +284,10 @@ const renderQuestionImage = (imageUrl) => {
   `;
 };
 
-const renderQuestionAudio = (audioUrl) => {
+const renderQuestionAudio = (audioUrl, resizeKey) => {
   if (!audioUrl) return "";
   return `
-    <div class="media-container question-media-container question-audio-container">
+    <div class="media-container question-media-container question-audio-container" data-resize-key="${escapeHtml(resizeKey)}-audio">
       ${MEDIA_SKELETON_HTML}
       ${renderMediaElement("audio", "question-audio", audioUrl)}
     </div>
@@ -305,7 +305,7 @@ const getYouTubeVideoId = (url) => {
   return m ? m[1] : null;
 };
 
-const renderQuestionVideo = (videoUrl) => {
+const renderQuestionVideo = (videoUrl, resizeKey) => {
   if (!videoUrl) return "";
 
   // Bug 4 Fix: render a YouTube iframe instead of a <video> element.
@@ -313,10 +313,11 @@ const renderQuestionVideo = (videoUrl) => {
     const videoId = getYouTubeVideoId(videoUrl);
     const embedSrc = `https://www.youtube.com/embed/${videoId}`;
     return `
-      <div class="media-container question-media-container question-video-container">
+      <div class="media-container question-media-container question-video-container" data-resize-key="${escapeHtml(resizeKey)}-youtube">
         <iframe
           class="question-video youtube-embed"
           src="${escapeHtml(embedSrc)}"
+          data-media-raw="${escapeHtml(videoUrl)}"
           frameborder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowfullscreen
@@ -327,18 +328,18 @@ const renderQuestionVideo = (videoUrl) => {
   }
 
   return `
-    <div class="media-container question-media-container question-video-container">
+    <div class="media-container question-media-container question-video-container" data-resize-key="${escapeHtml(resizeKey)}-video">
       ${MEDIA_SKELETON_HTML}
       ${renderMediaElement("video", "question-video", videoUrl)}
     </div>
   `;
 };
 
-const renderQuestionMedia = (q) =>
+const renderQuestionMedia = (q, resizeKey) =>
   [
-    renderQuestionImage(q.image),
-    renderQuestionAudio(q.audio),
-    renderQuestionVideo(q.video),
+    renderQuestionImage(q.image, resizeKey),
+    renderQuestionAudio(q.audio, resizeKey),
+    renderQuestionVideo(q.video, resizeKey),
   ].join("");
 
 const renderReadingPassage = (passage, alignClass) => {
@@ -362,6 +363,7 @@ const applyMediaSrc = (media, url) => {
 };
 
 const initMediaSkeletons = (root = document) => {
+  initMediaResize(root);
   root.querySelectorAll(".media-container").forEach((container) => {
     const media = container.querySelector("img, audio, video");
     const skeleton = container.querySelector(".media-skeleton");
@@ -469,7 +471,90 @@ const initMediaSkeletons = (root = document) => {
   });
 };
 
-// === Gamification Stats ===
+// === Feature: User-Resizable Media ===
+// Lets the user drag-resize images, audio players, videos, and YouTube
+// iframes via the native CSS `resize` handle. Sizes are persisted per
+// exam+question+media-type so they survive re-renders, navigation, and
+// page reloads.
+const RESIZE_STORAGE_PREFIX = "quiz_media_size_";
+
+const getMediaSizeStorageKey = (resizeKey) =>
+  `${RESIZE_STORAGE_PREFIX}${examId}_${resizeKey}`;
+
+const loadSavedMediaSize = (resizeKey) => {
+  try {
+    const raw = localStorage.getItem(getMediaSizeStorageKey(resizeKey));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed.width === "number" &&
+      typeof parsed.height === "number"
+    ) {
+      return parsed;
+    }
+  } catch {
+    /* ignore malformed/legacy entries */
+  }
+  return null;
+};
+
+const saveMediaSize = (resizeKey, width, height) => {
+  try {
+    localStorage.setItem(
+      getMediaSizeStorageKey(resizeKey),
+      JSON.stringify({ width, height }),
+    );
+  } catch {
+    /* localStorage may be full or unavailable; resizing still works for this session */
+  }
+};
+
+// Debounce writes so dragging the resize handle doesn't hammer localStorage
+const resizeSaveDebounces = new Map();
+const saveMediaSizeDebounced = (resizeKey, width, height) => {
+  clearTimeout(resizeSaveDebounces.get(resizeKey));
+  resizeSaveDebounces.set(
+    resizeKey,
+    setTimeout(() => saveMediaSize(resizeKey, width, height), 400),
+  );
+};
+
+const initMediaResize = (root = document) => {
+  root
+    .querySelectorAll(".media-container[data-resize-key]")
+    .forEach((container) => {
+      if (container.dataset.resizeInit) return; // avoid double-binding
+      container.dataset.resizeInit = "1";
+      container.classList.add("resizable-media");
+
+      const resizeKey = container.dataset.resizeKey;
+      const saved = loadSavedMediaSize(resizeKey);
+      if (saved) {
+        container.style.width = `${saved.width}px`;
+        container.style.height = `${saved.height}px`;
+      }
+
+      // ResizeObserver fires for both user drag-resize and programmatic
+      // changes; debounce-persist whatever size the box ends up at.
+      if (typeof ResizeObserver !== "undefined") {
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+              saveMediaSizeDebounced(
+                resizeKey,
+                Math.round(width),
+                Math.round(height),
+              );
+            }
+          }
+        });
+        observer.observe(container);
+      }
+    });
+};
+
 function updateGamificationStats() {
   const userData = gameEngine.getUserData();
   const levelInfo = gameEngine.calculateLevel(userData.totalPoints);
@@ -1265,7 +1350,7 @@ function buildVerticalQuestionCard(q, idx) {
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
-    ${renderQuestionMedia(q)}
+    ${renderQuestionMedia(q, `q${idx}`)}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
   `;
@@ -1413,39 +1498,18 @@ function renderAllQuestionsVertical() {
 }
 
 // === Core: Render Question ===
-function renderQuestion() {
-  if (!questions.length) return;
-
-  if (quizStyle === "vertical") {
-    renderAllQuestionsVertical();
-    updateNav();
-    return;
-  }
-
-  const q = questions[currentIdx];
+// Bug-fix: builds everything EXCEPT the media block (header text, action
+// buttons, reading passage, options/essay input, check button, feedback).
+// Splitting this out lets renderQuestion() patch just this part on every
+// input interaction without touching the media DOM at all — so audio/video/
+// YouTube elements never unmount, reload, or flicker while answering.
+function buildQuestionBodyHTML(q, idx, passageAlignClass) {
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
-
-  // Update Progress (only if changed)
-  const answeredCount = Object.keys(userAnswers).length;
-  const progressPercent = (answeredCount / questions.length) * 100;
-
-  if (els.progressFill) {
-    els.progressFill.style.width = `${progressPercent}%`;
-    els.progressFill.classList.toggle(
-      "progress-near-complete",
-      progressPercent >= 80,
-    );
-  }
-  if (els.progressText)
-    els.progressText.textContent = `${Math.round(
-      progressPercent,
-    )}% (${answeredCount}/${questions.length})`;
-
-  const isLocked = !!lockedQuestions[currentIdx];
-  const userSelected = userAnswers[currentIdx];
-  const isBookmarked = gameEngine.isBookmarked(examId, currentIdx);
-  const isFlagged = gameEngine.isFlagged(examId, currentIdx);
+  const isLocked = !!lockedQuestions[idx];
+  const userSelected = userAnswers[idx];
+  const isBookmarked = gameEngine.isBookmarked(examId, idx);
+  const isFlagged = gameEngine.isFlagged(examId, idx);
   const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
 
   let feedbackClass = "feedback";
@@ -1463,15 +1527,12 @@ function renderQuestion() {
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
       feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
-      // Check if answer is correct (handles both single and array)
       if (Array.isArray(correctIdx)) {
-        // Multiple correct answers: user's answer must match exactly
         isCorrect =
           Array.isArray(userSelected) &&
           userSelected.length === correctIdx.length &&
-          correctIdx.every((idx) => userSelected.includes(idx));
+          correctIdx.every((i) => userSelected.includes(i));
       } else {
-        // Single correct answer
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
@@ -1498,25 +1559,24 @@ function renderQuestion() {
 
   const qLang = getQuestionLang(q);
   const alignClass = getAlignClass(q.q, qLang);
-  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
   const passageClass =
     !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
 
-  const questionHeaderHTML = `
+  const textHeaderHTML = `
     <div class="question-header">
-      <div class="question-number">سؤال ${currentIdx + 1} من ${questions.length}</div>
+      <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionButtons}
     </div>
-    ${renderQuestionMedia(q)}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
   `;
 
   if (isEssay) {
-    setQuestionHTML(`
-      <div class="question-card${largeClass}">
-        ${questionHeaderHTML}
+    return {
+      largeClass,
+      html: `
+        ${textHeaderHTML}
         <div class="essay-container">
           <label for="essayInput" class="essay-label">Your Answer:</label>
           <textarea 
@@ -1549,73 +1609,145 @@ function renderQuestion() {
             : ""
         }
         <div class="${feedbackClass}">${feedbackText}</div>
-      </div>
-    `);
-  } else {
-    const isMultiple = Array.isArray(q.correct);
-    const userSelected = userAnswers[currentIdx];
-
-    els.questionContainer.classList.remove("loading");
-    setQuestionHTML(`
-      <div class="question-card${largeClass}">
-        ${questionHeaderHTML}
-        <div class="options-grid">
-          ${q.options
-            .map((opt, i) => {
-              let isSelected = false;
-              if (isMultiple) {
-                isSelected =
-                  Array.isArray(userSelected) && userSelected.includes(i);
-              } else {
-                isSelected = userSelected === i;
-              }
-
-              const optAlign = getAlignClass(opt, qLang);
-              let optionClass = "option-row";
-              if (isSelected) optionClass += " selected";
-              if (isLocked) {
-                optionClass += " locked";
-                // Check if this is a correct option
-                const isCorrectOption = isMultiple
-                  ? Array.isArray(q.correct) && q.correct.includes(i)
-                  : i === q.correct;
-                if (isCorrectOption) optionClass += " correct";
-                if (isSelected && !isCorrectOption) optionClass += " wrong";
-              }
-
-              const inputType = isMultiple ? "checkbox" : "radio";
-              const inputName = isMultiple ? `answer-${i}` : "answer";
-
-              return `
-              <div class="${optionClass} ${optAlign}" ${
-                isLocked ? "" : `onclick="window.handleSelect(${i})"`
-              }>
-                <input type="${inputType}" name="${inputName}" ${
-                  isSelected ? "checked" : ""
-                } 
-                       ${isLocked ? "disabled" : ""} aria-label="Option ${
-                         i + 1
-                       }">
-                <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
-              </div>`;
-            })
-            .join("")}
-        </div>
-        <button class="check-answer-btn ${
-          isLocked || !showCheckButton ? "hidden" : ""
-        }"
-                id="checkBtn" onclick="window.checkAnswer()"
-                ${userSelected === undefined || (isMultiple && (!Array.isArray(userSelected) || userSelected.length === 0)) ? "disabled" : ""}>
-          Check Answer
-        </button>
-        <div class="${feedbackClass}">${feedbackText}</div>
-      </div>
-    `);
+      `,
+    };
   }
 
+  const isMultiple = Array.isArray(q.correct);
+
+  return {
+    largeClass,
+    html: `
+      ${textHeaderHTML}
+      <div class="options-grid">
+        ${q.options
+          .map((opt, i) => {
+            let isSelected = false;
+            if (isMultiple) {
+              isSelected =
+                Array.isArray(userSelected) && userSelected.includes(i);
+            } else {
+              isSelected = userSelected === i;
+            }
+
+            const optAlign = getAlignClass(opt, qLang);
+            let optionClass = "option-row";
+            if (isSelected) optionClass += " selected";
+            if (isLocked) {
+              optionClass += " locked";
+              const isCorrectOption = isMultiple
+                ? Array.isArray(q.correct) && q.correct.includes(i)
+                : i === q.correct;
+              if (isCorrectOption) optionClass += " correct";
+              if (isSelected && !isCorrectOption) optionClass += " wrong";
+            }
+
+            const inputType = isMultiple ? "checkbox" : "radio";
+            const inputName = isMultiple ? `answer-${i}` : "answer";
+
+            return `
+            <div class="${optionClass} ${optAlign}" ${
+              isLocked ? "" : `onclick="window.handleSelect(${i})"`
+            }>
+              <input type="${inputType}" name="${inputName}" ${
+                isSelected ? "checked" : ""
+              } 
+                     ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
+              <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+            </div>`;
+          })
+          .join("")}
+      </div>
+      <button class="check-answer-btn ${
+        isLocked || !showCheckButton ? "hidden" : ""
+      }"
+              id="checkBtn" onclick="window.checkAnswer()"
+              ${userSelected === undefined || (isMultiple && (!Array.isArray(userSelected) || userSelected.length === 0)) ? "disabled" : ""}>
+        Check Answer
+      </button>
+      <div class="${feedbackClass}">${feedbackText}</div>
+    `,
+  };
+}
+
+// === Core: Render Question (pagination style) ===
+// Bug 5 Fix: media is rendered into its own `.question-media-wrap` once per
+// question. Re-renders triggered by answering (handleSelect/checkAnswer/
+// essay input) only touch `.question-body`, so the media DOM (audio/video/
+// YouTube iframe) is never unmounted or reloaded.
+function renderQuestion() {
+  if (!questions.length) return;
+
+  if (quizStyle === "vertical") {
+    renderAllQuestionsVertical();
+    updateNav();
+    return;
+  }
+
+  const q = questions[currentIdx];
+
+  // Update Progress
+  const answeredCount = Object.keys(userAnswers).length;
+  const progressPercent = (answeredCount / questions.length) * 100;
+  if (els.progressFill) {
+    els.progressFill.style.width = `${progressPercent}%`;
+    els.progressFill.classList.toggle(
+      "progress-near-complete",
+      progressPercent >= 80,
+    );
+  }
+  if (els.progressText)
+    els.progressText.textContent = `${Math.round(
+      progressPercent,
+    )}% (${answeredCount}/${questions.length})`;
+
+  const qLang = getQuestionLang(q);
+  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
+  const { largeClass, html: bodyHTML } = buildQuestionBodyHTML(
+    q,
+    currentIdx,
+    passageAlignClass,
+  );
+
   els.questionContainer.classList.remove("loading");
-  initMediaSkeletons(els.questionContainer);
+
+  const existingCard = els.questionContainer.querySelector(".question-card");
+  const sameQuestion =
+    existingCard && Number(existingCard.dataset.questionIndex) === currentIdx;
+
+  if (sameQuestion) {
+    // In-place update: only the body changes. Media wrap is left untouched
+    // so its audio/video/iframe elements keep playing without interruption.
+    const bodyEl = existingCard.querySelector(".question-body");
+    if (bodyEl) {
+      bodyEl.innerHTML = bodyHTML;
+      existingCard.className = `question-card${largeClass}`;
+    } else {
+      // Defensive fallback in case the expected structure is missing
+      setQuestionHTML(
+        renderFullQuestionCard(q, currentIdx, largeClass, bodyHTML),
+      );
+      initMediaSkeletons(els.questionContainer);
+    }
+  } else {
+    // Navigated to a different question (or first render): full rebuild,
+    // including a fresh media block for the new question.
+    setQuestionHTML(
+      renderFullQuestionCard(q, currentIdx, largeClass, bodyHTML),
+    );
+    initMediaSkeletons(els.questionContainer);
+  }
+
   updateNav();
+}
+
+function renderFullQuestionCard(q, idx, largeClass, bodyHTML) {
+  return `
+    <div class="question-card${largeClass}" data-question-index="${idx}">
+      <div class="question-media-wrap">${renderQuestionMedia(q, `q${idx}`)}</div>
+      <div class="question-body">${bodyHTML}</div>
+    </div>
+  `;
 }
 
 // === Event Handlers ===
@@ -2058,6 +2190,8 @@ function resetQuizState() {
     clearTimeout(saveStateDebounce);
     saveStateDebounce = null;
   }
+  resizeSaveDebounces.forEach((timeoutId) => clearTimeout(timeoutId));
+  resizeSaveDebounces.clear();
   questions = [];
   metaData = {};
   currentIdx = 0;
