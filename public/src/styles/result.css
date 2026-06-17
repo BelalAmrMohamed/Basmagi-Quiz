@@ -345,8 +345,8 @@ body {
   opacity: 0.85;
 }
 
-.breadcrumb-container{
-  margin-bottom: 4px; 
+.breadcrumb-container {
+  margin-bottom: 4px;
   direction: ltr;
 }
 
@@ -804,7 +804,17 @@ body {
   aspect-ratio: 16 / 9;
 }
 
-/* ─── Watermark Footer ────────────────────────────────────────────────────── */
+/* ─── YouTube iframe embed (mirrors quiz.css) ──────────────────────────────── */
+.question-video.youtube-embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 200px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-background);
+}
 .watermark {
   text-align: center;
   margin-top: 80px;
@@ -897,6 +907,23 @@ body {
     gap: 24px;
   }
 
+  /* Fix: center the score circle on phones instead of docking to one side */
+  .score-header-inner {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .score-circle {
+    /* Fix: explicit centering so it never floats right */
+    align-self: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .score-header-body {
+    width: 100%;
+  }
+
   .stats-text {
     align-items: flex-start;
     text-align: left;
@@ -973,6 +1000,9 @@ body {
     width: 120px;
     height: 120px;
     font-size: 2rem;
+    align-self: center;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   #scoreDisplay {
@@ -1000,6 +1030,11 @@ body {
   align-items: flex-start;
   gap: 28px;
   flex-wrap: wrap;
+}
+
+.score-header-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .score-greeting {

@@ -68,7 +68,8 @@ const getMediaUrlCandidates = (url) => {
 
   const candidates = [];
   const add = (candidate) => {
-    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
+    if (candidate && !candidates.includes(candidate))
+      candidates.push(candidate);
   };
 
   try {
@@ -111,7 +112,9 @@ const getMediaMimeType = (url) => {
 
 const renderMediaElement = (tag, className, mediaUrl) => {
   const src = resolveMediaUrl(mediaUrl);
-  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const srcWithCacheBust = src
+    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+    : "";
   const mime = getMediaMimeType(src);
   const typeAttr = mime ? ` type="${escapeHTML(mime)}"` : "";
   const fallback =
@@ -128,7 +131,9 @@ const renderMediaElement = (tag, className, mediaUrl) => {
 const renderQuestionImage = (imageUrl) => {
   if (!imageUrl) return "";
   const src = resolveMediaUrl(imageUrl);
-  const srcWithCacheBust = src ? `${src}${src.includes('?') ? '&' : '?'}_cb=${Date.now()}` : '';
+  const srcWithCacheBust = src
+    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+    : "";
   return `
     <div class="media-container question-image-container">
       <img src="${escapeHTML(srcWithCacheBust)}" alt="Question image"
@@ -145,8 +150,35 @@ const renderQuestionAudio = (audioUrl) => {
   `;
 };
 
+// ── YouTube helpers (mirrors quiz.js) ────────────────────────────────────────
+const YOUTUBE_RE =
+  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
+const getYouTubeId = (url) => {
+  const m = String(url || "").match(YOUTUBE_RE);
+  return m ? m[1] : null;
+};
+
 const renderQuestionVideo = (videoUrl) => {
   if (!videoUrl) return "";
+
+  if (isYouTubeUrl(videoUrl)) {
+    const videoId = getYouTubeId(videoUrl);
+    const embedSrc = `https://www.youtube.com/embed/${videoId}`;
+    return `
+      <div class="media-container question-media-container question-video-container">
+        <iframe
+          class="question-video youtube-embed"
+          src="${escapeHTML(embedSrc)}"
+          data-media-raw="${escapeHTML(videoUrl)}"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowfullscreen
+          loading="lazy"
+        ></iframe>
+      </div>`;
+  }
+
   return `
     <div class="media-container question-media-container question-video-container">
       ${renderMediaElement("video", "question-video", videoUrl)}
@@ -256,7 +288,8 @@ function updateBreadcrumb(meta, els) {
     courseName = parts[parts.length - 2];
   }
 
-  if (!courseName) courseName = meta.category || extractCategoryFromPath(meta.path) || "";
+  if (!courseName)
+    courseName = meta.category || extractCategoryFromPath(meta.path) || "";
 
   const isMobile = window.innerWidth <= 768;
   const limit = isMobile ? 40 : 60;
@@ -328,9 +361,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           const data = await res.json();
           questions = data.questions || [];
           if (data.meta) {
-              if (data.meta.createdAt) config.createdAt = data.meta.createdAt;
-              if (data.meta.description) config.description = data.meta.description;
-              if (data.meta.source) config.source = data.meta.source;
+            if (data.meta.createdAt) config.createdAt = data.meta.createdAt;
+            if (data.meta.description)
+              config.description = data.meta.description;
+            if (data.meta.source) config.source = data.meta.source;
           }
         }
       } else {
@@ -783,7 +817,19 @@ function renderHeader(
   essayScoreTotal,
   essayMaxTotal,
 ) {
-  const timeStr = `${Math.floor(data.timeElapsed / 60)}m ${data.timeElapsed % 60}s`;
+  // ── Time display ───────────────────────────────────────────────────────────
+  // For timed/timed_exam modes the meaningful number is how much time was
+  // *remaining* when the quiz ended (saved as data.timeRemaining).  For
+  // regular (elapsed) mode we show how long the user spent.
+  const isTimed = data.quizMode === "timed" || data.quizMode === "timed_exam";
+  let timeStr;
+  if (isTimed && data.timeRemaining !== undefined && data.timeRemaining > 0) {
+    const rm = data.timeRemaining;
+    timeStr = `${Math.floor(rm / 60)}m ${rm % 60}s متبقي`;
+  } else {
+    const el = data.timeElapsed ?? 0;
+    timeStr = `${Math.floor(el / 60)}m ${el % 60}s`;
+  }
   const points = data.gamification ? data.gamification.pointsEarned : 0;
   const newBadges = data.gamification ? data.gamification.newBadges : [];
 
@@ -947,7 +993,7 @@ function renderHeader(
 
         <p class="time-line">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          الوقت: ${timeStr}
+          ${isTimed ? "الوقت المتبقي" : "الوقت"}: ${timeStr}
         </p>
 
         ${badgeHTML}
@@ -1038,20 +1084,23 @@ function renderReview(container, questions, userAnswers) {
     } else {
       const correctIdx = q.correct ?? q.answer;
       const isMultiple = Array.isArray(correctIdx);
-      const isSkipped = userAns === undefined || userAns === null || (isMultiple && Array.isArray(userAns) && userAns.length === 0);
-      
+      const isSkipped =
+        userAns === undefined ||
+        userAns === null ||
+        (isMultiple && Array.isArray(userAns) && userAns.length === 0);
+
       // For multi-select: user must have selected exactly the correct set
       let isCorrect;
       if (isSkipped) {
         isCorrect = false;
       } else if (isMultiple) {
-        isCorrect = Array.isArray(userAns)
-          && userAns.length === correctIdx.length
-          && correctIdx.every(idx => userAns.includes(idx));
+        isCorrect =
+          Array.isArray(userAns) &&
+          userAns.length === correctIdx.length &&
+          correctIdx.every((idx) => userAns.includes(idx));
       } else {
         isCorrect = isAnswerCorrect(userAns, correctIdx);
       }
-      
 
       const statusClass = isCorrect
         ? "correct"
@@ -1069,22 +1118,24 @@ function renderReview(container, questions, userAnswers) {
         userText = "<em>Skipped</em>";
       } else if (isMultiple && Array.isArray(userAns)) {
         userText = userAns
-          .map(i => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
-          .map(html => `<div class="ans-multi-item">${html}</div>`)
+          .map((i) => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
+          .map((html) => `<div class="ans-multi-item">${html}</div>`)
           .join("");
       } else {
         userText = renderMarkdown(normalizeLiteralNewlines(q.options[userAns]));
       }
-      
+
       // Correct answer text — render each correct option as a separate item
       let correctText;
       if (isMultiple) {
         correctText = correctIdx
-          .map(i => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
-          .map(html => `<div class="ans-multi-item">${html}</div>`)
+          .map((i) => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
+          .map((html) => `<div class="ans-multi-item">${html}</div>`)
           .join("");
       } else {
-        correctText = renderMarkdown(normalizeLiteralNewlines(q.options[correctIdx]));
+        correctText = renderMarkdown(
+          normalizeLiteralNewlines(q.options[correctIdx]),
+        );
       }
       const explanationText = q.explanation
         ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
