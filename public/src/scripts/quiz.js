@@ -1214,13 +1214,16 @@ async function init() {
     initKeyboardNav({
       onNext: () => nav(1),
       onPrev: () => nav(-1),
-      onCheck: () => checkAnswer(),
-      onBookmark: () => window.toggleBookmark(), // ← was empty
-      onFlag: () => window.toggleFlag(), // ← was empty
+      onCheck: () => {
+        if (quizMode === "exam" || quizMode === "timed_exam") return;
+        checkAnswer();
+      },
+      onBookmark: () => window.toggleBookmark(),
+      onFlag: () => window.toggleFlag(),
       onSelect: (i) => {
         if (lockedQuestions[currentIdx]) return;
         const q = questions[currentIdx];
-        if (!q?.options || i >= q.options.length) return; // ← add this line
+        if (!q?.options || i >= q.options.length) return;
         userAnswers[currentIdx] = i;
         saveStateDebounced();
         renderQuestion();
@@ -2030,6 +2033,9 @@ async function finish(skipconfirmationNotification) {
       quizMode === "timed" || quizMode === "timed_exam"
         ? questions.length * 30 - timeRemaining
         : timeElapsed,
+    timeRemaining:
+      quizMode === "timed" || quizMode === "timed_exam" ? timeRemaining : 0,
+    quizMode,
     mode: quizMode,
   };
 

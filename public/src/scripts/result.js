@@ -821,15 +821,16 @@ function renderHeader(
   // For timed/timed_exam modes the meaningful number is how much time was
   // *remaining* when the quiz ended (saved as data.timeRemaining).  For
   // regular (elapsed) mode we show how long the user spent.
-  const isTimed = data.quizMode === "timed" || data.quizMode === "timed_exam";
-  let timeStr;
+  const savedMode = data.quizMode ?? data.mode ?? "";
+  const isTimed = savedMode === "timed" || savedMode === "timed_exam";
+  let timeStr, remainingStr;
   if (isTimed && data.timeRemaining !== undefined && data.timeRemaining > 0) {
     const rm = data.timeRemaining;
-    timeStr = `${Math.floor(rm / 60)}m ${rm % 60}s متبقي`;
-  } else {
-    const el = data.timeElapsed ?? 0;
-    timeStr = `${Math.floor(el / 60)}m ${el % 60}s`;
+    remainingStr = `${Math.floor(rm / 60)}m ${rm % 60}s`;
   }
+  const el = data.timeElapsed ?? 0;
+  timeStr = `${Math.floor(el / 60)}m ${el % 60}s`;
+
   const points = data.gamification ? data.gamification.pointsEarned : 0;
   const newBadges = data.gamification ? data.gamification.newBadges : [];
 
@@ -993,7 +994,7 @@ function renderHeader(
 
         <p class="time-line">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          ${isTimed ? "الوقت المتبقي" : "الوقت"}: ${timeStr}
+          ${isTimed ? `الوقت المتبقّي: ${remainingStr} | الوقت: ${timeStr}` : `الوقت: ${timeStr}`}
         </p>
 
         ${badgeHTML}
