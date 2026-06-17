@@ -550,22 +550,28 @@ const initMediaResize = (root = document) => {
       container.classList.add("resizable-media");
 
       const resizeKey = container.dataset.resizeKey;
+      const isAudio = container.classList.contains("question-audio-container");
 
-      // ── Inject four corner handles (if not already present) ────────────
-      const corners = ["nw", "ne", "sw", "se"];
-      corners.forEach((dir) => {
+      // ── Inject handles appropriate for this media type ─────────────────
+      // Audio is 1-D (fixed height) → only E/W side handles make sense.
+      // Images/video/iframes get all 8 (4 corners + 4 sides, sides hidden on touch).
+      const handlesToInject = isAudio
+        ? ["e", "w"]
+        : ["nw", "ne", "sw", "se", "n", "s", "e", "w"];
+
+      handlesToInject.forEach((dir) => {
         if (container.querySelector(`.resize-handle--${dir}`)) return;
-        const handle = document.createElement("div");
-        handle.className = `resize-handle resize-handle--${dir}`;
-        handle.setAttribute("aria-hidden", "true");
-        container.appendChild(handle);
+        const h = document.createElement("div");
+        h.className = `resize-handle resize-handle--${dir}`;
+        h.setAttribute("aria-hidden", "true");
+        container.appendChild(h);
       });
 
       // ── Restore saved size ─────────────────────────────────────────────
       const saved = loadSavedMediaSize(resizeKey);
       if (saved) {
         container.style.width = `${saved.width}px`;
-        container.style.height = `${saved.height}px`;
+        if (!isAudio) container.style.height = `${saved.height}px`;
       }
 
       // ── Drag-resize logic ──────────────────────────────────────────────
@@ -577,73 +583,94 @@ const initMediaResize = (root = document) => {
           handle.classList.add("is-active");
           document.body.classList.add("is-resizing-media");
 
-          // Capture the dimensions at drag-start so we can compute deltas.
           const startW = container.offsetWidth;
           const startH = container.offsetHeight;
           const startX = eDown.clientX;
           const startY = eDown.clientY;
 
-          // Fix A: lock the aspect ratio from the natural media size or the
-          //         current rendered size (whichever is available first).
+          // ── Aspect ratio ───────────────────────────────────────────────
+          // Priority: natural media dimensions > explicit 16:9 for iframes
+          // (YouTube). Never fall back to the rendered box size — that bakes
+          // in any previous distortion as the new "correct" ratio.
           const mediaEl = container.querySelector("img, video, iframe, audio");
-          let aspectRatio =
+          const isIframe = mediaEl instanceof HTMLIFrameElement;
+          const aspectRatio =
             mediaEl instanceof HTMLImageElement && mediaEl.naturalWidth > 0
               ? mediaEl.naturalWidth / mediaEl.naturalHeight
               : mediaEl instanceof HTMLVideoElement && mediaEl.videoWidth > 0
                 ? mediaEl.videoWidth / mediaEl.videoHeight
-                : startH > 0
-                  ? startW / startH
-                  : 16 / 9; // sane fallback for iframes / audio
+                : isIframe
+                  ? 16 / 9 // YouTube and other embeds are always 16:9
+                  : startH > 0
+                    ? startW / startH
+                    : 16 / 9;
 
-          // Audio players are 1-D (height is fixed by the browser chrome).
-          const isAudio = container.classList.contains(
-            "question-audio-container",
-          );
-
-          // Minimum dimensions
           const minW = isAudio ? 200 : 120;
           const minH = isAudio ? 52 : 80;
-          // Maximum = parent width (so it never overflows the card)
           const maxW = container.parentElement
             ? container.parentElement.clientWidth
             : window.innerWidth;
 
           const onMove = (eMove) => {
-            // Fix C: symmetric resize — treat each pointer pixel as 2px of
-            //         total width change so both visual edges move equally.
             const dxRaw = eMove.clientX - startX;
             const dyRaw = eMove.clientY - startY;
 
-            // Determine sign based on which corner is being dragged.
+            const cl = handle.classList;
+            const isCorner =
+              cl.contains("resize-handle--nw") ||
+              cl.contains("resize-handle--ne") ||
+              cl.contains("resize-handle--sw") ||
+              cl.contains("resize-handle--se");
+            const isSideE = cl.contains("resize-handle--e");
+            const isSideW = cl.contains("resize-handle--w");
+            const isSideN = cl.contains("resize-handle--n");
+            const isSideS = cl.contains("resize-handle--s");
+
+            // Positive dx/dy = growing
             const isRight =
-              handle.classList.contains("resize-handle--ne") ||
-              handle.classList.contains("resize-handle--se");
+              cl.contains("resize-handle--ne") ||
+              cl.contains("resize-handle--se") ||
+              isSideE;
             const isBottom =
-              handle.classList.contains("resize-handle--sw") ||
-              handle.classList.contains("resize-handle--se");
+              cl.contains("resize-handle--sw") ||
+              cl.contains("resize-handle--se") ||
+              isSideS;
 
             const dx = isRight ? dxRaw : -dxRaw;
             const dy = isBottom ? dyRaw : -dyRaw;
 
             if (isAudio) {
-              // Audio: only change width; height stays fixed.
+              // Audio: width-only, height is always fixed by the browser.
               const newW = Math.max(minW, Math.min(maxW, startW + dx * 2));
               container.style.width = `${newW}px`;
               saveMediaSizeDebounced(resizeKey, Math.round(newW), startH);
               return;
             }
 
-            // Fix A: use whichever axis moved more to drive the scale, then
-            //         compute the other dimension from the locked ratio.
-            const scaleByX = (startW + dx * 2) / startW;
-            const scaleByY = (startH + dy * 2) / startH;
-            // Pick the axis that results in a larger area (feels more natural)
-            const scale = Math.abs(dx) >= Math.abs(dy) ? scaleByX : scaleByY;
+            let newW, newH;
 
-            let newW = Math.max(minW, Math.min(maxW, startW * scale));
-            let newH = newW / aspectRatio;
+            if (isCorner) {
+              // Use the dominant axis to drive scale; other follows ratio.
+              const scaleByX = (startW + dx * 2) / startW;
+              const scaleByY = (startH + dy * 2) / startH;
+              const scale = Math.abs(dx) >= Math.abs(dy) ? scaleByX : scaleByY;
+              newW = Math.max(minW, Math.min(maxW, startW * scale));
+              newH = newW / aspectRatio;
+            } else if (isSideE || isSideW) {
+              // Horizontal drag → width drives, height follows ratio.
+              newW = Math.max(minW, Math.min(maxW, startW + dx * 2));
+              newH = newW / aspectRatio;
+            } else {
+              // Vertical drag (N/S) → height drives, width follows ratio.
+              newH = Math.max(minH, startH + dy * 2);
+              newW = Math.min(maxW, newH * aspectRatio);
+              if (newW < minW) {
+                newW = minW;
+                newH = newW / aspectRatio;
+              }
+            }
 
-            // Clamp height too.
+            // Floor clamp on height.
             if (newH < minH) {
               newH = minH;
               newW = newH * aspectRatio;

@@ -753,24 +753,27 @@ body {
   min-height: 120px;
 }
 
+/* ── Resize handle base ─────────────────────────────────────────────────────
+   All handles use display:flex + align/justify center so the ::before dot or
+   pill is always perfectly centered inside the hit-area — no hard-coded
+   top/left offsets that can de-sync when sizes change.                       */
 .resize-handle {
   position: absolute;
-  width: 16px;
-  height: 16px;
   z-index: 4;
   opacity: 0;
   transition: opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .resize-handle::before {
   content: "";
-  position: absolute;
-  width: 10px;
-  height: 10px;
+  display: block;
   background: var(--color-primary, #6366f1);
   border: 2px solid var(--color-background, #fff);
-  border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  /* Shape is overridden per-handle below */
 }
 
 .media-container.resizable-media:hover .resize-handle,
@@ -779,36 +782,99 @@ body {
   opacity: 1;
 }
 
-.resize-handle--nw {
-  top: -8px;
-  left: -8px;
-  cursor: nwse-resize;
-}
-
-.resize-handle--ne {
-  top: -8px;
-  right: -8px;
-  cursor: nesw-resize;
-}
-
-.resize-handle--sw {
-  bottom: -8px;
-  left: -8px;
-  cursor: nesw-resize;
-}
-
+/* ── Corner handles (16×16 hit area, 10×10 circle dot) ─────────────────── */
+.resize-handle--nw,
+.resize-handle--ne,
+.resize-handle--sw,
 .resize-handle--se {
-  bottom: -8px;
-  right: -8px;
-  cursor: nwse-resize;
+  width: 20px;
+  height: 20px;
 }
 
 .resize-handle--nw::before,
 .resize-handle--ne::before,
 .resize-handle--sw::before,
 .resize-handle--se::before {
-  top: 3px;
-  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.resize-handle--nw {
+  top: -10px;
+  left: -10px;
+  cursor: nwse-resize;
+}
+.resize-handle--ne {
+  top: -10px;
+  right: -10px;
+  cursor: nesw-resize;
+}
+.resize-handle--sw {
+  bottom: -10px;
+  left: -10px;
+  cursor: nesw-resize;
+}
+.resize-handle--se {
+  bottom: -10px;
+  right: -10px;
+  cursor: nwse-resize;
+}
+
+/* ── Side handles — pill bars (desktop / fine-pointer only) ─────────────── */
+.resize-handle--n,
+.resize-handle--s {
+  width: 44px;
+  height: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: ns-resize;
+}
+
+.resize-handle--e,
+.resize-handle--w {
+  width: 12px;
+  height: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle--n {
+  top: -6px;
+}
+.resize-handle--s {
+  bottom: -6px;
+}
+.resize-handle--e {
+  right: -6px;
+}
+.resize-handle--w {
+  left: -6px;
+}
+
+.resize-handle--n::before,
+.resize-handle--s::before {
+  width: 32px;
+  height: 4px;
+  border-radius: 100px;
+}
+
+.resize-handle--e::before,
+.resize-handle--w::before {
+  width: 4px;
+  height: 32px;
+  border-radius: 100px;
+}
+
+/* Hide side handles entirely on coarse-pointer devices (phones/tablets) */
+@media (pointer: coarse) {
+  .resize-handle--n,
+  .resize-handle--s,
+  .resize-handle--e,
+  .resize-handle--w {
+    display: none;
+  }
 }
 
 /* While actively dragging, suppress text selection / image-drag ghosting
