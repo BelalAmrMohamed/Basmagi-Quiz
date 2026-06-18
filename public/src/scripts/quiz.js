@@ -1564,6 +1564,10 @@ function setQuestionHTML(html) {
 
   els.questionContainer.innerHTML = html;
 
+  // Apply text direction classes synchronously — before the MutationObserver
+  // fires — so there is no flash-of-wrong-direction on question navigation.
+  TextDirectionEngine.scan(els.questionContainer);
+
   // Restore timestamps on the newly-inserted media elements
   if (mediaStates.length) {
     els.questionContainer.querySelectorAll("audio, video").forEach((el, i) => {
@@ -1632,6 +1636,8 @@ function renderAllQuestionsVertical() {
     }
 
     initMediaSkeletons(newCard);
+    // Targeted direction scan — only the rebuilt card, not the whole page.
+    TextDirectionEngine.scan(newCard);
     return;
   }
 
@@ -1644,6 +1650,9 @@ function renderAllQuestionsVertical() {
   els.questionContainer.classList.remove("loading");
   els.questionContainer.classList.add("vertical-style");
   initMediaSkeletons(els.questionContainer);
+  // Scan all cards in one pass after the full render so direction classes
+  // are set before the browser paints — no per-card flicker.
+  TextDirectionEngine.scan(els.questionContainer);
 }
 
 // === Core: Render Question ===
@@ -1871,6 +1880,9 @@ function renderQuestion() {
     if (bodyEl) {
       bodyEl.innerHTML = bodyHTML;
       existingCard.className = `question-card${largeClass}`;
+      // Re-scan only the patched body — avoids touching the media wrap and
+      // keeps direction classes in sync without a full-container scan.
+      TextDirectionEngine.scan(bodyEl);
     } else {
       // Defensive fallback in case the expected structure is missing
       setQuestionHTML(
@@ -1941,6 +1953,168 @@ function handleEssayInput() {
       checkBtn.disabled = !textarea.value.trim();
     }
   }
+}
+
+/**
+ * Dynamic Text Direction Injection Engine
+ * Tailored for Mixed-Language Arabic/English
+ */
+const TextDirectionEngine = (() => {
+  // Optimized RegEx matching Arabic character scripts
+  const ARABIC_REGEX =
+    /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+  // RegEx to capture the very first English or Arabic script alphabetical character
+  const FIRST_STRONG_CHAR_REGEX =
+    /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+  // Selectors targeted for direction adjustment
+  const TARGET_SELECTORS = [
+    ".question-text",
+    ".option-label",
+    ".feedback",
+    ".feedback-body",
+    ".formal-answer",
+    ".formal-answer-text",
+    ".md-content",
+    ".essay-textarea",
+  ].join(", ");
+
+  // Exception selectors that MUST remain LTR
+  const EXCEPTION_SELECTORS = [
+    "pre",
+    "code",
+    ".code-block",
+    ".reading-passage",
+    ".question-text--passage",
+  ].join(", ");
+
+  /**
+   * Detects the direction of a given text string based on its first strong alphabetical letter.
+   * Seamlessly ignores leading spaces, numbers, bullet punctuation, and emojis.
+   * @param {string} text
+   * @returns {'rtl' | 'ltr'}
+   */
+  function detectDirection(text) {
+    if (!text || typeof text !== "string") return "ltr";
+
+    // Find the first true alphabetical letter in Arabic or English
+    const match = text.match(FIRST_STRONG_CHAR_REGEX);
+    if (match) {
+      // If that first real character is Arabic, it's RTL
+      return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
+    }
+    return "ltr"; // Fallback default
+  }
+
+  /**
+   * Evaluates and applies text direction classes to a single DOM element.
+   * @param {HTMLElement} element
+   */
+  function processElement(element) {
+    if (!element) return;
+
+    // Fast-path protection for strict LTR exceptions (Passages and Code blocks)
+    if (element.closest(EXCEPTION_SELECTORS)) {
+      if (!element.classList.contains("text-ltr")) {
+        element.classList.remove("text-rtl");
+        element.classList.add("text-ltr");
+      }
+      return;
+    }
+
+    // Extract text depending on element type
+    const text =
+      element.tagName === "INPUT" || element.tagName === "TEXTAREA"
+        ? element.value
+        : element.textContent;
+
+    const direction = detectDirection(text);
+
+    // Apply classes conditionally to minimize layout/repaint loops
+    if (direction === "rtl") {
+      if (!element.classList.contains("text-rtl")) {
+        element.classList.remove("text-ltr");
+        element.classList.add("text-rtl");
+      }
+    } else {
+      if (!element.classList.contains("text-ltr")) {
+        element.classList.remove("text-rtl");
+        element.classList.add("text-ltr");
+      }
+    }
+  }
+
+  /**
+   * Scans a specific container element and updates all matching child nodes.
+   * Call this explicitly inside your quiz rendering cycles.
+   * @param {HTMLElement} container
+   */
+  function scan(container = document) {
+    const elements = container.querySelectorAll(TARGET_SELECTORS);
+    elements.forEach(processElement);
+  }
+
+  /**
+   * Initializes real-time text-change listeners and fallback MutationObservers.
+   */
+  function init() {
+    // 1. Real-time User Input Tracking (for Essay Workspace inputs)
+    document.addEventListener("input", (event) => {
+      if (
+        event.target &&
+        event.target.matches('.essay-textarea, input[type="text"]')
+      ) {
+        processElement(event.target);
+      }
+    });
+
+    // 2. Automated Observer Fallback to handle async question content swaps
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        // Handle elements added dynamically
+        if (mutation.addedNodes.length) {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.matches(TARGET_SELECTORS)) {
+                processElement(node);
+              }
+              scan(node);
+            }
+          });
+        }
+        // Handle raw text modifications inside nodes
+        if (mutation.type === "characterData") {
+          const parent = mutation.target.parentElement;
+          if (parent && parent.closest(TARGET_SELECTORS)) {
+            processElement(parent.closest(TARGET_SELECTORS));
+          }
+        }
+      });
+    });
+
+    // Start observing the main DOM structure defensively
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  return {
+    init,
+    scan,
+    detectDirection,
+  };
+})();
+
+// Autostart core global interactions when script evaluates
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () =>
+    TextDirectionEngine.init(),
+  );
+} else {
+  TextDirectionEngine.init();
 }
 
 const maybeAutoSubmit = () => {
