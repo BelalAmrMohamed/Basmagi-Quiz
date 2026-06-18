@@ -11,30 +11,20 @@
   },
   "stats": {
     "questionCount": 11,
-    "questionTypes": [
-      "Essay",
-      "MCQ",
-      "True/False"
-    ]
+    "questionTypes": ["Essay", "MCQ", "True/False"]
   },
   "questions": [
     {
       "q": "المنصة تدعم أسئلة صح **وخطأ**",
       "lang": "ar",
-      "options": [
-        "صح",
-        "خطأ"
-      ],
-      "correct": 1
+      "options": ["صح", "خطأ"],
+      "correct": 1,
+      "explanation": "نعم إنها كذلك ^_^"
     },
     {
       "q": "المنصة تدعم أسئلة متعددة الإختيارات ، بأي عدد من الإختيارات",
       "lang": "ar",
-      "options": [
-        "الإختيار الأول",
-        "**_الإختيار الثاني_**",
-        "الإختيار الثالث"
-      ],
+      "options": ["الإختيار الأول", "**_الإختيار الثاني_**", "الإختيار الثالث"],
       "correct": 1
     },
     {
@@ -46,21 +36,20 @@
       "q": "If it's an English Quiz, you can wrap your passage beautfully. The platform also supports markdown features. Like this awesome `code block`:\n```csharp\nusing System;\n\nclass Program\n{\n    static void Main(string[] args)\n    {\n        Console.WriteLine(\"Hello, World!\");\n    }\n}\n```",
       "passage": "## This is **Bold** Text\n\nThis is *Italic* Text\n\n## This is a Heading\n\n### This is a smaller Heading\n\n#### This is an even smaller Heading\n\n##### This is an even smaller Heading\n\n###### This is an even smaller Heading\n\nThis is a blockquote:\n\n> This is a blockquote\n\nThis is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
       "lang": "en",
-      "options": [
-        "Cool! ^_^",
-        "It's not cool ;("
-      ],
-      "correct": 0
+      "options": ["Cool! ^_^", "It's not cool ;("],
+      "correct": 0,
+      "explanation": "Yes, it is cool indeed, ^_^"
     },
     {
       "q": "It also Supports advanced LaTeX math notations, because it uses the KaTeX library to render them!\n\nWhat is the result of the next advanced equation?\n\n$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
       "lang": "en",
       "options": [
-        "$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
-        "$$\\frac{n(n+1)}{2}$$",
-        "$$\\sum_{i=1}^{n} i = \\frac{n(n-1)}{2}$$"
+        "$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$",
+        "$\\frac{n(n+1)}{2}$",
+        "$\\sum_{i=1}^{n} i = \\frac{n(n-1)}{2}$"
       ],
-      "correct": 0
+      "correct": 0,
+      "explanation": "The correct answer is $\\frac{n(n+1)}{2}$"
     },
     {
       "q": "The website also supports images, this image shows a star network topology\n\nAnd the Website also supports defining the language of the whole quiz, or for each question individually.",
@@ -80,10 +69,7 @@
       "audio": "https://server10.mp3quran.net/minsh/001.mp3",
       "lang": "ar",
       "explanation": "نعم إنه كذلك، ورائع بالفعل",
-      "options": [
-        "صحيح",
-        "خطأ"
-      ],
+      "options": ["صحيح", "خطأ"],
       "correct": 0
     },
     {
@@ -91,20 +77,14 @@
       "video": "./assets/quiz-media/TEST_1/Part_1.mp4",
       "lang": "en",
       "explanation": "Yes it's **True**, it is **cool**",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0
     },
     {
       "q": "Basmagi Quiz Platform supports Youtube videos too!",
       "video": "https://www.youtube.com/watch?v=WsY9rVET_XM",
       "lang": "en",
-      "options": [
-        "True",
-        "False"
-      ],
+      "options": ["True", "False"],
       "correct": 0
     },
     {
@@ -127,10 +107,7 @@
     {
       "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الإمتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الإمتحان. أليست ميزة رائعة؟",
       "lang": "ar",
-      "options": [
-        "نعم",
-        "لا"
-      ],
+      "options": ["نعم", "لا"],
       "correct": 0
     }
   ]
