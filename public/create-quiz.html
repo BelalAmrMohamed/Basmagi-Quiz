@@ -90,6 +90,7 @@
          canonical npm release unmodified. -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- Theme Controller Script -->
@@ -462,17 +463,18 @@
                     <div class="option-cards">
                         <label class="option-card selected">
                             <input type="radio" name="quizPrivacy" value="public" checked
-                                onchange="togglePrivacySettings()">
+                                onchange="updateOptionCards(this); togglePrivacySettings();">
                             <div class="option-card-content">
                                 <div class="option-card-title">عام (Public)</div>
                                 <div class="option-card-desc">متاح لجميع الطلاب</div>
                             </div>
                         </label>
                         <label class="option-card">
-                            <input type="radio" name="quizPrivacy" value="private" onchange="togglePrivacySettings()">
+                            <input type="radio" name="quizPrivacy" value="private"
+                                onchange="updateOptionCards(this); togglePrivacySettings();">
                             <div class="option-card-content">
                                 <div class="option-card-title">خاص (Private)</div>
-                                <div class="option-card-desc">يتطلب إذن للوصول أو كلمة مرور</div>
+                                <div class="option-card-desc">يتطلب كلمة مرور</div>
                             </div>
                         </label>
                     </div>
@@ -485,15 +487,6 @@
                         <input type="text" id="quizPassword" class="ltr" placeholder="أدخل كلمة المرور..."
                             aria-describedby="passwordHelp">
                         <small id="passwordHelp">إذا تم تعيينها، يمكن لأي شخص يمتلك كلمة المرور الدخول للاختبار</small>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="quizAllowedEmails">قائمة البريد الإلكتروني المسموح (اختياري)</label>
-                        <textarea id="quizAllowedEmails" rows="3" class="ltr"
-                            placeholder="student1@example.com&#10;student2@example.com"
-                            aria-describedby="emailsHelp"></textarea>
-                        <small id="emailsHelp">أدخل كل بريد إلكتروني في سطر منفصل. هؤلاء الطلاب يمكنهم الدخول بدون كلمة
-                            مرور بعد تسجيل الدخول.</small>
                     </div>
                 </div>
             </div>

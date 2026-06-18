@@ -42,6 +42,36 @@ let isTemplatesPanelOpen = false;
 let editingQuizId = null;
 
 // ============================================================================
+// LATEX / KATEX RENDERING
+// ============================================================================
+
+/**
+ * Scan a container for LaTeX delimiters ($...$ inline, $$...$$ block) and
+ * render them in place with KaTeX. Safe to call even if KaTeX or the
+ * auto-render extension haven't loaded yet (e.g. slow CDN) — it just no-ops.
+ * Call this AFTER any innerHTML update that may contain raw markdown/LaTeX
+ * source, so the DOM nodes actually exist for KaTeX to walk and replace.
+ */
+function renderMathIn(container) {
+  if (!container) return;
+  if (typeof window.renderMathInElement !== "function") return;
+  try {
+    window.renderMathInElement(container, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+        { left: "\\(", right: "\\)", display: false },
+        { left: "\\[", right: "\\]", display: true },
+      ],
+      throwOnError: false,
+      ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
+    });
+  } catch (err) {
+    console.error("KaTeX rendering error:", err);
+  }
+}
+
+// ============================================================================
 // MARKDOWN & INLINE EDITOR SYSTEM
 // ============================================================================
 
@@ -126,6 +156,7 @@ function setupMdEditor(id, onChange) {
     if (val.trim()) {
       livePreview.innerHTML = `<div class="md-live-preview-inner">${renderMarkdown(normalizeLiteralNewlines(val))}</div>`;
       livePreview.style.display = "block";
+      renderMathIn(livePreview);
     } else {
       livePreview.innerHTML = "";
       livePreview.style.display = "none";
@@ -137,6 +168,7 @@ function setupMdEditor(id, onChange) {
     if (val.trim()) {
       renderedDiv.innerHTML = renderMarkdown(normalizeLiteralNewlines(val));
       renderedDiv.classList.remove("md-empty");
+      renderMathIn(renderedDiv);
     } else {
       renderedDiv.innerHTML = `<span class="md-placeholder">${source.placeholder}</span>`;
       renderedDiv.classList.add("md-empty");
@@ -638,6 +670,7 @@ function renderQuestion(question, insertAtIndex = null) {
 
   setupQuestionEventListeners(question.id);
   setupDragAndDrop(questionCard);
+  renderMathIn(questionCard);
 
   // Load image preview if exists
   if (question.image) {
@@ -1569,8 +1602,12 @@ function loadDraftFromLocalStorage() {
           );
           if (data.meta.privacy === "private" && privRadio) {
             privRadio.checked = true;
+            if (typeof updateOptionCards === "function")
+              updateOptionCards(privRadio);
           } else if (pubRadio) {
             pubRadio.checked = true;
+            if (typeof updateOptionCards === "function")
+              updateOptionCards(pubRadio);
           }
           if (typeof togglePrivacySettings === "function")
             togglePrivacySettings();
@@ -1578,10 +1615,6 @@ function loadDraftFromLocalStorage() {
         if (data.meta.password) {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = data.meta.password;
-        }
-        if (data.meta.allowedEmails && Array.isArray(data.meta.allowedEmails)) {
-          const emailsEl = document.getElementById("quizAllowedEmails");
-          if (emailsEl) emailsEl.value = data.meta.allowedEmails.join("\n");
         }
         const langEl = document.getElementById("quizLang");
         if (langEl)
@@ -1676,8 +1709,12 @@ function loadQuizFromLocalStorage(quizId) {
           );
           if (quiz.meta.privacy === "private" && privRadio) {
             privRadio.checked = true;
+            if (typeof updateOptionCards === "function")
+              updateOptionCards(privRadio);
           } else if (pubRadio) {
             pubRadio.checked = true;
+            if (typeof updateOptionCards === "function")
+              updateOptionCards(pubRadio);
           }
           if (typeof togglePrivacySettings === "function")
             togglePrivacySettings();
@@ -1685,10 +1722,6 @@ function loadQuizFromLocalStorage(quizId) {
         if (quiz.meta.password) {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = quiz.meta.password;
-        }
-        if (quiz.meta.allowedEmails && Array.isArray(quiz.meta.allowedEmails)) {
-          const emailsEl = document.getElementById("quizAllowedEmails");
-          if (emailsEl) emailsEl.value = quiz.meta.allowedEmails.join("\n");
         }
         const langEl = document.getElementById("quizLang");
         if (langEl)
@@ -1793,13 +1826,6 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   if (privacyVal === "private") {
     const pwd = document.getElementById("quizPassword")?.value?.trim();
     if (pwd) meta.password = pwd;
-
-    const emailsRaw = document.getElementById("quizAllowedEmails")?.value || "";
-    const emails = emailsRaw
-      .split("\n")
-      .map((e) => e.trim())
-      .filter((e) => e);
-    if (emails.length > 0) meta.allowedEmails = emails;
   }
 
   const langVal = document.getElementById("quizLang")?.value;
@@ -1936,14 +1962,6 @@ window.exportQuiz = function () {
           if (privacyVal === "private") {
             const pwd = document.getElementById("quizPassword")?.value?.trim();
             if (pwd) exportMeta.password = pwd;
-
-            const emailsRaw =
-              document.getElementById("quizAllowedEmails")?.value || "";
-            const emails = emailsRaw
-              .split("\n")
-              .map((e) => e.trim())
-              .filter((e) => e);
-            if (emails.length > 0) exportMeta.allowedEmails = emails;
           }
 
           const langVal = document.getElementById("quizLang")?.value;
@@ -2235,6 +2253,7 @@ window.previewQuiz = function () {
 
   content.innerHTML = html;
   modal.style.display = "flex";
+  renderMathIn(content);
 };
 
 window.closePreview = function () {

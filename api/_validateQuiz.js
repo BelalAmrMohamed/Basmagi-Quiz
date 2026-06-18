@@ -20,7 +20,6 @@ const ALLOWED_META_KEYS = new Set([
   // Phase 2 — access control & default settings
   "privacy",
   "password",
-  "allowedEmails",
   "lang",
   "view",
   "mode",
@@ -181,9 +180,6 @@ export function validateQuizPayload(raw) {
   if (meta.password !== undefined && typeof meta.password !== "string") {
     throw new Error("INVALID_META_FIELD: password must be a string");
   }
-  if (meta.allowedEmails !== undefined && !Array.isArray(meta.allowedEmails)) {
-    throw new Error("INVALID_META_FIELD: allowedEmails must be an array");
-  }
   if (meta.lang !== undefined && typeof meta.lang !== "string") {
     throw new Error("INVALID_META_FIELD: lang must be a string");
   }
@@ -192,13 +188,6 @@ export function validateQuizPayload(raw) {
   }
   if (meta.mode !== undefined && typeof meta.mode !== "string") {
     throw new Error("INVALID_META_FIELD: mode must be a string");
-  }
-
-  // Sanitize allowedEmails if present
-  if (Array.isArray(meta.allowedEmails)) {
-    meta.allowedEmails = meta.allowedEmails.filter(
-      (email) => typeof email === "string" && email.trim() !== "",
-    );
   }
 
   // ── 5. Validate questions ───────────────────────────────────────────────────
