@@ -3,21 +3,21 @@
  *
  * Shared Markdown + KaTeX visual styles.
  * Import on every page that uses markdown-handler.js:
- *   quiz.html   → after quiz.css
- *   result.html → after result.css
+ * quiz.html   → after quiz.css
+ * result.html → after result.css
  *
  * Tokens used (all defined in themes.css):
- *   --color-primary          --color-border        --color-border-light
- *   --color-text-primary     --color-text-secondary
- *   --color-background       --color-background-secondary
- *   --color-primary-light    --shadow-sm  --shadow-md
- *   --color-success          --color-error
+ * --color-primary          --color-border        --color-border-light
+ * --color-text-primary     --color-text-secondary
+ * --color-background       --color-background-secondary
+ * --color-primary-light    --shadow-sm  --shadow-md
+ * --color-success          --color-error
  *
  * Glassmorphism recipe (shared across tables and copy buttons):
- *   background: rgba(…, 0.06–0.12)
- *   backdrop-filter: blur(12px)
- *   border: 1px solid rgba(…, 0.14)
- *   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-sm)
+ * background: rgba(…, 0.06–0.12)
+ * backdrop-filter: blur(12px)
+ * border: 1px solid rgba(…, 0.14)
+ * box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-sm)
  */
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -415,7 +415,7 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
    * Scroll-shadow technique: CSS-only affordance that appears at the edges
    * only when there is content to scroll.
    * background-attachment: local  — the gradient moves with scroll,
-   *                                 disappearing when the edge is reached.
+   * disappearing when the edge is reached.
    * background-attachment: scroll — fixed to the viewport, always visible.
    */
   background-image:
@@ -609,4 +609,176 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
     padding: 8px 12px;
     font-size: 0.85rem;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SYNTAX HIGHLIGHTING TOKENS  (used by highlightCode() in markdown.js)
+   ══════════════════════════════════════════════════════════════════════════════
+   Token classes:
+     .sh-keyword    — language keywords (if, return, class, …)
+     .sh-string     — string/template literals
+     .sh-number     — numeric literals
+     .sh-comment    — line and block comments
+     .sh-function   — function / method call identifiers
+     .sh-type       — PascalCase type / class names
+     .sh-builtin    — well-known built-ins (console, Math, …)
+     .sh-operator   — operators (+ - * / = < > … )
+     .sh-attr       — HTML attrs / object properties
+     .sh-property   — object properties (alias of sh-attr)
+     .sh-tag        — HTML / XML tag names
+     .sh-variable   — CSS custom properties (--foo)
+     .sh-interp     — template-literal interpolation delimiters ${ }
+     .sh-interp-body— expression inside ${ }
+
+   Colours are tuned for a dark background (the default .code-block uses
+   a near-black bg).  A separate [data-theme="light"] block overrides them
+   for light mode.  The palette is intentionally cohesive with the primary
+   colour (#6366f1 indigo / Catppuccin-inspired) used elsewhere in the UI.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Default / Dark palette ─────────────────────────────────────────────────── */
+
+.code-block .sh-keyword {
+  color: #c792ea; /* soft violet  — keywords */
+  font-weight: 600;
+}
+
+.code-block .sh-string {
+  color: #a3e635; /* lime green   — string contents */
+}
+
+.code-block .sh-number {
+  color: #f9a8d4; /* pink         — numeric literals */
+}
+
+.code-block .sh-comment {
+  color: #6b7280; /* muted grey   — comments */
+  font-style: italic;
+}
+
+.code-block .sh-function {
+  color: #7dd3fc; /* sky blue     — function / method calls */
+}
+
+.code-block .sh-type {
+  color: #fbbf24; /* amber        — PascalCase type / class names */
+}
+
+.code-block .sh-builtin {
+  color: #fb923c; /* orange       — built-in globals (console, Math, …) */
+}
+
+.code-block .sh-operator {
+  color: #94a3b8; /* slate        — operators */
+}
+
+.code-block .sh-attr,
+.code-block .sh-property {
+  color: #7dd3fc; /* sky blue     — HTML attrs / Properties / JSON keys */
+}
+
+.code-block .sh-tag {
+  color: #f472b6; /* hot pink     — HTML/XML tag names */
+}
+
+.code-block .sh-variable {
+  color: #a78bfa; /* violet       — CSS custom properties */
+}
+
+.code-block .sh-interp {
+  color: #f97316; /* amber-orange — ${ } delimiters */
+  font-weight: 700;
+}
+
+.code-block .sh-interp-body {
+  color: #e2e8f0; /* near-white   — expression inside ${} */
+}
+
+/* ── Light-theme overrides ───────────────────────────────────────────────────── */
+
+[data-theme="light"] .code-block .sh-keyword {
+  color: #7c3aed; /* deep violet */
+  font-weight: 600;
+}
+
+[data-theme="light"] .code-block .sh-string {
+  color: #16a34a; /* forest green */
+}
+
+[data-theme="light"] .code-block .sh-number {
+  color: #db2777; /* deep pink */
+}
+
+[data-theme="light"] .code-block .sh-comment {
+  color: #9ca3af; /* mid grey */
+  font-style: italic;
+}
+
+[data-theme="light"] .code-block .sh-function {
+  color: #0369a1; /* ocean blue */
+}
+
+[data-theme="light"] .code-block .sh-type {
+  color: #b45309; /* dark amber */
+}
+
+[data-theme="light"] .code-block .sh-builtin {
+  color: #c2410c; /* burnt orange */
+}
+
+[data-theme="light"] .code-block .sh-operator {
+  color: #475569; /* dark slate */
+}
+
+[data-theme="light"] .code-block .sh-attr,
+[data-theme="light"] .code-block .sh-property {
+  color: #0369a1; /* ocean blue */
+}
+
+[data-theme="light"] .code-block .sh-tag {
+  color: #be185d; /* deep pink */
+}
+
+[data-theme="light"] .code-block .sh-variable {
+  color: #6d28d9; /* indigo */
+}
+
+[data-theme="light"] .code-block .sh-interp {
+  color: #ea580c; /* burnt orange */
+  font-weight: 700;
+}
+
+[data-theme="light"] .code-block .sh-interp-body {
+  color: #334155; /* dark slate */
+}
+
+/* ── Dark-slate theme (mirrors dark but slightly warmer) ─────────────────────── */
+
+[data-theme="dark-slate"] .code-block .sh-keyword {
+  color: #d8b4fe;
+  font-weight: 600;
+}
+
+[data-theme="dark-slate"] .code-block .sh-string {
+  color: #86efac;
+}
+
+[data-theme="dark-slate"] .code-block .sh-number {
+  color: #f9a8d4;
+}
+
+[data-theme="dark-slate"] .code-block .sh-function {
+  color: #93c5fd;
+}
+
+[data-theme="dark-slate"] .code-block .sh-type {
+  color: #fcd34d;
+}
+
+[data-theme="dark-slate"] .code-block .sh-builtin {
+  color: #fdba74;
+}
+
+[data-theme="dark-slate"] .code-block .sh-tag {
+  color: #f9a8d4;
 }

@@ -6,12 +6,12 @@
  * page-specific logic here.
  *
  * Exports:
- *   renderMarkdown(str)            → HTML string
- *   normalizeLiteralNewlines(str)  → string with real \n chars
+ * renderMarkdown(str)            → HTML string
+ * normalizeLiteralNewlines(str)  → string with real \n chars
  *
  * Side-effects on first import:
- *   • window.copyCodeBlock is registered so inline onclick="…"
- *     attributes on copy buttons can reach it across any page.
+ * • window.copyCodeBlock is registered so inline onclick="…"
+ * attributes on copy buttons can reach it across any page.
  */
 
 // ─── 1. Utility: normalise literal \n two-char sequences ──────────────────────
@@ -152,7 +152,1177 @@ window.copyCodeBlock = (btn) => {
     });
 };
 
-// ─── 6. Core renderer ─────────────────────────────────────────────────────────
+// ─── 6. Syntax highlighter ────────────────────────────────────────────────────
+// Zero-dependency tokeniser that emits <span class="sh-*"> tokens.
+// Supports: js/ts, python, css, html/xml, bash/sh, json, sql, java, c/cpp, go,
+//           rust, ruby, swift, kotlin, php, csharp, yaml, and plain text.
+//
+// Strategy: single-pass regex alternation on raw (un-escaped) code.
+// Each branch is mutually exclusive and tried in priority order.
+// The function returns HTML-escaped, span-wrapped text ready for innerHTML.
+
+const _HL_KEYWORDS = {
+  js: new Set([
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "of",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "async",
+    "await",
+    "from",
+    "as",
+    "null",
+    "undefined",
+    "true",
+    "false",
+    "this",
+  ]),
+  ts: new Set([
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "of",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "throw",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "async",
+    "await",
+    "from",
+    "as",
+    "null",
+    "undefined",
+    "true",
+    "false",
+    "this",
+    "type",
+    "interface",
+    "enum",
+    "implements",
+    "declare",
+    "namespace",
+    "abstract",
+    "readonly",
+    "keyof",
+    "infer",
+    "never",
+    "any",
+    "unknown",
+    "object",
+  ]),
+  python: new Set([
+    "False",
+    "None",
+    "True",
+    "and",
+    "as",
+    "assert",
+    "async",
+    "await",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "nonlocal",
+    "not",
+    "or",
+    "pass",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
+    "self",
+    "cls",
+  ]),
+  java: new Set([
+    "abstract",
+    "assert",
+    "boolean",
+    "break",
+    "byte",
+    "case",
+    "catch",
+    "char",
+    "class",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extends",
+    "final",
+    "finally",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "implements",
+    "import",
+    "instanceof",
+    "int",
+    "interface",
+    "long",
+    "native",
+    "new",
+    "null",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "short",
+    "static",
+    "strictfp",
+    "super",
+    "switch",
+    "synchronized",
+    "this",
+    "throw",
+    "throws",
+    "transient",
+    "try",
+    "void",
+    "volatile",
+    "while",
+    "true",
+    "false",
+  ]),
+  csharp: new Set([
+    "abstract",
+    "as",
+    "base",
+    "bool",
+    "break",
+    "byte",
+    "case",
+    "catch",
+    "char",
+    "checked",
+    "class",
+    "const",
+    "continue",
+    "decimal",
+    "default",
+    "delegate",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "event",
+    "explicit",
+    "extern",
+    "false",
+    "finally",
+    "fixed",
+    "float",
+    "for",
+    "foreach",
+    "goto",
+    "if",
+    "implicit",
+    "in",
+    "int",
+    "interface",
+    "internal",
+    "is",
+    "lock",
+    "long",
+    "namespace",
+    "new",
+    "null",
+    "object",
+    "operator",
+    "out",
+    "override",
+    "params",
+    "private",
+    "protected",
+    "public",
+    "readonly",
+    "ref",
+    "return",
+    "sbyte",
+    "sealed",
+    "short",
+    "sizeof",
+    "stackalloc",
+    "static",
+    "string",
+    "struct",
+    "switch",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typeof",
+    "uint",
+    "ulong",
+    "unchecked",
+    "unsafe",
+    "ushort",
+    "using",
+    "virtual",
+    "void",
+    "volatile",
+    "while",
+    "add",
+    "alias",
+    "and",
+    "ascending",
+    "async",
+    "await",
+    "by",
+    "descending",
+    "dynamic",
+    "equals",
+    "file",
+    "from",
+    "get",
+    "global",
+    "group",
+    "init",
+    "into",
+    "join",
+    "let",
+    "managed",
+    "nameof",
+    "nint",
+    "not",
+    "notnull",
+    "nuint",
+    "on",
+    "or",
+    "orderby",
+    "partial",
+    "record",
+    "remove",
+    "required",
+    "scoped",
+    "select",
+    "set",
+    "unmanaged",
+    "value",
+    "var",
+    "when",
+    "where",
+    "with",
+    "yield",
+  ]),
+  c: new Set([
+    "auto",
+    "break",
+    "case",
+    "char",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extern",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "inline",
+    "int",
+    "long",
+    "register",
+    "restrict",
+    "return",
+    "short",
+    "signed",
+    "sizeof",
+    "static",
+    "struct",
+    "switch",
+    "typedef",
+    "union",
+    "unsigned",
+    "void",
+    "volatile",
+    "while",
+    "NULL",
+    "true",
+    "false",
+  ]),
+  go: new Set([
+    "break",
+    "case",
+    "chan",
+    "const",
+    "continue",
+    "default",
+    "defer",
+    "else",
+    "fallthrough",
+    "for",
+    "func",
+    "go",
+    "goto",
+    "if",
+    "import",
+    "interface",
+    "map",
+    "package",
+    "range",
+    "return",
+    "select",
+    "struct",
+    "switch",
+    "type",
+    "var",
+    "nil",
+    "true",
+    "false",
+    "iota",
+  ]),
+  rust: new Set([
+    "as",
+    "async",
+    "await",
+    "break",
+    "const",
+    "continue",
+    "crate",
+    "dyn",
+    "else",
+    "enum",
+    "extern",
+    "false",
+    "fn",
+    "for",
+    "if",
+    "impl",
+    "in",
+    "let",
+    "loop",
+    "match",
+    "mod",
+    "move",
+    "mut",
+    "pub",
+    "ref",
+    "return",
+    "self",
+    "Self",
+    "static",
+    "struct",
+    "super",
+    "trait",
+    "true",
+    "type",
+    "union",
+    "unsafe",
+    "use",
+    "where",
+    "while",
+  ]),
+  ruby: new Set([
+    "BEGIN",
+    "END",
+    "alias",
+    "and",
+    "begin",
+    "break",
+    "case",
+    "class",
+    "def",
+    "defined",
+    "do",
+    "else",
+    "elsif",
+    "end",
+    "ensure",
+    "false",
+    "for",
+    "if",
+    "in",
+    "module",
+    "next",
+    "nil",
+    "not",
+    "or",
+    "redo",
+    "rescue",
+    "retry",
+    "return",
+    "self",
+    "super",
+    "then",
+    "true",
+    "undef",
+    "unless",
+    "until",
+    "when",
+    "while",
+    "yield",
+  ]),
+  kotlin: new Set([
+    "as",
+    "break",
+    "class",
+    "continue",
+    "do",
+    "else",
+    "false",
+    "for",
+    "fun",
+    "if",
+    "in",
+    "interface",
+    "is",
+    "null",
+    "object",
+    "package",
+    "return",
+    "super",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typealias",
+    "typeof",
+    "val",
+    "var",
+    "when",
+    "while",
+    "by",
+    "catch",
+    "constructor",
+    "delegate",
+    "dynamic",
+    "field",
+    "file",
+    "finally",
+    "get",
+    "import",
+    "init",
+    "param",
+    "property",
+    "receiver",
+    "set",
+    "setparam",
+    "where",
+    "actual",
+    "abstract",
+    "annotation",
+    "companion",
+    "crossinline",
+    "data",
+    "enum",
+    "expect",
+    "external",
+    "final",
+    "infix",
+    "inline",
+    "inner",
+    "internal",
+    "lateinit",
+    "noinline",
+    "open",
+    "operator",
+    "out",
+    "override",
+    "private",
+    "protected",
+    "public",
+    "reified",
+    "sealed",
+    "suspend",
+    "tailrec",
+    "vararg",
+  ]),
+  swift: new Set([
+    "associatedtype",
+    "class",
+    "deinit",
+    "enum",
+    "extension",
+    "fileprivate",
+    "func",
+    "import",
+    "init",
+    "inout",
+    "internal",
+    "let",
+    "open",
+    "operator",
+    "private",
+    "precedencegroup",
+    "protocol",
+    "public",
+    "rethrows",
+    "static",
+    "struct",
+    "subscript",
+    "typealias",
+    "var",
+    "break",
+    "case",
+    "catch",
+    "continue",
+    "default",
+    "defer",
+    "do",
+    "else",
+    "fallthrough",
+    "for",
+    "guard",
+    "if",
+    "in",
+    "repeat",
+    "return",
+    "throw",
+    "switch",
+    "where",
+    "while",
+    "Any",
+    "as",
+    "catch",
+    "false",
+    "is",
+    "nil",
+    "rethrows",
+    "self",
+    "Self",
+    "super",
+    "throw",
+    "throws",
+    "true",
+    "try",
+  ]),
+  php: new Set([
+    "abstract",
+    "and",
+    "array",
+    "as",
+    "break",
+    "callable",
+    "case",
+    "catch",
+    "class",
+    "clone",
+    "const",
+    "continue",
+    "declare",
+    "default",
+    "die",
+    "do",
+    "echo",
+    "else",
+    "elseif",
+    "empty",
+    "enddeclare",
+    "endfor",
+    "endforeach",
+    "endif",
+    "endswitch",
+    "endwhile",
+    "eval",
+    "exit",
+    "extends",
+    "final",
+    "finally",
+    "fn",
+    "for",
+    "foreach",
+    "function",
+    "global",
+    "goto",
+    "if",
+    "implements",
+    "include",
+    "include_once",
+    "instanceof",
+    "insteadof",
+    "interface",
+    "isset",
+    "list",
+    "match",
+    "namespace",
+    "new",
+    "or",
+    "print",
+    "private",
+    "protected",
+    "public",
+    "readonly",
+    "require",
+    "require_once",
+    "return",
+    "static",
+    "switch",
+    "throw",
+    "trait",
+    "try",
+    "unset",
+    "use",
+    "var",
+    "while",
+    "xor",
+    "yield",
+    "null",
+    "true",
+    "false",
+  ]),
+  sql: new Set([
+    "SELECT",
+    "FROM",
+    "WHERE",
+    "AND",
+    "OR",
+    "NOT",
+    "INSERT",
+    "INTO",
+    "VALUES",
+    "UPDATE",
+    "SET",
+    "DELETE",
+    "CREATE",
+    "TABLE",
+    "ALTER",
+    "ADD",
+    "DROP",
+    "INDEX",
+    "VIEW",
+    "DATABASE",
+    "PRIMARY",
+    "KEY",
+    "FOREIGN",
+    "REFERENCES",
+    "UNIQUE",
+    "CHECK",
+    "DEFAULT",
+    "CONSTRAINT",
+    "JOIN",
+    "INNER",
+    "LEFT",
+    "RIGHT",
+    "FULL",
+    "OUTER",
+    "ON",
+    "GROUP",
+    "BY",
+    "HAVING",
+    "ORDER",
+    "ASC",
+    "DESC",
+    "LIMIT",
+    "OFFSET",
+    "UNION",
+    "ALL",
+    "DISTINCT",
+    "AS",
+    "IN",
+    "IS",
+    "NULL",
+    "LIKE",
+    "BETWEEN",
+    "EXISTS",
+    "CASE",
+    "WHEN",
+    "THEN",
+    "ELSE",
+    "END",
+    "WITH",
+    "OVER",
+    "PARTITION",
+    "FUNCTION",
+    "PROCEDURE",
+    "BEGIN",
+    "COMMIT",
+    "ROLLBACK",
+    "TRANSACTION",
+    "COUNT",
+    "SUM",
+    "AVG",
+    "MIN",
+    "MAX",
+    "COALESCE",
+    "CAST",
+    "CONVERT",
+    "CONCAT",
+  ]),
+  bash: new Set([
+    "if",
+    "then",
+    "else",
+    "elif",
+    "fi",
+    "for",
+    "in",
+    "do",
+    "done",
+    "while",
+    "until",
+    "case",
+    "esac",
+    "function",
+    "return",
+    "exit",
+    "break",
+    "continue",
+    "export",
+    "local",
+    "readonly",
+    "declare",
+    "typeset",
+    "unset",
+    "source",
+    "alias",
+    "echo",
+    "printf",
+    "read",
+    "test",
+    "true",
+    "false",
+    "shift",
+    "exec",
+    "eval",
+    "trap",
+    "wait",
+    "kill",
+    "set",
+    "unset",
+  ]),
+};
+
+// Expanded Aliases (Adding complete fallback paths for C#, C++, Python, Ruby, Rust, Go)
+_HL_KEYWORDS.javascript = _HL_KEYWORDS.js;
+_HL_KEYWORDS.typescript = _HL_KEYWORDS.ts;
+_HL_KEYWORDS.cpp = _HL_KEYWORDS.c;
+_HL_KEYWORDS["c++"] = _HL_KEYWORDS.c;
+_HL_KEYWORDS.cxx = _HL_KEYWORDS.c;
+_HL_KEYWORDS.sh = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.shell = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.zsh = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.jsx = _HL_KEYWORDS.js;
+_HL_KEYWORDS.tsx = _HL_KEYWORDS.ts;
+_HL_KEYWORDS.cs = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS["c#"] = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS.py = _HL_KEYWORDS.python;
+_HL_KEYWORDS.rb = _HL_KEYWORDS.ruby;
+_HL_KEYWORDS.kt = _HL_KEYWORDS.kotlin;
+_HL_KEYWORDS.rs = _HL_KEYWORDS.rust;
+_HL_KEYWORDS.golang = _HL_KEYWORDS.go;
+
+// JS/TS built-ins worth highlighting
+const _HL_BUILTINS_JS = new Set([
+  "console",
+  "Math",
+  "Object",
+  "Array",
+  "String",
+  "Number",
+  "Boolean",
+  "Promise",
+  "JSON",
+  "Date",
+  "RegExp",
+  "Error",
+  "Map",
+  "Set",
+  "WeakMap",
+  "WeakSet",
+  "Symbol",
+  "Proxy",
+  "Reflect",
+  "Intl",
+  "URL",
+  "fetch",
+  "setTimeout",
+  "setInterval",
+  "clearTimeout",
+  "clearInterval",
+  "parseInt",
+  "parseFloat",
+  "isNaN",
+  "isFinite",
+  "encodeURIComponent",
+  "decodeURIComponent",
+  "document",
+  "window",
+  "navigator",
+]);
+
+/**
+ * Highlight `code` (raw, un-escaped) for the given `lang`.
+ * Returns an HTML string with <span class="sh-*"> wrappers.
+ * Falls back to escHtml(code) for unrecognised languages.
+ */
+export function highlightCode(code, lang) {
+  const langKey = (lang || "").toLowerCase();
+
+  // Languages with no keyword set get plain escaping
+  const isHtmlLike =
+    langKey === "html" || langKey === "xml" || langKey === "svg";
+  const isCss = langKey === "css" || langKey === "scss" || langKey === "less";
+  const isJson = langKey === "json";
+  const keywords = _HL_KEYWORDS[langKey] || null;
+
+  if (!isHtmlLike && !isCss && !isJson && !keywords) {
+    return escHtml(code);
+  }
+
+  // ── HTML / XML highlighter ─────────────────────────────────────────────────
+  if (isHtmlLike) {
+    return (
+      code
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "\x01LT\x01") // temp placeholder
+        // Comments
+        .replace(
+          /&lt;!--[\s\S]*?--&gt;/g,
+          (m) => `<span class="sh-comment">${m}</span>`,
+        )
+        // Tags — do the real tokenising on the raw-ish string
+        .replace(
+          /\x01LT\x01(\/?)([A-Za-z][A-Za-z0-9\-:.]*)([\s\S]*?)(\/?)>/g,
+          (_, slash, tag, attrs, selfClose) => {
+            // Escape attrs
+            const safeAttrs = attrs
+              .replace(/>/g, "&gt;")
+              .replace(
+                /([A-Za-z][A-Za-z0-9\-:.]*)(\s*=\s*)("([^"]*?)"|'([^']*?)')/g,
+                (__, aName, eq, val) =>
+                  `<span class="sh-attr">${escHtml(aName)}</span>` +
+                  escHtml(eq) +
+                  `<span class="sh-string">${escHtml(val)}</span>`,
+              );
+            return (
+              `&lt;` +
+              escHtml(slash) +
+              `<span class="sh-tag">${escHtml(tag)}</span>` +
+              safeAttrs +
+              escHtml(selfClose) +
+              `&gt;`
+            );
+          },
+        )
+        .replace(/\x01LT\x01/g, "&lt;")
+    ); // leftover < not part of a tag
+  }
+
+  // ── CSS highlighter ────────────────────────────────────────────────────────
+  if (isCss) {
+    let out = "";
+    const css = code;
+    let i = 0;
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    while (i < css.length) {
+      // Comments /* … */
+      if (css[i] === "/" && css[i + 1] === "*") {
+        const end = css.indexOf("*/", i + 2);
+        const chunk = end === -1 ? css.slice(i) : css.slice(i, end + 2);
+        out += `<span class="sh-comment">${esc(chunk)}</span>`;
+        i += chunk.length;
+        continue;
+      }
+      // Strings
+      if (css[i] === '"' || css[i] === "'") {
+        const q = css[i];
+        let j = i + 1;
+        while (j < css.length && css[j] !== q) {
+          if (css[j] === "\\") j++;
+          j++;
+        }
+        const chunk = css.slice(i, j + 1);
+        out += `<span class="sh-string">${esc(chunk)}</span>`;
+        i = j + 1;
+        continue;
+      }
+      // Numbers with optional units
+      const numMatch = css
+        .slice(i)
+        .match(
+          /^-?\d+\.?\d*(%|px|em|rem|vw|vh|vmin|vmax|pt|pc|cm|mm|in|deg|rad|turn|s|ms)?/,
+        );
+      if (numMatch && numMatch[0].length > 0 && /\d/.test(numMatch[0][0])) {
+        out += `<span class="sh-number">${esc(numMatch[0])}</span>`;
+        i += numMatch[0].length;
+        continue;
+      }
+      // CSS variables --foo
+      const varMatch = css.slice(i).match(/^--[a-zA-Z][a-zA-Z0-9\-_]*/);
+      if (varMatch) {
+        out += `<span class="sh-variable">${esc(varMatch[0])}</span>`;
+        i += varMatch[0].length;
+        continue;
+      }
+      // Properties / selectors / at-rules
+      const propMatch = css.slice(i).match(/^@[a-zA-Z\-]+/);
+      if (propMatch) {
+        out += `<span class="sh-keyword">${esc(propMatch[0])}</span>`;
+        i += propMatch[0].length;
+        continue;
+      }
+      out += esc(css[i]);
+      i++;
+    }
+    return out;
+  }
+
+  // ── JSON highlighter ───────────────────────────────────────────────────────
+  if (isJson) {
+    return escHtml(code).replace(
+      /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^"\\])*"(\s*:)?|\b(true|false|null)\b|-?\d+\.?\d*([eE][+\-]?\d+)?)/g,
+      (match) => {
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) return `<span class="sh-attr">${match}</span>`;
+          return `<span class="sh-string">${match}</span>`;
+        }
+        if (/true|false/.test(match))
+          return `<span class="sh-keyword">${match}</span>`;
+        if (/null/.test(match))
+          return `<span class="sh-keyword">${match}</span>`;
+        return `<span class="sh-number">${match}</span>`;
+      },
+    );
+  }
+
+  // ── Generic keyword-based highlighter (JS/TS/Python/Java/C/Go/Rust/…) ──────
+  // We iterate char-by-char via a single combined regex to keep ordering strict.
+  const kw = keywords;
+  const isSql = langKey === "sql";
+  const isJsLike = [
+    "js",
+    "ts",
+    "jsx",
+    "tsx",
+    "javascript",
+    "typescript",
+  ].includes(langKey);
+
+  // Regex alternation (order = priority):
+  //  1. Line comment   //…  or  #…  or  --…
+  //  2. Block comment  /* … */
+  //  3. Template literal `…`       (JS/TS only)
+  //  4. Double-quoted string
+  //  5. Single-quoted string
+  //  6. Number (int, float, hex, binary, octal)
+  //  7. Word (identifier/keyword)
+  //  8. Operator
+  //  9. Everything else (1 char)
+  const TOKEN_RE = new RegExp(
+    [
+      // 1. line comment
+      isJsLike
+        ? "(\\/\\/[^\\n]*)"
+        : langKey === "py" ||
+            langKey === "python" ||
+            langKey === "rb" ||
+            langKey === "ruby" ||
+            langKey === "bash" ||
+            langKey === "sh" ||
+            langKey === "shell" ||
+            langKey === "zsh"
+          ? "(#[^\\n]*)"
+          : isSql
+            ? "(--[^\\n]*)"
+            : "(\\/\\/[^\\n]*)",
+      // 2. block comment
+      "(\\/\\*[\\s\\S]*?\\*\\/)",
+      // 3. template literal (JS/TS)
+      isJsLike ? "(`(?:[^`\\\\]|\\\\.)*`)" : null,
+      // 4. double-quoted string
+      '("(?:[^"\\\\]|\\\\.)*")',
+      // 5. single-quoted string
+      "('(?:[^'\\\\]|\\\\.)*')",
+      // 6. number (hex, binary, octal, float, int)
+      "(\\b0[xX][0-9a-fA-F]+\\b|\\b0[bB][01]+\\b|\\b0[oO][0-7]+\\b|-?\\b\\d+\\.?\\d*(?:[eE][+\\-]?\\d+)?\\b)",
+      // 7. identifier / keyword
+      "([A-Za-z_$][A-Za-z0-9_$]*)",
+      // 8. operator
+      "([+\\-*/%&|^~<>!=?:]+)",
+    ]
+      .filter(Boolean)
+      .join("|"),
+    "g",
+  );
+
+  let result = "";
+  let lastIndex = 0;
+
+  for (const m of code.matchAll(TOKEN_RE)) {
+    // Append any plain text gap before this match
+    if (m.index > lastIndex) {
+      result += escHtml(code.slice(lastIndex, m.index));
+    }
+    lastIndex = m.index + m[0].length;
+
+    const tok = m[0];
+
+    // Determine which group fired.
+    // Groups differ by language (JS/TS adds a template-literal capture):
+    //   JS/TS:  [lineComment, blockComment, templateLit, dqString, sqString, num, word, op]
+    //   Others: [lineComment, blockComment,              dqString, sqString, num, word, op]
+    // We use named indices based on whether isJsLike is true.
+    const G = isJsLike
+      ? {
+          lineComment: 1,
+          blockComment: 2,
+          templateLit: 3,
+          dqString: 4,
+          sqString: 5,
+          num: 6,
+          word: 7,
+          op: 8,
+        }
+      : {
+          lineComment: 1,
+          blockComment: 2,
+          templateLit: -1,
+          dqString: 3,
+          sqString: 4,
+          num: 5,
+          word: 6,
+          op: 7,
+        };
+
+    const lineComment = m[G.lineComment];
+    const blockComment = m[G.blockComment];
+    const templateLit = G.templateLit > 0 ? m[G.templateLit] : undefined;
+    const dqString = m[G.dqString];
+    const sqString = m[G.sqString];
+    const num = m[G.num];
+    const word = m[G.word];
+    const op = m[G.op];
+
+    if (lineComment || blockComment) {
+      result += `<span class="sh-comment">${escHtml(tok)}</span>`;
+    } else if (templateLit) {
+      // Highlight interpolations ${…} inside template literals
+      const inner = tok
+        .slice(1, -1)
+        .replace(
+          /(\$\{)([\s\S]*?)(\})/g,
+          (_, open, expr, close) =>
+            `<span class="sh-interp">${escHtml(open)}</span>` +
+            `<span class="sh-interp-body">${escHtml(expr)}</span>` +
+            `<span class="sh-interp">${escHtml(close)}</span>`,
+        );
+      result += `<span class="sh-string">\`${inner}\`</span>`;
+    } else if (dqString || sqString) {
+      result += `<span class="sh-string">${escHtml(tok)}</span>`;
+    } else if (num) {
+      result += `<span class="sh-number">${escHtml(tok)}</span>`;
+    } else if (word) {
+      const check = isSql ? tok.toUpperCase() : tok;
+      if (kw.has(check)) {
+        result += `<span class="sh-keyword">${escHtml(tok)}</span>`;
+      } else if (isJsLike && _HL_BUILTINS_JS.has(tok)) {
+        result += `<span class="sh-builtin">${escHtml(tok)}</span>`;
+      } else {
+        // Lookahead and Lookbehind for object properties and function calls
+        const after = code[lastIndex];
+        const before = m.index > 0 ? code[m.index - 1] : "";
+
+        if (after === "(") {
+          result += `<span class="sh-function">${escHtml(tok)}</span>`;
+        } else if (/[A-Z]/.test(tok[0]) && !isSql) {
+          // PascalCase → type/class name
+          result += `<span class="sh-type">${escHtml(tok)}</span>`;
+        } else if (before === ".") {
+          // Preceded by dot → object property
+          result += `<span class="sh-property">${escHtml(tok)}</span>`;
+        } else {
+          result += escHtml(tok);
+        }
+      }
+    } else if (op) {
+      result += `<span class="sh-operator">${escHtml(tok)}</span>`;
+    } else {
+      result += escHtml(tok);
+    }
+  }
+
+  // Remaining text after last match
+  if (lastIndex < code.length) {
+    result += escHtml(code.slice(lastIndex));
+  }
+
+  return result;
+}
+
+// ─── 7. Core renderer ─────────────────────────────────────────────────────────
 export function _renderMarkdownCore(str) {
   const stash = [];
   const stashPush = (html) => {
@@ -192,24 +1362,30 @@ export function _renderMarkdownCore(str) {
 
   // ── Step 2: Fenced code blocks ```lang\n…\n``` ─────────────────────────────
   // Wraps each block in .code-block-wrapper so the Copy button has a parent.
-  str = str.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-    const safe = escHtml(code.trim());
-    const langClass = lang ? ` language-${lang}` : "";
-    const langLabel = lang
-      ? `<span class="code-lang-label">${escHtml(lang)}</span>`
-      : "";
-    return stashPush(
-      `<div class="code-block-wrapper">` +
-        langLabel +
-        `<button class="copy-code-btn" onclick="window.copyCodeBlock(this)" aria-label="Copy code">` +
-        ICON_COPY +
-        `<span class="copy-label">Copy</span>` +
-        `</button>` +
-        `<pre class="code-block ltr${langClass}"><code>${safe}</code></pre>` +
-        `</div>`,
-    );
-  });
+  str = str.replace(
+    /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
+    (_, lang, code) => {
+      const highlighted = highlightCode(code.trim(), lang);
+      const langClass = lang ? ` language-${lang}` : "";
 
+      const langLabel = lang
+        ? `<span class="code-lang-label">${escHtml(lang)}</span>`
+        : "";
+
+      return stashPush(
+        `<div class="code-block-wrapper">` +
+          langLabel +
+          `<button class="copy-code-btn"
+                 onclick="window.copyCodeBlock(this)"
+                 aria-label="Copy code">` +
+          ICON_COPY +
+          `<span class="copy-label">Copy</span>` +
+          `</button>` +
+          `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
+          `</div>`,
+      );
+    },
+  );
   // ── Step 2b: GFM Tables ────────────────────────────────────────────────────
   // Must run BEFORE the line-by-line loop — str.split("\n") would destroy
   // the multi-line table structure.
@@ -280,7 +1456,7 @@ export function _renderMarkdownCore(str) {
     if (/\x00ST\d+\x00/.test(line)) {
       return { type: "stash", html: escapeAroundTokens(line) };
     }
-    // Horizontal rule  ---  ***  ___
+    // Horizontal rule  ---  *** ___
     if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
       return { type: "hr" };
     }
