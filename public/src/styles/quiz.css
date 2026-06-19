@@ -878,6 +878,7 @@ dialog.quiz-info-dialog {
   display: block;
   width: 100%;
   height: 52px;
+  min-width: 300px;
   border-radius: 12px;
   border: 2px solid var(--color-border);
   background: var(--color-surface);
