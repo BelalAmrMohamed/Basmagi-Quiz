@@ -74,12 +74,41 @@ const els = {
   viewToggle: document.getElementById("viewToggle"),
   viewIcon: document.getElementById("viewIcon"),
   viewText: document.getElementById("viewText"),
-  breadcrumb: document.getElementById("quizBreadcrumb"),
-  dateBadge: document.getElementById("dateBadge"),
-  quizDate: document.getElementById("quizDate"),
-  quizDescription: document.getElementById("quizDescription"),
   quizSource: document.getElementById("quizSource"),
+  quizInfoBtn: document.getElementById("quizInfoBtn"),
+  quizInfoDialog: document.getElementById("quizInfoDialog"),
+  quizInfoDialogClose: document.getElementById("quizInfoDialogClose"),
+  quizInfoTable: document.getElementById("quizInfoTable"),
 };
+
+// === Quiz Info Dialog: open / close wiring ===
+(function initInfoDialog() {
+  const btn = els.quizInfoBtn;
+  const dialog = els.quizInfoDialog;
+  const closeBtn = els.quizInfoDialogClose;
+  if (!btn || !dialog) return;
+
+  btn.addEventListener("click", () => {
+    if (typeof dialog.showModal === "function") dialog.showModal();
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => dialog.close());
+  }
+
+  // Close on backdrop click
+  dialog.addEventListener("click", (e) => {
+    const rect = dialog.getBoundingClientRect();
+    const isBackdrop =
+      e.clientX < rect.left ||
+      e.clientX > rect.right ||
+      e.clientY < rect.top ||
+      e.clientY > rect.bottom;
+    if (isBackdrop) dialog.close();
+  });
+
+  // Close on Escape is handled natively by <dialog>
+})();
 
 // === Global handlers ===
 window.finishEarly = () => finish();
@@ -734,7 +763,7 @@ function toggleView() {
 
 // === Breadcrumb Logic ===
 function updateBreadcrumb(meta) {
-  if (!els.breadcrumb || !meta.path) return;
+  if (!meta.path) return { courseName: "", fullBreadcrumb: "" };
 
   const parts = meta.path.split("/");
   let courseName = "";
@@ -752,23 +781,33 @@ function updateBreadcrumb(meta) {
 
   if (!courseName) courseName = meta.category || "";
 
-  const isMobile = window.innerWidth <= 768;
-  const limit = isMobile ? 40 : 60;
+  // The full, untruncated trail — e.g. "IELTS Exams → Cambridge IELTS 2020 → Test 2"
+  const fullBreadcrumb =
+    intermediate.length > 0
+      ? `${courseName} → ${intermediate.join(" → ")}`
+      : courseName;
 
-  let breadcrumbText = "";
+  if (els.breadcrumb) {
+    const isMobile = window.innerWidth <= 768;
+    const limit = isMobile ? 40 : 60;
 
-  if (intermediate.length > 0) {
-    const fullString = `${courseName} → ${intermediate.join(" → ")}`;
-    if (fullString.length > limit) {
-      breadcrumbText = `${courseName} → ... `;
+    let breadcrumbText = "";
+
+    if (intermediate.length > 0) {
+      const fullString = `${courseName} → ${intermediate.join(" → ")}`;
+      if (fullString.length > limit) {
+        breadcrumbText = `${courseName} → ... `;
+      } else {
+        breadcrumbText = fullString;
+      }
     } else {
-      breadcrumbText = fullString;
+      breadcrumbText = `${courseName} `;
     }
-  } else {
-    breadcrumbText = `${courseName} `;
+
+    els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
   }
 
-  els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
+  return { courseName, fullBreadcrumb };
 }
 
 // === OPTIMIZED: Load exam JSON with caching ===
@@ -1006,45 +1045,64 @@ async function init() {
     // Update page title
     document.title = `إمتحان ${metaData.title}`;
 
+    // === Populate Quiz Info Dialog ===
+    (function populateInfoDialog() {
+      const tbody = els.quizInfoTable?.querySelector("tbody");
+      if (!tbody) return;
+
+      // Reuse updateBreadcrumb() itself — it already computes the full
+      // course trail (e.g. "IELTS Exams → Cambridge IELTS 2020 → Test 2").
+      // No separate/duplicate logic here.
+      const { fullBreadcrumb } = updateBreadcrumb(metaData);
+
+      // Normalise the date display
+      const formatDate = (raw) => {
+        if (!raw) return null;
+        let d = String(raw);
+        if (d.includes(",")) d = d.split(",")[0];
+        else if (d.includes(" - ")) d = d.split(" - ")[0];
+        else if (d.includes(" ")) d = d.split(" ")[0];
+        return d || null;
+      };
+
+      // Explicit ordered list of allowed fields — nothing else is ever shown
+      const ROWS = [
+        { label: "العنوان", val: metaData.title },
+        { label: "الوصف", val: metaData.description },
+        { label: "المادة", val: fullBreadcrumb || null },
+        { label: "التاريخ", val: formatDate(metaData.createdAt) },
+        { label: "المصدر", val: metaData.source },
+        { label: "صاحب الإمتحان", val: metaData.author },
+      ].filter((r) => r.val);
+
+      if (!ROWS.length) {
+        tbody.innerHTML = `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
+        return;
+      }
+
+      const isUrl = (s) => /^https?:\/\//i.test(s);
+
+      tbody.innerHTML = ROWS.map(({ label, val }) => {
+        const v = String(val);
+        const displayVal = isUrl(v)
+          ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
+          : escapeHtml(v);
+        return `<tr>
+          <th scope="row">${escapeHtml(label)}</th>
+          <td>${displayVal}</td>
+        </tr>`;
+      }).join("");
+    })();
+
     // Update Title UI
     if (els.title) {
       els.title.textContent = metaData.title || "Quiz";
-    }
 
-    // A. Date Formatting
-    if (metaData.createdAt && els.quizDate && els.dateBadge) {
-      let dateStr = metaData.createdAt;
-      if (dateStr.includes(",")) {
-        dateStr = dateStr.split(",")[0];
-      } else if (dateStr.includes(" - ")) {
-        dateStr = dateStr.split(" - ")[0];
-      } else if (dateStr.includes(" ")) {
-        dateStr = dateStr.split(" ")[0];
-      }
-
-      els.quizDate.textContent = dateStr;
-      els.dateBadge.style.display = "flex";
-      els.dateBadge.style.alignItems = "center";
-    } else if (els.dateBadge) {
-      els.dateBadge.style.display = "none";
-    }
-
-    // B & C. Dynamic Breadcrumb Title
-    if (metaData.path && els.breadcrumb) {
-      updateBreadcrumb(metaData);
-      window.addEventListener("resize", () => updateBreadcrumb(metaData));
-    }
-
-    // D. Description
-    if (metaData.description && els.quizDescription) {
-      els.quizDescription.textContent = metaData.description;
-      els.quizDescription.style.display = "block";
-    }
-
-    // E. Source
-    if (metaData.source && els.quizSource) {
-      els.quizSource.textContent = `Source: ${metaData.source}`;
-      els.quizSource.style.display = "block";
+      //  The styling was applied successfully, but the title still wasn't aligned
+      //  to the right when it was arabic. Probably a styling issue not a logic issue.
+      // const titleDir = detectTextDirection(metaData.title);
+      // els.title.setAttribute("dir", titleDir);
+      // els.title.style.textAlign = titleDir === "rtl" ? "right" : "left";
     }
 
     // Setup Timer
