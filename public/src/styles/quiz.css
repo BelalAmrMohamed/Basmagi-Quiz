@@ -1161,13 +1161,6 @@ body.is-resizing-media .media-container.resizable-media {
   margin-bottom: 18px;
 }
 
-.essay-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  direction: ltr;
-}
-
 .essay-textarea {
   width: 100%;
   min-height: 180px;

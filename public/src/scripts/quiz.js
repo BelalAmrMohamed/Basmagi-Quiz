@@ -1567,7 +1567,6 @@ function buildVerticalQuestionCard(q, idx) {
       <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
         ${header}
         <div class="essay-container">
-          <label for="essayInput-${idx}" class="essay-label">Your Answer:</label>
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
@@ -1794,7 +1793,6 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       html: `
         ${textHeaderHTML}
         <div class="essay-container">
-          <label for="essayInput" class="essay-label">Your Answer:</label>
           <textarea 
             id="essayInput" 
             class="essay-textarea ${isLocked ? "locked" : ""}" 
