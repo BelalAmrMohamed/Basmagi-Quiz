@@ -79,7 +79,7 @@
       "correct": 0
     },
     {
-      "q": "What about so many options in a quiz? The platform can handle it.\n\nWhich programming language is primarily used for Front-End Styling?",
+      "q": "What about so many options in a quiz, with multiple correct options? The platform can handle that, too.\n\nWhich programming languages are primarily used for Front-End development?",
       "options": [
         "HTML",
         "CSS",
@@ -92,7 +92,7 @@
         "Swift",
         "Go"
       ],
-      "correct": 1
+      "correct": [0, 1, 2]
     },
     {
       "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الإمتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الإمتحان. أليست ميزة رائعة؟",

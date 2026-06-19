@@ -1004,6 +1004,7 @@ async function init() {
         path: userQuiz.meta?.path || null,
         description: userQuiz.meta?.description || null,
         source: userQuiz.meta?.source || null,
+        author: userQuiz.meta?.author || null,
       };
     } else {
       // === LOGIC FOR STANDARD EXAM (Original Code) ===
@@ -1035,6 +1036,7 @@ async function init() {
         path: module.meta?.path || null,
         description: module.meta?.description || null,
         source: module.meta?.source || null,
+        author: module.meta?.author || null,
       };
     }
 
@@ -1097,12 +1099,6 @@ async function init() {
     // Update Title UI
     if (els.title) {
       els.title.textContent = metaData.title || "Quiz";
-
-      //  The styling was applied successfully, but the title still wasn't aligned
-      //  to the right when it was arabic. Probably a styling issue not a logic issue.
-      // const titleDir = detectTextDirection(metaData.title);
-      // els.title.setAttribute("dir", titleDir);
-      // els.title.style.textAlign = titleDir === "rtl" ? "right" : "left";
     }
 
     // Setup Timer
@@ -2026,6 +2022,7 @@ const TextDirectionEngine = (() => {
 
   // Selectors targeted for direction adjustment
   const TARGET_SELECTORS = [
+    "#quizTitle",
     ".question-text",
     ".option-label",
     ".feedback",
@@ -2045,6 +2042,15 @@ const TextDirectionEngine = (() => {
     ".question-text--passage",
   ].join(", ");
 
+  // Fixed bilingual UI labels that precede dynamic content inside
+  // .feedback-body / .formal-answer-text wrappers (see renderQuestion()).
+  // These are presentational scaffolding, not actual content, so they
+  // must be stripped before judging direction — otherwise an Arabic
+  // explanation prefixed with the English word "Explanation:" gets
+  // mis-detected as LTR just because of its first character.
+  const LABEL_PREFIX_REGEX =
+    /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal Answer:)\s*/i;
+
   /**
    * Detects the direction of a given text string based on its first strong alphabetical letter.
    * Seamlessly ignores leading spaces, numbers, bullet punctuation, and emojis.
@@ -2054,8 +2060,13 @@ const TextDirectionEngine = (() => {
   function detectDirection(text) {
     if (!text || typeof text !== "string") return "ltr";
 
+    // Strip fixed static labels so they don't skew detection of the
+    // actual (often differently-directioned) content that follows them.
+    const contentOnly = text.replace(LABEL_PREFIX_REGEX, "");
+    const searchText = contentOnly.trim() ? contentOnly : text;
+
     // Find the first true alphabetical letter in Arabic or English
-    const match = text.match(FIRST_STRONG_CHAR_REGEX);
+    const match = searchText.match(FIRST_STRONG_CHAR_REGEX);
     if (match) {
       // If that first real character is Arabic, it's RTL
       return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
@@ -2130,6 +2141,17 @@ const TextDirectionEngine = (() => {
       mutations.forEach((mutation) => {
         // Handle elements added dynamically
         if (mutation.addedNodes.length) {
+          // The mutation target itself may be a tracked element whose
+          // content was just replaced (e.g. via `el.textContent = ...`,
+          // which swaps in a text node rather than an element node, so
+          // it would otherwise be missed by the addedNodes element check below).
+          if (
+            mutation.target.nodeType === Node.ELEMENT_NODE &&
+            mutation.target.matches(TARGET_SELECTORS)
+          ) {
+            processElement(mutation.target);
+          }
+
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (node.matches(TARGET_SELECTORS)) {
@@ -2155,6 +2177,10 @@ const TextDirectionEngine = (() => {
       subtree: true,
       characterData: true,
     });
+
+    // 3. Initial pass to catch content already present before the
+    // observer attached (e.g. static markup rendered before this script ran).
+    scan(document);
   }
 
   return {
