@@ -15,6 +15,8 @@
 export const SHORTCUT_MAP = Object.freeze({
   ArrowRight: "next",
   ArrowLeft: "prev",
+  ArrowDown: "option-next",
+  ArrowUp: "option-prev",
   1: "select-0",
   2: "select-1",
   3: "select-2",
@@ -35,17 +37,111 @@ export const SHORTCUT_MAP = Object.freeze({
 
 /**
  * Returns `true` when keyboard shortcuts should be suppressed:
- *   • The focused element is an INPUT or TEXTAREA (the user is typing).
+ *   • The focused element is a TEXTAREA, or an INPUT the user can type
+ *     into (text, search, etc.) — radio/checkbox inputs are deliberately
+ *     excluded here since ArrowUp/ArrowDown roving focus needs to land on
+ *     exactly those elements to navigate between quiz options; treating
+ *     them as "typing" would re-suppress the very feature that focuses
+ *     them.
  *   • A `.confirmation-overlay.show` element is present in the DOM
  *     (a blocking confirmation dialog is open).
  *
  * @returns {boolean}
  */
 function isSuppressed() {
-  const tag = document.activeElement?.tagName;
-  if (tag === "INPUT" || tag === "TEXTAREA") return true;
+  const el = document.activeElement;
+  const tag = el?.tagName;
+  if (tag === "TEXTAREA") return true;
+  if (tag === "INPUT") {
+    const type = (el.type || "text").toLowerCase();
+    if (type !== "radio" && type !== "checkbox") return true;
+  }
   if (document.querySelector(".confirmation-overlay.show")) return true;
   return false;
+}
+
+/**
+ * Returns the `.question-card` that keyboard interaction should currently
+ * target: whichever one contains the active focus, falling back to the
+ * single `.question-card` present in pagination mode, and falling back
+ * further (vertical mode, nothing focused yet) to the question-card whose
+ * vertical center is closest to the viewport's vertical center — i.e.
+ * "the one the user is actually looking at while scrolling".
+ *
+ * This is the piece that was missing for vertical mode: pagination mode
+ * only ever has one `.question-card` in the DOM, so "the current question"
+ * was never ambiguous. Vertical mode stacks every question's card in the
+ * DOM at once, so without this, keyboard actions had no way to know which
+ * card the user meant other than a stale, scroll-independent `currentIdx`.
+ *
+ * @returns {HTMLElement | null}
+ */
+function getActiveQuestionCard() {
+  const cards = document.querySelectorAll(".question-card");
+  if (cards.length === 0) return null;
+  if (cards.length === 1) return cards[0];
+
+  const focused = document.activeElement?.closest(".question-card");
+  if (focused) return focused;
+
+  const viewportCenter = window.innerHeight / 2;
+  let closest = null;
+  let closestDistance = Infinity;
+  cards.forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    // Skip cards that are entirely off-screen so a question far above or
+    // below an already-scrolled-past card never "wins" by raw distance.
+    if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+    const cardCenter = rect.top + rect.height / 2;
+    const distance = Math.abs(cardCenter - viewportCenter);
+    if (distance < closestDistance) {
+      closestDistance = distance;
+      closest = card;
+    }
+  });
+  return closest || cards[0];
+}
+
+/**
+ * Moves focus between `.option-row` elements within the currently active
+ * question card, wrapping at the ends. Used for ArrowDown/ArrowUp so option
+ * navigation stays local to the question instead of falling through to the
+ * browser's native page-scroll behaviour.
+ *
+ * @param {1 | -1} direction
+ * @returns {boolean} true if focus was actually moved (so the caller knows
+ *   whether to suppress the key's default scroll behaviour). Essay
+ *   questions and other option-less cards return false, leaving normal
+ *   page scroll intact for the user.
+ */
+function moveOptionFocus(direction) {
+  const card = getActiveQuestionCard();
+  if (!card) return false;
+
+  // Focus targets the native <input type="radio|checkbox"> inside each
+  // row rather than the wrapping <div class="option-row"> itself: the
+  // input is already natively focusable and carries the correct
+  // radio/checkbox role and aria-label, so no extra tabindex plumbing or
+  // ARIA is needed on the wrapper.
+  const inputs = Array.from(
+    card.querySelectorAll(".option-row:not(.locked) input"),
+  );
+  if (inputs.length === 0) return false;
+
+  const currentIndex = inputs.indexOf(document.activeElement);
+
+  let nextIndex;
+  if (currentIndex === -1) {
+    // Nothing in this card is focused yet: ArrowDown starts at the first
+    // option, ArrowUp starts at the last, so a single press always lands
+    // somewhere sensible regardless of direction.
+    nextIndex = direction === 1 ? 0 : inputs.length - 1;
+  } else {
+    nextIndex = (currentIndex + direction + inputs.length) % inputs.length;
+  }
+
+  inputs[nextIndex].focus();
+  return true;
 }
 
 /**
@@ -100,6 +196,18 @@ export function initKeyboardNav({
 
     // Bail early (no preventDefault) for keys not in the map.
     if (!action) return;
+
+    // ArrowUp/ArrowDown are special-cased: they should only suppress the
+    // browser's native scroll when there's actually an option to move
+    // focus to (an MCQ question with .option-row elements in the active
+    // card). On essay questions, or anywhere no options exist, the key
+    // falls through to normal page scrolling instead of being silently
+    // swallowed with no visible effect.
+    if (action === "option-next" || action === "option-prev") {
+      const moved = moveOptionFocus(action === "option-next" ? 1 : -1);
+      if (moved) e.preventDefault();
+      return;
+    }
 
     // Only prevent default for keys that have a registered handler so that
     // native browser behaviour (tab, scroll, etc.) is never silently eaten.

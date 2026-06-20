@@ -219,7 +219,26 @@ window.nextQuestion = () => nav(1);
 // Vertical style: select option for a specific question
 window.handleSelectForQuestion = (qIdx, optIdx) => {
   if (lockedQuestions[qIdx]) return;
-  userAnswers[qIdx] = optIdx;
+
+  const q = questions[qIdx];
+  const isMultiple = Array.isArray(q.correct);
+
+  if (isMultiple) {
+    // Multiple selection: toggle the checkbox
+    if (!Array.isArray(userAnswers[qIdx])) {
+      userAnswers[qIdx] = [];
+    }
+    const answerArray = userAnswers[qIdx];
+    const pos = answerArray.indexOf(optIdx);
+    if (pos > -1) {
+      answerArray.splice(pos, 1);
+    } else {
+      answerArray.push(optIdx);
+    }
+  } else {
+    userAnswers[qIdx] = optIdx;
+  }
+
   lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   saveStateDebounced();
   renderQuestion();
@@ -235,7 +254,10 @@ window.checkAnswerForQuestion = (qIdx) => {
     const textarea = document.getElementById(`essayInput-${qIdx}`);
     if (!textarea || !textarea.value.trim()) return;
   } else {
-    if (userAnswers[qIdx] === undefined) return;
+    const userAnswer = userAnswers[qIdx];
+    if (userAnswer === undefined) return;
+    // For multiple choice, ensure answer exists (could be empty array)
+    if (Array.isArray(userAnswer) && userAnswer.length === 0) return;
   }
   lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   lockedQuestions[qIdx] = true;
@@ -1228,7 +1250,7 @@ async function init() {
         { label: "التاريخ", val: formatDate(metaData.createdAt) },
         { label: "المصدر", val: metaData.source },
         { label: "صاحب الإمتحان", val: metaData.author },
-        { label: "نوع الإمتحان", val: metaData.mode },
+        { label: "نوع الإمتحان الإجباري", val: metaData.mode },
         {
           label: "الشكل الإجباري",
           val:
@@ -1430,16 +1452,81 @@ async function init() {
       }
     };
 
+    /**
+     * Bug fix: in vertical mode, `currentIdx` is only ever updated by
+     * `nav()` / `jumpToQuestion()` (i.e. clicking prev/next or a menu
+     * item) - it is never updated by scrolling. Since every question's
+     * card is stacked in the DOM at once in vertical mode, a user who
+     * scrolls down to question 5 without using next/prev leaves
+     * `currentIdx` stuck at whatever it last was (usually 0), so
+     * keyboard actions like Enter silently targeted the wrong question -
+     * appearing to "only work on the first question on the page".
+     *
+     * This resolves the question a keyboard action should actually
+     * target: whichever card currently contains focus (most precise -
+     * matches e.g. an option just navigated to via Up/Down), falling
+     * back to whichever vertical card's center is closest to the
+     * viewport's center (matches what the user is actually looking at
+     * while scrolling), falling back to `currentIdx` only if neither can
+     * be determined.
+     *
+     * @returns {number}
+     */
+    function getActiveVerticalQuestionIndex() {
+      const focusedCard = document.activeElement?.closest(
+        "[data-question-index]",
+      );
+      if (focusedCard) {
+        const idx = parseInt(focusedCard.dataset.questionIndex, 10);
+        if (!Number.isNaN(idx)) return idx;
+      }
+
+      const cards = document.querySelectorAll(
+        ".vertical-question-card[data-question-index]",
+      );
+      if (cards.length === 0) return currentIdx;
+
+      const viewportCenter = window.innerHeight / 2;
+      let closest = null;
+      let closestDistance = Infinity;
+      cards.forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+        const cardCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(cardCenter - viewportCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = card;
+        }
+      });
+
+      if (!closest) return currentIdx;
+      const idx = parseInt(closest.dataset.questionIndex, 10);
+      return Number.isNaN(idx) ? currentIdx : idx;
+    }
+
     initKeyboardNav({
       onNext: () => nav(1),
       onPrev: () => nav(-1),
       onCheck: () => {
         if (quizMode === "exam" || quizMode === "timed_exam") return;
-        checkAnswer();
+        if (quizStyle === "vertical") {
+          window.checkAnswerForQuestion(getActiveVerticalQuestionIndex());
+        } else {
+          checkAnswer();
+        }
       },
       onBookmark: () => window.toggleBookmark(),
       onFlag: () => window.toggleFlag(),
       onSelect: (i) => {
+        if (quizStyle === "vertical") {
+          const idx = getActiveVerticalQuestionIndex();
+          if (lockedQuestions[idx]) return;
+          const q = questions[idx];
+          if (!q?.options || i >= q.options.length) return;
+          window.handleSelectForQuestion(idx, i);
+          return;
+        }
         if (lockedQuestions[currentIdx]) return;
         const q = questions[currentIdx];
         if (!q?.options || i >= q.options.length) return;
@@ -1671,9 +1758,17 @@ function createListItem(q, idx) {
 }
 
 // === Vertical style: build one question card HTML for index idx ===
-function buildVerticalQuestionCard(q, idx) {
+// Bug-fix (vertical media reload): builds everything EXCEPT the media block
+// (header text, action buttons, reading passage, options/essay input, check
+// button, feedback) for a single vertical card — mirrors
+// buildQuestionBodyHTML() from pagination mode. Splitting this out lets
+// renderAllQuestionsVertical() patch just this part on every input
+// interaction without touching that card's media DOM at all, so audio/
+// video/YouTube elements never unmount, reload, or flicker while answering.
+function buildVerticalQuestionBodyHTML(q, idx) {
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
+  const isMultiple = Array.isArray(correctIdx);
   const isLocked = !!lockedQuestions[idx];
   const userSelected = userAnswers[idx];
   const isBookmarked = gameEngine.isBookmarked(examId, idx);
@@ -1685,15 +1780,22 @@ function buildVerticalQuestionCard(q, idx) {
     q.explanation || q.desc || q.info || "No explanation provided.";
 
   if (isLocked) {
-    let isCorrect;
+    let isCorrect = false;
     if (isEssay) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
-      isCorrect = userSelected === correctIdx;
+      if (isMultiple) {
+        isCorrect =
+          Array.isArray(userSelected) &&
+          userSelected.length === correctIdx.length &&
+          correctIdx.every((i) => userSelected.includes(i));
+      } else {
+        isCorrect = isAnswerCorrect(userSelected, correctIdx);
+      }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
       feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
@@ -1717,51 +1819,84 @@ function buildVerticalQuestionCard(q, idx) {
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
-    ${renderQuestionMedia(q, `q${idx}`)}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
   `;
 
   if (isEssay) {
-    return `
-      <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
+    return {
+      largeClass,
+      html: `
         ${header}
         <div class="essay-container">
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
-        ${isLocked ? `<div class="formal-answer"><strong>Formal Answer:</strong><div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>` : ""}
+        ${isLocked ? `<div class="formal-answer"><strong style="text-align: center;">Formal answer</strong><div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>` : ""}
         <div class="${feedbackClass}">${feedbackText}</div>
-      </div>
-    `;
+      `,
+    };
   }
 
-  // === MCQ card ===
+  // === MCQ card === (checkboxes for multi-answer questions, radios otherwise)
   const optionsHtml = q.options
     .map((opt, i) => {
-      const isSelected = userSelected === i;
+      let isSelected;
+      if (isMultiple) {
+        isSelected = Array.isArray(userSelected) && userSelected.includes(i);
+      } else {
+        isSelected = userSelected === i;
+      }
       let optionClass = "option-row";
       if (isSelected) optionClass += " selected";
       if (isLocked) {
         optionClass += " locked";
-        if (i === correctIdx) optionClass += " correct";
-        if (isSelected && i !== correctIdx) optionClass += " wrong";
+        const isCorrectOption = isMultiple
+          ? correctIdx.includes(i)
+          : i === correctIdx;
+        if (isCorrectOption) optionClass += " correct";
+        if (isSelected && !isCorrectOption) optionClass += " wrong";
       }
       const optAlign = getAlignClass(opt);
+      const inputType = isMultiple ? "checkbox" : "radio";
+      const inputName = isMultiple ? `answer-${idx}-${i}` : `answer-${idx}`;
       return `
         <div class="${optionClass} ${optAlign}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
-          <input type="radio" name="answer-${idx}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
+          <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
           <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
         </div>`;
     })
     .join("");
 
-  return `
-    <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
+  const checkDisabled = isMultiple
+    ? !Array.isArray(userSelected) || userSelected.length === 0
+    : userSelected === undefined;
+
+  return {
+    largeClass,
+    html: `
       ${header}
       <div class="options-grid">${optionsHtml}</div>
-      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${userSelected === undefined ? "disabled" : ""}>Check Answer</button>
+      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${checkDisabled ? "disabled" : ""}>Check Answer</button>
       <div class="${feedbackClass}">${feedbackText}</div>
+    `,
+  };
+}
+
+// Builds the static media block for a vertical card. This is rendered once
+// per card and never touched again on subsequent answer/submit interactions.
+function buildVerticalQuestionMediaHTML(q, idx) {
+  return renderQuestionMedia(q, `q${idx}`);
+}
+
+// Full (first-render) vertical card: media wrap + body, structured exactly
+// like the pagination card so media never needs to be touched again.
+function buildVerticalQuestionCard(q, idx) {
+  const { largeClass, html: bodyHTML } = buildVerticalQuestionBodyHTML(q, idx);
+  return `
+    <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
+      <div class="question-media-wrap">${buildVerticalQuestionMediaHTML(q, idx)}</div>
+      <div class="question-body">${bodyHTML}</div>
     </div>
   `;
 }
@@ -1815,9 +1950,10 @@ function renderAllQuestionsVertical() {
   if (els.progressText)
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
-  // Bug 2 Fix: if we know which card changed, only rebuild that card.
-  // This leaves all other cards (and their media elements) completely
-  // untouched so audio/video playback is never interrupted.
+  // Bug fix (media reload): if we know which card changed, only patch that
+  // card's `.question-body`. The `.question-media-wrap` (audio/video/
+  // YouTube) is never touched, so playback is never interrupted — matching
+  // pagination mode's behavior exactly.
   if (
     lastChangedIdx !== null &&
     document.getElementById(`q-${lastChangedIdx}`)
@@ -1826,35 +1962,49 @@ function renderAllQuestionsVertical() {
     lastChangedIdx = null;
 
     const existingCard = document.getElementById(`q-${targetIdx}`);
+    const { largeClass, html: bodyHTML } = buildVerticalQuestionBodyHTML(
+      questions[targetIdx],
+      targetIdx,
+    );
+    const bodyEl = existingCard.querySelector(".question-body");
 
-    // Preserve any media timestamps on the card being replaced
-    const mediaStates = [];
-    existingCard.querySelectorAll("audio, video").forEach((el) => {
-      mediaStates.push({ time: el.currentTime, paused: el.paused });
-    });
-
-    const temp = document.createElement("div");
-    temp.innerHTML = buildVerticalQuestionCard(questions[targetIdx], targetIdx);
-    const newCard = temp.firstElementChild;
-    existingCard.replaceWith(newCard);
-
-    // Restore media timestamps on the rebuilt card
-    if (mediaStates.length) {
-      newCard.querySelectorAll("audio, video").forEach((el, i) => {
-        const state = mediaStates[i];
-        if (!state || state.time <= 0) return;
-        const restore = () => {
-          el.currentTime = state.time;
-          if (!state.paused) el.play().catch(() => {});
-        };
-        if (el.readyState >= 1) restore();
-        else el.addEventListener("loadedmetadata", restore, { once: true });
+    if (bodyEl) {
+      bodyEl.innerHTML = bodyHTML;
+      existingCard.className = `question-card vertical-question-card${largeClass}`;
+      // Re-scan only the patched body — avoids touching the media wrap.
+      TextDirectionEngine.scan(bodyEl);
+    } else {
+      // Defensive fallback in case the expected structure is missing
+      // (e.g. an older saved card shape) — full rebuild for this card only.
+      const mediaStates = [];
+      existingCard.querySelectorAll("audio, video").forEach((el) => {
+        mediaStates.push({ time: el.currentTime, paused: el.paused });
       });
-    }
 
-    initMediaSkeletons(newCard);
-    // Targeted direction scan — only the rebuilt card, not the whole page.
-    TextDirectionEngine.scan(newCard);
+      const temp = document.createElement("div");
+      temp.innerHTML = buildVerticalQuestionCard(
+        questions[targetIdx],
+        targetIdx,
+      );
+      const newCard = temp.firstElementChild;
+      existingCard.replaceWith(newCard);
+
+      if (mediaStates.length) {
+        newCard.querySelectorAll("audio, video").forEach((el, i) => {
+          const state = mediaStates[i];
+          if (!state || state.time <= 0) return;
+          const restore = () => {
+            el.currentTime = state.time;
+            if (!state.paused) el.play().catch(() => {});
+          };
+          if (el.readyState >= 1) restore();
+          else el.addEventListener("loadedmetadata", restore, { once: true });
+        });
+      }
+
+      initMediaSkeletons(newCard);
+      TextDirectionEngine.scan(newCard);
+    }
     return;
   }
 
@@ -1900,7 +2050,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
       const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation:</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       if (Array.isArray(correctIdx)) {
         isCorrect =
@@ -1975,7 +2125,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
           isLocked
             ? `
           <div class="formal-answer">
-            <strong>Formal Answer:</strong>
+            <strong style="text-align: center;">Formal answer</strong>
             <div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div>
           </div>
         `
@@ -2227,7 +2377,7 @@ const TextDirectionEngine = (() => {
   // explanation prefixed with the English word "Explanation:" gets
   // mis-detected as LTR just because of its first character.
   const LABEL_PREFIX_REGEX =
-    /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal Answer:)\s*/i;
+    /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
 
   /**
    * Detects the direction of a single line/sentence of text based on its
@@ -2325,18 +2475,15 @@ const TextDirectionEngine = (() => {
   }
 
   /**
-   * Directions a plain text-bearing form control (textarea/input) — these
-   * can't contain child spans, so the whole control follows the direction
-   * of its own first line of typed text. This already matches native
-   * per-paragraph bidi behavior closely enough for a single-line/short
-   * multi-line input, and ensures cursor/space behavior is native+correct.
-   * @param {HTMLElement} element
+   * Form controls (textarea/input) are intentionally NOT direction-classed
+   * by JS. Toggling the `direction` CSS property via a class on every
+   * keystroke (the previous approach) fights the browser's own caret
+   * placement on a focused, populated field — the cursor and spacebar
+   * strokes would visually "snap" to the wrong edge mid-typing. Native
+   * `unicode-bidi: plaintext` in CSS (see .essay-textarea) lets the browser
+   * determine each paragraph's direction itself, directly from the typed
+   * content, with correct native caret tracking — no JS involvement needed.
    */
-  function processFormControl(element) {
-    const value = element.value || "";
-    const firstLine = value.split(/\n/).find((l) => l.trim() !== "") || value;
-    applyDirectionClass(element, detectDirection(firstLine));
-  }
 
   /**
    * Evaluates and applies text direction classes to a single DOM element,
@@ -2354,7 +2501,8 @@ const TextDirectionEngine = (() => {
     }
 
     if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-      processFormControl(element);
+      // Intentionally a no-op now — see comment above processElement's
+      // sibling function block. CSS handles direction for form controls.
       return;
     }
 
@@ -2410,17 +2558,12 @@ const TextDirectionEngine = (() => {
    * Initializes real-time text-change listeners and fallback MutationObservers.
    */
   function init() {
-    // 1. Real-time User Input Tracking (for Essay Workspace inputs)
-    document.addEventListener("input", (event) => {
-      if (
-        event.target &&
-        event.target.matches('.essay-textarea, input[type="text"]')
-      ) {
-        processElement(event.target);
-      }
-    });
+    // Form controls (textarea/input) get their direction from CSS
+    // `unicode-bidi: plaintext` natively — no JS listener needed; see the
+    // comment above the (intentionally inert) form-control branch in
+    // processElement().
 
-    // 2. Automated Observer Fallback to handle async question content swaps
+    // Automated Observer Fallback to handle async question content swaps
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         // Handle elements added dynamically
@@ -2462,7 +2605,7 @@ const TextDirectionEngine = (() => {
       characterData: true,
     });
 
-    // 3. Initial pass to catch content already present before the
+    // Initial pass to catch content already present before the
     // observer attached (e.g. static markup rendered before this script ran).
     scan(document);
   }

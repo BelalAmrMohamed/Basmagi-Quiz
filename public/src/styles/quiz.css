@@ -386,19 +386,30 @@ body {
   flex-wrap: wrap;
 }
 
-/* The title must actually grow to fill the row — otherwise its box stays
-   content-sized and right-aligning the text inside it has nowhere to go,
-   so it still visually hugs the left. */
+/* Bug fix: the title previously used `flex: 1` so its box would fill the
+   row, with text-align pushing the text to the correct edge inside that
+   oversized box. That's exactly what stranded #quizInfoBtn far away from
+   the title - the button sits after the h1's box in DOM/flex order, and
+   that box spanned the whole row even though the visible text only
+   occupied one side of it. The title is now content-sized; the container's
+   own `direction` (toggled below via :has(h1.text-ltr)) is what places the
+   button on the correct trailing side, immediately next to the text. */
 .title-date-container h1 {
   margin-bottom: 0 !important;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
-/* RTL: mirror the row so the info button sits to the LEFT of the title
-   (i.e. it stays on the "trailing" side relative to reading direction). */
-.title-date-container:has(h1.text-rtl) {
-  flex-direction: row-reverse;
+/* The info button must sit on the *trailing* side of the title text in
+   both directions: to the left when the title is RTL (Arabic), and to the
+   right when the title is LTR (English/Latin). The container's own
+   `direction` controls which side is "trailing" for a flex row — so it,
+   not `flex-direction`, is what needs to track the title's direction.
+   (The container inherits `direction: rtl` from html[dir="rtl"] by
+   default, which already places the DOM-last child — the info button —
+   on the left; that's correct for an RTL title and needs no override.) */
+.title-date-container:has(h1.text-ltr) {
+  direction: ltr;
 }
 
 /* Info icon button next to the quiz title */
@@ -1390,6 +1401,18 @@ body.is-resizing-media .media-container.resizable-media {
   line-height: 1.6;
   resize: vertical;
   transition: all 0.3s ease;
+  /* Bug fix: textarea was statically locked to RTL via the inherited
+     html[dir="rtl"] direction. unicode-bidi: plaintext tells the browser to
+     derive each paragraph's direction natively from the Unicode bidi
+     algorithm applied to whatever the user actually types, with correct
+     native caret tracking - no JS class-toggling needed (see quiz.js
+     TextDirectionEngine, which intentionally no-ops on textarea/input).
+     `direction: ltr` here is just the neutral starting point for empty/
+     placeholder state; plaintext overrides it per-paragraph once there's
+     real text. */
+  direction: ltr;
+  unicode-bidi: plaintext;
+  text-align: start;
 }
 
 .essay-textarea:focus {
@@ -1410,11 +1433,15 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 /* The "Formal Answer:" label is a fixed bilingual UI string — it must
-   always render LTR regardless of the answer text's own direction. */
+   always render LTR and stay left-aligned regardless of the answer text's
+   own direction, even if a direction-detection pass applies .text-rtl to
+   an ancestor (e.g. .formal-answer, when it also contains markdown block
+   children from .formal-answer-text). */
 .formal-answer > strong {
   direction: ltr;
   unicode-bidi: isolate;
-  display: inline-block;
+  display: block;
+  text-align: left;
 }
 
 .formal-answer strong {
@@ -1448,6 +1475,19 @@ body.is-resizing-media .media-container.resizable-media {
 
 .option-row:hover {
   transform: translateX(4px);
+}
+
+/* Visible focus ring for keyboard navigation (Up/Down arrow roving focus -
+   see moveOptionFocus() in keyboard-nav.js). Focus lands on the native
+   radio/checkbox <input> inside each row, not the row div itself, so
+   :focus-within (which matches when a descendant has focus) is used
+   instead of :focus-visible (which only matches the focused element
+   itself). This is the only visual cue a keyboard user gets for which
+   option is currently active before pressing Enter or a number key to
+   select it. */
+.option-row:focus-within {
+  outline: 3px solid var(--color-primary, #6366f1);
+  outline-offset: 2px;
 }
 
 .option-row input[type="radio"] {
@@ -1561,6 +1601,31 @@ body.is-resizing-media .media-container.resizable-media {
   text-align: left;
 }
 
+/* Bug fix: for MCQ feedback, quiz.js nests the "Explanation:" <strong>
+   label *inside* .feedback-body (`<div class="feedback-body"><strong>
+   Explanation:</strong>...explanation text...</div>`), not as a direct
+   child of .feedback like the essay feedback does. TextDirectionEngine
+   judges .feedback-body's direction from its first real line of content
+   (correctly skipping the "Explanation:" prefix for *detection*), but the
+   text-rtl/text-ltr class it applies still lands on the whole
+   .feedback-body container - so the label, as a descendant, was inheriting
+   that container's direction/right-alignment instead of keeping its own.
+   This rule re-asserts the label's own LTR styling regardless of which
+   direction class .feedback-body ends up with, while leaving the
+   explanation text after it free to follow .feedback-body's RTL/LTR rules
+   normally.
+   Specificity note: deliberately written as `.feedback .feedback-body >
+   strong` (0,2,1) rather than `.feedback-body > strong` (0,1,1) so it
+   reliably beats the later `.feedback-body * { text-align: inherit; }`
+   reset further down this file - same specificity would otherwise let
+   source order decide, which is fragile to future edits. */
+.feedback .feedback-body > strong {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+  display: inline-block;
+}
+
 .feedback.correct::before {
   content: "✓";
 }
@@ -1569,11 +1634,27 @@ body.is-resizing-media .media-container.resizable-media {
   content: "✗";
 }
 
+/* Bug fix: essay explanations were forced center-aligned regardless of
+   text direction, because .feedback.essay-feedback.show used
+   `align-items: center` on its flex column - which cross-axis-centers
+   every child as a shrink-to-content box, including .feedback-body. The
+   two <strong> labels (Score / Explanation) are meant to stay centered
+   (per existing design), so align-items stays as-is for them, but
+   .feedback-body now explicitly stretches to the full row width instead
+   of shrinking/centering as a box. Actual text alignment is left to the
+   .text-rtl/.text-ltr classes TextDirectionEngine already applies to
+   .feedback-body based on the explanation's real language - this rule
+   only fixes the box's own width/position, not its text-align. */
 .feedback.essay-feedback.show {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+}
+
+.feedback.essay-feedback.show > .feedback-body {
+  align-self: stretch;
+  width: 100%;
 }
 
 /* Footer Navigation Controls */
@@ -1780,7 +1861,17 @@ body.is-resizing-media .media-container.resizable-media {
 /* Markdown-rendered lists: use logical (direction-aware) padding instead of
    the browser's default physical padding-left. Without this, RTL lists keep
    indenting from the left (the wrong side for RTL), pushing list content
-   past the right edge of its container and causing horizontal overflow. */
+   past the right edge of its container and causing horizontal overflow.
+
+   Bug fix: this rule previously also set `padding-left: 0` and
+   `padding-right: 0` after the logical declarations. In RTL,
+   `padding-inline-start` resolves to the *physical* `padding-right`
+   property - so the later `padding-right: 0` declaration was clobbering
+   the very padding just set (same physical property, later in source
+   order wins), leaving RTL lists with no inline-start padding at all and
+   causing the bullets/numbers to overflow past the container edge. The
+   physical padding-left/padding-right resets are removed; the logical
+   start/end declarations are sufficient and direction-safe on their own. */
 .md-content ol,
 .md-content ul,
 .feedback-body ol,
@@ -1789,8 +1880,6 @@ body.is-resizing-media .media-container.resizable-media {
 .formal-answer-text ul {
   padding-inline-start: 1.5em;
   padding-inline-end: 0;
-  padding-left: 0;
-  padding-right: 0;
   margin-block: 0.5em;
 }
 

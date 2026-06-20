@@ -9,7 +9,7 @@
     "author": "بلال عمرو محمد",
     "author_email": "belalamrofficial@gmail.com",
     "password": "1234",
-    "view": "pagination",
+    "view": "vertical",
     "mode": "practice"
   },
   "stats": {
@@ -39,6 +39,11 @@
       "options": ["Cool! ^_^", "It's not cool ;("],
       "correct": 0,
       "explanation": "Yes, it is cool indeed, ^_^"
+    },
+    {
+      "q": "This is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
+      "options": ["1", "2", "3"],
+      "correct": 1
     },
     {
       "q": "It also Supports advanced LaTeX math notations, because it uses the KaTeX library to render them!\n\nWhat is the result of the next advanced equation?\n\n$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
