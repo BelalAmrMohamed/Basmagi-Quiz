@@ -110,7 +110,106 @@ const els = {
   // Close on Escape is handled natively by <dialog>
 })();
 
-// === Global handlers ===
+// === Quiz Password Lock: teacher-enforced access gate ===
+// Used by init() when metaData.password is present. Resolves `true` once the
+// student enters the correct password, `false` if they cancel out. While
+// shown, no quiz content (questions, info dialog data already populated
+// elsewhere) is rendered — init() awaits this before doing anything else.
+function promptForQuizPassword(correctPassword) {
+  return new Promise((resolve) => {
+    let dialog = document.getElementById("quizPasswordDialog");
+    if (!dialog) {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `
+        <dialog class="quiz-password-dialog" id="quizPasswordDialog" aria-labelledby="quizPasswordDialogTitle">
+          <form class="quiz-password-dialog-inner" id="quizPasswordForm">
+            <div class="quiz-password-dialog-header">
+              <h2 id="quizPasswordDialogTitle">هذا الإختبار محمي بكلمة سر</h2>
+            </div>
+            <div class="quiz-password-dialog-body">
+              <p class="quiz-password-dialog-hint">يرجى إدخال كلمة السر التي زودك بها المعلم للوصول إلى هذا الإمتحان.</p>
+              <input type="password" id="quizPasswordInput" class="quiz-password-input"
+                     placeholder="كلمة السر" autocomplete="off" aria-label="كلمة السر">
+              <p class="quiz-password-error" id="quizPasswordError" role="alert" hidden>كلمة السر غير صحيحة. حاول مرة أخرى.</p>
+            </div>
+            <div class="quiz-password-dialog-actions">
+              <button type="button" class="quiz-password-cancel-btn" id="quizPasswordCancel">الصفحة الرئيسية</button>
+              <button type="submit" class="quiz-password-submit-btn" id="quizPasswordSubmit">دخول</button>
+            </div>
+          </form>
+        </dialog>
+      `,
+      );
+      dialog = document.getElementById("quizPasswordDialog");
+    }
+
+    const form = dialog.querySelector("#quizPasswordForm");
+    const input = dialog.querySelector("#quizPasswordInput");
+    const errorEl = dialog.querySelector("#quizPasswordError");
+    const cancelBtn = dialog.querySelector("#quizPasswordCancel");
+
+    // Reset state for this attempt (dialog may be reused across navigations).
+    input.value = "";
+    errorEl.hidden = true;
+    dialog.classList.remove("shake");
+
+    const cleanup = () => {
+      form.removeEventListener("submit", onSubmit);
+      cancelBtn.removeEventListener("click", onCancel);
+      dialog.removeEventListener("cancel", onNativeCancel);
+    };
+
+    const onSubmit = (e) => {
+      e.preventDefault();
+      if (String(input.value) === String(correctPassword)) {
+        cleanup();
+        dialog.close();
+        resolve(true);
+      } else {
+        errorEl.hidden = false;
+        input.value = "";
+        input.focus();
+        // Small shake animation to signal the wrong attempt without being
+        // disruptive — purely cosmetic, no information about the password
+        // itself is ever revealed.
+        dialog.classList.remove("shake");
+        // Force reflow so the animation can restart on consecutive wrong tries.
+        void dialog.offsetWidth;
+        dialog.classList.add("shake");
+      }
+    };
+
+    const onCancel = () => {
+      cleanup();
+      dialog.close();
+      resolve(false);
+    };
+
+    // Block Escape/backdrop dismissal from silently granting access: treat
+    // a native "cancel" event (Escape key) the same as pressing the Cancel
+    // button — it does not unlock the quiz.
+    const onNativeCancel = (e) => {
+      e.preventDefault();
+      onCancel();
+    };
+
+    form.addEventListener("submit", onSubmit);
+    cancelBtn.addEventListener("click", onCancel);
+    dialog.addEventListener("cancel", onNativeCancel);
+
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+    } else {
+      // Extremely old browsers without <dialog> support: fail safe by
+      // denying access rather than silently rendering quiz content.
+      resolve(false);
+      return;
+    }
+    input.focus();
+  });
+}
+
 window.finishEarly = () => finish();
 window.restartQuiz = () => restart(); // Not implemented
 window.exitQuiz = () => exit();
@@ -174,28 +273,21 @@ const escapeHtml = (unsafe) => {
 // === Helper: Get the model answer for an essay question ===
 const getEssayAnswer = (q) => q.answer ?? "";
 
-// === Text direction / language helpers ===
+// === Text direction helpers (fully automatic — no manual lang codes) ===
 const ARABIC_CHAR_RE =
   /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
-const RTL_LANG_CODES = new Set(["ar", "fa", "ur", "he", "ps", "ku"]);
 
-const detectTextDirection = (text, explicitLang) => {
-  if (explicitLang) {
-    const code = String(explicitLang).toLowerCase().slice(0, 2);
-    return RTL_LANG_CODES.has(code) ? "rtl" : "ltr";
-  }
+const detectTextDirection = (text) => {
   const str = String(text || "");
   const arabicCount = (str.match(ARABIC_CHAR_RE) || []).length;
   const latinCount = (str.match(/[a-zA-Z]/g) || []).length;
   return arabicCount > latinCount ? "rtl" : "ltr";
 };
 
-const getAlignClass = (text, explicitLang) => {
-  const dir = detectTextDirection(text, explicitLang);
+const getAlignClass = (text) => {
+  const dir = detectTextDirection(text);
   return dir === "rtl" ? "text-rtl" : "text-ltr";
 };
-
-const getQuestionLang = (q) => q?.lang || metaData?.lang || null;
 
 const isLargeFormatQuestion = (q) =>
   !!(q?.passage || q?.audio || q?.video || (q?.q && String(q.q).length > 400));
@@ -811,6 +903,24 @@ function updateBreadcrumb(meta) {
 }
 
 // === OPTIMIZED: Load exam JSON with caching ===
+// === Helper: safely format stats.questionTypes for display ===
+// Root cause of "stats fail to appear for static quizzes": loadExamModule
+// (below) never read the `stats` field out of the fetched quiz JSON at all,
+// so module.stats was always undefined and questionTypes was silently lost
+// before it ever reached the info dialog — even when the quiz file legitimately
+// had it. That's fixed below by actually carrying `stats` through.
+// This helper additionally guards a real (if narrower) crash: when stats
+// exists but questionTypes doesn't (stats = {}), `stats?.questionTypes.join`
+// throws — the `?.` only short-circuits the `.questionTypes` read, not the
+// `.join()` call chained after it. It also tolerates questionTypes already
+// being a plain string (some hand-authored quizzes store it that way).
+const formatQuestionTypes = (stats) => {
+  const qt = stats?.questionTypes;
+  if (!qt) return null;
+  if (Array.isArray(qt)) return qt.length ? qt.join(" · ") : null;
+  return String(qt) || null;
+};
+
 async function loadExamModule(config) {
   // Check cache first
   if (examModuleCache.has(config.id)) {
@@ -834,12 +944,17 @@ async function loadExamModule(config) {
     const res = await fetch(quizUrl.href);
     if (!res.ok) throw new Error(`Failed to load quiz: ${res.status}`);
     const data = await res.json();
-    module = { questions: data.questions || [], meta: data.meta || {} };
+    module = {
+      questions: data.questions || [],
+      meta: data.meta || {},
+      stats: data.stats || {},
+    };
   } else {
     const loaded = await import(quizUrl.href);
     module = {
       questions: loaded.questions || [],
       meta: loaded.meta || {},
+      stats: loaded.stats || {},
     };
   }
 
@@ -904,20 +1019,9 @@ async function init() {
     }
   }
 
-  // Load saved view mode
+  // Load saved view mode (grid/list nav style — unaffected by teacher overrides)
   const savedView = localStorage.getItem("quiz_view_mode");
   if (savedView) viewMode = savedView;
-
-  // Load quiz style (vertical = all questions at once, pagination = one per page)
-  quizStyle =
-    userProfile && userProfile.getQuizStyle
-      ? userProfile.getQuizStyle()
-      : localStorage.getItem("quiz_style") || "pagination";
-  if (quizStyle !== "vertical") quizStyle = "pagination";
-  else {
-    nextBtn.style.display = "none";
-    prevBtn.style.display = "none";
-  }
 
   // Update view toggle button
   if (els.viewIcon && els.viewText) {
@@ -981,7 +1085,6 @@ async function init() {
         if (q.audio) out.audio = q.audio;
         if (q.video) out.video = q.video;
         if (q.passage) out.passage = q.passage;
-        if (q.lang) out.lang = q.lang;
         if (q.explanation) out.explanation = q.explanation;
         // Normalize essay: old 1-option → new answer field
         if (Array.isArray(q.options) && q.options.length === 1) {
@@ -999,12 +1102,16 @@ async function init() {
       metaData = {
         title: userQuiz.meta?.title || userQuiz.title,
         category: "Your Quiz",
-        lang: userQuiz.meta?.lang || null,
         createdAt: userQuiz.meta?.createdAt || null,
         path: userQuiz.meta?.path || null,
         description: userQuiz.meta?.description || null,
         source: userQuiz.meta?.source || null,
         author: userQuiz.meta?.author || null,
+        view: userQuiz.meta?.view || null,
+        mode: userQuiz.meta?.mode || null,
+        privacy: userQuiz.meta?.privacy || null,
+        password: userQuiz.meta?.password || null,
+        questionTypes: formatQuestionTypes(userQuiz.stats),
       };
     } else {
       // === LOGIC FOR STANDARD EXAM (Original Code) ===
@@ -1031,18 +1138,64 @@ async function init() {
       metaData = {
         title: config.title || fallbackTitle,
         category: parts[parts.length - 2] || "",
-        lang: module.meta?.lang || null,
         createdAt: module.meta?.createdAt || null,
         path: module.meta?.path || null,
         description: module.meta?.description || null,
         source: module.meta?.source || null,
         author: module.meta?.author || null,
+        view: module.meta?.view || null,
+        mode: module.meta?.mode || null,
+        privacy: module.meta?.privacy || null,
+        password: module.meta?.password || null,
+        questionTypes: formatQuestionTypes(module.stats),
       };
     }
 
     // -----------------------------------------------------------
     // SHARED LOGIC: UI Updates & Game Initialization
     // -----------------------------------------------------------
+
+    // ── Teacher-enforced settings ───────────────────────────────────────────
+    // meta.view / meta.mode, when present in the quiz JSON, STRICTLY override
+    // whatever the student has locally configured (profile / localStorage).
+    // The student's own preference is never consulted in that case — this is
+    // intentionally not a "default", it's a hard override.
+    if (metaData.view === "pagination" || metaData.view === "vertical") {
+      quizStyle = metaData.view;
+    } else {
+      quizStyle =
+        userProfile && userProfile.getQuizStyle
+          ? userProfile.getQuizStyle()
+          : localStorage.getItem("quiz_style") || "pagination";
+      if (quizStyle !== "vertical") quizStyle = "pagination";
+    }
+
+    if (
+      metaData.mode === "exam" ||
+      metaData.mode === "practice" ||
+      metaData.mode === "timed" ||
+      metaData.mode === "timed_exam"
+    ) {
+      quizMode = metaData.mode;
+    }
+
+    if (quizStyle === "vertical") {
+      if (els.nextBtn) els.nextBtn.style.display = "none";
+      if (els.prevBtn) els.prevBtn.style.display = "none";
+    }
+
+    // ── Teacher-enforced password lock ──────────────────────────────────────
+    // meta.password, when present, fully blocks access to the quiz content
+    // (questions are never rendered) until the correct password is entered
+    // in a dedicated pop-up dialog. Re-prompts on a wrong attempt; does not
+    // give up access to any quiz data while locked.
+    if (metaData.password) {
+      const unlocked = await promptForQuizPassword(metaData.password);
+      if (!unlocked) {
+        window.location.href = "/";
+        return;
+      }
+    }
 
     // Update page title
     document.title = `إمتحان ${metaData.title}`;
@@ -1075,6 +1228,18 @@ async function init() {
         { label: "التاريخ", val: formatDate(metaData.createdAt) },
         { label: "المصدر", val: metaData.source },
         { label: "صاحب الإمتحان", val: metaData.author },
+        { label: "نوع الإمتحان", val: metaData.mode },
+        {
+          label: "الشكل الإجباري",
+          val:
+            metaData.view === "pagination"
+              ? "كل سؤال في صفحة (Pagination)"
+              : metaData.view === "vertical"
+                ? "كل الأسئلة في صفحة واحدة (Vertical)"
+                : null,
+        },
+        { label: "نوع الأسئلة", val: metaData.questionTypes },
+        { label: "عدد الأسئلة", val: questions.length },
       ].filter((r) => r.val);
 
       if (!ROWS.length) {
@@ -1530,7 +1695,7 @@ function buildVerticalQuestionCard(q, idx) {
     } else {
       isCorrect = userSelected === correctIdx;
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation: </strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     }
   }
 
@@ -1541,9 +1706,8 @@ function buildVerticalQuestionCard(q, idx) {
     </div>
   `;
 
-  const qLang = getQuestionLang(q);
-  const alignClass = getAlignClass(q.q, qLang);
-  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
+  const alignClass = getAlignClass(q.q);
+  const passageAlignClass = getAlignClass(q.passage || q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
   const passageClass =
     !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
@@ -1583,7 +1747,7 @@ function buildVerticalQuestionCard(q, idx) {
         if (i === correctIdx) optionClass += " correct";
         if (isSelected && i !== correctIdx) optionClass += " wrong";
       }
-      const optAlign = getAlignClass(opt, qLang);
+      const optAlign = getAlignClass(opt);
       return `
         <div class="${optionClass} ${optAlign}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
           <input type="radio" name="answer-${idx}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
@@ -1747,7 +1911,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation: </strong>${renderMarkdown(
+      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(
         normalizeLiteralNewlines(explanationText),
       )}</div>`;
     }
@@ -1768,8 +1932,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
     </div>
   `;
 
-  const qLang = getQuestionLang(q);
-  const alignClass = getAlignClass(q.q, qLang);
+  const alignClass = getAlignClass(q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
   const passageClass =
     !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
@@ -1840,7 +2003,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
               isSelected = userSelected === i;
             }
 
-            const optAlign = getAlignClass(opt, qLang);
+            const optAlign = getAlignClass(opt);
             let optionClass = "option-row";
             if (isSelected) optionClass += " selected";
             if (isLocked) {
@@ -1911,8 +2074,7 @@ function renderQuestion() {
       progressPercent,
     )}% (${answeredCount}/${questions.length})`;
 
-  const qLang = getQuestionLang(q);
-  const passageAlignClass = getAlignClass(q.passage || q.q, qLang);
+  const passageAlignClass = getAlignClass(q.passage || q.q);
   const { largeClass, html: bodyHTML } = buildQuestionBodyHTML(
     q,
     currentIdx,
@@ -2010,6 +2172,16 @@ function handleEssayInput() {
 /**
  * Dynamic Text Direction Injection Engine
  * Tailored for Mixed-Language Arabic/English
+ *
+ * CRITICAL FIX: the previous implementation looked only at the first
+ * strong character of an element's ENTIRE textContent and used that one
+ * verdict to direction the whole container. That breaks down constantly in
+ * mixed-language quiz content — e.g. a question that opens in English but
+ * has an Arabic second sentence, or a multi-line passage where only some
+ * lines are Arabic. The fix below evaluates direction independently per
+ * rendering unit (per block-level child if the container has any — e.g.
+ * each <p>/<li>/<td> coming out of the markdown renderer — and otherwise
+ * per individual line of text) so each line/sentence gets its own verdict.
  */
 const TextDirectionEngine = (() => {
   // Optimized RegEx matching Arabic character scripts
@@ -2042,6 +2214,12 @@ const TextDirectionEngine = (() => {
     ".question-text--passage",
   ].join(", ");
 
+  // Block-level tags markdown rendering produces. When a target element
+  // contains one or more of these, direction is judged per-child instead of
+  // per-container, since each one is its own visual "line" of content.
+  const BLOCK_CHILD_SELECTOR =
+    "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
+
   // Fixed bilingual UI labels that precede dynamic content inside
   // .feedback-body / .formal-answer-text wrappers (see renderQuestion()).
   // These are presentational scaffolding, not actual content, so they
@@ -2052,8 +2230,9 @@ const TextDirectionEngine = (() => {
     /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal Answer:)\s*/i;
 
   /**
-   * Detects the direction of a given text string based on its first strong alphabetical letter.
-   * Seamlessly ignores leading spaces, numbers, bullet punctuation, and emojis.
+   * Detects the direction of a single line/sentence of text based on its
+   * first strong alphabetical letter. Ignores leading spaces, numbers,
+   * bullet punctuation, and emojis.
    * @param {string} text
    * @returns {'rtl' | 'ltr'}
    */
@@ -2075,7 +2254,94 @@ const TextDirectionEngine = (() => {
   }
 
   /**
-   * Evaluates and applies text direction classes to a single DOM element.
+   * Sets the direction classes on a single leaf node (a line-span or a
+   * block child) without touching anything else.
+   * @param {HTMLElement} node
+   * @param {string} direction
+   */
+  function applyDirectionClass(node, direction) {
+    if (direction === "rtl") {
+      if (!node.classList.contains("text-rtl")) {
+        node.classList.remove("text-ltr");
+        node.classList.add("text-rtl");
+      }
+    } else if (!node.classList.contains("text-ltr")) {
+      node.classList.remove("text-rtl");
+      node.classList.add("text-ltr");
+    }
+  }
+
+  /**
+   * Splits a block's direct text into per-line spans (one per newline-
+   * separated line) and directions each independently. Used for elements
+   * with no block-level children (plain single-paragraph targets like
+   * #quizTitle, .question-text, .option-label).
+   * @param {HTMLElement} element
+   */
+  function processByLine(element) {
+    // If we've already split this element into line-spans on a previous
+    // pass, just re-evaluate each existing span's direction without
+    // rebuilding the DOM (rebuilding would lose textarea focus, selection,
+    // etc. and is unnecessary work on every re-render).
+    const existingLines = element.querySelectorAll(":scope > .text-line");
+    if (existingLines.length) {
+      existingLines.forEach((line) => {
+        applyDirectionClass(line, detectDirection(line.textContent));
+      });
+      // Container itself follows its first line, purely so that
+      // non-text-aware ancestor CSS (e.g. unicode-bidi isolation) has a
+      // sane default; per-line spans are what actually control alignment.
+      applyDirectionClass(
+        element,
+        detectDirection(existingLines[0]?.textContent),
+      );
+      return;
+    }
+
+    const rawText = element.textContent;
+    const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
+
+    // Single line (the overwhelming common case) or empty: no need to
+    // wrap in spans, just direction the element itself by that one line.
+    if (lines.length <= 1) {
+      applyDirectionClass(element, detectDirection(rawText));
+      return;
+    }
+
+    // Multiple lines: wrap each in its own <span> so each can carry its
+    // own direction/alignment independently of its siblings.
+    const frag = document.createDocumentFragment();
+    lines.forEach((line, i) => {
+      const span = document.createElement("span");
+      span.className = "text-line";
+      span.style.display = "block";
+      span.textContent = line;
+      applyDirectionClass(span, detectDirection(line));
+      frag.appendChild(span);
+    });
+    element.textContent = "";
+    element.appendChild(frag);
+    applyDirectionClass(element, detectDirection(lines[0]));
+  }
+
+  /**
+   * Directions a plain text-bearing form control (textarea/input) — these
+   * can't contain child spans, so the whole control follows the direction
+   * of its own first line of typed text. This already matches native
+   * per-paragraph bidi behavior closely enough for a single-line/short
+   * multi-line input, and ensures cursor/space behavior is native+correct.
+   * @param {HTMLElement} element
+   */
+  function processFormControl(element) {
+    const value = element.value || "";
+    const firstLine = value.split(/\n/).find((l) => l.trim() !== "") || value;
+    applyDirectionClass(element, detectDirection(firstLine));
+  }
+
+  /**
+   * Evaluates and applies text direction classes to a single DOM element,
+   * judging direction per-line or per-block-child rather than blanket-
+   * applying one verdict for the entire container.
    * @param {HTMLElement} element
    */
   function processElement(element) {
@@ -2083,33 +2349,51 @@ const TextDirectionEngine = (() => {
 
     // Fast-path protection for strict LTR exceptions (Passages and Code blocks)
     if (element.closest(EXCEPTION_SELECTORS)) {
-      if (!element.classList.contains("text-ltr")) {
-        element.classList.remove("text-rtl");
-        element.classList.add("text-ltr");
-      }
+      applyDirectionClass(element, "ltr");
       return;
     }
 
-    // Extract text depending on element type
-    const text =
-      element.tagName === "INPUT" || element.tagName === "TEXTAREA"
-        ? element.value
-        : element.textContent;
-
-    const direction = detectDirection(text);
-
-    // Apply classes conditionally to minimize layout/repaint loops
-    if (direction === "rtl") {
-      if (!element.classList.contains("text-rtl")) {
-        element.classList.remove("text-ltr");
-        element.classList.add("text-rtl");
-      }
-    } else {
-      if (!element.classList.contains("text-ltr")) {
-        element.classList.remove("text-rtl");
-        element.classList.add("text-ltr");
-      }
+    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+      processFormControl(element);
+      return;
     }
+
+    // Pin every exception zone (code blocks, math, reading passages) nested
+    // anywhere inside this container to LTR first and unconditionally. These
+    // elements (<pre>, <code>, .code-block, etc.) usually aren't themselves
+    // one of the BLOCK_CHILD_SELECTOR tags, so the per-block loop below would
+    // otherwise never visit them at all and they'd keep whatever direction
+    // class they last had (or none).
+    element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
+      applyDirectionClass(zone, "ltr");
+    });
+
+    // Containers that hold markdown-rendered block children (paragraphs,
+    // list items, headings, table cells, etc.) get evaluated per-child —
+    // each block is its own line/sentence and may have its own direction.
+    const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
+    if (blockChildren.length) {
+      blockChildren.forEach((child) => {
+        // Skip exception zones (code blocks, math) nested inside markdown —
+        // already pinned LTR above, don't let automatic detection re-judge them.
+        if (child.closest(EXCEPTION_SELECTORS)) return;
+        applyDirectionClass(child, detectDirection(child.textContent));
+      });
+      // The container itself follows its first real (non-exception) block,
+      // just so any CSS relying on the container's own direction (e.g. list
+      // padding logical properties) has a sane value.
+      const firstRealBlock = Array.from(blockChildren).find(
+        (c) => !c.closest(EXCEPTION_SELECTORS),
+      );
+      applyDirectionClass(
+        element,
+        detectDirection(firstRealBlock?.textContent),
+      );
+      return;
+    }
+
+    // No block children: plain text container. Evaluate per visual line.
+    processByLine(element);
   }
 
   /**

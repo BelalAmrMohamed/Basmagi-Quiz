@@ -499,22 +499,13 @@
                         <path
                             d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                         <circle cx="12" cy="12" r="3" />
-                    </svg> الإعدادات الافتراضية للاختبار</h2>
+                    </svg> إعدادات إجبارية للاختبار</h2>
                 <p style="margin-bottom: 1.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
                     تحدد هذه الخيارات كيفية عرض الاختبار للطلاب افتراضياً
                 </p>
 
                 <div class="form-group">
-                    <label for="quizLang">لغة الاختبار</label>
-                    <select id="quizLang" class="form-control">
-                        <option value="empty">بدون لغة (Empty)</option>
-                        <option value="en">الإنجليزية (English)</option>
-                        <option value="ar">العربية (Arabic)</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>طريقة العرض</label>
+                    <label>طريقة عرض إجبارية</label>
                     <div class="option-cards">
                         <label class="option-card selected">
                             <input type="radio" name="quizView" value="empty" checked
@@ -542,7 +533,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>نمط الاختبار</label>
+                    <label>نمط إجباري للإختبار</label>
                     <div class="option-cards">
                         <label class="option-card selected">
                             <input type="radio" name="quizMode" value="empty" checked
@@ -556,7 +547,7 @@
                             <input type="radio" name="quizMode" value="practice" onchange="updateOptionCards(this)">
                             <div class="option-card-content">
                                 <div class="option-card-title">تدريب (Practice)</div>
-                                <div class="option-card-desc">إظهار الإجابات الصحيحة فوراً</div>
+                                <div class="option-card-desc">إظهار الإجابات الصحيحة بعد كل سؤال</div>
                             </div>
                         </label>
                         <label class="option-card">

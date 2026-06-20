@@ -316,8 +316,6 @@ body {
 .header-title-section {
   flex: 1;
   min-width: 0;
-  text-align: left;
-  direction: ltr;
 }
 
 .header h1 {
@@ -388,8 +386,19 @@ body {
   flex-wrap: wrap;
 }
 
+/* The title must actually grow to fill the row — otherwise its box stays
+   content-sized and right-aligning the text inside it has nowhere to go,
+   so it still visually hugs the left. */
 .title-date-container h1 {
   margin-bottom: 0 !important;
+  flex: 1;
+  min-width: 0;
+}
+
+/* RTL: mirror the row so the info button sits to the LEFT of the title
+   (i.e. it stays on the "trailing" side relative to reading direction). */
+.title-date-container:has(h1.text-rtl) {
+  flex-direction: row-reverse;
 }
 
 /* Info icon button next to the quiz title */
@@ -451,6 +460,24 @@ dialog.quiz-info-dialog {
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(3px);
   -webkit-backdrop-filter: blur(3px);
+  /* Styles for scrollbar, to make it smaller and more polished */
+  scrollbar-gutter: stable;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgb(0, 0, 0);
+  }
 }
 
 .quiz-info-dialog[open] {
@@ -613,6 +640,171 @@ dialog.quiz-info-dialog {
 
   .quiz-info-table td {
     font-size: 0.85rem;
+  }
+}
+
+/* ─── Quiz Password Lock Dialog ─────────────────────────────────────────── */
+dialog.quiz-password-dialog {
+  border: none;
+  border-radius: 20px;
+  padding: 0;
+  background: var(--color-background, #fff);
+  box-shadow: var(--shadow-xl);
+  max-width: min(420px, 92vw);
+  width: 100%;
+  color: var(--color-text, #111);
+  overflow: hidden;
+  position: fixed;
+  inset: 0;
+  margin: auto;
+}
+
+.quiz-password-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.quiz-password-dialog[open] {
+  animation: dialog-pop-in 0.22s
+    var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+}
+
+.quiz-password-dialog.shake {
+  animation: password-shake 0.4s ease;
+}
+
+@keyframes password-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.quiz-password-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 24px;
+  gap: 16px;
+}
+
+.quiz-password-dialog-header {
+  position: relative;
+  text-align: center;
+}
+
+.quiz-password-dialog-header::before {
+  content: "";
+  position: absolute;
+  top: -28px;
+  left: -24px;
+  right: -24px;
+  height: 4px;
+  background: var(--gradient-accent);
+}
+
+.quiz-password-dialog-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.quiz-password-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quiz-password-dialog-hint {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary, #6b7280);
+  text-align: center;
+  margin: 0;
+}
+
+.quiz-password-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  text-align: center;
+  letter-spacing: 0.05em;
+  background: var(--color-background, #fff);
+  color: var(--color-text, #111);
+  direction: ltr;
+}
+
+.quiz-password-input:focus {
+  outline: none;
+  border-color: var(--color-primary, #6366f1);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+.quiz-password-error {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-error, #ef4444);
+  text-align: center;
+  margin: 0;
+}
+
+.quiz-password-dialog-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.quiz-password-submit-btn,
+.quiz-password-cancel-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.quiz-password-submit-btn {
+  background: var(--gradient-accent);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.quiz-password-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.quiz-password-cancel-btn {
+  background: transparent;
+  border: 2px solid var(--color-border);
+  color: var(--color-text-secondary, #6b7280);
+}
+
+.quiz-password-cancel-btn:hover {
+  background: var(--color-background-secondary, #f3f4f6);
+}
+
+@media (max-width: 480px) {
+  dialog.quiz-password-dialog {
+    border-radius: 16px;
+    max-width: 94vw;
+  }
+
+  .quiz-password-dialog-inner {
+    padding: 24px 18px;
   }
 }
 
@@ -889,6 +1081,12 @@ dialog.quiz-info-dialog {
   min-height: 52px;
 }
 
+@media (max-width: 480px) {
+  .question-audio-container .question-audio {
+    min-width: 250px;
+  }
+}
+
 /* Video Player Elements */
 .question-video-container .question-video {
   display: block;
@@ -1105,13 +1303,33 @@ dialog.quiz-info-dialog {
   border-radius: 100px;
 }
 
-/* Hide side handles entirely on coarse-pointer devices (phones/tablets) */
+/* Hide side handles entirely on coarse-pointer devices (phones/tablets) —
+   EXCEPT for audio players. Audio is 1-D (only ever gets e/w handles, no
+   corner handles — see initMediaResize), so hiding its side handles on
+   touch devices would leave it with no way to resize at all. Video/image/
+   iframe still fall back to their corner handles on touch, unchanged. */
 @media (pointer: coarse) {
   .resize-handle--n,
   .resize-handle--s,
-  .resize-handle--e,
-  .resize-handle--w {
+  .question-image-container .resize-handle--e,
+  .question-image-container .resize-handle--w,
+  .question-video-container .resize-handle--e,
+  .question-video-container .resize-handle--w {
     display: none;
+  }
+
+  /* Enlarge the audio side-handle touch target so it's comfortably
+     tappable/draggable with a finger instead of a mouse pointer. */
+  .question-audio-container .resize-handle--e,
+  .question-audio-container .resize-handle--w {
+    width: 28px;
+    opacity: 1;
+  }
+
+  .question-audio-container .resize-handle--e::before,
+  .question-audio-container .resize-handle--w::before {
+    width: 6px;
+    height: 40px;
   }
 }
 
@@ -1172,7 +1390,6 @@ body.is-resizing-media .media-container.resizable-media {
   line-height: 1.6;
   resize: vertical;
   transition: all 0.3s ease;
-  direction: ltr;
 }
 
 .essay-textarea:focus {
@@ -1190,7 +1407,14 @@ body.is-resizing-media .media-container.resizable-media {
   padding: 16px 20px;
   border-radius: 12px;
   border-left: 5px solid;
+}
+
+/* The "Formal Answer:" label is a fixed bilingual UI string — it must
+   always render LTR regardless of the answer text's own direction. */
+.formal-answer > strong {
   direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
 }
 
 .formal-answer strong {
@@ -1199,7 +1423,6 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .formal-answer-text {
-  text-align: left;
   font-size: 1rem;
   line-height: 1.6;
   font-weight: 500;
@@ -1299,7 +1522,6 @@ body.is-resizing-media .media-container.resizable-media {
   font-weight: 600;
   border-left: 5px solid;
   box-shadow: var(--shadow-sm);
-  direction: ltr;
 }
 
 /* Complex Two-column Layout: [status icon] [explanation framework] */
@@ -1325,7 +1547,6 @@ body.is-resizing-media .media-container.resizable-media {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
-  text-align: left;
   overflow-wrap: break-word;
   word-break: break-word;
   margin-top: 0 !important;
@@ -1335,6 +1556,9 @@ body.is-resizing-media .media-container.resizable-media {
   grid-column: 2;
   grid-row: 1;
   min-width: 0;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
 }
 
 .feedback.correct::before {
@@ -1551,6 +1775,40 @@ body.is-resizing-media .media-container.resizable-media {
 .md-content {
   width: 100%;
   overflow-x: hidden;
+}
+
+/* Markdown-rendered lists: use logical (direction-aware) padding instead of
+   the browser's default physical padding-left. Without this, RTL lists keep
+   indenting from the left (the wrong side for RTL), pushing list content
+   past the right edge of its container and causing horizontal overflow. */
+.md-content ol,
+.md-content ul,
+.feedback-body ol,
+.feedback-body ul,
+.formal-answer-text ol,
+.formal-answer-text ul {
+  padding-inline-start: 1.5em;
+  padding-inline-end: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-block: 0.5em;
+}
+
+.md-content ol ol,
+.md-content ol ul,
+.md-content ul ol,
+.md-content ul ul,
+.feedback-body ol ol,
+.feedback-body ol ul,
+.feedback-body ul ol,
+.feedback-body ul ul {
+  padding-inline-start: 1.25em;
+}
+
+.md-content li,
+.feedback-body li,
+.formal-answer-text li {
+  margin-block: 0.25em;
 }
 
 /* ─── 14. Lucide & Vector Icon Infrastructure ───────────────────────────── */

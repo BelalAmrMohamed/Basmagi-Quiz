@@ -7,7 +7,10 @@
     "description": "Basmagi Quiz Platform Demo",
     "source": "https://www.w3schools.com/CPP/default.asp",
     "author": "بلال عمرو محمد",
-    "author_email": "belalamrofficial@gmail.com"
+    "author_email": "belalamrofficial@gmail.com",
+    "password": "1234",
+    "view": "pagination",
+    "mode": "practice"
   },
   "stats": {
     "questionCount": 11,
@@ -26,8 +29,9 @@
       "correct": 1
     },
     {
-      "q": "المنصة تدعم أسئلة مقالية ذات نظام تصحيح ذكي قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة.\n\nهذه هي الإجابة الصحيحة ، اختر النظام بطريقتك:\n\n```\nنظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة\n```",
-      "answer": "نظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة"
+      "q": "المنصة تدعم أسئلة مقالية ذات نظام تصحيح ذكي قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة.\n\nهذه هي الإجابة الصحيحة ، اختر النظام بطريقتك:\n\n```info\nA correction system based on the number of words identical to those in the Formal Answer\n```\nIsn't that cool ^_^!",
+      "answer": "نظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة",
+      "explanation": "نظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة"
     },
     {
       "q": "If it's an English Quiz, you can wrap your passage beautfully. The platform also supports markdown features. Like this awesome `code block`:\n```csharp\nusing System;\n\nclass Program\n{\n    static void Main(string[] args)\n    {\n        Console.WriteLine(\"Hello, World!\");\n    }\n}\n```",

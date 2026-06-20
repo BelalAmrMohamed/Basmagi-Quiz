@@ -1616,12 +1616,6 @@ function loadDraftFromLocalStorage() {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = data.meta.password;
         }
-        const langEl = document.getElementById("quizLang");
-        if (langEl)
-          langEl.value =
-            data.meta.lang && data.meta.lang !== "empty"
-              ? data.meta.lang
-              : "empty";
 
         const viewValue =
           data.meta.view && data.meta.view !== "empty"
@@ -1723,12 +1717,6 @@ function loadQuizFromLocalStorage(quizId) {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = quiz.meta.password;
         }
-        const langEl = document.getElementById("quizLang");
-        if (langEl)
-          langEl.value =
-            quiz.meta.lang && quiz.meta.lang !== "empty"
-              ? quiz.meta.lang
-              : "empty";
 
         const viewValue =
           quiz.meta.view && quiz.meta.view !== "empty"
@@ -1827,10 +1815,6 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
     const pwd = document.getElementById("quizPassword")?.value?.trim();
     if (pwd) meta.password = pwd;
   }
-
-  const langVal = document.getElementById("quizLang")?.value;
-  if (langVal && langVal !== "empty") meta.lang = langVal;
-
   const viewVal = document.querySelector(
     'input[name="quizView"]:checked',
   )?.value;
@@ -1964,8 +1948,6 @@ window.exportQuiz = function () {
             if (pwd) exportMeta.password = pwd;
           }
 
-          const langVal = document.getElementById("quizLang")?.value;
-          if (langVal && langVal !== "empty") exportMeta.lang = langVal;
           const viewVal = document.querySelector(
             'input[name="quizView"]:checked',
           )?.value;
