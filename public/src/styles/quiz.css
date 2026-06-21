@@ -576,6 +576,25 @@ dialog.quiz-info-dialog {
   padding: 20px 24px 24px;
   overflow-y: auto;
   max-height: min(60vh, 400px);
+
+  /* Scrollbar styles */
+  scrollbar-gutter: stable;
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgb(207, 207, 207);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgb(190, 190, 190);
+  }
 }
 
 /* Info metadata table */
