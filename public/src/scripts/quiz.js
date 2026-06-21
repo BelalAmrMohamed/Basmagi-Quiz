@@ -1820,7 +1820,22 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       ${actionBtns}
     </div>
     ${renderReadingPassage(q.passage, passageAlignClass)}
-    <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
+    <!-- Bug fix: this was previously a real <h2>. q.q is run through
+         renderMarkdown(), which can output its own block-level tags
+         (h1-h6, p, ul/ol, blockquote, pre) whenever a question's full
+         content is authored directly in \`q\` instead of a separate
+         \`passage\` field (e.g. a long question with no \`passage\` key, so
+         the >400-char heuristic below adds question-text--passage). A
+         <h2> cannot legally contain another heading or other block
+         content - the browser's HTML parser auto-closes the outer <h2>
+         the moment it hits the first nested block tag, leaving it empty
+         and pushing all the real content out as un-wrapped siblings that
+         never receive this element's text-rtl/text-ltr class, silently
+         falling back to inherited (often wrong) page direction. A <div>
+         has no such content-model restriction; role="heading"
+         aria-level="2" preserves the same heading semantics for screen
+         readers that the real <h2> provided. -->
+    <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
 
   if (isEssay) {
@@ -2093,7 +2108,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       ${actionButtons}
     </div>
     ${renderReadingPassage(q.passage, passageAlignClass)}
-    <h2 class="question-text ${alignClass}${passageClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</h2>
+    <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
 
   if (isEssay) {

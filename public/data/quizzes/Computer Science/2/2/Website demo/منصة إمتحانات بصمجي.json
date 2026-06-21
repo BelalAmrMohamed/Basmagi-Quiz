@@ -9,7 +9,7 @@
     "author": "بلال عمرو محمد",
     "author_email": "belalamrofficial@gmail.com",
     "password": "1234",
-    "view": "vertical",
+    "view": "pagination",
     "mode": "practice"
   },
   "stats": {
@@ -41,7 +41,7 @@
       "explanation": "Yes, it is cool indeed, ^_^"
     },
     {
-      "q": "This is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
+      "q": "## This is **Bold** Text\n\nThis is *Italic* Text\n\n## This is a Heading\n\n### This is a smaller Heading\n\n#### This is an even smaller Heading\n\n##### This is an even smaller Heading\n\n###### This is an even smaller Heading\n\nThis is a blockquote:\n\n> This is a blockquote\n\nThis is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
       "options": ["1", "2", "3"],
       "correct": 1
     },
