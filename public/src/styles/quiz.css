@@ -322,10 +322,18 @@ body {
   font-size: 1.75rem;
   font-weight: 800;
   margin-bottom: 12px;
-  background: var(--gradient-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #0f6e56;
+}
+
+[data-theme="dark"] .header h1 {
+  color: #5dcaa5;
+  text-shadow: 0 0 8px rgba(93, 202, 165, 0.35);
+}
+
+[data-theme="dark-slate"] .header h1 {
+  color: #85b7eb;
 }
 
 .breadcrumb {
@@ -535,12 +543,39 @@ dialog.quiz-info-dialog {
 .quiz-info-dialog-header h2 {
   font-size: 1.1rem;
   font-weight: 700;
-  margin: 0;
-  background: var(--gradient-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
   margin: 0 auto;
+  line-height: 1.4;
+  color: #0f6e56;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(4px);
+  animation: dialog-h2-enter 0.4s ease-out forwards;
+  transition: color 0.2s ease;
+}
+
+@keyframes dialog-h2-enter {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-info-dialog-header h2 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---- Dark theme override ---- */
+[data-theme="dark"] .quiz-info-dialog-header h2 {
+  color: #5dcaa5;
+}
+
+/* ---- Dark-slate theme override ---- */
+[data-theme="dark-slate"] .quiz-info-dialog-header h2 {
+  color: #85b7eb;
 }
 
 .quiz-info-dialog-close {
