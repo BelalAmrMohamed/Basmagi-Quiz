@@ -394,28 +394,12 @@ body {
   flex-wrap: wrap;
 }
 
-/* Bug fix: the title previously used `flex: 1` so its box would fill the
-   row, with text-align pushing the text to the correct edge inside that
-   oversized box. That's exactly what stranded #quizInfoBtn far away from
-   the title - the button sits after the h1's box in DOM/flex order, and
-   that box spanned the whole row even though the visible text only
-   occupied one side of it. The title is now content-sized; the container's
-   own `direction` (toggled below via :has(h1.text-ltr)) is what places the
-   button on the correct trailing side, immediately next to the text. */
 .title-date-container h1 {
   margin-bottom: 0 !important;
   flex: 0 1 auto;
   min-width: 0;
 }
 
-/* The info button must sit on the *trailing* side of the title text in
-   both directions: to the left when the title is RTL (Arabic), and to the
-   right when the title is LTR (English/Latin). The container's own
-   `direction` controls which side is "trailing" for a flex row — so it,
-   not `flex-direction`, is what needs to track the title's direction.
-   (The container inherits `direction: rtl` from html[dir="rtl"] by
-   default, which already places the DOM-last child — the info button —
-   on the left; that's correct for an RTL title and needs no override.) */
 .title-date-container:has(h1.text-ltr) {
   direction: ltr;
 }
@@ -1576,19 +1560,6 @@ body.is-resizing-media .media-container.resizable-media {
   gap: 0 12px;
 }
 
-/* .feedback::before {
-  grid-column: 1;
-  grid-row: 1;
-  font-size: 1.4rem;
-  line-height: 1.4;
-  align-self: start;
-  margin-top: 0.1em;
-} */
-
-/* .feedback-body {
-  text-align: center;
-} */
-
 .feedback > div,
 .feedback-body {
   grid-column: 2;
@@ -1605,7 +1576,6 @@ body.is-resizing-media .media-container.resizable-media {
   min-width: 0;
   direction: ltr;
   unicode-bidi: isolate;
-  /* text-align: left; */
 }
 
 .mcq-explanation-label {
@@ -1619,25 +1589,6 @@ body.is-resizing-media .media-container.resizable-media {
   display: inline-block;
 }
 
-/* .feedback.correct::before {
-  content: "✓";
-}
-
-.feedback.wrong::before {
-  content: "✗";
-} */
-
-/* Bug fix: essay explanations were forced center-aligned regardless of
-   text direction, because .feedback.essay-feedback.show used
-   `align-items: center` on its flex column - which cross-axis-centers
-   every child as a shrink-to-content box, including .feedback-body. The
-   two <strong> labels (Score / Explanation) are meant to stay centered
-   (per existing design), so align-items stays as-is for them, but
-   .feedback-body now explicitly stretches to the full row width instead
-   of shrinking/centering as a box. Actual text alignment is left to the
-   .text-rtl/.text-ltr classes TextDirectionEngine already applies to
-   .feedback-body based on the explanation's real language - this rule
-   only fixes the box's own width/position, not its text-align. */
 .feedback.essay-feedback.show {
   display: flex;
   flex-direction: column;
@@ -1818,13 +1769,6 @@ body.is-resizing-media .media-container.resizable-media {
     gap: 6px 0;
     padding: 14px;
   }
-
-  /* .feedback::before {
-    grid-column: 1;
-    grid-row: 1;
-    font-size: 1.8rem;
-    margin-top: 0;
-  } */
 
   .feedback > div,
   .feedback-body,
@@ -2075,7 +2019,7 @@ body.is-resizing-media .media-container.resizable-media {
   text-align: left;
 }
 
-/* Ensure child blockquotes or paragraphs inherit the injected parent wrapper direction */
+/* This was supposed to ensure child blockquotes or paragraphs inherit the injected parent wrapper direction, but it broke the labels like "Explanation" by making it inherit the text-alignment of its parent, when it waas supposed to be cenetered. */
 /* .feedback-body *,
 .formal-answer-text * {
   text-align: inherit;
