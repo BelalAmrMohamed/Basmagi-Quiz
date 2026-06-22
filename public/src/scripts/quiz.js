@@ -1757,14 +1757,6 @@ function createListItem(q, idx) {
   return div;
 }
 
-// === Vertical style: build one question card HTML for index idx ===
-// Bug-fix (vertical media reload): builds everything EXCEPT the media block
-// (header text, action buttons, reading passage, options/essay input, check
-// button, feedback) for a single vertical card — mirrors
-// buildQuestionBodyHTML() from pagination mode. Splitting this out lets
-// renderAllQuestionsVertical() patch just this part on every input
-// interaction without touching that card's media DOM at all, so audio/
-// video/YouTube elements never unmount, reload, or flicker while answering.
 function buildVerticalQuestionBodyHTML(q, idx) {
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
@@ -1785,8 +1777,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       if (isMultiple) {
         isCorrect =
@@ -1797,7 +1788,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div></div>`;
     }
   }
 
@@ -1839,6 +1830,8 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   `;
 
   if (isEssay) {
+    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+    const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
     return {
       largeClass,
       html: `
@@ -1847,7 +1840,14 @@ function buildVerticalQuestionBodyHTML(q, idx) {
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
-        ${isLocked ? `<div class="formal-answer"><strong style="text-align: center;">Formal answer</strong><div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>` : ""}
+        ${
+          isLocked
+            ? `<div class="formal-answer">            
+          <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
+          <strong style="text-align: center;">Formal answer</strong>
+          <div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>`
+            : ""
+        }
         <div class="${feedbackClass}">${feedbackText}</div>
       `,
     };
@@ -2064,8 +2064,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      feedbackText = `<strong>Score: ${essayScore}/5: ${stars}</strong><strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
     } else {
       if (Array.isArray(correctIdx)) {
         isCorrect =
@@ -2076,9 +2075,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><strong>Explanation:</strong>${renderMarkdown(
-        normalizeLiteralNewlines(explanationText),
-      )}</div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div></div>`;
     }
   }
 
@@ -2112,6 +2109,8 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
   `;
 
   if (isEssay) {
+    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+    const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
     return {
       largeClass,
       html: `
@@ -2140,6 +2139,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
           isLocked
             ? `
           <div class="formal-answer">
+            <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
             <strong style="text-align: center;">Formal answer</strong>
             <div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div>
           </div>
@@ -2334,20 +2334,6 @@ function handleEssayInput() {
   }
 }
 
-/**
- * Dynamic Text Direction Injection Engine
- * Tailored for Mixed-Language Arabic/English
- *
- * CRITICAL FIX: the previous implementation looked only at the first
- * strong character of an element's ENTIRE textContent and used that one
- * verdict to direction the whole container. That breaks down constantly in
- * mixed-language quiz content — e.g. a question that opens in English but
- * has an Arabic second sentence, or a multi-line passage where only some
- * lines are Arabic. The fix below evaluates direction independently per
- * rendering unit (per block-level child if the container has any — e.g.
- * each <p>/<li>/<td> coming out of the markdown renderer — and otherwise
- * per individual line of text) so each line/sentence gets its own verdict.
- */
 const TextDirectionEngine = (() => {
   // Optimized RegEx matching Arabic character scripts
   const ARABIC_REGEX =
@@ -2362,8 +2348,7 @@ const TextDirectionEngine = (() => {
     "#quizTitle",
     ".question-text",
     ".option-label",
-    ".feedback",
-    ".feedback-body",
+    ".feedback-body-text",
     ".formal-answer",
     ".formal-answer-text",
     ".md-content",
@@ -2379,18 +2364,9 @@ const TextDirectionEngine = (() => {
     ".question-text--passage",
   ].join(", ");
 
-  // Block-level tags markdown rendering produces. When a target element
-  // contains one or more of these, direction is judged per-child instead of
-  // per-container, since each one is its own visual "line" of content.
   const BLOCK_CHILD_SELECTOR =
     "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
 
-  // Fixed bilingual UI labels that precede dynamic content inside
-  // .feedback-body / .formal-answer-text wrappers (see renderQuestion()).
-  // These are presentational scaffolding, not actual content, so they
-  // must be stripped before judging direction — otherwise an Arabic
-  // explanation prefixed with the English word "Explanation:" gets
-  // mis-detected as LTR just because of its first character.
   const LABEL_PREFIX_REGEX =
     /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
 

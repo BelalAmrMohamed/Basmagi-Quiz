@@ -1012,11 +1012,6 @@ dialog.quiz-password-dialog {
   max-height: min(480px, 60vh);
 }
 
-/* ─── 8. Media Containers & Skeletons ───────────────────────────────────── */
-/* Centers the resizable media box within the question card, regardless of
-   page direction (LTR/RTL) or how far the user has shrunk it. Each media
-   helper (image/audio/video/YouTube) renders its `.media-container` inside
-   one of these. */
 .media-center-wrap {
   display: flex;
   justify-content: center;
@@ -1217,22 +1212,9 @@ dialog.quiz-password-dialog {
   background: var(--color-surface);
 }
 
-/* ─── 8b. User-Resizable Media ──────────────────────────────────────────── */
-/* Native CSS `resize` only ever gives a single bottom-corner handle and has
-   no way to anchor the resize to the center, so resizing is implemented
-   with four custom corner handles + JS pointer-drag logic (see
-   initMediaResize in quiz.js). Dragging any handle grows/shrinks the box
-   symmetrically from its center, so it never drifts toward one edge. */
-/* Fix B+C: when a user has set an explicit size, the container should be
-   exactly that wide (not 100%) so the centering flex parent can truly center
-   it.  We switch to `width: fit-content` as the base; JS sets an explicit px
-   width after the user drags a handle. */
 .media-container.resizable-media {
   max-width: 100%;
   touch-action: none;
-  /* Fix C: centering is handled by .media-center-wrap (display:flex;
-     justify-content:center). The container must NOT be 100% wide once the
-     user shrinks it — otherwise it stays glued to the left edge. */
   width: fit-content;
 }
 
@@ -1254,10 +1236,6 @@ dialog.quiz-password-dialog {
   min-height: 120px;
 }
 
-/* ── Resize handle base ─────────────────────────────────────────────────────
-   All handles use display:flex + align/justify center so the ::before dot or
-   pill is always perfectly centered inside the hit-area — no hard-coded
-   top/left offsets that can de-sync when sizes change.                       */
 .resize-handle {
   position: absolute;
   z-index: 4;
@@ -1368,11 +1346,6 @@ dialog.quiz-password-dialog {
   border-radius: 100px;
 }
 
-/* Hide side handles entirely on coarse-pointer devices (phones/tablets) —
-   EXCEPT for audio players. Audio is 1-D (only ever gets e/w handles, no
-   corner handles — see initMediaResize), so hiding its side handles on
-   touch devices would leave it with no way to resize at all. Video/image/
-   iframe still fall back to their corner handles on touch, unchanged. */
 @media (pointer: coarse) {
   .resize-handle--n,
   .resize-handle--s,
@@ -1383,8 +1356,6 @@ dialog.quiz-password-dialog {
     display: none;
   }
 
-  /* Enlarge the audio side-handle touch target so it's comfortably
-     tappable/draggable with a finger instead of a mouse pointer. */
   .question-audio-container .resize-handle--e,
   .question-audio-container .resize-handle--w {
     width: 28px;
@@ -1455,15 +1426,6 @@ body.is-resizing-media .media-container.resizable-media {
   line-height: 1.6;
   resize: vertical;
   transition: all 0.3s ease;
-  /* Bug fix: textarea was statically locked to RTL via the inherited
-     html[dir="rtl"] direction. unicode-bidi: plaintext tells the browser to
-     derive each paragraph's direction natively from the Unicode bidi
-     algorithm applied to whatever the user actually types, with correct
-     native caret tracking - no JS class-toggling needed (see quiz.js
-     TextDirectionEngine, which intentionally no-ops on textarea/input).
-     `direction: ltr` here is just the neutral starting point for empty/
-     placeholder state; plaintext overrides it per-paragraph once there's
-     real text. */
   direction: ltr;
   unicode-bidi: plaintext;
   text-align: start;
@@ -1486,11 +1448,6 @@ body.is-resizing-media .media-container.resizable-media {
   border-left: 5px solid;
 }
 
-/* The "Formal Answer:" label is a fixed bilingual UI string — it must
-   always render LTR and stay left-aligned regardless of the answer text's
-   own direction, even if a direction-detection pass applies .text-rtl to
-   an ancestor (e.g. .formal-answer, when it also contains markdown block
-   children from .formal-answer-text). */
 .formal-answer > strong {
   direction: ltr;
   unicode-bidi: isolate;
@@ -1531,14 +1488,6 @@ body.is-resizing-media .media-container.resizable-media {
   transform: translateX(4px);
 }
 
-/* Visible focus ring for keyboard navigation (Up/Down arrow roving focus -
-   see moveOptionFocus() in keyboard-nav.js). Focus lands on the native
-   radio/checkbox <input> inside each row, not the row div itself, so
-   :focus-within (which matches when a descendant has focus) is used
-   instead of :focus-visible (which only matches the focused element
-   itself). This is the only visual cue a keyboard user gets for which
-   option is currently active before pressing Enter or a number key to
-   select it. */
 .option-row:focus-within {
   outline: 3px solid var(--color-primary, #6366f1);
   outline-offset: 2px;
@@ -1627,14 +1576,18 @@ body.is-resizing-media .media-container.resizable-media {
   gap: 0 12px;
 }
 
-.feedback::before {
+/* .feedback::before {
   grid-column: 1;
   grid-row: 1;
   font-size: 1.4rem;
   line-height: 1.4;
   align-self: start;
   margin-top: 0.1em;
-}
+} */
+
+/* .feedback-body {
+  text-align: center;
+} */
 
 .feedback > div,
 .feedback-body {
@@ -1652,27 +1605,13 @@ body.is-resizing-media .media-container.resizable-media {
   min-width: 0;
   direction: ltr;
   unicode-bidi: isolate;
-  text-align: left;
+  /* text-align: left; */
 }
 
-/* Bug fix: for MCQ feedback, quiz.js nests the "Explanation:" <strong>
-   label *inside* .feedback-body (`<div class="feedback-body"><strong>
-   Explanation:</strong>...explanation text...</div>`), not as a direct
-   child of .feedback like the essay feedback does. TextDirectionEngine
-   judges .feedback-body's direction from its first real line of content
-   (correctly skipping the "Explanation:" prefix for *detection*), but the
-   text-rtl/text-ltr class it applies still lands on the whole
-   .feedback-body container - so the label, as a descendant, was inheriting
-   that container's direction/right-alignment instead of keeping its own.
-   This rule re-asserts the label's own LTR styling regardless of which
-   direction class .feedback-body ends up with, while leaving the
-   explanation text after it free to follow .feedback-body's RTL/LTR rules
-   normally.
-   Specificity note: deliberately written as `.feedback .feedback-body >
-   strong` (0,2,1) rather than `.feedback-body > strong` (0,1,1) so it
-   reliably beats the later `.feedback-body * { text-align: inherit; }`
-   reset further down this file - same specificity would otherwise let
-   source order decide, which is fragile to future edits. */
+.mcq-explanation-label {
+  text-align: center !important;
+}
+
 .feedback .feedback-body > strong {
   direction: ltr;
   unicode-bidi: isolate;
@@ -1680,13 +1619,13 @@ body.is-resizing-media .media-container.resizable-media {
   display: inline-block;
 }
 
-.feedback.correct::before {
+/* .feedback.correct::before {
   content: "✓";
 }
 
 .feedback.wrong::before {
   content: "✗";
-}
+} */
 
 /* Bug fix: essay explanations were forced center-aligned regardless of
    text direction, because .feedback.essay-feedback.show used
@@ -1880,12 +1819,12 @@ body.is-resizing-media .media-container.resizable-media {
     padding: 14px;
   }
 
-  .feedback::before {
+  /* .feedback::before {
     grid-column: 1;
     grid-row: 1;
     font-size: 1.8rem;
     margin-top: 0;
-  }
+  } */
 
   .feedback > div,
   .feedback-body,
@@ -2137,7 +2076,7 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 /* Ensure child blockquotes or paragraphs inherit the injected parent wrapper direction */
-.feedback-body *,
+/* .feedback-body *,
 .formal-answer-text * {
   text-align: inherit;
-}
+} */
