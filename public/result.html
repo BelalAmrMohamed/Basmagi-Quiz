@@ -183,59 +183,37 @@
             <div class="menu-section-title"><span class="menu-label">تحميل الإمتحان</span></div>
             <button id="exportQuizBtn" class="menu-item" title="تحميل الإمتحان كملف HTML تفاعلي">
                 <img src="./favicon.png" class="download-option-image" alt="Quiz logo"><span class="menu-label">Quiz
-                    (.html)</span>
+                    <code>(.html)</code></span>
             </button>
-            <button id="exportJsonBtn" class="menu-item" title="تحميل بيانات الإمتحان كملف JSON">
-                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-file-braces-icon lucide-file-braces icon">
-                    <path
-                        d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
-                    <path d="M14 2v5a1 1 0 0 0 1 1h5" />
-                    <path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1" />
-                    <path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1" />
-                </svg>
-                <span class="menu-label">JSON (.json)</span>
-            </button>
-            <button id="exportSourceBtn" class="menu-item" style="display: none;" title="تحميل الملف المصدر للإمتحان">
-                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-arrow-down-to-line-icon lucide-arrow-down-to-line icon">
-                    <path d="M12 17V3" />
-                    <path d="m6 11 6 6 6-6" />
-                    <path d="M19 21H5" />
-                </svg>
-                <span class="menu-label">Download Source</span>
-            </button>
+
             <div class="menu-divider" role="separator"></div>
 
             <div class="menu-section-title"><span class="menu-label">تحميل الإمتحان بإجاباتك</span></div>
             <button id="exportHtmlBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف HTML"><img
                     src="./assets/images/HTML_Icon.png" class="download-option-image" alt="HTML Icon">
-                <span class="menu-label">HTML (.html)</span></button>
+                <span class="menu-label">HTML <code>(.html)</code></span></button>
+            <button id="exportPdfBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف PDF"><img
+                    src="./assets/images/PDF_Icon.png" class="download-option-image" alt="PDF Icon"><span
+                    class="menu-label">PDF
+                    <code>(.pdf)</code></span></button>
+            <button id="exportPptxBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف PowerPoint"><img
+                    src="./assets/images/pptx_icon.png" class="download-option-image" alt="PowerPoint Icon"><span
+                    class="menu-label">PowerPoint
+                    <code>(.pptx)</code></span></button>
+            <button id="exportWordBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف Word"><img
+                    src="./assets/images/word_icon.png" class="download-option-image" alt="Word Icon">
+                <span class="menu-label">Word <code>(.docx)</code></span></button>
             <button id="exportMdBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف Markdown"><img
                     src="./assets/images/mardownIcon.png" class="download-option-image" alt="Mardown Icon"><span
                     class="menu-label">Markdown
-                    (.md)</span></button>
+                    <code>(.md)</code></span></button>
             <button id="exportTxtBtn" class="menu-item" title="نسخ الإمتحان مع إجاباتك كنص"><span><svg
                         xmlns="http://www.w3.org/2000/svg" id="exportTxtBtnIcon" width="24" height="24"
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy">
                         <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                         <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                    </svg></span><span class="menu-label">Copy text</span></button>
-            <button id="exportPdfBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف PDF"><img
-                    src="./assets/images/PDF_Icon.png" class="download-option-image" alt="PDF Icon"><span
-                    class="menu-label">PDF
-                    (.pdf)</span></button>
-            <button id="exportPptxBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف PowerPoint"><img
-                    src="./assets/images/pptx_icon.png" class="download-option-image" alt="PowerPoint Icon"><span
-                    class="menu-label">PowerPoint
-                    (.pptx)</span></button>
-            <button id="exportWordBtn" class="menu-item" title="تحميل الإمتحان مع إجاباتك كملف Word"><img
-                    src="./assets/images/word_icon.png" class="download-option-image" alt="Word Icon">
-                <span class="menu-label">Word (.docx)</span></button>
-
+                    </svg></span><span class="menu-label">Copy As Text</span></button>
 
             <div class="menu-divider" role="separator"></div>
 

@@ -74,6 +74,7 @@ body {
 }
 
 .hamburger-stats {
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -116,8 +117,10 @@ body {
   font-size: 0.875rem;
   font-weight: 700;
   margin-bottom: 12px;
+  margin-top: 12px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-align: center;
 }
 
 .menu-nav-legend {
@@ -126,6 +129,7 @@ body {
   gap: 12px;
   margin-bottom: 12px;
   font-size: 0.75rem;
+  direction: rtl;
 }
 
 .menu-nav-legend span {
@@ -2002,20 +2006,8 @@ body.is-resizing-media .media-container.resizable-media {
    We do NOT modify side-menu.css or side-menu.js.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* Fix A: .hamburger-stats has align-items/justify-content but is missing
-   display:flex, so those properties have no effect and the SVG icon
-   drifts off-centre. Adding display:flex here activates them. */
-.hamburger-stats {
-  display: flex;
-}
 
-@media (max-width: 480px) {
-  /* Fix B: Sidebar logo header — centering + bottom separator.
-     On all other pages the logo sits inside an <a> tag, and side-menu.css
-     targets `.sidebar > a:has(.sidebar-logo)` to centre it and draw a
-     border-bottom separator. The quiz page intentionally has no <a> wrapper
-     (to prevent students accidentally navigating away), so that rule never
-     fires. We replicate the exact same treatment here for the bare <div>. */
+@media (max-width: 768px) {
   .sidebar-logo.sidebar-expanded-only {
     display: flex;
     justify-content: center;

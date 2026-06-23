@@ -37,6 +37,17 @@ if (!result) window.location.href = "/";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getEssayAnswer = (q) => q.answer ?? "";
 
+// === Helper: HTML Escaping ===
+const escapeHtml = (unsafe) => {
+  if (unsafe === null || unsafe === undefined) return "";
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
+
 // ── Text Direction Engine ──────────────────────────────────────────────────
 const TextDirectionEngine = (() => {
   const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
@@ -393,49 +404,12 @@ function extractCategoryFromPath(path) {
   return "";
 }
 
-// === Breadcrumb Logic ===
-function updateBreadcrumb(meta, els) {
-  if (!els.breadcrumb || !meta.path) return { fullBreadcrumb: "" };
-
-  const parts = meta.path.split("/");
-  let courseName = "";
-  let intermediate = [];
-
-  const quizzesIdx = parts.indexOf("quizzes");
-  if (quizzesIdx !== -1 && quizzesIdx + 4 < parts.length) {
-    courseName = parts[quizzesIdx + 4];
-    if (quizzesIdx + 5 < parts.length - 1) {
-      intermediate = parts.slice(quizzesIdx + 5, parts.length - 1);
-    }
-  } else if (parts.length >= 3) {
-    courseName = parts[parts.length - 2];
-  }
-
-  if (!courseName)
-    courseName = meta.category || extractCategoryFromPath(meta.path) || "";
-
-  const isMobile = window.innerWidth <= 768;
-  const limit = isMobile ? 40 : 60;
-
-  let breadcrumbText = "";
-  const fullBreadcrumb = intermediate.length > 0 
-    ? `${courseName} → ${intermediate.join(" → ")}`
-    : courseName;
-
-  if (intermediate.length > 0) {
-    const fullString = fullBreadcrumb;
-    if (fullString.length > limit) {
-      breadcrumbText = `${courseName} → ... `;
-    } else {
-      breadcrumbText = fullString;
-    }
-  } else {
-    breadcrumbText = `${courseName} `;
-  }
-
-  els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
-  return { fullBreadcrumb };
-}
+const formatQuestionTypes = (stats) => {
+  const qt = stats?.questionTypes;
+  if (!qt) return null;
+  if (Array.isArray(qt)) return qt.length ? qt.join(" · ") : null;
+  return String(qt) || null;
+};
 
 document.addEventListener("DOMContentLoaded", async () => {
   const scoreHeader = document.getElementById("scoreHeader");
@@ -449,8 +423,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const exportPptxBtn = document.getElementById("exportPptxBtn");
   const exportHtmlBtn = document.getElementById("exportHtmlBtn");
   const exportQuizBtn = document.getElementById("exportQuizBtn");
-  const exportJsonBtn = document.getElementById("exportJsonBtn");
-  const exportSourceBtn = document.getElementById("exportSourceBtn");
+  // const exportJsonBtn = document.getElementById("exportJsonBtn");
+  // const exportSourceBtn = document.getElementById("exportSourceBtn");
 
   const els = {
     breadcrumb: document.getElementById("quizBreadcrumb"),
@@ -476,6 +450,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     source: result.source,
     createdAt: result.createdAt,
     path: null,
+    author: result.author || null,
+    view: result.view || null, // Doesn't show in the quiz info dialog
+    mode: result.mode || null, // Doesn't show in the quiz info dialog
+    questionTypes: formatQuestionTypes(userQuiz.stats), 
+    // The questionTypes is formatted incorrectly, it looks like this: 
+    // `Essay,MCQ,True/False`, when it's supposed to look like this: `Essay · MCQ · True/False`
   };
 
   let questions = [];
@@ -591,7 +571,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             await navigator.clipboard.writeText(text);
             quizTextBlob = new Blob([text], { type: "text/plain" });
 
-            exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Copy text</span>`;
+            exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Copy As Text</span>`;
             isCopied = true;
             showNotification(
               "تم النسخ",
@@ -615,9 +595,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }).then(() => {
         if (isCopied) {
-          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Text (.txt)</span>`;
+          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Text <code>(.txt)</code></span>`;
         } else {
-          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span><span class="menu-label">نسخ</span>`;
+          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span><span class="menu-label">Copy As Text</span>`;
         }
       }));
 
@@ -651,73 +631,91 @@ document.addEventListener("DOMContentLoaded", async () => {
         exportToQuiz(config, questions),
       ));
 
-  exportJsonBtn &&
-    (exportJsonBtn.onclick = () => {
-      withDownloadLoading(exportJsonBtn, async () => {
-        if (config.path && config.path.endsWith(".json")) {
-          const res = await fetch(config.path);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${config.title || config.id}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } else {
-          const exportQuestions = questions.map((q) => {
-            const question = { q: q.q, options: q.options, correct: q.correct };
-            if (q.image && q.image.trim()) question.image = q.image;
-            if (q.explanation && q.explanation.trim())
-              question.explanation = q.explanation;
-            return question;
-          });
-          const statsTypes = new Set();
-          exportQuestions.forEach((q) => {
-            if (!q.options || q.options.length === 0) statsTypes.add("Essay");
-            else if (q.options.length === 2) statsTypes.add("True/False");
-            else statsTypes.add("MCQ");
-          });
-
-          const payload = {
-            stats: {
-              questionCount: exportQuestions.length,
-              questionTypes: Array.from(statsTypes).sort(),
-            },
-            questions: exportQuestions,
-          };
-          const fileContent = JSON.stringify(payload, null, 2);
-          const blob = new Blob([fileContent], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${(config.title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      });
-    });
-
-  // Show source button if the manifest entry has a source URL
-  if (config.source && typeof config.source === "string" && exportSourceBtn) {
-    exportSourceBtn.style.display = "flex";
-    exportSourceBtn.onclick = () => {
-      window.open(config.source, "_blank");
-    };
-  }
-
   const limit = 30;
   const title = result.examTitle;
 
   /* Since the page is RTL and the welcome title is in Arabic,
-     but most exam Titles are in English, I reversed the placement
-     of the `...` so they actually get displayed correctly */
-  document.getElementById("quiz-title").textContent =
+     but most exam Titles are in English (but not all), The placement
+     of the `...` Should be dynamic */
+  const quizTitleEl = document.getElementById("quiz-title");
+  quizTitleEl.textContent =
     title.length > limit ? `${title.substring(0, limit)}...` : title;
+  // Apply RTL/LTR class now that the text is set — the engine's MutationObserver
+  // won't fire for a textContent change on a non-TARGET_SELECTORS parent, so we
+  // drive it manually.
+  TextDirectionEngine.scan(quizTitleEl.parentElement ?? document);
+
+  // ── Quiz Info Dialog ───────────────────────────────────────────────────────
+  // Populate the info table and wire open/close for the quiz-info dialog.
+  if (els.quizInfoTable) {
+
+    // Normalise the date display
+    const formatDate = (raw) => {
+      if (!raw) return null;
+      let d = String(raw);
+      if (d.includes(",")) d = d.split(",")[0];
+      else if (d.includes(" - ")) d = d.split(" - ")[0];
+      else if (d.includes(" ")) d = d.split(" ")[0];
+      return d || null;
+    };
+
+    // Explicit ordered list of allowed fields — nothing else is ever shown
+    const ROWS = [
+      { label: "العنوان", val: config.title },
+      { label: "الوصف", val: config.description },
+      { label: "المادة", val: config.category || extractCategoryFromPath(config.path) || null },
+      { label: "التاريخ", val: formatDate(config.createdAt) },
+      { label: "المصدر", val: config.source },
+      { label: "صاحب الإمتحان", val: config.author },
+      { label: "نوع الإمتحان الإجباري", val: config.mode },
+      {
+        label: "الشكل الإجباري",
+        val:
+          config.view === "pagination"
+            ? "كل سؤال في صفحة (Pagination)"
+            : config.view === "vertical"
+              ? "كل الأسئلة في صفحة واحدة (Vertical)"
+              : null,
+      },
+      { label: "نوع الأسئلة", val: config.questionTypes },
+      { label: "عدد الأسئلة", val: questions.length },
+    ].filter((r) => r.val);
+
+    if (!ROWS.length) {
+      tbody.innerHTML = `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
+      return;
+    }
+
+    const isUrl = (s) => /^https?:\/\//i.test(s);
+
+    els.quizInfoTable.innerHTML = ROWS.map(({ label, val }) => {
+      const v = String(val);
+      const displayVal = isUrl(v)
+        ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
+        : escapeHtml(v);
+      return `<tr>
+        <th scope="row">${escapeHtml(label)}</th>
+        <td>${displayVal}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  if (els.quizInfoBtn && els.quizInfoDialog) {
+    els.quizInfoBtn.addEventListener("click", () => {
+      els.quizInfoDialog.showModal();
+    });
+  }
+
+  if (els.quizInfoDialogClose && els.quizInfoDialog) {
+    els.quizInfoDialogClose.addEventListener("click", () => {
+      els.quizInfoDialog.close();
+    });
+  }
+
+  // Close dialog when the user clicks the backdrop
+  els.quizInfoDialog?.addEventListener("click", (e) => {
+    if (e.target === els.quizInfoDialog) els.quizInfoDialog.close();
+  });
 
   renderHeader(
     scoreHeader,
@@ -1246,7 +1244,7 @@ function renderReview(container, questions, userAnswers) {
             <span class="status-icon status-${statusClass}">${statusIcon}</span>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
           ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}

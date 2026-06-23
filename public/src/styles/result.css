@@ -76,7 +76,6 @@ body {
   font-weight: 700;
   margin: 0;
   display: block;
-  text-align: left;
 }
 
 /* ─── Score Header Card ───────────────────────────────────────────────────── */
@@ -352,12 +351,9 @@ body {
 
 .quiz-title-row {
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 8px;
-  direction: ltr;
-  justify-content: flex-start;
 }
 
 .badge-grid {
@@ -1392,6 +1388,12 @@ body {
   direction: ltr;
 }
 
+.title-container:has(#quiz-title.text-rtl),
+.title-date-container:has(#quiz-title.text-rtl),
+.title-date-container:has(h1.text-rtl) {
+  direction: rtl;
+}
+
 /* Info icon button next to the quiz title */
 .quiz-info-btn {
   display: inline-flex;
@@ -1719,4 +1721,3 @@ dialog.quiz-info-dialog {
   cursor: not-allowed;
   opacity: 0.75;
 }
-

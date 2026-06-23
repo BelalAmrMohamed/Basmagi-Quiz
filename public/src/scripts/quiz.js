@@ -106,8 +106,6 @@ const els = {
       e.clientY > rect.bottom;
     if (isBackdrop) dialog.close();
   });
-
-  // Close on Escape is handled natively by <dialog>
 })();
 
 // === Quiz Password Lock: teacher-enforced access gate ===
@@ -1134,7 +1132,6 @@ async function init() {
         author: userQuiz.meta?.author || null,
         view: userQuiz.meta?.view || null,
         mode: userQuiz.meta?.mode || null,
-        privacy: userQuiz.meta?.privacy || null,
         password: userQuiz.meta?.password || null,
         questionTypes: formatQuestionTypes(userQuiz.stats),
       };
@@ -1170,7 +1167,6 @@ async function init() {
         author: module.meta?.author || null,
         view: module.meta?.view || null,
         mode: module.meta?.mode || null,
-        privacy: module.meta?.privacy || null,
         password: module.meta?.password || null,
         questionTypes: formatQuestionTypes(module.stats),
       };
