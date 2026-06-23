@@ -233,80 +233,74 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   FENCED CODE BLOCKS  +  COPY BUTTON  (Glassmorphism)
+   CODE BLOCKS + FIXED HEADER ARCHITECTURE
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .code-block-wrapper {
-  position: relative;
-  margin: 14px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto 1fr;
+  margin: 20px 0;
   direction: ltr;
-  border-radius: 12px;
-  /* Glassmorphism card effect around the whole block */
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
-  overflow-x: hidden;
-  overflow-y: auto;
+  border-radius: 10px;
+  background: #121214; /* Deep, modern terminal background */
+  border: 1px solid #2d2d34;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  position: relative;
   max-height: 500px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  overflow: hidden; /* Locks down wrapper; inner container handles scrolling */
 }
 
-/* Language badge in the top-left corner */
+/* Distinct Code-Editor Header Bar Background */
+.code-block-wrapper::before {
+  content: "";
+  grid-column: 1 / span 2;
+  grid-row: 1;
+  height: 38px;
+  background: #1c1c1f; /* Visual separation for the header */
+  border-bottom: 1px solid #2d2d34;
+  z-index: 1;
+}
+
+/* Language Badge */
 .code-lang-label {
-  position: absolute;
-  top: 10px;
-  left: 14px;
-  font-family: "SF Mono", "Fira Code", Consolas, monospace;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary, #94a3b8);
-  opacity: 0.7;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* Copy button — glass pill floating in the top-right corner */
-.copy-code-btn {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  cursor: pointer;
+  grid-column: 1;
+  grid-row: 1;
+  z-index: 2;
+  align-self: center;
+  padding-left: 16px;
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
   font-size: 0.72rem;
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9b9ba6;
+  user-select: none;
+  pointer-events: none;
+  opacity: 1; /* Resetting original opacity downplay */
+}
 
-  /* Glassmorphism */
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 2px 8px rgba(0, 0, 0, 0.14);
-
-  color: var(--color-text-secondary, #94a3b8);
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.12s ease;
-
-  /* Hidden by default; reveal on wrapper hover */
-  opacity: 0;
+/* Copy Button — Refined Editor Utility */
+.copy-code-btn {
+  grid-column: 2;
+  grid-row: 1;
   z-index: 2;
+  align-self: center;
+  margin-right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #9b9ba6;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0; /* Hidden by default; reveals crisp on hover */
 }
 
 .copy-code-btn .copy-label {
@@ -318,44 +312,55 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 .copy-code-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: var(--color-text-primary, #1e1e2e);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 4px 12px rgba(0, 0, 0, 0.18);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 .copy-code-btn:active {
-  transform: translateY(0);
+  transform: scale(0.96);
 }
 
-/* "Copied!" confirmation state */
+/* "Copied!" Success Confirmation State */
 .copy-code-btn.copied {
-  opacity: 1;
-  background: rgba(16, 185, 129, 0.18); /* success green tint */
+  opacity: 1 !important;
+  background: rgba(16, 185, 129, 0.12);
   border-color: rgba(16, 185, 129, 0.4);
-  color: var(--color-success, #10b981);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 0 0 3px rgba(16, 185, 129, 0.12);
+  color: #34d399;
 }
 
-/* The <pre> inside the wrapper */
+/* Scrollable Inner Code Body (<pre>) */
 .code-block {
-  background: var(--color-background-secondary, #1a1a2e);
-  border: none; /* wrapper owns the border */
-  border-radius: 12px; /* match wrapper */
-  padding: 36px 16px 14px; /* top pad makes room for button + lang label */
+  grid-column: 1 / span 2;
+  grid-row: 2;
   margin: 0;
-  overflow-x: auto;
+  padding: 16px;
+  background: transparent; /* Seamless blend with wrapper background */
+  overflow: auto; /* Handles horizontal and vertical layout-overflow */
   -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
-  font-size: 0.9rem;
+  font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
+  font-size: 0.88rem;
   line-height: 1.6;
   white-space: pre;
   text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: #3a3a44 transparent;
+}
+
+/* Custom Scrollbar Tuning for Dark Theme */
+.code-block::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.code-block::-webkit-scrollbar-track {
+  background: transparent;
+}
+.code-block::-webkit-scrollbar-thumb {
+  background: #2d2d34;
+  border-radius: 4px;
+}
+.code-block::-webkit-scrollbar-thumb:hover {
+  background: #3a3a44;
 }
 
 .code-block code {
@@ -363,47 +368,77 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   padding: 0;
   border-radius: 0;
   font-size: inherit;
-  color: var(--color-code, #e2e8f0);
+  color: #e3e3e6;
 }
 
-/* ── Light-theme code block overrides ──────────────────────────────────────── */
+/* ── Custom High-Performance Token Highlighting (Dark Theme) ── */
+.sh-comment   { color: #636370; font-style: italic; }
+.sh-keyword   { color: #ff79c6; font-weight: 600; }
+.sh-string    { color: #50fa7b; }
+.sh-number    { color: #bd93f9; }
+.sh-type      { color: #8be9fd; }
+.sh-function  { color: #ffb86c; }
+.sh-property  { color: #f1fa8c; }
+.sh-builtin   { color: #8be9fd; font-style: italic; }
+.sh-operator  { color: #ff79c6; }
+.sh-variable  { color: #f8f8f2; }
+.sh-tag       { color: #ff79c6; }
+.sh-attr      { color: #50fa7b; }
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LIGHT THEME ADJUSTMENTS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 [data-theme="light"] .code-block-wrapper {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.08));
+  background: #f8f9fa;
+  border-color: #e1e1e6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .code-block-wrapper::before {
+  background: #edf0f2;
+  border-bottom-color: #e1e1e6;
+}
+
+[data-theme="light"] .code-lang-label {
+  color: #62626a;
 }
 
 [data-theme="light"] .copy-code-btn {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.12);
-  color: var(--color-text-secondary, #64748b);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 2px 6px rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #62626a;
 }
 
 [data-theme="light"] .copy-code-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: var(--color-text-primary, #0f172a);
-}
-
-[data-theme="light"] .code-block {
-  background: #f8f9fb;
+  background: rgba(0, 0, 0, 0.08);
+  color: #1a1a1a;
 }
 
 [data-theme="light"] .code-block code {
-  color: #334155;
+  color: #24292e;
 }
 
-[data-theme="dark"] .code-block code,
-[data-theme="dark-slate"] .code-block code {
-  color: var(--color-code, #e2e8f0);
+[data-theme="light"] .code-block::-webkit-scrollbar-thumb {
+  background: #d1d1d6;
 }
+
+/* Custom Token Highlighting (Light Theme) */
+[data-theme="light"] .sh-comment   { color: #8e908c; font-style: italic; }
+[data-theme="light"] .sh-keyword   { color: #a71d5d; font-weight: 600; }
+[data-theme="light"] .sh-string    { color: #183691; }
+[data-theme="light"] .sh-number    { color: #0086b3; }
+[data-theme="light"] .sh-type      { color: #795da3; }
+[data-theme="light"] .sh-function  { color: #795da3; }
+[data-theme="light"] .sh-property  { color: #0086b3; }
+[data-theme="light"] .sh-builtin   { color: #ed6a43; }
+[data-theme="light"] .sh-operator  { color: #a71d5d; }
+[data-theme="light"] .sh-tag       { color: #63a35c; }
+[data-theme="light"] .sh-attr      { color: #795da3; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   GFM TABLES  (Glassmorphism)
+   GFM TABLES
    ══════════════════════════════════════════════════════════════════════════════ */
 
 /* Outer scroll container — owns the glass aesthetic */

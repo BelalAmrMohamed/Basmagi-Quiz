@@ -1805,16 +1805,6 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   const alignClass = getAlignClass(q.q);
   const passageAlignClass = getAlignClass(q.passage || q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
-  // Fix 2: passageClass is ONLY applied when the question has an explicit
-  // passage field. The old >400-char auto-promotion is removed so that
-  // long plain questions stay as normal questions and are never auto-wrapped
-  // in the scrollable passage box.
-  const passageClass = q.passage ? " question-text--passage" : "";
-
-  // Fix 4: media now lives UNDER .question-header, not in a separate wrapper
-  // above .question-body. renderQuestionMedia returns zero or more
-  // .media-center-wrap divs; placing them here keeps the DOM order
-  // header → media → question-text → options as requested.
   const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
   const header = `
@@ -1831,7 +1821,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
          \`passage\` field. A <div> has no content-model restriction;
          role="heading" aria-level="2" preserves the same heading
          semantics for screen readers that the real <h2> provided. -->
-    <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
 
   if (isEssay) {
@@ -2097,12 +2087,6 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 
   const alignClass = getAlignClass(q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
-  // Fix 2: passageClass only applies when an explicit passage field exists.
-  // The >400-char heuristic is removed so long questions remain standard.
-  const passageClass = q.passage ? " question-text--passage" : "";
-
-  // Fix 4: media injected here — immediately after .question-header —
-  // so .media-center-wrap renders under the header, not above .question-body.
   const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
   const textHeaderHTML = `
@@ -2112,7 +2096,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
     </div>
     ${mediaHTML}
     ${renderReadingPassage(q.passage, passageAlignClass)}
-    <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
 
   if (isEssay) {
@@ -2374,7 +2358,6 @@ const TextDirectionEngine = (() => {
     "code",
     ".code-block",
     ".reading-passage",
-    ".question-text--passage",
   ].join(", ");
 
   const BLOCK_CHILD_SELECTOR =
