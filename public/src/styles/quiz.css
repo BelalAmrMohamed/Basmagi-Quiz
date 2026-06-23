@@ -74,7 +74,6 @@ body {
 }
 
 .hamburger-stats {
-  z-index: calc(var(--z-overlay, 500) + 1000);
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -2044,9 +2043,10 @@ body.is-resizing-media .media-container.resizable-media {
      border-bottom separator. The quiz page intentionally has no <a> wrapper
      (to prevent students accidentally navigating away), so that rule never
      fires. We replicate the exact same treatment here for the bare <div>. */
-  .sidebar > div:has(.sidebar-logo) {
+  .sidebar-logo.sidebar-expanded-only {
     display: flex;
     justify-content: center;
+    align-items: center;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-background);
