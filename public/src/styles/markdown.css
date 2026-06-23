@@ -233,42 +233,50 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   CODE BLOCKS + FIXED HEADER ARCHITECTURE
+   MODERN TERMINAL CODE BLOCKS + INDESTRUCTIBLE 3-COLUMN HEADER
    ══════════════════════════════════════════════════════════════════════════════ */
 
 .code-block-wrapper {
   display: grid;
-  grid-template-columns: 1fr auto;
+  /* FIX: 3-column layout ensures a dedicated middle spacer column that prevents overlap */
+  grid-template-columns: auto 1fr auto;
   grid-template-rows: auto 1fr;
   margin: 20px 0;
-  direction: ltr;
+  /* FIX: Strictly lock the physical grid coordinates regardless of parent document direction */
+  direction: ltr !important;
   border-radius: 10px;
-  background: #121214; /* Deep, modern terminal background */
+  background: #121214;
   border: 1px solid #2d2d34;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   position: relative;
   max-height: 500px;
-  overflow: hidden; /* Locks down wrapper; inner container handles scrolling */
+  overflow: hidden;
 }
 
 /* Distinct Code-Editor Header Bar Background */
 .code-block-wrapper::before {
   content: "";
-  grid-column: 1 / span 2;
+  /* FIX: Spans across all 3 structural columns */
+  grid-column: 1 / span 3;
   grid-row: 1;
   height: 38px;
-  background: #1c1c1f; /* Visual separation for the header */
+  background: #1c1c1f;
   border-bottom: 1px solid #2d2d34;
   z-index: 1;
 }
 
 /* Language Badge */
 .code-lang-label {
-  grid-column: 1;
+  grid-column: 1; /* Locked to the left-most column box */
   grid-row: 1;
   z-index: 2;
   align-self: center;
+  /* FIX: Insulation package against global text-align or direction resets */
+  justify-self: start;
+  text-align: left !important;
+  direction: ltr !important;
   padding-left: 16px;
+  padding-right: 8px;
   font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
   font-size: 0.72rem;
   font-weight: 600;
@@ -277,15 +285,15 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   color: #9b9ba6;
   user-select: none;
   pointer-events: none;
-  opacity: 1; /* Resetting original opacity downplay */
 }
 
 /* Copy Button — Refined Editor Utility */
 .copy-code-btn {
-  grid-column: 2;
+  grid-column: 3; /* Locked to the right-most column box */
   grid-row: 1;
   z-index: 2;
   align-self: center;
+  justify-self: end;
   margin-right: 12px;
   display: inline-flex;
   align-items: center;
@@ -300,7 +308,7 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #9b9ba6;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  opacity: 0; /* Hidden by default; reveals crisp on hover */
+  opacity: 0;
 }
 
 .copy-code-btn .copy-label {
@@ -331,12 +339,13 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 
 /* Scrollable Inner Code Body (<pre>) */
 .code-block {
-  grid-column: 1 / span 2;
+  /* FIX: Spans across all 3 layout columns to maximize horizontal canvas room */
+  grid-column: 1 / span 3;
   grid-row: 2;
   margin: 0;
   padding: 16px;
-  background: transparent; /* Seamless blend with wrapper background */
-  overflow: auto; /* Handles horizontal and vertical layout-overflow */
+  background: transparent;
+  overflow: auto;
   -webkit-overflow-scrolling: touch;
   font-family: "SF Mono", "Fira Code", "JetBrains Mono", Consolas, monospace;
   font-size: 0.88rem;
@@ -385,6 +394,57 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 .sh-tag       { color: #ff79c6; }
 .sh-attr      { color: #50fa7b; }
 
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LIGHT THEME ADJUSTMENTS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .code-block-wrapper {
+  background: #f8f9fa;
+  border-color: #e1e1e6;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .code-block-wrapper::before {
+  background: #edf0f2;
+  border-bottom-color: #e1e1e6;
+}
+
+[data-theme="light"] .code-lang-label {
+  color: #62626a;
+}
+
+[data-theme="light"] .copy-code-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #62626a;
+}
+
+[data-theme="light"] .copy-code-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #1a1a1a;
+}
+
+[data-theme="light"] .code-block code {
+  color: #24292e;
+}
+
+[data-theme="light"] .code-block::-webkit-scrollbar-thumb {
+  background: #d1d1d6;
+}
+
+/* Custom Token Highlighting (Light Theme) */
+[data-theme="light"] .sh-comment   { color: #8e908c; font-style: italic; }
+[data-theme="light"] .sh-keyword   { color: #a71d5d; font-weight: 600; }
+[data-theme="light"] .sh-string    { color: #183691; }
+[data-theme="light"] .sh-number    { color: #0086b3; }
+[data-theme="light"] .sh-type      { color: #795da3; }
+[data-theme="light"] .sh-function  { color: #795da3; }
+[data-theme="light"] .sh-property  { color: #0086b3; }
+[data-theme="light"] .sh-builtin   { color: #ed6a43; }
+[data-theme="light"] .sh-operator  { color: #a71d5d; }
+[data-theme="light"] .sh-tag       { color: #63a35c; }
+[data-theme="light"] .sh-attr      { color: #795da3; }
 
 /* ══════════════════════════════════════════════════════════════════════════════
    LIGHT THEME ADJUSTMENTS
