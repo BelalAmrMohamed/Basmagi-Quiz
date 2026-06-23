@@ -2024,3 +2024,35 @@ body.is-resizing-media .media-container.resizable-media {
 .formal-answer-text * {
   text-align: inherit;
 } */
+
+/* ─── 17. Quiz Page — Mobile Hamburger & Sidebar Overrides ─────────────────
+   Scoped strictly to phone viewports so desktop layout is never touched.
+   We do NOT modify side-menu.css or side-menu.js.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Fix A: .hamburger-stats has align-items/justify-content but is missing
+   display:flex, so those properties have no effect and the SVG icon
+   drifts off-centre. Adding display:flex here activates them. */
+.hamburger-stats {
+  display: flex;
+}
+
+@media (max-width: 480px) {
+  /* Fix B: Sidebar logo header — centering + bottom separator.
+     On all other pages the logo sits inside an <a> tag, and side-menu.css
+     targets `.sidebar > a:has(.sidebar-logo)` to centre it and draw a
+     border-bottom separator. The quiz page intentionally has no <a> wrapper
+     (to prevent students accidentally navigating away), so that rule never
+     fires. We replicate the exact same treatment here for the bare <div>. */
+  .sidebar > div:has(.sidebar-logo) {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex-shrink: 0;
+  }
+}

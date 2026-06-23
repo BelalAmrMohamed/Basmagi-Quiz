@@ -249,7 +249,11 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
-  overflow: hidden; /* keep child pre's border-radius */
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 500px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
 /* Language badge in the top-left corner */

@@ -311,8 +311,11 @@ const getAlignClass = (text) => {
   return dir === "rtl" ? "text-rtl" : "text-ltr";
 };
 
-const isLargeFormatQuestion = (q) =>
-  !!(q?.passage || q?.audio || q?.video || (q?.q && String(q.q).length > 400));
+// Fix 2: Removed the automatic >400-char heuristic that previously
+// promoted long questions into a passage/large-card layout.
+// Large format now only applies when the question has an explicit
+// passage, audio, or video field — never for long plain text.
+const isLargeFormatQuestion = (q) => !!(q?.passage || q?.audio || q?.video);
 
 const MEDIA_SKELETON_HTML = `
   <div class="media-skeleton" aria-hidden="true">
@@ -1220,7 +1223,7 @@ async function init() {
     }
 
     // Update page title
-    document.title = `إمتحان ${metaData.title}`;
+    document.title = metaData.title;
 
     // === Populate Quiz Info Dialog ===
     (function populateInfoDialog() {
@@ -1802,30 +1805,32 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   const alignClass = getAlignClass(q.q);
   const passageAlignClass = getAlignClass(q.passage || q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
-  const passageClass =
-    !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
+  // Fix 2: passageClass is ONLY applied when the question has an explicit
+  // passage field. The old >400-char auto-promotion is removed so that
+  // long plain questions stay as normal questions and are never auto-wrapped
+  // in the scrollable passage box.
+  const passageClass = q.passage ? " question-text--passage" : "";
+
+  // Fix 4: media now lives UNDER .question-header, not in a separate wrapper
+  // above .question-body. renderQuestionMedia returns zero or more
+  // .media-center-wrap divs; placing them here keeps the DOM order
+  // header → media → question-text → options as requested.
+  const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
   const header = `
     <div class="question-header">
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
+    ${mediaHTML}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <!-- Bug fix: this was previously a real <h2>. q.q is run through
          renderMarkdown(), which can output its own block-level tags
          (h1-h6, p, ul/ol, blockquote, pre) whenever a question's full
          content is authored directly in \`q\` instead of a separate
-         \`passage\` field (e.g. a long question with no \`passage\` key, so
-         the >400-char heuristic below adds question-text--passage). A
-         <h2> cannot legally contain another heading or other block
-         content - the browser's HTML parser auto-closes the outer <h2>
-         the moment it hits the first nested block tag, leaving it empty
-         and pushing all the real content out as un-wrapped siblings that
-         never receive this element's text-rtl/text-ltr class, silently
-         falling back to inherited (often wrong) page direction. A <div>
-         has no such content-model restriction; role="heading"
-         aria-level="2" preserves the same heading semantics for screen
-         readers that the real <h2> provided. -->
+         \`passage\` field. A <div> has no content-model restriction;
+         role="heading" aria-level="2" preserves the same heading
+         semantics for screen readers that the real <h2> provided. -->
     <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
 
@@ -1898,19 +1903,14 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   };
 }
 
-// Builds the static media block for a vertical card. This is rendered once
-// per card and never touched again on subsequent answer/submit interactions.
-function buildVerticalQuestionMediaHTML(q, idx) {
-  return renderQuestionMedia(q, `q${idx}`);
-}
-
-// Full (first-render) vertical card: media wrap + body, structured exactly
-// like the pagination card so media never needs to be touched again.
+// Full (first-render) vertical card.
+// Fix 4: .media-center-wrap is now injected inside buildVerticalQuestionBodyHTML,
+// directly after .question-header. The separate .question-media-wrap wrapper
+// that previously sat above .question-body has been removed.
 function buildVerticalQuestionCard(q, idx) {
   const { largeClass, html: bodyHTML } = buildVerticalQuestionBodyHTML(q, idx);
   return `
     <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
-      <div class="question-media-wrap">${buildVerticalQuestionMediaHTML(q, idx)}</div>
       <div class="question-body">${bodyHTML}</div>
     </div>
   `;
@@ -1965,10 +1965,10 @@ function renderAllQuestionsVertical() {
   if (els.progressText)
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
-  // Bug fix (media reload): if we know which card changed, only patch that
-  // card's `.question-body`. The `.question-media-wrap` (audio/video/
-  // YouTube) is never touched, so playback is never interrupted — matching
-  // pagination mode's behavior exactly.
+  // Partial re-render (vertical mode): if we know which card changed, only
+  // patch that card's `.question-body`. Fix 4 note: media is now inside
+  // .question-body (after .question-header), so it is re-created together
+  // with the options/feedback on each answer interaction.
   if (
     lastChangedIdx !== null &&
     document.getElementById(`q-${lastChangedIdx}`)
@@ -1986,8 +1986,9 @@ function renderAllQuestionsVertical() {
     if (bodyEl) {
       bodyEl.innerHTML = bodyHTML;
       existingCard.className = `question-card vertical-question-card${largeClass}`;
-      // Re-scan only the patched body — avoids touching the media wrap.
+      // Re-scan only the patched body to keep direction classes in sync.
       TextDirectionEngine.scan(bodyEl);
+      initMediaSkeletons(existingCard);
     } else {
       // Defensive fallback in case the expected structure is missing
       // (e.g. an older saved card shape) — full rebuild for this card only.
@@ -2096,14 +2097,20 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 
   const alignClass = getAlignClass(q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
-  const passageClass =
-    !q.passage && String(q.q).length > 400 ? " question-text--passage" : "";
+  // Fix 2: passageClass only applies when an explicit passage field exists.
+  // The >400-char heuristic is removed so long questions remain standard.
+  const passageClass = q.passage ? " question-text--passage" : "";
+
+  // Fix 4: media injected here — immediately after .question-header —
+  // so .media-center-wrap renders under the header, not above .question-body.
+  const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
   const textHeaderHTML = `
     <div class="question-header">
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionButtons}
     </div>
+    ${mediaHTML}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <div class="question-text ${alignClass}${passageClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
@@ -2209,10 +2216,11 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 }
 
 // === Core: Render Question (pagination style) ===
-// Bug 5 Fix: media is rendered into its own `.question-media-wrap` once per
-// question. Re-renders triggered by answering (handleSelect/checkAnswer/
-// essay input) only touch `.question-body`, so the media DOM (audio/video/
-// YouTube iframe) is never unmounted or reloaded.
+// Fix 4: media is now rendered inside .question-body, directly after
+// .question-header. Re-renders triggered by answering (handleSelect/
+// checkAnswer/essay input) replace the whole .question-body including
+// media; initMediaSkeletons is called afterward to reinitialise any
+// lazy-loading skeleton placeholders in the new media nodes.
 function renderQuestion() {
   if (!questions.length) return;
 
@@ -2253,15 +2261,18 @@ function renderQuestion() {
     existingCard && Number(existingCard.dataset.questionIndex) === currentIdx;
 
   if (sameQuestion) {
-    // In-place update: only the body changes. Media wrap is left untouched
-    // so its audio/video/iframe elements keep playing without interruption.
+    // In-place update: replace the body content for the same question
+    // (e.g. after answering or checking). Fix 4 note: media is now rendered
+    // inside .question-body (after .question-header), so it is re-created
+    // here alongside the options/feedback. initMediaSkeletons is called to
+    // set up any lazy-loading skeleton placeholders in the new media nodes.
     const bodyEl = existingCard.querySelector(".question-body");
     if (bodyEl) {
       bodyEl.innerHTML = bodyHTML;
       existingCard.className = `question-card${largeClass}`;
-      // Re-scan only the patched body — avoids touching the media wrap and
-      // keeps direction classes in sync without a full-container scan.
+      // Re-scan only the patched body to keep direction classes in sync.
       TextDirectionEngine.scan(bodyEl);
+      initMediaSkeletons(existingCard);
     } else {
       // Defensive fallback in case the expected structure is missing
       setQuestionHTML(
@@ -2281,10 +2292,12 @@ function renderQuestion() {
   updateNav();
 }
 
+// Fix 4: .question-media-wrap removed. Media is now rendered inside
+// buildQuestionBodyHTML, directly after .question-header, so the DOM
+// order is: header → media → question-text → options.
 function renderFullQuestionCard(q, idx, largeClass, bodyHTML) {
   return `
     <div class="question-card${largeClass}" data-question-index="${idx}">
-      <div class="question-media-wrap">${renderQuestionMedia(q, `q${idx}`)}</div>
       <div class="question-body">${bodyHTML}</div>
     </div>
   `;
