@@ -357,27 +357,17 @@
 
                         <div class="quiz-title-row">
                             <h1 id="quiz-title"></h1>
-                            <div class="date-badge" id="dateBadge"
-                                style="display: none; padding: 4px 10px; font-size: 0.8rem;">
-                                <svg class="date-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14"
-                                    height="14" style="margin-inline-end: 4px;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            <button class="quiz-info-btn" id="quizInfoBtn" aria-label="معلومات الاختبار" type="button"
+                                title="معلومات عن الإمتحان">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="lucide lucide-info">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 16v-4" />
+                                    <path d="M12 8h.01" />
                                 </svg>
-                                <span id="quizDate"></span>
-                            </div>
+                            </button>
                         </div>
-                    </div>
-                    <div id="quizDescription"
-                        style="display: none; color: var(--color-text-secondary, #6b7280); font-size: 0.95rem; margin-bottom: 8px;">
-                    </div>
-
-                    <div class="breadcrumb-container">
-                        <div class="breadcrumb" id="quizBreadcrumb" style="margin-bottom: 0;"></div>
-                    </div>
-
-                    <div id="quizSource"
-                        style="display: none; font-size: 0.85rem; color: var(--color-text-secondary, #6b7280); margin-bottom: 8px; opacity: 0.8;">
                     </div>
                 </div>
             </div>
@@ -448,6 +438,29 @@
             </div>
         </div>
     </div>
+
+    <!-- ── Quiz Info Dialog ────────────────────────────────────────────────── -->
+    <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle">
+        <div class="quiz-info-dialog-inner">
+            <div class="quiz-info-dialog-header">
+                <h2 id="quizInfoDialogTitle">تفاصيل الإمتحان</h2>
+                <button class="quiz-info-dialog-close" id="quizInfoDialogClose" aria-label="إغلاق" type="button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="quiz-info-dialog-body">
+                <table class="quiz-info-table" id="quizInfoTable">
+                    <tbody>
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </dialog>
 
     <!-- Contact Developer Overlay -->
     <div id="contactDevOverlay" class="contact-overlay" style="display:none;" role="dialog" aria-modal="true"

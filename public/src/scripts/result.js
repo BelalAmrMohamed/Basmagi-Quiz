@@ -37,27 +37,150 @@ if (!result) window.location.href = "/";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getEssayAnswer = (q) => q.answer ?? "";
 
-// ── Language & Text Direction Helpers ─────────────────────────────────────────
-const ARABIC_CHAR_RE =
-  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
-const RTL_LANG_CODES = new Set(["ar", "fa", "ur", "he", "ps", "ku"]);
+// ── Text Direction Engine ──────────────────────────────────────────────────
+const TextDirectionEngine = (() => {
+  const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+  const FIRST_STRONG_CHAR_REGEX = /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-const detectTextDirection = (text, explicitLang) => {
-  if (explicitLang) {
-    const code = String(explicitLang).toLowerCase().slice(0, 2);
-    return RTL_LANG_CODES.has(code) ? "rtl" : "ltr";
+  const TARGET_SELECTORS = [
+    "#quiz-title",
+    ".q-text",
+    ".option-label",
+    ".explanation-body",
+    ".ans-text",
+    ".essay-text",
+    ".md-content"
+  ].join(", ");
+
+  const EXCEPTION_SELECTORS = [
+    "pre",
+    "code",
+    ".code-block",
+    ".reading-passage"
+  ].join(", ");
+
+  const BLOCK_CHILD_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
+  const LABEL_PREFIX_REGEX = /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
+
+  function detectDirection(text) {
+    if (!text || typeof text !== "string") return "ltr";
+    const contentOnly = text.replace(LABEL_PREFIX_REGEX, "");
+    const searchText = contentOnly.trim() ? contentOnly : text;
+    const match = searchText.match(FIRST_STRONG_CHAR_REGEX);
+    if (match) {
+      return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
+    }
+    return "ltr";
   }
-  const str = String(text || "");
-  const arabicCount = (str.match(ARABIC_CHAR_RE) || []).length;
-  const latinCount = (str.match(/[a-zA-Z]/g) || []).length;
-  return arabicCount > latinCount ? "rtl" : "ltr";
-};
 
-const getAlignClass = (text, explicitLang) => {
-  const dir = detectTextDirection(text, explicitLang);
-  return dir === "rtl" ? "text-rtl" : "text-ltr";
-};
+  function applyDirectionClass(node, direction) {
+    if (direction === "rtl") {
+      if (!node.classList.contains("text-rtl")) {
+        node.classList.remove("text-ltr");
+        node.classList.add("text-rtl");
+      }
+    } else if (!node.classList.contains("text-ltr")) {
+      node.classList.remove("text-rtl");
+      node.classList.add("text-ltr");
+    }
+  }
 
+  function processByLine(element) {
+    const existingLines = element.querySelectorAll(":scope > .text-line");
+    if (existingLines.length) {
+      existingLines.forEach((line) => {
+        applyDirectionClass(line, detectDirection(line.textContent));
+      });
+      applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
+      return;
+    }
+
+    const rawText = element.textContent;
+    const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
+
+    if (lines.length <= 1) {
+      applyDirectionClass(element, detectDirection(rawText));
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    lines.forEach((line) => {
+      const span = document.createElement("span");
+      span.className = "text-line";
+      span.style.display = "block";
+      span.textContent = line;
+      applyDirectionClass(span, detectDirection(line));
+      frag.appendChild(span);
+    });
+    element.textContent = "";
+    element.appendChild(frag);
+    applyDirectionClass(element, detectDirection(lines[0]));
+  }
+
+  function processElement(element) {
+    if (!element) return;
+    if (element.closest(EXCEPTION_SELECTORS)) {
+      applyDirectionClass(element, "ltr");
+      return;
+    }
+    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
+
+    element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
+      applyDirectionClass(zone, "ltr");
+    });
+
+    const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
+    if (blockChildren.length) {
+      blockChildren.forEach((child) => {
+        if (child.closest(EXCEPTION_SELECTORS)) return;
+        applyDirectionClass(child, detectDirection(child.textContent));
+      });
+      const firstRealBlock = Array.from(blockChildren).find((c) => !c.closest(EXCEPTION_SELECTORS));
+      applyDirectionClass(element, detectDirection(firstRealBlock?.textContent));
+      return;
+    }
+
+    processByLine(element);
+  }
+
+  function scan(container = document) {
+    const elements = container.querySelectorAll(TARGET_SELECTORS);
+    elements.forEach(processElement);
+  }
+
+  function init() {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.addedNodes.length) {
+          if (mutation.target.nodeType === Node.ELEMENT_NODE && mutation.target.matches(TARGET_SELECTORS)) {
+            processElement(mutation.target);
+          }
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.matches(TARGET_SELECTORS)) processElement(node);
+              scan(node);
+            }
+          });
+        }
+        if (mutation.type === "characterData") {
+          const parent = mutation.target.parentElement;
+          if (parent && parent.closest(TARGET_SELECTORS)) {
+            processElement(parent.closest(TARGET_SELECTORS));
+          }
+        }
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    scan(document);
+  }
+
+  return { init, scan, detectDirection };
+})();
+
+// Provide backward compatible helpers for any legacy code calling these
+const detectTextDirection = (text) => TextDirectionEngine.detectDirection(text);
+const getAlignClass = (text) => TextDirectionEngine.detectDirection(text) === "rtl" ? "text-rtl" : "text-ltr";
 const getQuestionLang = (q) => q?.lang || null;
 
 // ── Media Helper Functions ────────────────────────────────────────────────────
@@ -272,7 +395,7 @@ function extractCategoryFromPath(path) {
 
 // === Breadcrumb Logic ===
 function updateBreadcrumb(meta, els) {
-  if (!els.breadcrumb || !meta.path) return;
+  if (!els.breadcrumb || !meta.path) return { fullBreadcrumb: "" };
 
   const parts = meta.path.split("/");
   let courseName = "";
@@ -295,9 +418,12 @@ function updateBreadcrumb(meta, els) {
   const limit = isMobile ? 40 : 60;
 
   let breadcrumbText = "";
+  const fullBreadcrumb = intermediate.length > 0 
+    ? `${courseName} → ${intermediate.join(" → ")}`
+    : courseName;
 
   if (intermediate.length > 0) {
-    const fullString = `${courseName} → ${intermediate.join(" → ")}`;
+    const fullString = fullBreadcrumb;
     if (fullString.length > limit) {
       breadcrumbText = `${courseName} → ... `;
     } else {
@@ -308,6 +434,7 @@ function updateBreadcrumb(meta, els) {
   }
 
   els.breadcrumb.textContent = `Course: ${breadcrumbText}`;
+  return { fullBreadcrumb };
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -328,9 +455,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const els = {
     breadcrumb: document.getElementById("quizBreadcrumb"),
     dateBadge: document.getElementById("dateBadge"),
-    quizDate: document.getElementById("quizDate"),
-    quizDescription: document.getElementById("quizDescription"),
-    quizSource: document.getElementById("quizSource"),
+    quizInfoBtn: document.getElementById("quizInfoBtn"),
+    quizInfoDialog: document.getElementById("quizInfoDialog"),
+    quizInfoDialogClose: document.getElementById("quizInfoDialogClose"),
+    quizInfoTable: document.getElementById("quizInfoTable"),
   };
 
   let examList = [];
@@ -590,42 +718,6 @@ document.addEventListener("DOMContentLoaded", async () => {
      of the `...` so they actually get displayed correctly */
   document.getElementById("quiz-title").textContent =
     title.length > limit ? `${title.substring(0, limit)}...` : title;
-
-  // A. Date Formatting
-  if (config.createdAt && els.quizDate && els.dateBadge) {
-    let dateStr = config.createdAt;
-    if (dateStr.includes(",")) {
-      dateStr = dateStr.split(",")[0];
-    } else if (dateStr.includes(" - ")) {
-      dateStr = dateStr.split(" - ")[0];
-    } else if (dateStr.includes(" ")) {
-      dateStr = dateStr.split(" ")[0];
-    }
-
-    els.quizDate.textContent = dateStr;
-    els.dateBadge.style.display = "flex";
-    els.dateBadge.style.alignItems = "center";
-  } else if (els.dateBadge) {
-    els.dateBadge.style.display = "none";
-  }
-
-  // B & C. Dynamic Breadcrumb Title
-  if (config.path && els.breadcrumb) {
-    updateBreadcrumb(config, els);
-    window.addEventListener("resize", () => updateBreadcrumb(config, els));
-  }
-
-  // D. Description
-  if (config.description && els.quizDescription) {
-    els.quizDescription.textContent = config.description;
-    els.quizDescription.style.display = "block";
-  }
-
-  // E. Source
-  if (config.source && els.quizSource) {
-    els.quizSource.textContent = `Source: ${config.source}`;
-    els.quizSource.style.display = "block";
-  }
 
   renderHeader(
     scoreHeader,
@@ -1064,11 +1156,11 @@ function renderReview(container, questions, userAnswers) {
           ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
-              <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> Your Answer:</small>
+              <div class="centered-label"><small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> Your Answer</small></div>
               <div class="essay-text">${userText}</div>
             </div>
             <div class="essay-answer-box formal-essay">
-              <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Formal Answer:</small>
+              <div class="centered-label"><small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-icon lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg> Formal Answer</small></div>
               <div class="essay-text">${formalText}</div>
             </div>
           </div>
@@ -1076,7 +1168,7 @@ function renderReview(container, questions, userAnswers) {
             explanationText
               ? `
           <div class="explanation">
-            <strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation:</strong>
+            <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation</strong></div>
             <div class="explanation-body">${explanationText}</div>
           </div>`
               : ""
@@ -1114,30 +1206,34 @@ function renderReview(container, questions, userAnswers) {
           ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-minus-icon lucide-circle-minus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
 
-      let userText;
-      if (isSkipped) {
-        userText = "<em>Skipped</em>";
-      } else if (isMultiple && Array.isArray(userAns)) {
-        userText = userAns
-          .map((i) => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
-          .map((html) => `<div class="ans-multi-item">${html}</div>`)
-          .join("");
-      } else {
-        userText = renderMarkdown(normalizeLiteralNewlines(q.options[userAns]));
-      }
+      const optionsHtml = q.options.map((opt, i) => {
+        let isSelected = false;
+        if (isMultiple) {
+          isSelected = Array.isArray(userAns) && userAns.includes(i);
+        } else {
+          isSelected = userAns === i;
+        }
+        
+        let optionClass = "option-row locked";
+        if (isSelected) optionClass += " selected";
+        
+        const isCorrectOption = isMultiple 
+          ? Array.isArray(correctIdx) && correctIdx.includes(i)
+          : i === correctIdx;
+          
+        if (isCorrectOption) optionClass += " correct";
+        if (isSelected && !isCorrectOption) optionClass += " wrong";
+        
+        const inputType = isMultiple ? "checkbox" : "radio";
+        const inputName = isMultiple ? `answer-${index}-${i}` : `answer-${index}`;
+        
+        return `
+          <div class="${optionClass} ${getAlignClass(opt)}">
+            <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} disabled aria-label="Option ${i + 1}">
+            <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+          </div>`;
+      }).join("");
 
-      // Correct answer text — render each correct option as a separate item
-      let correctText;
-      if (isMultiple) {
-        correctText = correctIdx
-          .map((i) => renderMarkdown(normalizeLiteralNewlines(q.options[i])))
-          .map((html) => `<div class="ans-multi-item">${html}</div>`)
-          .join("");
-      } else {
-        correctText = renderMarkdown(
-          normalizeLiteralNewlines(q.options[correctIdx]),
-        );
-      }
       const explanationText = q.explanation
         ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
         : "";
@@ -1150,28 +1246,16 @@ function renderReview(container, questions, userAnswers) {
             <span class="status-icon status-${statusClass}">${statusIcon}</span>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          <p class="q-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
           ${renderQuestionMedia(q)}
-          <div class="ans-comparison">
-            <div class="ans-box ${isCorrect ? "ans-correct" : isSkipped ? "ans-skipped" : "ans-wrong"}">
-              <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> Your Answer:</small>
-              <div class="ans-text">${userText}</div>
-            </div>
-            ${
-              !isCorrect
-                ? `
-            <div class="ans-box ans-correct-answer">
-              <small><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg> Correct Answer:</small>
-              <div class="ans-text">${correctText}</div>
-            </div>`
-                : ""
-            }
+          <div class="options-grid">
+            ${optionsHtml}
           </div>
           ${
             explanationText
               ? `
           <div class="explanation">
-            <strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation:</strong>
+            <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation:</strong></div>
             <div class="explanation-body">${explanationText}</div>
           </div>`
               : ""
@@ -1181,6 +1265,7 @@ function renderReview(container, questions, userAnswers) {
   });
 
   container.innerHTML = html;
+  TextDirectionEngine.scan(container);
 }
 
 // ─── Confetti Burst ────────────────────────────────────────────────────────────
