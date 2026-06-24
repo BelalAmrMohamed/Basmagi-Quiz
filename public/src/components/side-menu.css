@@ -419,6 +419,12 @@ body.sidebar-expanded {
   flex-shrink: 0;
 }
 
+/* ── Section header labels: must NOT stretch (flex:1 is for menu-items only) */
+.theme-section-header .menu-label,
+.animation-section-header .menu-label {
+  flex: none;
+}
+
 /* ── Theme Controls Section ──────────────────────────────────────────────── */
 .theme-controls-section {
   margin-top: 4px;
@@ -437,6 +443,7 @@ body.sidebar-expanded {
 .theme-section-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 8px;
   font-size: 0.72rem;
@@ -555,6 +562,7 @@ body.sidebar-expanded {
 .animation-section-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -744,8 +752,9 @@ body.sidebar-expanded {
     transition: none !important;
   }
 
-  .theme-section-header {
-    justify-content: flex-start !important;
+  .theme-section-header,
+  .animation-section-header {
+    justify-content: center !important;
     padding: 8px 14px !important;
   }
 
