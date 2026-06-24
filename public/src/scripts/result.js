@@ -447,12 +447,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     createdAt: result.createdAt,
     path: null,
     author: result.author || null,
-    view: result.view || null, // Doesn't show in the quiz info dialog
-    mode: result.mode || null, // Doesn't show in the quiz info dialog
-    questionTypes: formatQuestionTypes(userQuiz.stats), 
-    // The questionTypes is formatted incorrectly, it looks like this: 
-    // `Essay,MCQ,True/False`, when it's supposed to look like this: `Essay · MCQ · True/False`
   };
+
+  // Patch runtime fields onto config.
+  // view and mode are never on manifest entries; read them from result.
+  // questionTypes may come from the manifest as a raw array or an already-joined
+  // string; normalise both cases through formatQuestionTypes.
+  if (!config.view) config.view = result.view || null;
+  if (!config.mode) config.mode = result.mode || null;
+  config.questionTypes =
+    formatQuestionTypes({ questionTypes: config.questionTypes })
+    || formatQuestionTypes({ questionTypes: result.questionTypes })
+    || null;
 
   let questions = [];
   if (config.path) {
@@ -1146,7 +1152,7 @@ function renderReview(container, questions, userAnswers) {
             </div>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text ${alignClass}">${renderMarkdown(q.q)}</p>
+          <div class="q-text ${alignClass}">${renderMarkdown(q.q)}</div>
           ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
@@ -1240,7 +1246,7 @@ function renderReview(container, questions, userAnswers) {
             <span class="status-icon status-${statusClass}">${statusIcon}</span>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text ${alignClass}">${renderMarkdown(q.q)}</p>
+          <div class="q-text ${alignClass}">${renderMarkdown(q.q)}</div>
           ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}

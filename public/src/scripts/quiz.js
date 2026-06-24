@@ -2741,6 +2741,8 @@ async function finish(skipconfirmationNotification) {
       quizMode === "timed" || quizMode === "timed_exam" ? timeRemaining : 0,
     quizMode,
     mode: quizMode,
+    view: quizStyle,
+    questionTypes: metaData.questionTypes || null,
   };
 
   const gamifiedResult = gameEngine.processResult(rawResult);
