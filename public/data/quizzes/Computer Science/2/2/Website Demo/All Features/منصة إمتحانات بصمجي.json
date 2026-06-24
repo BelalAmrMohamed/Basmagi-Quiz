@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "title": "منصة إمتحانات بصمجي",
+    "id": "3SVMT2U3",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/2/Website Demo/All Features/منصة إمتحانات بصمجي.json",
+    "description": "Basmagi Quiz Platform Demo",
+    "source": "https://www.w3schools.com/CPP/default.asp",
+    "author": "بلال عمرو محمد",
+    "author_email": "belalamrofficial@gmail.com",
+    "password": "1234",
+    "view": "vertical",
+    "mode": "practice"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "المنصة تدعم أسئلة صح **وخطأ**",
+      "explanation": "نعم إنها كذلك ^_^",
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة تدعم أسئلة متعددة الإختيارات ، بأي عدد من الإختيارات",
+      "options": [
+        "الإختيار الأول",
+        "**_الإختيار الثاني_**",
+        "الإختيار الثالث"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة تدعم أسئلة مقالية ذات نظام تصحيح ذكي قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة.\n\nهذه هي الإجابة الصحيحة ، اختر النظام بطريقتك:\n\n```correct-answer\nنظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة\n```\nIsn't that cool ^_^!",
+      "audio": "https://server10.mp3quran.net/minsh/001.mp3",
+      "explanation": "نظام التصحيح متسامح بعض الشئ",
+      "answer": "نظام تصحيح قائم على عدد الكلمات المتشابهة مع الإجابة الصحيحة"
+    },
+    {
+      "q": "If it's an English Quiz, you can wrap your passage beautfully. The platform also supports markdown features. Like this awesome `code block`:\n```cs\nusing System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing System.Text.Json;\nusing System.Threading.Tasks;\n\nnamespace MediumCSharpExample\n{\n    // Simple Task/Todo management system\n    public class TodoItem\n    {\n        public Guid Id { get; set; } = Guid.NewGuid();\n        public string Title { get; set; } = string.Empty;\n        public string? Description { get; set; }\n        public bool IsCompleted { get; set; }\n        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;\n        public DateTime? DueDate { get; set; }\n        public int Priority { get; set; } // 1 = Low, 2 = Medium, 3 = High\n    }\n\n    public class TodoManager\n    {\n        private readonly List<TodoItem> _todos = new();\n\n        public void AddTodo(string title, string? description = null, DateTime? dueDate = null, int priority = 2)\n        {\n            var todo = new TodoItem\n            {\n                Title = title,\n                Description = description,\n                DueDate = dueDate,\n                Priority = priority,\n                IsCompleted = false\n            };\n\n            _todos.Add(todo);\n            Console.WriteLine($\"✅ Added todo: {title}\");\n        }\n\n        public void CompleteTodo(Guid id)\n        {\n            var todo = _todos.FirstOrDefault(t => t.Id == id);\n            if (todo != null)\n            {\n                todo.IsCompleted = true;\n                Console.WriteLine($\"✅ Completed: {todo.Title}\");\n            }\n            else\n            {\n                Console.WriteLine(\"❌ Todo not found.\");\n            }\n        }\n\n        public void ListTodos(bool showCompleted = false)\n        {\n            var filtered = showCompleted \n                ? _todos \n                : _todos.Where(t => !t.IsCompleted);\n\n            if (!filtered.Any())\n            {\n                Console.WriteLine(\"No todos found.\");\n                return;\n            }\n\n            Console.WriteLine(\"\\n📋 Todo List:\");\n            foreach (var todo in filtered.OrderByDescending(t => t.Priority).ThenBy(t => t.DueDate))\n            {\n                string status = todo.IsCompleted ? \"[✓]\" : \"[ ]\";\n                string due = todo.DueDate.HasValue ? $\" (Due: {todo.DueDate.Value:yyyy-MM-dd})\" : \"\";\n                string prio = todo.Priority switch\n                {\n                    3 => \"🔴\",\n                    2 => \"🟡\",\n                    _ => \"🔵\"\n                };\n\n                Console.WriteLine($\"{status} {prio} {todo.Title}{due}\");\n                if (!string.IsNullOrEmpty(todo.Description))\n                    Console.WriteLine($\"   └─ {todo.Description}\");\n            }\n        }\n\n        public void RemoveTodo(Guid id)\n        {\n            var todo = _todos.FirstOrDefault(t => t.Id == id);\n            if (todo != null)\n            {\n                _todos.Remove(todo);\n                Console.WriteLine($\"🗑️  Removed: {todo.Title}\");\n            }\n        }\n\n        public string ExportToJson()\n        {\n            return JsonSerializer.Serialize(_todos, new JsonSerializerOptions\n            {\n                WriteIndented = true\n            });\n        }\n\n        public async Task ImportFromJsonAsync(string json)\n        {\n            try\n            {\n                var imported = JsonSerializer.Deserialize<List<TodoItem>>(json);\n                if (imported != null)\n                {\n                    _todos.Clear();\n                    _todos.AddRange(imported);\n                    Console.WriteLine($\"📥 Imported {imported.Count} todos.\");\n                }\n            }\n            catch (Exception ex)\n            {\n                Console.WriteLine($\"❌ Import failed: {ex.Message}\");\n            }\n        }\n    }\n\n    class Program\n    {\n        static async Task Main(string[] args)\n        {\n            Console.WriteLine(\"🚀 Medium C# Todo Manager\");\n            Console.WriteLine(\"==========================\\n\");\n\n            var manager = new TodoManager();\n\n            // Demo data\n            manager.AddTodo(\"Finish C# project\", \"Implement JSON export/import\", DateTime.UtcNow.AddDays(2), 3);\n            manager.AddTodo(\"Buy groceries\", null, DateTime.UtcNow.AddDays(1), 2);\n            manager.AddTodo(\"Read documentation\", \"Review System.Text.Json\", null, 1);\n\n            manager.ListTodos();\n\n            Console.WriteLine(\"\\nMarking first todo as complete...\");\n            // In real app you would get ID from user input\n            var firstId = manager.GetType().GetField(\"_todos\", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)\n                ?.GetValue(manager) as List<TodoItem>?.FirstOrDefault()?.Id ?? Guid.Empty;\n            if (firstId != Guid.Empty)\n                manager.CompleteTodo(firstId);\n\n            manager.ListTodos();\n\n            // Export example\n            string json = manager.ExportToJson();\n            Console.WriteLine(\"\\n📤 Exported JSON:\");\n            Console.WriteLine(json.Substring(0, Math.Min(300, json.Length)) + \"...\");\n\n            Console.WriteLine(\"\\n✅ Demo completed. Ready for extension!\");\n        }\n    }\n}\n```",
+      "audio": "https://server10.mp3quran.net/minsh/001.mp3",
+      "passage": "## This is **Bold** Text\n\nThis is *Italic* Text\n\n## This is a Heading\n\n### This is a smaller Heading\n\n#### This is an even smaller Heading\n\n##### This is an even smaller Heading\n\n###### This is an even smaller Heading\n\nThis is a blockquote:\n\n> This is a blockquote\n\nThis is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
+      "explanation": "Yes, it is cool indeed, ^_^",
+      "options": [
+        "Cool! ^_^",
+        "It's not cool ;("
+      ],
+      "correct": 0
+    },
+    {
+      "q": "## This is **Bold** Text\n\nThis is *Italic* Text\n\n## This is a Heading\n\n### This is a smaller Heading\n\n#### This is an even smaller Heading\n\n##### This is an even smaller Heading\n\n###### This is an even smaller Heading\n\nThis is a blockquote:\n\n> This is a blockquote\n\nThis is a list:\n\n* Item 1\n* Item 2\n* Item 3\n\nThis is a nested list:\n\n* Item 1\n    * Item 1.1\n    * Item 1.2\n* Item 2\n    * Item 2.1\n    * Item 2.2\n\nThis is an ordered list:\n\n1. Item 1\n2. Item 2\n3. Item 3",
+      "options": [
+        "1",
+        "2",
+        "3"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "It also Supports advanced LaTeX math notations, because it uses the KaTeX library to render them!\n\nWhat is the result of the next advanced equation?\n\n$$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$$",
+      "explanation": "The correct answer is $\\frac{n(n+1)}{2}$",
+      "options": [
+        "$\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$",
+        "$\\frac{n(n+1)}{2}$",
+        "$\\sum_{i=1}^{n} i = \\frac{n(n-1)}{2}$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The website also supports images, this image shows a star network topology\n\nAnd the Website also supports defining the language of the whole quiz, or for each question individually.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/8/84/Star_Topology.png",
+      "explanation": "This is a Star Topology where all devices connect to a central hub or switch.",
+      "options": [
+        "Bus Topology",
+        "Star Topology",
+        "Ring Topology",
+        "Mesh Topology"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "المنصة أيضا تدعم ملفات الصوت ، أليس هذا رائع\n\nهذه قائمة:\n- عنصر 1\n- عنصر 2\n- عنصر 3\n\nهذه قائمة مرتبة:\n1. عنصر 1\n2. عنصر 2\n3. عنصر 3",
+      "audio": "https://server10.mp3quran.net/minsh/001.mp3",
+      "explanation": "نعم إنه كذلك، ورائع بالفعل\n\nYes, it's correct, and truly wonderfull",
+      "options": [
+        "صحيح\n\nTrue",
+        "خطأ\n\nFalse"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The website also supports videos",
+      "video": "./assets/quiz-media/TEST_1/Part_1.mp4",
+      "explanation": "Yes it's **True**, it is **cool**",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Basmagi Quiz Platform supports Youtube videos too!",
+      "video": "https://www.youtube.com/watch?v=WsY9rVET_XM",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What about so many options in a quiz, with multiple correct options? The platform can handle that, too.\n\nWhich programming languages are primarily used for Front-End development?",
+      "options": [
+        "HTML",
+        "CSS",
+        "JavaScript",
+        "PHP",
+        "Python",
+        "Java",
+        "C++",
+        "Ruby",
+        "Swift",
+        "Go"
+      ],
+      "correct": [
+        0,
+        1,
+        2
+      ]
+    },
+    {
+      "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الإمتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الإمتحان. أليست ميزة رائعة؟",
+      "options": [
+        "نعم",
+        "لا"
+      ],
+      "correct": 0
+    }
+  ]
+}
