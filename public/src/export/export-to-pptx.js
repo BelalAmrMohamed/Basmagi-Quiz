@@ -20,10 +20,7 @@ import {
 } from "../shared/rate-answers.js";
 
 // Markdown + KaTeX renderer (same engine used by the live quiz UI and HTML export)
-import {
-  renderMarkdown,
-  normalizeLiteralNewlines,
-} from "../shared/markdown.js";
+import { renderMarkdown } from "../shared/markdown.js";
 
 // ===========================
 // LAZY LOADERS
@@ -84,12 +81,9 @@ async function warmKatexFonts() {
   // Cover as many KaTeX font variants as possible in one probe:
   // Main, Math italic, bold, SansSerif, Caligraphic, fractions, Greek, operators
   probe.innerHTML = renderMarkdown(
-    normalizeLiteralNewlines(
-      "$E = mc^2$, $\\alpha + \\beta + \\gamma$, $\\mathbf{A}$, $\\mathcal{L}$\n\n" +
+        "$E = mc^2$, $\\alpha + \\beta + \\gamma$, $\\mathbf{A}$, $\\mathcal{L}$\n\n" +
         "$$\\int_0^\\infty e^{-x}\\,dx = 1 \\quad \\sum_{i=0}^{n} \\frac{i^2}{n}$$\n\n" +
-        "$$\\sqrt{x^2+y^2} \\leq \\|\\mathbf{v}\\| \\cdot \\cos\\theta$$",
-    ),
-  );
+        "$$\\sqrt{x^2+y^2} \\leq \\|\\mathbf{v}\\| \\cdot \\cos\\theta$$");
   document.body.appendChild(probe);
 
   // Step 1 — let the browser decide what fonts it needs
@@ -238,7 +232,7 @@ export async function exportToPptx(config, questions, userAnswers = []) {
      * Strategy:
      *  1. Create a hidden off-screen <div> whose pixel width matches the desired
      *     PPTX width in inches (at 96 DPI).
-     *  2. Inject `renderMarkdown(normalizeLiteralNewlines(text))` HTML.
+     *  2. Inject `renderMarkdown(text)` HTML.
      *  3. Wait two rAF frames for KaTeX to finish painting.
      *  4. Capture with html2canvas at scale 1.5 for crisp text in PowerPoint.
      *  5. Return the data URL and the computed height in inches.
@@ -318,7 +312,7 @@ export async function exportToPptx(config, questions, userAnswers = []) {
       wrapper.appendChild(style);
 
       const content = document.createElement("div");
-      content.innerHTML = renderMarkdown(normalizeLiteralNewlines(text));
+      content.innerHTML = renderMarkdown(text);
       wrapper.appendChild(content);
       document.body.appendChild(wrapper);
 

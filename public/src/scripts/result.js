@@ -23,11 +23,7 @@ import {
 
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
-// normalizeLiteralNewlines: fixes double-serialised \n sequences
-import {
-  renderMarkdown,
-  normalizeLiteralNewlines,
-} from "../shared/markdown.js";
+import { renderMarkdown } from "../shared/markdown.js";
 
 // Helpers
 const userName = localStorage.getItem("username") || "User";
@@ -331,7 +327,7 @@ const renderReadingPassage = (passage, alignClass) => {
   if (!passage) return "";
   return `
     <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
-      ${renderMarkdown(normalizeLiteralNewlines(passage))}
+      ${renderMarkdown(passage)}
     </div>
   `;
 };
@@ -1130,13 +1126,13 @@ function renderReview(container, questions, userAnswers) {
               : "essay-score-none";
 
       const userText = userAns
-        ? renderMarkdown(normalizeLiteralNewlines(String(userAns)))
+        ? renderMarkdown(String(userAns))
         : "<em>Not answered</em>";
       const formalText = renderMarkdown(
-        normalizeLiteralNewlines(getEssayAnswer(q)),
+        getEssayAnswer(q),
       );
       const explanationText = q.explanation
-        ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
+        ? renderMarkdown(q.explanation)
         : "";
 
       const alignClass = getAlignClass(q.q, getQuestionLang(q));
@@ -1150,7 +1146,7 @@ function renderReview(container, questions, userAnswers) {
             </div>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          <p class="q-text ${alignClass}">${renderMarkdown(q.q)}</p>
           ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
@@ -1228,12 +1224,12 @@ function renderReview(container, questions, userAnswers) {
         return `
           <div class="${optionClass} ${getAlignClass(opt)}">
             <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} disabled aria-label="Option ${i + 1}">
-            <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+            <span class="option-label">${renderMarkdown(opt)}</span>
           </div>`;
       }).join("");
 
       const explanationText = q.explanation
-        ? renderMarkdown(normalizeLiteralNewlines(q.explanation))
+        ? renderMarkdown(q.explanation)
         : "";
 
       const alignClass = getAlignClass(q.q, getQuestionLang(q));
@@ -1244,7 +1240,7 @@ function renderReview(container, questions, userAnswers) {
             <span class="status-icon status-${statusClass}">${statusIcon}</span>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
-          <p class="q-text ${alignClass}">${renderMarkdown(normalizeLiteralNewlines(q.q))}</p>
+          <p class="q-text ${alignClass}">${renderMarkdown(q.q)}</p>
           ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}

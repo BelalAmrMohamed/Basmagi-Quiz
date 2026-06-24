@@ -7,26 +7,11 @@
  *
  * Exports:
  * renderMarkdown(str)            → HTML string
- * normalizeLiteralNewlines(str)  → string with real \n chars
  *
  * Side-effects on first import:
  * • window.copyCodeBlock is registered so inline onclick="…"
  * attributes on copy buttons can reach it across any page.
  */
-
-// ─── 1. Utility: normalise literal \n two-char sequences ──────────────────────
-// JSON round-trips or double-serialisation can leave the literal characters
-// backslash + n in a string instead of a real newline.  The renderer splits
-// on real newlines only, so fix this up before anything else runs.
-//
-// FIX 1: Use a negative lookahead (?![a-zA-Z]) so that LaTeX command names
-// like \neq, \nabla, \nu etc. are NOT treated as newlines.  Only the
-// two-character sequence \n that is NOT immediately followed by an ASCII
-// letter is replaced with a real newline character.
-export function normalizeLiteralNewlines(text) {
-  if (!text || !text.includes("\\n")) return text;
-  return text.replace(/\\n(?![a-zA-Z])/g, "\n");
-}
 
 // ─── 2. HTML escaping ─────────────────────────────────────────────────────────
 // Internal — escapes for safe insertion into markup.

@@ -18,8 +18,7 @@ showNotification(
   "./assets/images/صلى_على_النبي_2.png",
 );
 import {
-  renderMarkdown,
-  normalizeLiteralNewlines,
+  renderMarkdown
 } from "../shared/markdown.js";
 
 // === MEMORY CACHE for exam modules ===
@@ -498,7 +497,7 @@ const renderReadingPassage = (passage, alignClass) => {
   if (!passage) return "";
   return `
     <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
-      ${renderMarkdown(normalizeLiteralNewlines(passage))}
+      ${renderMarkdown(passage)}
     </div>
   `;
 };
@@ -1780,7 +1779,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
     } else {
       if (isMultiple) {
         isCorrect =
@@ -1791,7 +1790,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
     }
   }
 
@@ -1825,7 +1824,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
          \`passage\` field. A <div> has no content-model restriction;
          role="heading" aria-level="2" preserves the same heading
          semantics for screen readers that the real <h2> provided. -->
-    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
   `;
 
   if (isEssay) {
@@ -1845,7 +1844,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
             ? `<div class="formal-answer">            
           <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
           <strong style="text-align: center;">Formal answer</strong>
-          <div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div></div>`
+          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div></div>`
             : ""
         }
         <div class="${feedbackClass}">${feedbackText}</div>
@@ -1878,7 +1877,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       return `
         <div class="${optionClass} ${optAlign}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
           <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
-          <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+          <span class="option-label">${renderMarkdown(opt)}</span>
         </div>`;
     })
     .join("");
@@ -2079,7 +2078,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div>`;
+      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
     } else {
       if (Array.isArray(correctIdx)) {
         isCorrect =
@@ -2090,7 +2089,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(normalizeLiteralNewlines(explanationText))}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
     }
   }
 
@@ -2124,7 +2123,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       ${actionButtons}
     </div>
     ${renderReadingPassage(q.passage, passageAlignClass)}
-    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
   `;
 
   if (isEssay) {
@@ -2161,7 +2160,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
           <div class="formal-answer">
             <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
             <strong style="text-align: center;">Formal answer</strong>
-            <div class="formal-answer-text">${renderMarkdown(normalizeLiteralNewlines(getEssayAnswer(q)))}</div>
+            <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
           </div>
         `
             : ""
@@ -2212,7 +2211,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
                 isSelected ? "checked" : ""
               } 
                      ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
-              <span class="option-label">${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+              <span class="option-label">${renderMarkdown(opt)}</span>
             </div>`;
           })
           .join("")}

@@ -17,10 +17,7 @@ import {
   parseImportContent,
   buildJsonQuizExport,
 } from "../shared/quiz-processor.js";
-import {
-  renderMarkdown,
-  normalizeLiteralNewlines,
-} from "../shared/markdown.js";
+import { renderMarkdown } from "../shared/markdown.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -83,7 +80,7 @@ function renderMathIn(container) {
 function mdEditorHtml(id, value, placeholder, rows = 2) {
   const safeValue = (value || "").replace(/\\n/g, "\n");
   const rendered = safeValue.trim()
-    ? renderMarkdown(normalizeLiteralNewlines(safeValue))
+    ? renderMarkdown(safeValue)
     : "";
   const escaped = safeValue
     .replace(/&/g, "&amp;")
@@ -154,7 +151,7 @@ function setupMdEditor(id, onChange) {
     if (!livePreview) return;
     const val = source.value;
     if (val.trim()) {
-      livePreview.innerHTML = `<div class="md-live-preview-inner">${renderMarkdown(normalizeLiteralNewlines(val))}</div>`;
+      livePreview.innerHTML = `<div class="md-live-preview-inner">${renderMarkdown(val)}</div>`;
       livePreview.style.display = "block";
       renderMathIn(livePreview);
     } else {
@@ -166,7 +163,7 @@ function setupMdEditor(id, onChange) {
   const refreshRenderedDiv = () => {
     const val = source.value;
     if (val.trim()) {
-      renderedDiv.innerHTML = renderMarkdown(normalizeLiteralNewlines(val));
+      renderedDiv.innerHTML = renderMarkdown(val);
       renderedDiv.classList.remove("md-empty");
       renderMathIn(renderedDiv);
     } else {

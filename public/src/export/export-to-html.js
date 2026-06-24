@@ -15,7 +15,6 @@ import {
 import {
   renderMarkdown,
   _renderMarkdownCore,
-  normalizeLiteralNewlines,
 } from "../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
@@ -271,7 +270,7 @@ export async function exportToHtml(config, questions, userAnswers = []) {
               <span>${isEssayQuestion(q) ? "Essay" : "MCQ"}</span>
           </div>
           ${q.image ? `<img src="${q.image}" class="question-image" alt="Question Image" onerror="this.alt='[Image not available]'; this.style.border='2px dashed #666';">` : ""}
-          <div class="q-text">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>`;
+          <div class="q-text">${renderMarkdown(q.q)}</div>`;
 
     if (isEssayQuestion(q)) {
       const userText = userAns || "";
@@ -283,7 +282,7 @@ export async function exportToHtml(config, questions, userAnswers = []) {
         htmlContent += `
           <div class="essay-box" style="border-left: 3px solid #3b82f6;">
               <strong style="color: #60a5fa; display:block; margin-bottom:5px;">Your Answer:</strong>
-              ${renderMarkdown(normalizeLiteralNewlines(userText || "Not answered"))}
+              ${renderMarkdown(userText || "Not answered")}
           </div>
           <div class="essay-score ${scoreClass}">
             Score: ${score}/5 &nbsp;<span style="font-size:1.1em;color:#f59e0b">${stars}</span>
@@ -292,13 +291,13 @@ export async function exportToHtml(config, questions, userAnswers = []) {
 
       htmlContent += `<div class="essay-box">
               <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Formal Answer / Key Points:</strong>
-              ${renderMarkdown(normalizeLiteralNewlines(q.answer))}
+              ${renderMarkdown(q.answer)}
           </div>`;
     } else {
       htmlContent += `<div class="options-list">`;
       q.options.forEach((opt, i) => {
         const letter = String.fromCharCode(65 + i);
-        htmlContent += `<div class="option"><span class="option-letter">${letter}</span><span>${renderMarkdown(normalizeLiteralNewlines(opt))}</span></div>`;
+        htmlContent += `<div class="option"><span class="option-letter">${letter}</span><span>${renderMarkdown(opt)}</span></div>`;
       });
       htmlContent += `</div>`;
 
@@ -306,7 +305,7 @@ export async function exportToHtml(config, questions, userAnswers = []) {
       const userLetter = isSkipped ? "" : String.fromCharCode(65 + userAns);
       const userAnswer = isSkipped
         ? "Skipped"
-        : `${userLetter}. ${renderMarkdown(normalizeLiteralNewlines(q.options[userAns]))}`;
+        : `${userLetter}. ${renderMarkdown(q.options[userAns])}`;
       const userIcon = isSkipped ? "⚪" : isCorrect ? "✅" : "❌";
 
       if (isResultsMode)
@@ -314,12 +313,12 @@ export async function exportToHtml(config, questions, userAnswers = []) {
 
       const correctLetter = String.fromCharCode(65 + q.correct);
       htmlContent += `<div class="correct-answer">✓ Correct Answer: ${correctLetter}. ${renderMarkdown(
-        normalizeLiteralNewlines(q.options[q.correct]),
+        q.options[q.correct],
       )}</div>`;
     }
 
     if (q.explanation) {
-      htmlContent += `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(normalizeLiteralNewlines(q.explanation))}</div>`;
+      htmlContent += `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(q.explanation)}</div>`;
     }
 
     htmlContent += `</div>`;

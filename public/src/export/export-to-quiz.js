@@ -13,7 +13,6 @@ import {
   _renderMarkdownCore,
   applyInline,
   escHtml,
-  normalizeLiteralNewlines,
 } from "../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
@@ -1548,8 +1547,6 @@ export async function exportToQuiz(config, questions) {
   // All functions are serialised from module scope via .toString() so the
   // generated file is self-contained with no build step needed.
 
-  ${normalizeLiteralNewlines.toString()}
-
   ${escHtml.toString()}
   
   ${applyInline.toString()}
@@ -1828,7 +1825,7 @@ export async function exportToQuiz(config, questions) {
       if (!passage) return "";
       return \`
         <div class="reading-passage" role="region" aria-label="Reading passage">
-          <div class="passage-content">\${renderMarkdown(normalizeLiteralNewlines(passage))}</div>
+          <div class="passage-content">\${renderMarkdown(passage)}</div>
         </div>
       \`;
     },
@@ -1904,7 +1901,7 @@ export async function exportToQuiz(config, questions) {
           </div>
           <div class="model-answer" id="modelAns\${i}">
             <strong>✓ Model Answer:</strong><br>
-            \${renderMarkdown(normalizeLiteralNewlines(q.answer))}
+            \${renderMarkdown(q.answer)}
           </div>
           <div class="essay-score" id="essayScore\${i}"></div>
         \`;
@@ -1925,7 +1922,7 @@ export async function exportToQuiz(config, questions) {
                 aria-label="Option \${letter}: \${this.escapeHTML(opt)}"
               >
                 \${prefix}
-                <span>\${renderMarkdown(normalizeLiteralNewlines(opt))}</span>
+                <span>\${renderMarkdown(opt)}</span>
               </button>
             \`;
           }).join("")
@@ -1934,7 +1931,7 @@ export async function exportToQuiz(config, questions) {
   
       const explanationHtml = q.explanation ? 
         \`<div class="explanation" id="exp\${i}">
-          <strong>💡 Explanation:</strong> \${renderMarkdown(normalizeLiteralNewlines(q.explanation))}
+          <strong>💡 Explanation:</strong> \${renderMarkdown(q.explanation)}
         </div>\` : "";
   
       return \`
@@ -1950,7 +1947,7 @@ export async function exportToQuiz(config, questions) {
           </div>
           
           \${this.renderReadingPassage(q.passage)}
-          <div class="question-text">\${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
+          <div class="question-text">\${renderMarkdown(q.q)}</div>
           \${this.renderQuestionMedia(q, i)}
           \${optionsHtml}
           \${explanationHtml}
