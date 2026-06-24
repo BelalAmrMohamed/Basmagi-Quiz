@@ -979,6 +979,14 @@ dialog.quiz-password-dialog {
   margin-bottom: 20px;
 }
 
+/* Wraps the interactive portion of the question card (header text, reading
+   passage, question text, options/essay, check button, feedback). Only this
+   element is replaced on every answer interaction; .media-center-wrap siblings
+   above it are never touched so audio/video/YouTube never remounts. */
+.reloadable-context {
+  display: block;
+}
+
 .question-image-container {
   text-align: center;
   min-height: 160px;

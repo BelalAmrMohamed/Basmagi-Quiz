@@ -9,7 +9,7 @@
     "author": "بلال عمرو محمد",
     "author_email": "belalamrofficial@gmail.com",
     "password": "1234",
-    "view": "vertical",
+    "view": "pagination",
     "mode": "practice"
   },
   "stats": {

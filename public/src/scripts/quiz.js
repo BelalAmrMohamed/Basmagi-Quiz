@@ -54,6 +54,11 @@ let lastChangedIdx = null;
 // Bug 3 Fix: media timestamps loaded from saved state, applied after first render.
 let pendingMediaTimestamps = null;
 
+// Pagination media cache: stores { url -> { time, paused } } per question index
+// so that navigating away from a question and coming back restores the exact
+// playback position. Session-only (Map is cleared on quiz restart/finish).
+const paginationMediaCache = new Map();
+
 // === DOM Elements (cached references) ===
 const els = {
   title: document.getElementById("quizTitle"),
@@ -382,10 +387,11 @@ const getMediaMimeType = (url) => {
 
 const renderMediaElement = (tag, className, mediaUrl) => {
   const src = resolveMediaUrl(mediaUrl);
-  // Add cache-busting parameter to prevent stale service worker cache on initial load
-  const srcWithCacheBust = src
-    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
-    : "";
+  // Do NOT add cache-busting to the initial src — it forces a network fetch
+  // on every render (even same-question re-renders) and prevents the browser
+  // from restoring the cached resource on page reload, which is the primary
+  // reason timestamp restoration was failing. Cache-busting is only applied
+  // by applyMediaSrc() when retrying a failed candidate URL.
   const mime = getMediaMimeType(src);
   const typeAttr = mime ? ` type="${escapeHtml(mime)}"` : "";
   const candidates = escapeHtml(
@@ -397,8 +403,8 @@ const renderMediaElement = (tag, className, mediaUrl) => {
       ? "متصفحك لا يدعم تشغيل الصوت."
       : "متصفحك لا يدعم تشغيل الفيديو.";
   const playsinline = tag === "video" ? " playsinline" : "";
-  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHtml(srcWithCacheBust)}" data-media-raw="${raw}" data-media-candidates="${candidates}">
-        <source src="${escapeHtml(srcWithCacheBust)}"${typeAttr} />
+  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHtml(src)}" data-media-raw="${raw}" data-media-candidates="${candidates}">
+        <source src="${escapeHtml(src)}"${typeAttr} />
         ${fallback}
       </${tag}>`;
 };
@@ -407,10 +413,6 @@ const renderMediaElement = (tag, className, mediaUrl) => {
 const renderQuestionImage = (imageUrl, resizeKey) => {
   if (!imageUrl) return "";
   const src = resolveMediaUrl(imageUrl);
-  // Add cache-busting parameter to prevent stale service worker cache on initial load
-  const srcWithCacheBust = src
-    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
-    : "";
   const candidates = escapeHtml(
     JSON.stringify(getMediaUrlCandidates(imageUrl)),
   );
@@ -418,7 +420,7 @@ const renderQuestionImage = (imageUrl, resizeKey) => {
     <div class="media-container question-image-container" data-resize-key="${escapeHtml(resizeKey)}-image">
       ${MEDIA_SKELETON_HTML}
       <img
-        src="${escapeHtml(srcWithCacheBust)}"
+        src="${escapeHtml(src)}"
         alt="Question context image"
         class="question-image"
         data-media-raw="${escapeHtml(imageUrl)}"
@@ -1437,6 +1439,8 @@ async function init() {
       });
     };
     window.jumpToQuestion = (idx) => {
+      // Snapshot current question's media state before leaving (pagination only).
+      if (quizStyle !== "vertical") snapshotPaginationMedia(currentIdx);
       currentIdx = idx;
       saveStateDebounced();
       renderQuestion();
@@ -1801,14 +1805,18 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   const alignClass = getAlignClass(q.q);
   const passageAlignClass = getAlignClass(q.passage || q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
+  // mediaHTML is returned SEPARATELY — it will live outside .reloadable-context
+  // so the media DOM is never destroyed when the user answers the question.
   const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
+  // The reloadable section contains only the question number, action buttons,
+  // reading passage, question text, options/essay, check button, and feedback.
+  // NO media.
   const header = `
     <div class="question-header">
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
-    ${mediaHTML}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <!-- Bug fix: this was previously a real <h2>. q.q is run through
          renderMarkdown(), which can output its own block-level tags
@@ -1825,6 +1833,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
     return {
       largeClass,
+      mediaHTML,
       html: `
         ${header}
         <div class="essay-container">
@@ -1880,6 +1889,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
 
   return {
     largeClass,
+    mediaHTML,
     html: `
       ${header}
       <div class="options-grid">${optionsHtml}</div>
@@ -1890,50 +1900,66 @@ function buildVerticalQuestionBodyHTML(q, idx) {
 }
 
 // Full (first-render) vertical card.
-// Fix 4: .media-center-wrap is now injected inside buildVerticalQuestionBodyHTML,
-// directly after .question-header. The separate .question-media-wrap wrapper
-// that previously sat above .question-body has been removed.
+// Structure inside .question-body:
+//   [.media-center-wrap …]   ← persistent, rendered once, never replaced
+//   .reloadable-context       ← replaced on every answer interaction
 function buildVerticalQuestionCard(q, idx) {
-  const { largeClass, html: bodyHTML } = buildVerticalQuestionBodyHTML(q, idx);
+  const { largeClass, mediaHTML, html: bodyHTML } = buildVerticalQuestionBodyHTML(q, idx);
   return `
     <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
-      <div class="question-body">${bodyHTML}</div>
+      <div class="question-body">
+        ${mediaHTML}
+        <div class="reloadable-context">${bodyHTML}</div>
+      </div>
     </div>
   `;
 }
 
 // Bug 2 Fix: helper that replaces the question container HTML while preserving
 // media playback state (currentTime + paused/playing) in pagination mode.
-function setQuestionHTML(html) {
-  // Snapshot all currently-playing media elements before the DOM is replaced
-  const mediaStates = [];
+// Matches media elements by their canonical URL (data-media-raw) so the
+// restore is robust even if element count or order changes across questions.
+// Saves the current question's media playback positions into paginationMediaCache
+// so they can be restored when the user navigates back to this question.
+// Call this BEFORE changing currentIdx in pagination mode.
+function snapshotPaginationMedia(idx) {
+  const stateMap = new Map();
   els.questionContainer.querySelectorAll("audio, video").forEach((el) => {
-    mediaStates.push({
-      baseUrl: (el.src || "").split("?")[0],
-      time: el.currentTime,
-      paused: el.paused,
-    });
+    const key = el.dataset.mediaRaw || el.src.split("?")[0];
+    if (key) stateMap.set(key, { time: el.currentTime, paused: el.paused });
   });
+  if (stateMap.size) paginationMediaCache.set(idx, stateMap);
+}
 
+// Restores media playback positions from paginationMediaCache (or the supplied
+// fallback map) onto media elements that have just been inserted into the DOM.
+function restoreMediaFromMap(container, stateMap) {
+  if (!stateMap || !stateMap.size) return;
+  container.querySelectorAll("audio, video").forEach((el) => {
+    const key = el.dataset.mediaRaw || el.src.split("?")[0];
+    const state = key ? stateMap.get(key) : null;
+    if (!state || state.time <= 0) return;
+    const restore = () => {
+      el.currentTime = state.time;
+      if (!state.paused) el.play().catch(() => {});
+    };
+    if (el.readyState >= 1) restore();
+    else el.addEventListener("loadedmetadata", restore, { once: true });
+  });
+}
+
+function setQuestionHTML(html) {
   els.questionContainer.innerHTML = html;
 
-  // Apply text direction classes synchronously — before the MutationObserver
-  // fires — so there is no flash-of-wrong-direction on question navigation.
+  // Apply text direction classes synchronously before MutationObserver fires.
   TextDirectionEngine.scan(els.questionContainer);
 
-  // Restore timestamps on the newly-inserted media elements
-  if (mediaStates.length) {
-    els.questionContainer.querySelectorAll("audio, video").forEach((el, i) => {
-      const state = mediaStates[i];
-      if (!state || state.time <= 0) return;
-      const restore = () => {
-        el.currentTime = state.time;
-        if (!state.paused) el.play().catch(() => {});
-      };
-      if (el.readyState >= 1) restore();
-      else el.addEventListener("loadedmetadata", restore, { once: true });
-    });
-  }
+  // Restore playback position for this question if we navigated back to it.
+  // paginationMediaCache is populated by snapshotPaginationMedia() just before
+  // currentIdx changes, so the Map entry for currentIdx (if any) holds the
+  // state the user left this question in.
+  const cached = paginationMediaCache.get(currentIdx);
+  if (cached) restoreMediaFromMap(els.questionContainer, cached);
 }
 
 function renderAllQuestionsVertical() {
@@ -1952,9 +1978,8 @@ function renderAllQuestionsVertical() {
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
   // Partial re-render (vertical mode): if we know which card changed, only
-  // patch that card's `.question-body`. Fix 4 note: media is now inside
-  // .question-body (after .question-header), so it is re-created together
-  // with the options/feedback on each answer interaction.
+  // patch that card's .reloadable-context. Media (.media-center-wrap siblings)
+  // are intentionally left untouched — audio/video/YouTube keeps playing.
   if (
     lastChangedIdx !== null &&
     document.getElementById(`q-${lastChangedIdx}`)
@@ -1967,17 +1992,18 @@ function renderAllQuestionsVertical() {
       questions[targetIdx],
       targetIdx,
     );
-    const bodyEl = existingCard.querySelector(".question-body");
 
-    if (bodyEl) {
-      bodyEl.innerHTML = bodyHTML;
+    const reloadableEl = existingCard.querySelector(".reloadable-context");
+
+    if (reloadableEl) {
+      reloadableEl.innerHTML = bodyHTML;
       existingCard.className = `question-card vertical-question-card${largeClass}`;
-      // Re-scan only the patched body to keep direction classes in sync.
-      TextDirectionEngine.scan(bodyEl);
-      initMediaSkeletons(existingCard);
+      // Re-scan only the patched section to keep direction classes in sync.
+      TextDirectionEngine.scan(reloadableEl);
+      // initMediaSkeletons is NOT called here — media was not re-created.
     } else {
-      // Defensive fallback in case the expected structure is missing
-      // (e.g. an older saved card shape) — full rebuild for this card only.
+      // Defensive fallback: full rebuild for this card only,
+      // with media state snapshot/restore.
       const mediaStates = [];
       existingCard.querySelectorAll("audio, video").forEach((el) => {
         mediaStates.push({ time: el.currentTime, paused: el.paused });
@@ -2025,8 +2051,10 @@ function renderAllQuestionsVertical() {
 }
 
 // === Core: Render Question ===
-// Bug-fix: builds everything EXCEPT the media block (header text, action
-// buttons, reading passage, options/essay input, check button, feedback).
+// Key architectural principle: mediaHTML is returned as a SEPARATE property
+// so the caller can place it in a persistent sibling element (.media-center-wrap
+// elements rendered once) while only the .reloadable-context gets innerHTML
+// replaced on every interaction. This prevents media from unmounting/reloading.
 // Splitting this out lets renderQuestion() patch just this part on every
 // input interaction without touching the media DOM at all — so audio/video/
 // YouTube elements never unmount, reload, or flicker while answering.
@@ -2083,14 +2111,18 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 
   const alignClass = getAlignClass(q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
+  // mediaHTML is returned SEPARATELY so the caller can render it outside
+  // .reloadable-context. This is the core of the fix: media lives in its own
+  // persistent siblings and is never touched when the interactive content changes.
   const mediaHTML = renderQuestionMedia(q, `q${idx}`);
 
-  const textHeaderHTML = `
+  // The reloadable header only contains the question number, action buttons,
+  // reading passage, and question text — NO media.
+  const reloadableHeaderHTML = `
     <div class="question-header">
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionButtons}
     </div>
-    ${mediaHTML}
     ${renderReadingPassage(q.passage, passageAlignClass)}
     <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(normalizeLiteralNewlines(q.q))}</div>
   `;
@@ -2100,8 +2132,9 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
     const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
     return {
       largeClass,
+      mediaHTML,
       html: `
-        ${textHeaderHTML}
+        ${reloadableHeaderHTML}
         <div class="essay-container">
           <textarea 
             id="essayInput" 
@@ -2142,8 +2175,9 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 
   return {
     largeClass,
+    mediaHTML,
     html: `
-      ${textHeaderHTML}
+      ${reloadableHeaderHTML}
       <div class="options-grid">
         ${q.options
           .map((opt, i) => {
@@ -2196,11 +2230,13 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
 }
 
 // === Core: Render Question (pagination style) ===
-// Fix 4: media is now rendered inside .question-body, directly after
-// .question-header. Re-renders triggered by answering (handleSelect/
-// checkAnswer/essay input) replace the whole .question-body including
-// media; initMediaSkeletons is called afterward to reinitialise any
-// lazy-loading skeleton placeholders in the new media nodes.
+// The question card is split into two sibling zones inside .question-body:
+//   1. .media-center-wrap elements  — rendered ONCE on first load / navigation,
+//      never touched again on same-question interactions.
+//   2. .reloadable-context          — replaced on every handleSelect /
+//      checkAnswer / essay-input cycle. Contains header text, reading passage,
+//      question text, options/essay, check button, feedback.
+// This prevents any audio/video/iframe from unmounting while the user answers.
 function renderQuestion() {
   if (!questions.length) return;
 
@@ -2228,7 +2264,7 @@ function renderQuestion() {
     )}% (${answeredCount}/${questions.length})`;
 
   const passageAlignClass = getAlignClass(q.passage || q.q);
-  const { largeClass, html: bodyHTML } = buildQuestionBodyHTML(
+  const { largeClass, mediaHTML, html: bodyHTML } = buildQuestionBodyHTML(
     q,
     currentIdx,
     passageAlignClass,
@@ -2241,30 +2277,27 @@ function renderQuestion() {
     existingCard && Number(existingCard.dataset.questionIndex) === currentIdx;
 
   if (sameQuestion) {
-    // In-place update: replace the body content for the same question
-    // (e.g. after answering or checking). Fix 4 note: media is now rendered
-    // inside .question-body (after .question-header), so it is re-created
-    // here alongside the options/feedback. initMediaSkeletons is called to
-    // set up any lazy-loading skeleton placeholders in the new media nodes.
-    const bodyEl = existingCard.querySelector(".question-body");
-    if (bodyEl) {
-      bodyEl.innerHTML = bodyHTML;
+    // In-place update for the same question (e.g. after answering or checking).
+    // ONLY patch .reloadable-context — media siblings are left completely alone
+    // so audio/video/YouTube never unmounts or loses playback state.
+    const reloadableEl = existingCard.querySelector(".reloadable-context");
+    if (reloadableEl) {
+      reloadableEl.innerHTML = bodyHTML;
       existingCard.className = `question-card${largeClass}`;
-      // Re-scan only the patched body to keep direction classes in sync.
-      TextDirectionEngine.scan(bodyEl);
-      initMediaSkeletons(existingCard);
+      TextDirectionEngine.scan(reloadableEl);
+      // No initMediaSkeletons here — media was not re-created.
     } else {
-      // Defensive fallback in case the expected structure is missing
+      // Defensive fallback (unexpected DOM shape): full rebuild.
       setQuestionHTML(
-        renderFullQuestionCard(q, currentIdx, largeClass, bodyHTML),
+        renderFullQuestionCard(q, currentIdx, largeClass, mediaHTML, bodyHTML),
       );
       initMediaSkeletons(els.questionContainer);
     }
   } else {
     // Navigated to a different question (or first render): full rebuild,
-    // including a fresh media block for the new question.
+    // including fresh media elements for the new question.
     setQuestionHTML(
-      renderFullQuestionCard(q, currentIdx, largeClass, bodyHTML),
+      renderFullQuestionCard(q, currentIdx, largeClass, mediaHTML, bodyHTML),
     );
     initMediaSkeletons(els.questionContainer);
   }
@@ -2272,13 +2305,17 @@ function renderQuestion() {
   updateNav();
 }
 
-// Fix 4: .question-media-wrap removed. Media is now rendered inside
-// buildQuestionBodyHTML, directly after .question-header, so the DOM
-// order is: header → media → question-text → options.
-function renderFullQuestionCard(q, idx, largeClass, bodyHTML) {
+// Builds the full question card HTML.
+// Structure inside .question-body:
+//   [.media-center-wrap …]   ← persistent, never replaced after first render
+//   .reloadable-context       ← replaced on every interaction
+function renderFullQuestionCard(q, idx, largeClass, mediaHTML, bodyHTML) {
   return `
     <div class="question-card${largeClass}" data-question-index="${idx}">
-      <div class="question-body">${bodyHTML}</div>
+      <div class="question-body">
+        ${mediaHTML}
+        <div class="reloadable-context">${bodyHTML}</div>
+      </div>
     </div>
   `;
 }
@@ -2637,6 +2674,8 @@ const maybeAutoSubmit = () => {
 function nav(dir) {
   const newIdx = currentIdx + dir;
   if (newIdx < 0 || newIdx >= questions.length) return;
+  // Snapshot current question's media state before leaving (pagination only).
+  if (quizStyle !== "vertical") snapshotPaginationMedia(currentIdx);
   currentIdx = newIdx;
   saveStateDebounced();
   renderQuestion();
@@ -2851,29 +2890,30 @@ function saveStateDebounced() {
   if (saveStateDebounce) clearTimeout(saveStateDebounce);
   saveStateDebounce = setTimeout(() => {
     // Bug 3 Fix: capture current media timestamps so they survive a page reload.
+    // Keys are the canonical media URL (data-media-raw) so they survive
+    // re-renders that may change element order.
     const mediaTimestamps = {};
+    const captureMedia = (container, idxKey) => {
+      container.querySelectorAll("audio, video").forEach((el) => {
+        if (el.currentTime > 0) {
+          const key = el.dataset.mediaRaw || el.src.split("?")[0];
+          if (!key) return;
+          if (!mediaTimestamps[idxKey]) mediaTimestamps[idxKey] = {};
+          mediaTimestamps[idxKey][key] = el.currentTime;
+        }
+      });
+    };
+
     if (quizStyle === "vertical") {
       els.questionContainer
         .querySelectorAll(".vertical-question-card")
         .forEach((card) => {
           const idx = parseInt(card.dataset.questionIndex, 10);
           if (isNaN(idx)) return;
-          card.querySelectorAll("audio, video").forEach((el, i) => {
-            if (el.currentTime > 0) {
-              if (!mediaTimestamps[idx]) mediaTimestamps[idx] = [];
-              mediaTimestamps[idx][i] = el.currentTime;
-            }
-          });
+          captureMedia(card, idx);
         });
     } else {
-      els.questionContainer
-        .querySelectorAll("audio, video")
-        .forEach((el, i) => {
-          if (el.currentTime > 0) {
-            if (!mediaTimestamps[currentIdx]) mediaTimestamps[currentIdx] = [];
-            mediaTimestamps[currentIdx][i] = el.currentTime;
-          }
-        });
+      captureMedia(els.questionContainer, currentIdx);
     }
 
     const state = {
@@ -2895,6 +2935,8 @@ function saveStateDebounced() {
 
 // Bug 3 Fix: apply media timestamps that were saved before a page reload.
 // Called once after the very first renderQuestion() in init().
+// Timestamps are stored per-question-index as an object keyed by data-media-raw
+// URL (set by saveStateDebounced), so they survive even if element order changes.
 function applyPendingMediaTimestamps() {
   if (!pendingMediaTimestamps || !Object.keys(pendingMediaTimestamps).length)
     return;
@@ -2902,29 +2944,26 @@ function applyPendingMediaTimestamps() {
   const timestamps = pendingMediaTimestamps;
   pendingMediaTimestamps = null;
 
-  const applyToElement = (el, time) => {
-    if (time <= 0) return;
-    const restore = () => {
-      el.currentTime = time;
-    };
-    if (el.readyState >= 1) restore();
-    else el.addEventListener("loadedmetadata", restore, { once: true });
+  const applyToContainer = (container, timeMap) => {
+    if (!timeMap || typeof timeMap !== "object") return;
+    container.querySelectorAll("audio, video").forEach((el) => {
+      const key = el.dataset.mediaRaw || el.src.split("?")[0];
+      const time = key ? timeMap[key] : undefined;
+      if (!time || time <= 0) return;
+      const restore = () => { el.currentTime = time; };
+      if (el.readyState >= 1) restore();
+      else el.addEventListener("loadedmetadata", restore, { once: true });
+    });
   };
 
   if (quizStyle === "vertical") {
-    Object.entries(timestamps).forEach(([idxStr, times]) => {
+    Object.entries(timestamps).forEach(([idxStr, timeMap]) => {
       const card = document.getElementById(`q-${idxStr}`);
-      if (!card) return;
-      card.querySelectorAll("audio, video").forEach((el, i) => {
-        if (Array.isArray(times) && times[i] > 0) applyToElement(el, times[i]);
-      });
+      if (card) applyToContainer(card, timeMap);
     });
   } else {
-    const times = timestamps[currentIdx];
-    if (!times) return;
-    els.questionContainer.querySelectorAll("audio, video").forEach((el, i) => {
-      if (Array.isArray(times) && times[i] > 0) applyToElement(el, times[i]);
-    });
+    const timeMap = timestamps[currentIdx];
+    if (timeMap) applyToContainer(els.questionContainer, timeMap);
   }
 }
 
@@ -3010,6 +3049,7 @@ function resetQuizState() {
   }
   resizeSaveDebounces.forEach((timeoutId) => clearTimeout(timeoutId));
   resizeSaveDebounces.clear();
+  paginationMediaCache.clear();
   questions = [];
   metaData = {};
   currentIdx = 0;
