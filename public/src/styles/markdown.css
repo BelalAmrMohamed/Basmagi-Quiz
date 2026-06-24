@@ -420,62 +420,6 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   color: #62626a;
 }
 
-[data-theme="light"] .copy-code-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #1a1a1a;
-}
-
-[data-theme="light"] .code-block code {
-  color: #24292e;
-}
-
-[data-theme="light"] .code-block::-webkit-scrollbar-thumb {
-  background: #d1d1d6;
-}
-
-/* Custom Token Highlighting (Light Theme) */
-[data-theme="light"] .sh-comment   { color: #8e908c; font-style: italic; }
-[data-theme="light"] .sh-keyword   { color: #a71d5d; font-weight: 600; }
-[data-theme="light"] .sh-string    { color: #183691; }
-[data-theme="light"] .sh-number    { color: #0086b3; }
-[data-theme="light"] .sh-type      { color: #795da3; }
-[data-theme="light"] .sh-function  { color: #795da3; }
-[data-theme="light"] .sh-property  { color: #0086b3; }
-[data-theme="light"] .sh-builtin   { color: #ed6a43; }
-[data-theme="light"] .sh-operator  { color: #a71d5d; }
-[data-theme="light"] .sh-tag       { color: #63a35c; }
-[data-theme="light"] .sh-attr      { color: #795da3; }
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   LIGHT THEME ADJUSTMENTS
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-[data-theme="light"] .code-block-wrapper {
-  background: #f8f9fa;
-  border-color: #e1e1e6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .code-block-wrapper::before {
-  background: #edf0f2;
-  border-bottom-color: #e1e1e6;
-}
-
-[data-theme="light"] .code-lang-label {
-  color: #62626a;
-}
-
-[data-theme="light"] .copy-code-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #62626a;
-}
-
-[data-theme="light"] .copy-code-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #1a1a1a;
-}
-
 [data-theme="light"] .code-block code {
   color: #24292e;
 }
