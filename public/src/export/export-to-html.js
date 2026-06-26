@@ -1,4 +1,4 @@
-// src/scripts/exportToHtml.js
+// src/scripts/export-to-html.js
 // Downloads the quiz as an html page, showing the results of the quiz only (.html)
 // Deals with the export from both main page and result page
 // No libraries used

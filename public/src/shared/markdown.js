@@ -146,7 +146,7 @@ window.copyCodeBlock = (btn) => {
 // Each branch is mutually exclusive and tried in priority order.
 // The function returns HTML-escaped, span-wrapped text ready for innerHTML.
 
-const _HL_KEYWORDS = {
+export const _HL_KEYWORDS = {
   js: new Set([
     "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", "let", "new", "of", "return", "static", "super", "switch", "throw", "try", "typeof", "var", "void", "while", "with", "yield", "async", "await", "from", "as", "null", "undefined", "true", "false", "this",   ]),   
     ts: new Set([
@@ -198,7 +198,7 @@ _HL_KEYWORDS.rs = _HL_KEYWORDS.rust;
 _HL_KEYWORDS.golang = _HL_KEYWORDS.go;
 
 // JS/TS built-ins worth highlighting
-const _HL_BUILTINS_JS = new Set([
+export const _HL_BUILTINS_JS = new Set([
   "console",   "Math",   "Object",   "Array",   "String",   "Number",   "Boolean",   "Promise",   "JSON",   "Date",   "RegExp",   "Error",   "Map",   "Set",   "WeakMap",   "WeakSet",   "Symbol",   "Proxy",   "Reflect",   "Intl",   "URL",   "fetch",   "setTimeout",   "setInterval",   "clearTimeout",   "clearInterval",   "parseInt",   "parseFloat",   "isNaN",   "isFinite",   "encodeURIComponent",   "decodeURIComponent",   "document",   "window",   "navigator",
 ]);
 

@@ -1,4 +1,4 @@
-// src/scripts/exportToQuiz.js
+// src/scripts/export-to-quiz.js
 // Downloads the quiz as a standalone file (.html)
 // Deals with the export from both main page and results page
 // No libraries used.
@@ -13,12 +13,117 @@ import {
   _renderMarkdownCore,
   applyInline,
   escHtml,
+  highlightCode,
+  _HL_KEYWORDS,
+  _HL_BUILTINS_JS,
 } from "../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
 
+// ── Quiz Info Dialog helpers (ported from result.js) ──────────────────────
+// Resolves a category label from a stored quiz path when config.category
+// isn't set directly. Mirrors the canonical Faculty/Year/Term/Subject path
+// structure used elsewhere in the app.
+const extractCategoryFromPath = (path) => {
+  if (!path) return "";
+
+  let rawPath = path;
+
+  try {
+    const qIdx = rawPath.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+      const p = params.get("path");
+      if (p) rawPath = decodeURIComponent(p);
+    }
+  } catch (_) {
+    // ignore malformed query strings
+  }
+
+  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
+  if (match) {
+    const segments = match[1].split("/");
+    const parts = segments.slice(0, -1);
+    if (parts.length > 0) return parts.join(" / ");
+  }
+
+  return "";
+};
+
+// Builds the <tr> rows for the quiz-info dialog at export time (the dialog
+// content is static once downloaded, so this runs once here rather than
+// being re-derived client-side). Field set and Arabic labels match the
+// quiz-info dialog used on the results page exactly.
+const buildQuizInfoRows = (config, questionCount) => {
+  const formatDate = (raw) => {
+    if (!raw) return null;
+    let d = String(raw);
+    if (d.includes(",")) d = d.split(",")[0];
+    else if (d.includes(" - ")) d = d.split(" - ")[0];
+    else if (d.includes(" ")) d = d.split(" ")[0];
+    return d || null;
+  };
+
+  const ROWS = [
+    { label: "العنوان", val: config.title },
+    { label: "الوصف", val: config.description },
+    { label: "المادة", val: config.category || extractCategoryFromPath(config.path) || null },
+    { label: "التاريخ", val: formatDate(config.createdAt) },
+    { label: "المصدر", val: config.source },
+    { label: "صاحب الإمتحان", val: config.author },
+    { label: "نوع الإمتحان الإجباري", val: config.mode },
+    {
+      label: "الشكل الإجباري",
+      val:
+        config.view === "pagination"
+          ? "كل سؤال في صفحة (Pagination)"
+          : config.view === "vertical"
+            ? "كل الأسئلة في صفحة واحدة (Vertical)"
+            : null,
+    },
+    { label: "نوع الأسئلة", val: config.questionTypes },
+    { label: "عدد الأسئلة", val: questionCount },
+  ].filter((r) => r.val);
+
+  if (!ROWS.length) {
+    return `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
+  }
+
+  const isUrl = (s) => /^https?:\/\//i.test(s);
+
+  return ROWS.map(({ label, val }) => {
+    const v = String(val);
+    const displayVal = isUrl(v)
+      ? `<a href="${escHtml(v)}" target="_blank" rel="noopener noreferrer">${escHtml(v)}</a>`
+      : escHtml(v);
+    return `<tr>
+        <td>${displayVal}</td>
+        <th scope="row">${escHtml(label)}</th>
+      </tr>`;
+  }).join("");
+};
+
+// highlightCode (imported above) is serialized into the export via
+// .toString(), same as renderMarkdown/escHtml/etc — but it also reads two
+// module-level constants from markdown.js (_HL_KEYWORDS, _HL_BUILTINS_JS)
+// by bare reference. Those aren't functions, so .toString() can't capture
+// them, and they contain Set objects, so JSON.stringify can't either.
+// Rebuild them as JS source text here so the exported script actually
+// defines what highlightCode expects to find in scope.
+const serializeHlKeywords = (hlKeywords) => {
+  const entries = Object.entries(hlKeywords).map(([lang, set]) => {
+    const items = Array.from(set).map((w) => JSON.stringify(w)).join(", ");
+    return `  ${JSON.stringify(lang)}: new Set([${items}])`;
+  });
+  return `{\n${entries.join(",\n")}\n}`;
+};
+
+const serializeHlBuiltinsJs = (set) =>
+  `new Set([${Array.from(set).map((w) => JSON.stringify(w)).join(", ")}])`;
+
 export async function exportToQuiz(config, questions) {
   const processedQuestions = await convertImagesToBase64(questions);
+  const quizInfoRowsHtml = buildQuizInfoRows(config, questions.length);
 
   const quizHTML = `<!DOCTYPE html>
   <html lang="en">
@@ -513,6 +618,257 @@ export async function exportToQuiz(config, questions) {
     text-wrap: balance;
   }
 
+  /* ── Direction-aware title row ──────────────────────────────────
+     The info button sits after the title in reading order: to the
+     right of an LTR title, to the left of an RTL title. Flipping
+     flex-direction (rather than order) keeps this correct regardless
+     of which side "after" maps to. */
+  .quiz-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .quiz-title-row.text-rtl {
+    flex-direction: row-reverse;
+  }
+
+  .quiz-title-row h1 {
+    margin-bottom: 0;
+  }
+
+  /* ── Per-element text direction (ported from result.js) ────────── */
+  .text-rtl {
+    direction: rtl;
+  }
+
+  .text-ltr {
+    direction: ltr;
+  }
+
+  /* ── Info icon button next to the quiz title ────────────────────── */
+  .quiz-info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    cursor: pointer;
+    transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.15s ease;
+  }
+
+  .quiz-info-btn:hover {
+    background: rgba(255, 255, 255, 0.24);
+    border-color: rgba(255, 255, 255, 0.6);
+    transform: scale(1.1);
+  }
+
+  .quiz-info-btn:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  .quiz-info-btn svg {
+    pointer-events: none;
+  }
+
+  /* ── Quiz Info Dialog ────────────────────────────────────────────── */
+  dialog.quiz-info-dialog {
+    border: none;
+    border-radius: 20px;
+    padding: 0;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-lg);
+    max-width: min(560px, 92vw);
+    max-height: min(85vh, 640px);
+    width: 100%;
+    color: var(--text-primary);
+    overflow: hidden;
+    position: fixed;
+    inset: 0;
+    margin: auto;
+  }
+
+  .quiz-info-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  .quiz-info-dialog[open] {
+    animation: dialog-pop-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes dialog-pop-in {
+    from { opacity: 0; transform: scale(0.93) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .quiz-info-dialog-inner {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .quiz-info-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border-color);
+    position: relative;
+  }
+
+  .quiz-info-dialog-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient);
+    border-radius: 20px 20px 0 0;
+  }
+
+  .quiz-info-dialog-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 auto;
+    line-height: 1.4;
+    color: var(--gradient-start);
+    text-align: center;
+    opacity: 0;
+    transform: translateY(4px);
+    animation: dialog-h2-enter 0.4s ease-out forwards;
+  }
+
+  @keyframes dialog-h2-enter {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .quiz-info-dialog-header h2 {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  [data-theme="dark"] .quiz-info-dialog-header h2 {
+    color: #93c5fd;
+  }
+
+  .quiz-info-dialog-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  }
+
+  .quiz-info-dialog-close:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transform: scale(1.08);
+  }
+
+  .quiz-info-dialog-close:focus-visible {
+    outline: 2px solid var(--gradient-start);
+    outline-offset: 2px;
+  }
+
+  .quiz-info-dialog-body {
+    padding: 20px 24px 24px;
+    overflow-y: auto;
+    max-height: min(60vh, 400px);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+  }
+
+  .quiz-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .quiz-info-table tr {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .quiz-info-table tr:last-child {
+    border-bottom: none;
+  }
+
+  .quiz-info-table th,
+  .quiz-info-table td {
+    padding: 11px 8px;
+    vertical-align: top;
+    border: none;
+    background: none;
+  }
+
+  .quiz-info-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    width: 30%;
+    padding-inline-end: 16px;
+    text-align: right;
+  }
+
+  .quiz-info-table td {
+    color: var(--text-primary);
+    overflow-wrap: break-word;
+    word-break: break-word;
+    text-align: left;
+  }
+
+  .quiz-info-table td a {
+    color: var(--gradient-start);
+    text-decoration: none;
+    word-break: break-all;
+  }
+
+  .quiz-info-table td a:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .quiz-info-dialog {
+      border-radius: 16px;
+      max-width: 96vw;
+    }
+
+    .quiz-info-dialog-header {
+      padding: 18px 18px 14px;
+    }
+
+    .quiz-info-dialog-body {
+      padding: 16px 18px 20px;
+      max-height: 55vh;
+    }
+
+    .quiz-info-table th {
+      width: 35%;
+      font-size: 0.82rem;
+    }
+  }
+
   .header-meta {
     display: flex;
     justify-content: center;
@@ -744,14 +1100,18 @@ export async function exportToQuiz(config, questions) {
 
   /* ── Reading Passage ──────────────────────────────────────────── */
   .reading-passage {
-    margin-bottom: 22px;
-    padding: 16px;
-    background: var(--bg-secondary);
-    border-left: 4px solid var(--gradient-start);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--text-secondary);
+    max-height: min(420px, 55vh);
+    overflow-y: auto;
+    padding: 20px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background-secondary);
+    font-size: 1.05rem;
+    font-weight: 500;
+    line-height: 1.75;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+    margin-bottom: 20px;
   }
 
   .passage-content {
@@ -796,6 +1156,10 @@ export async function exportToQuiz(config, questions) {
   .question-video {
     height: auto;
     aspect-ratio: 16 / 9;
+  }
+
+  .question-video.youtube-embed {
+    border: none;
   }
 
   /* ── Options ─────────────────────────────────────────────────── */
@@ -1494,7 +1858,12 @@ export async function exportToQuiz(config, questions) {
   
   <div class="container">
     <header class="header">
-      <h1>${escHtml(config.title || "Practice Quiz")}</h1>
+      <div class="quiz-title-row" id="quizTitleRow">
+        <h1 id="quiz-title">${escHtml(config.title || "Practice Quiz")}</h1>
+        <button class="quiz-info-btn" id="quizInfoBtn" type="button" aria-label="Quiz info" aria-haspopup="dialog">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        </button>
+      </div>
       <div class="header-meta">
         <span>📝 ${questions.length} Questions</span>
         <span class="quiz-timer">⏱️ <span id="timerDisplay">0:00</span></span>
@@ -1505,7 +1874,23 @@ export async function exportToQuiz(config, questions) {
       </div>
       <div class="progress-text" id="progressText">0 of ${questions.length} answered</div>
     </header>
-    
+
+    <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle">
+      <div class="quiz-info-dialog-inner">
+        <div class="quiz-info-dialog-header">
+          <h2 id="quizInfoDialogTitle">معلومات الإمتحان</h2>
+          <button class="quiz-info-dialog-close" id="quizInfoDialogClose" type="button" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="quiz-info-dialog-body">
+          <table class="quiz-info-table">
+            <tbody id="quizInfoTable">${quizInfoRowsHtml}</tbody>
+          </table>
+        </div>
+      </div>
+    </dialog>
+
     <main id="main-content" class="quiz-body"></main>
     
     <div class="controls">
@@ -1546,6 +1931,15 @@ export async function exportToQuiz(config, questions) {
   // ── Markdown + KaTeX integration (mirrored from create-quiz) ──
   // All functions are serialised from module scope via .toString() so the
   // generated file is self-contained with no build step needed.
+  // highlightCode's own module-level dependencies (_HL_KEYWORDS,
+  // _HL_BUILTINS_JS) aren't functions, so .toString() can't carry them —
+  // they're rebuilt as JS source text via the serialize* helpers above.
+
+  const _HL_KEYWORDS = ${serializeHlKeywords(_HL_KEYWORDS)};
+
+  const _HL_BUILTINS_JS = ${serializeHlBuiltinsJs(_HL_BUILTINS_JS)};
+
+  ${highlightCode.toString()}
 
   ${escHtml.toString()}
   
@@ -1564,6 +1958,162 @@ export async function exportToQuiz(config, questions) {
   const isEssayQuestion = (question) => {
     return question.answer;
   };
+
+  // ── Text Direction Engine (ported from result.js) ─────────────────────────
+  // Detects Arabic vs Latin script per element/line and applies .text-rtl /
+  // .text-ltr accordingly, so every part of every question renders in its own
+  // natural direction regardless of the surrounding page direction.
+  const TextDirectionEngine = (() => {
+    // Built via RegExp(string) rather than /regex/ literals: a literal regex
+    // containing backslash escapes (\\u0600 etc.) sits inside the outer
+    // quizHTML template literal, and those escapes get silently consumed by
+    // the outer literal's own escape processing before the regex is ever
+    // parsed by the browser -- turning \\u0600 into the literal text u0600
+    // and quietly breaking Arabic detection with no error at all. Building
+    // each pattern from actual Unicode characters (via fromCharCode, so the
+    // source itself contains zero backslashes) sidesteps that entirely.
+    const range = (a, b) => String.fromCharCode(a) + "-" + String.fromCharCode(b);
+    const ARABIC_RANGES =
+      range(0x0600, 0x06ff) + range(0x0750, 0x077f) + range(0x08a0, 0x08ff) +
+      range(0xfb50, 0xfdff) + range(0xfe70, 0xfeff);
+    const ARABIC_REGEX = new RegExp("[" + ARABIC_RANGES + "]");
+    const FIRST_STRONG_CHAR_REGEX = new RegExp("[A-Za-z" + ARABIC_RANGES + "]");
+
+    const TARGET_SELECTORS = [
+      "#quiz-title",
+      ".question-text",
+      ".option-label",
+      ".explanation",
+      ".model-answer",
+      ".essay-input",
+    ].join(", ");
+
+    const EXCEPTION_SELECTORS = [
+      "pre",
+      "code",
+      ".code-block",
+      ".reading-passage",
+    ].join(", ");
+
+    const BLOCK_CHILD_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
+
+    function detectDirection(text) {
+      if (!text || typeof text !== "string") return "ltr";
+      const match = text.match(FIRST_STRONG_CHAR_REGEX);
+      if (match) {
+        return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
+      }
+      return "ltr";
+    }
+
+    function applyDirectionClass(node, direction) {
+      if (direction === "rtl") {
+        if (!node.classList.contains("text-rtl")) {
+          node.classList.remove("text-ltr");
+          node.classList.add("text-rtl");
+        }
+      } else if (!node.classList.contains("text-ltr")) {
+        node.classList.remove("text-rtl");
+        node.classList.add("text-ltr");
+      }
+    }
+
+    function processByLine(element) {
+      const existingLines = element.querySelectorAll(":scope > .text-line");
+      if (existingLines.length) {
+        existingLines.forEach((line) => {
+          applyDirectionClass(line, detectDirection(line.textContent));
+        });
+        applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
+        return;
+      }
+
+      const rawText = element.textContent;
+      // Same backslash-stripping hazard as above -- build the newline
+      // matcher from RegExp(string) with an actual newline character
+      // rather than a "\\n+" literal.
+      const NEWLINE_RE = new RegExp(String.fromCharCode(10) + "+");
+      const lines = rawText.split(NEWLINE_RE).filter((l) => l.trim() !== "");
+
+      if (lines.length <= 1) {
+        applyDirectionClass(element, detectDirection(rawText));
+        return;
+      }
+
+      const frag = document.createDocumentFragment();
+      lines.forEach((line) => {
+        const span = document.createElement("span");
+        span.className = "text-line";
+        span.style.display = "block";
+        span.textContent = line;
+        applyDirectionClass(span, detectDirection(line));
+        frag.appendChild(span);
+      });
+      element.textContent = "";
+      element.appendChild(frag);
+      applyDirectionClass(element, detectDirection(lines[0]));
+    }
+
+    function processElement(element) {
+      if (!element) return;
+      if (element.closest(EXCEPTION_SELECTORS)) {
+        applyDirectionClass(element, "ltr");
+        return;
+      }
+      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
+
+      element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
+        applyDirectionClass(zone, "ltr");
+      });
+
+      const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
+      if (blockChildren.length) {
+        blockChildren.forEach((child) => {
+          if (child.closest(EXCEPTION_SELECTORS)) return;
+          applyDirectionClass(child, detectDirection(child.textContent));
+        });
+        const firstRealBlock = Array.from(blockChildren).find((c) => !c.closest(EXCEPTION_SELECTORS));
+        applyDirectionClass(element, detectDirection(firstRealBlock?.textContent));
+        return;
+      }
+
+      processByLine(element);
+    }
+
+    function scan(container = document) {
+      const elements = container.querySelectorAll(TARGET_SELECTORS);
+      elements.forEach(processElement);
+    }
+
+    function init() {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.addedNodes.length) {
+            if (mutation.target.nodeType === Node.ELEMENT_NODE && mutation.target.matches(TARGET_SELECTORS)) {
+              processElement(mutation.target);
+            }
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                if (node.matches(TARGET_SELECTORS)) processElement(node);
+                scan(node);
+              }
+            });
+          }
+          if (mutation.type === "characterData") {
+            const parent = mutation.target.parentElement;
+            if (parent && parent.closest(TARGET_SELECTORS)) {
+              processElement(parent.closest(TARGET_SELECTORS));
+            }
+          }
+        });
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+      scan(document);
+    }
+
+    return { init, scan, detectDirection };
+  })();
 
   const quizApp = {
     userAnswers: new Array(questions.length).fill(null),
@@ -1585,6 +2135,9 @@ export async function exportToQuiz(config, questions) {
       this.setupModalClickOutside();
       this.startQuizTimer();
       this.setupImageLoading();
+      this.setupQuizTitle();
+      this.setupInfoDialog();
+      TextDirectionEngine.init();
       this.announceToScreenReader('Quiz loaded. ' + questions.length + ' questions available.');
     },
   
@@ -1706,6 +2259,44 @@ export async function exportToQuiz(config, questions) {
       }
     },
   
+    // The info button's position (after the title, in reading order) follows
+    // whichever direction the title text itself resolves to — independent of
+    // the rest of the page, since titles are often Arabic while the rest of
+    // the quiz (or vice versa) may not be. TextDirectionEngine.scan() applies
+    // .text-rtl/.text-ltr to #quiz-title itself; mirror that onto the row
+    // wrapper so the flex order follows it.
+    setupQuizTitle() {
+      const titleEl = document.getElementById('quiz-title');
+      const titleRow = document.getElementById('quizTitleRow');
+      if (!titleEl || !titleRow) return;
+
+      const applyRowDirection = () => {
+        const isRtl = titleEl.classList.contains('text-rtl');
+        titleRow.classList.toggle('text-rtl', isRtl);
+        titleRow.classList.toggle('text-ltr', !isRtl);
+      };
+
+      // TextDirectionEngine.init() runs after this and applies the class
+      // asynchronously via its own scan, so observe the title for the class
+      // change rather than assuming ordering.
+      const observer = new MutationObserver(applyRowDirection);
+      observer.observe(titleEl, { attributes: true, attributeFilter: ['class'] });
+      applyRowDirection();
+    },
+
+    setupInfoDialog() {
+      const btn = document.getElementById('quizInfoBtn');
+      const dialog = document.getElementById('quizInfoDialog');
+      const closeBtn = document.getElementById('quizInfoDialogClose');
+      if (!btn || !dialog) return;
+
+      btn.addEventListener('click', () => dialog.showModal());
+      closeBtn && closeBtn.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
+      });
+    },
+
     setupMenuToggle() {
       const menuToggle = document.getElementById('menuToggle');
       const overlay = document.getElementById('menuOverlay');
@@ -1811,6 +2402,48 @@ export async function exportToQuiz(config, questions) {
 
     renderQuestionVideo(videoUrl, qIndex) {
       if (!videoUrl) return "";
+
+      // Built via RegExp(string) rather than a /regex/ literal: a literal
+      // regex here sits inside the outer quizHTML template literal, and its
+      // backslash escapes get consumed by that outer literal's own escape
+      // processing before the regex is ever parsed by the browser --
+      // silently stripping every backslash and producing an invalid
+      // pattern at runtime. Building the pattern from plain string pieces
+      // (zero backslashes in the source) sidesteps that entirely.
+      // NOTE: "." and "?" are regex metacharacters, so they must be escaped
+      // *within the pattern string* to match literally -- using a
+      // char-code-built backslash (not a literal "\\") to keep zero
+      // backslashes in this file's own source.
+      const BACKSLASH = String.fromCharCode(92);
+      const DOT = BACKSLASH + String.fromCharCode(46);
+      const SLASH = BACKSLASH + String.fromCharCode(47);
+      const QMARK = BACKSLASH + String.fromCharCode(63);
+      const YOUTUBE_RE = new RegExp(
+        "(?:youtube" + DOT + "com" + SLASH +
+          "(?:watch" + QMARK + "(?:.*&)?v=|embed" + SLASH + "|v" + SLASH + "|shorts" + SLASH + ")" +
+          "|youtu" + DOT + "be" + SLASH +
+          ")([a-zA-Z0-9_-]{11})",
+        "i"
+      );
+      const ytMatch = String(videoUrl).match(YOUTUBE_RE);
+
+      if (ytMatch) {
+        const embedSrc = \`https://www.youtube.com/embed/\${ytMatch[1]}\`;
+        return \`
+          <div class="question-media-container question-video-container">
+            <iframe
+              class="question-video youtube-embed"
+              id="video\${qIndex}"
+              src="\${this.escapeHTML(embedSrc)}"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+              loading="lazy"
+            ></iframe>
+          </div>
+        \`;
+      }
+
       return \`
         <div class="question-media-container question-video-container">
           <video controls preload="metadata" playsinline class="question-video" id="video\${qIndex}">
@@ -1922,7 +2555,7 @@ export async function exportToQuiz(config, questions) {
                 aria-label="Option \${letter}: \${this.escapeHTML(opt)}"
               >
                 \${prefix}
-                <span>\${renderMarkdown(opt)}</span>
+                <span class="option-label">\${renderMarkdown(opt)}</span>
               </button>
             \`;
           }).join("")
