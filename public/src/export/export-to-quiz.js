@@ -2436,6 +2436,7 @@ export async function exportToQuiz(config, questions) {
               id="video\${qIndex}"
               src="\${this.escapeHTML(embedSrc)}"
               frameborder="0"
+              referrerpolicy="strict-origin-when-cross-origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen
               loading="lazy"
