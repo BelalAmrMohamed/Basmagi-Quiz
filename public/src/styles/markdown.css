@@ -394,53 +394,6 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 .sh-tag       { color: #ff79c6; }
 .sh-attr      { color: #50fa7b; }
 
-
-/* ══════════════════════════════════════════════════════════════════════════════
-   LIGHT THEME ADJUSTMENTS
-   ══════════════════════════════════════════════════════════════════════════════ */
-
-[data-theme="light"] .code-block-wrapper {
-  background: #f8f9fa;
-  border-color: #e1e1e6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .code-block-wrapper::before {
-  background: #edf0f2;
-  border-bottom-color: #e1e1e6;
-}
-
-[data-theme="light"] .code-lang-label {
-  color: #62626a;
-}
-
-[data-theme="light"] .copy-code-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #62626a;
-}
-
-[data-theme="light"] .code-block code {
-  color: #24292e;
-}
-
-[data-theme="light"] .code-block::-webkit-scrollbar-thumb {
-  background: #d1d1d6;
-}
-
-/* Custom Token Highlighting (Light Theme) */
-[data-theme="light"] .sh-comment   { color: #8e908c; font-style: italic; }
-[data-theme="light"] .sh-keyword   { color: #a71d5d; font-weight: 600; }
-[data-theme="light"] .sh-string    { color: #183691; }
-[data-theme="light"] .sh-number    { color: #0086b3; }
-[data-theme="light"] .sh-type      { color: #795da3; }
-[data-theme="light"] .sh-function  { color: #795da3; }
-[data-theme="light"] .sh-property  { color: #0086b3; }
-[data-theme="light"] .sh-builtin   { color: #ed6a43; }
-[data-theme="light"] .sh-operator  { color: #a71d5d; }
-[data-theme="light"] .sh-tag       { color: #63a35c; }
-[data-theme="light"] .sh-attr      { color: #795da3; }
-
 /* ══════════════════════════════════════════════════════════════════════════════
    GFM TABLES
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -748,88 +701,118 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 /* ── Light-theme overrides ───────────────────────────────────────────────────── */
 
 [data-theme="light"] .code-block .sh-keyword {
-  color: #7c3aed; /* deep violet */
+  color: #569cd6; /* cool blue — classic keyword blue */
   font-weight: 600;
 }
 
 [data-theme="light"] .code-block .sh-string {
-  color: #16a34a; /* forest green */
+  color: #ce9178; /* warm terracotta — easy on dark bg */
 }
 
 [data-theme="light"] .code-block .sh-number {
-  color: #db2777; /* deep pink */
+  color: #b5cea8; /* soft sage green */
 }
 
 [data-theme="light"] .code-block .sh-comment {
-  color: #9ca3af; /* mid grey */
+  color: #6a9955; /* muted green — readable but recedes */
   font-style: italic;
 }
 
 [data-theme="light"] .code-block .sh-function {
-  color: #0369a1; /* ocean blue */
+  color: #dcdcaa; /* warm yellow — functions stand out */
 }
 
 [data-theme="light"] .code-block .sh-type {
-  color: #b45309; /* dark amber */
+  color: #4ec9b0; /* teal — types feel structural */
 }
 
 [data-theme="light"] .code-block .sh-builtin {
-  color: #c2410c; /* burnt orange */
+  color: #4ec9b0; /* same teal family as types */
 }
 
 [data-theme="light"] .code-block .sh-operator {
-  color: #475569; /* dark slate */
+  color: #d4d4d4; /* near-white — punctuation stays neutral */
 }
 
 [data-theme="light"] .code-block .sh-attr,
 [data-theme="light"] .code-block .sh-property {
-  color: #0369a1; /* ocean blue */
+  color: #9cdcfe; /* light sky blue — properties feel accessible */
 }
 
 [data-theme="light"] .code-block .sh-tag {
-  color: #be185d; /* deep pink */
+  color: #569cd6; /* same blue as keywords — HTML tags fit */
 }
 
 [data-theme="light"] .code-block .sh-variable {
-  color: #6d28d9; /* indigo */
+  color: #9cdcfe; /* sky blue — consistent with properties */
 }
 
 [data-theme="light"] .code-block .sh-interp {
-  color: #ea580c; /* burnt orange */
+  color: #c586c0; /* soft violet — interpolation markers pop */
   font-weight: 700;
 }
 
 [data-theme="light"] .code-block .sh-interp-body {
-  color: #334155; /* dark slate */
+  color: #d4d4d4; /* same neutral as operators */
 }
 
-/* ── Dark-slate theme (mirrors dark but slightly warmer) ─────────────────────── */
+/* ── Dark-slate theme ────────────────────────────────────────────────────────
+   Page bg ≈ deep navy, code block ≈ slightly lighter slate
+   Goal: warm, sophisticated — no neon, no pastels that clash with cool blues
+   ─────────────────────────────────────────────────────────────────────────── */
 
 [data-theme="dark-slate"] .code-block .sh-keyword {
-  color: #d8b4fe;
+  color: #82aaff; /* periwinkle blue — softer than purple, fits navy context */
   font-weight: 600;
 }
 
 [data-theme="dark-slate"] .code-block .sh-string {
-  color: #86efac;
+  color: #c3e88d; /* muted lime-green — warm but not neon */
 }
 
 [data-theme="dark-slate"] .code-block .sh-number {
-  color: #f9a8d4;
+  color: #f78c6c; /* soft coral — replaces bubblegum pink, feels mature */
+}
+
+[data-theme="dark-slate"] .code-block .sh-comment {
+  color: #546e7a; /* blue-grey — recedes into the slate without disappearing */
+  font-style: italic;
 }
 
 [data-theme="dark-slate"] .code-block .sh-function {
-  color: #93c5fd;
+  color: #82aaff; /* same family as keywords — cohesive, not competing */
 }
 
 [data-theme="dark-slate"] .code-block .sh-type {
-  color: #fcd34d;
+  color: #ffcb6b; /* warm gold — structural types deserve warmth */
 }
 
 [data-theme="dark-slate"] .code-block .sh-builtin {
-  color: #fdba74;
+  color: #89ddff; /* cool sky — distinct from types, fits the slate palette */
+}
+
+[data-theme="dark-slate"] .code-block .sh-operator {
+  color: #89ddff; /* same sky — operators stay light and neutral */
+}
+
+[data-theme="dark-slate"] .code-block .sh-attr,
+[data-theme="dark-slate"] .code-block .sh-property {
+  color: #b2ccd6; /* desaturated steel blue — calm and readable */
 }
 
 [data-theme="dark-slate"] .code-block .sh-tag {
-  color: #f9a8d4;
+  color: #f07178; /* muted rose-red — replaces bubblegum, still distinct */
+}
+
+[data-theme="dark-slate"] .code-block .sh-variable {
+  color: #eeffff; /* near-white with a cool tint — variables are plain text */
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp {
+  color: #f78c6c; /* coral — matches numbers, signals interpolation clearly */
+  font-weight: 700;
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp-body {
+  color: #b2ccd6; /* matches properties — calm body text */
 }
