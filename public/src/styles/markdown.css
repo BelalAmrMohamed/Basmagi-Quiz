@@ -640,62 +640,66 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
    colour (#6366f1 indigo / Catppuccin-inspired) used elsewhere in the UI.
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Default / Dark palette ─────────────────────────────────────────────────── */
+/* ── Default / Dark palette ─────────────────────────────────────────────────
+   Page bg ≈ #1a1a2e (near-black, slight purple tint)
+   Code block ≈ slightly lighter dark surface
+   Goal: rich but not neon — purples feel at home, accents are warm not garish
+   ─────────────────────────────────────────────────────────────────────────── */
 
 .code-block .sh-keyword {
-  color: #c792ea; /* soft violet  — keywords */
+  color: #c792ea; /* soft violet — kept, it harmonizes with the purple-tinted bg */
   font-weight: 600;
 }
 
 .code-block .sh-string {
-  color: #a3e635; /* lime green   — string contents */
+  color: #a8d8a8; /* sage green — replaces neon lime, warm and readable */
 }
 
 .code-block .sh-number {
-  color: #f9a8d4; /* pink         — numeric literals */
+  color: #f78c6c; /* soft coral — replaces bubblegum pink, mature accent */
 }
 
 .code-block .sh-comment {
-  color: #6b7280; /* muted grey   — comments */
+  color: #4e5a6a; /* deeper blue-grey — recedes cleanly on this near-black bg */
   font-style: italic;
 }
 
 .code-block .sh-function {
-  color: #7dd3fc; /* sky blue     — function / method calls */
+  color: #82aaff; /* periwinkle blue — softer than sky, less clinical */
 }
 
 .code-block .sh-type {
-  color: #fbbf24; /* amber        — PascalCase type / class names */
+  color: #ffcb6b; /* warm gold — amber was close, this is richer and less harsh */
 }
 
 .code-block .sh-builtin {
-  color: #fb923c; /* orange       — built-in globals (console, Math, …) */
+  color: #f78c6c; /* same coral as numbers — related category, consistent family */
 }
 
 .code-block .sh-operator {
-  color: #94a3b8; /* slate        — operators */
+  color: #7986a8; /* muted blue-slate — visible but not competing */
 }
 
 .code-block .sh-attr,
 .code-block .sh-property {
-  color: #7dd3fc; /* sky blue     — HTML attrs / Properties / JSON keys */
+  color: #89ddff; /* cool sky — distinct from functions, feels like metadata */
 }
 
 .code-block .sh-tag {
-  color: #f472b6; /* hot pink     — HTML/XML tag names */
+  color: #f07178; /* muted rose-red — replaces hot pink, same role but calmer */
 }
 
 .code-block .sh-variable {
-  color: #a78bfa; /* violet       — CSS custom properties */
+  color: #c792ea; /* same violet as keywords — CSS vars share the keyword family */
 }
 
 .code-block .sh-interp {
-  color: #f97316; /* amber-orange — ${ } delimiters */
+  color: #f78c6c; /* coral — consistent with numbers/builtins, signals injection */
   font-weight: 700;
 }
 
 .code-block .sh-interp-body {
-  color: #e2e8f0; /* near-white   — expression inside ${} */
+  color: #cdd5e0; /* soft blue-white — cooler than near-white, fits the tinted bg */
 }
 
 /* ── Light-theme overrides ───────────────────────────────────────────────────── */
