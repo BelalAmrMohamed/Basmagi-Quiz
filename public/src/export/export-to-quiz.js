@@ -1226,6 +1226,19 @@ export async function exportToQuiz(config, questions) {
     transition: background var(--t-base), color var(--t-base);
   }
 
+  .option-label {
+    flex: 1;
+    text-align: left;
+  }
+
+  .option-label.text-rtl {
+    text-align: right;
+  }
+
+  .option-label p {
+    margin: 0;
+  }
+
   .option-btn.selected .option-letter { background: var(--gradient-start); color: #fff; }
   .option-btn.correct  .option-letter { background: var(--success);         color: #fff; }
   .option-btn.wrong    .option-letter { background: var(--error);           color: #fff; }
@@ -1324,6 +1337,17 @@ export async function exportToQuiz(config, questions) {
 
   .explanation  { background: var(--info-bg);    border-color: var(--info);    color: var(--info-text);    }
   .model-answer { background: var(--success-bg); border-color: var(--success); color: var(--success-text); }
+
+  /* Labels like "💡 Explanation" / "✓ Model Answer" are fixed English
+     captions, not part of the (possibly Arabic/RTL) answer content, so
+     they must always render centered and LTR regardless of which
+     direction TextDirectionEngine applies to their parent container. */
+  .answer-label {
+    display: block;
+    text-align: center;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
 
   .essay-score.correct { background: var(--success-bg); border-color: var(--success); color: var(--success-text); }
   .essay-score.partial { background: var(--warning-bg); border-color: var(--warning); color: var(--warning-text); }
@@ -1993,6 +2017,7 @@ export async function exportToQuiz(config, questions) {
       "code",
       ".code-block",
       ".reading-passage",
+      ".answer-label",
     ].join(", ");
 
     const BLOCK_CHILD_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
@@ -2428,7 +2453,7 @@ export async function exportToQuiz(config, questions) {
       const ytMatch = String(videoUrl).match(YOUTUBE_RE);
 
       if (ytMatch) {
-        const embedSrc = \`https://www.youtube.com/embed/\${ytMatch[1]}\`;
+        const embedSrc = \`https://www.youtube-nocookie.com/embed/\${ytMatch[1]}\`;
         return \`
           <div class="question-media-container question-video-container">
             <iframe
@@ -2534,7 +2559,7 @@ export async function exportToQuiz(config, questions) {
             \${savedAnswer.length} characters
           </div>
           <div class="model-answer" id="modelAns\${i}">
-            <strong>✓ Model Answer:</strong><br>
+            <strong class="answer-label">✓ Model Answer</strong><br>
             \${renderMarkdown(q.answer)}
           </div>
           <div class="essay-score" id="essayScore\${i}"></div>
@@ -2565,7 +2590,7 @@ export async function exportToQuiz(config, questions) {
   
       const explanationHtml = q.explanation ? 
         \`<div class="explanation" id="exp\${i}">
-          <strong>💡 Explanation:</strong> \${renderMarkdown(q.explanation)}
+          <strong class="answer-label">💡 Explanation</strong> \${renderMarkdown(q.explanation)}
         </div>\` : "";
   
       return \`
