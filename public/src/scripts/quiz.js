@@ -18,7 +18,9 @@ showNotification(
   "./assets/images/صلى_على_النبي_2.png",
 );
 import {
-  renderMarkdown
+  renderMarkdown,
+  scanDirections,
+  detectDirection,
 } from "../shared/markdown.js";
 
 // === MEMORY CACHE for exam modules ===
@@ -297,22 +299,6 @@ const escapeHtml = (unsafe) => {
 // === Helper: Get the model answer for an essay question ===
 const getEssayAnswer = (q) => q.answer ?? "";
 
-// === Text direction helpers (fully automatic — no manual lang codes) ===
-const ARABIC_CHAR_RE =
-  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g;
-
-const detectTextDirection = (text) => {
-  const str = String(text || "");
-  const arabicCount = (str.match(ARABIC_CHAR_RE) || []).length;
-  const latinCount = (str.match(/[a-zA-Z]/g) || []).length;
-  return arabicCount > latinCount ? "rtl" : "ltr";
-};
-
-const getAlignClass = (text) => {
-  const dir = detectTextDirection(text);
-  return dir === "rtl" ? "text-rtl" : "text-ltr";
-};
-
 // Fix 2: Removed the automatic >400-char heuristic that previously
 // promoted long questions into a passage/large-card layout.
 // Large format now only applies when the question has an explicit
@@ -493,13 +479,12 @@ const renderQuestionMedia = (q, resizeKey) =>
     wrapMedia(renderQuestionVideo(q.video, resizeKey)),
   ].join("");
 
-const renderReadingPassage = (passage, alignClass) => {
+const renderReadingPassage = (passage) => {
   if (!passage) return "";
-  return `
-    <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
-      ${renderMarkdown(passage)}
-    </div>
-  `;
+  // The passage wrapper and per-element direction classes are handled
+  // entirely by renderMarkdown (via the ```passage``` fence) and the
+  // RTL/LTR engine embedded in it. No wrapper or alignClass needed here.
+  return `<div class="reading-passage" role="region" aria-label="Reading passage">${renderMarkdown(passage)}</div>`;
 };
 
 const applyMediaSrc = (media, url) => {
@@ -1286,6 +1271,9 @@ async function init() {
     // Update Title UI
     if (els.title) {
       els.title.textContent = metaData.title || "Quiz";
+      // Apply RTL/LTR direction to the title (it lives outside the
+      // markdown pipeline so we call the engine directly).
+      applyQuizTitleDirection();
     }
 
     // Setup Timer
@@ -1801,8 +1789,6 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     </div>
   `;
 
-  const alignClass = getAlignClass(q.q);
-  const passageAlignClass = getAlignClass(q.passage || q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
   // mediaHTML is returned SEPARATELY — it will live outside .reloadable-context
   // so the media DOM is never destroyed when the user answers the question.
@@ -1816,7 +1802,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionBtns}
     </div>
-    ${renderReadingPassage(q.passage, passageAlignClass)}
+    ${renderReadingPassage(q.passage)}
     <!-- Bug fix: this was previously a real <h2>. q.q is run through
          renderMarkdown(), which can output its own block-level tags
          (h1-h6, p, ul/ol, blockquote, pre) whenever a question's full
@@ -1824,7 +1810,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
          \`passage\` field. A <div> has no content-model restriction;
          role="heading" aria-level="2" preserves the same heading
          semantics for screen readers that the real <h2> provided. -->
-    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
+    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
   `;
 
   if (isEssay) {
@@ -1838,7 +1824,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         <div class="essay-container">
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
-        <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" title="إظهار الإجابة الصحيحة" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
+        <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
         ${
           isLocked
             ? `<div class="formal-answer">            
@@ -1871,11 +1857,10 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         if (isCorrectOption) optionClass += " correct";
         if (isSelected && !isCorrectOption) optionClass += " wrong";
       }
-      const optAlign = getAlignClass(opt);
       const inputType = isMultiple ? "checkbox" : "radio";
       const inputName = isMultiple ? `answer-${idx}-${i}` : `answer-${idx}`;
       return `
-        <div class="${optionClass} ${optAlign}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
+        <div class="${optionClass}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
           <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
           <span class="option-label">${renderMarkdown(opt)}</span>
         </div>`;
@@ -1892,7 +1877,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     html: `
       ${header}
       <div class="options-grid">${optionsHtml}</div>
-      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" onclick="window.checkAnswerForQuestion(${idx})" title="إظهار الإجابة الصحيحة" ${checkDisabled ? "disabled" : ""}>Check Answer</button>
+      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${checkDisabled ? "disabled" : ""}>Check Answer</button>
       <div class="${feedbackClass}">${feedbackText}</div>
     `,
   };
@@ -1951,7 +1936,7 @@ function setQuestionHTML(html) {
   els.questionContainer.innerHTML = html;
 
   // Apply text direction classes synchronously before MutationObserver fires.
-  TextDirectionEngine.scan(els.questionContainer);
+  scanDirections(els.questionContainer);
 
   // Restore playback position for this question if we navigated back to it.
   // paginationMediaCache is populated by snapshotPaginationMedia() just before
@@ -1998,7 +1983,7 @@ function renderAllQuestionsVertical() {
       reloadableEl.innerHTML = bodyHTML;
       existingCard.className = `question-card vertical-question-card${largeClass}`;
       // Re-scan only the patched section to keep direction classes in sync.
-      TextDirectionEngine.scan(reloadableEl);
+      scanDirections(reloadableEl);
       // initMediaSkeletons is NOT called here — media was not re-created.
     } else {
       // Defensive fallback: full rebuild for this card only,
@@ -2030,7 +2015,7 @@ function renderAllQuestionsVertical() {
       }
 
       initMediaSkeletons(newCard);
-      TextDirectionEngine.scan(newCard);
+      scanDirections(newCard);
     }
     return;
   }
@@ -2046,7 +2031,7 @@ function renderAllQuestionsVertical() {
   initMediaSkeletons(els.questionContainer);
   // Scan all cards in one pass after the full render so direction classes
   // are set before the browser paints — no per-card flicker.
-  TextDirectionEngine.scan(els.questionContainer);
+  scanDirections(els.questionContainer);
 }
 
 // === Core: Render Question ===
@@ -2057,7 +2042,7 @@ function renderAllQuestionsVertical() {
 // Splitting this out lets renderQuestion() patch just this part on every
 // input interaction without touching the media DOM at all — so audio/video/
 // YouTube elements never unmount, reload, or flicker while answering.
-function buildQuestionBodyHTML(q, idx, passageAlignClass) {
+function buildQuestionBodyHTML(q, idx) {
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
   const isLocked = !!lockedQuestions[idx];
@@ -2108,7 +2093,6 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
     </div>
   `;
 
-  const alignClass = getAlignClass(q.q);
   const largeClass = isLargeFormatQuestion(q) ? " question-card--large" : "";
   // mediaHTML is returned SEPARATELY so the caller can render it outside
   // .reloadable-context. This is the core of the fix: media lives in its own
@@ -2122,8 +2106,8 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
       <div class="question-number">سؤال ${idx + 1} من ${questions.length}</div>
       ${actionButtons}
     </div>
-    ${renderReadingPassage(q.passage, passageAlignClass)}
-    <div class="question-text ${alignClass}" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
+    ${renderReadingPassage(q.passage)}
+    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
   `;
 
   if (isEssay) {
@@ -2143,7 +2127,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
             oninput="window.handleEssayInput()"
           >${escapeHtml(userSelected || "")}</textarea>
         </div>
-        <button title="إظهار الإجابة الصحيحة" class="check-answer-btn ${
+        <button class="check-answer-btn ${
           isLocked || !showCheckButton ? "hidden" : ""
         }"
                 id="checkBtn" onclick="window.checkAnswer()"
@@ -2188,7 +2172,6 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
               isSelected = userSelected === i;
             }
 
-            const optAlign = getAlignClass(opt);
             let optionClass = "option-row";
             if (isSelected) optionClass += " selected";
             if (isLocked) {
@@ -2204,7 +2187,7 @@ function buildQuestionBodyHTML(q, idx, passageAlignClass) {
             const inputName = isMultiple ? `answer-${i}` : "answer";
 
             return `
-            <div class="${optionClass} ${optAlign}" ${
+            <div class="${optionClass}" ${
               isLocked ? "" : `onclick="window.handleSelect(${i})"`
             }>
               <input type="${inputType}" name="${inputName}" ${
@@ -2262,11 +2245,9 @@ function renderQuestion() {
       progressPercent,
     )}% (${answeredCount}/${questions.length})`;
 
-  const passageAlignClass = getAlignClass(q.passage || q.q);
   const { largeClass, mediaHTML, html: bodyHTML } = buildQuestionBodyHTML(
     q,
     currentIdx,
-    passageAlignClass,
   );
 
   els.questionContainer.classList.remove("loading");
@@ -2283,7 +2264,7 @@ function renderQuestion() {
     if (reloadableEl) {
       reloadableEl.innerHTML = bodyHTML;
       existingCard.className = `question-card${largeClass}`;
-      TextDirectionEngine.scan(reloadableEl);
+      scanDirections(reloadableEl);
       // No initMediaSkeletons here — media was not re-created.
     } else {
       // Defensive fallback (unexpected DOM shape): full rebuild.
@@ -2363,286 +2344,12 @@ function handleEssayInput() {
   }
 }
 
-const TextDirectionEngine = (() => {
-  // Optimized RegEx matching Arabic character scripts
-  const ARABIC_REGEX =
-    /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-
-  // RegEx to capture the very first English or Arabic script alphabetical character
-  const FIRST_STRONG_CHAR_REGEX =
-    /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-
-  // Selectors targeted for direction adjustment
-  const TARGET_SELECTORS = [
-    "#quizTitle",
-    ".question-text",
-    ".option-label",
-    ".feedback-body-text",
-    ".formal-answer",
-    ".formal-answer-text",
-    ".md-content",
-    ".essay-textarea",
-  ].join(", ");
-
-  // Exception selectors that MUST remain LTR
-  const EXCEPTION_SELECTORS = [
-    "pre",
-    "code",
-    ".code-block",
-    ".reading-passage",
-  ].join(", ");
-
-  const BLOCK_CHILD_SELECTOR =
-    "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
-
-  const LABEL_PREFIX_REGEX =
-    /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
-
-  /**
-   * Detects the direction of a single line/sentence of text based on its
-   * first strong alphabetical letter. Ignores leading spaces, numbers,
-   * bullet punctuation, and emojis.
-   * @param {string} text
-   * @returns {'rtl' | 'ltr'}
-   */
-  function detectDirection(text) {
-    if (!text || typeof text !== "string") return "ltr";
-
-    // Strip fixed static labels so they don't skew detection of the
-    // actual (often differently-directioned) content that follows them.
-    const contentOnly = text.replace(LABEL_PREFIX_REGEX, "");
-    const searchText = contentOnly.trim() ? contentOnly : text;
-
-    // Find the first true alphabetical letter in Arabic or English
-    const match = searchText.match(FIRST_STRONG_CHAR_REGEX);
-    if (match) {
-      // If that first real character is Arabic, it's RTL
-      return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
-    }
-    return "ltr"; // Fallback default
-  }
-
-  /**
-   * Sets the direction classes on a single leaf node (a line-span or a
-   * block child) without touching anything else.
-   * @param {HTMLElement} node
-   * @param {string} direction
-   */
-  function applyDirectionClass(node, direction) {
-    if (direction === "rtl") {
-      if (!node.classList.contains("text-rtl")) {
-        node.classList.remove("text-ltr");
-        node.classList.add("text-rtl");
-      }
-    } else if (!node.classList.contains("text-ltr")) {
-      node.classList.remove("text-rtl");
-      node.classList.add("text-ltr");
-    }
-  }
-
-  /**
-   * Splits a block's direct text into per-line spans (one per newline-
-   * separated line) and directions each independently. Used for elements
-   * with no block-level children (plain single-paragraph targets like
-   * #quizTitle, .question-text, .option-label).
-   * @param {HTMLElement} element
-   */
-  function processByLine(element) {
-    // If we've already split this element into line-spans on a previous
-    // pass, just re-evaluate each existing span's direction without
-    // rebuilding the DOM (rebuilding would lose textarea focus, selection,
-    // etc. and is unnecessary work on every re-render).
-    const existingLines = element.querySelectorAll(":scope > .text-line");
-    if (existingLines.length) {
-      existingLines.forEach((line) => {
-        applyDirectionClass(line, detectDirection(line.textContent));
-      });
-      // Container itself follows its first line, purely so that
-      // non-text-aware ancestor CSS (e.g. unicode-bidi isolation) has a
-      // sane default; per-line spans are what actually control alignment.
-      applyDirectionClass(
-        element,
-        detectDirection(existingLines[0]?.textContent),
-      );
-      return;
-    }
-
-    const rawText = element.textContent;
-    const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
-
-    // Single line (the overwhelming common case) or empty: no need to
-    // wrap in spans, just direction the element itself by that one line.
-    if (lines.length <= 1) {
-      applyDirectionClass(element, detectDirection(rawText));
-      return;
-    }
-
-    // Multiple lines: wrap each in its own <span> so each can carry its
-    // own direction/alignment independently of its siblings.
-    const frag = document.createDocumentFragment();
-    lines.forEach((line, i) => {
-      const span = document.createElement("span");
-      span.className = "text-line";
-      span.style.display = "block";
-      span.textContent = line;
-      applyDirectionClass(span, detectDirection(line));
-      frag.appendChild(span);
-    });
-    element.textContent = "";
-    element.appendChild(frag);
-    applyDirectionClass(element, detectDirection(lines[0]));
-  }
-
-  /**
-   * Form controls (textarea/input) are intentionally NOT direction-classed
-   * by JS. Toggling the `direction` CSS property via a class on every
-   * keystroke (the previous approach) fights the browser's own caret
-   * placement on a focused, populated field — the cursor and spacebar
-   * strokes would visually "snap" to the wrong edge mid-typing. Native
-   * `unicode-bidi: plaintext` in CSS (see .essay-textarea) lets the browser
-   * determine each paragraph's direction itself, directly from the typed
-   * content, with correct native caret tracking — no JS involvement needed.
-   */
-
-  /**
-   * Evaluates and applies text direction classes to a single DOM element,
-   * judging direction per-line or per-block-child rather than blanket-
-   * applying one verdict for the entire container.
-   * @param {HTMLElement} element
-   */
-  function processElement(element) {
-    if (!element) return;
-
-    // Fast-path protection for strict LTR exceptions (Passages and Code blocks)
-    if (element.closest(EXCEPTION_SELECTORS)) {
-      applyDirectionClass(element, "ltr");
-      return;
-    }
-
-    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-      // Intentionally a no-op now — see comment above processElement's
-      // sibling function block. CSS handles direction for form controls.
-      return;
-    }
-
-    // Pin every exception zone (code blocks, math, reading passages) nested
-    // anywhere inside this container to LTR first and unconditionally. These
-    // elements (<pre>, <code>, .code-block, etc.) usually aren't themselves
-    // one of the BLOCK_CHILD_SELECTOR tags, so the per-block loop below would
-    // otherwise never visit them at all and they'd keep whatever direction
-    // class they last had (or none).
-    element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
-      applyDirectionClass(zone, "ltr");
-    });
-
-    // Containers that hold markdown-rendered block children (paragraphs,
-    // list items, headings, table cells, etc.) get evaluated per-child —
-    // each block is its own line/sentence and may have its own direction.
-    const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
-    if (blockChildren.length) {
-      blockChildren.forEach((child) => {
-        // Skip exception zones (code blocks, math) nested inside markdown —
-        // already pinned LTR above, don't let automatic detection re-judge them.
-        if (child.closest(EXCEPTION_SELECTORS)) return;
-        applyDirectionClass(child, detectDirection(child.textContent));
-      });
-      // The container itself follows its first real (non-exception) block,
-      // just so any CSS relying on the container's own direction (e.g. list
-      // padding logical properties) has a sane value.
-      const firstRealBlock = Array.from(blockChildren).find(
-        (c) => !c.closest(EXCEPTION_SELECTORS),
-      );
-      applyDirectionClass(
-        element,
-        detectDirection(firstRealBlock?.textContent),
-      );
-      return;
-    }
-
-    // No block children: plain text container. Evaluate per visual line.
-    processByLine(element);
-  }
-
-  /**
-   * Scans a specific container element and updates all matching child nodes.
-   * Call this explicitly inside your quiz rendering cycles.
-   * @param {HTMLElement} container
-   */
-  function scan(container = document) {
-    const elements = container.querySelectorAll(TARGET_SELECTORS);
-    elements.forEach(processElement);
-  }
-
-  /**
-   * Initializes real-time text-change listeners and fallback MutationObservers.
-   */
-  function init() {
-    // Form controls (textarea/input) get their direction from CSS
-    // `unicode-bidi: plaintext` natively — no JS listener needed; see the
-    // comment above the (intentionally inert) form-control branch in
-    // processElement().
-
-    // Automated Observer Fallback to handle async question content swaps
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        // Handle elements added dynamically
-        if (mutation.addedNodes.length) {
-          // The mutation target itself may be a tracked element whose
-          // content was just replaced (e.g. via `el.textContent = ...`,
-          // which swaps in a text node rather than an element node, so
-          // it would otherwise be missed by the addedNodes element check below).
-          if (
-            mutation.target.nodeType === Node.ELEMENT_NODE &&
-            mutation.target.matches(TARGET_SELECTORS)
-          ) {
-            processElement(mutation.target);
-          }
-
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              if (node.matches(TARGET_SELECTORS)) {
-                processElement(node);
-              }
-              scan(node);
-            }
-          });
-        }
-        // Handle raw text modifications inside nodes
-        if (mutation.type === "characterData") {
-          const parent = mutation.target.parentElement;
-          if (parent && parent.closest(TARGET_SELECTORS)) {
-            processElement(parent.closest(TARGET_SELECTORS));
-          }
-        }
-      });
-    });
-
-    // Start observing the main DOM structure defensively
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-    });
-
-    // Initial pass to catch content already present before the
-    // observer attached (e.g. static markup rendered before this script ran).
-    scan(document);
-  }
-
-  return {
-    init,
-    scan,
-    detectDirection,
-  };
-})();
-
-// Autostart core global interactions when script evaluates
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () =>
-    TextDirectionEngine.init(),
-  );
-} else {
-  TextDirectionEngine.init();
+// #quizTitle direction: applied once after the title element is set.
+// The RTL/LTR engine now lives in markdown.js; quiz.js uses the
+// exported scanDirections() to handle this one non-markdown element.
+function applyQuizTitleDirection() {
+  const titleEl = els.title || document.getElementById("quizTitle");
+  if (titleEl) scanDirections(titleEl.parentElement || document);
 }
 
 const maybeAutoSubmit = () => {

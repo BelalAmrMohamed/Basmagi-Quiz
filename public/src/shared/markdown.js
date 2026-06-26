@@ -540,8 +540,21 @@ export function _renderMarkdownCore(str) {
     return stashPush(`<div class="math-block">${rendered}</div>`);
   });
 
-  // ── Step 2: Fenced code blocks ```lang\n…\n``` ─────────────────────────────
+  // ── Step 2a: Fenced passage blocks  ```passage … ``` ──────────────────────
+  // A passage fence renders its body as full markdown (not a code block).
+  // The wrapper gets class="reading-passage"; RTL/LTR direction is applied
+  // per-element by the engine after rendering, not on the wrapper itself.
+  str = str.replace(
+    /```passage\n?([\s\S]*?)```/gi,
+    (_, body) => {
+      const innerHtml = _renderMarkdownCore(body.trim());
+      return stashPush(`<div class="reading-passage">${innerHtml}</div>`);
+    },
+  );
+
+  // ── Step 2b: Fenced code blocks ```lang\n…\n``` ────────────────────────
   // Wraps each block in .code-block-wrapper so the Copy button has a parent.
+  // "passage" is already consumed above so it never reaches this branch.
   str = str.replace(
     /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
     (_, lang, code) => {
@@ -556,7 +569,6 @@ export function _renderMarkdownCore(str) {
         `<div class="code-block-wrapper">` +
           langLabel +
           `<button class="copy-code-btn"
-                 title="Copy the code inside this code block"
                  onclick="window.copyCodeBlock(this)"
                  aria-label="Copy code">` +
           ICON_COPY +
@@ -845,11 +857,186 @@ export function _renderMarkdownCore(str) {
   return result;
 }
 
-// ─── 7. Public renderMarkdown (with error boundary) ───────────────────────────
+// ─── 7. Text-Direction Engine ─────────────────────────────────────────────────
+// Evaluates and applies RTL/LTR direction classes on a per-line / per-block
+// basis to every element produced by renderMarkdown.  Also exported so that
+// special-case elements that are not rendered through renderMarkdown (e.g.
+// #quizTitle) can be processed directly by the caller.
+//
+// Elements that are always LTR (code blocks, inline code, math) are never
+// touched by the engine — the HTML they produce carries no direction class and
+// CSS keeps them LTR by default.
+
+const _ARABIC_REGEX =
+  /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+const _FIRST_STRONG_CHAR_REGEX =
+  /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
+// Static label prefixes that must not skew direction detection of the content
+// that follows them (e.g. "Explanation:" before an Arabic answer).
+const _LABEL_PREFIX_REGEX =
+  /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
+
+// Block-level child selector — each of these gets its own direction verdict.
+const _BLOCK_CHILD_SELECTOR =
+  "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
+
+// Selectors whose subtrees the engine must NEVER touch (always LTR by nature).
+const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, .math-block, .katex";
+
 /**
- * Render a Markdown string to an HTML string.
+ * Detects the base direction of a text string by finding its first strong
+ * alphabetical character (Arabic → rtl, Latin → ltr).
+ * Exported so quiz.js can reuse it for #quizTitle and similar one-off cases.
+ * @param {string} text
+ * @returns {'rtl' | 'ltr'}
+ */
+export function detectDirection(text) {
+  if (!text || typeof text !== "string") return "ltr";
+  const contentOnly = text.replace(_LABEL_PREFIX_REGEX, "");
+  const searchText = contentOnly.trim() ? contentOnly : text;
+  const match = searchText.match(_FIRST_STRONG_CHAR_REGEX);
+  if (match) return _ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
+  return "ltr";
+}
+
+/**
+ * Applies a direction class to a single element without redundant class churn.
+ * @param {HTMLElement} node
+ * @param {'rtl'|'ltr'} direction
+ */
+function _applyDirectionClass(node, direction) {
+  if (direction === "rtl") {
+    if (!node.classList.contains("text-rtl")) {
+      node.classList.remove("text-ltr");
+      node.classList.add("text-rtl");
+    }
+  } else {
+    if (!node.classList.contains("text-ltr")) {
+      node.classList.remove("text-rtl");
+      node.classList.add("text-ltr");
+    }
+  }
+}
+
+/**
+ * Handles plain-text elements (no block children) by splitting on newlines
+ * and wrapping each line in a direction-classed <span class="text-line">.
+ * On subsequent calls it re-evaluates the existing spans without rebuilding.
+ * @param {HTMLElement} element
+ */
+function _processByLine(element) {
+  const existingLines = element.querySelectorAll(":scope > .text-line");
+  if (existingLines.length) {
+    existingLines.forEach((line) => {
+      _applyDirectionClass(line, detectDirection(line.textContent));
+    });
+    _applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
+    return;
+  }
+
+  const rawText = element.textContent;
+  const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
+
+  if (lines.length <= 1) {
+    _applyDirectionClass(element, detectDirection(rawText));
+    return;
+  }
+
+  const frag = document.createDocumentFragment();
+  lines.forEach((line) => {
+    const span = document.createElement("span");
+    span.className = "text-line";
+    span.style.display = "block";
+    span.textContent = line;
+    _applyDirectionClass(span, detectDirection(line));
+    frag.appendChild(span);
+  });
+  element.textContent = "";
+  element.appendChild(frag);
+  _applyDirectionClass(element, detectDirection(lines[0]));
+}
+
+/**
+ * Evaluates and applies direction classes to a single element — per block
+ * child if the element contains block-level markdown output, or per visual
+ * line for plain-text leaves.  Never touches LTR-only subtrees.
+ * @param {HTMLElement} element
+ */
+function _processElement(element) {
+  if (!element) return;
+
+  // INPUT / TEXTAREA: direction is handled by CSS `unicode-bidi: plaintext`.
+  // No JS involvement needed or wanted — touching it fights the browser's
+  // native caret placement on focused / partially-typed fields.
+  if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
+
+  // Pin every always-LTR zone nested inside this element first.
+  element.querySelectorAll(_LTR_ONLY_SELECTOR).forEach((zone) => {
+    _applyDirectionClass(zone, "ltr");
+  });
+
+  // Containers with block-level markdown children get per-child evaluation.
+  const blockChildren = element.querySelectorAll(_BLOCK_CHILD_SELECTOR);
+  if (blockChildren.length) {
+    blockChildren.forEach((child) => {
+      if (child.closest(_LTR_ONLY_SELECTOR)) return; // already pinned LTR
+      _applyDirectionClass(child, detectDirection(child.textContent));
+    });
+    // Container itself follows its first real (non-LTR-only) block so that
+    // CSS logical properties (list padding, etc.) have a sane base direction.
+    const firstReal = Array.from(blockChildren).find(
+      (c) => !c.closest(_LTR_ONLY_SELECTOR),
+    );
+    _applyDirectionClass(element, detectDirection(firstReal?.textContent));
+    return;
+  }
+
+  // No block children — plain text leaf.  Process per visual line.
+  _processByLine(element);
+}
+
+/**
+ * Scans `container` and applies direction classes to every direct child
+ * element that carries rendered markdown content.  Call this after setting
+ * innerHTML on any element that may contain renderMarkdown output.
+ *
+ * Exported so quiz.js can call it for special-case containers (e.g. #quizTitle)
+ * that are populated outside the renderMarkdown pipeline.
+ * @param {HTMLElement} [container=document]
+ */
+export function scanDirections(container = document) {
+  // Walk every element inside the container and process those that are
+  // themselves renderable leaf/block containers, skipping always-LTR zones.
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode(node) {
+        // Never descend into LTR-only subtrees.
+        if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    },
+  );
+
+  const candidates = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    candidates.push(node);
+  }
+
+  candidates.forEach(_processElement);
+}
+
+// ─── 8. Public renderMarkdown (with error boundary + direction scan) ──────────
+/**
+ * Render a Markdown string to an HTML string with RTL/LTR direction classes
+ * already applied to every block and line.
  * Supports: KaTeX math, GFM tables, fenced code blocks with copy button,
- * headings, blockquotes, nested lists, bold/italic, links, images.
+ * reading passages (```passage … ```), headings, blockquotes, nested lists,
+ * bold/italic, links, images.
  *
  * @param {string} str — Raw Markdown input.
  * @returns {string}   — Safe HTML string ready for innerHTML.
@@ -857,7 +1044,20 @@ export function _renderMarkdownCore(str) {
 export function renderMarkdown(str) {
   if (!str) return "";
   try {
-    return _renderMarkdownCore(str);
+    const html = _renderMarkdownCore(str);
+
+    // Apply direction classes to the rendered output.  We parse the HTML
+    // string into a detached container, run the engine over it, then
+    // serialise back — so the returned string already carries direction
+    // classes and callers never need to call scanDirections themselves.
+    if (typeof document !== "undefined") {
+      const tmp = document.createElement("div");
+      tmp.innerHTML = html;
+      scanDirections(tmp);
+      return tmp.innerHTML;
+    }
+
+    return html;
   } catch (err) {
     console.error("[markdown-handler] renderMarkdown error:", err);
     return escHtml(str).replace(/\n/g, "<br>");
