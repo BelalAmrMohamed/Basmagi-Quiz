@@ -938,17 +938,6 @@ dialog.quiz-password-dialog {
   margin-bottom: 20px;
 }
 
-/* Dynamic Direction Utilities */
-.text-ltr {
-  direction: ltr;
-  text-align: left;
-}
-
-.text-rtl {
-  direction: rtl;
-  text-align: right;
-}
-
 /* Reading Comprehension Passages */
 .reading-passage {
   max-height: min(420px, 55vh);

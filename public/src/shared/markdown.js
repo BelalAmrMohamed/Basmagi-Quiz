@@ -556,6 +556,7 @@ export function _renderMarkdownCore(str) {
         `<div class="code-block-wrapper">` +
           langLabel +
           `<button class="copy-code-btn"
+                 title="Copy the code inside this code block"
                  onclick="window.copyCodeBlock(this)"
                  aria-label="Copy code">` +
           ICON_COPY +

@@ -1371,17 +1371,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Dynamic Direction Utilities */
-.text-ltr {
-  direction: ltr;
-  text-align: left;
-}
-
-.text-rtl {
-  direction: rtl;
-  text-align: right;
-}
-
 .title-container:has(#quiz-title.text-ltr),
 .title-date-container:has(#quiz-title.text-ltr),
 .title-date-container:has(h1.text-ltr) {

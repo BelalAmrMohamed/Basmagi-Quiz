@@ -1145,10 +1145,10 @@ function renderReview(container, questions, userAnswers) {
       html += `
         <div class="review-card essay-card">
           <div class="review-header">
-            <span class="q-num">#${index + 1}</span>
+            <span class="q-num" title="This is question number ${index + 1}">#${index + 1}</span>
             <div class="review-header-right">
-              <span class="essay-badge"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg> Essay</span>
-              <span class="essay-score-badge ${scoreLabelClass}">${stars} ${scoreLabel} (${score}/5)</span>
+              <span class="essay-badge" title="Your score is (${score}/5)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg> Essay</span>
+              <span class="essay-score-badge ${scoreLabelClass}" title="Your score is (${score}/5)">${stars} ${scoreLabel} (${score}/5)</span>
             </div>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
@@ -1243,7 +1243,7 @@ function renderReview(container, questions, userAnswers) {
         <div class="review-card ${statusClass}">
           <div class="review-header">
             <span class="q-num">#${index + 1}</span>
-            <span class="status-icon status-${statusClass}">${statusIcon}</span>
+            <span class="status-icon status-${statusClass}" title="This question is ${statusClass}">${statusIcon}</span>
           </div>
           ${renderReadingPassage(q.passage, alignClass)}
           <div class="q-text ${alignClass}">${renderMarkdown(q.q)}</div>
@@ -1255,7 +1255,7 @@ function renderReview(container, questions, userAnswers) {
             explanationText
               ? `
           <div class="explanation">
-            <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation:</strong></div>
+            <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> Explanation</strong></div>
             <div class="explanation-body">${explanationText}</div>
           </div>`
               : ""

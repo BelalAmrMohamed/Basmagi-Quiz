@@ -820,3 +820,14 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 [data-theme="dark-slate"] .code-block .sh-interp-body {
   color: #b2ccd6; /* matches properties — calm body text */
 }
+
+/* Dynamic Direction Utilities */
+.text-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.text-rtl {
+  direction: rtl;
+  text-align: right;
+}
