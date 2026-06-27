@@ -11,11 +11,22 @@ import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../shared/rat
 import {
   renderMarkdown,
   _renderMarkdownCore,
+  scanDirections,
+  detectDirection,
   applyInline,
   escHtml,
   highlightCode,
+  _processElement,
+  _processByLine,
+  _applyDirectionClass,
   _HL_KEYWORDS,
   _HL_BUILTINS_JS,
+  _SKIP_TAGS,
+  _LTR_ONLY_SELECTOR,
+  _BLOCK_CHILD_SELECTOR,
+  _LABEL_PREFIX_REGEX,
+  _FIRST_STRONG_CHAR_REGEX,
+  _ARABIC_REGEX,
 } from "../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../shared/markdown-css.js";
@@ -1293,6 +1304,8 @@ export async function exportToQuiz(config, questions) {
     background: var(--bg-primary);
     color: var(--text-primary);
     caret-color: var(--gradient-start);
+    unicode-bidi: plaintext;
+    text-align: start;
   }
 
   .essay-input:focus {
@@ -1889,9 +1902,7 @@ export async function exportToQuiz(config, questions) {
         </button>
       </div>
       <div class="header-meta">
-        <span>📝 ${questions.length} Questions</span>
         <span class="quiz-timer">⏱️ <span id="timerDisplay">0:00</span></span>
-        <span>🎯 Practice Mode</span>
       </div>
       <div class="progress-container">
         <div class="progress-bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
@@ -1972,173 +1983,33 @@ export async function exportToQuiz(config, questions) {
   ${_renderMarkdownCore.toString()}
   
   ${renderMarkdown.toString()}
+
+  ${scanDirections.toString()}
   
   ${gradeEssay.toString()}
   
   ${isAnswerCorrect.toString()}
   
   ${calculateQuizMetrics.toString()}
-  
+
+  const _BLOCK_CHILD_SELECTOR = ${JSON.stringify(_BLOCK_CHILD_SELECTOR)};
+  const _LTR_ONLY_SELECTOR = ${JSON.stringify(_LTR_ONLY_SELECTOR)};
+  const _ARABIC_REGEX = ${_ARABIC_REGEX.toString()};
+  const _FIRST_STRONG_CHAR_REGEX = ${_FIRST_STRONG_CHAR_REGEX.toString()};
+  const _LABEL_PREFIX_REGEX = ${_LABEL_PREFIX_REGEX.toString()};
+  const _SKIP_TAGS = new Set(${JSON.stringify(Array.from(_SKIP_TAGS))});
+
+  ${detectDirection.toString()}
+
+  ${_processElement.toString()}
+
+  ${_processByLine.toString()}
+
+  ${_applyDirectionClass.toString()}
+ 
   const isEssayQuestion = (question) => {
     return question.answer;
   };
-
-  // ── Text Direction Engine (ported from result.js) ─────────────────────────
-  // Detects Arabic vs Latin script per element/line and applies .text-rtl /
-  // .text-ltr accordingly, so every part of every question renders in its own
-  // natural direction regardless of the surrounding page direction.
-  const TextDirectionEngine = (() => {
-    // Built via RegExp(string) rather than /regex/ literals: a literal regex
-    // containing backslash escapes (\\u0600 etc.) sits inside the outer
-    // quizHTML template literal, and those escapes get silently consumed by
-    // the outer literal's own escape processing before the regex is ever
-    // parsed by the browser -- turning \\u0600 into the literal text u0600
-    // and quietly breaking Arabic detection with no error at all. Building
-    // each pattern from actual Unicode characters (via fromCharCode, so the
-    // source itself contains zero backslashes) sidesteps that entirely.
-    const range = (a, b) => String.fromCharCode(a) + "-" + String.fromCharCode(b);
-    const ARABIC_RANGES =
-      range(0x0600, 0x06ff) + range(0x0750, 0x077f) + range(0x08a0, 0x08ff) +
-      range(0xfb50, 0xfdff) + range(0xfe70, 0xfeff);
-    const ARABIC_REGEX = new RegExp("[" + ARABIC_RANGES + "]");
-    const FIRST_STRONG_CHAR_REGEX = new RegExp("[A-Za-z" + ARABIC_RANGES + "]");
-
-    const TARGET_SELECTORS = [
-      "#quiz-title",
-      ".question-text",
-      ".option-label",
-      ".explanation",
-      ".model-answer",
-      ".essay-input",
-    ].join(", ");
-
-    const EXCEPTION_SELECTORS = [
-      "pre",
-      "code",
-      ".code-block",
-      ".reading-passage",
-      ".answer-label",
-    ].join(", ");
-
-    const BLOCK_CHILD_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
-
-    function detectDirection(text) {
-      if (!text || typeof text !== "string") return "ltr";
-      const match = text.match(FIRST_STRONG_CHAR_REGEX);
-      if (match) {
-        return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
-      }
-      return "ltr";
-    }
-
-    function applyDirectionClass(node, direction) {
-      if (direction === "rtl") {
-        if (!node.classList.contains("text-rtl")) {
-          node.classList.remove("text-ltr");
-          node.classList.add("text-rtl");
-        }
-      } else if (!node.classList.contains("text-ltr")) {
-        node.classList.remove("text-rtl");
-        node.classList.add("text-ltr");
-      }
-    }
-
-    function processByLine(element) {
-      const existingLines = element.querySelectorAll(":scope > .text-line");
-      if (existingLines.length) {
-        existingLines.forEach((line) => {
-          applyDirectionClass(line, detectDirection(line.textContent));
-        });
-        applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
-        return;
-      }
-
-      const rawText = element.textContent;
-      // Same backslash-stripping hazard as above -- build the newline
-      // matcher from RegExp(string) with an actual newline character
-      // rather than a "\\n+" literal.
-      const NEWLINE_RE = new RegExp(String.fromCharCode(10) + "+");
-      const lines = rawText.split(NEWLINE_RE).filter((l) => l.trim() !== "");
-
-      if (lines.length <= 1) {
-        applyDirectionClass(element, detectDirection(rawText));
-        return;
-      }
-
-      const frag = document.createDocumentFragment();
-      lines.forEach((line) => {
-        const span = document.createElement("span");
-        span.className = "text-line";
-        span.style.display = "block";
-        span.textContent = line;
-        applyDirectionClass(span, detectDirection(line));
-        frag.appendChild(span);
-      });
-      element.textContent = "";
-      element.appendChild(frag);
-      applyDirectionClass(element, detectDirection(lines[0]));
-    }
-
-    function processElement(element) {
-      if (!element) return;
-      if (element.closest(EXCEPTION_SELECTORS)) {
-        applyDirectionClass(element, "ltr");
-        return;
-      }
-      if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
-
-      element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
-        applyDirectionClass(zone, "ltr");
-      });
-
-      const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
-      if (blockChildren.length) {
-        blockChildren.forEach((child) => {
-          if (child.closest(EXCEPTION_SELECTORS)) return;
-          applyDirectionClass(child, detectDirection(child.textContent));
-        });
-        const firstRealBlock = Array.from(blockChildren).find((c) => !c.closest(EXCEPTION_SELECTORS));
-        applyDirectionClass(element, detectDirection(firstRealBlock?.textContent));
-        return;
-      }
-
-      processByLine(element);
-    }
-
-    function scan(container = document) {
-      const elements = container.querySelectorAll(TARGET_SELECTORS);
-      elements.forEach(processElement);
-    }
-
-    function init() {
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length) {
-            if (mutation.target.nodeType === Node.ELEMENT_NODE && mutation.target.matches(TARGET_SELECTORS)) {
-              processElement(mutation.target);
-            }
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === Node.ELEMENT_NODE) {
-                if (node.matches(TARGET_SELECTORS)) processElement(node);
-                scan(node);
-              }
-            });
-          }
-          if (mutation.type === "characterData") {
-            const parent = mutation.target.parentElement;
-            if (parent && parent.closest(TARGET_SELECTORS)) {
-              processElement(parent.closest(TARGET_SELECTORS));
-            }
-          }
-        });
-      });
-
-      observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-      scan(document);
-    }
-
-    return { init, scan, detectDirection };
-  })();
 
   const quizApp = {
     userAnswers: new Array(questions.length).fill(null),
@@ -2162,7 +2033,6 @@ export async function exportToQuiz(config, questions) {
       this.setupImageLoading();
       this.setupQuizTitle();
       this.setupInfoDialog();
-      TextDirectionEngine.init();
       this.announceToScreenReader('Quiz loaded. ' + questions.length + ' questions available.');
     },
   
@@ -2287,7 +2157,7 @@ export async function exportToQuiz(config, questions) {
     // The info button's position (after the title, in reading order) follows
     // whichever direction the title text itself resolves to — independent of
     // the rest of the page, since titles are often Arabic while the rest of
-    // the quiz (or vice versa) may not be. TextDirectionEngine.scan() applies
+    // the quiz (or vice versa) may not be. scanDirections applies
     // .text-rtl/.text-ltr to #quiz-title itself; mirror that onto the row
     // wrapper so the flex order follows it.
     setupQuizTitle() {
@@ -2295,18 +2165,14 @@ export async function exportToQuiz(config, questions) {
       const titleRow = document.getElementById('quizTitleRow');
       if (!titleEl || !titleRow) return;
 
-      const applyRowDirection = () => {
-        const isRtl = titleEl.classList.contains('text-rtl');
-        titleRow.classList.toggle('text-rtl', isRtl);
-        titleRow.classList.toggle('text-ltr', !isRtl);
-      };
+      // #quiz-title is populated via static HTML (not renderMarkdown), so
+      // we call scanDirections once to apply the direction class, then
+      // mirror it synchronously onto the row wrapper.
+      scanDirections(titleEl);
 
-      // TextDirectionEngine.init() runs after this and applies the class
-      // asynchronously via its own scan, so observe the title for the class
-      // change rather than assuming ordering.
-      const observer = new MutationObserver(applyRowDirection);
-      observer.observe(titleEl, { attributes: true, attributeFilter: ['class'] });
-      applyRowDirection();
+      const isRtl = titleEl.classList.contains('text-rtl');
+      titleRow.classList.toggle('text-rtl', isRtl);
+      titleRow.classList.toggle('text-ltr', !isRtl);
     },
 
     setupInfoDialog() {
@@ -2537,6 +2403,7 @@ export async function exportToQuiz(config, questions) {
       const quizBody = document.querySelector(".quiz-body");
       const html = questions.map((q, i) => this.renderQuestion(q, i)).join("");
       quizBody.innerHTML = html;
+      scanDirections(quizBody);
     },
   
     renderQuestion(q, i) {

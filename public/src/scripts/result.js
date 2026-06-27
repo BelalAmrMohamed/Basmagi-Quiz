@@ -23,7 +23,8 @@ import {
 
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
-import { renderMarkdown } from "../shared/markdown.js";
+// scanDirections:           post-render direction scan for non-markdown elements
+import { renderMarkdown, scanDirections } from "../shared/markdown.js";
 
 // Helpers
 const userName = localStorage.getItem("username") || "User";
@@ -44,150 +45,6 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-// ── Text Direction Engine ──────────────────────────────────────────────────
-const TextDirectionEngine = (() => {
-  const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  const FIRST_STRONG_CHAR_REGEX = /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-
-  const TARGET_SELECTORS = [
-    "#quiz-title",
-    ".q-text",
-    ".option-label",
-    ".explanation-body",
-    ".ans-text",
-    ".essay-text",
-    ".md-content"
-  ].join(", ");
-
-  const EXCEPTION_SELECTORS = [
-    "pre",
-    "code",
-    ".code-block",
-    ".reading-passage"
-  ].join(", ");
-
-  const BLOCK_CHILD_SELECTOR = "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
-  const LABEL_PREFIX_REGEX = /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
-
-  function detectDirection(text) {
-    if (!text || typeof text !== "string") return "ltr";
-    const contentOnly = text.replace(LABEL_PREFIX_REGEX, "");
-    const searchText = contentOnly.trim() ? contentOnly : text;
-    const match = searchText.match(FIRST_STRONG_CHAR_REGEX);
-    if (match) {
-      return ARABIC_REGEX.test(match[0]) ? "rtl" : "ltr";
-    }
-    return "ltr";
-  }
-
-  function applyDirectionClass(node, direction) {
-    if (direction === "rtl") {
-      if (!node.classList.contains("text-rtl")) {
-        node.classList.remove("text-ltr");
-        node.classList.add("text-rtl");
-      }
-    } else if (!node.classList.contains("text-ltr")) {
-      node.classList.remove("text-rtl");
-      node.classList.add("text-ltr");
-    }
-  }
-
-  function processByLine(element) {
-    const existingLines = element.querySelectorAll(":scope > .text-line");
-    if (existingLines.length) {
-      existingLines.forEach((line) => {
-        applyDirectionClass(line, detectDirection(line.textContent));
-      });
-      applyDirectionClass(element, detectDirection(existingLines[0]?.textContent));
-      return;
-    }
-
-    const rawText = element.textContent;
-    const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
-
-    if (lines.length <= 1) {
-      applyDirectionClass(element, detectDirection(rawText));
-      return;
-    }
-
-    const frag = document.createDocumentFragment();
-    lines.forEach((line) => {
-      const span = document.createElement("span");
-      span.className = "text-line";
-      span.style.display = "block";
-      span.textContent = line;
-      applyDirectionClass(span, detectDirection(line));
-      frag.appendChild(span);
-    });
-    element.textContent = "";
-    element.appendChild(frag);
-    applyDirectionClass(element, detectDirection(lines[0]));
-  }
-
-  function processElement(element) {
-    if (!element) return;
-    if (element.closest(EXCEPTION_SELECTORS)) {
-      applyDirectionClass(element, "ltr");
-      return;
-    }
-    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
-
-    element.querySelectorAll(EXCEPTION_SELECTORS).forEach((zone) => {
-      applyDirectionClass(zone, "ltr");
-    });
-
-    const blockChildren = element.querySelectorAll(BLOCK_CHILD_SELECTOR);
-    if (blockChildren.length) {
-      blockChildren.forEach((child) => {
-        if (child.closest(EXCEPTION_SELECTORS)) return;
-        applyDirectionClass(child, detectDirection(child.textContent));
-      });
-      const firstRealBlock = Array.from(blockChildren).find((c) => !c.closest(EXCEPTION_SELECTORS));
-      applyDirectionClass(element, detectDirection(firstRealBlock?.textContent));
-      return;
-    }
-
-    processByLine(element);
-  }
-
-  function scan(container = document) {
-    const elements = container.querySelectorAll(TARGET_SELECTORS);
-    elements.forEach(processElement);
-  }
-
-  function init() {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.addedNodes.length) {
-          if (mutation.target.nodeType === Node.ELEMENT_NODE && mutation.target.matches(TARGET_SELECTORS)) {
-            processElement(mutation.target);
-          }
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              if (node.matches(TARGET_SELECTORS)) processElement(node);
-              scan(node);
-            }
-          });
-        }
-        if (mutation.type === "characterData") {
-          const parent = mutation.target.parentElement;
-          if (parent && parent.closest(TARGET_SELECTORS)) {
-            processElement(parent.closest(TARGET_SELECTORS));
-          }
-        }
-      });
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    scan(document);
-  }
-
-  return { init, scan, detectDirection };
-})();
-
-// Provide backward compatible helpers for any legacy code calling these
-const detectTextDirection = (text) => TextDirectionEngine.detectDirection(text);
-const getAlignClass = (text) => TextDirectionEngine.detectDirection(text) === "rtl" ? "text-rtl" : "text-ltr";
 const getQuestionLang = (q) => q?.lang || null;
 
 // ── Media Helper Functions ────────────────────────────────────────────────────
@@ -323,10 +180,10 @@ const renderQuestionMedia = (q) =>
     renderQuestionVideo(q.video),
   ].join("");
 
-const renderReadingPassage = (passage, alignClass) => {
+const renderReadingPassage = (passage) => {
   if (!passage) return "";
   return `
-    <div class="reading-passage ${alignClass}" role="region" aria-label="Reading passage">
+    <div class="reading-passage" role="region" aria-label="Reading passage">
       ${renderMarkdown(passage)}
     </div>
   `;
@@ -642,10 +499,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const quizTitleEl = document.getElementById("quiz-title");
   quizTitleEl.textContent =
     title.length > limit ? `${title.substring(0, limit)}...` : title;
-  // Apply RTL/LTR class now that the text is set — the engine's MutationObserver
-  // won't fire for a textContent change on a non-TARGET_SELECTORS parent, so we
-  // drive it manually.
-  TextDirectionEngine.scan(quizTitleEl.parentElement ?? document);
+  // #quiz-title is set via textContent (outside renderMarkdown), so we must
+  // call scanDirections to apply the correct direction class.
+  scanDirections(quizTitleEl);
 
   // ── Quiz Info Dialog ───────────────────────────────────────────────────────
   // Populate the info table and wire open/close for the quiz-info dialog.
@@ -1141,7 +997,6 @@ function renderReview(container, questions, userAnswers) {
         ? renderMarkdown(q.explanation)
         : "";
 
-      const alignClass = getAlignClass(q.q, getQuestionLang(q));
       html += `
         <div class="review-card essay-card">
           <div class="review-header">
@@ -1151,8 +1006,8 @@ function renderReview(container, questions, userAnswers) {
               <span class="essay-score-badge ${scoreLabelClass}" title="Your score is (${score}/5)">${stars} ${scoreLabel} (${score}/5)</span>
             </div>
           </div>
-          ${renderReadingPassage(q.passage, alignClass)}
-          <div class="q-text ${alignClass}">${renderMarkdown(q.q)}</div>
+          ${renderReadingPassage(q.passage)}
+          <div class="q-text">${renderMarkdown(q.q)}</div>
           ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
@@ -1228,7 +1083,7 @@ function renderReview(container, questions, userAnswers) {
         const inputName = isMultiple ? `answer-${index}-${i}` : `answer-${index}`;
         
         return `
-          <div class="${optionClass} ${getAlignClass(opt)}">
+          <div class="${optionClass}">
             <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} disabled aria-label="Option ${i + 1}">
             <span class="option-label">${renderMarkdown(opt)}</span>
           </div>`;
@@ -1238,15 +1093,14 @@ function renderReview(container, questions, userAnswers) {
         ? renderMarkdown(q.explanation)
         : "";
 
-      const alignClass = getAlignClass(q.q, getQuestionLang(q));
       html += `
         <div class="review-card ${statusClass}">
           <div class="review-header">
             <span class="q-num">#${index + 1}</span>
             <span class="status-icon status-${statusClass}" title="This question is ${statusClass}">${statusIcon}</span>
           </div>
-          ${renderReadingPassage(q.passage, alignClass)}
-          <div class="q-text ${alignClass}">${renderMarkdown(q.q)}</div>
+          ${renderReadingPassage(q.passage)}
+          <div class="q-text">${renderMarkdown(q.q)}</div>
           ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}
@@ -1265,7 +1119,6 @@ function renderReview(container, questions, userAnswers) {
   });
 
   container.innerHTML = html;
-  TextDirectionEngine.scan(container);
 }
 
 // ─── Confetti Burst ────────────────────────────────────────────────────────────

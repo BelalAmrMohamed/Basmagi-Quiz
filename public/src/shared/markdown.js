@@ -867,29 +867,29 @@ export function _renderMarkdownCore(str) {
 // touched by the engine — the HTML they produce carries no direction class and
 // CSS keeps them LTR by default.
 
-const _ARABIC_REGEX =
+export const _ARABIC_REGEX =
   /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
-const _FIRST_STRONG_CHAR_REGEX =
+export const _FIRST_STRONG_CHAR_REGEX =
   /[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
 
 // Static label prefixes that must not skew direction detection of the content
 // that follows them (e.g. "Explanation:" before an Arabic answer).
-const _LABEL_PREFIX_REGEX =
+export const _LABEL_PREFIX_REGEX =
   /^\s*(?:Score:\s*\d+\/\d+:[^]*?)?(?:Explanation:|Formal answer)\s*/i;
 
 // Block-level child selector — each of these gets its own direction verdict.
-const _BLOCK_CHILD_SELECTOR =
+export const _BLOCK_CHILD_SELECTOR =
   "p, li, h1, h2, h3, h4, h5, h6, blockquote, td, th, dt, dd, div.katex-display";
 
 // Selectors whose subtrees the engine must NEVER touch (always LTR by nature).
-const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, .math-block, .katex";
+export const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, .math-block, .katex";
 
 // Tag names _processElement must never modify.
 // Form controls: CSS unicode-bidi:plaintext handles direction natively.
 // Media elements: _processByLine sets textContent="" which destroys
 // <source> children and breaks audio/video playback entirely.
-const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURCE", "IFRAME", "IMG", "TRACK"]);
+export const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURCE", "IFRAME", "IMG", "TRACK"]);
 
 /**
  * Detects the base direction of a text string by finding its first strong
@@ -912,7 +912,7 @@ export function detectDirection(text) {
  * @param {HTMLElement} node
  * @param {'rtl'|'ltr'} direction
  */
-function _applyDirectionClass(node, direction) {
+export function _applyDirectionClass(node, direction) {
   if (direction === "rtl") {
     if (!node.classList.contains("text-rtl")) {
       node.classList.remove("text-ltr");
@@ -932,7 +932,7 @@ function _applyDirectionClass(node, direction) {
  * On subsequent calls it re-evaluates the existing spans without rebuilding.
  * @param {HTMLElement} element
  */
-function _processByLine(element) {
+export function _processByLine(element) {
   const existingLines = element.querySelectorAll(":scope > .text-line");
   if (existingLines.length) {
     existingLines.forEach((line) => {
@@ -981,7 +981,7 @@ function _processByLine(element) {
  * line for plain-text leaves.  Never touches LTR-only subtrees.
  * @param {HTMLElement} element
  */
-function _processElement(element) {
+export function _processElement(element) {
   if (!element) return;
 
   // INPUT / TEXTAREA: direction is handled by CSS `unicode-bidi: plaintext`.
