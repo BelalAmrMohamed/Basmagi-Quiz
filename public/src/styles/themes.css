@@ -884,32 +884,6 @@ body {
   color: var(--color-warning);
 }
 
-/* Navigation button specific colors */
-.nav-btn#prevBtn,
-.nav-btn#nextBtn {
-  background: var(--color-text-primary);
-  color: white;
-}
-
-.nav-btn#prevBtn:hover:not(:disabled),
-.nav-btn#nextBtn:hover:not(:disabled) {
-  background: var(--color-text-secondary);
-}
-
-[data-theme="dark-slate"] .nav-btn#prevBtn,
-[data-theme="dark-slate"] .nav-btn#nextBtn,
-[data-theme="dark"] .nav-btn#prevBtn,
-[data-theme="dark"] .nav-btn#nextBtn {
-  background: var(--color-primary);
-}
-
-[data-theme="dark-slate"] .nav-btn#prevBtn:hover:not(:disabled),
-[data-theme="dark-slate"] .nav-btn#nextBtn:hover:not(:disabled),
-[data-theme="dark"] .nav-btn#prevBtn:hover:not(:disabled),
-[data-theme="dark"] .nav-btn#nextBtn:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
 /* Accessibility */
 *:focus-visible {
   outline: 3px solid var(--color-focus-ring, var(--color-primary));

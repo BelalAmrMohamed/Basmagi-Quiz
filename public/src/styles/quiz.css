@@ -1578,7 +1578,7 @@ body.is-resizing-media .media-container.resizable-media {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-md);
+  /* box-shadow: var(--shadow-md); */
   flex: 1;
   max-width: 200px;
 }
@@ -1591,6 +1591,38 @@ body.is-resizing-media .media-container.resizable-media {
 .nav-btn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.nav-btn#prevBtn,
+.nav-btn#nextBtn {
+  background: var(--color-text-primary);
+  color: white;
+}
+
+.nav-btn#prevBtn:hover:not(:disabled),
+.nav-btn#nextBtn:hover:not(:disabled) {
+  background: var(--color-text-secondary);
+}
+
+[data-theme="dark-slate"] .nav-btn#prevBtn,
+[data-theme="dark-slate"] .nav-btn#nextBtn,
+[data-theme="dark"] .nav-btn#prevBtn,
+[data-theme="dark"] .nav-btn#nextBtn {
+  background: var(--color-primary);
+}
+
+[data-theme="dark-slate"] .nav-btn#prevBtn:hover:not(:disabled),
+[data-theme="dark-slate"] .nav-btn#nextBtn:hover:not(:disabled),
+[data-theme="dark"] .nav-btn#prevBtn:hover:not(:disabled),
+[data-theme="dark"] .nav-btn#nextBtn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+@media (max-width: 768px) {
+.nav-btn#prevBtn:hover:not(:disabled),
+.nav-btn#nextBtn:hover:not(:disabled) {
+    background: var(--color-text-primary);
+  }
 }
 
 /* Core System Asynchronous Loading Indicator */
