@@ -885,6 +885,12 @@ const _BLOCK_CHILD_SELECTOR =
 // Selectors whose subtrees the engine must NEVER touch (always LTR by nature).
 const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, .math-block, .katex";
 
+// Tag names _processElement must never modify.
+// Form controls: CSS unicode-bidi:plaintext handles direction natively.
+// Media elements: _processByLine sets textContent="" which destroys
+// <source> children and breaks audio/video playback entirely.
+const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURCE", "IFRAME", "IMG", "TRACK"]);
+
 /**
  * Detects the base direction of a text string by finding its first strong
  * alphabetical character (Arabic → rtl, Latin → ltr).
@@ -936,6 +942,17 @@ function _processByLine(element) {
     return;
   }
 
+  // If the element has any element children (e.g. a wrapper div around a
+  // <video>, <audio>, or <img>), it is not a pure text leaf. Reading
+  // textContent would concatenate all descendant text (including media
+  // fallback strings), and setting textContent="" would destroy those
+  // child elements entirely. Only apply a direction class on the container
+  // itself and leave its children untouched.
+  if (element.childElementCount > 0) {
+    _applyDirectionClass(element, detectDirection(element.textContent));
+    return;
+  }
+
   const rawText = element.textContent;
   const lines = rawText.split(/\n+/).filter((l) => l.trim() !== "");
 
@@ -970,7 +987,7 @@ function _processElement(element) {
   // INPUT / TEXTAREA: direction is handled by CSS `unicode-bidi: plaintext`.
   // No JS involvement needed or wanted — touching it fights the browser's
   // native caret placement on focused / partially-typed fields.
-  if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") return;
+  if (_SKIP_TAGS.has(element.tagName)) return;
 
   // Pin every always-LTR zone nested inside this element first.
   element.querySelectorAll(_LTR_ONLY_SELECTOR).forEach((zone) => {
@@ -1014,8 +1031,9 @@ export function scanDirections(container = document) {
     NodeFilter.SHOW_ELEMENT,
     {
       acceptNode(node) {
-        // Never descend into LTR-only subtrees.
+        // Never descend into LTR-only subtrees or media elements.
         if (node.matches(_LTR_ONLY_SELECTOR)) return NodeFilter.FILTER_REJECT;
+        if (_SKIP_TAGS.has(node.tagName)) return NodeFilter.FILTER_REJECT;
         return NodeFilter.FILTER_ACCEPT;
       },
     },

@@ -2032,6 +2032,18 @@ function renderAllQuestionsVertical() {
   // Scan all cards in one pass after the full render so direction classes
   // are set before the browser paints — no per-card flicker.
   scanDirections(els.questionContainer);
+
+  // After a page reload with restored progress, scroll the user back to
+  // the question they were on without forcing them to scroll manually.
+  // requestAnimationFrame ensures the cards are painted before we scroll.
+  // "instant" is intentional: smooth scrolling on a cold page load feels
+  // jarring and can overshoot on long quizzes.
+  if (currentIdx > 0) {
+    requestAnimationFrame(() => {
+      const targetCard = document.getElementById(`q-${currentIdx}`);
+      if (targetCard) targetCard.scrollIntoView({ behavior: "instant", block: "start" });
+    });
+  }
 }
 
 // === Core: Render Question ===
