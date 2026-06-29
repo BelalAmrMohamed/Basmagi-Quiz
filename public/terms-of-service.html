@@ -1,364 +1,332 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Basmagi 3D Logo – Demo</title>
-  <style>
-    /* ─── Reset & Base ──────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شروط الخدمة | منصة إمتحانات بصمجي</title>
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
 
-    body {
-      min-height: 100vh;
-      /* Rich dark gradient — matches the ToS brand's #1a1a2e deep navy */
-      background: radial-gradient(ellipse at 60% 30%, #2d2f4a 0%, #1a1a2e 55%, #0e0e1c 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
-      overflow: hidden;
-    }
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-    /* ─── Canvas sits as a background layer ─────────────────── */
-    #logo-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none; /* let clicks pass through to UI */
-    }
+        body {
+            background-color: #ffffff;
+            color: #1a1a2e;
+            font-family: "IBM Plex Sans Arabic", "Noto Naskh Arabic", serif;
+            line-height: 1.9;
+            padding: 60px 24px 80px;
+        }
 
-    /* ─── Foreground UI overlay ──────────────────────────────── */
-    .ui-overlay {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-      color: #f0f0f8;
-      user-select: none;
-      padding: 24px;
-    }
+        .page-wrapper {
+            max-width: 780px;
+            margin: 0 auto;
+        }
 
-    .brand-label {
-      font-size: 0.78rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: #9ca3af;
-      margin-bottom: 10px;
-    }
+        /* ── Official Header ── */
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding-bottom: 36px;
+            margin-bottom: 44px;
+            border-bottom: 1.5px solid #1a1a2e;
+        }
 
-    .brand-title {
-      font-size: clamp(1.6rem, 4vw, 2.6rem);
-      font-weight: 700;
-      color: #ffffff;
-      line-height: 1.25;
-      text-shadow: 0 2px 24px rgba(0,0,0,0.55);
-    }
+        .logo-mark {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 18px;
+        }
 
-    .brand-sub {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      color: #6b7280;
-    }
+        .brand-name {
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            color: #4b4e6d;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
 
-    /* ─── Subtle vignette to ground the scene ───────────────── */
-    body::after {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(ellipse at center, transparent 40%, rgba(14,14,28,0.72) 100%);
-      z-index: 0;
-    }
-  </style>
+        h1 {
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 12px;
+            line-height: 1.35;
+        }
+
+        .doc-meta {
+            display: flex;
+            gap: 28px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .doc-meta span {
+            font-size: 0.82rem;
+            color: #6b7280;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            padding: 3px 10px;
+        }
+
+        /* ── Intro paragraph ── */
+        .intro {
+            font-size: 1.05rem;
+            color: #374151;
+            margin-bottom: 40px;
+            padding: 20px 24px;
+            border-right: 3px solid #1a1a2e;
+            background-color: #f9fafb;
+        }
+
+        /* ── Sections ── */
+        .section {
+            margin-bottom: 42px;
+        }
+
+        h2 {
+            font-family: "Noto Naskh Arabic", serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .section-num {
+            font-size: 0.78rem;
+            font-weight: 400;
+            color: #9ca3af;
+            font-family: "IBM Plex Sans Arabic", sans-serif;
+            letter-spacing: 0.05em;
+            flex-shrink: 0;
+        }
+
+        p {
+            color: #374151;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            text-align: justify;
+        }
+
+        ul {
+            margin-right: 20px;
+            margin-bottom: 0;
+            color: #374151;
+        }
+
+        li {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        li::marker {
+            color: #1a1a2e;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            margin-top: 56px;
+            padding-top: 28px;
+            border-top: 1.5px solid #1a1a2e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .footer-note {
+            font-size: 0.82rem;
+            color: #9ca3af;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #1a1a2e;
+            color: #ffffff;
+            padding: 10px 26px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            font-family: "IBM Plex Sans Arabic", sans-serif;
+            letter-spacing: 0.02em;
+            transition: background-color 0.18s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background-color: #2d2f4a;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* ── Print ── */
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .btn {
+                display: none;
+            }
+        }
+
+        /* ── Mobile ── */
+        @media (max-width: 600px) {
+            body {
+                padding: 36px 18px 60px;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
+
 <body>
+    <div class="page-wrapper">
 
-  <!-- Three.js renders into this canvas; alpha:true keeps it transparent -->
-  <canvas id="logo-canvas"></canvas>
+        <!-- Header -->
+        <div class="header">
+            <img src="/favicon.png" alt="بصمجي" class="logo-mark" />
+            <div class="brand-name">منصة إمتحانات بصمجي</div>
+            <h1>شروط الخدمة</h1>
+            <div class="doc-meta">
+                <span>آخر تحديث: 14 يونيو 2026</span>
+                <span>الإصدار: 1.1</span>
+            </div>
+        </div>
 
-  <!-- Demo foreground text — remove or replace in your actual page -->
-  <div class="ui-overlay">
-    <p class="brand-label">منصة إمتحانات</p>
-    <h1 class="brand-title">بصمجي</h1>
-    <p class="brand-sub">اختبر نفسك. طوّر معرفتك.</p>
-  </div>
+        <!-- Intro -->
+        <p class="intro">
+            مرحباً بكم في <strong>منصة إمتحانات بصمجي</strong>. باستخدامكم لموقعنا وخدماتنا، فإنكم توافقون على الالتزام
+            بالشروط والأحكام التالية. يرجى قراءتها بعناية.
+        </p>
 
-  <!--
-    ══════════════════════════════════════════════════════════════
-    THREE.JS  –  IMPORTMAP
-    We pin to r165 (latest stable as of 2025-Q4). All submodule
-    paths are relative to the same CDN version so they stay in sync.
-    ══════════════════════════════════════════════════════════════
-  -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three":            "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
-      "three/addons/":    "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
-    }
-  }
-  </script>
+        <!-- Section 1 -->
+        <div class="section">
+            <h2>
+                قبول الشروط
+                <span class="section-num">المادة الأولى</span>
+            </h2>
+            <p>بمجرد وصولك إلى منصة بصمجي أو استخدامها بأي شكل من الأشكال، فإنك تقر بأنك قرأت هذه الشروط وفهمتها
+                وتوافق على الالتزام بها بالكامل.</p>
+        </div>
 
-  <script type="module">
-    /* ════════════════════════════════════════════════════════════
-       IMPORTS
-    ════════════════════════════════════════════════════════════ */
-    import * as THREE from 'three';
-    import { SVGLoader }  from 'three/addons/loaders/SVGLoader.js';
+        <!-- Section 2 -->
+        <div class="section">
+            <h2>
+                حسابات المستخدمين وأمنها
+                <span class="section-num">المادة الثانية</span>
+            </h2>
+            <p>للوصول إلى ميزات معينة، قد يُطلب منك تسجيل الدخول أو إدخال رمز وصول:</p>
+            <ul>
+                <li>تتحمل المسؤولية الكاملة عن سرية بيانات حسابك ورمز الدخول الخاص بك.</li>
+                <li>توافق على إخطارنا فوراً بأي استخدام غير مصرح به لحسابك.</li>
+                <li>نحتفظ بالحق في تعليق أو إلغاء الحسابات في حال انتهاك هذه الشروط.</li>
+            </ul>
+        </div>
 
-    /* ════════════════════════════════════════════════════════════
-       SVG DATA  (your Basmagi logo, embedded as a string)
-    ════════════════════════════════════════════════════════════ */
-    const SVG_STRING = `
-<svg width="511" height="451" viewBox="0 0 511 451" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M251.676 238.678C252.938 238.681 254.2 238.684 255.5 238.688C256.762 238.671 258.024 238.655 259.324 238.639C260.527 238.638 261.73 238.637 262.969 238.637C264.631 238.632 264.631 238.632 266.326 238.628C267.209 238.751 268.091 238.873 269 239C271.307 242.461 271.257 243.829 271.266 247.91C271.269 249.642 271.269 249.642 271.273 251.408C271.266 252.614 271.258 253.82 271.25 255.063C271.258 256.272 271.265 257.482 271.273 258.729C271.271 259.882 271.268 261.035 271.266 262.223C271.263 263.282 271.261 264.342 271.259 265.434C271 268 271 268 269 270C266.219 270.243 266.219 270.243 262.715 270.23C261.463 270.229 260.21 270.227 258.92 270.225C256.949 270.206 256.949 270.206 254.938 270.188C253.619 270.187 252.301 270.186 250.943 270.186C241.14 270.14 241.14 270.14 240 269C239.746 264.36 239.815 259.709 239.812 255.063C239.8 253.748 239.788 252.434 239.775 251.08C239.772 249.202 239.772 249.202 239.77 247.285C239.765 246.129 239.761 244.973 239.757 243.782C240.343 237.069 246.393 238.709 251.676 238.678Z" fill="white"/>
-<path d="M279 113C279.815 113.351 280.629 113.701 281.469 114.062C292.933 119.716 299.717 129.483 303.809 141.344C306.885 153.057 305.314 165.251 299.625 175.875C293.825 184.966 285.024 192.726 276.586 199.34C272.039 204.099 271.418 209.569 270.875 215.812C270.11 223.89 270.11 223.89 269 225C266.939 225.1 264.876 225.131 262.813 225.133C261.557 225.134 260.301 225.135 259.008 225.137C258.351 225.135 257.694 225.133 257.017 225.13C255.008 225.125 253 225.13 250.992 225.137C249.737 225.135 248.481 225.134 247.188 225.133C246.026 225.132 244.865 225.131 243.668 225.129C241 225 241 225 240 224C239.138 208.511 240.321 195.134 250.816 182.879C255.088 178.452 259.802 174.664 264.703 170.957C269.208 167.119 272.577 162.931 273.223 156.93C273.429 151.626 272.673 147.701 270 143C264.47 137.746 259.597 137.649 252.242 137.723C247.628 138.117 245.569 139.052 242 142C239.289 146.481 238.386 150.675 237.875 155.812C237.11 162.89 237.11 162.89 236 164C233.939 164.1 231.876 164.131 229.813 164.133C228.557 164.134 227.301 164.135 226.008 164.137C225.351 164.135 224.694 164.133 224.017 164.13C222.008 164.125 220 164.13 217.992 164.137C216.737 164.135 215.481 164.134 214.188 164.133C213.026 164.132 211.865 164.131 210.668 164.129C208 164 208 164 207 163C205.873 148.139 208.368 134.874 218 123C233.249 107.295 259.369 104.426 279 113Z" fill="white"/>
-<path d="M0 0C168.63 0 337.26 0 511 0C511 148.83 511 297.66 511 451C342.37 451 173.74 451 0 451C0 302.17 0 153.34 0 0ZM250 14C249.191 17.7957 249.397 21.6276 249.438 25.5C249.414 26.5454 249.39 27.5909 249.365 28.668C249.279 34.7234 249.279 34.7234 252.332 39.7266C255.707 41.3375 257.472 41.1225 261 40C263.174 35.6515 262.185 29.7764 262.188 25C262.2 23.7857 262.212 22.5714 262.225 21.3203C262.227 20.1627 262.228 19.0052 262.23 17.8125C262.237 16.2134 262.237 16.2134 262.243 14.582C262.261 11.8363 262.261 11.8363 260 10C255.016 9.34997 253.11 10.101 250 14ZM161 33C160.264 36.5677 160.264 36.5677 160 40C160.66 40 161.32 40 162 40C162 40.99 162 41.98 162 43C162.66 43 163.32 43 164 43C164.268 43.7013 164.536 44.4025 164.812 45.125C167.104 50.6737 169.176 55.2101 174 59C177.268 59.0778 178.488 58.4458 180.938 56.3125C182.285 54.0045 182.285 54.0045 181.383 51.375C179.657 47.1626 177.395 43.507 174.938 39.6875C174.478 38.9598 174.018 38.2321 173.545 37.4824C171.502 34.064 171.502 34.064 169 31C165.278 30.7061 164.222 30.8519 161 33ZM341 35C339.929 36.6346 338.907 38.3032 337.938 40C336.504 42.4939 335.133 44.8322 333.348 47.0898C331.215 50.1127 331.48 52.4273 332 56C334.33 58.0708 335.766 59.0326 338.922 58.9492C342.2 57.4521 343.224 54.8826 345 51.8125C347.004 48.3876 348.986 45.021 351.223 41.7422C353.15 38.7682 353.655 37.4605 353 34C351.917 32.0833 351.917 32.0833 350 31C345.398 30.1741 343.977 31.6511 341 35ZM83.8398 55.125C83.2121 55.7437 82.5843 56.3625 81.9375 57C81.2646 57.6574 80.5917 58.3148 79.8984 58.9922C79.272 59.6548 78.6455 60.3173 78 61C77.4766 61.5388 76.9533 62.0777 76.4141 62.6328C73.7684 65.5537 72 67.9855 72 72C73.4608 74.1101 74.9894 74.9941 77.2266 76.2383C80.5803 78.3686 83.3522 80.86 86.25 83.5625C86.7914 84.0569 87.3328 84.5512 87.8906 85.0605C91.8667 88.7335 91.8667 88.7335 93 91C93.7193 91.4215 94.4386 91.843 95.1797 92.2773C98.5433 94.3319 101.281 96.864 104.125 99.5625C106.981 102.253 109.722 104.814 113 107C116.098 106.828 117.569 106.391 119.879 104.293C120.434 103.598 120.99 102.903 121.562 102.188C123.479 99.8309 125.205 97.8205 127.5 95.8125C129.222 94.085 129.222 94.085 129.188 91.625C127.681 88.2958 125.669 86.7293 122.84 84.4844C121 83 121 83 118.312 80.25C116.18 77.9481 116.18 77.9481 113.75 76.875C112 76 112 76 111 73C109.513 71.4538 109.513 71.4538 107.625 69.9375C103.153 66.1734 98.9323 62.1785 94.7109 58.1367C91.282 55.4341 88.0741 52.9198 83.8398 55.125ZM419.438 57.75C418.43 58.7013 418.43 58.7013 417.402 59.6719C416.61 60.4402 415.817 61.2084 415 62C413.408 63.4828 411.807 64.9564 410.206 66.4297C409.065 67.4799 407.926 68.532 406.788 69.5859C403.808 72.3462 400.812 75.0801 397.75 77.75C396.845 78.5466 396.845 78.5466 395.922 79.3594C394.48 80.5899 393.006 81.7817 391.516 82.9531C386.406 86.9211 386.406 86.9211 384.312 92.8125C384.825 96.1352 384.825 96.1352 387 99C387.681 99.33 388.361 99.66 389.062 100C391 101 391 101 392 104C394.016 105.944 395.455 106.882 398.199 107.477C402.618 106.725 404.966 103.778 408.062 100.688C409.281 99.5023 410.501 98.3187 411.723 97.1367C412.289 96.5829 412.855 96.0291 413.438 95.4585C415 94 415 94 417.434 92.207C417.951 91.8087 418.467 91.4104 419 91C419 90.34 419 89.68 419 89C419.577 88.7319 420.155 88.4638 420.75 88.1875C423.056 86.9707 425.021 85.6967 427 84C427 83.34 427 82.68 427 82C427.66 82 428.32 82 429 82C429 81.34 429 80.68 429 80C429.577 79.7319 430.155 79.4638 430.75 79.1875C433.056 77.9707 435.021 76.6967 437 75C437 74.34 437 73.68 437 73C437.99 72.67 438.98 72.34 440 72C440.497 67.9181 440.28 66.3816 437.805 63.0078C436.844 62.0311 435.867 61.0704 434.875 60.125C434.401 59.6274 433.926 59.1298 433.438 58.6172C430.951 56.1706 429.327 55.0512 425.855 54.5078C422.737 55.0453 421.671 55.5736 419.438 57.75ZM155.688 99.4141C153.734 101.568 151.849 103.756 150 106C149.469 106.643 148.938 107.286 148.391 107.949C144.216 113.254 141.096 119.018 138 125C137.544 125.849 137.087 126.699 136.617 127.574C133.648 133.237 131.653 138.836 130 145C129.676 146.093 129.353 147.186 129.02 148.312C122.057 173.494 124.781 196.843 134 221C134.563 222.5 135.126 224 135.688 225.5C136.121 226.655 136.554 227.81 137 229C137.66 229 138.32 229 139 229C139.268 229.866 139.536 230.733 139.812 231.625C141.675 237.779 141.675 237.779 146 242C146 242.99 146 243.98 146 245C146.66 245 147.32 245 148 245C148 245.99 148 246.98 148 248C148.433 248.433 148.866 248.866 149.312 249.312C151.559 251.559 152.587 254.175 154 257C154.66 257.33 155.32 257.66 156 258C156.33 258.99 156.66 259.98 157 261C157.66 261 158.32 261 159 261C159 261.99 159 262.98 159 264C160.167 265.167 161.348 266.32 162.562 267.438C164 269 164 269 165 272C165.99 272.99 165.99 272.99 167 274C169 276 169 276 170 279C170.99 279.99 170.99 279.99 172 281C175.157 284.419 178.005 287.782 180.25 291.875C181.648 295.058 181.648 295.058 184 296C184.625 298.562 184.625 298.562 185 301C185.66 301 186.32 301 187 301C187.495 304.465 187.495 304.465 188 308C188.66 308 189.32 308 190 308C189.67 308.99 189.34 309.98 189 311C189.61 313.018 190.289 315.015 191 317C192.511 321.979 193.125 326.422 193.375 331.625C193.818 339.079 195.29 346.015 198 353C198.66 353.33 199.32 353.66 200 354C201.177 359.779 200.863 364.941 200.156 370.777C200.079 371.878 200.079 371.878 200 373C200.33 373.33 200.66 373.66 201 374C201.312 378.282 201.084 382.449 200.438 386.688C199.981 390.147 200.385 392.586 201 396C200.975 397.417 200.932 398.834 200.875 400.25C200.803 405.542 202.281 410.044 204 415C204.227 415.908 204.454 416.815 204.688 417.75C208.378 424.077 216.538 428.013 223.328 429.949C243.128 433.676 264.661 433.326 284.625 430.812C285.475 430.712 286.326 430.611 287.202 430.507C295.347 429.276 301.648 425.244 307 419C311.487 412.693 312.188 406.688 312 399C311.34 399 310.68 399 310 399C310.33 397.866 310.66 396.731 311 395.562C312.158 391.002 312.195 386.678 312 382C311.34 382 310.68 382 310 382C310.33 380.928 310.66 379.855 311 378.75C312.409 373.195 312.146 367.689 312 362C312 357.875 312.398 356.934 314.363 353.535C317.421 347.655 318.334 341.957 319.188 335.438C319.491 333.29 319.797 331.143 320.105 328.996C320.325 327.463 320.325 327.463 320.55 325.9C322.682 312.169 327.604 299.323 335.812 288.062C338.194 285.356 338.194 285.356 338 283C338.66 283 339.32 283 340 283C340.33 281.68 340.66 280.36 341 279C341.66 279 342.32 279 343 279C344.821 276.825 344.821 276.825 346.625 274.125C347.257 273.22 347.888 272.315 348.539 271.383C350.174 269.182 350.174 269.182 350 267C350.66 267 351.32 267 352 267C353.32 265.39 353.32 265.39 354.625 263.25C356.952 259.63 359.325 256.055 361.75 252.5C372.603 236.127 382.122 219.473 386 200C386.204 199.132 386.407 198.265 386.617 197.371C392.82 167.504 384.518 137.845 368.453 112.695C365.895 108.722 365.895 108.722 363 105C362.34 105 361.68 105 361 105C360 103 359 101 358 99C357.34 99 356.68 99 356 99C355.752 98.3813 355.505 97.7625 355.25 97.125C353.772 94.6129 352.56 94.2389 350 93C349.67 92.01 349.34 91.02 349 90C322.995 67.5609 291.191 56.7777 257.188 56.75C256.448 56.7493 255.708 56.7487 254.946 56.748C216.619 56.8035 182.238 71.6978 155.688 99.4141ZM44 166C42.712 169.864 42.8158 173.537 42.8125 177.562C42.8003 178.343 42.788 179.124 42.7754 179.928C42.7701 181.953 42.8777 183.978 43 186C45.5592 188.559 46.5085 188.253 50.0605 188.259C51.6423 188.268 51.6423 188.268 53.256 188.278C54.3987 188.274 55.5414 188.27 56.7188 188.266C57.8876 188.268 59.0564 188.269 60.2606 188.271C62.7354 188.273 65.2103 188.269 67.6851 188.261C71.4842 188.25 75.2829 188.261 79.082 188.273C81.4818 188.272 83.8815 188.27 86.2812 188.266C87.9953 188.272 87.9953 188.272 89.744 188.278C90.7985 188.272 91.853 188.265 92.9395 188.259C93.8705 188.257 94.8016 188.256 95.7609 188.254C98.2028 188.212 98.2028 188.212 100 186C100.472 182.876 100.37 179.719 100.375 176.562C100.412 175.254 100.412 175.254 100.449 173.92C100.453 173.081 100.457 172.243 100.461 171.379C100.473 170.228 100.473 170.228 100.486 169.053C100.167 166.855 100.167 166.855 98.2627 165.395C95.6777 163.801 94.319 163.625 91.3108 163.628C90.3863 163.621 89.4617 163.615 88.5092 163.609C87.5174 163.618 86.5257 163.627 85.5039 163.637C84.4782 163.636 83.4525 163.636 82.3957 163.635C80.2279 163.638 78.0601 163.647 75.8923 163.664C72.5784 163.687 69.2652 163.684 65.9512 163.678C63.8437 163.683 61.7363 163.69 59.6289 163.699C58.1443 163.698 58.1443 163.698 56.6298 163.696C50.0409 163.653 50.0409 163.653 44 166ZM413 167C412.319 168.955 412.319 168.955 412.285 171.125C412.239 171.914 412.194 172.703 412.146 173.516C412.119 174.335 412.091 175.155 412.062 176C412.008 176.82 411.953 177.64 411.896 178.484C411.493 182.81 411.493 182.81 413.203 186.597C415.593 188.463 417.052 188.38 420.066 188.388C421.098 188.398 422.129 188.407 423.191 188.417C424.86 188.408 424.86 188.408 426.562 188.398C427.705 188.401 428.848 188.404 430.026 188.407C432.443 188.409 434.861 188.404 437.278 188.391C440.985 188.375 444.691 188.391 448.398 188.41C450.745 188.408 453.091 188.404 455.438 188.398C456.55 188.405 457.663 188.411 458.809 188.417C460.356 188.403 460.356 188.403 461.934 188.388C462.842 188.386 463.75 188.383 464.685 188.381C467.047 188.169 467.047 188.169 468.794 186.704C470.844 183.807 470.389 180.475 470.312 177.062C470.316 176.346 470.319 175.63 470.322 174.893C470.317 169.588 470.317 169.588 468 165C465.075 164.036 462.36 163.865 459.295 163.839C458.367 163.829 457.439 163.82 456.484 163.81C455.489 163.806 454.494 163.801 453.469 163.797C452.441 163.791 451.413 163.785 450.353 163.78C448.181 163.77 446.009 163.764 443.837 163.76C440.512 163.75 437.188 163.719 433.863 163.688C431.753 163.681 429.642 163.676 427.531 163.672C426.536 163.66 425.542 163.647 424.516 163.634C423.589 163.637 422.661 163.64 421.705 163.644C420.891 163.64 420.077 163.636 419.238 163.633C416.448 164.091 415.067 165.104 413 167ZM108.062 242.75C107.096 243.57 106.129 244.39 105.133 245.234C100.182 249.569 95.3721 254.055 90.5635 258.545C88.1633 260.778 85.7416 262.986 83.3125 265.188C82.5249 265.903 81.7373 266.618 80.9258 267.355C79 269 79 269 77 270C77 270.66 77 271.32 77 272C75.515 272.495 75.515 272.495 74 273C72.8148 275.433 72 277.28 72 280C73.6539 281.349 75.3217 282.681 77 284C77.66 284.99 78.32 285.98 79 287C79.66 287 80.32 287 81 287C81 287.66 81 288.32 81 289C84.2258 291.461 84.2258 291.461 88.125 291.812C90.268 290.95 90.268 290.95 93 289C93 288.34 93 287.68 93 287C93.5827 286.732 94.1653 286.464 94.7656 286.188C97.0279 284.985 98.8058 283.662 100.75 282C101.364 281.484 101.977 280.969 102.609 280.438C104.232 279.094 104.232 279.094 104 277C104.536 276.773 105.072 276.546 105.625 276.312C108.825 274.544 111.29 272.463 114 270C114 269.34 114 268.68 114 268C114.565 267.737 115.129 267.474 115.711 267.203C120.946 264.451 125.837 261.077 128.75 255.875C129.194 250.772 126.084 248.044 123 244.312C121.046 242.018 119.567 240.711 117 239C112.26 239 111.576 239.77 108.062 242.75ZM392 243C385.934 248.947 385.934 248.947 384 257C384.531 257.375 385.062 257.75 385.609 258.137C389.738 261.128 392.843 263.971 396 268C396.763 268.454 397.526 268.907 398.312 269.375C402.126 271.681 404.931 274.801 408 278C409.938 279.987 411.853 281.711 414 283.5C417 286 417 286 418.562 287.625C420.614 289.588 422.39 290.847 425 292C430.544 291.397 433.111 288.037 436.484 283.973C439.315 280.468 439.315 280.468 439.965 276.145C438.753 272.195 436.633 270.256 433.562 267.688C433.023 267.216 432.484 266.745 431.929 266.259C430.824 265.293 429.714 264.333 428.6 263.378C426.278 261.378 424.017 259.312 421.75 257.25C420.167 255.833 418.584 254.416 417 253C416.232 252.303 415.463 251.605 414.672 250.887C413.955 250.243 413.238 249.6 412.5 248.938C411.871 248.369 411.242 247.801 410.594 247.215C409.069 245.798 409.069 245.798 407 246C407 245.34 407 244.68 407 244C401.371 238.693 397.744 237.393 392 243Z" fill="white"/>
-</svg>
-`;
+        <!-- Section 3 -->
+        <div class="section">
+            <h2>
+                الاستخدام المقبول للمنصة
+                <span class="section-num">المادة الثالثة</span>
+            </h2>
+            <p>يجب استخدام المنصة فقط للأغراض التعليمية والشخصية المخصصة لها. يُحظر تماماً:</p>
+            <ul>
+                <li>محاولة اختراق أو تخريب أو تعطيل عمل المنصة أو خوادمها.</li>
+                <li>استخدام أي أدوات آلية (كالبوتات أو برامج كشط البيانات) لجمع المحتوى من المنصة.</li>
+                <li>إعادة نشر أو توزيع أسئلة أو اختبارات المنصة دون إذن خطي مسبق.</li>
+            </ul>
+        </div>
 
-    /* ════════════════════════════════════════════════════════════
-       SCENE SETUP
-    ════════════════════════════════════════════════════════════ */
+        <!-- Section 4 -->
+        <div class="section">
+            <h2>
+                الملكية الفكرية
+                <span class="section-num">المادة الرابعة</span>
+            </h2>
+            <p>جميع المحتويات المتوفرة على منصة بصمجي (بما في ذلك الأسئلة، النصوص، التصاميم، الشعارات، البرمجيات،
+                والأكواد) هي ملكية فكرية محمية ولا يجوز نسخها أو استخدامها لأغراض تجارية دون إذننا.</p>
+        </div>
 
-    const canvas  = document.getElementById('logo-canvas');
-    const W       = () => window.innerWidth;
-    const H       = () => window.innerHeight;
+        <!-- Section 5 -->
+        <div class="section">
+            <h2>
+                إخلاء المسؤولية
+                <span class="section-num">المادة الخامسة</span>
+            </h2>
+            <p>تُقدم الخدمات على منصة بصمجي "كما هي" دون أي ضمانات من أي نوع، صريحة أو ضمنية. نحن لا نضمن عدم
+                انقطاع الخدمة أو خلوها من الأخطاء، ونبذل قصارى جهدنا لضمان دقة وتوافر المنصة.</p>
+        </div>
 
-    /* Renderer ─────────────────────────────────────────────── */
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha:     true,   // transparent background → blends with body CSS
-      antialias: true,
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(W(), H());
-    renderer.shadowMap.enabled  = true;
-    renderer.shadowMap.type     = THREE.PCFSoftShadowMap;
-    renderer.toneMapping        = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+        <!-- Section 6 -->
+        <div class="section">
+            <h2>
+                التعديل على الشروط
+                <span class="section-num">المادة السادسة</span>
+            </h2>
+            <p>نحتفظ بالحق في تعديل أو تحديث شروط الخدمة هذه في أي وقت. يعتبر استمرارك في استخدام المنصة بعد نشر أي
+                تغييرات موافقة منك على الشروط الجديدة.</p>
+        </div>
 
-    /* Scene ────────────────────────────────────────────────── */
-    const scene = new THREE.Scene();
-    // No scene background — renderer alpha handles transparency
+        <!-- Footer -->
+        <div class="footer">
+            <span class="footer-note">© 2026 منصة إمتحانات بصمجي ، بلال عمرو محمد. جميع الحقوق محفوظة.</span>
+            <a href="/sign-in.html" class="btn" id="back-btn">العودة لتسجيل الدخول</a>
+        </div>
 
-    /* Camera ───────────────────────────────────────────────── */
-    const camera = new THREE.PerspectiveCamera(45, W() / H(), 0.1, 2000);
-    camera.position.set(0, 0, 400); // pulled back; we'll adjust after centering
+    </div>
 
-    /* ════════════════════════════════════════════════════════════
-       LIGHTS  —  "premium studio" three-point setup
-    ════════════════════════════════════════════════════════════ */
-
-    // 1. Ambient — lifts shadows, keeps dark side visible
-    const ambientLight = new THREE.AmbientLight(0xb0b4d0, 0.55);
-    scene.add(ambientLight);
-
-    // 2. Key light — cool-white directional, casts shadows
-    const keyLight = new THREE.DirectionalLight(0xd4daff, 2.2);
-    keyLight.position.set(120, 180, 200);
-    keyLight.castShadow = true;
-    keyLight.shadow.mapSize.set(1024, 1024);
-    keyLight.shadow.camera.near = 1;
-    keyLight.shadow.camera.far  = 800;
-    scene.add(keyLight);
-
-    // 3. Fill light — warm from below-left, simulates environmental bounce
-    const fillLight = new THREE.DirectionalLight(0xffd6a5, 0.65);
-    fillLight.position.set(-150, -80, 80);
-    scene.add(fillLight);
-
-    // 4. Dynamic rim / specular point light — orbits with the logo rotation
-    //    giving the clearcoat that moving highlight
-    const rimLight = new THREE.PointLight(0x7eb8ff, 3.5, 600, 1.4);
-    rimLight.position.set(-100, 60, 180);
-    scene.add(rimLight);
-
-    /* ════════════════════════════════════════════════════════════
-       MATERIAL  —  MeshPhysicalMaterial for clearcoat sheen
-    ════════════════════════════════════════════════════════════ */
-    const logoMaterial = new THREE.MeshPhysicalMaterial({
-      color:          0x3a3d6e,   // deep indigo-violet, matches brand palette
-      metalness:      0.72,
-      roughness:      0.22,
-      clearcoat:      1.0,        // glossy top-coat layer
-      clearcoatRoughness: 0.08,
-      reflectivity:   0.9,
-      envMapIntensity: 1.0,
-      side:           THREE.DoubleSide,
-    });
-
-    // Subtle bevel-face material — slightly lighter, gives the edge a lift
-    const bevelMaterial = new THREE.MeshPhysicalMaterial({
-      color:          0x5c60a0,
-      metalness:      0.5,
-      roughness:      0.3,
-      clearcoat:      0.6,
-      clearcoatRoughness: 0.15,
-      side: THREE.DoubleSide,
-    });
-
-    /* ════════════════════════════════════════════════════════════
-       SVG → 3D EXTRUSION
-    ════════════════════════════════════════════════════════════ */
-
-    /**
-     * buildLogoMesh()
-     * Parses the embedded SVG, converts each path to a Three.js Shape,
-     * extrudes with bevel, groups all meshes, then centres the group
-     * on its own bounding-box centroid so rotation is around true centre.
-     */
-    function buildLogoMesh() {
-      const loader = new SVGLoader();
-      const svgData = loader.parse(SVG_STRING);
-
-      // ExtrudeGeometry settings
-      const extrudeSettings = {
-        depth:          14,          // Z-axis thickness
-        bevelEnabled:   true,
-        bevelThickness: 2.2,         // how far the bevel reaches into the extrusion
-        bevelSize:      1.6,         // how far it spreads laterally
-        bevelOffset:    0,
-        bevelSegments:  5,           // smooth arc; more = rounder but heavier
-      };
-
-      const group = new THREE.Group();
-
-      svgData.paths.forEach((path) => {
-        // SVGLoader gives us sub-paths; turn each into a Shape + holes
-        const shapes = SVGLoader.createShapes(path);
-
-        shapes.forEach((shape) => {
-          const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-
-          // MeshPhysicalMaterial accepts an array of materials:
-          //   index 0 → front/back face
-          //   index 1 → bevel/side faces
-          const mesh = new THREE.Mesh(geometry, [logoMaterial, bevelMaterial]);
-          mesh.castShadow    = true;
-          mesh.receiveShadow = true;
-          group.add(mesh);
-        });
-      });
-
-      /* ── Centre the group ──────────────────────────────────
-         SVG coords start at (0,0) = top-left, so the raw geometry
-         is offset. We compute the bounding box and translate every
-         child so the group pivot sits exactly at the centroid.
-      ──────────────────────────────────────────────────────── */
-      const box = new THREE.Box3().setFromObject(group);
-      const centre = new THREE.Vector3();
-      box.getCenter(centre);
-
-      // Shift all children so their collective centroid is at origin
-      group.children.forEach((child) => {
-        child.position.sub(centre);
-      });
-
-      /* ── SVG Y-axis is flipped relative to Three.js ────── */
-      group.scale.y = -1;
-
-      /* ── Uniform scale to fit nicely in the viewport ────── */
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y);
-
-      // Target: logo fills ~55 % of the shorter viewport dimension
-      const targetPx  = Math.min(W(), H()) * 0.55;
-      // Convert px target to world units at z=0 plane
-      const fovRad     = THREE.MathUtils.degToRad(camera.fov);
-      const worldHeight = 2 * Math.tan(fovRad / 2) * camera.position.z;
-      const pxPerUnit  = H() / worldHeight;
-      const targetUnits = targetPx / pxPerUnit;
-
-      const scaleFactor = targetUnits / maxDim;
-      group.scale.x = scaleFactor;
-      group.scale.y = -scaleFactor; // keep Y-flip
-
-      return group;
-    }
-
-    /* ════════════════════════════════════════════════════════════
-       BUILD & ADD TO SCENE
-    ════════════════════════════════════════════════════════════ */
-    const logoGroup = buildLogoMesh();
-    scene.add(logoGroup);
-
-    /* ════════════════════════════════════════════════════════════
-       SUBTLE FLOATING PARTICLES  —  ambient depth cue
-    ════════════════════════════════════════════════════════════ */
-    (function addParticles() {
-      const count    = 120;
-      const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array(count * 3);
-
-      for (let i = 0; i < count; i++) {
-        positions[i * 3    ] = (Math.random() - 0.5) * 600;
-        positions[i * 3 + 1] = (Math.random() - 0.5) * 500;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 400;
-      }
-
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-      const material = new THREE.PointsMaterial({
-        color: 0x7eb8ff,
-        size:  1.4,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.35,
-      });
-
-      scene.add(new THREE.Points(geometry, material));
-    })();
-
-    /* ════════════════════════════════════════════════════════════
-       ANIMATION LOOP
-    ════════════════════════════════════════════════════════════ */
-    const clock = new THREE.Clock();
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const t = clock.getElapsedTime();
-
-      // Primary Y-axis spin — slow and majestic
-      logoGroup.rotation.y = t * 0.38;
-
-      // Gentle breathing tilt on X — gives parallax depth feeling
-      logoGroup.rotation.x = Math.sin(t * 0.22) * 0.12;
-
-      // Rim light orbits slightly behind the logo for a sweep highlight
-      rimLight.position.x  = Math.cos(t * 0.38) * 180;
-      rimLight.position.z  = Math.sin(t * 0.38) * 180 + 80;
-
-      renderer.render(scene, camera);
-    }
-
-    animate();
-
-    /* ════════════════════════════════════════════════════════════
-       RESPONSIVE  —  update camera + renderer on resize
-    ════════════════════════════════════════════════════════════ */
-    window.addEventListener('resize', () => {
-      camera.aspect = W() / H();
-      camera.updateProjectionMatrix();
-      renderer.setSize(W(), H());
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    });
-
-    /* ════════════════════════════════════════════════════════════
-       REDUCED-MOTION  —  respect user accessibility preference
-    ════════════════════════════════════════════════════════════ */
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (prefersReducedMotion.matches) {
-      // Freeze at a nice angle instead of animating
-      logoGroup.rotation.y = 0.45;
-      logoGroup.rotation.x = 0.08;
-      renderer.render(scene, camera);
-    }
-
-  </script>
+    <script>
+        // Handle dynamic back redirection
+        const backBtn = document.getElementById('back-btn');
+        if (backBtn) {
+            const referrer = document.referrer;
+            if (referrer && referrer.startsWith(window.location.origin)) {
+                // If referrer is from the same site, change text and redirect there
+                backBtn.textContent = 'العودة للصفحة السابقة';
+                backBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = referrer;
+                    }
+                });
+            }
+        }
+    </script>
 </body>
+
 </html>
