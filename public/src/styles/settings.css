@@ -440,9 +440,8 @@ body {
    ============================================================================ */
 
 .site-footer {
-  /* background-color: #111827; */
   background: var(--color-surface);
-  color: #d1d5db;
+  color: var(--color-text-primary);
   margin-top: 80px;
   /* Bust out of body padding to span full width */
   margin-left: -24px;
@@ -551,6 +550,57 @@ body {
   color: #6b7280;
   line-height: 1.6;
   text-align: center;
+}
+
+/* ============================================================================
+   FOOTER THEME OVERRIDES
+   ============================================================================ */
+
+[data-theme="light"] .footer-grid,
+[data-theme="light"] .footer-col,
+[data-theme="light"] .footer-col-label,
+[data-theme="light"] .footer-bottom-outer {
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .footer-col-label {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+}
+
+[data-theme="light"] .footer-links a {
+  color: #374151;
+}
+
+[data-theme="light"] .footer-links a:hover {
+  color: #111827;
+}
+
+[data-theme="light"] .footer-links a svg {
+  opacity: 0.4;
+}
+
+[data-theme="light"] .footer-links a:hover svg {
+  opacity: 0.85;
+}
+
+[data-theme="light"] .footer-copyright {
+  color: #9ca3af;
+}
+
+
+/* Dark-slate theme — shift footer toward deep blue-slate */
+[data-theme="dark-slate"] .footer-grid,
+[data-theme="dark-slate"] .footer-col,
+[data-theme="dark-slate"] .footer-col-label,
+[data-theme="dark-slate"] .footer-bottom-outer,
+[data-theme="dark-slate"] .footer-col-label {
+  border-color: #1e293b;
+}
+
+[data-theme="dark-slate"] .footer-col-label,
+[data-theme="dark-slate"] .footer-copyright {
+  color: #475569;
 }
 
 /* ============================================================================
