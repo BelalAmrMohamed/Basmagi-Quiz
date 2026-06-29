@@ -37,6 +37,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html{
+  scrollbar-width: thin;
+}
+
 /* ── Split-screen shell ───────────────────────────────────── */
 
 .split-screen {

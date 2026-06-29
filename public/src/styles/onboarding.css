@@ -68,6 +68,10 @@
   padding: 0;
 }
 
+html{
+  scrollbar-width: thin;
+}
+
 /* ── 3. Base Body (mobile-first) ────────────────────────────────────────────── */
 body {
   font-family: "IBM Plex Sans Arabic", "Inter", sans-serif;
