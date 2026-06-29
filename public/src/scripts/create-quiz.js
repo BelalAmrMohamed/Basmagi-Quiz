@@ -139,7 +139,7 @@ function autoResizeMdSource(ta) {
   ta.style.height = Math.max(ta.scrollHeight, 60) + "px";
 }
 
-/** Wire up all md-editor events: live preview, blur→render, auto-resize, ``` shortcut */
+/** Wire up all md-editor events: live preview, blur→render, auto-resize */
 function setupMdEditor(id, onChange) {
   const source = document.getElementById(id);
   const renderedDiv = document.getElementById(`rendered-${id}`);
@@ -188,39 +188,6 @@ function setupMdEditor(id, onChange) {
       editPanel.style.display = "none";
       renderedDiv.style.display = "block";
     }, 150);
-  });
-
-  // Triple-backtick + Enter → insert code block
-  source.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const val = source.value;
-      const pos = source.selectionStart;
-      const before = val.slice(0, pos);
-      const after = val.slice(pos);
-      const lineStart = before.lastIndexOf("\n") + 1;
-      const currentLine = before.slice(lineStart);
-
-      // Only trigger when the current line is exactly ``` and
-      // there is no closing fence later in the text (avoid firing inside/after a closed block)
-      if (currentLine.trim() === "```" && !/```/.test(after)) {
-        e.preventDefault();
-        const insertion = "\n\n```";
-        source.value = before + insertion + after;
-        // Place cursor on the empty line between the two fences
-        const newPos = before.length + 1;
-        source.setSelectionRange(newPos, newPos);
-        source.dispatchEvent(new Event("input"));
-        return;
-      }
-    }
-    // Tab → insert 2 spaces
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const pos = source.selectionStart;
-      source.value =
-        source.value.slice(0, pos) + "  " + source.value.slice(pos);
-      source.setSelectionRange(pos + 2, pos + 2);
-    }
   });
 
   // Initial live preview

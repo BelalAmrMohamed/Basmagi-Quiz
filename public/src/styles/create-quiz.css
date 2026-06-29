@@ -111,7 +111,7 @@ body {
 /* Header with enhanced design */
 .header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 15px;
   padding: 30px 20px;
   border-radius: 12px;
   box-shadow: var(--shadow-md);
@@ -1037,6 +1037,10 @@ body {
 
   .btn-bulk {
     flex: 1;
+  }
+
+  .btn-help{
+    display: none;
   }
 
   .fab-container {
