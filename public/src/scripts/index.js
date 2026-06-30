@@ -2422,7 +2422,7 @@ function promptDownloadPassword(title, correctPassword) {
 
     const submitBtn = document.createElement("button");
     submitBtn.type = "button";
-    submitBtn.className = "btn btn-primary start-btn";
+    submitBtn.className = "btn btn-primary";
     submitBtn.textContent = "تأكيد";
 
     const cancelBtn = document.createElement("button");
@@ -3296,80 +3296,13 @@ function createExamCard(exam) {
   };
 
   const moreBtn = document.createElement("button");
-  moreBtn.className = "mobile-more-btn";
+  moreBtn.className = "exam-more-btn";
   moreBtn.type = "button";
-  moreBtn.innerHTML = `⋮`;
-  moreBtn.setAttribute("aria-label", "خيارات إضافية");
+  moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+  moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${exam.title || exam.id}`);
   moreBtn.onclick = (ev) => {
     ev.stopPropagation();
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.style.zIndex = "9999";
-    modal.addEventListener("click", () => modal.remove());
-
-    const menu = document.createElement("div");
-    menu.style.cssText = `
-       background: var(--color-surface);
-       border-radius: 20px 20px 0 0;
-       position: absolute;
-       bottom: 0; left: 0; right: 0;
-       padding: 24px;
-       box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-       display: flex; flex-direction: column; gap: 12px;
-    `;
-
-    const downloadOpt = document.createElement("button");
-    downloadOpt.className = "btn btn-primary";
-    downloadOpt.textContent = exam.password ? "🔒 تحميل ⬇️" : "تحميل ⬇️";
-    downloadOpt.style.padding = "14px";
-    downloadOpt.style.fontWeight = "bold";
-    if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
-    downloadOpt.onclick = (e) => {
-      e.stopPropagation();
-      modal.remove();
-      showDownloadPopup();
-    };
-
-    const shareOpt = document.createElement("button");
-    shareOpt.className = "btn";
-    shareOpt.textContent = "مشاركة 🔗";
-    shareOpt.style.padding = "14px";
-    shareOpt.style.background = "var(--color-primary-light)";
-    shareOpt.style.color = "var(--color-primary)";
-    shareOpt.style.fontWeight = "bold";
-    shareOpt.onclick = (e) => {
-      e.stopPropagation();
-      modal.remove();
-      const url =
-        window.location.origin +
-        window.location.pathname.replace("index.html", "") +
-        "quiz.html?id=" +
-        exam.id;
-      if (navigator.share) {
-        navigator
-          .share({ title: exam.title || exam.id, url: url })
-          .catch(() => {});
-      } else {
-        navigator.clipboard
-          .writeText(url)
-          .then(() =>
-            showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
-          );
-      }
-    };
-
-    const cancelOpt = document.createElement("button");
-    cancelOpt.className = "btn";
-    cancelOpt.textContent = "إلغاء";
-    cancelOpt.style.padding = "14px";
-    cancelOpt.style.background = "transparent";
-    cancelOpt.style.color = "var(--color-text-secondary)";
-
-    menu.appendChild(downloadOpt);
-    menu.appendChild(shareOpt);
-    menu.appendChild(cancelOpt);
-    modal.appendChild(menu);
-    document.body.appendChild(modal);
+    showExamActionsOverlay(exam, showDownloadPopup);
   };
 
   const btnWrap = document.createElement("div");
@@ -3377,26 +3310,6 @@ function createExamCard(exam) {
   btnWrap.appendChild(btn);
   btnWrap.appendChild(downloadBtn);
   btnWrap.appendChild(moreBtn);
-
-  const shareBtn = document.createElement("button");
-  shareBtn.className = "share-quiz-link-button desktop-share-btn";
-  shareBtn.type = "button";
-  shareBtn.setAttribute("aria-label", `مشاركة ${exam.title || exam.id}`);
-  shareBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-share-2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>`;
-  shareBtn.onclick = (ev) => {
-    ev.stopPropagation();
-    const url =
-      window.location.origin +
-      window.location.pathname.replace("index.html", "") +
-      "quiz.html?id=" +
-      exam.id;
-    navigator.clipboard
-      .writeText(url)
-      .then(() =>
-        showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
-      );
-  };
-  card.appendChild(shareBtn);
 
   card.style.position = "relative";
 
@@ -3814,6 +3727,305 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// ============================================================================
+// Exam card "more actions" overlay — نسخ الرابط / مشاركة الإمتحان /
+// معلومات الإمتحان / تحميل / إلغاء
+//
+// One shared overlay is used for both the desktop and mobile 3-dots
+// trigger button on exam cards (previously: a separate icon-only share
+// button on desktop, and a more limited sheet on mobile).
+// ============================================================================
+
+/**
+ * extractCategoryFromPath — derives the quiz category from a manifest path.
+ * Ported verbatim from result.js so both pages display the category
+ * identically. See result.js for the full doc comment.
+ */
+function extractCategoryFromPath(path) {
+  if (!path) return "";
+
+  let rawPath = path;
+
+  try {
+    const qIdx = rawPath.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+      const p = params.get("path");
+      if (p) rawPath = decodeURIComponent(p);
+    }
+  } catch (_) {
+    /* ignore malformed query strings */
+  }
+
+  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
+  if (match) {
+    const segments = match[1].split("/");
+    const parts = segments.slice(0, -1);
+    if (parts.length > 0) return parts.join(" / ");
+  }
+
+  return "";
+}
+
+/** Normalise a stored date string down to just its date portion. Mirrors
+ * the formatDate() helper in result.js's quiz-info dialog. */
+function formatDateForInfo(raw) {
+  if (!raw) return null;
+  let d = String(raw);
+  if (d.includes(",")) d = d.split(",")[0];
+  else if (d.includes(" - ")) d = d.split(" - ")[0];
+  else if (d.includes(" ")) d = d.split(" ")[0];
+  return d || null;
+}
+
+const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+const SHARE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>`;
+const INFO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+const DOWNLOAD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+
+function buildExamShareUrl(examId) {
+  return (
+    window.location.origin +
+    window.location.pathname.replace("index.html", "") +
+    "quiz.html?id=" +
+    examId
+  );
+}
+
+/**
+ * Shows the shared "more actions" bottom-sheet overlay for an exam card.
+ * Used by both the desktop and mobile 3-dots trigger button.
+ *
+ * @param {object} exam - manifest exam entry
+ * @param {() => void|Promise<void>} showDownloadPopup - opens the
+ *   format-picker popup (already password-gated by the caller)
+ */
+function showExamActionsOverlay(exam, showDownloadPopup) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay exam-actions-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const sheet = document.createElement("div");
+  sheet.className = "exam-actions-sheet";
+
+  const copyOpt = document.createElement("button");
+  copyOpt.type = "button";
+  copyOpt.className = "exam-action-btn";
+  copyOpt.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+  copyOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    navigator.clipboard
+      .writeText(buildExamShareUrl(exam.id))
+      .then(() =>
+        showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
+      );
+  };
+
+  const shareOpt = document.createElement("button");
+  shareOpt.type = "button";
+  shareOpt.className = "exam-action-btn";
+  shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الإمتحان</span>`;
+  shareOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    const url = buildExamShareUrl(exam.id);
+    if (navigator.share) {
+      navigator
+        .share({ title: exam.title || exam.id, url })
+        .catch(() => {});
+    } else {
+      navigator.clipboard
+        .writeText(url)
+        .then(() =>
+          showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
+        );
+    }
+  };
+
+  const infoOpt = document.createElement("button");
+  infoOpt.type = "button";
+  infoOpt.className = "exam-action-btn";
+  infoOpt.innerHTML = `${INFO_ICON_SVG}<span>معلومات الإمتحان</span>`;
+  infoOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    showQuizInfoModal(exam);
+  };
+
+  const downloadOpt = document.createElement("button");
+  downloadOpt.type = "button";
+  downloadOpt.className = exam.password
+    ? "exam-action-btn exam-action-btn--primary is-password-protected"
+    : "exam-action-btn exam-action-btn--primary";
+  downloadOpt.innerHTML = exam.password
+    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+  if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+  downloadOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    showDownloadPopup();
+  };
+
+  const cancelOpt = document.createElement("button");
+  cancelOpt.type = "button";
+  cancelOpt.className = "exam-action-btn exam-action-btn--cancel";
+  cancelOpt.textContent = "إلغاء";
+  cancelOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+  };
+
+  sheet.appendChild(downloadOpt);
+  sheet.appendChild(copyOpt);
+  sheet.appendChild(shareOpt);
+  sheet.appendChild(infoOpt);
+  sheet.appendChild(cancelOpt);
+  modal.appendChild(sheet);
+  document.body.appendChild(modal);
+}
+
+/**
+ * Shows a read-only "quiz info" modal, listing the same fields as the
+ * quiz-info dialog on result.js (title, description, category, date,
+ * source, author, mode, view, question types, question count).
+ *
+ * Works for any exam-shaped object carrying at least an `id`/`path`; if
+ * fields the manifest doesn't carry (mode/view/questionCount fallback)
+ * are missing, the raw quiz file is fetched once to fill them in — same
+ * defensive-patch pattern used for downloads.
+ */
+async function showQuizInfoModal(exam) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "quizInfoModalTitle");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card quiz-info-modal-card";
+
+  const h2 = document.createElement("h2");
+  h2.id = "quizInfoModalTitle";
+  h2.textContent = "معلومات الإمتحان";
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "quiz-info-table-wrap";
+  tableWrap.innerHTML = `<p class="quiz-info-loading">جاري التحميل...</p>`;
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "close-modal";
+  closeBtn.textContent = "إغلاق";
+  closeBtn.onclick = () => modal.remove();
+
+  modalCard.appendChild(h2);
+  modalCard.appendChild(tableWrap);
+  modalCard.appendChild(closeBtn);
+  modal.appendChild(modalCard);
+  document.body.appendChild(modal);
+
+  // Build a config object shaped like the one result.js uses, backfilling
+  // anything the manifest entry doesn't carry (view/mode, and a question
+  // count fallback) from the raw quiz file — same approach as the download
+  // path's defensive patch.
+  const config = {
+    title: exam.title || exam.id,
+    description: exam.description || null,
+    category: exam.category || null,
+    path: exam.path || null,
+    createdAt: exam.createdAt || null,
+    source: exam.source || null,
+    author: exam.author || null,
+    mode: null,
+    view: null,
+    questionTypes: formatQuestionTypesForDownload(exam.questionTypes),
+  };
+  let questionCount =
+    typeof exam.questionCount === "number" ? exam.questionCount : null;
+
+  try {
+    if (exam.path) {
+      let data = null;
+      if (exam.path.endsWith(".json")) {
+        const res = await fetch(exam.path);
+        if (res.ok) data = await res.json();
+      } else {
+        const mod = await import(exam.path).catch(() => null);
+        if (mod) data = mod;
+      }
+      if (data) {
+        const meta = data.meta || {};
+        const stats = data.stats || {};
+        if (!config.description) config.description = meta.description || null;
+        if (!config.source) config.source = meta.source || null;
+        if (!config.author) config.author = meta.author || null;
+        if (!config.createdAt) config.createdAt = meta.createdAt || null;
+        config.mode = meta.mode || null;
+        config.view = meta.view || null;
+        if (!config.questionTypes)
+          config.questionTypes = formatQuestionTypesForDownload(
+            stats.questionTypes,
+          );
+        if (questionCount === null) {
+          questionCount =
+            stats.questionCount ?? (data.questions || []).length ?? null;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load quiz file for info modal", e);
+  }
+
+  const ROWS = [
+    { label: "العنوان", val: config.title },
+    { label: "الوصف", val: config.description },
+    {
+      label: "المادة",
+      val: config.category || extractCategoryFromPath(config.path) || null,
+    },
+    { label: "التاريخ", val: formatDateForInfo(config.createdAt) },
+    { label: "المصدر", val: config.source },
+    { label: "صاحب الإمتحان", val: config.author },
+    { label: "نوع الإمتحان الإجباري", val: config.mode },
+    {
+      label: "الشكل الإجباري",
+      val:
+        config.view === "pagination"
+          ? "كل سؤال في صفحة (Pagination)"
+          : config.view === "vertical"
+            ? "كل الأسئلة في صفحة واحدة (Vertical)"
+            : null,
+    },
+    { label: "نوع الأسئلة", val: config.questionTypes },
+    { label: "عدد الأسئلة", val: questionCount },
+  ].filter((r) => r.val);
+
+  if (!modal.isConnected) return; // user closed the modal while we were fetching
+
+  if (!ROWS.length) {
+    tableWrap.innerHTML = `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
+    return;
+  }
+
+  const isUrl = (s) => /^https?:\/\//i.test(s);
+  tableWrap.innerHTML = `<table class="quiz-info-table">${ROWS.map(({ label, val }) => {
+    const v = String(val);
+    const displayVal = isUrl(v)
+      ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
+      : escapeHtml(v);
+    return `<tr><th scope="row">${escapeHtml(label)}</th><td>${displayVal}</td></tr>`;
+  }).join("")}</table>`;
+}
 
 // ============================================================================
 // show UserQuiz Download Popup

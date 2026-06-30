@@ -86,9 +86,12 @@ body {
 }
 
 /* ============================================================================
-   share-quiz-link-button
+   exam-more-btn — shared 3-dots trigger for the exam card "more actions"
+   overlay (نسخ الرابط / مشاركة الإمتحان / معلومات الإمتحان / تحميل).
+   Replaces the old desktop-only share-quiz-link-button; now used on both
+   desktop and mobile so the menu content stays identical everywhere.
    ============================================================================ */
-.share-quiz-link-button {
+.exam-more-btn {
   position: absolute;
   top: 8px;
   left: 8px;
@@ -96,8 +99,8 @@ body {
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
   border-radius: 50%;
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,13 +109,179 @@ body {
   z-index: 2;
 }
 
+.exam-more-btn:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: scale(1.05);
+}
+
 @media (max-width: 768px) {
-  .share-quiz-link-button {
+  .exam-more-btn {
     top: 7px;
     left: 7px;
-    width: 27px;
-    height: 27px;
+    width: 30px;
+    height: 30px;
   }
+}
+
+/* ============================================================================
+   exam-actions-sheet — bottom-sheet content for the "more actions" overlay.
+   ============================================================================ */
+.exam-actions-overlay .modal-overlay,
+.exam-actions-overlay {
+  z-index: 9999;
+  align-items: flex-end;
+}
+
+.exam-actions-sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exam-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  direction: rtl;
+}
+
+.exam-action-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.exam-action-btn svg {
+  flex-shrink: 0;
+}
+
+/* .exam-action-btn .exam-action-btn--primary{
+  display: none !important;
+} */
+
+.exam-action-btn--primary {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.exam-action-btn--primary:hover {
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.exam-action-btn--cancel {
+  justify-content: center;
+  width: auto;
+  align-self: center;
+  padding: 8px 28px;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.exam-action-btn--cancel:hover {
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+/* ============================================================================
+   quiz-info-modal — "معلومات الإمتحان" read-only details table.
+   ============================================================================ */
+.quiz-info-modal-card {
+  text-align: right;
+  direction: rtl;
+  padding-left: 0px !important;
+  padding-right: 0px !important;
+  background-color: var(--color-background) !important;
+}
+
+.quiz-info-table-wrap {
+  margin: 16px 0 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  padding: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.08));
+  border-bottom: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.08));
+}
+
+.quiz-info-loading,
+.quiz-info-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 20px 0;
+}
+
+.quiz-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.quiz-info-table tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.quiz-info-table tr:last-child {
+  border-bottom: none;
+}
+
+.quiz-info-table th,
+.quiz-info-table td {
+  padding: 10px 8px;
+  vertical-align: top;
+}
+
+.quiz-info-table th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+  width: 40%;
+  text-align: right;
+}
+
+.quiz-info-table td {
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.quiz-info-table td a {
+  color: var(--color-primary);
+  word-break: break-all;
 }
 
 /* ============================================================================
@@ -756,10 +925,8 @@ Container
     direction: rtl;
   }
 
-  /* ── Share button: HIDDEN on mobile ─────────────────────────────────────── */
-  .share-quiz-link-button {
-    display: none !important;
-  }
+  /* exam-more-btn stays visible on mobile too — it's now the single shared
+     trigger for the actions overlay on both desktop and mobile. */
 
   /* ── Exam card: reset min-height for compact rows ────────────────────────── */
   .exam-card {
@@ -1388,7 +1555,26 @@ Container
 .download-password-actions .btn-primary {
   width: 100%;
   padding: 14px;
-  font-weight: 600;
+  background: var(--gradient-accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow:
+    var(--shadow-md),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.download-password-actions .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.download-password-actions .btn-primary:active {
+  transform: translateY(0);
 }
 
 /* Lock badge on download triggers for password-protected quizzes */
@@ -2218,24 +2404,6 @@ Container
     display: none !important;
   }
 
-  .desktop-share-btn {
-    display: none !important;
-  }
-
-  .mobile-more-btn {
-    display: flex;
-    width: 15px;
-    height: 32px;
-    max-width: 10px;
-    flex: 0 0 32px;
-    background: inherit;
-    border: none;
-    box-shadow: none;
-    align-items: center;
-    justify-content: end;
-    color: #0088cc;
-  }
-
   .course-meta,
   .new-badge {
     display: none;
@@ -2268,12 +2436,6 @@ Container
     flex-direction: column !important;
     text-align: center;
     align-items: center !important;
-  }
-}
-
-@media (min-width: 641px) {
-  .mobile-more-btn {
-    display: none !important;
   }
 }
 
