@@ -296,6 +296,7 @@ body {
 .quiz-info-table td {
   color: var(--color-text-primary);
   text-align: left;
+  direction: ltr;
 }
 
 .quiz-info-table td a {
