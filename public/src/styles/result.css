@@ -1487,7 +1487,7 @@ dialog.quiz-info-dialog {
   max-width: min(560px, 92vw);
   max-height: min(85vh, 640px);
   width: 100%;
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   overflow: hidden;
   /* Center in viewport, overriding UA default dialog centering */
   position: fixed;
@@ -1620,7 +1620,7 @@ dialog.quiz-info-dialog {
 
 .quiz-info-dialog-close:hover {
   background: var(--color-background-secondary, #f3f4f6);
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   transform: scale(1.08);
 }
 
@@ -1670,7 +1670,7 @@ dialog.quiz-info-dialog {
 }
 
 .quiz-info-table td {
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   overflow-wrap: break-word;
   word-break: break-word;
   text-align: left;

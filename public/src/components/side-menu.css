@@ -103,7 +103,7 @@ body.sidebar-expanded {
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   background: var(--color-background, #fff);
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;

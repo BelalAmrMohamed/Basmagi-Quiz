@@ -224,7 +224,7 @@ function escapeHTML(input) {
  * @returns {string} Category string, or "" if the path is absent / malformed.
  */
 
-// Still broken. Category never shows up.
+
 function extractCategoryFromPath(path) {
   if (!path) return "";
 
