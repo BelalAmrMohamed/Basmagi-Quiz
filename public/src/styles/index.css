@@ -93,8 +93,8 @@ body {
    ============================================================================ */
 .exam-more-btn {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 0px; /* Changing this value makes it look like the `.exam-more-btn` button's parent is the `start-btn` element, because when the `top = 0px` it just stick to the top of that button */
+  right: 8px;
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -119,7 +119,7 @@ body {
 @media (max-width: 768px) {
   .exam-more-btn {
     top: 7px;
-    left: 7px;
+    right: 7px;
     width: 30px;
     height: 30px;
   }
@@ -1587,6 +1587,8 @@ Container
 .is-password-protected {
   display: flex;
   gap: 6px;
+  align-items: center;
+  justify-content: center;
 }
 
 /* =============================================================================
