@@ -7,12 +7,13 @@ html[data-theme="light"] {
 
   /* Backgrounds */
   --color-background: #fafbfc;
+  --color-background-light: #F5F5F2;
   --color-background-secondary: #f3f4f6;
   --color-surface: #ffffff;
 
   /* Borders */
   --color-border: #e5e7eb;
-  --color-border-light: #f3f4f6;
+  --color-border-light: #cfd5e1;
 
   /* Text */
   --color-text-primary: #111827;
@@ -161,6 +162,7 @@ html[data-theme="dark-slate"] {
 
   /* Backgrounds */
   --color-background: #0f172a;
+  --color-background-light: #1e293b;
   --color-background-secondary: #1e293b;
   --color-surface: #1e293b;
 
@@ -243,6 +245,7 @@ html[data-theme="dark"] {
 
   /* Backgrounds */
   --color-background: #121212;
+  --color-background-light: #171717;
   --color-background-secondary: #1e1e1e;
   --color-surface: #1e1e1e;
 

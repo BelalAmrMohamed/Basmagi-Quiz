@@ -256,6 +256,7 @@ body {
   padding-top: 10px;
   border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
   border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  background-color: var(--color-background-light);
 }
 
 .quiz-info-loading,
