@@ -2707,3 +2707,85 @@ kbd {
     padding: 9px 15px;
   }
 }
+
+#errorBoundary {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    z-index: 9999;
+    min-width: 300px;
+    max-width: 90vw;
+    width: 420px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-left: 5px solid #dc2626;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow:
+        0 10px 25px -5px rgba(220, 38, 38, 0.25),
+        0 8px 10px -6px rgba(220, 38, 38, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-family: 'IBM Plex Sans Arabic', Tajawal, sans-serif;
+    animation: errorBoundarySlideIn 0.35s ease-out forwards;
+}
+
+#errorBoundary p {
+    margin: 0;
+    color: #991b1b;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+#errorBoundary button {
+    flex-shrink: 0;
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+#errorBoundary button:hover {
+    background: #b91c1c;
+}
+
+#errorBoundary button:active {
+    transform: scale(0.97);
+}
+
+@keyframes errorBoundarySlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Dark theme support, matching your data-theme attribute pattern */
+[data-theme="dark"] #errorBoundary,
+[data-theme="dark-slate"] #errorBoundary {
+    background: #2a1216;
+    border-color: #7f1d1d;
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.5),
+        0 8px 10px -6px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] #errorBoundary p,
+[data-theme="dark-slate"] #errorBoundary p {
+    color: #fca5a5;
+}
