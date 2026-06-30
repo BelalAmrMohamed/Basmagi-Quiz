@@ -707,6 +707,7 @@ dialog.quiz-info-dialog {
   max-height: min(60vh, 400px);
   scrollbar-width: thin;
   scrollbar-color: var(--color-text-secondary) transparent;
+  background-color: var(--color-background-light);
 }
 
 /* Info metadata table */
