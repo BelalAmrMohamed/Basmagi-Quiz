@@ -2789,3 +2789,7 @@ kbd {
 [data-theme="dark-slate"] #errorBoundary p {
     color: #fca5a5;
 }
+
+[data-animations="disabled"] #errorBoundary {
+    animation: none;
+}
