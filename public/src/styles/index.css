@@ -139,12 +139,14 @@ body {
   max-width: 480px;
   margin: 0 auto;
   background: var(--color-surface);
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px 20px 20px 20px;
   padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .exam-action-btn {
@@ -175,10 +177,6 @@ body {
   flex-shrink: 0;
 }
 
-/* .exam-action-btn .exam-action-btn--primary{
-  display: none !important;
-} */
-
 .exam-action-btn--primary {
   background: var(--gradient-accent);
   color: white;
@@ -186,6 +184,8 @@ body {
   box-shadow:
     var(--shadow-md),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  align-items: center;
+  justify-content: center;
 }
 
 .exam-action-btn--primary:hover {
@@ -214,6 +214,12 @@ body {
   border: none;
   color: var(--color-text-primary);
   text-decoration: underline;
+}
+
+@media (min-width: 641px) {
+  .mobile-only {
+    display: none !important;
+  }
 }
 
 /* ============================================================================
@@ -1580,8 +1586,6 @@ Container
 /* Lock badge on download triggers for password-protected quizzes */
 .is-password-protected {
   display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
 }
 

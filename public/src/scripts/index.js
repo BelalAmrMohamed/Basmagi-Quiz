@@ -3861,8 +3861,8 @@ function showExamActionsOverlay(exam, showDownloadPopup) {
   const downloadOpt = document.createElement("button");
   downloadOpt.type = "button";
   downloadOpt.className = exam.password
-    ? "exam-action-btn exam-action-btn--primary is-password-protected"
-    : "exam-action-btn exam-action-btn--primary";
+    ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
+    : "exam-action-btn mobile-only exam-action-btn--primary";
   downloadOpt.innerHTML = exam.password
     ? `${LOCK_ICON_SVG}<span>تحميل</span>`
     : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
