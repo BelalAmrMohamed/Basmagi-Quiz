@@ -1344,6 +1344,61 @@ Container
   color: var(--color-text-primary);
 }
 
+/* ── Download password prompt ─────────────────────────────────────────────── */
+
+.download-password-form {
+  margin: 20px 0 8px;
+  direction: rtl;
+}
+
+.download-password-input {
+  width: 100%;
+  padding: 14px 16px;
+  direction: ltr;
+  text-align: center;
+  letter-spacing: 0.15em;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.download-password-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+.download-password-error {
+  margin-top: 10px;
+  color: var(--color-error, #dc2626);
+  font-size: 0.85rem;
+}
+
+.download-password-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.download-password-actions .btn-primary {
+  width: 100%;
+  padding: 14px;
+  font-weight: 600;
+}
+
+/* Lock badge on download triggers for password-protected quizzes */
+.is-password-protected {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 /* =============================================================================
    DB-sourced quiz card — accent border
    ============================================================================= */

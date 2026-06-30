@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T19:48:49.655Z",
+  "generatedAt": "2026-06-30T06:16:45.387Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -2493,6 +2493,8 @@
           ],
           "description": "Basmagi Quiz Platform Demo",
           "author": "بلال عمرو محمد",
+          "author_email": "belalamrofficial@gmail.com",
+          "password": "1234",
           "source": "https://www.w3schools.com/CPP/default.asp",
           "createdAt": "2026-03-01 - 20:37"
         }

@@ -222,6 +222,12 @@ function buildCompatStructures(subjects) {
         examCategoryKey = currentParentKey;
       }
 
+      // NOTE: `view` and `mode` are intentionally NOT flattened onto examEntry.
+      // They only affect quiz-taking behavior on quiz.html and are read
+      // straight out of the quiz file's `meta` object there; they were never
+      // part of quiz-manifest.json. Consumers that need them for *download*
+      // (index.js) fetch the raw quiz JSON at download-time instead — see
+      // the manifest-patching fallback in index.js's onDownloadOption.
       const examEntry = {
         id: quiz.id,
         title: quiz.title,
@@ -232,7 +238,12 @@ function buildCompatStructures(subjects) {
         questionTypes: quiz.questionTypes,
         ...(quiz.description && { description: quiz.description }),
         ...(quiz.author && { author: quiz.author }),
+        ...(quiz.author_email && { author_email: quiz.author_email }),
         ...(quiz.source && { source: quiz.source }),
+        // password gates downloads (see index.js download-gate logic). Kept
+        // off the entry entirely when absent, same convention as the other
+        // optional fields above — never coerced to null/empty string.
+        ...(quiz.password && { password: quiz.password }),
         // Preserve the "db" marker so index.js can show the "قاعدة البيانات" badge
         ...(quiz.dbSource === "db" ? { dbSource: "db" } : {}),
       };

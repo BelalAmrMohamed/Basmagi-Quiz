@@ -2319,6 +2319,173 @@ Explanation: The \`typename T\` template parameter is deduced at the call site, 
 // Quizzes may be stored in the old flat schema OR the new meta+stats schema.
 // These helpers normalise reads so every consumer works with both.
 
+/** Normalize a questionTypes value (raw array or already-joined string) into
+ * a display string, or null if empty/absent. Mirrors formatQuestionTypes()
+ * in result.js so both pages render this field identically. */
+function formatQuestionTypesForDownload(questionTypes) {
+  if (!questionTypes) return null;
+  if (Array.isArray(questionTypes))
+    return questionTypes.length ? questionTypes.join(" · ") : null;
+  return String(questionTypes) || null;
+}
+
+// Small lock glyph shown on download buttons/badges for password-protected
+// quizzes. Inline SVG (no extra asset request), inherits currentColor.
+const LOCK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+
+// ── Download password gate ───────────────────────────────────────────────────
+// Quizzes can carry an optional `password` in their meta. The quiz PAGE
+// (quiz.html) is responsible for gating *playing* the quiz — we never touch
+// that here. This gate only protects *downloads* initiated from the index
+// page's download popups (static exams, DB exams, and user quizzes alike).
+//
+// Once a correct password is entered for a given quiz id, it's remembered
+// for the rest of the tab session (sessionStorage) so the user isn't asked
+// again on every format click within the same visit.
+
+const DOWNLOAD_PASSWORD_SESSION_PREFIX = "dl_pw_ok:";
+
+function isDownloadPasswordVerified(quizId) {
+  try {
+    return (
+      sessionStorage.getItem(DOWNLOAD_PASSWORD_SESSION_PREFIX + quizId) ===
+      "1"
+    );
+  } catch (_) {
+    return false; // sessionStorage unavailable (e.g. private mode) — fall through to prompting
+  }
+}
+
+function markDownloadPasswordVerified(quizId) {
+  try {
+    sessionStorage.setItem(DOWNLOAD_PASSWORD_SESSION_PREFIX + quizId, "1");
+  } catch (_) {
+    /* non-fatal — user will just be re-prompted next time */
+  }
+}
+
+/**
+ * Prompts the user for a quiz's download password in a modal.
+ * Resolves `true` if the correct password was entered, `false` if the user
+ * cancelled or the password was wrong after the user gave up.
+ */
+function promptDownloadPassword(title, correctPassword) {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "modal-overlay";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "downloadPasswordTitle");
+
+    let settled = false;
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      modal.remove();
+      resolve(result);
+    };
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) finish(false);
+    });
+
+    const modalCard = document.createElement("div");
+    modalCard.className = "modal-card";
+
+    const h2 = document.createElement("h2");
+    h2.id = "downloadPasswordTitle";
+    h2.textContent = "هذا الإمتحان محمي بكلمة مرور";
+
+    const p = document.createElement("p");
+    p.textContent = `أدخل كلمة المرور لتنزيل "${title}"`;
+
+    const form = document.createElement("div");
+    form.className = "download-password-form";
+
+    const input = document.createElement("input");
+    input.type = "password";
+    input.className = "download-password-input";
+    input.placeholder = "كلمة المرور";
+    input.autocomplete = "off";
+    input.setAttribute("aria-label", "كلمة مرور الإمتحان");
+
+    const errorMsg = document.createElement("p");
+    errorMsg.className = "download-password-error";
+    errorMsg.textContent = "كلمة مرور غير صحيحة";
+    errorMsg.style.display = "none";
+
+    form.appendChild(input);
+    form.appendChild(errorMsg);
+
+    const actions = document.createElement("div");
+    actions.className = "download-password-actions";
+
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "button";
+    submitBtn.className = "btn btn-primary start-btn";
+    submitBtn.textContent = "تأكيد";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "close-modal";
+    cancelBtn.textContent = "إلغاء";
+    cancelBtn.onclick = () => finish(false);
+
+    const attemptSubmit = () => {
+      if (input.value === correctPassword) {
+        finish(true);
+      } else {
+        errorMsg.style.display = "block";
+        input.value = "";
+        input.focus();
+      }
+    };
+    submitBtn.onclick = attemptSubmit;
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        attemptSubmit();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        finish(false);
+      }
+      errorMsg.style.display = "none";
+    });
+
+    actions.appendChild(submitBtn);
+    actions.appendChild(cancelBtn);
+
+    modalCard.appendChild(h2);
+    modalCard.appendChild(p);
+    modalCard.appendChild(form);
+    modalCard.appendChild(actions);
+    modal.appendChild(modalCard);
+
+    requestAnimationFrame(() => {
+      document.body.appendChild(modal);
+      input.focus();
+    });
+  });
+}
+
+/**
+ * Ensures the user is allowed to download a (possibly password-protected)
+ * quiz. Resolves `true` if download should proceed, `false` if it should be
+ * cancelled. Quizzes with no password always resolve `true` immediately.
+ *
+ * @param {string} quizId - stable id used as the sessionStorage cache key
+ * @param {string|null|undefined} password - the quiz's correct password, if any
+ * @param {string} title - quiz title, shown in the prompt
+ */
+async function ensureDownloadAllowed(quizId, password, title) {
+  if (!password) return true;
+  if (isDownloadPasswordVerified(quizId)) return true;
+
+  const ok = await promptDownloadPassword(title, password);
+  if (ok) markDownloadPasswordVerified(quizId);
+  return ok;
+}
+
 /** Read a field from either old or new schema */
 function qz(quiz, field) {
   switch (field) {
@@ -2515,12 +2682,24 @@ function createUserQuizCard(quiz, index) {
   };
 
   const downloadBtn = document.createElement("button");
-  downloadBtn.textContent = "تحميل";
+  const userQuizPassword = qz(quiz, "password");
+  downloadBtn.innerHTML = userQuizPassword
+    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+    : "تحميل";
   downloadBtn.type = "button";
-  downloadBtn.setAttribute("aria-label", `تحميل اختبار ${qz(quiz, "title")}`);
-  downloadBtn.className = "btn user-quiz-download-btn";
+  downloadBtn.setAttribute(
+    "aria-label",
+    userQuizPassword
+      ? `تحميل اختبار ${qz(quiz, "title")} (محمي بكلمة مرور)`
+      : `تحميل اختبار ${qz(quiz, "title")}`,
+  );
+  downloadBtn.className = userQuizPassword
+    ? "btn user-quiz-download-btn is-password-protected"
+    : "btn user-quiz-download-btn";
 
-  downloadBtn.title = "Download Quiz";
+  downloadBtn.title = userQuizPassword
+    ? "هذا الإمتحان محمي بكلمة مرور"
+    : "Download Quiz";
   downloadBtn.onclick = (e) => {
     e.stopPropagation();
     showUserQuizDownloadPopup(quiz);
@@ -2874,13 +3053,20 @@ function createExamCard(exam) {
       author: exam.author || null,
       author_email: exam.author_email || null,
       password: exam.password || null,
-      view: exam.view || null, // This one doesn't show up
-      mode: exam.mode || null, // This one doesn't show up
-      questionTypes: exam.type || null, // This one doesn't show up
-      questionCount: exam.count || null,
+      // view/mode are never present on manifest entries (see quizManifest.js)
+      // — they only get backfilled below once we've loaded the raw quiz file.
+      view: null,
+      mode: null,
+      // BUG FIX: the manifest entry uses `questionTypes`/`questionCount`,
+      // not `type`/`count` — those never existed on `exam`, so this was
+      // always null regardless of what the quiz file contained.
+      questionTypes: exam.questionTypes || null,
+      questionCount: exam.questionCount || null,
     };
     // Load exam data (HANDLES .js vs .json issue)
     let questions = [];
+    let rawMeta = null;
+    let rawStats = null;
     try {
       const path = config.path;
       if (path.endsWith(".json")) {
@@ -2888,6 +3074,8 @@ function createExamCard(exam) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         questions = data.questions;
+        rawMeta = data.meta || null;
+        rawStats = data.stats || null;
       } else if (path.endsWith(".js")) {
         // Try fetching as JSON first if it might be a mislabeled path
         // But if it's really a JS file with export, we use import
@@ -2896,6 +3084,8 @@ function createExamCard(exam) {
         try {
           mod = await import(config.path);
           questions = mod.questions;
+          rawMeta = mod.meta || null;
+          rawStats = mod.stats || null;
         } catch (jsErr) {
           console.warn(
             "Failed to load as JS, trying JSON substitute...",
@@ -2906,21 +3096,58 @@ function createExamCard(exam) {
           if (!res.ok) throw new Error("Failed to load as JSON as well");
           const data = await res.json();
           questions = data.questions;
+          rawMeta = data.meta || null;
+          rawStats = data.stats || null;
         }
       } else {
         // Fallback
         mod = await import(config.path);
         questions = mod.questions;
+        rawMeta = mod.meta || null;
+        rawStats = mod.stats || null;
       }
     } catch (e) {
       console.error("Load failed", e);
       alert("Failed to load exam data.");
       return;
     }
+
+    // Defensive patch: the manifest is a lossy summary (it never carries
+    // view/mode, and may be stale/incomplete for other fields). Now that
+    // we have the raw quiz file in hand anyway, backfill anything missing
+    // on config from its meta/stats — same pattern result.js uses.
+    if (rawMeta) {
+      if (!config.source) config.source = rawMeta.source || null;
+      if (!config.description) config.description = rawMeta.description || null;
+      if (!config.createdAt) config.createdAt = rawMeta.createdAt || null;
+      if (!config.author) config.author = rawMeta.author || null;
+      if (!config.author_email)
+        config.author_email = rawMeta.author_email || null;
+      if (!config.password) config.password = rawMeta.password || null;
+      config.view = rawMeta.view || null;
+      config.mode = rawMeta.mode || null;
+    }
+    if (rawStats) {
+      if (!config.questionTypes)
+        config.questionTypes = formatQuestionTypesForDownload(
+          rawStats.questionTypes,
+        );
+      if (!config.questionCount)
+        config.questionCount =
+          rawStats.questionCount ?? (questions || []).length;
+    }
+
     await executeExport(format, config, questions);
   };
 
-  const showDownloadPopup = () => {
+  const showDownloadPopup = async () => {
+    const allowed = await ensureDownloadAllowed(
+      exam.id,
+      exam.password,
+      exam.title || exam.id,
+    );
+    if (!allowed) return;
+
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
     modal.style.transform = "translateZ(0)";
@@ -3043,7 +3270,9 @@ function createExamCard(exam) {
   };
 
   const downloadBtn = document.createElement("button");
-  downloadBtn.className = "start-btn desktop-download-btn";
+  downloadBtn.className = exam.password
+    ? "start-btn desktop-download-btn is-password-protected"
+    : "start-btn desktop-download-btn";
   downloadBtn.type = "button";
   downloadBtn.style.flex = "1";
   downloadBtn.style.minWidth = "0";
@@ -3051,8 +3280,16 @@ function createExamCard(exam) {
     "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
   downloadBtn.style.color = "white";
   downloadBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
-  downloadBtn.textContent = "تحميل";
-  downloadBtn.setAttribute("aria-label", `تحميل ${exam.title || exam.id}`);
+  downloadBtn.innerHTML = exam.password
+    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+    : "تحميل";
+  downloadBtn.setAttribute(
+    "aria-label",
+    exam.password
+      ? `تحميل ${exam.title || exam.id} (محمي بكلمة مرور)`
+      : `تحميل ${exam.title || exam.id}`,
+  );
+  if (exam.password) downloadBtn.title = "هذا الإمتحان محمي بكلمة مرور";
   downloadBtn.onclick = (ev) => {
     ev.stopPropagation();
     showDownloadPopup();
@@ -3083,9 +3320,10 @@ function createExamCard(exam) {
 
     const downloadOpt = document.createElement("button");
     downloadOpt.className = "btn btn-primary";
-    downloadOpt.textContent = "تحميل ⬇️";
+    downloadOpt.textContent = exam.password ? "🔒 تحميل ⬇️" : "تحميل ⬇️";
     downloadOpt.style.padding = "14px";
     downloadOpt.style.fontWeight = "bold";
+    if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
     downloadOpt.onclick = (e) => {
       e.stopPropagation();
       modal.remove();
@@ -3588,7 +3826,14 @@ const opts = [
   ["./assets/images/pptx_icon.png", "PowerPoint (.pptx)", "pptx"],
   ["./assets/images/word_icon.png", "Word (.docx)", "docx"],
 ];
-function showUserQuizDownloadPopup(quiz) {
+async function showUserQuizDownloadPopup(quiz) {
+  const allowed = await ensureDownloadAllowed(
+    qz(quiz, "id") || quiz.id,
+    qz(quiz, "password"),
+    qz(quiz, "title"),
+  );
+  if (!allowed) return;
+
   const modal = document.createElement("div");
   modal.className = "modal-overlay";
   modal.style.transform = "translateZ(0)";
@@ -3617,23 +3862,24 @@ function showUserQuizDownloadPopup(quiz) {
   grid.setAttribute("role", "group");
   grid.setAttribute("aria-label", "خيارات التنزيل");
 
-  // Config object for export functions
+  // Config object for export functions.
+  // All fields below are correctly sourced via qz() against quiz.meta/stats —
+  // this path was never broken. The actual bug was in the static/manifest
+  // exam path (see onDownloadOption above) and in quizManifest.js, which
+  // dropped author_email/password before they ever reached the page.
   const config = {
-    id: quiz.id,
+    id: qz(quiz, "id") || quiz.id,
     title: qz(quiz, "title"),
     description: qz(quiz, "description"),
-
-    // title: qz(quiz, "title") || quiz.id,
     source: qz(quiz, "source"),
     createdAt: qz(quiz, "createdAt"),
     author: qz(quiz, "author"),
     author_email: qz(quiz, "author_email"),
     password: qz(quiz, "password"),
-    view: qz(quiz, "view"), // This one doesn't show up
-    mode: qz(quiz, "mode"), // This one doesn't show up
-    questionTypes: qz(quiz, "type"), // This one doesn't show up
+    view: qz(quiz, "view"),
+    mode: qz(quiz, "mode"),
+    questionTypes: qz(quiz, "type"),
     questionCount: qz(quiz, "count"),
-
   };
 
   const questions = quiz.questions;
@@ -3667,9 +3913,9 @@ function showUserQuizDownloadPopup(quiz) {
         author: qz(quiz, "author"),
         author_email: qz(quiz, "author_email"),
         password: qz(quiz, "password"),
-        view: qz(quiz, "view"), // This one doesn't show up
-        mode: qz(quiz, "mode"), // This one doesn't show up
-        questionTypes: qz(quiz, "type"), // This one doesn't show up
+        view: qz(quiz, "view"),
+        mode: qz(quiz, "mode"),
+        questionTypes: qz(quiz, "type"),
         questionCount: qz(quiz, "count"),
       };
       return buildQuizText(config, quiz.questions);

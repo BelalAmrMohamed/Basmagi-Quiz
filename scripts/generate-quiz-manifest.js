@@ -111,6 +111,18 @@ function migrateQuiz(raw) {
   if (author && typeof author === "string" && author.trim())
     meta.author = author.trim();
 
+  // --- author_email ---
+
+  const author_email = oldMeta.author_email || raw.author_email;
+  if (author_email && typeof author_email === "string" && author_email.trim())
+    meta.author_email = author_email.trim();
+
+  // --- password ---
+
+  const password = oldMeta.password || raw.password;
+  if (password && typeof password === "string" && password.trim())
+    meta.password = password.trim();
+
   // --- preserve id and createdAt ---
   if (oldMeta.id) meta.id = oldMeta.id;
   if (oldMeta.createdAt) meta.createdAt = oldMeta.createdAt;
@@ -317,6 +329,8 @@ async function build(examsDir, repoRoot) {
         if (quizObj.meta.description)
           quizEntry.description = quizObj.meta.description;
         if (quizObj.meta.author) quizEntry.author = quizObj.meta.author;
+        if (quizObj.meta.author_email) quizEntry.author_email = quizObj.meta.author_email;
+        if (quizObj.meta.password) quizEntry.password = quizObj.meta.password;
         if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
         if (quizObj.meta.createdAt)
           quizEntry.createdAt = quizObj.meta.createdAt;
