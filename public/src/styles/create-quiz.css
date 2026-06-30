@@ -186,7 +186,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 30px;
+  background-color: var(--quiz-creator-bg);
 }
+
 
 .card {
   padding: 30px;
@@ -210,6 +212,13 @@ body {
 .section-header h2 {
   margin: 0 0 20px 0;
   font-size: 1.5rem;
+}
+
+.quiz-metadata,
+.questions-section,
+.action-bar {
+  background-color: var(--quiz-card-bg);
+  border-color: var(--quiz-card-border);
 }
 
 /* Character Counter */
@@ -273,6 +282,13 @@ body {
 .form-group textarea {
   resize: vertical;
   min-height: 80px;
+}
+
+.form-group input,
+.form-group textarea {
+  background-color: var(--quiz-input-bg);
+  border-color: var(--quiz-card-border);
+  color: var(--color-text-primary);
 }
 
 .form-group small {
@@ -748,6 +764,15 @@ body {
   position: relative;
   z-index: 1;
   animation: float 3s ease-in-out infinite;
+  opacity: 0.4;
+}
+
+[data-theme="dark-slate"] .empty-icon {
+  opacity: 0.3;
+}
+
+[data-theme="dark"] .empty-icon {
+  opacity: 0.25;
 }
 
 .empty-glow {
@@ -1142,6 +1167,11 @@ body {
     transform 0.2s;
 }
 
+.option-item.correct {
+  background-color: var(--quiz-option-correct-bg);
+  border-color: var(--color-success);
+}
+
 .option-item:hover {
   border-color: var(--color-primary-hover);
   transform: translateX(-2px);
@@ -1490,13 +1520,14 @@ body {
   background: var(--color-surface);
   border-radius: 12px;
   max-width: 800px;
-  width: 100%;
+  width: 90%;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
   animation: slideUp 0.3s ease;
+  margin-right: 40px;
 }
 
 .preview-modal {
@@ -1577,6 +1608,7 @@ body {
   padding: 30px;
   overflow-y: auto;
   flex: 1;
+  scrollbar-width: thin;
 }
 
 .preview-question {
@@ -1777,12 +1809,6 @@ body {
 
 .watermark a:hover {
   text-decoration: underline;
-}
-
-.watermark::before {
-  font-size: 1.25rem;
-  display: inline-flex;
-  align-items: center;
 }
 
 /* ============================================================================

@@ -261,6 +261,8 @@ body {
   margin-top: 0;
   margin-bottom: 32px;
   text-align: center;
+  background-color: var(--quiz-card-bg);
+  border-color: var(--quiz-card-border);
 }
 
 #scoreDisplay {
@@ -910,12 +912,6 @@ body {
 
 .watermark a:hover {
   text-decoration: underline;
-}
-
-.watermark::before {
-  font-size: 1.25rem;
-  display: inline-flex;
-  align-items: center;
 }
 
 /* ─── Accessibility ───────────────────────────────────────────────────────── */

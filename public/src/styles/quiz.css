@@ -165,11 +165,16 @@ body {
   background: var(--color-error);
 }
 
+/* Menu flag count */
 .menu-flag-count {
   font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
+}
+
+.menu-flag-count {
+  color: var(--color-warning);
 }
 
 /* Grid View Navigation */
@@ -350,12 +355,24 @@ body {
   opacity: 1;
 }
 
-/* Global Actions */
+/* Action buttons in menu */
 .action-btn {
   display: flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
+}
+
+.action-btn {
+  color: var(--color-text-primary);
+}
+
+.action-btn.bookmarked {
+  color: var(--color-warning);
+}
+
+.action-btn.flagged {
+  color: var(--color-error);
 }
 
 /* ─── 5. Examination Page Header ─────────────────────────────────────────── */
@@ -999,6 +1016,8 @@ dialog.quiz-password-dialog {
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border-light);
   margin-bottom: 24px;
+  background-color: var(--quiz-card-bg);
+  border-color: var(--quiz-card-border);
 }
 
 .question-header {

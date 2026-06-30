@@ -423,6 +423,16 @@ body.sidebar-expanded {
   color: var(--color-primary);
 }
 
+[data-theme="dark-slate"] .menu-item.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+[data-theme="dark"] .menu-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
 /* ── Tooltips (collapsed state, desktop only) ────────────────────────────── */
 /* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon       */
 .sidebar:not(.expanded) [data-tooltip]::after {
@@ -593,6 +603,25 @@ body.sidebar-expanded {
   font-size: 0.68rem;
   font-weight: 600;
   color: var(--color-text);
+}
+
+[data-theme="dark-slate"] .theme-btn-label,
+[data-theme="dark"] .theme-btn-label {
+  color: var(--color-text-primary); 
+  font-weight: 600;
+  font-size: 14px;
+}
+
+[data-theme="light"] .theme-selector-btn .theme-btn-label {
+  color: var(--color-text-primary) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark-slate"] .theme-selector-btn .theme-btn-label,
+[data-theme="dark"] .theme-selector-btn .theme-btn-label {
+  color: var(--color-text-primary) !important;
+  font-weight: 700;
+  font-size: 14px;
 }
 
 .theme-selector-btn:focus-visible {

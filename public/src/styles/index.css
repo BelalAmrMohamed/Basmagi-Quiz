@@ -249,30 +249,25 @@ HEADER BADGE – GAMIFIED WELCOME
   position: relative;
   display: inline-flex;
   gap: 10px;
-
-  flex-wrap: wrap; /* Allows text to go to a second line if needed */
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  text-align: center; /* Keeps text centered if it wraps */
-
+  text-align: center;
   padding: 10px 18px;
   border-radius: 999px;
-
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1;
-
   margin-bottom: 24px;
-
   backdrop-filter: blur(10px);
   background: rgba(255, 255, 255, 0.6);
-
   box-shadow:
     0 8px 20px rgba(0, 0, 0, 0.08),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
-
   will-change: transform, box-shadow;
 }
+
+/* Only when the user has enabled the background animations */
 [data-animations="enabled"] .header-badge {
   animation:
     badgePopIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
@@ -294,6 +289,7 @@ HEADER BADGE – GAMIFIED WELCOME
   border-radius: 6px;
   margin-inline: 0; /* logical: replaces margin-right: 0; margin-left: 0 */
 }
+
 [data-animations="enabled"] .header-badge .user-name {
   animation: namePulse 3s ease-in-out infinite;
 }
@@ -319,9 +315,61 @@ HEADER BADGE – GAMIFIED WELCOME
 
   border-radius: inherit;
   pointer-events: none;
-}
-.header-badge::after {
   animation: nameShimmer 5s ease-in-out infinite;
+}
+
+[data-theme="light"] .header-badge {
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
+}
+
+[data-theme="light"] .header-badge .user-name {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* For the animation */
+[data-theme="light"] .header-badge::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(153, 204, 255, 0.6) 50%,
+    transparent 100%
+  );
+}
+
+[data-theme="dark"] .header-badge {
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .header-badge .user-name {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+[data-theme="dark-slate"] .header-badge {
+  background: var(--glass-bg-light);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark-slate"] .header-badge .user-name {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* For the animation */
+[data-theme="dark-slate"] .header-badge::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+
+    /* Pink animation */ rgba(255, 192, 203, 0.6) 50%,
+    transparent 100%
+  );
 }
 
 /* ============================================================================
@@ -472,6 +520,15 @@ ANIMATIONS
   position: relative;
   z-index: 1;
 }
+
+[data-theme="dark"] #Subjects-text,
+[data-theme="dark-slate"] #Subjects-text {
+  background: rgba(99, 102, 241, 0.12);
+  box-shadow:
+    0 4px 20px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 
 /* ── Entrance keyframe ────────────────────────────────────────────────────── */
 @keyframes subjectsReveal {
@@ -1232,7 +1289,6 @@ Container
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
-  /* color: var(--color-text-primary); */
 }
 
 .modal-card p {
@@ -1327,12 +1383,6 @@ Container
 
 .watermark a:hover {
   text-decoration: underline;
-}
-
-.watermark::before {
-  font-size: 1.25rem;
-  display: inline-flex;
-  align-items: center;
 }
 
 /* Loading State */

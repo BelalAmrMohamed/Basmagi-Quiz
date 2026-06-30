@@ -19,3 +19,5 @@ sw-cache/
 
 # Node modules
 node_modules/
+
+docs/
