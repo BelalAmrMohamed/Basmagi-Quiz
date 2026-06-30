@@ -251,11 +251,11 @@ body {
   max-height: 50vh;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
+  scrollbar-color: var(--color-text-secondary) transparent;
   padding: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.08));
-  border-bottom: 1px solid var(--color-border-light, rgba(0, 0, 0, 0.08));
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
 }
 
 .quiz-info-loading,
