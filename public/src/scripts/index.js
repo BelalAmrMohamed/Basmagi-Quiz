@@ -1796,9 +1796,7 @@ async function handleUserQuizzesDrop(files) {
 
     if (!parsed.questions || !parsed.questions.length) continue;
 
-    const quizId = `user_quiz_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 7)}`;
+    const quizId = crypto.randomUUID();
 
     existingQuizzes.push(buildUserQuizEntry(quizId, parsed, defaultTitle));
     importedCount++;
@@ -2277,9 +2275,7 @@ Explanation: The \`typename T\` template parameter is deduced at the call site, 
     }
 
     const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    const quizId = `user_quiz_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 7)}`;
+    const quizId = crypto.randomUUID();
 
     quizzes.push(buildUserQuizEntry(quizId, parsed, title || "Untitled Quiz"));
 
