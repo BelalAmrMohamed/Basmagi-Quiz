@@ -261,8 +261,7 @@ body {
   margin-top: 0;
   margin-bottom: 32px;
   text-align: center;
-  background-color: var(--quiz-card-bg);
-  border-color: var(--quiz-card-border);
+  background-color: var(--color-surface);
 }
 
 #scoreDisplay {
@@ -474,6 +473,7 @@ body {
   transition:
     box-shadow 0.2s ease,
     transform 0.2s ease;
+  background: var(--color-surfaces);
 }
 
 .review-card:hover {

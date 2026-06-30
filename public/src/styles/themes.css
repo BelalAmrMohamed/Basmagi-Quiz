@@ -18,8 +18,6 @@ html[data-theme="light"] {
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
   --color-text-tertiary: #9ca3af;
-  /* Alias consumed by quiz.css — resolves to primary text at paint time */
-  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -40,9 +38,6 @@ html[data-theme="light"] {
   --color-error: #ef4444;
   --color-error-hover: #dc2626;
   --color-error-light: #fee2e2;
-
-  /* Code text colour (consumed by markdown.css) */
-  --color-code: #334155;
 
   /* Gradients */
   --gradient-accent: linear-gradient(
@@ -66,9 +61,6 @@ html[data-theme="light"] {
   --shadow-xl:
     0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
-
-  /* Effects */
-  --blur-md: 12px;
 
   /* ── Glassmorphism system ──────────────────────────────────────────────────
      Centralised tokens for the semi-transparent, frosted-glass aesthetic.
@@ -180,7 +172,6 @@ html[data-theme="dark-slate"] {
   --color-text-primary: #f8fafc;
   --color-text-secondary: #94a3b8;
   --color-text-tertiary: #64748b;
-  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -202,8 +193,6 @@ html[data-theme="dark-slate"] {
   --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
-  --color-code: #e2e8f0;
-
   /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
@@ -224,9 +213,6 @@ html[data-theme="dark-slate"] {
   --shadow-xl:
     0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
-
-  /* Effects */
-  --blur-md: 12px;
 
   /* Glassmorphism — darker surfaces need subtler glass */
   --glass-bg: rgba(255, 255, 255, 0.04);
@@ -268,7 +254,6 @@ html[data-theme="dark"] {
   --color-text-primary: #e0e0e0;
   --color-text-secondary: #a0a0a0;
   --color-text-tertiary: #707070;
-  --color-text: var(--color-text-primary);
 
   /* Primary Colors */
   --color-primary: #3b82f6;
@@ -312,9 +297,6 @@ html[data-theme="dark"] {
   --shadow-xl:
     0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
   --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
-
-  /* Effects */
-  --blur-md: 12px;
 
   /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.04);

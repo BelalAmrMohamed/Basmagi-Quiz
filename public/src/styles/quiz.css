@@ -86,7 +86,7 @@ body {
   box-shadow: var(--shadow-md);
   border: 1px solid var(--color-border);
   background: var(--color-background, #fff);
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -560,7 +560,7 @@ dialog.quiz-info-dialog {
   max-width: min(560px, 92vw);
   max-height: min(85vh, 640px);
   width: 100%;
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   overflow: hidden;
   /* Center in viewport, overriding UA default dialog centering */
   position: fixed;
@@ -692,7 +692,7 @@ dialog.quiz-info-dialog {
 
 .quiz-info-dialog-close:hover {
   background: var(--color-background-secondary, #f3f4f6);
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   transform: scale(1.08);
 }
 
@@ -742,7 +742,7 @@ dialog.quiz-info-dialog {
 }
 
 .quiz-info-table td {
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   overflow-wrap: break-word;
   word-break: break-word;
   text-align: left;
@@ -794,7 +794,7 @@ dialog.quiz-password-dialog {
   box-shadow: var(--shadow-xl);
   max-width: min(420px, 92vw);
   width: 100%;
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   overflow: hidden;
   position: fixed;
   inset: 0;
@@ -882,7 +882,7 @@ dialog.quiz-password-dialog {
   text-align: center;
   letter-spacing: 0.05em;
   background: var(--color-background, #fff);
-  color: var(--color-text, #111);
+  color: var(--color-text-primary, #111);
   direction: ltr;
 }
 
@@ -1016,8 +1016,7 @@ dialog.quiz-password-dialog {
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border-light);
   margin-bottom: 24px;
-  background-color: var(--quiz-card-bg);
-  border-color: var(--quiz-card-border);
+  background-color: var(--color-surface);
 }
 
 .question-header {
