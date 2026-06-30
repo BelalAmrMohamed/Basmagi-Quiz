@@ -93,8 +93,8 @@ body {
    ============================================================================ */
 .exam-more-btn {
   position: absolute;
-  top: 0px; /* Changing this value makes it look like the `.exam-more-btn` button's parent is the `start-btn` element, because when the `top = 0px` it just stick to the top of that button */
-  right: 8px;
+  top: 12px;
+  right: 12px;
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -116,12 +116,25 @@ body {
   transform: scale(1.05);
 }
 
+/*
+ * Mobile (≤768px): .exam-more-btn is a DOM child of .exam-card-actions-wrap,
+ * sitting alongside .start-btn (which has an inline `flex: 1` style). Taking
+ * the dots button out of absolute positioning here makes it a normal flex
+ * item in that row instead — vertically centered, no overlap — while
+ * order: 1 pins it to the end of the row (the right side) regardless of
+ * where it actually falls in DOM order among its .start-btn siblings.
+ */
 @media (max-width: 768px) {
   .exam-more-btn {
-    top: 7px;
-    right: 7px;
+    position: static;
+    order: 1;
+    flex-shrink: 0;
     width: 30px;
     height: 30px;
+  }
+
+  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
+    align-items: center;
   }
 }
 
@@ -1189,6 +1202,44 @@ Container
   left: 16px;
   right: 16px;
   width: calc(100% - 32px);
+}
+
+/*
+ * DESKTOP ONLY (≥769px): re-anchor .exam-more-btn to .exam-card instead of
+ * .exam-card-actions-wrap.
+ *
+ * .exam-more-btn is a DOM child of .exam-card-actions-wrap (see
+ * createExamCard in JS — moreBtn is appended into btnWrap alongside the
+ * start/download buttons). Since that wrap is `position: absolute` above,
+ * it — not .exam-card — becomes the nearest positioned ancestor for
+ * .exam-more-btn, so the button's own `top`/`right` resolve against the
+ * wrap's box (pinned to the bottom of the card) instead of the card's box.
+ *
+ * Fix: make .exam-card a flex column and pin the wrap to the bottom via
+ * `margin-top: auto` (normal flow) instead of `position: absolute`. That
+ * removes the wrap as a containing block, so .exam-more-btn's `top`/`right`
+ * now correctly resolve against .exam-card.
+ *
+ * Scoped to min-width:769px ONLY — .exam-card already has its own separate
+ * flex-row "list-row" layout at ≤640px (and whatever governs 641-768px),
+ * driven by .card-text switching from `display:contents` to its own flex
+ * column. Applying flex-column to the unscoped/base .exam-card rule broke
+ * that mobile layout, so this change must never reach those widths.
+ */
+@media (min-width: 769px) {
+  .exam-card:not(.user-quiz-card) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    margin-top: auto;
+  }
 }
 
 /* Mobile: restore to normal flex flow so btnWrap sits on the RIGHT */
