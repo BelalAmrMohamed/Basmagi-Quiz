@@ -12,8 +12,6 @@
 
 html {
   font-size: 16px;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
 }
 
 body {
@@ -895,6 +893,7 @@ body {
   }
 
   .footer-col {
+    border-right: none;
     padding: 0;
     border-bottom: 1px solid #2a2a2a;
     padding-bottom: 24px;

@@ -1231,6 +1231,8 @@ Container
   text-align: center;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  /* color: var(--color-text-primary); */
 }
 
 .modal-card p {
@@ -1260,23 +1262,30 @@ Container
 .mode-btn:hover {
   transform: translateY(-3px);
   box-shadow: var(--shadow-sm);
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
 }
 
 .mode-btn .icon {
   font-size: 2rem;
-
   width: 70px;
   height: 70px;
   object-fit: cover;
   border-radius: 8px;
 }
 
+/* Close modal button */
 .close-modal {
   background: none;
   border: none;
   cursor: pointer;
   text-decoration: underline;
   margin-top: 16px;
+  color: var(--color-text-secondary);
+}
+
+.close-modal:hover {
+  color: var(--color-text-primary);
 }
 
 /* =============================================================================
@@ -1321,7 +1330,6 @@ Container
 }
 
 .watermark::before {
-  content: "✨";
   font-size: 1.25rem;
   display: inline-flex;
   align-items: center;

@@ -127,6 +127,21 @@ body.sidebar-expanded {
     opacity 0.2s ease;
 }
 
+[data-theme="light"] .hamburger-icon {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark-slate"] .hamburger-icon,
+[data-theme="dark"] .hamburger-icon {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark-slate"] #breadcrumb,
+[data-theme="dark"] #breadcrumb {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
 .hamburger[aria-expanded="true"] .bar-top {
   transform: translateY(6px) rotate(45deg);
 }
@@ -138,6 +153,33 @@ body.sidebar-expanded {
 
 .hamburger[aria-expanded="true"] .bar-bottom {
   transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Solution for showing the side bar at the right, and the rest normally rtl */
+.side-menu nav {
+  direction: ltr;
+}
+
+.side-menu nav > * {
+  direction: rtl;
+}
+
+/* Side menu scrollbar */
+.side-menu nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-menu nav::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+}
+
+.side-menu nav::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.side-menu nav::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
 }
 
 /* ── Backdrop (mobile overlay) ───────────────────────────────────────────── */
@@ -617,6 +659,10 @@ body.sidebar-expanded {
   background: var(--color-border, #ccc);
   transition: background 0.3s ease;
   flex-shrink: 0;
+}
+
+.toggle-switch.active {
+  background: var(--color-primary);
 }
 
 .toggle-switch::after {

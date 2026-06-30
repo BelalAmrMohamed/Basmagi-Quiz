@@ -157,6 +157,10 @@ html[data-theme="light"] {
   /* Sidebar */
   --sidebar-collapsed-width: 64px;
   --sidebar-expanded-width: 240px;
+
+  --scrollbar-thumb: #C0E040;       /* Your Citrus Logo Color */
+  --scrollbar-thumb-hover: #a9c933; /* Slightly darker for contrast on hover */
+  --scrollbar-track: transparent;
 }
 
 /* ==================== DARK SLATE THEME ==================== */
@@ -241,6 +245,10 @@ html[data-theme="dark-slate"] {
   --anim-particle-2: rgba(139, 92, 246, 0.4);
   --anim-particle-3: rgba(236, 72, 153, 0.4);
   --anim-orb: rgba(99, 102, 241, 0.15);
+
+  --scrollbar-thumb: #C0E040;       /* Your Citrus Logo Color */
+  --scrollbar-thumb-hover: #d5f754; /* Slightly brighter for dark background hover */
+  --scrollbar-track: #0f172a;       /* Dark slate track */
 }
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
@@ -325,546 +333,55 @@ html[data-theme="dark"] {
   --anim-particle-2: rgba(139, 92, 246, 0.35);
   --anim-particle-3: rgba(236, 72, 153, 0.35);
   --anim-orb: rgba(59, 130, 246, 0.12);
+
+  --scrollbar-thumb: #C0E040;       /* Your Citrus Logo Color */
+  --scrollbar-thumb-hover: #d5f754; /* Slightly brighter for dark background hover */
+  --scrollbar-track: transparent;
 }
 
 /* ==================== COMMON ELEMENT STYLING ==================== */
 
-/* Apply theme to body */
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+html::-webkit-scrollbar {
+  width: 8px; 
+}
+
+/* Color the track (background) */
+html::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+/* Color and style the thumb (the draggable part) */
+html::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 10px; /* Gives the scrollbar nice rounded edges */
+}
+
+/* Change thumb color when hovering over it */
+html::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text-primary);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
 }
 
-/* Cards and surfaces */
-.card,
-.category-card,
-.exam-card,
-.stat-card,
-.history-item,
-.sidebar-card,
-.question-card,
-.review-card,
-.level-progress-card,
-.header,
-#scoreHeader {
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
+@media (prefers-reduced-motion: no-preference) {
+  body {
+    transition:
+      background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      color          0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color   0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow     0.3s  cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
-/* Stats bar (quiz page) */
-.stats-bar {
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-/* Solution for showing the side bar at the right, and the rest normally rtl */
-.side-menu nav {
-  direction: ltr;
-}
-
-.side-menu nav > * {
-  direction: rtl;
-}
-
-[data-theme="light"] .hamburger-icon {
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark-slate"] .hamburger-icon,
-[data-theme="dark"] .hamburger-icon {
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark-slate"] #breadcrumb,
-[data-theme="dark"] #breadcrumb {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-/* Navigation buttons */
-.nav-btn {
-  background-color: var(--color-text-primary);
-  color: white;
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-.nav-btn:hover:not(:disabled) {
-  background-color: var(--color-text-secondary);
-}
-
-.nav-btn:disabled {
-  background: var(--color-border);
-  color: var(--color-text-tertiary);
-}
-
-/* Toggle switch */
-.toggle-switch {
-  background: var(--color-border);
-}
-
-.toggle-switch.active {
-  background: var(--color-primary);
-}
-
-/* Hamburger button */
-.hamburger-stats {
-  background: var(--color-primary);
-}
-
-/* Option rows (quiz page) */
-.option-row {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-.option-row:hover {
-  background: var(--color-primary-light);
-}
-
-.option-row.locked.correct {
-  background: var(--color-success-light) !important;
-  border-color: var(--color-success);
-}
-
-.option-row.locked.wrong {
-  background: var(--color-error-light) !important;
-  border-color: var(--color-error);
-}
-
-/* Essay textarea */
-.essay-textarea {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-.essay-textarea:focus {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-}
-
-[data-theme="dark-slate"] .essay-textarea,
-[data-theme="dark"] .essay-textarea {
-  background: var(--color-background-secondary);
-}
-
-[data-theme="dark-slate"] .essay-textarea:focus,
-[data-theme="dark"] .essay-textarea:focus {
-  background: var(--color-surface);
-}
-
-/* Feedback messages */
-.feedback.correct {
-  background: var(--color-success-light);
-  color: var(--color-success);
-  border-left-color: var(--color-success);
-}
-
-.feedback.wrong {
-  background: var(--color-error-light);
-  color: var(--color-error);
-  border-left-color: var(--color-error);
-}
-
-[data-theme="dark-slate"] .feedback.correct,
-[data-theme="dark"] .feedback.correct {
-  color: #6ee7b7;
-}
-
-[data-theme="dark-slate"] .feedback.wrong,
-[data-theme="dark"] .feedback.wrong {
-  color: #f87171;
-}
-
-/* Formal answer box */
-.formal-answer {
-  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
-  border-color: #0ea5e9;
-}
-
-[data-theme="dark-slate"] .formal-answer,
-[data-theme="dark"] .formal-answer {
-  background: linear-gradient(
-    135deg,
-    rgba(14, 165, 233, 0.2) 0%,
-    rgba(14, 165, 233, 0.1) 100%
-  );
-}
-
-[data-theme="dark-slate"] .formal-answer strong,
-[data-theme="dark-slate"] .formal-answer-text,
-[data-theme="dark"] .formal-answer strong,
-[data-theme="dark"] .formal-answer-text {
-  color: #7dd3fc;
-}
-
-/* Timer badge */
-.timer-badge {
-  background: linear-gradient(
-    135deg,
-    var(--color-primary-light) 0%,
-    #fce7f3 100%
-  );
-  color: var(--color-primary);
-  border-color: rgba(99, 102, 241, 0.1);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-[data-theme="dark-slate"] .timer-badge,
-[data-theme="dark"] .timer-badge {
-  background: var(--color-background-secondary);
-  border: 1px solid var(--color-border);
-}
-
-/* Answer boxes (result page) */
-.your-ans {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    color 0.3s ease;
-}
-
-.correct-ans {
-  background: var(--color-success-light);
-  border-color: var(--color-success);
-  color: var(--color-success);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    color 0.3s ease;
-}
-
-[data-theme="dark-slate"] .your-ans,
-[data-theme="dark"] .your-ans {
-  background: var(--color-background-secondary);
-}
-
-[data-theme="dark-slate"] .correct-ans,
-[data-theme="dark"] .correct-ans {
-  color: #6ee7b7;
-}
-
-/* Essay answer boxes */
-.essay-answer-box {
-  background: var(--color-background-secondary);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-.essay-answer-box.user-essay {
-  background: linear-gradient(
-    135deg,
-    #dbeafe 0%,
-    var(--color-background-secondary) 100%
-  );
-  border-color: #3b82f6;
-}
-
-[data-theme="dark-slate"] .essay-answer-box.user-essay,
-[data-theme="dark"] .essay-answer-box.user-essay {
-  background: rgba(59, 130, 246, 0.15);
-}
-
-[data-theme="dark-slate"] .essay-answer-box.user-essay .essay-text,
-[data-theme="dark"] .essay-answer-box.user-essay .essay-text {
-  color: #93c5fd;
-}
-
-.essay-answer-box.formal-essay {
-  background: linear-gradient(
-    135deg,
-    #d1fae5 0%,
-    var(--color-background-secondary) 100%
-  );
-  border-color: #10b981;
-}
-
-[data-theme="dark-slate"] .essay-answer-box.formal-essay,
-[data-theme="dark"] .essay-answer-box.formal-essay {
-  background: rgba(16, 185, 129, 0.15);
-}
-
-[data-theme="dark-slate"] .essay-answer-box.formal-essay .essay-text,
-[data-theme="dark"] .essay-answer-box.formal-essay .essay-text {
-  color: #6ee7b7;
-}
-
-/* Explanation boxes */
-.explanation {
-  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-  border-color: #3b82f6;
-  color: #1e40af;
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    color 0.3s ease;
-}
-
-[data-theme="dark-slate"] .explanation,
-[data-theme="dark"] .explanation {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
-}
-
-[data-theme="dark-slate"] .explanation strong,
-[data-theme="dark"] .explanation strong {
-  color: #bfdbfe;
-}
-
-/* Review cards */
-.review-card.correct {
-  background: linear-gradient(
-    to right,
-    var(--color-success-light) 0%,
-    var(--color-surface) 30%
-  );
-}
-
-.review-card.wrong {
-  background: linear-gradient(
-    to right,
-    var(--color-error-light) 0%,
-    var(--color-surface) 30%
-  );
-}
-
-.review-card.skipped {
-  background: linear-gradient(
-    to right,
-    var(--color-warning-light) 0%,
-    var(--color-surface) 30%
-  );
-}
-
-.review-card.essay-card {
-  background: linear-gradient(to right, #dbeafe 0%, var(--color-surface) 30%);
-}
-
-[data-theme="dark-slate"] .review-card.essay-card,
-[data-theme="dark"] .review-card.essay-card {
-  background: linear-gradient(
-    to right,
-    rgba(59, 130, 246, 0.15) 0%,
-    var(--color-surface) 30%
-  );
-}
-
-/* Badges section */
-.new-badges-section {
-  background: rgba(255, 255, 255, 0.5);
-  border-color: var(--color-primary-light);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-[data-theme="dark-slate"] .new-badges-section,
-[data-theme="dark"] .new-badges-section {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: var(--color-border);
-}
-
-.badge-item {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
-}
-
-[data-theme="dark-slate"] .badge-item,
-[data-theme="dark"] .badge-item {
-  background: var(--color-background-secondary);
-}
-
-/* Menu divider */
-.menu-divider {
-  background: var(--color-border);
-}
-
-/* Close menu button */
-.close-menu {
-  background: var(--color-background-secondary);
-  color: var(--color-text-primary);
-}
-
-.close-menu:hover {
-  background: var(--color-error);
-  color: white;
-}
-
-/* Answer comparison boxes (result page) */
-.ans-comparison {
-  background: var(--color-background-secondary);
-  border-color: var(--color-border-light);
-}
-
-/* Question navigator items */
-.menu-nav-item.current {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-.menu-nav-item.answered {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-}
-
-.menu-nav-item.correct {
-  background: var(--color-success-light);
-  border-color: var(--color-success);
-  color: var(--color-success);
-}
-
-[data-theme="dark-slate"] .menu-nav-item.correct,
-[data-theme="dark"] .menu-nav-item.correct {
-  color: #6ee7b7;
-}
-
-.menu-nav-item.wrong {
-  background: var(--color-error-light);
-  border-color: var(--color-error);
-  color: var(--color-error);
-}
-
-[data-theme="dark-slate"] .menu-nav-item.wrong,
-[data-theme="dark"] .menu-nav-item.wrong {
-  color: #f87171;
-}
-
-.menu-nav-item.unanswered {
-  background: var(--color-background-secondary);
-  border-color: var(--color-border);
-}
-
-/* Legend dots */
-.legend-dot.current {
-  background: var(--color-primary);
-}
-
-.legend-dot.answered {
-  background: var(--color-text-tertiary);
-}
-
-.legend-dot.correct {
-  background: var(--color-success);
-}
-
-.legend-dot.wrong {
-  background: var(--color-error);
-}
-
-/* Menu scrollbar */
-.menu-nav-items.list-view::-webkit-scrollbar-track {
-  background: var(--color-background-secondary);
-}
-
-.menu-nav-items.list-view::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-}
-
-.menu-nav-items.list-view::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
-}
-
-/* Side menu scrollbar */
-.side-menu nav::-webkit-scrollbar {
-  width: 6px;
-}
-
-.side-menu nav::-webkit-scrollbar-track {
-  background: var(--color-background-secondary);
-}
-
-.side-menu nav::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-.side-menu nav::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
-}
-
-/* Modal overlay and content */
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-}
-
-.modal-card {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.modal-card h2,
-.modal-card h3 {
-  color: var(--color-text-primary);
-}
-
-.modal-card p {
-  color: var(--color-text-secondary);
-}
-
-/* Mode selection buttons */
-.mode-btn {
-  background: var(--color-background-secondary);
-  border-color: var(--color-border);
-  color: var(--color-text-primary);
-}
-
-.mode-btn:hover {
-  background: var(--color-primary-light);
-  border-color: var(--color-primary);
-}
-
-.mode-btn .icon {
-  filter: grayscale(0.2);
-}
-
-.mode-btn:hover .icon {
-  filter: grayscale(0);
-}
-
-/* Close modal button */
-.close-modal {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-}
-
-.close-modal:hover {
-  color: var(--color-text-primary);
-}
 
 /* Action buttons in menu */
 .action-btn {

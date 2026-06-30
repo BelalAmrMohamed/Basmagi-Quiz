@@ -43,6 +43,7 @@ body {
   text-align: center;
   position: relative;
   overflow: hidden;
+  background-color: var(--color-surface);
 }
 
 .header::before {
@@ -90,6 +91,7 @@ body {
   justify-content: center;
   gap: 40px;
   margin-bottom: 32px;
+  background-color: var(--color-surface);
 }
 
 .stats-text {
@@ -306,6 +308,8 @@ body {
   padding: 16px;
   border-radius: 12px;
   border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.5);
+  border-color: var(--color-primary-light);
 }
 
 .new-badges-section h3 {
@@ -321,6 +325,12 @@ body {
 .new-badges-section h3 svg {
   width: 16px;
   height: 16px;
+}
+
+[data-theme="dark-slate"] .new-badges-section,
+[data-theme="dark"] .new-badges-section {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--color-border);
 }
 
 .date-badge {
@@ -373,6 +383,12 @@ body {
   box-shadow: var(--shadow-sm);
   width: 80px;
   border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+[data-theme="dark-slate"] .badge-item,
+[data-theme="dark"] .badge-item {
+  background: var(--color-background-secondary);
 }
 
 .badge-icon {
@@ -476,6 +492,43 @@ body {
   border-left-color: #3b82f6;
 }
 
+.review-card.correct {
+  background: linear-gradient(
+    to right,
+    var(--color-success-light) 0%,
+    var(--color-surface) 30%
+  );
+}
+
+.review-card.wrong {
+  background: linear-gradient(
+    to right,
+    var(--color-error-light) 0%,
+    var(--color-surface) 30%
+  );
+}
+
+.review-card.skipped {
+  background: linear-gradient(
+    to right,
+    var(--color-warning-light) 0%,
+    var(--color-surface) 30%
+  );
+}
+
+.review-card.essay-card {
+  background: linear-gradient(to right, #dbeafe 0%, var(--color-surface) 30%);
+}
+
+[data-theme="dark-slate"] .review-card.essay-card,
+[data-theme="dark"] .review-card.essay-card {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.15) 0%,
+    var(--color-surface) 30%
+  );
+}
+
 /* Review card header */
 .review-header {
   display: flex;
@@ -547,6 +600,7 @@ body {
   padding: 20px;
   border-radius: 12px;
   border: 1px solid var(--color-border-light);
+  background: var(--color-background-secondary);
 }
 
 .ans-box {
@@ -666,7 +720,14 @@ body {
   padding: 18px 20px;
   border-radius: 12px;
   border: 2px solid var(--color-border);
+  background: var(--color-background-secondary);
 }
+
+[data-theme="dark-slate"] .essay-answer-box.user-essay,
+[data-theme="dark"] .essay-answer-box.user-essay {
+  background: rgba(59, 130, 246, 0.15);
+}
+
 
 .essay-answer-box small {
   gap: 5px;
@@ -695,6 +756,16 @@ body {
 }
 .essay-answer-box.formal-essay {
   border-color: var(--color-success, #10b981);
+  background: linear-gradient(
+    135deg,
+    #d1fae5 0%,
+    var(--color-background-secondary) 100%
+  );
+}
+
+[data-theme="dark-slate"] .essay-answer-box.formal-essay,
+[data-theme="dark"] .essay-answer-box.formal-essay {
+  background: rgba(16, 185, 129, 0.15);
 }
 
 /* ─── Explanation ─────────────────────────────────────────────────────────── */
@@ -705,6 +776,19 @@ body {
   font-size: 0.9375rem;
   border-left: 4px solid var(--color-primary, #6366f1);
   border: 1px solid var(--color-border-light);
+  background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+  color: #1e40af;
+}
+
+[data-theme="dark-slate"] .explanation,
+[data-theme="dark"] .explanation {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+[data-theme="dark-slate"] .explanation strong,
+[data-theme="dark"] .explanation strong {
+  color: #bfdbfe;
 }
 
 .explanation strong {
@@ -829,7 +913,6 @@ body {
 }
 
 .watermark::before {
-  content: "✨";
   font-size: 1.25rem;
   display: inline-flex;
   align-items: center;
@@ -1647,10 +1730,13 @@ dialog.quiz-info-dialog {
   border: 2px solid var(--color-border);
   cursor: pointer;
   transition: all 0.3s ease;
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .option-row:hover {
   transform: translateX(4px);
+  background: var(--color-primary-light);
 }
 
 .option-row:focus-within {
@@ -1688,4 +1774,14 @@ dialog.quiz-info-dialog {
 .option-row.locked {
   cursor: not-allowed;
   opacity: 0.75;
+}
+
+.option-row.locked.correct {
+  background: var(--color-success-light) !important;
+  border-color: var(--color-success);
+}
+
+.option-row.locked.wrong {
+  background: var(--color-error-light) !important;
+  border-color: var(--color-error);
 }

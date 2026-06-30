@@ -2325,18 +2325,28 @@ function qz(quiz, field) {
     // Always prefer the top-level id (the storage key); fall back to meta.id for
     // legacy payloads that accidentally stored it only inside meta.
     case "id":
-      return quiz.id || quiz.meta?.id || "";
+      return quiz.meta?.id || "";
     // path is a top-level field on manifest exams, not stored in user quizzes
     case "path":
-      return quiz.path || quiz.meta?.path || "";
+      return quiz.meta?.path || "";
     case "title":
-      return quiz.meta?.title || quiz.title || "";
+      return quiz.meta?.title || "";
     case "description":
-      return quiz.meta?.description || quiz.description || "";
+      return quiz.meta?.description || "";
     case "source":
-      return quiz.meta?.source || quiz.source || "";
+      return quiz.meta?.source || "";
     case "createdAt":
-      return quiz.meta?.createdAt || quiz.createdAt || "";
+      return quiz.meta?.createdAt || "";
+    case "author":
+      return quiz.meta?.author || "";
+    case "author_email":
+      return quiz.meta?.author_email || "";
+    case "password":
+      return quiz.meta?.password || "";
+    case "view":
+      return quiz.meta?.view || "";
+    case "mode":
+      return quiz.meta?.mode || "";
     case "count":
       return quiz.stats?.questionCount ?? quiz.questions?.length ?? 0;
     // FIX: guard against undefined questionTypes before calling .join()
@@ -2858,6 +2868,16 @@ function createExamCard(exam) {
       id: exam.id,
       title: exam.title || exam.id,
       path: exam.path,
+      source: exam.source || null,
+      description: exam.description || null,
+      createdAt: exam.createdAt || null,
+      author: exam.author || null,
+      author_email: exam.author_email || null,
+      password: exam.password || null,
+      view: exam.view || null, // This one doesn't show up
+      mode: exam.mode || null, // This one doesn't show up
+      questionTypes: exam.type || null, // This one doesn't show up
+      questionCount: exam.count || null,
     };
     // Load exam data (HANDLES .js vs .json issue)
     let questions = [];
@@ -2950,8 +2970,16 @@ function createExamCard(exam) {
       const questions = data.questions || [];
       const config = {
         title: exam.title || exam.id,
-        description: exam.description,
-        source: exam.source,
+        source: exam.source || null,
+        description: exam.description || null,
+        createdAt: exam.createdAt || null,
+        author: exam.author || null,
+        author_email: exam.author_email || null,
+        password: exam.password || null,
+        view: exam.view || null, // This one doesn't show up
+        mode: exam.mode || null, // This one doesn't show up
+        questionTypes: exam.type || null, // This one doesn't show up
+        questionCount: exam.count || null,
       };
       return buildQuizText(config, questions);
     }, exam.title || exam.id);
@@ -3589,11 +3617,23 @@ function showUserQuizDownloadPopup(quiz) {
   grid.setAttribute("role", "group");
   grid.setAttribute("aria-label", "خيارات التنزيل");
 
-  // Config object for export functions (schema-normalised)
+  // Config object for export functions
   const config = {
     id: quiz.id,
     title: qz(quiz, "title"),
     description: qz(quiz, "description"),
+
+    // title: qz(quiz, "title") || quiz.id,
+    source: qz(quiz, "source"),
+    createdAt: qz(quiz, "createdAt"),
+    author: qz(quiz, "author"),
+    author_email: qz(quiz, "author_email"),
+    password: qz(quiz, "password"),
+    view: qz(quiz, "view"), // This one doesn't show up
+    mode: qz(quiz, "mode"), // This one doesn't show up
+    questionTypes: qz(quiz, "type"), // This one doesn't show up
+    questionCount: qz(quiz, "count"),
+
   };
 
   const questions = quiz.questions;
@@ -3623,6 +3663,14 @@ function showUserQuizDownloadPopup(quiz) {
         title: qz(quiz, "title") || quiz.id,
         description: qz(quiz, "description"),
         source: qz(quiz, "source"),
+        createdAt: qz(quiz, "createdAt"),
+        author: qz(quiz, "author"),
+        author_email: qz(quiz, "author_email"),
+        password: qz(quiz, "password"),
+        view: qz(quiz, "view"), // This one doesn't show up
+        mode: qz(quiz, "mode"), // This one doesn't show up
+        questionTypes: qz(quiz, "type"), // This one doesn't show up
+        questionCount: qz(quiz, "count"),
       };
       return buildQuizText(config, quiz.questions);
     },
