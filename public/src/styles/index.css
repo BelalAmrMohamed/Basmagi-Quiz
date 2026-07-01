@@ -209,6 +209,24 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
+/*
+ * Danger variant — used by the user-quiz Action Overlay's delete option.
+ * Same shape/layout as a regular .exam-action-btn, just colored to signal
+ * a destructive action (mirrors the error tokens used elsewhere, e.g. the
+ * old standalone .user-quiz-delete-btn icon this option replaced).
+ */
+.exam-action-btn--danger {
+  background: var(--color-error-light);
+  border-color: transparent;
+  color: var(--color-error);
+}
+
+.exam-action-btn--danger:hover {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
+}
+
 .exam-action-btn--cancel {
   justify-content: center;
   width: auto;
@@ -1042,6 +1060,75 @@ Container
   box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 
+/*
+ * Spacer so quiz cards don't hug the create-quiz card above them.
+ * Applied here rather than as margin-top on .user-quizzes-container so the
+ * gap also appears when the container is absent (empty state, etc.).
+ */
+.user-create-quiz-card {
+  margin-bottom: 20px;
+}
+
+/*
+ * Dedicated wrapper for the quiz-card list. Gets the bordered, rounded
+ * treatment that the outer grid-container used to apply to everything
+ * (including the sign-in button and create card). Now only quiz cards sit
+ * inside this border, keeping the controls above visually separate.
+ *
+ * Desktop: spans all grid columns and repeats the same column template so
+ *   cards flow into a multi-column grid exactly like normal exam cards do.
+ * Mobile (≤640px): solid border + border-radius, same list-row style as
+ *   normal exam card containers, overriding the outer grid-container border
+ *   which is reset to none below so only this inner container shows it.
+ */
+.user-quizzes-container {
+  /* Span all columns of the parent grid */
+  grid-column: 1 / -1;
+  /* Repeat the same 4-column grid so cards inside flow normally */
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1280px) {
+  .user-quizzes-container {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  .user-quizzes-container {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Inner quiz-card list gets the border */
+  .user-quizzes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  /* First quiz card: no top border (the container border serves as the top) */
+  .user-quizzes-container .exam-card.user-quiz-card:first-child {
+    border-top: none !important;
+  }
+
+  /* Outer drop-zone container: strip the border the global .grid-container
+     mobile rule adds — we don't want a double border or the controls wrapped */
+  .grid-container.user-quizzes-drop-zone {
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+}
+
 /* Premium Card Design */
 .card,
 .category-card,
@@ -1140,6 +1227,7 @@ Container
   font-size: 0.9rem;
   color: var(--color-text-secondary);
   direction: rtl;
+  margin-bottom: 10px !important;
 }
 
 /*
@@ -1260,14 +1348,16 @@ Container
   }
 }
 
-/* ── user-quiz-card btnWrap: inline flex row, pushes to bottom of column ──── */
-/* display/gap/width were previously set as inline styles in JS — now in CSS. */
-.exam-card.user-quiz-card .exam-card-actions-wrap {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: auto; /* push buttons to bottom of the flex-column card */
-  width: 100%;
+/* ── user-quiz-card btnWrap: desktop-only — full-width row at the card bottom.
+   Scoped to ≥641px so the mobile list-row layout never fights this rule.      */
+@media (min-width: 641px) {
+  .exam-card.user-quiz-card .exam-card-actions-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    width: 100%;
+  }
 }
 
 /* ── User-quiz cards: full flex-column layout ────────────────────────────── */
@@ -1280,7 +1370,27 @@ Container
 .exam-card.user-quiz-card {
   align-self: start;
   overflow: visible !important; /* accent bar corners are rounded; no clip needed */
-  text-align: start;
+  /* No text-align override here — inherits "center" from base .exam-card,
+     keeping the title centred on desktop to match normal quiz cards. */
+}
+
+/*
+ * Suppress the shared .exam-card::before hover-accent strip on user-quiz-card.
+ * The strip is absolutely-positioned and overflow:visible on this card lets it
+ * bleed outside the border-radius at the top corners. user-quiz-card uses its
+ * own .user-quiz-accent-bar element (always-visible, clipped by border-radius
+ * on the bar itself) so the ::before strip is redundant here.
+ */
+.exam-card.user-quiz-card::before {
+  display: none !important;
+}
+
+/* Types-row (badge chips): right-justify within the meta bar so the chips
+   sit flush right — mirroring text-align:right on plain .exam-types-subtext.
+   display:flex overrides text-align, so justify-content is what actually
+   controls which side the chips stack toward. */
+.user-quiz-types-row.exam-types-subtext {
+  justify-content: flex-end;
 }
 
 .exam-types-subtext {
@@ -1336,7 +1446,8 @@ Container
 
   /* ── Category icon: small pill on the left ───────────────────────────────── */
   .category-card .icon,
-  .phone-only-emoji {
+  .phone-only-emoji,
+.user-quiz--phone-only-emoji {
     font-size: 1.25rem;
     margin-bottom: 0;
     display: flex;
@@ -2133,19 +2244,6 @@ Container
   border-radius: 10px 10px 0 0;
 }
 
-/* "Your Quiz" badge */
-.user-quiz-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 12px;
-  margin-left: 50px;
-  margin-right: 50px;
-}
-
 /* Quiz title */
 .user-quiz-title {
   margin: 0 0 8px 0;
@@ -2153,27 +2251,12 @@ Container
   font-size: 1.1rem;
 }
 
-/* Quiz description */
-.user-quiz-desc {
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-  margin: 0 0 12px 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  direction: ltr;
-}
-
 /* Metadata row (question count + date) */
 .user-quiz-metadata {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 15px;
   padding-top: 15px;
-  border-top: 1px solid var(--color-border);
 }
 
 /* Question count span */
@@ -2182,104 +2265,28 @@ Container
   font-size: 0.85rem;
 }
 
-/* Created date span */
-.user-quiz-date {
-  color: var(--color-text-tertiary);
-  font-size: 0.85rem;
-}
-
 /* Question type chips row */
 .user-quiz-types-row {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
-/* Action buttons container */
-.user-quiz-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 15px;
-}
-
-/* Play / primary action button inside actions */
-.user-quiz-actions .btn-primary {
-  flex: 1;
-  padding: 10px 16px;
-  background: var(--gradient-accent);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-/* Delete button */
-.user-quiz-delete-btn {
+/*
+ * Admin upload button — top-left absolute on desktop, mirroring the ⋮ moreBtn
+ * which sits top-right. On mobile it's hidden here (mobile-only class controls
+ * visibility — it appears inside the Action Overlay instead via mobile-only).
+ */
+.admin-upload-btn {
   position: absolute;
   top: 14px;
   left: 14px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-error-light);
-  color: var(--color-error);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
   z-index: 2;
-}
-
-.user-quiz-delete-btn:hover {
-  background: var(--color-error);
-  color: white;
-  transform: scale(1.05);
-}
-
-/* Edit button */
-.user-quiz-edit-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
+  /* Reset the old block-level layout — this is now a positioned container */
+  margin-top: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 2;
-}
-
-.user-quiz-edit-btn:hover {
-  background: var(--color-primary);
-  color: white;
-  transform: scale(1.05);
-}
-
-/* Download button */
-.user-quiz-download-btn {
-  flex: 1;
-  padding: 10px 16px;
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
+  justify-content: flex-start;
 }
 
 /* ============================================================================
@@ -2450,12 +2457,14 @@ Container
 /* ============================================================================
    Custom utility classes for responsive visibility & Mobile Layout Fixes
    ============================================================================ */
-.phone-only-emoji {
+.phone-only-emoji,
+.user-quiz--phone-only-emoji {
   display: none;
 }
 
 @media (max-width: 640px) {
-  .phone-only-emoji {
+  .phone-only-emoji,
+.user-quiz--phone-only-emoji {
     display: inline;
   }
 
@@ -2468,23 +2477,144 @@ Container
     display: none;
   }
 
-  /* User Quizzes Mobile Layout Fixes */
-  .grid-container.user-quizzes-drop-zone {
-    border: none !important;
+  /* ── User-quiz cards: same compact list-row as normal exam cards ── */
+
+  /* Card shell */
+  .exam-card.user-quiz-card {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 10px !important;
+    min-height: 52px !important;
+    height: auto !important;
     border-radius: 0 !important;
-    gap: 16px !important;
-    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-top: 1px solid var(--color-border) !important;
+    margin-top: 0 !important;
+    text-align: left !important;
+    direction: ltr !important;
+    overflow: hidden !important;
   }
 
-  .exam-card.user-quiz-card {
-    border-radius: 12px !important;
-    border: 1px solid var(--color-border) !important;
-    padding: 16px !important;
+  /* No decorative gradient bar — no room in compact row */
+  .exam-card.user-quiz-card .user-quiz-accent-bar {
+    display: none !important;
+  }
+
+  /* No lift animation on mobile */
+  .exam-card.user-quiz-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* card-text: override display:contents (desktop base) → flex column
+     so it participates in the horizontal flex row as the stretchy middle */
+  .exam-card.user-quiz-card .card-text {
     display: flex !important;
     flex-direction: column !important;
-    height: auto !important;
-    box-shadow: var(--shadow-sm) !important;
-    align-items: stretch !important;
+    gap: 2px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  /* Title: compact, single line, truncated */
+  .exam-card.user-quiz-card h3 {
+    font-size: 0.83rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    direction: ltr !important;
+    width: 100% !important;
+  }
+
+  /* Meta bar: reset absolute desktop positioning → static sub-row under title */
+  .exam-card.user-quiz-card .exam-card-meta {
+    position: static !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  /* Question count: compact muted text, after the chips */
+  .exam-card.user-quiz-card .exam-question-count {
+    font-size: 0.65rem !important;
+    color: var(--color-text-tertiary, #888) !important;
+    order: 2 !important;
+    direction: rtl !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Type chips row: stays as badges, smaller, left-to-right reading order */
+  .exam-card.user-quiz-card .user-quiz-types-row {
+    order: 1 !important;
+    flex-wrap: wrap !important;
+    gap: 3px !important;
+    margin-top: 0 !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Individual chips: smaller font + tighter padding for compact row */
+  .exam-card.user-quiz-card .user-quiz-types-row span {
+    font-size: 0.6rem !important;
+    padding: 1px 6px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Actions wrap: static, pushed to far right, horizontal pill buttons */
+  .exam-card.user-quiz-card .exam-card-actions-wrap {
+    position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    margin-left: auto !important;
+    width: auto !important;
+    flex-wrap: nowrap !important;
+  }
+
+  /* Play button: compact icon-only pill */
+  .exam-card.user-quiz-card .start-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
+    flex: 0 0 32px !important;
+    min-width: 0 !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .exam-card.user-quiz-card .start-btn::after {
+    content: "▶";
+    font-size: 0.75rem;
+    color: white;
+  }
+
+  /* Download button: hidden on mobile (same as normal exam cards) */
+  .exam-card.user-quiz-card .start-btn.desktop-download-btn {
+    display: none !important;
+  }
+
+  /* Admin upload button: hidden from card on mobile — lives in overlay instead */
+  .exam-card.user-quiz-card .admin-upload-btn {
+    display: none !important;
   }
 
   .user-create-quiz-card {

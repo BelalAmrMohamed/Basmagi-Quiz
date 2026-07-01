@@ -1669,7 +1669,12 @@ function renderUserQuizzesView() {
     // Ensure drag-and-drop import is enabled for this section
     setupUserQuizzesDropZone();
 
-    // 2. Grid for Quizzes
+    // 2. Dedicated container for quiz cards — gets its own border/border-radius
+    //    so the sign-in button and create card sit outside the bordered list.
+    const quizzesContainer = document.createElement("div");
+    quizzesContainer.className = "user-quizzes-container";
+
+    // 3. Quiz cards (or empty state) go into quizzesContainer, not container
     if (userQuizzes.length === 0) {
       // Empty state
       const emptyState = document.createElement("div");
@@ -1688,13 +1693,15 @@ function renderUserQuizzesView() {
         <h3 style="margin-bottom: 10px;">لم تقم بإنشاء أي اختبارات حتى الآن</h3>
         <p style="color: var(--color-text-secondary);">انقر على الزر الذي في الأعلى للبدء</p>
       `;
-      container.appendChild(emptyState);
+      quizzesContainer.appendChild(emptyState);
     } else {
       userQuizzes.forEach((quiz, index) => {
         const quizCard = createUserQuizCard(quiz, index);
-        container.appendChild(quizCard);
+        quizzesContainer.appendChild(quizCard);
       });
     }
+
+    container.appendChild(quizzesContainer);
   } catch (error) {
     console.error("Error rendering user quizzes view:", error);
     if (container) {
@@ -2574,64 +2581,94 @@ function createUserQuizCard(quiz, index) {
   const card = document.createElement("div");
   card.className = "exam-card user-quiz-card";
   card.setAttribute("role", "article");
-  card.setAttribute("aria-label", `اختبار: ${qz(quiz, "title")}`);
+  card.setAttribute("aria-label", `إمتحان: ${qz(quiz, "title")}`);
   card.setAttribute(
     "title",
     `${qz(quiz, "description") ? `Description: ${qz(quiz, "description")}` : `Type: ${qz(quiz, "type")}`}`,
   );
+  card.style.position = "relative";
 
-  // Gradient accent on top
-  const accentBar = document.createElement("div");
-  accentBar.setAttribute("aria-hidden", "true");
-  accentBar.className = "user-quiz-accent-bar";
-  card.appendChild(accentBar);
+  const h = document.createElement("h3");
+  h.innerHTML = `<span class="user-quiz--phone-only-emoji">👤</span> ${qz(quiz, "title") || qz(quiz, "id")}`;
 
-  // User badge
-  const badge = document.createElement("div");
-  badge.textContent = "👤 اختبارك";
-  badge.className = "user-quiz-badge";
-
-  card.appendChild(badge);
-
-  // Quiz title
-  const titleEl = document.createElement("h3");
-  titleEl.textContent = qz(quiz, "title");
-  titleEl.className = "user-quiz-title";
-  card.appendChild(titleEl);
-
-  // Description
-  if (qz(quiz, "description")) {
-    const desc = document.createElement("p");
-    desc.textContent = qz(quiz, "description");
-    desc.className = "user-quiz-desc";
-    card.appendChild(desc);
-  }
-
-  // Metadata
-  const metadata = document.createElement("div");
-  metadata.className = "user-quiz-metadata";
-
-  const questionsCount = document.createElement("span");
+  const questionCountLine = document.createElement("p");
+  questionCountLine.className = "exam-question-count";
   const count = qz(quiz, "count");
-  questionsCount.textContent = `📝 ${formatArabicQuestionCount(count)}`;
-  questionsCount.className = "user-quiz-count";
+  questionCountLine.textContent = formatArabicQuestionCount(count);
 
-  const createdDate = document.createElement("span");
-  const rawDate = qz(quiz, "createdAt");
-  const dateObj = rawDate ? new Date(rawDate) : null;
-  createdDate.textContent =
-    dateObj && !isNaN(dateObj) ? dateObj.toLocaleDateString() : rawDate || "";
-  createdDate.className = "user-quiz-date";
+  // ── Play button — mirrors createExamCard's .start-btn ───────────────────
+  const playBtn = document.createElement("button");
+  playBtn.className = "start-btn";
+  playBtn.type = "button";
+  playBtn.style.flex = "1";
+  playBtn.style.minWidth = "0";
+  playBtn.textContent = "إبدأ الإختبار";
+  playBtn.setAttribute("aria-label", `بدء اختبار ${qz(quiz, "title")}`);
+  playBtn.onclick = (e) => {
+    e.stopPropagation();
+    playUserQuiz(quiz);
+  };
 
-  metadata.appendChild(questionsCount);
-  metadata.appendChild(createdDate);
-  card.appendChild(metadata);
+  // ── Download button — mirrors createExamCard's desktop-download-btn ─────
+  const userQuizPassword = qz(quiz, "password");
+  const downloadBtn = document.createElement("button");
+  downloadBtn.className = userQuizPassword
+    ? "start-btn desktop-download-btn is-password-protected"
+    : "start-btn desktop-download-btn";
+  downloadBtn.type = "button";
+  downloadBtn.style.flex = "1";
+  downloadBtn.style.minWidth = "0";
+  downloadBtn.style.background =
+    "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)";
+  downloadBtn.style.color = "white";
+  downloadBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
+  downloadBtn.innerHTML = userQuizPassword
+    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+    : "تحميل";
+  downloadBtn.setAttribute(
+    "aria-label",
+    userQuizPassword
+      ? `تحميل اختبار ${qz(quiz, "title")} (محمي بكلمة مرور)`
+      : `تحميل اختبار ${qz(quiz, "title")}`,
+  );
+  if (userQuizPassword) downloadBtn.title = "هذا الإمتحان محمي بكلمة مرور";
+  downloadBtn.onclick = (e) => {
+    e.stopPropagation();
+    showUserQuizDownloadPopup(quiz);
+  };
 
-  // ── Question type badges ─────────────────────────────────────────────────────
+  // ── More (⋮) button — opens the Action Overlay ──────────────────────────
+  const moreBtn = document.createElement("button");
+  moreBtn.className = "exam-more-btn";
+  moreBtn.type = "button";
+  moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+  moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${qz(quiz, "title") || qz(quiz, "id")}`);
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    showUserQuizActionsOverlay(quiz);
+  };
+
+  const btnWrap = document.createElement("div");
+  btnWrap.className = "exam-card-actions-wrap";
+  btnWrap.appendChild(moreBtn);
+  btnWrap.appendChild(playBtn);
+  btnWrap.appendChild(downloadBtn);
+
+  // ── Build text wrapper (display:contents on desktop, flex-col on mobile) ──
+  const textWrap = document.createElement("div");
+  textWrap.className = "card-text";
+  textWrap.appendChild(h);
+
+  // Meta wrapper: holds types + count — same role as .exam-card-meta, but
+  // keeps the uniquely-designed typesRow chips as a 👤 user-quiz indicator.
+  const metaWrap = document.createElement("div");
+  metaWrap.className = "exam-card-meta user-quiz-card-meta";
+
+  // ── Question type badges (kept unique to user quizzes) ──────────────────
   const typeStr = qz(quiz, "type");
   if (typeStr) {
     const typesRow = document.createElement("div");
-    typesRow.className = "user-quiz-types-row";
+    typesRow.className = "user-quiz-types-row exam-types-subtext";
     typeStr.split(" · ").forEach((t) => {
       const chip = document.createElement("span");
       chip.textContent = t;
@@ -2650,86 +2687,27 @@ function createUserQuizCard(quiz, index) {
       `;
       typesRow.appendChild(chip);
     });
-    card.appendChild(typesRow);
+    metaWrap.appendChild(typesRow);
   }
 
-  // Action buttons
-  const actions = document.createElement("div");
-  actions.className = "user-quiz-actions";
+  metaWrap.appendChild(questionCountLine);
+  textWrap.appendChild(metaWrap);
 
-  const playBtn = document.createElement("button");
-  playBtn.textContent = "إبدأ الإختبار";
-  playBtn.className = "btn btn-primary";
-  playBtn.type = "button";
-  playBtn.setAttribute("aria-label", `بدء اختبار ${qz(quiz, "title")}`);
-  playBtn.onclick = (e) => {
-    e.stopPropagation();
-    playUserQuiz(quiz);
-  };
-
-  const deleteBtn = document.createElement("button");
-  deleteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
-  deleteBtn.type = "button";
-  deleteBtn.setAttribute("aria-label", `حذف اختبار ${qz(quiz, "title")}`);
-  deleteBtn.className = "user-quiz-delete-btn";
-  deleteBtn.onclick = (e) => {
-    e.stopPropagation();
-    deleteUserQuiz(quiz.id);
-  };
-
-  const downloadBtn = document.createElement("button");
-  const userQuizPassword = qz(quiz, "password");
-  downloadBtn.innerHTML = userQuizPassword
-    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
-    : "تحميل";
-  downloadBtn.type = "button";
-  downloadBtn.setAttribute(
-    "aria-label",
-    userQuizPassword
-      ? `تحميل اختبار ${qz(quiz, "title")} (محمي بكلمة مرور)`
-      : `تحميل اختبار ${qz(quiz, "title")}`,
-  );
-  downloadBtn.className = userQuizPassword
-    ? "btn user-quiz-download-btn is-password-protected"
-    : "btn user-quiz-download-btn";
-
-  downloadBtn.title = userQuizPassword
-    ? "هذا الإمتحان محمي بكلمة مرور"
-    : "Download Quiz";
-  downloadBtn.onclick = (e) => {
-    e.stopPropagation();
-    showUserQuizDownloadPopup(quiz);
-  };
-
-  const editBtn = document.createElement("button");
-  editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
-  editBtn.type = "button";
-  editBtn.setAttribute("aria-label", `تعديل اختبار ${qz(quiz, "title")}`);
-  editBtn.className = "user-quiz-edit-btn";
-  editBtn.onclick = (e) => {
-    e.stopPropagation();
-    window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
-  };
-
-  actions.appendChild(playBtn);
-  actions.appendChild(downloadBtn);
-
-  card.appendChild(deleteBtn);
-  card.appendChild(editBtn);
+  // DOM order: [textWrap] [btnWrap] — same as createExamCard
+  card.appendChild(textWrap);
+  card.appendChild(btnWrap);
 
   // ── Admin Upload Button (visible only to authenticated admins) ──────────
-  // isAdminAuthenticated() checks the in-memory token — no server call needed here.
-  // hasAdminSessionHint() checks sessionStorage as a fallback for UI hint.
+  // Desktop: absolutely positioned top-left (mirrors moreBtn at top-right).
+  // Mobile: hidden here via .mobile-only suppression — shown inside the
+  //         Action Overlay instead (added dynamically in showUserQuizActionsOverlay).
   if (isAdminAuthenticated() || hasAdminSessionHint()) {
     const uploadRow = document.createElement("div");
-    uploadRow.style.cssText =
-      "margin-top: 10px; display: flex; justify-content: flex-end;";
+    uploadRow.className = "admin-upload-btn";
     const uploadBtn = createUploadButton(quiz);
     uploadRow.appendChild(uploadBtn);
     card.appendChild(uploadRow);
   }
-
-  card.appendChild(actions);
 
   return card;
 }
@@ -2777,6 +2755,151 @@ async function deleteUserQuiz(quizId) {
     console.error("Error deleting quiz:", error);
     alert("Error deleting quiz. Please try again.");
   }
+}
+
+// Trash glyph used by the user-quiz Action Overlay's delete option.
+const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>`;
+
+// Pencil glyph — used by the "تعديل الإمتحان" row inside the Action Overlay
+// (shown on all screen sizes; no standalone card icon exists for edit anymore).
+const EDIT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
+
+/**
+ * Action Overlay for user-made quizzes — styled identically to
+ * showExamActionsOverlay (same .exam-actions-overlay/.exam-actions-sheet/
+ * .exam-action-btn classes), but with only the two options that make sense
+ * for a locally-stored, non-shareable quiz: show info and delete. No
+ * copy-link/share/download here since user quizzes aren't shareable (they
+ * live in localStorage, not on a server), and Download already has its own
+ * dedicated button on the card.
+ */
+function showUserQuizActionsOverlay(quiz) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay exam-actions-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const sheet = document.createElement("div");
+  sheet.className = "exam-actions-sheet";
+
+  // Admin upload — only rendered for authenticated admins, and only visible
+  // on mobile (mobile-only hides it at ≥641px where the card's top-left
+  // absolute .admin-upload-btn is already shown instead).
+  if (isAdminAuthenticated() || hasAdminSessionHint()) {
+    const adminOpt = document.createElement("div");
+    adminOpt.className = "exam-action-btn mobile-only";
+    adminOpt.style.cursor = "default"; // it's a wrapper, not a button itself
+    const uploadBtn = createUploadButton(quiz);
+    adminOpt.appendChild(uploadBtn);
+    adminOpt.addEventListener("click", (e) => e.stopPropagation());
+    sheet.appendChild(adminOpt);
+  }
+
+  // Edit — present in the overlay on all screen sizes (desktop and mobile).
+  // There is no longer a standalone edit icon on the card itself — the overlay
+  // is the single entry-point for editing on both form factors.
+  const editOpt = document.createElement("button");
+  editOpt.type = "button";
+  editOpt.className = "exam-action-btn";
+  editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الإمتحان</span>`;
+  editOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
+  };
+
+  const infoOpt = document.createElement("button");
+  infoOpt.type = "button";
+  infoOpt.className = "exam-action-btn";
+  infoOpt.innerHTML = `${INFO_ICON_SVG}<span>معلومات الإمتحان</span>`;
+  infoOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    showUserQuizInfoModal(quiz);
+  };
+
+  const deleteOpt = document.createElement("button");
+  deleteOpt.type = "button";
+  deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+  deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
+  deleteOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    deleteUserQuiz(quiz.id);
+  };
+
+  sheet.appendChild(editOpt);
+  sheet.appendChild(infoOpt);
+  sheet.appendChild(deleteOpt);
+  modal.appendChild(sheet);
+  document.body.appendChild(modal);
+}
+
+/**
+ * "معلومات الإمتحان" info modal for user-made quizzes.
+ *
+ * Mirrors showQuizInfoModal's UI (same modal-card/table markup and the
+ * shared buildQuizInfoRows/renderQuizInfoTable row logic) but skips the
+ * async fetch entirely: user quizzes are stored in full in localStorage
+ * (quiz.meta/quiz.stats/quiz.questions), so the `config` object can be
+ * built synchronously straight from qz() — there's no `path` to fetch.
+ */
+function showUserQuizInfoModal(quiz) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "quizInfoModalTitle");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card quiz-info-modal-card";
+
+  const h2 = document.createElement("h2");
+  h2.id = "quizInfoModalTitle";
+  h2.textContent = "معلومات الإمتحان";
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "quiz-info-table-wrap";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "close-modal";
+  closeBtn.textContent = "إغلاق";
+  closeBtn.onclick = () => modal.remove();
+
+  modalCard.appendChild(h2);
+  modalCard.appendChild(tableWrap);
+  modalCard.appendChild(closeBtn);
+  modal.appendChild(modalCard);
+
+  // Build config directly from already-available data — no fetch needed,
+  // since user quizzes carry everything in quiz.meta/quiz.stats already.
+  const config = {
+    title: qz(quiz, "title") || quiz.id,
+    description: qz(quiz, "description") || null,
+    category: null, // user quizzes aren't filed under a category/path
+    path: null,
+    createdAt: qz(quiz, "createdAt") || null,
+    source: qz(quiz, "source") || null,
+    author: qz(quiz, "author") || null,
+    mode: qz(quiz, "mode") || null,
+    view: qz(quiz, "view") || null,
+    questionTypes: formatQuestionTypesForDownload(
+      quiz.stats?.questionTypes,
+    ),
+  };
+  const questionCount = qz(quiz, "count") || null;
+
+  const ROWS = buildQuizInfoRows(config, questionCount);
+  renderQuizInfoTable(tableWrap, ROWS);
+
+  document.body.appendChild(modal);
 }
 
 function renderCategory(category) {
@@ -3003,7 +3126,7 @@ function createExamCard(exam) {
   card.className = "card exam-card";
   card.setAttribute("role", "article");
   card.setAttribute("title", `${exam.description || exam.title}`);
-  card.setAttribute("aria-label", `اختبار: ${exam.title || exam.id}`);
+  card.setAttribute("aria-label", `إمتحان: ${exam.title || exam.id}`);
 
   // ── DB source accent border ───────────────────────────────────────────────
   if (exam.dbSource === "db") card.classList.add("exam-card--db");
@@ -3888,6 +4011,62 @@ function showExamActionsOverlay(exam, showDownloadPopup) {
 }
 
 /**
+ * Builds the label/value row list for the "معلومات الإمتحان" info table.
+ * Shared by showQuizInfoModal (normal/manifest exams) and
+ * showUserQuizInfoModal (user-created quizzes) so both render identical
+ * rows from a `config` object shaped the same way, plus a question count.
+ * Rows with no value are dropped.
+ */
+function buildQuizInfoRows(config, questionCount) {
+  return [
+    { label: "العنوان", val: config.title },
+    { label: "الوصف", val: config.description },
+    {
+      label: "المادة",
+      val: config.category || extractCategoryFromPath(config.path) || null,
+    },
+    { label: "التاريخ", val: formatDateForInfo(config.createdAt) },
+    { label: "المصدر", val: config.source },
+    { label: "صاحب الإمتحان", val: config.author },
+    { label: "نوع الإمتحان الإجباري", val: config.mode },
+    {
+      label: "الشكل الإجباري",
+      val:
+        config.view === "pagination"
+          ? "كل سؤال في صفحة (Pagination)"
+          : config.view === "vertical"
+            ? "كل الأسئلة في صفحة واحدة (Vertical)"
+            : null,
+    },
+    { label: "نوع الأسئلة", val: config.questionTypes },
+    { label: "عدد الأسئلة", val: questionCount },
+  ].filter((r) => r.val);
+}
+
+/**
+ * Renders the built ROWS into the info modal's table wrapper, or an
+ * "empty" message if there are no rows. Shared by showQuizInfoModal and
+ * showUserQuizInfoModal.
+ */
+function renderQuizInfoTable(tableWrap, rows) {
+  if (!rows.length) {
+    tableWrap.innerHTML = `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
+    return;
+  }
+
+  const isUrl = (s) => /^https?:\/\//i.test(s);
+  tableWrap.innerHTML = `<table class="quiz-info-table">${rows
+    .map(({ label, val }) => {
+      const v = String(val);
+      const displayVal = isUrl(v)
+        ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
+        : escapeHtml(v);
+      return `<tr><th scope="row">${escapeHtml(label)}</th><td>${displayVal}</td></tr>`;
+    })
+    .join("")}</table>`;
+}
+
+/**
  * Shows a read-only "quiz info" modal, listing the same fields as the
  * quiz-info dialog on result.js (title, description, category, date,
  * source, author, mode, view, question types, question count).
@@ -3982,45 +4161,11 @@ async function showQuizInfoModal(exam) {
     console.warn("Failed to load quiz file for info modal", e);
   }
 
-  const ROWS = [
-    { label: "العنوان", val: config.title },
-    { label: "الوصف", val: config.description },
-    {
-      label: "المادة",
-      val: config.category || extractCategoryFromPath(config.path) || null,
-    },
-    { label: "التاريخ", val: formatDateForInfo(config.createdAt) },
-    { label: "المصدر", val: config.source },
-    { label: "صاحب الإمتحان", val: config.author },
-    { label: "نوع الإمتحان الإجباري", val: config.mode },
-    {
-      label: "الشكل الإجباري",
-      val:
-        config.view === "pagination"
-          ? "كل سؤال في صفحة (Pagination)"
-          : config.view === "vertical"
-            ? "كل الأسئلة في صفحة واحدة (Vertical)"
-            : null,
-    },
-    { label: "نوع الأسئلة", val: config.questionTypes },
-    { label: "عدد الأسئلة", val: questionCount },
-  ].filter((r) => r.val);
+  const ROWS = buildQuizInfoRows(config, questionCount);
 
   if (!modal.isConnected) return; // user closed the modal while we were fetching
 
-  if (!ROWS.length) {
-    tableWrap.innerHTML = `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
-    return;
-  }
-
-  const isUrl = (s) => /^https?:\/\//i.test(s);
-  tableWrap.innerHTML = `<table class="quiz-info-table">${ROWS.map(({ label, val }) => {
-    const v = String(val);
-    const displayVal = isUrl(v)
-      ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
-      : escapeHtml(v);
-    return `<tr><th scope="row">${escapeHtml(label)}</th><td>${displayVal}</td></tr>`;
-  }).join("")}</table>`;
+  renderQuizInfoTable(tableWrap, ROWS);
 }
 
 // ============================================================================
