@@ -136,6 +136,44 @@ function mergeSubjects(local, db) {
  * @param {Subject[]} subjects
  * @returns {{ categoryTree: object, examList: object[] }}
  */
+function extractFolderSegmentsFromQuizPath(rawPath) {
+  let pathStr = rawPath;
+  try {
+    const qIdx = pathStr.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(pathStr.slice(qIdx + 1));
+      const pathParam = params.get("path");
+      if (pathParam) pathStr = decodeURIComponent(pathParam);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  pathStr = pathStr.replace(/^\/data\//, "quizzes/");
+
+  const canonical = pathStr.replace(/^\/+/, "").replace(/^quizzes\//, "");
+  const lastSlash = canonical.lastIndexOf("/");
+  if (lastSlash === -1) return [];
+
+  const dirPart = canonical.slice(0, lastSlash);
+  const segments = dirPart.split("/").filter(Boolean);
+  if (!segments.length) return [];
+
+  const root = segments[0];
+  let courseDepth;
+  if (root === "University") courseDepth = 4;
+  else if (root === "Featured Courses") courseDepth = 1;
+  else if (
+    root === "Primary-Schools" ||
+    root === "Middle-Schools" ||
+    root === "Secondary-Schools"
+  )
+    courseDepth = 3;
+  else return [];
+
+  return segments.slice(courseDepth + 1);
+}
+
 function buildCompatStructures(subjects) {
   const categoryTree = {};
   const examList = [];
@@ -148,8 +186,9 @@ function buildCompatStructures(subjects) {
         id: subject.id,
         name: subject.name,
         faculty: subject.faculty,
-        year: String(subject.year),
-        term: String(subject.term),
+        education_type: subject.education_type,
+        ...(subject.year != null && { year: String(subject.year) }),
+        ...(subject.term != null && { term: String(subject.term) }),
         path: [subject.name],
         parent: null,
         subcategories: [],
@@ -159,40 +198,9 @@ function buildCompatStructures(subjects) {
     }
 
     for (const quiz of subject.quizzes ?? []) {
-      // Determine if this quiz is inside a subfolder by inspecting its path.
-      //
-      // Local quiz paths (relative):
-      //   "../../data/quizzes/College/Year/Term/Subject/[Subfolder/]file.json"
-      //
-      // DB quiz paths (encoded query parameter):
-      //   "/api/quiz-data?path=quizzes%2FCollege%2FYear%2FTerm%2FSubject%2F[Subfolder%2F]file.json"
-      //
-      // Fix (Bug 1): decode the `path` query-parameter value for DB paths so
-      // the canonical regex can match `/`-separated segments correctly.
-      // Local paths have no `?` and are left untouched.
       let folderSegments = [];
       try {
-        let rawPath = quiz.path;
-
-        // Isolate and decode the `path` query-parameter for DB URLs.
-        const qIdx = rawPath.indexOf("?");
-        if (qIdx !== -1) {
-          const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-          const pathParam = params.get("path");
-          if (pathParam) rawPath = decodeURIComponent(pathParam);
-        }
-
-        // Extract the canonical part: "quizzes/College/Year/Term/Subject/..."
-        const canonicalMatch = rawPath.match(
-          /quizzes\/[^/]+\/\d+\/\d+\/[^/]+\/(.+)/,
-        );
-        if (canonicalMatch) {
-          const rest = canonicalMatch[1]; // e.g., "SubfolderName/file.json" or just "file.json"
-          const segments = rest.split("/");
-          if (segments.length > 1) {
-            folderSegments = segments.slice(0, -1);
-          }
-        }
+        folderSegments = extractFolderSegmentsFromQuizPath(quiz.path);
       } catch (_) {}
 
       let examCategoryKey = key;
@@ -222,12 +230,6 @@ function buildCompatStructures(subjects) {
         examCategoryKey = currentParentKey;
       }
 
-      // NOTE: `view` and `mode` are intentionally NOT flattened onto examEntry.
-      // They only affect quiz-taking behavior on quiz.html and are read
-      // straight out of the quiz file's `meta` object there; they were never
-      // part of quiz-manifest.json. Consumers that need them for *download*
-      // (index.js) fetch the raw quiz JSON at download-time instead — see
-      // the manifest-patching fallback in index.js's onDownloadOption.
       const examEntry = {
         id: quiz.id,
         title: quiz.title,
@@ -240,11 +242,7 @@ function buildCompatStructures(subjects) {
         ...(quiz.author && { author: quiz.author }),
         ...(quiz.author_email && { author_email: quiz.author_email }),
         ...(quiz.source && { source: quiz.source }),
-        // password gates downloads (see index.js download-gate logic). Kept
-        // off the entry entirely when absent, same convention as the other
-        // optional fields above — never coerced to null/empty string.
         ...(quiz.password && { password: quiz.password }),
-        // Preserve the "db" marker so index.js can show the "قاعدة البيانات" badge
         ...(quiz.dbSource === "db" ? { dbSource: "db" } : {}),
       };
 

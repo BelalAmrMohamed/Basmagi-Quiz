@@ -119,6 +119,28 @@ const els = {
 // student enters the correct password, `false` if they cancel out. While
 // shown, no quiz content (questions, info dialog data already populated
 // elsewhere) is rendered — init() awaits this before doing anything else.
+function isStoredPasswordHash(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
+}
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function quizPasswordMatches(input, stored) {
+  if (!stored) return false;
+  if (isStoredPasswordHash(stored)) {
+    return (await sha256Hex(input)) === stored.toLowerCase();
+  }
+  return String(input) === String(stored);
+}
+
 function promptForQuizPassword(correctPassword) {
   return new Promise((resolve) => {
     let dialog = document.getElementById("quizPasswordDialog");
@@ -164,9 +186,10 @@ function promptForQuizPassword(correctPassword) {
       dialog.removeEventListener("cancel", onNativeCancel);
     };
 
-    const onSubmit = (e) => {
+    const onSubmit = async (e) => {
       e.preventDefault();
-      if (String(input.value) === String(correctPassword)) {
+      const ok = await quizPasswordMatches(input.value, correctPassword);
+      if (ok) {
         cleanup();
         dialog.close();
         resolve(true);
@@ -1153,7 +1176,7 @@ async function init() {
         author: module.meta?.author || null,
         view: module.meta?.view || null,
         mode: module.meta?.mode || null,
-        password: module.meta?.password || null,
+        password: module.meta?.password || config.password || null,
         questionTypes: formatQuestionTypes(module.stats),
       };
     }

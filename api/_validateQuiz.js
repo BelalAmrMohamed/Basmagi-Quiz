@@ -18,9 +18,7 @@ const ALLOWED_META_KEYS = new Set([
   "author",
   "author_email",
   // Phase 2 — access control & default settings
-  "privacy",
   "password",
-  "lang",
   "view",
   "mode",
 ]);
@@ -29,11 +27,9 @@ const ALLOWED_STATS_KEYS = new Set(["questionCount", "questionTypes"]);
 
 const ALLOWED_QUESTION_KEYS = new Set([
   "q",
-  "passage",
   "image",
   "audio",
   "video",
-  "lang",
   "options",
   "correct",
   "explanation",
@@ -174,14 +170,8 @@ export function validateQuizPayload(raw) {
   }
 
   // Phase 2 new fields validation
-  if (meta.privacy !== undefined && typeof meta.privacy !== "string") {
-    throw new Error("INVALID_META_FIELD: privacy must be a string");
-  }
   if (meta.password !== undefined && typeof meta.password !== "string") {
     throw new Error("INVALID_META_FIELD: password must be a string");
-  }
-  if (meta.lang !== undefined && typeof meta.lang !== "string") {
-    throw new Error("INVALID_META_FIELD: lang must be a string");
   }
   if (meta.view !== undefined && typeof meta.view !== "string") {
     throw new Error("INVALID_META_FIELD: view must be a string");

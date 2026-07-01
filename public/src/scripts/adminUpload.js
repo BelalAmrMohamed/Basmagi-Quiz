@@ -825,6 +825,7 @@ async function doUpload({ college, subject, year, term, subfolder, author }) {
       subject,
       subfolder: subfolder || undefined,
       author: author || undefined,
+      author_email: _quiz?.meta?.author_email || undefined,
       quiz: _quiz,
     });
 
@@ -907,6 +908,15 @@ function normalizeQuizSchema(quiz) {
       ? quiz.author
       : null);
   if (author?.trim()) meta.author = author.trim();
+
+  const authorEmail = quiz.meta?.author_email;
+  if (authorEmail?.trim()) meta.author_email = authorEmail.trim();
+
+  if (quiz.meta?.password?.trim()) meta.password = quiz.meta.password.trim();
+  if (quiz.meta?.privacy) meta.privacy = quiz.meta.privacy;
+  if (quiz.meta?.view) meta.view = quiz.meta.view;
+  if (quiz.meta?.mode) meta.mode = quiz.meta.mode;
+  if (quiz.meta?.lang?.trim()) meta.lang = quiz.meta.lang.trim();
 
   return {
     meta,

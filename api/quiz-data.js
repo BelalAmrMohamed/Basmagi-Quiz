@@ -1,20 +1,11 @@
 // =============================================================================
 // api/quiz-data.js
 // Public endpoint — serves the full quiz JSON for a single DB-hosted quiz.
-//
-// Called by the client whenever it opens a quiz whose path points here
-// (i.e. any exam with source: "db" in the merged manifest).
-//
-// GET /api/quiz-data?path=quizzes%2FCollege%2F1%2F1%2FSubject%2Ffilename.json
-// No auth required — quizzes are public content.
-//
-// 200: { title, questions, ... }   (the raw quiz JSON object stored in DB)
-// 404: quiz not found
-// 400: missing or malformed path parameter
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
 import { applyCors } from "./_middleware.js";
+import { parseCanonicalPath } from "../scripts/lib/quizPath.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -26,43 +17,33 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "GET") return res.status(405).end();
 
-  // ── 1. Parse & validate the `path` query parameter ────────────────────────
-  // Expected format (URL-decoded): "quizzes/College/Year/Term/Subject[/Subfolder]/filename.json"
-  // This is the same relative path (from public/data/) used to generate the exam ID.
-
   const rawPath = req.query?.path || "";
 
   if (!rawPath) {
     return res.status(400).json({ error: "معامل المسار مفقود" });
   }
 
-  // Normalise: forward slashes only, no leading slash, no traversal
   const normalised = rawPath
     .replace(/\\/g, "/")
     .replace(/^\/+/, "")
-    .replace(/\.\.+/g, ""); // strip any ".." sequences
+    .replace(/\.\.+/g, "");
 
-  // Must start with "quizzes/" and end with ".json"
   if (!normalised.startsWith("quizzes/") || !normalised.endsWith(".json")) {
     return res.status(400).json({ error: "مسار غير صالح" });
   }
 
-  // Strip the leading "quizzes/" prefix — what remains is "College/Year/Term/Subject[/Sub]/file.json"
-  const withoutPrefix = normalised.slice("quizzes/".length);
-
-  // Split off the filename (last segment) from the DB `path` column (everything before it)
-  const lastSlash = withoutPrefix.lastIndexOf("/");
-  if (lastSlash === -1) {
+  const parsed = parseCanonicalPath(normalised);
+  if (!parsed) {
     return res.status(400).json({ error: "مسار غير صالح" });
   }
 
-  const dbPath = withoutPrefix.slice(0, lastSlash); // "College/Year/Term/Subject[/Sub]"
-  const filename = withoutPrefix.slice(lastSlash + 1); // "filename.json"
+  const lastSlash = parsed.dbPath.lastIndexOf("/");
+  const dbPath = parsed.dbPath.slice(0, lastSlash);
+  const filename = parsed.dbPath.slice(lastSlash + 1);
 
-  // ── 2. Fetch the quiz row ──────────────────────────────────────────────────
   const { data, error } = await supabase
     .from("quizzes")
-    .select("data") // only the full quiz JSON blob
+    .select("data")
     .eq("path", dbPath)
     .eq("filename", filename)
     .maybeSingle();
@@ -76,8 +57,6 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: "الاختبار غير موجود" });
   }
 
-  // ── 3. Return the quiz payload ─────────────────────────────────────────────
-  // Cache for 5 minutes — quiz content changes rarely; reduces DB read load.
   res.setHeader(
     "Cache-Control",
     "public, s-maxage=300, stale-while-revalidate=600",

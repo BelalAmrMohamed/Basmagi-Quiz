@@ -88,7 +88,7 @@ async function main() {
   // Fetch rows
   let query = supabase
     .from("quizzes")
-    .select("id, path, category, subject, subfolder, filename, data, synced_at")
+    .select("id, path, category, subject, subfolder, filename, data, synced_at, education_type")
     .order("created_at", { ascending: true });
 
   if (!SYNC_ALL) query = query.is("synced_at", null);

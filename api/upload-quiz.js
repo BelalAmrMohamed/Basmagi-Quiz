@@ -4,14 +4,13 @@
 //
 // POST /api/upload-quiz
 // Headers: Authorization: Bearer <token>
-// Body:    { college, year, term, subject, subfolder?, author?, quiz: {...} }
+// Body:    { college, year, term, subject, subfolder?, author?, author_email?,
+//            education_type?, quiz: {...} }
 //
-// Path stored as: College/Year/Term/Subject[/Subfolder]
-// This matches the codebase structure under public/data/quizzes/
-//
-// 201: { success: true, id, path }
+// Path stored as: University/College/Year/Term/Subject[/Subfolder]
 // =============================================================================
 
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin, applyCors, handleAuthError } from "./_middleware.js";
 import {
@@ -20,6 +19,7 @@ import {
   computeStats,
 } from "./_validateQuiz.js";
 import { generateQuizId } from "../scripts/lib/quizId.js";
+import { isValidEducationType } from "../scripts/lib/quizPath.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -31,36 +31,44 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).end();
 
-  // ── 1. Authenticate ────────────────────────────────────────────────────────
+  let adminPayload;
   try {
-    requireAdmin(req);
+    adminPayload = requireAdmin(req);
   } catch (err) {
     if (handleAuthError(err, res)) return;
     return res.status(401).json({ error: "غير مصرح" });
   }
 
-  // ── 2. Extract & validate fields ──────────
-  const { college, year, term, subject, subfolder, author, quiz } =
-    req.body || {};
+  const {
+    college,
+    year,
+    term,
+    subject,
+    subfolder,
+    author,
+    author_email,
+    education_type: rawEducationType,
+    quiz,
+  } = req.body || {};
 
-  // Validate each path segment
+  const education_type =
+    rawEducationType && isValidEducationType(rawEducationType)
+      ? rawEducationType
+      : "University";
+
   try {
     validatePath(college, subject, subfolder);
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 
-  // Year must be "1" or "2"
   if (!["1", "2"].includes(String(year))) {
     return res.status(400).json({ error: "INVALID_PATH: year must be 1 or 2" });
   }
-  // Term must be "1" or "2"
   if (!["1", "2"].includes(String(term))) {
     return res.status(400).json({ error: "INVALID_PATH: term must be 1 or 2" });
   }
 
-  // Inject a dummy valid Base32 ID to pass strict validation.
-  // We deterministically override this ID downstream anyway.
   if (quiz && quiz.meta) {
     quiz.meta.id = "AAAAAAAA";
   }
@@ -72,8 +80,8 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: e.message });
   }
 
-  // ── 3. Build path matching codebase structure ──────────────────────────────
   const pathParts = [
+    "University",
     college.trim(),
     String(year),
     String(term),
@@ -88,33 +96,35 @@ export default async function handler(req, res) {
     .replace(/\s+/g, "_");
   const filename = `${safeTitle || "quiz"}.json`;
 
-  // ── 4. Server-side enrichment ──────────────────────────────────────────────
-  // Set meta.path (canonical path for ID stability and quiz-data endpoint)
   cleanQuiz.meta.path = `quizzes/${fullPath}/${filename}`;
-
-  // Deterministically generate ID from path (discarding any client-supplied ID)
   cleanQuiz.meta.id = generateQuizId(cleanQuiz.meta.path);
-
-  // Recompute stats server-side — never trust client-submitted stats
   cleanQuiz.stats = computeStats(cleanQuiz.questions);
 
-  // Set author from request body (not from JWT)
   if (author && typeof author === "string" && author.trim()) {
     cleanQuiz.meta.author = author.trim();
   } else {
-    delete cleanQuiz.meta.author; // don't store undefined/empty
+    delete cleanQuiz.meta.author;
   }
 
-  // Hash password if present
+  if (author_email && typeof author_email === "string" && author_email.trim()) {
+    cleanQuiz.meta.author_email = author_email.trim();
+  } else if (adminPayload?.email) {
+    cleanQuiz.meta.author_email = adminPayload.email;
+  } else {
+    delete cleanQuiz.meta.author_email;
+  }
+
+  // view / mode / lang / privacy come from validated quiz.meta — already in cleanQuiz
+
+  let passwordHash = null;
   if (cleanQuiz.meta.password) {
-    const crypto = await import("crypto");
-    cleanQuiz.meta.password = crypto
+    passwordHash = crypto
       .createHash("sha256")
       .update(cleanQuiz.meta.password)
       .digest("hex");
+    delete cleanQuiz.meta.password;
   }
 
-  // ── 5. Duplicate check ─────────────────────────────────────────────────────
   const { data: existing } = await supabase
     .from("quizzes")
     .select("id")
@@ -128,17 +138,18 @@ export default async function handler(req, res) {
     });
   }
 
-  // ── 6. Insert ──────────────────────────────────────────────────────────────
   const { data, error } = await supabase
     .from("quizzes")
     .insert({
       path: fullPath,
-      category: college.trim(), // "category" column = college name
+      category: college.trim(),
       subject: subject.trim(),
       subfolder: subfolder?.trim() || null,
       title: cleanQuiz.meta.title,
       filename,
       data: cleanQuiz,
+      education_type,
+      password: passwordHash,
     })
     .select("id")
     .single();

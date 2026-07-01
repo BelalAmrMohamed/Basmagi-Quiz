@@ -14,6 +14,12 @@ import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { generateQuizId } from "./lib/quizId.js";
+import {
+  ROOT_MAP,
+  buildCourseKey,
+  buildCourseRelDir,
+  buildSubjectManifestEntry,
+} from "./lib/quizPath.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,6 +86,9 @@ function migrateQuiz(raw) {
   if (raw.meta && raw.questions && !raw.title && !raw.metadata) {
     const meta = { ...raw.meta };
     if (oldMeta.lang?.trim()) meta.lang = oldMeta.lang.trim();
+    if (oldMeta.view) meta.view = oldMeta.view;
+    if (oldMeta.mode) meta.mode = oldMeta.mode;
+    if (oldMeta.privacy) meta.privacy = oldMeta.privacy;
     return {
       meta,
       stats: computeStats(questions),
@@ -165,191 +174,199 @@ async function walk(dir) {
 
 // ─── Main build function ──────────────────────────────────────────────────────
 async function build(examsDir, repoRoot) {
-  // subjectsMap: courseKey → { id, name, faculty, year, term, quizzes[] }
   const subjectsMap = new Map();
-
-  // public/data/ directory (used as base for relative path computation)
   const dataDir = path.join(repoRoot, "public", "data");
 
-  /**
-   * Scan directory tree with depth tracking.
-   * Depth 0 = Faculty, 1 = Year, 2 = Term, 3 = Course, 4+ = Subfolder
-   */
-  async function scanDir(dir, depth = 0, metadata = {}) {
-    let entries;
+  function ensureSubject(metadata) {
+    const courseKey = metadata.courseKey;
+    if (!subjectsMap.has(courseKey)) {
+      subjectsMap.set(
+        courseKey,
+        buildSubjectManifestEntry(metadata.parsed, []),
+      );
+    }
+    return subjectsMap.get(courseKey);
+  }
+
+  async function processQuizFile(fullPath, entries, metadata) {
+    const fileName = path.basename(fullPath);
+    const isJson = fileName.toLowerCase().endsWith(".json");
+    const baseName = fileName.replace(/\.(json|js)$/i, "");
+    const otherExt = isJson ? ".js" : ".json";
+    const hasOther = entries.some((e) => e.name === baseName + otherExt);
+    if (!isJson && hasOther) return;
+
+    const canonicalRelPath = path
+      .relative(dataDir, fullPath)
+      .split(path.sep)
+      .join("/")
+      .replace(/\.js$/, ".json");
+
+    const examId = generateQuizId(canonicalRelPath);
+
+    let quizObj;
     try {
-      entries = await fs.readdir(dir, { withFileTypes: true });
-    } catch {
+      const raw = JSON.parse(await fs.readFile(fullPath, "utf8"));
+      quizObj = migrateQuiz(raw);
+    } catch (e) {
+      console.warn(`WARNING: Could not parse ${fullPath}: ${e.message}`);
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    if (!quizObj.meta.id) quizObj.meta.id = examId;
+    if (!quizObj.meta.createdAt) {
+      quizObj.meta.createdAt = new Date()
+        .toISOString()
+        .slice(0, 16)
+        .replace("T", " - ");
+    }
+    if (!quizObj.meta.title || quizObj.meta.title === "Untitled") {
+      quizObj.meta.title = titleCase(baseName);
+    }
+    quizObj.meta.path = canonicalRelPath;
+    quizObj.stats = computeStats(quizObj.questions);
 
-      if (entry.isDirectory()) {
-        if (depth === 0) {
-          console.log(`  📁 Faculty: ${entry.name}`);
-          await scanDir(fullPath, 1, { faculty: entry.name });
-        } else if (depth === 1) {
-          console.log(`    📅 Year: ${entry.name}`);
-          await scanDir(fullPath, 2, { ...metadata, year: entry.name });
-        } else if (depth === 2) {
-          console.log(`      📆 Term: ${entry.name}`);
-          await scanDir(fullPath, 3, { ...metadata, term: entry.name });
-        } else if (depth === 3) {
-          // Course root
-          const courseKey = `${metadata.faculty}/${metadata.year}/${metadata.term}/${entry.name}`;
-          const courseRelDir = `quizzes/${courseKey}`;
-          const courseId = generateQuizId(courseRelDir);
+    const enriched = JSON.stringify(quizObj, null, 2);
+    const existing = await fs.readFile(fullPath, "utf8").catch(() => null);
+    if (existing !== enriched) {
+      const writePath = fullPath.replace(/\.js$/, ".json");
+      await fs.writeFile(writePath, enriched, "utf8");
+      if (!isJson) await fs.unlink(fullPath).catch(() => {});
+      console.log(`            ✏️  Enriched: ${path.basename(writePath)}`);
+    }
 
-          console.log(`        📚 Course: ${entry.name} (ID: ${courseId})`);
+    const dataRelPath =
+      "/data/" +
+      path
+        .relative(dataDir, fullPath.replace(/\.js$/, ".json"))
+        .split(path.sep)
+        .join("/");
 
-          subjectsMap.set(courseKey, {
-            id: courseId,
-            name: entry.name,
-            faculty: metadata.faculty,
-            year: parseInt(metadata.year, 10),
-            term: parseInt(metadata.term, 10),
-            quizzes: [],
-          });
+    const title = quizObj.meta.title || titleCase(baseName);
+    const stats = quizObj.stats;
+    console.log(`            📝 Quiz: ${title} (ID: ${quizObj.meta.id})`);
 
-          await scanDir(fullPath, 4, {
-            ...metadata,
-            courseName: entry.name,
-            courseKey,
-            subfolderPath: null,
-          });
-        } else {
-          // Subfolder (depth 4+)
-          const sfPath = metadata.subfolderPath
-            ? `${metadata.subfolderPath}/${entry.name}`
-            : entry.name;
-          console.log(`          📂 Subfolder: ${sfPath}`);
-          await scanDir(fullPath, depth + 1, {
-            ...metadata,
-            subfolderPath: sfPath,
-          });
-        }
-      } else if (entry.name.endsWith(".json") || entry.name.endsWith(".js")) {
-        if (depth < 4 || !metadata.courseKey) {
-          if (depth < 4)
-            console.warn(
-              `WARNING: Quiz "${entry.name}" found at depth ${depth}, skipping`,
+    const quizEntry = {
+      id: quizObj.meta.id,
+      title,
+      path: dataRelPath,
+      questionCount: stats.questionCount,
+      questionTypes: stats.questionTypes,
+    };
+
+    if (quizObj.meta.description)
+      quizEntry.description = quizObj.meta.description;
+    if (quizObj.meta.author) quizEntry.author = quizObj.meta.author;
+    if (quizObj.meta.author_email)
+      quizEntry.author_email = quizObj.meta.author_email;
+    if (quizObj.meta.password) quizEntry.password = quizObj.meta.password;
+    if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
+    if (quizObj.meta.createdAt) quizEntry.createdAt = quizObj.meta.createdAt;
+    if (quizObj.meta.lang) quizEntry.lang = quizObj.meta.lang;
+
+    const subject = ensureSubject(metadata);
+    subject.quizzes.push(quizEntry);
+  }
+
+  /**
+   * Generic scanner: walks labeled segments then course + subfolders.
+   * @param {string} rootFolder
+   * @param {string} rootDir
+   * @param {string[]} segmentLabels  e.g. ['college','year','term','course']
+   */
+  async function scanTrack(rootFolder, rootDir, segmentLabels) {
+    const education_type = ROOT_MAP[rootFolder].education_type;
+
+    async function walk(dir, depth, fieldValues = {}) {
+      let entries;
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
+      const courseDepth = segmentLabels.length - 1;
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+          if (depth < courseDepth) {
+            const label = segmentLabels[depth];
+            const next = { ...fieldValues, [label]: entry.name };
+            const indent = "  ".repeat(depth + 2);
+            console.log(`${indent}📁 ${label}: ${entry.name}`);
+            await walk(fullPath, depth + 1, next);
+          } else if (depth === courseDepth) {
+            const courseName = entry.name;
+            const parsed = {
+              education_type,
+              rootFolder,
+              college: fieldValues.college,
+              year: fieldValues.year,
+              term: fieldValues.term,
+              course: courseName,
+              subfolders: [],
+            };
+            const courseKey = buildCourseKey(parsed);
+            const courseRelDir = buildCourseRelDir(parsed);
+            console.log(
+              `        📚 Course: ${courseName} (ID: ${generateQuizId(courseRelDir)})`,
             );
-          continue;
-        }
 
-        const fileName = entry.name;
-        const isJson = fileName.toLowerCase().endsWith(".json");
-        const baseName = fileName.replace(/\.(json|js)$/i, "");
-        const otherExt = isJson ? ".js" : ".json";
-        const hasOther = entries.some((e) => e.name === baseName + otherExt);
-        if (!isJson && hasOther) continue; // prefer .json over .js
-
-        // Canonical relative path from public/data/ (always .json)
-        const canonicalRelPath = path
-          .relative(dataDir, fullPath)
-          .split(path.sep)
-          .join("/")
-          .replace(/\.js$/, ".json");
-
-        // Remove "quizzes/" prefix to get the path segment stored in meta.path
-        // Actually canonical form IS "quizzes/..."
-        const examId = generateQuizId(canonicalRelPath);
-
-        // ── Enrich quiz file in-place ──────────────────────────────────────
-        let quizObj;
-        try {
-          const raw = JSON.parse(await fs.readFile(fullPath, "utf8"));
-          quizObj = migrateQuiz(raw);
-        } catch (e) {
-          console.warn(`WARNING: Could not parse ${fullPath}: ${e.message}`);
-          continue;
-        }
-
-        // Set/update fields
-        if (!quizObj.meta.id) {
-          quizObj.meta.id = examId;
-        }
-        if (!quizObj.meta.createdAt) {
-          quizObj.meta.createdAt = new Date()
-            .toISOString()
-            .slice(0, 16)
-            .replace("T", " - ");
-        }
-        if (!quizObj.meta.title || quizObj.meta.title === "Untitled") {
-          quizObj.meta.title = titleCase(baseName);
-        }
-        // Always update path and stats (they must be accurate)
-        quizObj.meta.path = canonicalRelPath;
-        quizObj.stats = computeStats(quizObj.questions);
-
-        // Write enriched file back (only if changed)
-        const enriched = JSON.stringify(quizObj, null, 2);
-        const existing = await fs.readFile(fullPath, "utf8").catch(() => null);
-        if (existing !== enriched) {
-          // Write as .json (rename .js → .json if needed)
-          const writePath = fullPath.replace(/\.js$/, ".json");
-          await fs.writeFile(writePath, enriched, "utf8");
-          if (!isJson) {
-            // Remove old .js file
-            await fs.unlink(fullPath).catch(() => {});
+            await walk(fullPath, depth + 1, {
+              ...fieldValues,
+              course: courseName,
+              courseKey,
+              parsed,
+            });
+          } else {
+            await walk(fullPath, depth + 1, fieldValues);
           }
-          console.log(`            ✏️  Enriched: ${path.basename(writePath)}`);
-        }
-
-        // ── Build path for manifest ─────────────────────────────────────────
-        // Store as an absolute-from-root path ("/data/quizzes/...")
-        // so quiz.js can fetch with: new URL(path, window.location.origin)
-        // regardless of where quiz.js itself lives.
-        const dataRelPath =
-          "/data/" +
-          path
-            .relative(
-              path.join(repoRoot, "public", "data"),
-              fullPath.replace(/\.js$/, ".json"),
-            )
-            .split(path.sep)
-            .join("/");
-
-        const title = quizObj.meta.title || titleCase(baseName);
-        const stats = quizObj.stats;
-
-        console.log(`            📝 Quiz: ${title} (ID: ${quizObj.meta.id})`);
-
-        const quizEntry = {
-          id: quizObj.meta.id,
-          title,
-          path: dataRelPath,
-          questionCount: stats.questionCount,
-          questionTypes: stats.questionTypes,
-        };
-
-        // Optional manifest fields
-        if (quizObj.meta.description)
-          quizEntry.description = quizObj.meta.description;
-        if (quizObj.meta.author) quizEntry.author = quizObj.meta.author;
-        if (quizObj.meta.author_email) quizEntry.author_email = quizObj.meta.author_email;
-        if (quizObj.meta.password) quizEntry.password = quizObj.meta.password;
-        if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
-        if (quizObj.meta.createdAt)
-          quizEntry.createdAt = quizObj.meta.createdAt;
-        if (quizObj.meta.lang) quizEntry.lang = quizObj.meta.lang;
-
-        const subject = subjectsMap.get(metadata.courseKey);
-        if (subject) {
-          subject.quizzes.push(quizEntry);
-        } else {
-          console.warn(`WARNING: Subject "${metadata.courseKey}" not found`);
+        } else if (
+          entry.name.endsWith(".json") ||
+          entry.name.endsWith(".js")
+        ) {
+          if (!fieldValues.courseKey) {
+            console.warn(
+              `WARNING: Quiz "${entry.name}" found outside a course, skipping`,
+            );
+            continue;
+          }
+          await processQuizFile(fullPath, entries, fieldValues);
         }
       }
     }
+
+    await walk(rootDir, 0, {});
   }
 
   console.log("\n🔍 Scanning exam directory structure...\n");
-  await scanDir(examsDir);
-  console.log("\n✅ Scan complete!\n");
 
+  let rootEntries;
+  try {
+    rootEntries = await fs.readdir(examsDir, { withFileTypes: true });
+  } catch {
+    console.warn("Could not read quizzes directory");
+    return [];
+  }
+
+  for (const entry of rootEntries) {
+    if (!entry.isDirectory()) continue;
+    const config = ROOT_MAP[entry.name];
+    if (!config) {
+      console.warn(`WARNING: Unknown root folder "${entry.name}", skipping`);
+      continue;
+    }
+    console.log(`\n🏫 Root: ${entry.name} (${config.education_type})`);
+    await scanTrack(
+      entry.name,
+      path.join(examsDir, entry.name),
+      config.segments,
+    );
+  }
+
+  console.log("\n✅ Scan complete!\n");
   return Array.from(subjectsMap.values());
 }
 
@@ -418,6 +435,9 @@ async function generate() {
   );
 
   // Summary
+  const educationTypes = new Set(
+    subjects.map((s) => s.education_type).filter(Boolean),
+  );
   const faculties = new Set(subjects.map((s) => s.faculty).filter(Boolean));
   const years = new Set(subjects.map((s) => s.year).filter(Boolean));
   const terms = new Set(subjects.map((s) => s.term).filter(Boolean));
@@ -426,6 +446,9 @@ async function generate() {
   console.log(`   • Subjects: ${subjects.length}`);
   console.log(`   • Total Quizzes: ${totalQuizzes}`);
   console.log(`\n🏫 Metadata Coverage:`);
+  console.log(
+    `   • Education types: ${Array.from(educationTypes).sort().join(", ")}`,
+  );
   console.log(`   • Faculties: ${Array.from(faculties).sort().join(", ")}`);
   console.log(`   • Years: ${Array.from(years).sort().join(", ")}`);
   console.log(`   • Terms: ${Array.from(terms).sort().join(", ")}`);

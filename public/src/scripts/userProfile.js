@@ -18,6 +18,7 @@ const DEFAULT_PROFILE = {
   faculty: "All",
   year: "All",
   term: "All",
+  education_type: null,
   subscribedCourseIds: [],
   quizStyle: "pagination", // "pagination" | "vertical"
   defaultQuizMode: "practice", // "practice" | "timed" | "exam" | "timed_exam"
@@ -102,13 +103,25 @@ export class UserProfileManager {
    * @param {Object} updates - { faculty?, year?, term? }
    */
   updateAcademicInfo(updates) {
-    const { faculty, year, term } = updates;
+    const { faculty, year, term, education_type } = updates;
 
     if (faculty !== undefined) this.profile.faculty = faculty;
     if (year !== undefined) this.profile.year = year;
     if (term !== undefined) this.profile.term = term;
+    if (education_type !== undefined) this.profile.education_type = education_type;
 
     this.saveProfile();
+  }
+
+  /**
+   * Set education_type for legacy profile migration.
+   * @param {string} type - e.g. 'University'
+   */
+  migrateEducationType(type) {
+    if (!type) return false;
+    this.profile.education_type = type;
+    this.saveProfile();
+    return true;
   }
 
   /**

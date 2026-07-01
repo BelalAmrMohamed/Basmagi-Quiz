@@ -461,6 +461,8 @@ function getCategoriesLazy() {
 
 // Initialize after manifest is loaded (called from DOMContentLoaded)
 async function initApp() {
+  migrateLegacyUserProfile();
+
   let hasVisited = true;
   try {
     hasVisited = !!localStorage.getItem("first_visit_complete");
@@ -2329,7 +2331,6 @@ function formatQuestionTypesForDownload(questionTypes) {
 const LOCK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 
 // ── Download password gate ───────────────────────────────────────────────────
-// Quizzes can carry an optional `password` in their meta. The quiz PAGE
 // (quiz.html) is responsible for gating *playing* the quiz — we never touch
 // that here. This gate only protects *downloads* initiated from the index
 // page's download popups (static exams, DB exams, and user quizzes alike).
@@ -2339,6 +2340,40 @@ const LOCK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height
 // again on every format click within the same visit.
 
 const DOWNLOAD_PASSWORD_SESSION_PREFIX = "dl_pw_ok:";
+
+function migrateLegacyUserProfile() {
+  try {
+    const p = userProfile.getProfile();
+    const college = p.college || p.faculty;
+    if (college && college !== "All" && !p.education_type) {
+      userProfile.migrateEducationType("University");
+    }
+  } catch (e) {
+    console.warn("Legacy profile migration skipped:", e);
+  }
+}
+
+function isStoredPasswordHash(value) {
+  return typeof value === "string" && /^[a-f0-9]{64}$/i.test(value);
+}
+
+async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function quizPasswordMatches(input, stored, dbSource) {
+  if (!stored) return false;
+  if (isStoredPasswordHash(stored) || dbSource === "db") {
+    return (await sha256Hex(input)) === stored.toLowerCase();
+  }
+  return input === stored;
+}
 
 function isDownloadPasswordVerified(quizId) {
   try {
@@ -2364,7 +2399,7 @@ function markDownloadPasswordVerified(quizId) {
  * Resolves `true` if the correct password was entered, `false` if the user
  * cancelled or the password was wrong after the user gave up.
  */
-function promptDownloadPassword(title, correctPassword) {
+function promptDownloadPassword(title, correctPassword, dbSource) {
   return new Promise((resolve) => {
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -2426,8 +2461,13 @@ function promptDownloadPassword(title, correctPassword) {
     cancelBtn.textContent = "إلغاء";
     cancelBtn.onclick = () => finish(false);
 
-    const attemptSubmit = () => {
-      if (input.value === correctPassword) {
+    const attemptSubmit = async () => {
+      const ok = await quizPasswordMatches(
+        input.value,
+        correctPassword,
+        dbSource,
+      );
+      if (ok) {
         finish(true);
       } else {
         errorMsg.style.display = "block";
@@ -2472,11 +2512,11 @@ function promptDownloadPassword(title, correctPassword) {
  * @param {string|null|undefined} password - the quiz's correct password, if any
  * @param {string} title - quiz title, shown in the prompt
  */
-async function ensureDownloadAllowed(quizId, password, title) {
+async function ensureDownloadAllowed(quizId, password, title, dbSource) {
   if (!password) return true;
   if (isDownloadPasswordVerified(quizId)) return true;
 
-  const ok = await promptDownloadPassword(title, password);
+  const ok = await promptDownloadPassword(title, password, dbSource);
   if (ok) markDownloadPasswordVerified(quizId);
   return ok;
 }
@@ -3277,6 +3317,7 @@ function createExamCard(exam) {
       exam.id,
       exam.password,
       exam.title || exam.id,
+      exam.dbSource,
     );
     if (!allowed) return;
 
@@ -3890,12 +3931,30 @@ function extractCategoryFromPath(path) {
     /* ignore malformed query strings */
   }
 
-  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
-  if (match) {
-    const segments = match[1].split("/");
-    const parts = segments.slice(0, -1);
-    if (parts.length > 0) return parts.join(" / ");
-  }
+  rawPath = rawPath.replace(/^\/data\//, "quizzes/");
+
+  const canonical = rawPath.replace(/^\/+/, "").replace(/^quizzes\//, "");
+  const lastSlash = canonical.lastIndexOf("/");
+  if (lastSlash === -1) return "";
+
+  const dirPart = canonical.slice(0, lastSlash);
+  const segments = dirPart.split("/").filter(Boolean);
+  if (!segments.length) return "";
+
+  const root = segments[0];
+  let courseDepth;
+  if (root === "University") courseDepth = 4;
+  else if (root === "Featured Courses") courseDepth = 1;
+  else if (
+    root === "Primary-Schools" ||
+    root === "Middle-Schools" ||
+    root === "Secondary-Schools"
+  )
+    courseDepth = 3;
+  else return "";
+
+  const subfolders = segments.slice(courseDepth + 1);
+  if (subfolders.length > 0) return subfolders.join(" / ");
 
   return "";
 }
