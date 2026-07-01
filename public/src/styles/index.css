@@ -1061,13 +1061,9 @@ Container
 }
 
 /*
- * Spacer so quiz cards don't hug the create-quiz card above them.
- * Applied here rather than as margin-top on .user-quizzes-container so the
- * gap also appears when the container is absent (empty state, etc.).
+ * The create-quiz card now lives inside .user-quizzes-container (same grid
+ * as user quiz cards) so the old margin-bottom spacer is no longer needed.
  */
-.user-create-quiz-card {
-  margin-bottom: 20px;
-}
 
 /*
  * Dedicated wrapper for the quiz-card list. Gets the bordered, rounded
@@ -1115,9 +1111,9 @@ Container
     overflow: hidden;
   }
 
-  /* First quiz card: no top border (the container border serves as the top) */
-  .user-quizzes-container .exam-card.user-quiz-card:first-child {
-    border-top: none !important;
+  /* First card (create-quiz): no top border (container border serves as top) */
+  .user-quizzes-container > .exam-card:first-child {
+    border: none !important;
   }
 
   /* Outer drop-zone container: strip the border the global .grid-container
@@ -1334,6 +1330,16 @@ Container
 
 /* Mobile: restore to normal flex flow so btnWrap sits on the RIGHT */
 @media (max-width: 640px) {
+  /*
+ * Clip the shared .exam-card::before hover-accent strip so it never bleeds
+ * outside the card's rounded corners.  The card itself keeps overflow:visible
+ * (needed for the action-menu / admin-upload absolutely-positioned children),
+ * so we clip the strip on its own pseudo-element instead.
+ */
+.exam-card.user-quiz-card::before {
+  overflow: hidden;
+  border-radius: 20px 20px 0 0;  /* match the card's top corners */
+}
   .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
     position: static;
     width: auto;
@@ -1369,20 +1375,19 @@ Container
  */
 .exam-card.user-quiz-card {
   align-self: start;
-  overflow: visible !important; /* accent bar corners are rounded; no clip needed */
+  overflow: hidden; /* clip the ::before accent strip to the card's border-radius */
   /* No text-align override here — inherits "center" from base .exam-card,
      keeping the title centred on desktop to match normal quiz cards. */
 }
 
 /*
- * Suppress the shared .exam-card::before hover-accent strip on user-quiz-card.
- * The strip is absolutely-positioned and overflow:visible on this card lets it
- * bleed outside the border-radius at the top corners. user-quiz-card uses its
- * own .user-quiz-accent-bar element (always-visible, clipped by border-radius
- * on the bar itself) so the ::before strip is redundant here.
+ * Re-enable the shared .exam-card::before hover-accent strip on user-quiz-card.
+ * The card now uses overflow:hidden (above) so the strip is properly clipped.
+ * Match the card's own border-radius (12px from the USER QUIZ CARD section)
+ * so the strip's corners align exactly with the card's top corners.
  */
 .exam-card.user-quiz-card::before {
-  display: none !important;
+  border-radius: 12px 12px 0 0;
 }
 
 /* Types-row (badge chips): right-justify within the meta bar so the chips
@@ -2618,14 +2623,64 @@ Container
     display: none !important;
   }
 
+  /* ── Create-quiz card: compact list-row matching user quiz cards on mobile ── */
   .user-create-quiz-card {
-    border-radius: 12px !important;
-    border: 1px dashed var(--color-primary) !important;
-    padding: 16px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 0 10px !important;
+    min-height: 52px !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-top: 1px solid var(--color-border) !important;
+    border-style: solid !important;
+    text-align: left !important;
+    direction: ltr !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide the big desktop-only centered icon on mobile */
+  .user-create-quiz-card > .icon {
+    display: none !important;
+  }
+
+  /* card-text wrapper: stretchy middle column (same as user-quiz-card) */
+  .user-create-quiz-card .card-text {
     display: flex !important;
     flex-direction: column !important;
-    text-align: center;
-    align-items: center !important;
+    gap: 2px !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+  }
+
+  /* Title: compact, single line, truncated — matching user quiz cards */
+  .user-create-quiz-card h3 {
+    font-size: 0.83rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    text-align: left !important;
+    direction: ltr !important;
+    width: 100% !important;
+  }
+
+  /* Description subtitle: sits in place of .user-quiz-card-meta */
+  .user-create-quiz-card .create-quiz-card-subtitle {
+    font-size: 0.65rem !important;
+    color: var(--color-text-tertiary, #888) !important;
+    margin-bottom: 6px !important;
+    line-height: 1.3 !important;
+    direction: rtl !important;
+    text-align: right;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    width: 100% !important;
   }
 }
 

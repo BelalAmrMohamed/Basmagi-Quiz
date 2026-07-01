@@ -1664,7 +1664,6 @@ function renderUserQuizzesView() {
 
     // Inline create-quiz card (always visible in this view)
     const inlineCreateCard = createInlineCreateQuizCard();
-    container.appendChild(inlineCreateCard);
 
     // Ensure drag-and-drop import is enabled for this section
     setupUserQuizzesDropZone();
@@ -1700,6 +1699,10 @@ function renderUserQuizzesView() {
         quizzesContainer.appendChild(quizCard);
       });
     }
+
+    // Prepend the create card as the first child in the quizzesContainer
+    // so it flows inline in the same CSS grid on desktop.
+    quizzesContainer.prepend(inlineCreateCard);
 
     container.appendChild(quizzesContainer);
   } catch (error) {
@@ -2014,21 +2017,29 @@ function createInlineCreateQuizCard() {
   card.setAttribute("title", "تحويل نص ← امتحان");
   card.setAttribute("aria-label", "إنشاء إمتحان جديد من نص");
 
+  // Desktop-only large centered icon (hidden on mobile via CSS)
   const icon = document.createElement("div");
   icon.className = "icon";
   icon.textContent = "➕";
   icon.setAttribute("aria-hidden", "true");
 
+  // card-text wrapper (display:contents on desktop, flex column on mobile)
+  const textWrap = document.createElement("div");
+  textWrap.className = "card-text";
+
   const titleEl = document.createElement("h3");
-  titleEl.textContent = "إنشاء إمتحان جديد";
+  titleEl.innerHTML = `<span class="user-quiz--phone-only-emoji">➕</span> إنشاء إمتحان جديد`;
 
   const desc = document.createElement("p");
+  desc.className = "create-quiz-card-subtitle";
   desc.textContent =
     "الصق أسئلة الإمتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
 
+  textWrap.appendChild(titleEl);
+  textWrap.appendChild(desc);
+
   card.appendChild(icon);
-  card.appendChild(titleEl);
-  card.appendChild(desc);
+  card.appendChild(textWrap);
 
   const open = () => openInlineCreateQuizModal();
   card.onclick = open;
@@ -2798,7 +2809,28 @@ function showUserQuizActionsOverlay(quiz) {
     sheet.appendChild(adminOpt);
   }
 
-  // Edit — present in the overlay on all screen sizes (desktop and mobile).
+  // ── Mobile-only Download button ─────────────────────────────────────────
+  // Mirrors showExamActionsOverlay's mobile download option. Hidden on desktop
+  // (≥641px) via the .mobile-only class — the card's own desktop-download-btn
+  // handles that form factor.
+  const userQuizPwd = qz(quiz, "password");
+  const downloadOpt = document.createElement("button");
+  downloadOpt.type = "button";
+  downloadOpt.className = userQuizPwd
+    ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
+    : "exam-action-btn mobile-only exam-action-btn--primary";
+  downloadOpt.innerHTML = userQuizPwd
+    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+  if (userQuizPwd) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+  downloadOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    showUserQuizDownloadPopup(quiz);
+  };
+  sheet.appendChild(downloadOpt);
+
+  // ── Edit — present in the overlay on all screen sizes (desktop and mobile).
   // There is no longer a standalone edit icon on the card itself — the overlay
   // is the single entry-point for editing on both form factors.
   const editOpt = document.createElement("button");
