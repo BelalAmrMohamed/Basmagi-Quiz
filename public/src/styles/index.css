@@ -1447,7 +1447,7 @@ Container
   /* ── Category icon: small pill on the left ───────────────────────────────── */
   .category-card .icon,
   .phone-only-emoji,
-.user-quiz--phone-only-emoji {
+  .user-quiz--phone-only-emoji {
     font-size: 1.25rem;
     margin-bottom: 0;
     display: flex;
@@ -1455,11 +1455,9 @@ Container
     justify-content: center;
     width: 34px;
     height: 34px;
-    /* Suppress the desktop hover spin */
     transform: none !important;
     transition: none;
     filter: none;
-    /* Pill background */
     background: inherit;
     border-radius: 8px;
   }
@@ -2464,7 +2462,7 @@ Container
 
 @media (max-width: 640px) {
   .phone-only-emoji,
-.user-quiz--phone-only-emoji {
+  .user-quiz--phone-only-emoji {
     display: inline;
   }
 
@@ -2555,6 +2553,7 @@ Container
     order: 2 !important;
     direction: rtl !important;
     flex-shrink: 0 !important;
+    margin-bottom: 8px !important;
   }
 
   /* Type chips row: stays as badges, smaller, left-to-right reading order */
@@ -2564,13 +2563,15 @@ Container
     gap: 3px !important;
     margin-top: 0 !important;
     justify-content: flex-start !important;
+    margin-bottom: 7px !important;
   }
 
   /* Individual chips: smaller font + tighter padding for compact row */
   .exam-card.user-quiz-card .user-quiz-types-row span {
     font-size: 0.6rem !important;
     padding: 1px 6px !important;
-    border-radius: 10px !important;
+    border-radius: 10px ;
+    margin-left: 3px;
   }
 
   /* Actions wrap: static, pushed to far right, horizontal pill buttons */
