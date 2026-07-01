@@ -1,11 +1,13 @@
-// settings.js - Settings page: name, faculty, year, term, quiz style, default mode
+// settings.js - Settings page: name, education type, faculty, year, term, quiz style, default mode
 import { getManifest } from "./quizManifest.js";
 import { userProfile } from "./userProfile.js";
 import {
-  extractMetadata,
+  getAvailableFaculties,
   getAvailableYears,
   getAvailableTerms,
-  filterCourses,
+  filterTrackCourses,
+  filterFeaturedCourses,
+  isUniversityTrack,
 } from "../shared/filterUtils.js";
 import { validateUsername } from "../shared/user-name-validation.js";
 
@@ -23,6 +25,44 @@ function escapeHtml(unsafe) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function getEducationType() {
+  return document.getElementById("settingsEducationType")?.value || "University";
+}
+
+function getTrackFilters(overrides = {}) {
+  const education_type = getEducationType();
+  const faculty = document.getElementById("settingsFaculty")?.value;
+  const year = document.getElementById("settingsYear")?.value;
+  const term = document.getElementById("settingsTerm")?.value;
+
+  const filters = {
+    education_type,
+    ...overrides,
+  };
+
+  if (isUniversityTrack(education_type) && faculty) {
+    filters.faculty = faculty;
+  }
+  if (year) filters.year = year;
+  if (term) filters.term = term;
+
+  return filters;
+}
+
+function formatCourseDetails(course) {
+  if (course.education_type === "Featured") return "";
+  if (isUniversityTrack(course.education_type)) {
+    return `${escapeHtml(course.faculty)} | ${course.year} | ${course.term}`;
+  }
+  return `${course.year} | ${course.term}`;
+}
+
+function toggleFacultyVisibility() {
+  const row = document.getElementById("settingsFacultyRow");
+  if (!row) return;
+  row.style.display = isUniversityTrack(getEducationType()) ? "" : "none";
 }
 
 function setOptionCardsSelection(name, value) {
@@ -58,18 +98,39 @@ function bindOptionCards(name) {
 }
 
 function setupCascade() {
+  const educationTypeSelect = document.getElementById("settingsEducationType");
   const facultySelect = document.getElementById("settingsFaculty");
   const yearSelect = document.getElementById("settingsYear");
   const termSelect = document.getElementById("settingsTerm");
 
-  if (!facultySelect || !yearSelect || !termSelect || !categoryTree) return;
+  if (!educationTypeSelect || !facultySelect || !yearSelect || !termSelect || !categoryTree) {
+    return;
+  }
+
+  educationTypeSelect.addEventListener("change", () => {
+    if (!isUniversityTrack(getEducationType())) {
+      facultySelect.value = "All";
+    }
+    populateAcademic(
+      getEducationType(),
+      facultySelect.value,
+      "All",
+      "All",
+    );
+    toggleFacultyVisibility();
+    renderCourseManagerList();
+    renderFeaturedCourseManagerList();
+  });
 
   facultySelect.addEventListener("change", () => {
+    const education_type = getEducationType();
     const faculty = facultySelect.value;
-    const years =
-      faculty === "All"
-        ? extractMetadata(categoryTree).years
-        : getAvailableYears(categoryTree, faculty);
+    const years = isUniversityTrack(education_type)
+      ? faculty === "All"
+        ? getAvailableYears(categoryTree, { education_type, faculty: "All" })
+        : getAvailableYears(categoryTree, { education_type, faculty })
+      : getAvailableYears(categoryTree, { education_type });
+
     yearSelect.innerHTML =
       '<option value="All">All Years</option>' +
       years
@@ -79,7 +140,12 @@ function setupCascade() {
         )
         .join("");
     yearSelect.value = "All";
-    const terms = getAvailableTerms(categoryTree, faculty, "All");
+
+    const terms = getAvailableTerms(categoryTree, {
+      education_type,
+      faculty: isUniversityTrack(education_type) ? faculty : undefined,
+      year: "All",
+    });
     termSelect.innerHTML =
       '<option value="All">All Terms</option>' +
       terms
@@ -92,9 +158,14 @@ function setupCascade() {
   });
 
   yearSelect.addEventListener("change", () => {
+    const education_type = getEducationType();
     const faculty = facultySelect.value;
     const year = yearSelect.value;
-    const terms = getAvailableTerms(categoryTree, faculty, year);
+    const terms = getAvailableTerms(categoryTree, {
+      education_type,
+      faculty: isUniversityTrack(education_type) ? faculty : undefined,
+      year,
+    });
     const current = termSelect.value;
     termSelect.innerHTML =
       '<option value="All">All Terms</option>' +
@@ -109,44 +180,60 @@ function setupCascade() {
   });
 }
 
-function populateAcademic(faculty, year, term) {
-  const metadata = extractMetadata(categoryTree);
+function populateAcademic(education_type, faculty, year, term) {
+  const educationTypeSelect = document.getElementById("settingsEducationType");
   const facultySelect = document.getElementById("settingsFaculty");
   const yearSelect = document.getElementById("settingsYear");
   const termSelect = document.getElementById("settingsTerm");
-  if (!facultySelect || !yearSelect || !termSelect) return;
+  if (!educationTypeSelect || !facultySelect || !yearSelect || !termSelect) {
+    return;
+  }
 
-  facultySelect.innerHTML =
-    '<option value="All">All Faculties</option>' +
-    metadata.faculties
-      .map(
-        (f) =>
-          `<option value="${escapeHtml(f)}" ${f === faculty ? "selected" : ""}>${escapeHtml(f)}</option>`,
-      )
-      .join("");
+  educationTypeSelect.value = education_type || "University";
 
-  const years =
-    faculty === "All"
-      ? metadata.years
-      : getAvailableYears(categoryTree, faculty);
+  if (isUniversityTrack(education_type)) {
+    const faculties = getAvailableFaculties(categoryTree, "University");
+    facultySelect.innerHTML =
+      '<option value="All">All Faculties</option>' +
+      faculties
+        .map(
+          (f) =>
+            `<option value="${escapeHtml(f)}" ${f === faculty ? "selected" : ""}>${escapeHtml(f)}</option>`,
+        )
+        .join("");
+  } else {
+    facultySelect.innerHTML = '<option value="All">All Faculties</option>';
+    facultySelect.value = "All";
+  }
+
+  const years = getAvailableYears(categoryTree, {
+    education_type,
+    faculty: isUniversityTrack(education_type) ? faculty : undefined,
+  });
   yearSelect.innerHTML =
     '<option value="All">All Years</option>' +
     years
       .map(
         (y) =>
-          `<option value="${escapeHtml(y)}" ${y === year ? "selected" : ""}>العام ${escapeHtml(y)}</option>`,
+          `<option value="${escapeHtml(y)}" ${String(y) === String(year) ? "selected" : ""}>العام ${escapeHtml(y)}</option>`,
       )
       .join("");
 
-  const terms = getAvailableTerms(categoryTree, faculty, year);
+  const terms = getAvailableTerms(categoryTree, {
+    education_type,
+    faculty: isUniversityTrack(education_type) ? faculty : undefined,
+    year,
+  });
   termSelect.innerHTML =
     '<option value="All">All Terms</option>' +
     terms
       .map(
         (t) =>
-          `<option value="${escapeHtml(t)}" ${t === term ? "selected" : ""}>الترم ${escapeHtml(t)}</option>`,
+          `<option value="${escapeHtml(t)}" ${String(t) === String(term) ? "selected" : ""}>الترم ${escapeHtml(t)}</option>`,
       )
       .join("");
+
+  toggleFacultyVisibility();
 }
 
 function showFeedback(message, isError = false) {
@@ -163,7 +250,6 @@ function showFeedback(message, isError = false) {
   }
 }
 
-// === AUTO-SAVE FUNCTIONS ===
 function scheduleAutoSave() {
   clearTimeout(autoSaveTimeout);
   showSavingIndicator();
@@ -196,6 +282,21 @@ function showSavedIndicator() {
   }
 }
 
+function unsubscribeTrackCourses(profile) {
+  const oldMatchingCourses = filterTrackCourses(categoryTree, {
+    education_type: profile.education_type || "University",
+    faculty: profile.faculty,
+    year: profile.year,
+    term: profile.term,
+  });
+  const subscribedIds = userProfile.getSubscribedCourseIds();
+  oldMatchingCourses.forEach((course) => {
+    if (subscribedIds.includes(course.id)) {
+      userProfile.unsubscribeFromCourse(course.id);
+    }
+  });
+}
+
 async function saveSettingsAuto() {
   if (isSaving) return;
   isSaving = true;
@@ -203,7 +304,6 @@ async function saveSettingsAuto() {
   try {
     const username = document.getElementById("settingsName")?.value?.trim();
 
-    // Validate and save username
     if (username) {
       const validation = validateUsername(username);
       if (!validation.valid) {
@@ -214,37 +314,40 @@ async function saveSettingsAuto() {
       userProfile.setUsername(username);
     }
 
-    // Save academic info
+    const education_type = getEducationType();
     const faculty = document.getElementById("settingsFaculty")?.value;
     const year = document.getElementById("settingsYear")?.value;
     const term = document.getElementById("settingsTerm")?.value;
 
     const oldProfile = userProfile.getProfile();
-    userProfile.updateAcademicInfo({ faculty, year, term });
+    userProfile.updateAcademicInfo({
+      education_type,
+      faculty: isUniversityTrack(education_type) ? faculty : "All",
+      year,
+      term,
+    });
 
-    // Handle academic info changes (subscription updates)
     const academicInfoChanged =
-      oldProfile.faculty !== faculty ||
+      oldProfile.education_type !== education_type ||
+      oldProfile.faculty !== (isUniversityTrack(education_type) ? faculty : "All") ||
       oldProfile.year !== year ||
       oldProfile.term !== term;
 
     if (academicInfoChanged) {
-      if (
-        oldProfile.faculty !== "All" &&
+      const hadSpecificTrack =
         oldProfile.year !== "All" &&
-        oldProfile.term !== "All"
-      ) {
-        const oldMatchingCourses = filterCourses(categoryTree, oldProfile);
-        const oldMatchingIds = oldMatchingCourses.map((c) => c.id);
-        const subscribedIds = userProfile.getSubscribedCourseIds();
-        oldMatchingIds.forEach((courseId) => {
-          if (subscribedIds.includes(courseId)) {
-            userProfile.unsubscribeFromCourse(courseId);
-          }
-        });
+        oldProfile.term !== "All" &&
+        (isUniversityTrack(oldProfile.education_type || "University")
+          ? oldProfile.faculty && oldProfile.faculty !== "All"
+          : true);
+
+      if (hadSpecificTrack) {
+        unsubscribeTrackCourses(oldProfile);
       }
+
       userProfile.initializeDefaultSubscriptions(categoryTree);
-      renderCourseManagerList(); // Re-render now that subscriptions reflect the new profile
+      renderCourseManagerList();
+      renderFeaturedCourseManagerList();
     }
 
     showSavedIndicator();
@@ -257,12 +360,10 @@ async function saveSettingsAuto() {
 }
 
 function setupAutoSave() {
-  // Username auto-save with debounce
   const nameInput = document.getElementById("settingsName");
   if (nameInput) {
     nameInput.addEventListener("input", scheduleAutoSave);
     nameInput.addEventListener("blur", () => {
-      // Validate immediately on blur
       const username = nameInput.value?.trim();
       if (username) {
         const validation = validateUsername(username);
@@ -273,19 +374,22 @@ function setupAutoSave() {
     });
   }
 
-  // Academic dropdowns auto-save
-  ["settingsFaculty", "settingsYear", "settingsTerm"].forEach((id) => {
+  [
+    "settingsEducationType",
+    "settingsFaculty",
+    "settingsYear",
+    "settingsTerm",
+  ].forEach((id) => {
     const select = document.getElementById(id);
     if (select) {
       select.addEventListener("change", () => {
         scheduleAutoSave();
-        // Re-render course list when academic info changes
         renderCourseManagerList();
+        renderFeaturedCourseManagerList();
       });
     }
   });
 
-  // Quiz style auto-save
   document.querySelectorAll('input[name="quizStyle"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       userProfile.setQuizStyle(radio.value);
@@ -293,7 +397,6 @@ function setupAutoSave() {
     });
   });
 
-  // Default mode auto-save
   document.querySelectorAll('input[name="defaultMode"]').forEach((radio) => {
     radio.addEventListener("change", () => {
       userProfile.setDefaultQuizMode(radio.value);
@@ -302,22 +405,15 @@ function setupAutoSave() {
   });
 }
 
-// --- Course Manager Logic ---
 function renderCourseManagerList() {
   const listContainer = document.getElementById("courseManagerList");
   if (!listContainer) return;
 
-  const faculty = document.getElementById("settingsFaculty")?.value;
-  const year = document.getElementById("settingsYear")?.value;
-  const term = document.getElementById("settingsTerm")?.value;
+  const displayFilters = getTrackFilters();
+  delete displayFilters.year;
+  delete displayFilters.term;
 
-  const tempProfile = {
-    faculty: faculty === "All" ? null : faculty,
-    // year: year === "All" ? null : year,
-    // term: term === "All" ? null : term,
-  };
-
-  const allCourses = filterCourses(categoryTree, tempProfile);
+  const allCourses = filterTrackCourses(categoryTree, displayFilters);
   const subscribedIds = userProfile.getSubscribedCourseIds();
 
   if (allCourses.length === 0) {
@@ -329,13 +425,43 @@ function renderCourseManagerList() {
   listContainer.innerHTML = allCourses
     .map((course) => {
       const isSubscribed = subscribedIds.includes(course.id);
+      const details = formatCourseDetails(course);
       return `
       <div class="course-item">
         <div class="course-info">
           <h4>${escapeHtml(course.name)}</h4>
-          <p class="course-details">
-            ${escapeHtml(course.faculty)} | ${course.year} | ${course.term}
-          </p>
+          ${details ? `<p class="course-details">${details}</p>` : ""}
+        </div>
+        <label class="toggle-container">
+            <input type="checkbox" onchange="toggleCourseSubscription('${escapeHtml(course.id)}')" ${isSubscribed ? "checked" : ""}>
+            <span class="toggle-switch"></span>
+        </label>
+      </div>
+    `;
+    })
+    .join("");
+}
+
+function renderFeaturedCourseManagerList() {
+  const listContainer = document.getElementById("featuredCourseManagerList");
+  if (!listContainer) return;
+
+  const featuredCourses = filterFeaturedCourses(categoryTree);
+  const subscribedIds = userProfile.getSubscribedCourseIds();
+
+  if (featuredCourses.length === 0) {
+    listContainer.innerHTML =
+      '<p style="grid-column: 1/-1; text-align:center; padding:20px; color:var(--color-text-secondary);">لا توجد مواد مميزة متاحة حالياً</p>';
+    return;
+  }
+
+  listContainer.innerHTML = featuredCourses
+    .map((course) => {
+      const isSubscribed = subscribedIds.includes(course.id);
+      return `
+      <div class="course-item">
+        <div class="course-info">
+          <h4>${escapeHtml(course.name)}</h4>
         </div>
         <label class="toggle-container">
             <input type="checkbox" onchange="toggleCourseSubscription('${escapeHtml(course.id)}')" ${isSubscribed ? "checked" : ""}>
@@ -350,9 +476,6 @@ function renderCourseManagerList() {
 window.toggleCourseSubscription = function (courseId) {
   try {
     userProfile.toggleSubscription(courseId);
-    // No need to re-render entire list, checkbox state is enough
-    // But if we want to update UI feedback or something?
-    // Let's leave it simple.
   } catch (error) {
     console.error("Error toggling subscription:", error);
   }
@@ -368,33 +491,27 @@ async function init() {
   }
 
   const profile = userProfile.getProfile();
+  const education_type = profile.education_type || "University";
 
   const nameInput = document.getElementById("settingsName");
   if (nameInput) nameInput.value = profile.username || "";
 
   populateAcademic(
+    education_type,
     profile.faculty || "All",
     profile.year || "All",
     profile.term || "All",
   );
   setupCascade();
 
-  // Render initial course list
   renderCourseManagerList();
-
-  // Update course list when academic info changes
-  ["settingsFaculty", "settingsYear", "settingsTerm"].forEach((id) => {
-    document
-      .getElementById(id)
-      ?.addEventListener("change", renderCourseManagerList);
-  });
+  renderFeaturedCourseManagerList();
 
   setOptionCardsSelection("quizStyle", profile.quizStyle || "pagination");
   setOptionCardsSelection("defaultMode", profile.defaultQuizMode || "practice");
   bindOptionCards("quizStyle");
   bindOptionCards("defaultMode");
 
-  // Setup auto-save instead of form submit
   setupAutoSave();
 }
 

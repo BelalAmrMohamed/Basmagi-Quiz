@@ -171,14 +171,8 @@
                 style="position: absolute; top: 30px; left: 40px; border: 1px solid rgba(0,0,0,0.1);">تخطي</button>
         </div>
 
-        <div class="progress-container">
-            <div class="progress-step active"></div> <!-- Name -->
-            <div class="progress-step"></div> <!-- Faculty -->
-            <div class="progress-step"></div> <!-- Year -->
-            <div class="progress-step"></div> <!-- Term -->
-            <div class="progress-step"></div> <!-- Preferences -->
-            <div class="progress-step"></div> <!-- Courses -->
-            <div class="progress-step"></div> <!-- Welcome -->
+        <div class="progress-container" id="progressContainer">
+            <!-- Progress dots rendered dynamically by onboarding.js -->
         </div>
 
         <div class="wizard-content">
@@ -192,34 +186,51 @@
                 </div>
             </div>
 
-            <!-- Step 1: Faculty -->
+            <!-- Step 1: Education Type -->
             <div id="step-1" class="step-panel">
+                <h2 class="step-title">ما هو مسارك الدراسي؟</h2>
+                <div id="educationTypeGrid" class="cards-grid">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+
+            <!-- Step 2: College (University only) -->
+            <div id="step-2" class="step-panel">
                 <h2 class="step-title">في أي كلية تدرس؟</h2>
                 <div id="facultyGrid" class="cards-grid">
                     <!-- JS Injected -->
                 </div>
             </div>
 
-            <!-- Step 2: Year -->
-            <div id="step-2" class="step-panel">
+            <!-- Step 3: Year -->
+            <div id="step-3" class="step-panel">
                 <h2 class="step-title">أي سنة دراسية؟</h2>
                 <div id="yearGrid" class="cards-grid"></div>
             </div>
 
-            <!-- Step 3: Term -->
-            <div id="step-3" class="step-panel">
+            <!-- Step 4: Term -->
+            <div id="step-4" class="step-panel">
                 <h2 class="step-title">أي تيرم؟</h2>
                 <div id="termGrid" class="cards-grid"></div>
             </div>
 
-            <!-- Step 4: Courses -->
-            <div id="step-4" class="step-panel">
+            <!-- Step 5: Courses -->
+            <div id="step-5" class="step-panel">
                 <h2 class="step-title">اختر موادك (إضافة حذف)</h2>
                 <div id="coursesList" class="course-list"></div>
             </div>
 
-            <!-- Step 5: Preferences -->
-            <div id="step-5" class="step-panel">
+            <!-- Step 6: Featured Courses -->
+            <div id="step-6" class="step-panel">
+                <h2 class="step-title">المواد المميزة</h2>
+                <p style="text-align:center;color:var(--text-secondary);margin-bottom:10px;">
+                    مواد عامة يمكنك الاشتراك فيها بجانب مسارك الدراسي
+                </p>
+                <div id="featuredCoursesList" class="course-list"></div>
+            </div>
+
+            <!-- Step 7: Preferences -->
+            <div id="step-7" class="step-panel">
                 <h2 class="step-title">تفضيلات الاختبار</h2>
 
                 <h3 style="font-size:1rem; margin-bottom:10px;">وضع الاختبار المفضل</h3>
@@ -271,8 +282,8 @@
                 </div>
             </div>
 
-            <!-- Step 6: Welcome -->
-            <div id="step-6" class="step-panel">
+            <!-- Step 8: Welcome -->
+            <div id="step-8" class="step-panel">
                 <div class="welcome-step">
                     <div class="welcome-icon">🎉</div>
                     <h2 id="welcomeMsg">أهلاً بك!</h2>

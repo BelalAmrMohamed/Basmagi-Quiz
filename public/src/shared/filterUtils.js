@@ -1,5 +1,41 @@
 // src/shared/filterUtils.js - Course Filtering & Metadata Extraction
 
+const SCHOOL_TYPES = new Set(["Primary", "Middle", "High"]);
+
+function sortNumeric(a, b) {
+  const numA = parseInt(a, 10);
+  const numB = parseInt(b, 10);
+  if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+  return String(a).localeCompare(String(b));
+}
+
+export function isUniversityTrack(educationType) {
+  return educationType === "University";
+}
+
+export function isSchoolTrack(educationType) {
+  return SCHOOL_TYPES.has(educationType);
+}
+
+/**
+ * Get available colleges for a university track.
+ */
+export function getAvailableFaculties(categoryTree, educationType = "University") {
+  const faculties = new Set();
+
+  Object.values(categoryTree).forEach((category) => {
+    if (
+      !category.parent &&
+      category.education_type === educationType &&
+      category.faculty
+    ) {
+      faculties.add(category.faculty);
+    }
+  });
+
+  return Array.from(faculties).sort();
+}
+
 /**
  * Extract unique values for faculties, years, and terms from categoryTree
  */
@@ -36,73 +72,180 @@ export function extractMetadata(categoryTree) {
   };
 }
 
+function getAvailableYearsForTrack(categoryTree, { education_type, faculty }) {
+  const years = new Set();
+
+  Object.values(categoryTree).forEach((category) => {
+    if (category.parent || category.education_type !== education_type || !category.year) {
+      return;
+    }
+
+    if (
+      isUniversityTrack(education_type) &&
+      faculty &&
+      faculty !== "All" &&
+      category.faculty !== faculty
+    ) {
+      return;
+    }
+
+    years.add(String(category.year));
+  });
+
+  return Array.from(years).sort(sortNumeric);
+}
+
 /**
  * Get available years for a specific faculty (cascading filter)
  * @param {Object} categoryTree - The category tree
- * @param {string} faculty - Selected faculty ('All' or specific faculty)
+ * @param {string|Object} facultyOrFilters - Faculty string or { education_type, faculty }
  * @returns {Array} Array of available years
  */
-export function getAvailableYears(categoryTree, faculty) {
+export function getAvailableYears(categoryTree, facultyOrFilters) {
+  if (
+    facultyOrFilters &&
+    typeof facultyOrFilters === "object" &&
+    facultyOrFilters.education_type
+  ) {
+    return getAvailableYearsForTrack(categoryTree, facultyOrFilters);
+  }
+
+  const faculty = facultyOrFilters;
   const years = new Set();
 
   Object.values(categoryTree).forEach((category) => {
     if (!category.parent && category.year) {
-      // If "All" is selected, include all years
       if (faculty === "All") {
         years.add(category.year);
-      }
-      // Otherwise, only include years for the selected faculty
-      else if (category.faculty === faculty) {
+      } else if (category.faculty === faculty) {
         years.add(category.year);
       }
     }
   });
 
-  return Array.from(years).sort((a, b) => {
-    const numA = parseInt(a);
-    const numB = parseInt(b);
-    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-    return a.localeCompare(b);
+  return Array.from(years).sort(sortNumeric);
+}
+
+function getAvailableTermsForTrack(
+  categoryTree,
+  { education_type, faculty, year },
+) {
+  const terms = new Set();
+
+  Object.values(categoryTree).forEach((category) => {
+    if (category.parent || category.education_type !== education_type || !category.term) {
+      return;
+    }
+
+    if (
+      isUniversityTrack(education_type) &&
+      faculty &&
+      faculty !== "All" &&
+      category.faculty !== faculty
+    ) {
+      return;
+    }
+
+    if (year && year !== "All" && String(category.year) !== String(year)) {
+      return;
+    }
+
+    terms.add(String(category.term));
   });
+
+  return Array.from(terms).sort(sortNumeric);
 }
 
 /**
  * Get available terms for a specific faculty and year (cascading filter)
  * @param {Object} categoryTree - The category tree
- * @param {string} faculty - Selected faculty ('All' or specific faculty)
- * @param {string} year - Selected year ('All' or specific year)
+ * @param {string|Object} facultyOrFilters - Faculty string or { education_type, faculty, year }
+ * @param {string} [year] - Selected year when first arg is faculty string
  * @returns {Array} Array of available terms
  */
-export function getAvailableTerms(categoryTree, faculty, year) {
+export function getAvailableTerms(categoryTree, facultyOrFilters, year) {
+  if (
+    facultyOrFilters &&
+    typeof facultyOrFilters === "object" &&
+    facultyOrFilters.education_type
+  ) {
+    return getAvailableTermsForTrack(categoryTree, facultyOrFilters);
+  }
+
+  const faculty = facultyOrFilters;
   const terms = new Set();
 
   Object.values(categoryTree).forEach((category) => {
     if (!category.parent && category.term) {
-      // If both faculty and year are "All", include all terms
       if (faculty === "All" && year === "All") {
         terms.add(category.term);
-      }
-      // If only faculty is "All", filter by year
-      else if (faculty === "All" && category.year === year) {
+      } else if (faculty === "All" && category.year === year) {
         terms.add(category.term);
-      }
-      // If only year is "All", filter by faculty
-      else if (year === "All" && category.faculty === faculty) {
+      } else if (year === "All" && category.faculty === faculty) {
         terms.add(category.term);
-      }
-      // If both are specified, filter by both
-      else if (category.faculty === faculty && category.year === year) {
+      } else if (category.faculty === faculty && category.year === year) {
         terms.add(category.term);
       }
     }
   });
 
-  return Array.from(terms).sort((a, b) => {
-    const numA = parseInt(a);
-    const numB = parseInt(b);
-    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-    return a.localeCompare(b);
-  });
+  return Array.from(terms).sort(sortNumeric);
+}
+
+/**
+ * Filter track courses by education_type (excludes Featured).
+ * University requires faculty/year/term; school tracks require year/term only.
+ */
+export function filterTrackCourses(categoryTree, filters) {
+  const { education_type, faculty, year, term } = filters;
+
+  return Object.entries(categoryTree)
+    .filter(([key, category]) => {
+      if (category.parent) return false;
+      if (category.education_type === "Featured") return false;
+      if (education_type && category.education_type !== education_type) {
+        return false;
+      }
+
+      const trackType = education_type || category.education_type;
+
+      if (isUniversityTrack(trackType)) {
+        if (!category.faculty || !category.year || !category.term) return false;
+        if (faculty && faculty !== "All" && category.faculty !== faculty) {
+          return false;
+        }
+      } else if (isSchoolTrack(trackType)) {
+        if (!category.year || !category.term) return false;
+      } else if (trackType) {
+        return false;
+      } else if (!category.faculty || !category.year || !category.term) {
+        return false;
+      }
+
+      if (year && year !== "All" && String(category.year) !== String(year)) {
+        return false;
+      }
+
+      if (term && term !== "All" && String(category.term) !== String(term)) {
+        return false;
+      }
+
+      return true;
+    })
+    .map(([key, category]) => ({ key, ...category }));
+}
+
+/**
+ * Filter standalone featured courses.
+ */
+export function filterFeaturedCourses(categoryTree) {
+  return Object.entries(categoryTree)
+    .filter(
+      ([key, category]) =>
+        !category.parent && category.education_type === "Featured",
+    )
+    .map(([key, category]) => ({ key, ...category }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

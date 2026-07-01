@@ -227,36 +227,44 @@ export class UserProfileManager {
    * This should be called when user first sets their faculty/year/term
    */
   initializeDefaultSubscriptions(categoryTree) {
-    const { faculty, year, term } = this.profile;
+    const { faculty, year, term, education_type } = this.profile;
+    const trackType = education_type || "University";
 
-    // Don't auto-subscribe if user hasn't set their info yet
-    if (faculty === "All" || year === "All" || term === "All") {
+    if (year === "All" || term === "All") {
+      return [];
+    }
+
+    if (trackType === "University" && (faculty === "All" || !faculty)) {
       return [];
     }
 
     const matchingCourses = [];
 
-    // Find all courses that match user's academic info
     Object.values(categoryTree).forEach((category) => {
-      // Only consider top-level categories (courses) with metadata
       if (
         !category.parent &&
-        category.faculty &&
+        category.education_type !== "Featured" &&
         category.year &&
-        category.term
+        category.term &&
+        category.id
       ) {
+        if (category.education_type !== trackType) return;
+
         if (
-          category.faculty === faculty &&
-          category.year === year &&
-          category.term === term &&
-          category.id
+          String(category.year) !== String(year) ||
+          String(category.term) !== String(term)
         ) {
-          matchingCourses.push(category.id);
+          return;
         }
+
+        if (trackType === "University") {
+          if (!category.faculty || category.faculty !== faculty) return;
+        }
+
+        matchingCourses.push(category.id);
       }
     });
 
-    // Add matching courses to subscriptions (without duplicates)
     matchingCourses.forEach((courseId) => {
       if (!this.isSubscribed(courseId)) {
         this.subscribeToCourse(courseId);

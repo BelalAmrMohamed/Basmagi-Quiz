@@ -1,24 +1,25 @@
 import { userProfile } from "./userProfile.js";
 import { getManifest } from "./quizManifest.js";
 import {
-  extractMetadata,
+  getAvailableFaculties,
   getAvailableYears,
   getAvailableTerms,
-  filterCourses,
+  filterTrackCourses,
+  filterFeaturedCourses,
+  isUniversityTrack,
 } from "../shared/filterUtils.js";
 
 import {
   showNotification,
-  // confirmationNotification,
 } from "../components/notifications.js";
 
 let categoryTree = null;
-let currentStep = 0;
-const totalSteps = 6;
+let currentStepIndex = 0;
 const DRAFT_KEY = "onboarding_draft";
 
 const state = {
   username: "",
+  education_type: null,
   faculty: null,
   year: null,
   term: null,
@@ -27,15 +28,77 @@ const state = {
   subscribedCourses: [],
 };
 
+const EDUCATION_TYPES = [
+  { value: "Primary", label: "المدرسة الابتدائية", icon: "🎒" },
+  { value: "Middle", label: "المدرسة الإعدادية", icon: "📘" },
+  { value: "High", label: "المدرسة الثانوية", icon: "🎓" },
+  { value: "University", label: "الجامعة", icon: "🏛️" },
+];
+
+const STEPS = [
+  {
+    id: "name",
+    panel: "step-0",
+    validate: () => state.username.length > 0,
+  },
+  {
+    id: "educationType",
+    panel: "step-1",
+    validate: () => !!state.education_type,
+    render: renderEducationTypeStep,
+  },
+  {
+    id: "college",
+    panel: "step-2",
+    skip: () => !isUniversityTrack(state.education_type),
+    validate: () => !!state.faculty,
+    render: renderFacultyStep,
+  },
+  {
+    id: "year",
+    panel: "step-3",
+    validate: () => !!state.year,
+    render: renderYearStep,
+  },
+  {
+    id: "term",
+    panel: "step-4",
+    validate: () => !!state.term,
+    render: renderTermStep,
+  },
+  {
+    id: "courses",
+    panel: "step-5",
+    validate: () => true,
+    render: renderCoursesStep,
+  },
+  {
+    id: "featured",
+    panel: "step-6",
+    validate: () => true,
+    render: renderFeaturedStep,
+  },
+  {
+    id: "preferences",
+    panel: "step-7",
+    validate: () => true,
+  },
+  {
+    id: "welcome",
+    panel: "step-8",
+    validate: () => true,
+    render: renderWelcomeStep,
+  },
+];
+
 // ── Draft Persistence ─────────────────────────────────────────────────────────
-// Saves progress to localStorage so a page reload resumes where the user left off.
 
 function saveDraft() {
   try {
     localStorage.setItem(
       DRAFT_KEY,
       JSON.stringify({
-        step: currentStep,
+        stepIndex: currentStepIndex,
         savedState: {
           ...state,
           subscribedCourses: [...state.subscribedCourses],
@@ -51,14 +114,21 @@ function loadDraft() {
   try {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
-    const { step, savedState } = JSON.parse(raw);
+    const { stepIndex, step, savedState } = JSON.parse(raw);
     if (savedState) Object.assign(state, savedState);
-    if (typeof step === "number" && step >= 0 && step <= totalSteps) {
-      currentStep = step;
+    const resolvedIndex =
+      typeof stepIndex === "number"
+        ? stepIndex
+        : typeof step === "number"
+          ? step
+          : 0;
+    if (resolvedIndex >= 0 && resolvedIndex < STEPS.length) {
+      currentStepIndex = resolvedIndex;
     }
-    // If resuming at the courses step with courses already in the draft,
-    // skip the auto-subscription pass so the user's manual changes are kept.
-    if (currentStep >= 5 && state.subscribedCourses.length > 0) {
+    if (
+      STEPS[currentStepIndex]?.id === "courses" &&
+      state.subscribedCourses.length > 0
+    ) {
       hasAutoSelected = true;
     }
   } catch (e) {
@@ -99,13 +169,60 @@ function escapeHtml(unsafe) {
     .replace(/'/g, "&#039;");
 }
 
+function getActiveSteps() {
+  return STEPS.filter((step) => !(step.skip && step.skip()));
+}
+
+function getCurrentStep() {
+  return STEPS[currentStepIndex];
+}
+
+function findNextStepIndex(fromIndex) {
+  for (let i = fromIndex + 1; i < STEPS.length; i++) {
+    const step = STEPS[i];
+    if (step.skip && step.skip()) continue;
+    return i;
+  }
+  return -1;
+}
+
+function findPrevStepIndex(fromIndex) {
+  for (let i = fromIndex - 1; i >= 0; i--) {
+    const step = STEPS[i];
+    if (step.skip && step.skip()) continue;
+    return i;
+  }
+  return -1;
+}
+
+function getTrackFilters(overrides = {}) {
+  const filters = {
+    education_type: state.education_type,
+    ...overrides,
+  };
+
+  if (isUniversityTrack(state.education_type)) {
+    filters.faculty = state.faculty;
+  }
+
+  return filters;
+}
+
+function formatCourseDetails(course) {
+  if (course.education_type === "Featured") return "";
+  if (isUniversityTrack(course.education_type)) {
+    return `${escapeHtml(course.faculty)} | ${course.year} | ${course.term}`;
+  }
+  return `${course.year} | ${course.term}`;
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
   try {
     const manifest = await getManifest();
     categoryTree = manifest.categoryTree || {};
-    loadDraft(); // restore step + state before first render
+    loadDraft();
     setupEventListeners();
     renderStep();
   } catch (e) {
@@ -133,37 +250,38 @@ function setupEventListeners() {
 // ── Progress ──────────────────────────────────────────────────────────────────
 
 function updateProgress() {
-  document.querySelectorAll(".progress-step").forEach((dot, idx) => {
-    dot.classList.toggle("active", idx === currentStep);
-    dot.classList.toggle("completed", idx < currentStep);
-  });
+  const activeSteps = getActiveSteps();
+  const currentStep = getCurrentStep();
+  const activeIndex = activeSteps.findIndex((s) => s.id === currentStep.id);
+  const container = document.getElementById("progressContainer");
+
+  if (container) {
+    container.innerHTML = activeSteps
+      .map((_, idx) => {
+        let cls = "progress-step";
+        if (idx === activeIndex) cls += " active";
+        else if (idx < activeIndex) cls += " completed";
+        return `<div class="${cls}"></div>`;
+      })
+      .join("");
+  }
 
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
-  const skipBtn = document.getElementById("skipBtn");
 
-  prevBtn.style.visibility = currentStep === 0 ? "hidden" : "visible";
-  nextBtn.textContent = currentStep === totalSteps ? "ابدأ رحلتك 🚀" : "التالي";
+  prevBtn.style.visibility = findPrevStepIndex(currentStepIndex) < 0 ? "hidden" : "visible";
+  nextBtn.textContent =
+    currentStep.id === "welcome" ? "ابدأ رحلتك 🚀" : "التالي";
 }
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
 function validateStep() {
-  switch (currentStep) {
-    case 0:
-      state.username = document.getElementById("nameInput").value.trim();
-      return state.username.length > 0;
-    case 1:
-      return !!state.faculty;
-    case 2:
-      return !!state.year;
-    case 3:
-      return !!state.term;
-    case 4:
-    case 5:
-    default:
-      return true;
+  const step = getCurrentStep();
+  if (step.id === "name") {
+    state.username = document.getElementById("nameInput").value.trim();
   }
+  return step.validate ? step.validate() : true;
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -173,18 +291,25 @@ async function nextStep() {
     showNotification("الرجاء إكمال البيانات المطلوبة");
     return;
   }
-  if (currentStep < totalSteps) {
-    currentStep++;
+
+  const step = getCurrentStep();
+  if (step.id === "welcome") {
+    await saveAndRedirect();
+    return;
+  }
+
+  const nextIndex = findNextStepIndex(currentStepIndex);
+  if (nextIndex >= 0) {
+    currentStepIndex = nextIndex;
     saveDraft();
     renderStep();
-  } else {
-    await saveAndRedirect();
   }
 }
 
 function prevStep() {
-  if (currentStep > 0) {
-    currentStep--;
+  const prevIndex = findPrevStepIndex(currentStepIndex);
+  if (prevIndex >= 0) {
+    currentStepIndex = prevIndex;
     saveDraft();
     renderStep();
   }
@@ -197,29 +322,58 @@ function renderStep() {
     .querySelectorAll(".step-panel")
     .forEach((el) => el.classList.remove("active"));
 
-  const panel = document.getElementById(`step-${currentStep}`);
+  const step = getCurrentStep();
+  const panel = document.getElementById(step.panel);
   if (panel) panel.classList.add("active");
 
-  if (currentStep === 0) {
-    // Restore the name field from draft so a reload doesn't blank it
+  if (step.id === "name") {
     const nameInput = document.getElementById("nameInput");
     if (nameInput && state.username) nameInput.value = state.username;
   }
-  if (currentStep === 1) renderFacultyStep();
-  if (currentStep === 2) renderYearStep();
-  if (currentStep === 3) renderTermStep();
-  if (currentStep === 4) renderCoursesStep();
-  if (currentStep === 6) renderWelcomeStep();
+
+  if (step.render) step.render();
 
   updateProgress();
 }
 
 // ── Step Renderers ────────────────────────────────────────────────────────────
 
+function renderEducationTypeStep() {
+  const container = document.getElementById("educationTypeGrid");
+  if (!container) return;
+
+  container.innerHTML = EDUCATION_TYPES.map(
+    (type) => `
+      <div class="selection-card ${state.education_type === type.value ? "selected" : ""}"
+           onclick="selectEducationType('${type.value}')">
+        <div class="card-icon">${type.icon}</div>
+        <div class="card-label">${escapeHtml(type.label)}</div>
+      </div>`,
+  ).join("");
+}
+
+window.selectEducationType = (type) => {
+  state.education_type = type;
+  state.faculty = isUniversityTrack(type) ? null : "All";
+  state.year = null;
+  state.term = null;
+  hasAutoSelected = false;
+  saveDraft();
+  renderEducationTypeStep();
+};
+
 function renderFacultyStep() {
   const container = document.getElementById("facultyGrid");
-  const metadata = extractMetadata(categoryTree);
-  container.innerHTML = metadata.faculties
+  if (!container) return;
+
+  const faculties = getAvailableFaculties(categoryTree, "University");
+  if (faculties.length === 0) {
+    container.innerHTML =
+      "<p>لا توجد كليات متاحة حالياً.</p>";
+    return;
+  }
+
+  container.innerHTML = faculties
     .map(
       (f) => `
       <div class="selection-card ${state.faculty === f ? "selected" : ""}"
@@ -235,18 +389,22 @@ window.selectFaculty = (f) => {
   state.faculty = f;
   state.year = null;
   state.term = null;
+  hasAutoSelected = false;
   saveDraft();
   renderFacultyStep();
 };
 
 function renderYearStep() {
   const container = document.getElementById("yearGrid");
-  const years = getAvailableYears(categoryTree, state.faculty);
+  if (!container) return;
+
+  const years = getAvailableYears(categoryTree, getTrackFilters());
   if (years.length === 0) {
     container.innerHTML =
-      "<p>لا توجد سنوات دراسية متاحة لهذه الكلية حالياً.</p>";
+      "<p>لا توجد سنوات دراسية متاحة لهذا المسار حالياً.</p>";
     return;
   }
+
   container.innerHTML = years
     .map(
       (y) => `
@@ -262,17 +420,24 @@ function renderYearStep() {
 window.selectYear = (y) => {
   state.year = y;
   state.term = null;
+  hasAutoSelected = false;
   saveDraft();
   renderYearStep();
 };
 
 function renderTermStep() {
   const container = document.getElementById("termGrid");
-  const terms = getAvailableTerms(categoryTree, state.faculty, state.year);
+  if (!container) return;
+
+  const terms = getAvailableTerms(
+    categoryTree,
+    getTrackFilters({ year: state.year }),
+  );
   if (terms.length === 0) {
     container.innerHTML = "<p>لا توجد فصول دراسية متاحة حالياً.</p>";
     return;
   }
+
   container.innerHTML = terms
     .map(
       (t) => `
@@ -287,6 +452,7 @@ function renderTermStep() {
 
 window.selectTerm = (t) => {
   state.term = t;
+  hasAutoSelected = false;
   saveDraft();
   renderTermStep();
 };
@@ -301,30 +467,16 @@ window.updatePreference = (key, value) => {
 };
 
 // ── Courses Step ──────────────────────────────────────────────────────────────
-//
-//  Mirrors settings.js renderCourseManagerList() exactly:
-//  • NO dropdown filters in this step — removed entirely.
-//  • Filter profile uses only `faculty` (year + term omitted on purpose),
-//    matching the commented-out lines in settings.js:
-//      const tempProfile = {
-//        faculty: faculty === "All" ? null : faculty,
-//        // year: year === "All" ? null : year,   ← intentionally omitted
-//        // term: term === "All" ? null : term,   ← intentionally omitted
-//      };
-//  • Result: every course for the user's college is shown, all years & terms.
-// ─────────────────────────────────────────────────────────────────────────────
 
 let hasAutoSelected = false;
 
 function renderCoursesStep() {
-  // Auto-subscribe courses that match the user's full profile (faculty+year+term)
-  // once on first entry to this step — mirrors initializeDefaultSubscriptions.
   if (!hasAutoSelected) {
-    filterCourses(categoryTree, {
-      faculty: state.faculty,
+    const autoFilters = getTrackFilters({
       year: state.year,
       term: state.term,
-    }).forEach((c) => {
+    });
+    filterTrackCourses(categoryTree, autoFilters).forEach((c) => {
       if (!state.subscribedCourses.includes(c.id)) {
         state.subscribedCourses.push(c.id);
       }
@@ -339,32 +491,24 @@ function renderCourseList() {
   const container = document.getElementById("coursesList");
   if (!container) return;
 
-  // Faculty-only filter — mirrors settings.js tempProfile (year/term omitted)
-  const tempProfile = {
-    faculty: state.faculty, // null means show all
-    // year intentionally omitted
-    // term intentionally omitted
-  };
-
-  const allCourses = filterCourses(categoryTree, tempProfile);
+  const displayFilters = getTrackFilters();
+  const allCourses = filterTrackCourses(categoryTree, displayFilters);
 
   if (allCourses.length === 0) {
     container.innerHTML =
-      '<p style="grid-column:1/-1;text-align:center;padding:20px;color:var(--color-text-secondary);">لا توجد مواد متاحة لكليتك حالياً</p>';
+      '<p style="grid-column:1/-1;text-align:center;padding:20px;color:var(--color-text-secondary);">لا توجد مواد متاحة لمسارك الدراسي حالياً</p>';
     return;
   }
 
-  // HTML template is identical to settings.js renderCourseManagerList
   container.innerHTML = allCourses
     .map((course) => {
       const isSubscribed = state.subscribedCourses.includes(course.id);
+      const details = formatCourseDetails(course);
       return `
         <div class="course-item">
           <div class="course-info">
             <h4>${escapeHtml(course.name)}</h4>
-            <p class="course-details">
-              ${escapeHtml(course.faculty)} | ${course.year} | ${course.term}
-            </p>
+            ${details ? `<p class="course-details">${details}</p>` : ""}
           </div>
           <label class="toggle-container">
             <input type="checkbox"
@@ -388,6 +532,39 @@ window.toggleCourse = (id, checked) => {
   saveDraft();
 };
 
+// ── Featured Step ─────────────────────────────────────────────────────────────
+
+function renderFeaturedStep() {
+  const container = document.getElementById("featuredCoursesList");
+  if (!container) return;
+
+  const featuredCourses = filterFeaturedCourses(categoryTree);
+
+  if (featuredCourses.length === 0) {
+    container.innerHTML =
+      '<p style="grid-column:1/-1;text-align:center;padding:20px;color:var(--color-text-secondary);">لا توجد مواد مميزة متاحة حالياً</p>';
+    return;
+  }
+
+  container.innerHTML = featuredCourses
+    .map((course) => {
+      const isSubscribed = state.subscribedCourses.includes(course.id);
+      return `
+        <div class="course-item">
+          <div class="course-info">
+            <h4>${escapeHtml(course.name)}</h4>
+          </div>
+          <label class="toggle-container">
+            <input type="checkbox"
+              onchange="toggleCourse('${escapeHtml(course.id)}', this.checked)"
+              ${isSubscribed ? "checked" : ""}>
+            <span class="toggle-switch"></span>
+          </label>
+        </div>`;
+    })
+    .join("");
+}
+
 // ── Welcome Step ──────────────────────────────────────────────────────────────
 
 function renderWelcomeStep() {
@@ -397,14 +574,19 @@ function renderWelcomeStep() {
 
 // ── Save & Redirect ───────────────────────────────────────────────────────────
 
+function persistAcademicProfile() {
+  userProfile.updateAcademicInfo({
+    education_type: state.education_type,
+    faculty: isUniversityTrack(state.education_type) ? state.faculty : "All",
+    year: state.year,
+    term: state.term,
+  });
+}
+
 async function saveAndRedirect() {
   try {
     userProfile.setUsername(state.username);
-    userProfile.updateAcademicInfo({
-      faculty: state.faculty,
-      year: state.year,
-      term: state.term,
-    });
+    persistAcademicProfile();
     userProfile.setQuizStyle(state.quizStyle);
     userProfile.setDefaultQuizMode(state.defaultMode);
     userProfile.setSubscribedCourses(state.subscribedCourses);
@@ -412,7 +594,6 @@ async function saveAndRedirect() {
     clearDraft();
     localStorage.setItem("first_visit_complete", "true");
 
-    // Restore preserved redirect
     const preservedHash = sessionStorage.getItem("intended_redirect_hash");
     if (preservedHash) {
       sessionStorage.removeItem("intended_redirect_hash");
@@ -427,32 +608,33 @@ async function saveAndRedirect() {
 }
 
 function skipOnboarding() {
-  // Default any fields the user hasn't filled in yet to "All"
-  if (!state.faculty) state.faculty = "All";
+  if (!state.education_type) state.education_type = "University";
+  if (!state.faculty) {
+    state.faculty = isUniversityTrack(state.education_type) ? "All" : "All";
+  }
   if (!state.year) state.year = "All";
   if (!state.term) state.term = "All";
 
-  // Auto-subscribe courses that match the profile the user DID set.
-  // If any field is "All" this produces no matches, which is correct —
-  // the user can always manage subscriptions later from settings.
-  if (state.faculty !== "All" && state.year !== "All" && state.term !== "All") {
-    filterCourses(categoryTree, {
-      faculty: state.faculty,
-      year: state.year,
-      term: state.term,
-    }).forEach((c) => {
+  if (
+    state.education_type &&
+    state.year !== "All" &&
+    state.term !== "All" &&
+    (isUniversityTrack(state.education_type)
+      ? state.faculty && state.faculty !== "All"
+      : true)
+  ) {
+    filterTrackCourses(
+      categoryTree,
+      getTrackFilters({ year: state.year, term: state.term }),
+    ).forEach((c) => {
       if (!state.subscribedCourses.includes(c.id)) {
         state.subscribedCourses.push(c.id);
       }
     });
   }
 
-  userProfile.setUsername(state.username);
-  userProfile.updateAcademicInfo({
-    faculty: state.faculty,
-    year: state.year,
-    term: state.term,
-  });
+  userProfile.setUsername(state.username || "User");
+  persistAcademicProfile();
   userProfile.setQuizStyle(state.quizStyle);
   userProfile.setDefaultQuizMode(state.defaultMode);
   userProfile.setSubscribedCourses(state.subscribedCourses);
@@ -460,7 +642,6 @@ function skipOnboarding() {
   clearDraft();
   localStorage.setItem("first_visit_complete", "true");
 
-  // Restore preserved redirect
   const preservedHash = sessionStorage.getItem("intended_redirect_hash");
   if (preservedHash) {
     sessionStorage.removeItem("intended_redirect_hash");
@@ -470,5 +651,4 @@ function skipOnboarding() {
   }
 }
 
-// Start
 init();

@@ -319,6 +319,15 @@
                 <h2 id="academic-heading"><span>📚</span> المعلومات الأكاديمية</h2>
                 <p class="profile-hint">تساعدنا على عرض المواد المناسبة لك</p>
                 <div class="settings-row">
+                    <label for="settingsEducationType">المسار الدراسي</label>
+                    <select id="settingsEducationType" name="education_type" aria-label="اختر المسار الدراسي">
+                        <option value="University">الجامعة</option>
+                        <option value="Primary">المدرسة الابتدائية</option>
+                        <option value="Middle">المدرسة الإعدادية</option>
+                        <option value="High">المدرسة الثانوية</option>
+                    </select>
+                </div>
+                <div class="settings-row" id="settingsFacultyRow">
                     <label for="settingsFaculty">الكلية</label>
                     <select id="settingsFaculty" name="faculty" aria-label="اختر الكلية">
                         <option value="All">All Faculties</option>
@@ -347,6 +356,16 @@
                 <div id="courseManagerList" class="course-list-grid">
                     <!-- Javascript will populate this list -->
                     <div style="padding:20px; text-align:center;">جاري تحميل المواد...</div>
+                </div>
+            </section>
+
+            <!-- Featured Courses -->
+            <section class="settings-card" aria-labelledby="featured-heading">
+                <h2 id="featured-heading"><span>⭐</span> المواد المميزة</h2>
+                <p class="profile-hint">مواد عامة متاحة لجميع المسارات الدراسية</p>
+
+                <div id="featuredCourseManagerList" class="course-list-grid">
+                    <div style="padding:20px; text-align:center;">جاري تحميل المواد المميزة...</div>
                 </div>
             </section>
 
