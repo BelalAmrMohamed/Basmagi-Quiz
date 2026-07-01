@@ -2225,7 +2225,7 @@ Container
     box-shadow 0.2s;
   border: 2px solid var(--color-border);
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   margin-top: 24px;
   display: flex;
   flex-direction: column;
