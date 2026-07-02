@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "title": "2024 2025 Mid",
+    "id": "3ZIWJ3UA",
+    "createdAt": "2026-06-04 - 16:45",
+    "path": "quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Mid.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the best-case time complexity of Insertion Sort for an already sorted array?",
+      "explanation": "In the best case (already sorted), Insertion Sort only makes one comparison for each element and no shifts, resulting in linear time complexity $O(n)$.",
+      "options": [
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$",
+        "$O(1)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "...........is a contiguous area of memory consisting of equal-size elements.",
+      "explanation": "An array is defined as a collection of elements of the same type stored in contiguous memory locations.",
+      "options": [
+        "Stack",
+        "LinkedList",
+        "Array",
+        "All of above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the access time required to retrieve the element located at position (5,9) in a 7-row and 12-column array?",
+      "explanation": "Using row-major ordering for a 1-indexed array: $Address = Base + size \\times ((row - 1) \\times total\\_columns + (col - 1))$. Here, rows=7, cols=12, target=(5,9).",
+      "options": [
+        "$arr\\_addr + elem\\_size \\times ((5-1) \\times 12 + (9-1))$",
+        "$arr\\_addr + elem\\_size \\times ((5-1) \\times 7 + (9-1))$",
+        "$arr\\_addr + elem\\_size \\times (5 \\times 9)$",
+        "$arr\\_addr + elem\\_size \\times ((7-1) \\times 12 + (5-1))$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The complexity of adding three elements to the end of an array is.......",
+      "explanation": "Adding a constant number of elements (like 3) to the end of an array is a constant time operation, $O(1)$, assuming the array has sufficient capacity.",
+      "options": [
+        "$O(3)$",
+        "$O(n)$",
+        "$O(1)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If `tail == head`, this means the linked list is empty?",
+      "explanation": "False. If `head == tail` and they are not null, the list contains exactly one element. An empty list is typically represented by `head == null`.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "`Find(Key)` in a double linked list with a tail is:",
+      "explanation": "To find a specific key in a linked list (single or double), you must perform a linear search from the head (or tail), which takes $O(n)$ time.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "`AddAfter(Node, Key)` in a single linked list with a tail is:",
+      "explanation": "Since the specific `Node` is already provided, adding a new node after it only requires updating a few pointers, which is $O(1)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "`Erase(Key)` in a single linked list with a tail is....",
+      "explanation": "In a single linked list, even if you find the key, you need a pointer to the *previous* node to remove it. This requires traversing the list, making it $O(n)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "`TopBack()` in a single linked list with a tail is:",
+      "explanation": "With a tail pointer, accessing the last element (TopBack) is a direct operation taking $O(1)$ time.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which operation removes and returns the first added key?",
+      "explanation": "Removing the first added key (First-In, First-Out) is the definition of the `Dequeue` operation in a Queue.",
+      "options": [
+        "Key Pop()",
+        "Key Enqueue()",
+        "Key Top(key)",
+        "Not Allowed"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Stack operations are known as..........",
+      "explanation": "Stacks follow the Last-In, First-Out (LIFO) principle.",
+      "options": [
+        "FIFO",
+        "LIFO",
+        "MILO",
+        "None of above"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "`PushBack(Key)` in a single linked list without a tail is:",
+      "explanation": "Without a tail pointer, you must traverse the entire list from the head to reach the last node to append a new one, resulting in $O(n)$ complexity.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "To return and remove the most recently added key in a stack, we use the....... function.",
+      "explanation": "The `Pop()` operation in a stack removes and returns the most recently added (top) element.",
+      "options": [
+        "KeyTop()",
+        "Pop(key)",
+        "Push(key)",
+        "Key Pop()"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Stack operation `Push()` is implemented using LinkedList.......",
+      "explanation": "For a standard single linked list, `PushFront` is $O(1)$, making it the most efficient way to implement a Stack's `Push` operation.",
+      "options": [
+        "PushBack(key)",
+        "PushFront(key)",
+        "PopBack()",
+        "none of above"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the worst-case time complexity of Linear Search?",
+      "explanation": "In the worst case, Linear Search must check every element in the list, resulting in $O(n)$ complexity.",
+      "options": [
+        "$O(1)$",
+        "$O(\\log n)$",
+        "$O(n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which algorithm is adaptive and performs well on partially sorted arrays?",
+      "explanation": "Insertion Sort is adaptive; its performance improves significantly when the input array is already partially sorted.",
+      "options": [
+        "Bubble Sort",
+        "Binary Search",
+        "Insertion Sort",
+        "All of above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The complexity of adding an element to the middle of an array is:",
+      "explanation": "Adding an element to the middle requires shifting approximately half of the existing elements to make room, which is $O(n)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which operation checks if the stack has elements?",
+      "explanation": "The `Empty()` (or `isEmpty()`) operation returns a boolean indicating whether the stack contains any elements.",
+      "options": [
+        "Push",
+        "Pop",
+        "Top",
+        "Empty"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "When you apply `PushBack` in a Linked List that contains exactly one Node, you must update:",
+      "explanation": "If there is already one node, `head` already points to it. Adding a second node at the back requires updating the `tail` to point to this new last node.",
+      "options": [
+        "head",
+        "tail",
+        "head & tail",
+        "none of above"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "When applying `pop()` in a Stack implemented with an array, you should:",
+      "explanation": "Popping an element from an array-based stack involves decreasing the counter (`numElements`) that tracks the current top index.",
+      "options": [
+        "increment numElements",
+        "decrement numElements",
+        "resize the array",
+        "save null in top"
+      ],
+      "correct": 1
+    }
+  ]
+}

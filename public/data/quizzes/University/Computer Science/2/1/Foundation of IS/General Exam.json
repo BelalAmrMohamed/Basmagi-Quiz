@@ -1,0 +1,176 @@
+{
+  "meta": {
+    "title": "General Exam",
+    "id": "MJEQKPZN",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Foundation of IS/General Exam.json"
+  },
+  "stats": {
+    "questionCount": 16,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "In the DIKW hierarchy, which level represents the practical application of information and 'how' to use it?",
+      "explanation": "Knowledge is defined as individual expertise and the practical 'how' to use information [1, 2].",
+      "options": [
+        "Data",
+        "Information",
+        "Knowledge",
+        "Wisdom"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: Economical information is characterized by having a high cost to produce relative to its value.",
+      "explanation": "According to the Professor Style Guide and Lecture 1, economical information is cheap to produce relative to its value [3, 4].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which specific analyst role focuses on identifying the 'business value' (such as profit or ROI) that a system will provide?",
+      "explanation": "The Business Analyst focuses on business issues and identifying business value, whereas the System Analyst is the 'change agent' focusing on IS issues [5-7].",
+      "options": [
+        "System Analyst",
+        "Infrastructure Analyst",
+        "Business Analyst",
+        "Requirements Analyst"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Scenario: In an SDLC diagram, a 'Go/No Go' decision diamond appears. Based on the course materials, after which phase does this decision typically occur before moving to Design?",
+      "explanation": "The 'Go/No Go' decision by the steering committee follows the Requirements Gathering & Analysis phase [8, 9].",
+      "options": [
+        "Requirement Gathering & Analysis",
+        "Implementation",
+        "Testing",
+        "Maintenance"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which Software Development Life Cycle (SDLC) phase includes the creation of screen mockups and 'Unit Testing'?",
+      "explanation": "Implementation involves developers writing and integrating code, and unit testing begins during this phase [7, 10]. Note: Sample screen designs are created in Analysis [8], but the guide notes Unit Testing as a specific 'trap' for Implementation [7].",
+      "options": [
+        "Phase 1: Analysis",
+        "Phase 2: Design",
+        "Phase 3: Implementation",
+        "Phase 4: Testing"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: The database schema is considered 'Dynamic' because it changes every time data is inserted or updated.",
+      "explanation": "The database schema (Intension) is relatively static; it is the database 'Instance' (Extension) that is dynamic and changes with data updates [2, 11, 12].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "An independent worker offering specialized services on a platform like Upwork is an example of which e-commerce model?",
+      "explanation": "Consumer-to-Business (C2B) involves independent workers or freelancers offering services to businesses via specialized websites like Upwork [2, 13].",
+      "options": [
+        "B2B",
+        "B2C",
+        "C2C",
+        "C2B"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In an ERD, if a 'Customer' connects to 'Order' with a single line on the customer side and a crow's foot on the order side, what is the cardinality?",
+      "explanation": "A single line represents 'one' and a crow's foot represents 'many', resulting in a 1:N (One-to-Many) cardinality [14, 15].",
+      "options": [
+        "1:1",
+        "1:N",
+        "M:N",
+        "0:0"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which cloud service model provides hardware and software tools for application development without requiring the user to manage the underlying infrastructure?",
+      "explanation": "Platform as a Service (PaaS) offers tools for building, deploying, and managing applications without dealing with the underlying infrastructure [16].",
+      "options": [
+        "Infrastructure as a Service (IaaS)",
+        "Platform as a Service (PaaS)",
+        "Software as a Service (SaaS)",
+        "Data as a Service (DaaS)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Intangible value refers to quantifiable gains such as a 15% increase in profit or cycle time reduction.",
+      "explanation": "Quantifiable gains are 'Tangible' values. 'Intangible' values are qualitative, such as user satisfaction or brand image [2, 17].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In Requirements Engineering, which type of requirement specifies that 'The system must be available 24 hours per day'?",
+      "explanation": "System availability and reliability are classified as Non-functional Performance Requirements [18].",
+      "options": [
+        "Process-Oriented Functional Requirement",
+        "Information-Oriented Functional Requirement",
+        "Non-functional Performance Requirement",
+        "Non-functional Cultural Requirement"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which security principle ensures that parties involved in a digital transaction cannot later deny their involvement?",
+      "explanation": "Non-repudiation ensures that parties in a transaction cannot deny their involvement, often using digital signatures [19].",
+      "options": [
+        "Confidentiality",
+        "Integrity",
+        "Authentication",
+        "Non-repudiation"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Scenario: In a Data Flow Diagram (DFD), a process is labeled 'Verify_User_Database'. Why is this label considered incorrect according to the naming rules?",
+      "explanation": "Processes must use a Verb + Noun format (e.g., 'Verify User') and should represent logical business rules rather than physical implementations like a 'Database' [20, 21].",
+      "options": [
+        "Process names must be plural nouns.",
+        "Process names must follow the Verb + Noun rule and avoid technical implementation details.",
+        "Process names must only be a single noun.",
+        "Process names must represent data at rest."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which e-government model is exemplified by an 'E-Invoice System' that mandates businesses to issue electronic invoices for transparency?",
+      "explanation": "G2B facilitates interactions like procurement and compliance reporting (e.g., E-Invoice System) between the government and businesses [22].",
+      "options": [
+        "G2C (Government to Citizen)",
+        "G2B (Government to Business)",
+        "G2G (Government to Government)",
+        "G2E (Government to Employee)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Explain the concept of 'Digital Transformation' and its impact on organizational value delivery.",
+      "explanation": "As defined in Lecture 1, it involves changing operations and value delivery via technology integration [23].",
+      "answer": "Digital Transformation is the integration of digital technology into all business areas, fundamentally changing how an organization operates and delivers value to its customers."
+    },
+    {
+      "q": "What is the primary difference between Symmetric and Asymmetric encryption regarding key usage?",
+      "explanation": "Symmetric uses the same key; Asymmetric uses a public key to encrypt and a private key to decrypt [24, 25].",
+      "answer": "Symmetric encryption uses a single shared key for both encryption and decryption, while Asymmetric encryption uses a mathematically related public and private key pair."
+    }
+  ]
+}

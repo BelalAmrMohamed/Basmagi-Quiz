@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "title": "Lecture 1 Quiz",
+    "id": "6FWYH3H3",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 1 Quiz.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary goal of Systems Analysis and Design?",
+      "explanation": "The main goal of Systems Analysis and Design is developing application software to support the organization function such as Payroll or market analysis.",
+      "options": [
+        "To write code for operating systems",
+        "To develop application software that supports organizational functions",
+        "To repair computer hardware",
+        "To market software products to new customers"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT a characteristic of a system?",
+      "explanation": "Characteristics of a system include Components, Interrelated Components, Boundary, Purpose, Environment, Interfaces, Constraints, Inputs, and Outputs. Randomness is not a defining characteristic.",
+      "options": [
+        "Components",
+        "Boundary",
+        "Randomness",
+        "Interfaces"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the context of Systems Concepts, what does 'Coupling' refer to?",
+      "explanation": "Coupling is defined as 'To what extent the subsystems are dependent on each other' . breaking a system is Decomposition , and single function performance is Cohesion.",
+      "options": [
+        "The process of breaking a system into smaller chunks",
+        "To what extent a subsystem performs a single function",
+        "To what extent subsystems are dependent on each other",
+        "The point of contact with the environment"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which skill set helps a System Analyst understand the organization's objectives, structure, and processes?",
+      "explanation": "Analytical skills help the analyst understand the organization and its functions.",
+      "options": [
+        "Technical Skills",
+        "Analytical Skills",
+        "Interpersonal Skills",
+        "Managerial Skills"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which phase of the SDLC involves studying the current system and proposing a replacement system?",
+      "explanation": "Phase 2: Systems Analysis is where the current system is studied and a proposed replacement system is presented.",
+      "options": [
+        "Phase 1: Systems Planning and Selection",
+        "Phase 2: Systems Analysis",
+        "Phase 3: Systems Design",
+        "Phase 4: Systems Implementation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the difference between Logical Design and Physical Design?",
+      "explanation": "Logical Design describes the system independently from any technology, while Physical Design transforms it to technology-specific details.",
+      "options": [
+        "Logical design depends on technology; Physical design is independent.",
+        "Logical design is for hardware; Physical design is for software.",
+        "Logical design describes the system independently of technology; Physical design adds technology-specific details.",
+        "There is no difference; they are the same."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which development methodology involves building a scaled-down version of the desired system?",
+      "explanation": "Prototyping is building a scaled-down version of the desired information system.",
+      "options": [
+        "SDLC",
+        "Prototyping",
+        "Participatory Design",
+        "Joint Application Design"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Based on the concept of 'The University as a System' (Page 11), what represents the 'Environment'?",
+      "image": "./assets/quiz-media/university-as-a-system.jpg",
+      "explanation": "In the system diagram for a university, the environment includes external entities like funding sources, news media, and prospective students.",
+      "options": [
+        "The lecture halls and labs",
+        "The internal computer network",
+        "Funding sources, prospective students, and news media",
+        "The university president"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the primary function of CASE tools in systems development?",
+      "image": "./assets/quiz-media/case-tools.jpg",
+      "explanation": "CASE (Computer-aided Software Engineering) tools are software programs that provide automated support for some portions of systems development.",
+      "options": [
+        "To replace the system analyst completely",
+        "To provide automated support for portions of systems development",
+        "To serve as the operating system for the final product",
+        "To conduct job interviews for new staff"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is an example of Application Software?",
+      "explanation": "Examples of Application Software are spreadsheets, word processors, and DBMS.",
+      "options": [
+        "Windows 10",
+        "Linux",
+        "Spreadsheets (e.g., Excel)",
+        "The computer hard drive"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is 'Modularity' in systems design?",
+      "explanation": "Modularity is defined as dividing the system into chunks or modules for easier management.",
+      "options": [
+        "Breaking a system into smaller components",
+        "Dividing the system into chunks or modules for easier management",
+        "Connecting the system to the internet",
+        "The limit on what a system can do"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "During which SDLC phase is the system coded, tested, and installed?",
+      "explanation": "Phase 4: Systems Implementation and Maintenance is where the final system is coded, tested, and installed.",
+      "options": [
+        "Systems Planning and Selection",
+        "Systems Analysis",
+        "Systems Design",
+        "Systems Implementation and Maintenance"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What distinguishes Agile Methodologies from traditional SDLC?",
+      "explanation": "Agile Methodologies are characterized by short iterative cycles, extensive testing, and active involvement of users.",
+      "options": [
+        "Agile uses long, rigid cycles without user feedback",
+        "Agile focuses on short iterative cycles and active user involvement",
+        "Agile is only used for hardware development",
+        "Agile does not require programming"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which methodology is described as a structured process where users, managers, and analysts work together in intensive meetings?",
+      "explanation": "JAD is a structured process in which users, managers, and analysts work together for several days in a series of intensive meetings.",
+      "options": [
+        "Rapid Application Development (RAD)",
+        "Joint Application Design (JAD)",
+        "Prototyping",
+        "Participatory Design"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the definition of 'Cohesion' in a system?",
+      "explanation": "Cohesion refers to to what extent a subsystem performs a single function.",
+      "options": [
+        "How well the system interacts with the environment",
+        "To what extent a subsystem performs a single function",
+        "How dependent subsystems are on each other",
+        "The physical boundary of the system"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT a source of software?",
+      "explanation": "While 'Sources of Software' is a heading in the outline, Hardware Manufacturers are typically distinct from software sources unless specified (e.g., firmware). However, based on the provided text, the list is not fully detailed in the snippets, but logically, hardware manufacturing is the least likely 'source of software' compared to IT firms or packaged producers.",
+      "options": [
+        "Information Technology Services Firms",
+        "Packaged Software Producers",
+        "Open Source Software",
+        "Hardware Manufacturers"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which skill allows a System Analyst to manage resources and risk?",
+      "explanation": "Managerial skills help in project management, risk management, and managing resources.",
+      "options": [
+        "Technical Skills",
+        "Analytical Skills",
+        "Managerial Skills",
+        "Interpersonal Skills"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the RAD vs. SDLC diagram (Page 27), what is a key difference in their structure?",
+      "image": "./assets/quiz-media/rad-sdlc.jpg",
+      "explanation": "RAD is designed to radically decrease the time needed  and typically uses prototyping/iterative cycles to support this, effectively compressing the standard phases shown in the SDLC loop.",
+      "options": [
+        "SDLC is circular and iterative; RAD is linear.",
+        "RAD compresses the analysis, design, and implementation into shorter, iterative cycles compared to the traditional sequential SDLC.",
+        "RAD skips the planning phase entirely.",
+        "SDLC does not include a maintenance phase."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the output of Phase 1: Systems Planning and Selection?",
+      "explanation": "Phase 1 involves identifying a potential project and presenting an argument for continuing or not continuing with the project.",
+      "options": [
+        "A working prototype",
+        "A detailed code base",
+        "An argument for continuing or not continuing with the project",
+        "The final user manual"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What does Participatory Design focus on?",
+      "explanation": "Participatory Design is a methodology where users and the improvement of their work lives are the central focus.",
+      "options": [
+        "Maximizing profit for the software company",
+        "Automating all user tasks to remove humans",
+        "Users and the improvement of their work lives",
+        "Using only the newest hardware available"
+      ],
+      "correct": 2
+    }
+  ]
+}

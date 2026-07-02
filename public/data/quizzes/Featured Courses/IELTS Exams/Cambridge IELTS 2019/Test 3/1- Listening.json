@@ -1,0 +1,442 @@
+{
+  "meta": {
+    "title": "1  Listening",
+    "id": "T55KVH2F",
+    "createdAt": "2026-06-11 - 13:27",
+    "path": "quizzes/Featured Courses/IELTS Exams/Cambridge IELTS 2019/Test 3/1- Listening.json"
+  },
+  "stats": {
+    "questionCount": 38,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Q1 – Kite Place is near the ___. (Write ONE WORD AND/OR A NUMBER)",
+      "audio": "./assets/quiz-media/Cambridge_2019/Test3 Part1.mp3",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\nComplete the notes below. Write **ONE WORD AND/OR A NUMBER** for each answer.\n\n**Where to go**\n- Kite Place – near the **1** ___\n\n**Fish market**\n- cross the **2** ___ and turn right\n- best to go before **3** ___ pm, earlier than closing time\n\n**Organic shop**\n- called **4** '___'\n- below a restaurant in the large, grey building\n- look for the large **5** ___ outside\n\n**Supermarket**\n- take a **6** ___ minibus, number 289",
+      "lang": "en",
+      "explanation": "In the listening, the speaker says Kite Place is near the **station**. 'Station' refers to a transport hub — commonly a train or bus station used as a landmark for giving directions.",
+      "answer": "station"
+    },
+    {
+      "q": "Q2 – To get to the fish market, you need to cross the ___ and turn right. (Write ONE WORD AND/OR A NUMBER)",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\nComplete the notes below. Write **ONE WORD AND/OR A NUMBER** for each answer.\n\n**Fish market**\n- cross the **2** ___ and turn right\n- best to go before **3** ___ pm, earlier than closing time",
+      "lang": "en",
+      "explanation": "The answer is **bridge**. This is a common direction-giving word: *'Cross the bridge and turn right.'* Note the pronunciation: /brɪdʒ/.",
+      "answer": "bridge"
+    },
+    {
+      "q": "Q3 – It is best to go to the fish market before ___ pm. (Write ONE WORD AND/OR A NUMBER)",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\n**Fish market**\n- best to go before **3** ___ pm, earlier than closing time",
+      "lang": "en",
+      "explanation": "The answer is **4** (four o'clock). The speaker advises going before 4 pm as it is earlier than the official closing time, ensuring better stock and service.",
+      "answer": "4"
+    },
+    {
+      "q": "Q4 – The organic shop is called '___'. (Write ONE WORD AND/OR A NUMBER)",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\n**Organic shop**\n- called **4** '___'\n- below a restaurant in the large, grey building",
+      "lang": "en",
+      "explanation": "The organic shop is called **'Seasons'**. Shop names in listening tasks are often spelled out by the speaker. *Seasons* is a fitting name for an organic food shop, implying fresh, seasonal produce.",
+      "answer": "Seasons"
+    },
+    {
+      "q": "Q5 – To find the organic shop, look for the large ___ outside. (Write ONE WORD AND/OR A NUMBER)",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\n**Organic shop**\n- look for the large **5** ___ outside",
+      "lang": "en",
+      "explanation": "The answer is **sign**. A *sign* outside a shop or building is a common identifying landmark. Collocations: *a large sign*, *a neon sign*, *a shop sign*. Pronunciation: /saɪn/.",
+      "answer": "sign"
+    },
+    {
+      "q": "Q6 – To get to the supermarket, take a ___ minibus, number 289. (Write ONE WORD AND/OR A NUMBER)",
+      "passage": "**Local Food Shops – Part 1, Questions 1–6**\n\n**Supermarket**\n- take a **6** ___ minibus, number 289",
+      "lang": "en",
+      "explanation": "The answer is **free**. The speaker mentions that a *free* minibus (number 289) goes to the supermarket — a useful detail for shoppers. Note: 'free' here means *no charge*, not *unrestricted*.",
+      "answer": "free"
+    },
+    {
+      "q": "Q7 – At the fish market, you could also buy a handful of ___ (a type of seaweed). (Write ONE WORD ONLY)",
+      "passage": "**Shopping Table – Part 1, Questions 7–10**\n\nComplete the table below. Write **ONE WORD ONLY** for each answer.\n\n| | To buy | Other ideas |\n|---|---|---|\n| **Fish market** | a dozen prawns | a handful of **7** ___ (type of seaweed) |\n| **Organic shop** | beans and a **8** ___ for dessert | spices and **9** ___ |\n| **Bakery** | a brown loaf | a **10** ___ tart |",
+      "lang": "en",
+      "explanation": "The answer is **samphire** /ˈsæmfaɪər/ — a type of edible seaweed or coastal plant, commonly found in fish markets in the UK. It is often eaten with seafood. This is a specialist vocabulary item typical of IELTS Part 1 listening tasks.",
+      "answer": "samphire"
+    },
+    {
+      "q": "Q8 – At the organic shop, you should buy beans and a ___ for dessert. (Write ONE WORD ONLY)",
+      "passage": "**Shopping Table – Part 1, Questions 7–10**\n\n| | To buy | Other ideas |\n|---|---|---|\n| **Organic shop** | beans and a **8** ___ for dessert | spices and **9** ___ |",
+      "lang": "en",
+      "explanation": "The answer is **mango** /ˈmæŋɡəʊ/ — a tropical fruit commonly sold in organic shops. It is used here as a dessert option. Useful collocation: *a ripe mango*, *fresh mango*.",
+      "answer": "mango"
+    },
+    {
+      "q": "Q9 – At the organic shop, other ideas include spices and ___. (Write ONE WORD ONLY)",
+      "passage": "**Shopping Table – Part 1, Questions 7–10**\n\n| | To buy | Other ideas |\n|---|---|---|\n| **Organic shop** | beans and a mango for dessert | spices and **9** ___ |",
+      "lang": "en",
+      "explanation": "The answer is **oils**. The speaker suggests buying *spices and oils* at the organic shop — both common items in health or organic food stores. Note: the plural form *oils* (not *oil*) is required here.",
+      "answer": "oils"
+    },
+    {
+      "q": "Q10 – At the bakery, another idea is to buy a ___ tart. (Write ONE WORD ONLY)",
+      "passage": "**Shopping Table – Part 1, Questions 7–10**\n\n| | To buy | Other ideas |\n|---|---|---|\n| **Bakery** | a brown loaf | a **10** ___ tart |",
+      "lang": "en",
+      "explanation": "The answer is **lemon** — a *lemon tart* is a classic bakery item. This tests food vocabulary in context. Pronunciation: /ˈlemən/. Common collocations: *lemon tart*, *lemon drizzle*, *lemon curd*.",
+      "answer": "lemon"
+    },
+    {
+      "q": "Q11 – What information is given about the workshop **'Superheroes'**?",
+      "audio": "./assets/quiz-media/Cambridge_2019/Test3 Part2.mp3",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nWhat information is given about each of the following festival workshops?\n\nChoose **SIX** answers from the box and write the correct letter, **A–H**, next to Questions 11–16.\n\n| Letter | Information |\n|---|---|\n| **A** | involves painting and drawing |\n| **B** | will be led by a prize-winning author |\n| **C** | is aimed at children with a disability |\n| **D** | involves a drama activity |\n| **E** | focuses on new relationships |\n| **F** | is aimed at a specific age group |\n| **G** | explores an unhappy feeling |\n| **H** | raises awareness of a particular culture |",
+      "lang": "en",
+      "explanation": "**Answer: A** – The 'Superheroes' workshop **involves painting and drawing**. Children are invited to create their own superhero characters through visual art. This tests your ability to match spoken descriptions to written summaries.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Q12 – What information is given about the workshop **'Just do it'**?",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nSee information box above (A–H).",
+      "lang": "en",
+      "explanation": "**Answer: F** – 'Just do it' **is aimed at a specific age group** (teenagers). The speaker specifies that this workshop is designed for a particular age range, which distinguishes it from general children's workshops.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 5
+    },
+    {
+      "q": "Q13 – What information is given about the workshop **'Count on me'**?",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nSee information box above (A–H).",
+      "lang": "en",
+      "explanation": "**Answer: E** – 'Count on me' **focuses on new relationships**, such as those formed when children start a new school or move to a new area. The title itself hints at themes of trust and friendship.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 4
+    },
+    {
+      "q": "Q14 – What information is given about the workshop **'Speak up'**?",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nSee information box above (A–H).",
+      "lang": "en",
+      "explanation": "**Answer: D** – 'Speak up' **involves a drama activity**. Participants engage in role-play or performance to develop their voice and confidence. *'Speak up'* means to express yourself more loudly or assertively.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Q15 – What information is given about the workshop **'Jump for joy'**?",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nSee information box above (A–H).",
+      "lang": "en",
+      "explanation": "**Answer: H** – 'Jump for joy' **raises awareness of a particular culture**. Despite the cheerful title, the content focuses on cultural storytelling and traditions from a specific community. This is a typical IELTS distractor — the title suggests happiness but the content differs.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 7
+    },
+    {
+      "q": "Q16 – What information is given about the workshop **'Sticks and stones'**?",
+      "passage": "**Festival Workshops – Part 2, Questions 11–16**\n\nSee information box above (A–H).",
+      "lang": "en",
+      "explanation": "**Answer: G** – 'Sticks and stones' **explores an unhappy feeling**, specifically the emotion of anger or sadness related to bullying. The title references the idiom *'Sticks and stones may break my bones but words will never hurt me'* — ironically, the workshop explores how words *do* hurt.",
+      "options": [
+        "A – involves painting and drawing",
+        "B – will be led by a prize-winning author",
+        "C – is aimed at children with a disability",
+        "D – involves a drama activity",
+        "E – focuses on new relationships",
+        "F – is aimed at a specific age group",
+        "G – explores an unhappy feeling",
+        "H – raises awareness of a particular culture"
+      ],
+      "correct": 6
+    },
+    {
+      "q": "Q17 & Q18 – Which TWO reasons does the speaker give for recommending *Alive and Kicking*? (Choose TWO letters, A–E)",
+      "passage": "**Questions 17 and 18 – Part 2**\n\nWhich **TWO** reasons does the speaker give for recommending *Alive and Kicking*?\n\n- A – It will appeal to both boys and girls.\n- B – The author is well known.\n- C – It has colourful illustrations.\n- D – It is funny.\n- E – It deals with an important topic.",
+      "lang": "en",
+      "explanation": "**Answers: A and E** – The speaker recommends *Alive and Kicking* because it **appeals to both boys and girls** (A) and **deals with an important topic** (E), namely disability and inclusion. Note: 'Alive and Kicking' is an idiom meaning *active and lively*, which is fitting for a book about overcoming challenges.",
+      "options": [
+        "A – It will appeal to both boys and girls",
+        "B – The author is well known",
+        "C – It has colourful illustrations",
+        "D – It is funny",
+        "E – It deals with an important topic"
+      ],
+      "correct": [
+        0,
+        4
+      ]
+    },
+    {
+      "q": "Q19 & Q20 – Which TWO pieces of advice does the speaker give to parents about reading? (Choose TWO letters, A–E)",
+      "passage": "**Questions 19 and 20 – Part 2**\n\nWhich **TWO** pieces of advice does the speaker give to parents about reading?\n\n- A – Encourage children to write down new vocabulary.\n- B – Allow children to listen to audio books.\n- C – Get recommendations from librarians.\n- D – Give children a choice about what they read.\n- E – Only read aloud to children until they can read independently.",
+      "lang": "en",
+      "explanation": "**Answers: B and D** – The speaker advises parents to **allow children to listen to audio books** (B) and to **give children a choice about what they read** (D). These strategies support reading motivation and enjoyment. Note: Option E is a distractor — the speaker says to *continue* reading aloud even after children can read independently.",
+      "options": [
+        "A – Encourage children to write down new vocabulary",
+        "B – Allow children to listen to audio books",
+        "C – Get recommendations from librarians",
+        "D – Give children a choice about what they read",
+        "E – Only read aloud to children until they can read independently"
+      ],
+      "correct": [
+        1,
+        3
+      ]
+    },
+    {
+      "q": "Q21 – How does Clare feel about the students in her Year 12 science class?",
+      "audio": "./assets/quiz-media/Cambridge_2019/Test3 Part3.mp3",
+      "passage": "**Science Experiment for Year 12 Students – Part 3, Questions 21–25**\n\nChoose the correct letter, **A**, **B** or **C**.",
+      "lang": "en",
+      "explanation": "**Answer: C** – Clare feels **frustrated at her students' lack of interest in science**. She does not mention poor behaviour (B) or failure to progress academically (A); rather, her concern is motivational — students seem disengaged from the subject itself.",
+      "options": [
+        "A – worried that they are not making progress",
+        "B – challenged by their poor behaviour in class",
+        "C – frustrated at their lack of interest in the subject"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Q22 – How does Jake react to Clare's suggestion about an experiment based on children's diet?",
+      "passage": "**Science Experiment for Year 12 Students – Part 3, Questions 21–25**",
+      "lang": "en",
+      "explanation": "**Answer: B** – Jake worries that **some data might be difficult to obtain** when studying children's diets. For example, accurate dietary records from children are hard to collect reliably. This is a common issue in nutritional science research.",
+      "options": [
+        "A – He is concerned that the results might not be meaningful",
+        "B – He feels some of the data might be difficult to obtain",
+        "C – He suspects that the conclusions might be upsetting"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Q23 – What problem do they agree may be involved in an experiment involving animals?",
+      "passage": "**Science Experiment for Year 12 Students – Part 3, Questions 21–25**",
+      "lang": "en",
+      "explanation": "**Answer: B** – They agree that **getting permission for animal experiments may be complicated**. Ethics approval for animal research involves formal procedures, and in a school setting this can be a significant barrier. This reflects real-world scientific practice.",
+      "options": [
+        "A – Any results may not apply to humans",
+        "B – It may be complicated to get permission",
+        "C – Students may not be happy about animal experiments"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Q24 – What question do they decide the experiment should address?",
+      "passage": "**Science Experiment for Year 12 Students – Part 3, Questions 21–25**",
+      "lang": "en",
+      "explanation": "**Answer: B** – The experiment will investigate whether **an increase in sugar intake leads to health problems**. This is a straightforward, testable hypothesis suitable for a student science project using mice as subjects.",
+      "options": [
+        "A – Are mice capable of controlling their food intake?",
+        "B – Does an increase in sugar lead to health problems?",
+        "C – How much do supplements of different kinds affect health?"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Q25 – Clare might also consider doing another experiment involving ___.",
+      "passage": "**Science Experiment for Year 12 Students – Part 3, Questions 21–25**",
+      "lang": "en",
+      "explanation": "**Answer: C** – Clare suggests a follow-up experiment exploring **varying amounts of exercise** and their effect on health outcomes in mice. This would extend the study beyond diet alone to include physical activity as a variable.",
+      "options": [
+        "A – other types of food supplement",
+        "B – different genetic strains of mice",
+        "C – varying amounts of exercise"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Q26 – Choose mice which are all the same ___ .",
+      "passage": "**Flowchart – Part 3, Questions 26–30**\n\nComplete the flowchart below. Choose **FIVE** answers from the box (A–H):\n\n| Letter | Word |\n|---|---|\n| A | size |\n| B | escape |\n| C | age |\n| D | water |\n| E | cereal |\n| F | calculations |\n| G | changes |\n| H | colour |\n\n**Flowchart steps:**\n1. Choose mice which are all the same **26** ___\n2. Divide the mice into two groups, each with a different **27** ___\n3. Feed group A commercial mouse food. Feed group B the same, but also sugar contained in **28** ___\n4. Take measurements using an electronic scale. Place them in a weighing chamber to prevent **29** ___\n5. Do all necessary **30** ___",
+      "lang": "en",
+      "explanation": "**Answer: C – age** – To ensure a fair test (a controlled experiment), all mice must be the **same age**. This removes age as a confounding variable. In scientific methodology, controlling variables is essential for reliable results.",
+      "options": [
+        "A – size",
+        "B – escape",
+        "C – age",
+        "D – water",
+        "E – cereal",
+        "F – calculations",
+        "G – changes",
+        "H – colour"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Q27 – Divide the mice into two groups, each with a different ___ .",
+      "passage": "**Flowchart – Part 3, Questions 26–30** (See flowchart above)",
+      "lang": "en",
+      "explanation": "**Answer: D – water** – The two groups are given **different water** — one group receives plain water while the other receives sugar-dissolved water. This is the independent variable being tested in the experiment.",
+      "options": [
+        "A – size",
+        "B – escape",
+        "C – age",
+        "D – water",
+        "E – cereal",
+        "F – calculations",
+        "G – changes",
+        "H – colour"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Q28 – Feed group B the same food, but also sugar contained in ___ .",
+      "passage": "**Flowchart – Part 3, Questions 26–30** (See flowchart above)",
+      "lang": "en",
+      "explanation": "**Answer: D – water** – The sugar is dissolved in **water** and given to Group B alongside their normal food. This mimics the consumption of sugary drinks in human dietary studies.",
+      "options": [
+        "A – size",
+        "B – escape",
+        "C – age",
+        "D – water",
+        "E – cereal",
+        "F – calculations",
+        "G – changes",
+        "H – colour"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Q29 – Place them in a weighing chamber to prevent ___ .",
+      "passage": "**Flowchart – Part 3, Questions 26–30** (See flowchart above)",
+      "lang": "en",
+      "explanation": "**Answer: B – escape** – The weighing chamber prevents the mice from **escaping** during measurement. This is a practical laboratory consideration to ensure accurate and safe data collection.",
+      "options": [
+        "A – size",
+        "B – escape",
+        "C – age",
+        "D – water",
+        "E – cereal",
+        "F – calculations",
+        "G – changes",
+        "H – colour"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Q30 – Do all necessary ___ .",
+      "passage": "**Flowchart – Part 3, Questions 26–30** (See flowchart above)",
+      "lang": "en",
+      "explanation": "**Answer: F – calculations** – The final step in the experiment is to perform all necessary **calculations** on the collected data. This involves statistical analysis to determine whether the sugar intake caused measurable health differences.",
+      "options": [
+        "A – size",
+        "B – escape",
+        "C – age",
+        "D – water",
+        "E – cereal",
+        "F – calculations",
+        "G – changes",
+        "H – colour"
+      ],
+      "correct": 5
+    },
+    {
+      "q": "Q31 – Microplastics come from fibres released from some ___ during washing. (Write ONE WORD ONLY)",
+      "audio": "./assets/quiz-media/Cambridge_2019/Test3 Part4.mp3",
+      "passage": "**Microplastics – Part 4, Questions 31–40**\n\nComplete the notes below. Write **ONE WORD ONLY** for each answer.\n\n**Where microplastics come from:**\n- fibres from some **31** ___ during washing\n- the breakdown of large pieces of plastic\n- waste from industry\n- the action of vehicle tyres on roads\n\n**Effects of microplastics:**\n- They cause injuries to the **32** ___ of wildlife and affect their digestive systems.\n- They enter the food chain, e.g., in bottled and tap water, **33** ___ and seafood.\n- They may not affect human health, but they are already banned in skin cleaning products and **34** ___ in some countries.\n- Microplastics enter the soil through the air, rain and **35** ___.",
+      "lang": "en",
+      "explanation": "**Answer: clothing** — Synthetic **clothing** (e.g., polyester, nylon) sheds microscopic plastic fibres when washed. These fibres pass through water treatment systems and enter the environment. Key vocabulary: *synthetic fibres*, *microfibre pollution*.",
+      "answer": "clothing"
+    },
+    {
+      "q": "Q32 – Microplastics cause injuries to the ___ of wildlife and affect their digestive systems. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics – Part 4, Questions 31–40** (See notes above)",
+      "lang": "en",
+      "explanation": "**Answer: mouths** — Microplastics cause physical injuries to the **mouths** of wildlife (e.g., fish, seabirds) as they ingest them. The particles also disrupt digestive systems. This is one of the most documented harmful effects of microplastic pollution on marine life.",
+      "answer": "mouths"
+    },
+    {
+      "q": "Q33 – Microplastics enter the food chain in bottled and tap water, ___ and seafood. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics – Part 4, Questions 31–40** (See notes above)",
+      "lang": "en",
+      "explanation": "**Answer: beer** — Research has found microplastics in **beer**, alongside bottled water, tap water, and seafood. This is a surprising finding that highlights how widespread microplastic contamination is in everyday food and drink.",
+      "answer": "beer"
+    },
+    {
+      "q": "Q34 – Microplastics are already banned in skin cleaning products and ___ in some countries. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics – Part 4, Questions 31–40** (See notes above)",
+      "lang": "en",
+      "explanation": "**Answer: toothpaste** — Several countries have banned microbeads (tiny plastic particles) in **toothpaste** and skin cleaning products. These microbeads were used as abrasives but were found to pollute waterways and marine environments.",
+      "answer": "toothpaste"
+    },
+    {
+      "q": "Q35 – Microplastics enter the soil through the air, rain and ___. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics – Part 4, Questions 31–40** (See notes above)",
+      "lang": "en",
+      "explanation": "**Answer: irrigation** — Microplastics reach soil not only through air and rain but also via **irrigation** water used in agriculture. This is particularly concerning as it introduces plastic contamination directly into food-growing environments.",
+      "answer": "irrigation"
+    },
+    {
+      "q": "Q36 – Earthworms are important because they add ___ to the soil. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics in the soil – Anglia Ruskin University study – Part 4, Questions 36–40**\n\n- Earthworms are important because they add **36** ___ to the soil.\n- The study aimed to find whether microplastics in earthworms affect the **37** ___ of plants.\n- The study found that microplastics caused:\n  - **38** ___ loss in earthworms\n  - fewer seeds to germinate\n  - a rise in the level of **39** ___ in the soil\n- The study concluded:\n  - soil should be seen as an important natural process.\n  - changes to soil damage both ecosystems and **40** ___.",
+      "lang": "en",
+      "explanation": "**Answer: nutrients** — Earthworms break down organic matter and add **nutrients** to the soil, improving its fertility. This is why they are considered vital to healthy ecosystems and agricultural land. Key vocabulary: *soil fertility*, *decomposition*, *nutrient cycling*.",
+      "answer": "nutrients"
+    },
+    {
+      "q": "Q37 – The study aimed to find whether microplastics in earthworms affect the ___ of plants. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics in the soil – Anglia Ruskin University study – Part 4, Questions 36–40**",
+      "lang": "en",
+      "explanation": "**Answer: growth** — The Anglia Ruskin University study investigated whether microplastics ingested by earthworms would negatively affect the **growth** of plants. A reduction in earthworm health could reduce soil quality and thus impair plant development.",
+      "answer": "growth"
+    },
+    {
+      "q": "Q38 – The study found that microplastics caused ___ loss in earthworms. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics in the soil – Anglia Ruskin University study – Part 4, Questions 36–40**",
+      "lang": "en",
+      "explanation": "**Answer: weight** — Earthworms exposed to microplastics experienced significant **weight** loss, suggesting the plastics interfere with their ability to absorb nutrients. This is a key measurable outcome of the study.",
+      "answer": "weight"
+    },
+    {
+      "q": "Q39 – The study found a rise in the level of ___ in the soil. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics in the soil – Anglia Ruskin University study – Part 4, Questions 36–40**",
+      "lang": "en",
+      "explanation": "**Answer: bacteria** — The presence of microplastics in soil led to a rise in **bacteria** levels. While some bacteria are beneficial, changes in bacterial balance can disrupt soil health and affect plant growth and ecosystem stability.",
+      "answer": "bacteria"
+    },
+    {
+      "q": "Q40 – The study concluded that changes to soil damage both ecosystems and ___. (Write ONE WORD ONLY)",
+      "passage": "**Microplastics in the soil – Anglia Ruskin University study – Part 4, Questions 36–40**",
+      "lang": "en",
+      "explanation": "**Answer: livelihoods** — The study's conclusion is that microplastic-induced soil damage threatens both **natural ecosystems** and human **livelihoods**, particularly those of farmers and communities dependent on agriculture. Pronunciation: /ˈlaɪvlihʊdz/. This word refers to a person's means of earning a living.",
+      "answer": "livelihoods"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "AI Introduction To Math 2",
+    "id": "IBTMOUCN",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/1/2/Math 2/AI Introduction to Math 2.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What does the derivative of a function represent?",
+      "explanation": "Derivatives tell us how fast a value is changing at a specific moment.",
+      "options": [
+        "The area under a curve",
+        "The rate of change or the slope of the curve",
+        "The total sum of all values",
+        "The starting point"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the derivative of x² with respect to x?",
+      "explanation": "Using the power rule, the exponent 2 comes to the front and decreases by 1.",
+      "options": [
+        "x",
+        "2",
+        "2x",
+        "x/2"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a right-angled triangle, what is the Sine of an angle?",
+      "explanation": "Remember 'SOH'—Sine is Opposite over Hypotenuse.",
+      "options": [
+        "Adjacent / Hypotenuse",
+        "Opposite / Adjacent",
+        "Opposite / Hypotenuse",
+        "Hypotenuse / Opposite"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the integral of 1 with respect to x?",
+      "explanation": "Integration is the reverse of differentiation; the derivative of x is 1.",
+      "options": [
+        "0",
+        "x + C",
+        "x²",
+        "1/x"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the sum of the interior angles of a triangle?",
+      "explanation": "This is a fundamental rule in Euclidean geometry.",
+      "options": [
+        "90 degrees",
+        "180 degrees",
+        "360 degrees",
+        "270 degrees"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Pi (π) is a rational number that can be written as a simple fraction.",
+      "explanation": "Pi is irrational; its decimals go on forever without repeating a simple pattern.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: A 'Matrix' is a rectangular array of numbers arranged in rows and columns.",
+      "explanation": "Matrices are key tools in linear algebra and computer graphics.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: The square root of a negative number is always a real number.",
+      "explanation": "Square roots of negative numbers lead to the 'Imaginary' number system (i).",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Adding two matrices requires them to have the same dimensions.",
+      "explanation": "You add each corresponding element, so the shapes must match.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Infinity is a specific number that you can reach by counting.",
+      "explanation": "Infinity is a concept representing something without bound, not a reachable number.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In your own words, what is 'Integration' used for?",
+      "answer": "Integration is primarily used to find the area under a curve or to accumulate quantities over time."
+    },
+    {
+      "q": "What is a 'Function' in mathematics?",
+      "answer": "A function is a relation that associates each input with exactly one output."
+    }
+  ]
+}

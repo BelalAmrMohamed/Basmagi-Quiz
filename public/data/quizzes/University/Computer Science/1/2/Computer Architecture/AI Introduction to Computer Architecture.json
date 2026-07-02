@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "AI Introduction To Computer Architecture",
+    "id": "N5ORNEW3",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/1/2/Computer Architecture/AI Introduction to Computer Architecture.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is often referred to as the 'Brain' of the computer?",
+      "explanation": "The Central Processing Unit (CPU) performs most of the processing inside a computer.",
+      "options": [
+        "The Power Supply",
+        "The CPU",
+        "The Monitor",
+        "The Keyboard"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does RAM stand for?",
+      "explanation": "RAM is the short-term memory where data currently in use is stored.",
+      "options": [
+        "Read Access Module",
+        "Random Access Memory",
+        "Rapid Action Media",
+        "Remote Array Memory"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which unit inside the CPU performs mathematical and logical operations?",
+      "explanation": "The ALU handles all arithmetic (addition, etc.) and logic (true/false) calculations.",
+      "options": [
+        "Control Unit",
+        "ALU (Arithmetic Logic Unit)",
+        "Registers",
+        "Bus"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which memory is the fastest but has the smallest capacity?",
+      "explanation": "Cache memory is built into the CPU to provide high-speed access to frequently used data.",
+      "options": [
+        "Hard Drive",
+        "RAM",
+        "Cache",
+        "USB Flash Drive"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many bits are in a single Byte?",
+      "explanation": "A byte is a unit of digital information that most commonly consists of eight bits.",
+      "options": [
+        "2",
+        "4",
+        "8",
+        "16"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: ROM (Read-Only Memory) is volatile, meaning it loses data when power is off.",
+      "explanation": "ROM is non-volatile; it keeps its data even without power.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: The motherboard is the main circuit board that connects all components.",
+      "explanation": "It serves as the 'spine' of the computer, allowing parts to communicate.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: A 64-bit processor can handle more data at once than a 32-bit processor.",
+      "explanation": "The bit-width refers to how much data the CPU can process in a single cycle.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Registers are located inside the RAM.",
+      "explanation": "Registers are small, extremely fast storage locations located directly inside the CPU.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: An Output device allows the computer to send data to the user.",
+      "explanation": "Examples include monitors, printers, and speakers.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Briefly explain the purpose of Computer Architecture.",
+      "answer": "Computer Architecture is the set of rules and methods that describe the functionality, organization, and implementation of computer systems."
+    },
+    {
+      "q": "What is the difference between hardware and software?",
+      "answer": "Hardware refers to the physical components you can touch, while software refers to the digital instructions that tell the hardware what to do."
+    }
+  ]
+}

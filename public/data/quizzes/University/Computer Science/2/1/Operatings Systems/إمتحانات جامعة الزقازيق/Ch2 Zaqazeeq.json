@@ -1,0 +1,273 @@
+{
+  "meta": {
+    "title": "Ch2 Zaqazeeq",
+    "id": "OXSWYQ6F",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch2 Zaqazeeq.json"
+  },
+  "stats": {
+    "questionCount": 25,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which of the following describes the primary role of device drivers in an operating system?",
+      "explanation": "There is a specific **device driver** for each device controller that provides a **uniform interface** between the controller and the kernel [1, 2]. These drivers allow the operating system to manage I/O operations by converting high-level requests into device-specific commands [3, 4].",
+      "options": [
+        "They provide a high-level API for hardware communication.",
+        "They translate system calls into machine code.",
+        "They enable the operating system to interact directly with hardware devices.",
+        "They execute application programs directly on the CPU."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following statements best describes the purpose of the shell in an operating system?",
+      "explanation": "The shell is a **command interpreter** that serves as a user interface, allowing for direct command entry [5, 6]. It works by fetching commands from the user and executing them, usually by translating them into one or more **system calls** [5, 7].",
+      "options": [
+        "It provides a graphical user interface for applications.",
+        "It offers a command-line interface for user interaction.",
+        "It manages memory allocation for system processes.",
+        "It is responsible for file management."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "System programs that act as intermediaries between users and hardware components are known as:",
+      "explanation": "While the operating system as a whole acts as an intermediary between the user and hardware, **device drivers** are the specific programs that bridge the gap to the hardware controllers [1, 8]. They allow the kernel to communicate with and control specific hardware devices effectively [2, 9].",
+      "options": [
+        "Interpreters",
+        "Device drivers",
+        "Compilers",
+        "API libraries"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The primary disadvantage of a microkernel system structure is:",
+      "explanation": "A **microkernel** structure improves security and reliability by moving services from the kernel into user space [10, 11]. However, this leads to **performance overhead** because of the increased communication required between user-level modules using message passing [11, 12].",
+      "options": [
+        "Increased risk of system crashes",
+        "Larger codebase leading to memory bloat",
+        "Decreased efficiency due to frequent communication between components",
+        "Lack of support for modularity"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which system program allows users to view and edit files in an operating system?",
+      "explanation": "**Text editors** are classified as system programs that provide a convenient environment for **file modification**, allowing users to create and change the contents of files [13, 14]. They are part of a suite of programs that manage file manipulation, such as copying, renaming, and listing files [15].",
+      "options": [
+        "Device manager",
+        "Text editor",
+        "File system manager",
+        "API"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In an operating system with a modular kernel, modules are:",
+      "explanation": "Modern operating systems use an object-oriented approach where core components are separate and **loadable as needed within the kernel** [1, 2]. This allows for the **dynamic loading of functionality** while the system is running [2].",
+      "options": [
+        "Integrated into the kernel at compile time only",
+        "Loaded into the kernel dynamically at runtime",
+        "Separate user applications running outside the kernel",
+        "Assigned fixed memory locations"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following best describes a system daemon?",
+      "explanation": "System daemons, also known as background services, launch at boot time and provide facilities such as **disk checking, process scheduling, and error logging** [3]. They run in a **user context** rather than a kernel context [3].",
+      "options": [
+        "A background process that handles system-level tasks",
+        "A user application that interfaces directly with hardware",
+        "A component of the file management system",
+        "A command-line utility for user interaction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The command interpreter, or shell, is responsible for:",
+      "explanation": "The shell is a command interpreter that **reads commands from the user** and executes them [4, 5]. It typically carries out these instructions by turning them into one or more **system calls** [6].",
+      "options": [
+        "Interfacing directly with the hardware",
+        "Managing memory resources in the OS",
+        "Translating and executing user commands",
+        "Allocating CPU time to applications"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A benefit of modular kernel design in operating systems is that it allows:",
+      "explanation": "Modular kernel design allows core components to be **loaded only as needed** [2]. This prevents the system from becoming a **bloated operating system**, which can happen when too many applications or features are embedded directly into the core [7].",
+      "options": [
+        "Fast boot times",
+        "Reduced kernel size by loading only necessary modules",
+        "Direct access to all system resources by user applications",
+        "Faster execution of application programs"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the primary purpose of the API (Application Programming Interface) in the context of operating systems?",
+      "explanation": "Programmers typically access OS services through an **API** rather than using direct system calls [8]. The API serves as a standardized interface that **hides the complex details** of the operating system from the programmer [9].",
+      "options": [
+        "To provide direct access to hardware",
+        "To give user programs the ability to request OS services in a standardized way",
+        "To manage low-level kernel tasks",
+        "To optimize CPU scheduling"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a modular kernel, the term “loadable kernel module” refers to:",
+      "explanation": "Many modern operating systems implement **loadable kernel modules**, which are core components that are separate but can be **loaded as needed within the kernel** [1, 2]. This approach is similar to a layered structure but is **more flexible** [2].",
+      "options": [
+        "A kernel component that cannot be removed once loaded",
+        "A component that can be loaded and unloaded as needed",
+        "A command-line utility",
+        "A memory segment reserved for files"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In the context of an operating system, which of the following best describes a “trap”?",
+      "explanation": "A **trap (or exception)** is a **software-generated interrupt** [3, 4]. It is typically triggered by a **software error**, such as division by zero, or by a specific **request from a user program** for an operating system service [5].",
+      "options": [
+        "A software-generated interrupt that is handled by the operating system",
+        "A hardware error that forces the system to shut down",
+        "A method of switching from kernel mode to user mode",
+        "A network error that prevents resource sharing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the main advantage of the command-line interface (CLI) over a graphical user interface (GUI) for experienced users?",
+      "explanation": "The CLI (or command interpreter) provides a user interface that allows for **direct command entry** [6, 7]. It works by **fetching a command from the user and executing it**, often via system calls, which provides a more direct path to system functionality [6, 8].",
+      "options": [
+        "Easier learning curve",
+        "Faster, more direct access to system functionality",
+        "Improved multitasking capabilities",
+        "Better support for multimedia applications"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which type of system call is responsible for creating, terminating, and synchronizing processes?",
+      "explanation": "**Process control** system calls handle the **creation and deletion of processes**, as well as the provision of mechanisms for **process synchronization and communication** [9-11].",
+      "options": [
+        "File management",
+        "Device management",
+        "Process control",
+        "Information maintenance"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A key reason for using system calls in an operating system is to:",
+      "explanation": "System calls serve as a **programming interface to the services provided by the OS** [12, 13]. They allow user-level processes to **request kernel-level tasks safely**, ensuring the operating system remains **protected from errant user programs** [12, 14].",
+      "options": [
+        "Provide low-level debugging tools",
+        "Allow user programs to request OS services safely",
+        "Enable programs to access hardware directly",
+        "Improve the system’s graphical capabilities"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of the kernel mode and user mode in an operating system?",
+      "explanation": "The distinction between user mode and kernel mode acts as a **rudimentary form of protection** by ensuring that the CPU has very limited capability while in user mode, thereby **protecting critical resources** and the operating system from errant user programs [1, 2].",
+      "options": [
+        "To distinguish between system and application programs",
+        "To protect critical system resources from unauthorized access by applications",
+        "To manage multi-threading",
+        "To optimize memory usage for the OS"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The function of the wait system call in process management is to:",
+      "explanation": "In process management, a **parent process** may use the **wait() system call** to **suspend its own execution** until a child process has finished, at which point it receives status information from that terminated child [3, 4].",
+      "options": [
+        "Pause the process until resources are available",
+        "Allow a process to sleep for a specified time",
+        "Suspend the execution of a parent process until a child process has terminated",
+        "Swap a process out of memory"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following system calls is used to create a new process in most operating systems?",
+      "explanation": "In Unix-based systems, a new process is started using the **fork() system call**, which effectively **clones the currently executing process** [5, 6].",
+      "options": [
+        "open",
+        "exec",
+        "fork",
+        "read"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The mechanism that allows a user to interact with an operating system via textual commands is called:",
+      "explanation": "The **Command-Line Interface (CLI)**, also known as the shell or command interpreter, provides a user interface that allows for **direct textual command entry** and execution [7-9].",
+      "options": [
+        "GUI (Graphical User Interface)",
+        "CLI (Command-Line Interface)",
+        "File system interface",
+        "Kernel interface"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What are the system call types?",
+      "explanation": "System calls are generally categorized into six major types: **process control**, **file management**, **device management**, **information maintenance**, **communication**, and **protection** [10-13].",
+      "answer": "Process control, File management, Device management, Information maintenance, Communication, Protection"
+    },
+    {
+      "q": "List the main types of operating system structures.",
+      "explanation": "Operating systems can be organized using several structures, including **monolithic** (simple or complex), **layered**, **microkernel**, and **modular** approaches, while most modern systems use a **hybrid** model that combines these methods [14-16].",
+      "answer": "Monolithic, Layered, Microkernel, Modular, Hybrid"
+    },
+    {
+      "q": "policies determine how to do something.(T or F)",
+      "explanation": "According to the sources, a key principle in system design is the separation of **mechanism** and **policy** [1]. **Mechanisms** determine how to do something, whereas **policies** decide what will be done [1].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A process is an instance of a program in execution.(T or F)",
+      "explanation": "A **process** is defined as a program in execution and is an **active entity** with a program counter and associated resources [2, 3]. This is distinct from a program, which is a **passive entity** stored on a disk [2, 4].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A monolithic kernel divides the operating system into several small, independent modules.(T or F)",
+      "explanation": "A **monolithic kernel** typically places all functionality into a single level, whereas a **microkernel** approach is the one that moves services into user space to keep the kernel small [5-7]. Alternatively, a **modular kernel** approach uses an object-oriented method where core components are separate and loadable as needed [8, 9].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a layered operating system architecture, each layer directly interacts with the hardware layer.(T or F)",
+      "explanation": "In a **layered architecture**, the system is divided into levels where only the **bottom layer (layer 0) is the hardware** [7, 10]. Each higher layer is built on top of lower layers and is designed to use the functions and services of **only the layers below it** [7, 10].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    }
+  ]
+}

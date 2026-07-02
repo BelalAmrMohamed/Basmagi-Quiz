@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "AI Introduction To C Sharp",
+    "id": "YEA7D4UI",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/1/2/Programming 1/AI Introduction to C Sharp.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Who developed the C# programming language?",
+      "explanation": "C# was developed by Microsoft as part of its .NET initiative.",
+      "options": [
+        "Apple",
+        "Google",
+        "Microsoft",
+        "Oracle"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which symbol is used to end most lines of code in C#?",
+      "explanation": "Just like a period ends a sentence, a semicolon ends a statement in C#.",
+      "options": [
+        ":",
+        ".",
+        ";",
+        "!"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How do you write a single-line comment in C#?",
+      "explanation": "Two forward slashes tell the compiler to ignore the rest of the line.",
+      "options": [
+        "// comment",
+        "/* comment */",
+        "# comment",
+        ""
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which data type would you use to store a whole number like 25?",
+      "explanation": "'int' stands for integer, which represents whole numbers.",
+      "options": [
+        "string",
+        "bool",
+        "int",
+        "double"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the standard command to print text to the screen in a console app?",
+      "explanation": "Console.WriteLine() moves to a new line after printing the text.",
+      "options": [
+        "print()",
+        "echo()",
+        "Console.WriteLine()",
+        "System.Out()"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: C# is an Object-Oriented Programming (OOP) language.",
+      "explanation": "C# is built around the concept of 'objects' and 'classes'.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: C# is case-sensitive, meaning 'Variable' and 'variable' are different.",
+      "explanation": "The computer treats capital and lowercase letters as distinct characters.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: A 'string' data type is used to store true or false values.",
+      "explanation": "A 'bool' stores true/false; a 'string' stores text.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: The 'Main' method is where a C# program starts execution.",
+      "explanation": "Every C# console application must have a Main method as its entry point.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: C# code must be compiled before it can be run.",
+      "explanation": "Compilation turns your human-readable code into something the machine can understand.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is a 'Class' in C#?",
+      "answer": "A class is a blueprint or template for creating objects, defining the data and behavior they will have."
+    },
+    {
+      "q": "What is the purpose of a 'Variable'?",
+      "answer": "A variable is a named storage location in memory used to hold data that can be changed during program execution."
+    }
+  ]
+}

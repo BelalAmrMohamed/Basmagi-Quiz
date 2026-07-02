@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "title": "2025   2026 Mid",
+    "id": "6FWI7O32",
+    "createdAt": "2026-05-29 - 22:01",
+    "path": "quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2025 - 2026 Mid.json"
+  },
+  "stats": {
+    "questionCount": 13,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Describe the different sources of software available to organizations.",
+      "explanation": "Organizations can acquire software through multiple channels depending on cost, customization needs, and scalability requirements.",
+      "answer": "1. **Outsourcing**: The process of hiring an external company or third party to develop or manage software instead of developing it internally within the organization.\n2. **Packaged Software (Off-the-Shelf)**: Companies that create ready-made software for many users.\n3. **Enterprise Resource Planning (ERP) Systems**: Provide large-scale software for organizations. Example ERP Vendors: SAP, Oracle.\n4. **Cloud Computing**: Provides software, storage, and computing services via the Internet; users access them using a web browser.\n5. **Open-Source Software**: Software with source code available for free use and modification."
+    },
+    {
+      "q": "List and describe the common skills and activities of a project manager.",
+      "explanation": "A project manager must balance technical expertise with interpersonal and organizational skills to successfully lead a project.",
+      "answer": "1. **Analytical Thinking**: Ability to break down complex problems and evaluate solutions.\n2. **Communication Skills**: Clearly conveying information to team members and stakeholders.\n3. **Problem-Solving**: Identifying issues and developing effective solutions.\n4. **Technical Knowledge**: Understanding of databases, programming basics, and system architecture.\n5. **Understanding of Business Processes**: Knowledge of how organizational workflows and operations function."
+    },
+    {
+      "q": "List five characteristics of a system.",
+      "explanation": "A system is defined by its components and how they interact within a boundary to achieve a common purpose.",
+      "answer": "Any five of the following:\n\n| # | Characteristic |\n|---|---|\n| 1 | Components |\n| 2 | Interrelated Components |\n| 3 | Boundary |\n| 4 | Purpose |\n| 5 | Environment |\n| 6 | Interfaces |\n| 7 | Constraints |\n| 8 | Inputs |\n| 9 | Outputs |"
+    },
+    {
+      "q": "What is the purpose of a Project Workbook?",
+      "explanation": "A Project Workbook is an online or hard-copy repository for all project correspondence, inputs, outputs, deliverables, procedures, and standards.",
+      "answer": "1. Organize all project documents in one place.\n2. Track progress and updates.\n3. Document decisions and changes.\n4. Serve as a reference for team members."
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** organizes the parts into independent modules (chunks).",
+      "explanation": "Modularity is the design principle of dividing a system into separate, independent modules to improve maintainability and clarity.",
+      "options": [
+        "Coupling",
+        "Cohesion",
+        "Modularity",
+        "CASE Tools"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** is the output of the second phase (Systems Analysis) of the SDLC.",
+      "explanation": "The Software Requirements Specification (SRS) documents the functional and non-functional requirements gathered during the Systems Analysis phase.",
+      "options": [
+        "Project Workbook",
+        "Software Requirements Specification (SRS)",
+        "PERT Chart",
+        "CASE Tools"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** measures how much one module depends on another module.",
+      "explanation": "Coupling measures inter-module dependency. Low coupling is desirable as it means modules are more independent and easier to maintain.",
+      "options": [
+        "Cohesion",
+        "Modularity",
+        "Coupling",
+        "Outsourcing"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** measures how focused a module is on performing a single task.",
+      "explanation": "Cohesion refers to how closely related the functions within a single module are. High cohesion is desirable as it means each module has a well-defined, focused responsibility.",
+      "options": [
+        "Coupling",
+        "Cohesion",
+        "Modularity",
+        "PERT"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** are software tools that provide automated support for some portions of systems development.",
+      "explanation": "CASE (Computer-Aided Software Engineering) Tools automate parts of the software development process, such as diagramming, code generation, and documentation.",
+      "options": [
+        "ERP Systems",
+        "PERT",
+        "CASE Tools",
+        "Project Workbook"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** is the final phase of the project management process that focuses on bringing a project to an end.",
+      "explanation": "Project Close Down involves finalizing all activities, releasing resources, conducting post-project reviews, and formally closing the project.",
+      "options": [
+        "Project Execution",
+        "Project Initiation",
+        "Project Close Down",
+        "Systems Analysis"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Complete the sentence:\n\n**___________** is a technique that uses optimistic, pessimistic, and realistic time estimates to calculate the expected completion time for a particular task.",
+      "explanation": "PERT (Program Evaluation and Review Technique) uses three time estimates — optimistic $(O)$, pessimistic $(P)$, and most likely $(M)$ — to compute expected duration: $$T_e = \\frac{O + 4M + P}{6}$$",
+      "options": [
+        "Gantt Chart",
+        "PERT",
+        "CASE Tools",
+        "Modularity"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Complete the sentence:\n\nA **___________** is an online or hard-copy repository for all project correspondence, inputs, outputs, deliverables, procedures, and standards.",
+      "explanation": "The Project Workbook serves as the central repository keeping all project-related documentation organized and accessible to team members.",
+      "options": [
+        "PERT Chart",
+        "Gantt Chart",
+        "Project Workbook",
+        "SRS Document"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Construct a Gantt chart for the following project activities:\n\n| Activity No. | Immediate Activity | Time (weeks) | Predecessors |\n|---|---|---|---|\n| 1 | Collect requirements | 3 | — |\n| 2 | Analyze processes | 2 | 1 |\n| 3 | Analyze data | 2 | 2 |\n| 4 | Design processes | 6 | 2 |\n| 5 | Design data | 3 | 3 |\n| 6 | Design screens | 2 | 3, 4 |\n| 7 | Design reports | 4 | 4, 5 |\n| 8 | Program | 5 | 6, 7 |\n| 9 | Test and document | 7 | 7 |\n| 10 | Install | 2 | 8, 9 |\n\nIdentify the start week and end week for each activity based on predecessor constraints.",
+      "explanation": "Each activity starts after all its predecessors are completed. Activity 10 (Install) finishes at week 24, which is the total project duration. The critical path runs through activities 1 → 2 → 4 → 7 → 9 → 10.",
+      "answer": "Using forward scheduling (earliest start = end of last predecessor):\n\n| Activity No. | Activity Name | Start Week | End Week |\n|---|---|---|---|\n| 1 | Collect requirements | 1 | 3 |\n| 2 | Analyze processes | 4 | 5 |\n| 3 | Analyze data | 6 | 7 |\n| 4 | Design processes | 6 | 11 |\n| 5 | Design data | 8 | 10 |\n| 6 | Design screens | 12 | 13 |\n| 7 | Design reports | 12 | 15 |\n| 8 | Program | 16 | 20 |\n| 9 | Test and document | 16 | 22 |\n| 10 | Install | 23 | 24 |\n\n**Gantt Chart (weeks 1–24):**\n\n| Activity | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| A1 | ▓ | ▓ | ▓ | | | | | | | | | | | | | | | | | | | | | |\n| A2 | | | | ▓ | ▓ | | | | | | | | | | | | | | | | | | | |\n| A3 | | | | | | ▓ | ▓ | | | | | | | | | | | | | | | | | |\n| A4 | | | | | | ▓ | ▓ | ▓ | ▓ | ▓ | ▓ | | | | | | | | | | | | | |\n| A5 | | | | | | | | ▓ | ▓ | ▓ | | | | | | | | | | | | | | |\n| A6 | | | | | | | | | | | | ▓ | ▓ | | | | | | | | | | | |\n| A7 | | | | | | | | | | | | ▓ | ▓ | ▓ | ▓ | | | | | | | | | |\n| A8 | | | | | | | | | | | | | | | | ▓ | ▓ | ▓ | ▓ | ▓ | | | | |\n| A9 | | | | | | | | | | | | | | | | ▓ | ▓ | ▓ | ▓ | ▓ | ▓ | ▓ | | |\n| A10 | | | | | | | | | | | | | | | | | | | | | | | ▓ | ▓ |"
+    }
+  ]
+}

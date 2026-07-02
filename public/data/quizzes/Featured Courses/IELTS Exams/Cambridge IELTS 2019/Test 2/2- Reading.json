@@ -1,0 +1,260 @@
+{
+  "meta": {
+    "title": "2  Reading",
+    "id": "ZGTPJSZG",
+    "createdAt": "2026-06-11 - 13:27",
+    "path": "quizzes/Featured Courses/IELTS Exams/Cambridge IELTS 2019/Test 2/2- Reading.json"
+  },
+  "stats": {
+    "questionCount": 27,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "In Watt and Boulton's steam engine, the movement of the __________ was linked to a gear system.",
+      "passage": "READING PASSAGE 1\n\nThe Industrial Revolution began in Britain in the mid-1700s... [full passage summary for context: steam engines by Newcomen and Watt, textile innovations, iron smelting with coke, Luddites, etc.]",
+      "lang": "en",
+      "explanation": "From the passage: 'Watt later worked with... to invent a new steam engine driven by both the forward and backward strokes of the piston, while the gear mechanism it was connected to produced rotary motion.'",
+      "answer": "piston"
+    },
+    {
+      "q": "A greater supply of __________ was required to power steam engines.",
+      "lang": "en",
+      "explanation": "From the passage: 'The demand for coal, which was a relatively cheap energy source, grew rapidly during the Industrial Revolution...'",
+      "answer": "coal"
+    },
+    {
+      "q": "Before the Industrial Revolution, spinners and weavers worked at home and in __________.",
+      "lang": "en",
+      "explanation": "From the passage: 'the British textile business was a true \"cottage industry\", with the work performed in small workshops or even homes...'",
+      "answer": "workshops"
+    },
+    {
+      "q": "Not as much __________ was needed to produce cloth once the spinning jenny and power loom were invented.",
+      "lang": "en",
+      "explanation": "From the passage: 'With these machines, relatively little labour was required to produce cloth...'",
+      "answer": "labour"
+    },
+    {
+      "q": "Smelting of iron ore with coke resulted in material that was better __________.",
+      "lang": "en",
+      "explanation": "From the passage: 'This method was cheaper and produced metals that were of a higher quality...'",
+      "answer": "quality"
+    },
+    {
+      "q": "Demand for iron increased with the growth of the __________.",
+      "lang": "en",
+      "explanation": "From the passage: 'enabling Britain's iron and steel production to expand in response to demand created by the Napoleonic Wars (1803–15) and the expansion of the railways from the 1830s.'",
+      "answer": "railways"
+    },
+    {
+      "q": "The new cities were dirty, crowded and lacked sufficient __________.",
+      "lang": "en",
+      "explanation": "From the passage: 'This rapid urbanisation brought significant challenges, as overcrowded cities suffered from pollution and inadequate sanitation.'",
+      "answer": "sanitation"
+    },
+    {
+      "q": "Britain's canal network grew rapidly so that more goods could be transported around the country. Does this statement agree with the information in the passage?",
+      "passage": "READING PASSAGE 1 (continued)",
+      "lang": "en",
+      "explanation": "NOT GIVEN. The passage mentions steam-powered boats and ships on canals but does not state that the canal network itself grew rapidly.",
+      "options": [
+        "TRUE",
+        "FALSE",
+        "NOT GIVEN"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Costs in the iron industry rose when the technique of smelting iron ore with coke was introduced.",
+      "lang": "en",
+      "explanation": "FALSE. The passage states: 'This method was cheaper...'",
+      "options": [
+        "TRUE",
+        "FALSE",
+        "NOT GIVEN"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The economic benefits of industrialisation were limited to certain sectors of society.",
+      "lang": "en",
+      "explanation": "TRUE. 'Although industrialisation increased the country's economic output overall and improved the standard of living for the middle and upper classes, many poor people continued to struggle.'",
+      "options": [
+        "TRUE",
+        "FALSE",
+        "NOT GIVEN"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Some skilled weavers believed that the introduction of the new textile machines would lead to job losses.",
+      "lang": "en",
+      "explanation": "TRUE. 'A group of British workers who became known as \"Luddites\"... feared that unskilled machine operators were robbing them of their livelihood.'",
+      "options": [
+        "TRUE",
+        "FALSE",
+        "NOT GIVEN"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which paragraph contains reference to two chemical compounds which impact on performance?",
+      "passage": "READING PASSAGE 2\n\nAthletes and stress... [Paragraphs A-F on performance stress, challenge vs threat states, adrenaline, cortisol, anxiety, strategies]",
+      "lang": "en",
+      "explanation": "Paragraph D discusses adrenaline and cortisol (stress hormones).",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which paragraph contains examples of strategies for minimising the effects of stress?",
+      "lang": "en",
+      "explanation": "Paragraph F: 'Positive stress responses can be promoted through the language... visualisation... Recreating competitive pressure during training...'",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "correct": 5
+    },
+    {
+      "q": "How a sportsperson accounted for their own experience of stress.",
+      "lang": "en",
+      "explanation": "Paragraph A mentions Emma Raducanu's social media post about breathing and heart rate due to 'the accumulation of the excitement and the buzz'.",
+      "options": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Performance stress involves many demands on the athlete, for example, coping with the possible risk of __________.",
+      "lang": "en",
+      "explanation": "From Paragraph B: 'any potential dangers such as injury.'",
+      "answer": "injury"
+    },
+    {
+      "q": "Cortisol can cause tennis players to produce fewer good __________.",
+      "lang": "en",
+      "explanation": "From Paragraph D: 'In tennis players, cortisol has been associated with more unsuccessful serves...'",
+      "answer": "serves"
+    },
+    {
+      "q": "Psychologists can help athletes to view their physiological responses as the effect of a positive feeling such as __________.",
+      "lang": "en",
+      "explanation": "From Paragraph F: 'helping them see a higher heart rate as excitement, rather than nerves.'",
+      "answer": "excitement"
+    },
+    {
+      "q": "__________ is an example of a psychological technique which can reduce an athlete's stress responses.",
+      "lang": "en",
+      "explanation": "From Paragraph F: 'Developing psychological skills, such as visualisation...'",
+      "answer": "visualisation"
+    },
+    {
+      "q": "Which TWO facts about Emma Raducanu's withdrawal from the Wimbledon tournament are mentioned?",
+      "passage": "READING PASSAGE 2 (Questions 23 and 24)",
+      "lang": "en",
+      "explanation": "B (difficulty regulating breathing and heart rate) and D (larger audience, higher expectations, more skilful opponent).",
+      "options": [
+        "the stage at which she dropped out of the tournament",
+        "symptoms of her performance stress at the tournament",
+        "measures which she had taken to manage her stress levels",
+        "aspects of the Wimbledon tournament which increased her stress levels",
+        "reactions to her social media posts about her experience at Wimbledon"
+      ],
+      "correct": [
+        1,
+        3
+      ]
+    },
+    {
+      "q": "Maryam Mirzakhani is regarded as __________ in the field of mathematics because she was the only female holder of the Fields Medal.",
+      "passage": "READING PASSAGE 3\n\nAn inquiry into the existence of the gifted child... [Maryam Mirzakhani, Einstein, high performance learning, Ericsson, Bloom]",
+      "lang": "en",
+      "explanation": "Option H from the list. The passage highlights her as the only woman to win it.",
+      "answer": "unique"
+    },
+    {
+      "q": "Maths held little __________ for her as a child.",
+      "lang": "en",
+      "explanation": "Option A. 'maths wasn’t her interest – reading was.'",
+      "answer": "appeal"
+    },
+    {
+      "q": "Her performance was below average until she was __________ by a difficult puzzle.",
+      "lang": "en",
+      "explanation": "Option C. 'she was hooked' after the puzzle shared by her brother.",
+      "answer": "intrigued"
+    },
+    {
+      "q": "As a professional mathematician, she proved herself to be __________ when things did not go smoothly.",
+      "lang": "en",
+      "explanation": "Option B. 'resolute in the face of setbacks.'",
+      "answer": "determined"
+    },
+    {
+      "q": "Many people who ended up winning prestigious intellectual prizes only reached an average standard when young.",
+      "lang": "en",
+      "explanation": "YES. 'Most Nobel prize winners were unexceptional in childhood.'",
+      "options": [
+        "YES",
+        "NO",
+        "NOT GIVEN"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "It is difficult to reach agreement on whether some children are actually born gifted.",
+      "lang": "en",
+      "explanation": "YES. 'While the jury is out on giftedness being innate...'",
+      "options": [
+        "YES",
+        "NO",
+        "NOT GIVEN"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does Eyre believe is needed for children to equal 'gifted' standards?",
+      "lang": "en",
+      "explanation": "C. 'they must be taught the right attitudes... develop the attributes of high performers – curiosity...'",
+      "options": [
+        "strict discipline from the teaching staff",
+        "assistance from their peers in the classroom",
+        "the development of a spirit of inquiry towards their studies",
+        "the determination to surpass everyone else's achievements"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the result of Ericsson's research?",
+      "lang": "en",
+      "explanation": "B. 'he doesn’t think unique and innate talents are at the heart of performance. Deliberate practice... is what produces the goods.'",
+      "options": [
+        "Very gifted students do not need to work on improving memory skills.",
+        "Being born with a special gift is not the key factor in becoming expert.",
+        "Including time for physical exercise is crucial in raising performance.",
+        "10,000 hours of relevant and demanding work will create a genius."
+      ],
+      "correct": 1
+    }
+  ]
+}

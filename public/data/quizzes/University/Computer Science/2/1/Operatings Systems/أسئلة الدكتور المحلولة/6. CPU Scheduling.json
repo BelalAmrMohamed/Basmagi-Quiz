@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "title": "6. CPU Scheduling",
+    "id": "TNNNWL5D",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Operatings Systems/أسئلة الدكتور المحلولة/6. CPU Scheduling.json"
+  },
+  "stats": {
+    "questionCount": 11,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Given n processes to be scheduled on one processor, how many different possible schedules exist?",
+      "explanation": "With n processes, there are n! (n factorial = n × (n-1) × (n-2) × ... × 2 × 1) possible orderings or schedules.",
+      "options": [
+        "n! (n factorial)",
+        "2^n",
+        "n^2",
+        "n"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the difference between preemptive and nonpreemptive scheduling?",
+      "explanation": "Preemptive scheduling can interrupt a running process and switch to another. Nonpreemptive scheduling waits for the process to finish its CPU burst before switching.",
+      "answer": "Preemptive allows interrupting a process and allocating CPU to another; nonpreemptive requires the process to relinquish CPU voluntarily"
+    },
+    {
+      "q": "For the processes with arrival times P1(0.0, 8), P2(0.4, 4), P3(1.0, 1), what is the average turnaround time using FCFS scheduling?",
+      "explanation": "Using First-Come-First-Served, P1 runs first, then P2, then P3. Remember turnaround time is finishing time minus arrival time. FCFS gives 10.53.",
+      "options": [
+        "10.53",
+        "9.53",
+        "6.86",
+        "11.00"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Using the same processes from the previous question, what is the average turnaround time with SJF (Shortest Job First) scheduling?",
+      "explanation": "SJF schedules P1 first (it's available at time 0), then P3 (shortest remaining), then P2, giving an average turnaround time of 9.53.",
+      "options": [
+        "9.53",
+        "10.53",
+        "6.86",
+        "11.00"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What advantage is there in having different time-quantum sizes at different levels of a multilevel queueing system?",
+      "explanation": "Processes needing frequent servicing (like editors) benefit from small time quanta. Processes not requiring frequent servicing can use larger quanta, reducing context switches and improving efficiency.",
+      "answer": "Interactive processes can use small quanta for frequent servicing while batch processes use larger quanta for efficiency"
+    },
+    {
+      "q": "The FCFS algorithm is equivalent to the RR (Round Robin) algorithm with an infinite time quantum.",
+      "explanation": "With an infinite time quantum, Round Robin never preempts, allowing each process to run to completion in order of arrival, which is exactly First-Come-First-Served behavior.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What relationship exists between Priority scheduling and SJF (Shortest Job First)?",
+      "explanation": "SJF is a special case of priority scheduling where priority is inversely related to predicted CPU burst time - the shortest job gets the highest priority.",
+      "options": [
+        "In SJF, the shortest job has the highest priority",
+        "They are completely unrelated",
+        "Priority scheduling is always faster than SJF",
+        "SJF cannot be expressed as priority scheduling"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Why does a scheduling algorithm that favors processes with least recent processor time favor I/O-bound programs without starving CPU-bound programs?",
+      "explanation": "I/O-bound programs are favored due to their short CPU burst requests, but they frequently relinquish the CPU to perform I/O operations, giving CPU-bound programs opportunities to run.",
+      "answer": "I/O-bound programs have short CPU bursts (favored by the algorithm) but relinquish CPU frequently (allowing CPU-bound programs to eventually run)"
+    },
+    {
+      "q": "What is the difference between PCS (Process-Contention Scope) and SCS (System-Contention Scope) scheduling?",
+      "explanation": "PCS scheduling is how the thread library schedules user threads onto available LWPs. SCS is where the OS schedules kernel threads. On one-to-one threading models, PCS and SCS are the same.",
+      "options": [
+        "PCS is local thread library scheduling of threads onto LWPs; SCS is OS scheduling of kernel threads",
+        "PCS is faster than SCS",
+        "SCS only works on single-processor systems",
+        "PCS is used only for real-time systems"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Is it necessary to bind a real-time thread to an LWP in a many-to-many threading model for scheduling purposes?",
+      "explanation": "Yes. Without binding, a user thread may have to compete for an available LWP before being scheduled, introducing latency. Binding ensures the real-time thread can be scheduled immediately without waiting for an LWP.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the traditional UNIX scheduler with Priority = (recent CPU usage / 2) + base (base=60), if P1 has recent CPU usage of 40, P2 has 18, and P3 has 10, what are their new priorities? Does this raise or lower the priority of CPU-bound processes?",
+      "explanation": "With higher numbers meaning lower priority in UNIX, the priorities are 80, 69, and 65 respectively. CPU-bound processes have higher recent usage, resulting in higher priority numbers (lower actual priority).",
+      "answer": "P1=80, P2=69, P3=65. The scheduler lowers the relative priority of CPU-bound processes"
+    }
+  ]
+}

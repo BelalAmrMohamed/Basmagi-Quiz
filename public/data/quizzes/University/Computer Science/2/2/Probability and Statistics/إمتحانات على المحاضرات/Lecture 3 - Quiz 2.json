@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "id": "SVVBLRXS",
+    "title": "Lecture 3 - Quiz 2",
+    "createdAt": "3/30/2026, 8:56:12 PM",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 3 - Quiz 2.json"
+  },
+  "stats": {
+    "questionCount": 5,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "A continuous random variable $X$ (representing processing time) has a density function:\n$$f(x) = c \\cdot x \\text{ for } 0 < x < 2, \\text{ and } 0 \\text{ otherwise.}$$\nFind the constant $c$ such that $f(x)$ is a valid PDF. (Hint: The integral from $0$ to $2$ must equal $1$)",
+      "explanation": "To be a valid PDF, the total area under the curve must equal $1$:\n$$\\int_{0}^{2} cx \\, dx = 1$$\n$$\\left[ \\frac{cx^2}{2} \\right]_{0}^{2} = 1$$\n$$\\frac{c(2)^2}{2} - 0 = 1 \\implies 2c = 1 \\implies c = 0.5$$",
+      "answer": "$c = 0.5$ (or $\\frac{1}{2}$)"
+    },
+    {
+      "q": "Using the PDF from Question 1 (once you find $c$), calculate the probability that the processing time is between $1$ and $2$: $P(1 < X < 2)$.",
+      "explanation": "Using $f(x) = 0.5x$:\n$$P(1 < X < 2) = \\int_{1}^{2} 0.5x \\, dx$$\n$$\\left[ 0.25x^2 \\right]_{1}^{2} = 0.25(2^2) - 0.25(1^2)$$\n$$1 - 0.25 = 0.75$$",
+      "answer": "$P(1 < X < 2) = 0.75$ (or $\\frac{3}{4}$)"
+    },
+    {
+      "q": "Given a random variable $X$ with PDF:\n$$f(x) = \\frac{1}{2} \\text{ for } 0 < x < 2.$$\nCalculate the Expected Value $E[X]$.",
+      "explanation": "The expected value for a continuous variable is $\\int x f(x) \\, dx$:\n$$E[X] = \\int_{0}^{2} x \\cdot \\left(\\frac{1}{2}\\right) dx = \\int_{0}^{2} \\frac{x}{2} dx$$\n$$\\left[ \\frac{x^2}{4} \\right]_{0}^{2} = \\frac{4}{4} - 0 = 1$$",
+      "answer": "$E[X] = 1$"
+    },
+    {
+      "q": "You are comparing two server clusters for your quiz platform:\n- **Cluster A**: Mean Latency = $50\\text{ms}$, Variance = $9$\n- **Cluster B**: Mean Latency = $50\\text{ms}$, Variance = $100$\n\nCalculate the Standard Deviation for both clusters. Which cluster is more \"reliable\" or predictable in its performance? Why?",
+      "explanation": "Standard Deviation ($\\sigma$) is the square root of Variance:\n- $\\sigma_A = \\sqrt{9} = 3$\n- $\\sigma_B = \\sqrt{100} = 10$\n\nCluster A is more reliable because a lower standard deviation indicates that the data points (latency) are closer to the mean, resulting in more consistent and predictable performance with fewer extreme spikes.",
+      "answer": "**Cluster A**: $\\sigma = 3\\text{ms}$ | **Cluster B**: $\\sigma = 10\\text{ms}$. **Cluster A** is more reliable."
+    },
+    {
+      "q": "True or False:\n1. The CDF, $F(x)$, represents the probability $P(X \\le x)$.\n2. For any continuous random variable, the probability of the variable equaling an exact point, $P(X = 5)$, is always $0$.\n3. The value of $F(x)$ can sometimes exceed $1.0$ if the interval is large enough.",
+      "explanation": "1. **True**: This is the definition of the Cumulative Distribution Function.\n2. **True**: For continuous distributions, the probability at a single point is the integral over an interval of width zero, which is $0$.\n3. **False**: $F(x)$ is a probability measure and is bounded by $[0, 1]$. It represents the total accumulated probability, which cannot exceed $100\\%$ ($1.0$).",
+      "answer": "1. True | 2. True | 3. False"
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "title": "General Exam",
+    "id": "TSQCHFUJ",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Operatings Systems/General Exam.json"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "In a dual-mode operation system, which of the following actions must be designated as a privileged instruction to ensure system integrity?",
+      "explanation": "Modifying the device-status table is a privileged instruction because it involves direct management of I/O devices. Reading the clock and issuing traps are generally non-privileged, while register computation is purely a user-mode task.",
+      "options": [
+        "Reading the status of the system clock",
+        "Issuing a trap instruction for a system call",
+        "Modifying the entries in the device-status table",
+        "Computing a mathematical value in the registers"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "During the system boot process, why is a 'two-step' process often used involving a boot block?",
+      "explanation": "A small bootstrap loader in ROM/firmware often loads a more complex 'boot block' from a fixed disk location, which then loads the full OS. This overcomes size limitations in ROM.",
+      "options": [
+        "To allow the bootstrap loader to fit within the limited space of ROM while the full loader resides on disk",
+        "To ensure that the kernel can be loaded into the stack instead of the heap",
+        "To provide a backup of the BIOS in case of a crash dump failure",
+        "To allow the user to select between CLI and GUI modes before the kernel initializes"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A developer is using a microkernel-based operating system. What is the primary performance trade-off associated with this structure compared to a monolithic kernel?",
+      "explanation": "Microkernels improve reliability by moving services to user space, but they suffer from performance overhead because communication between these services requires system calls and message passing.",
+      "options": [
+        "Decreased system reliability due to more code running in kernel space",
+        "Increased overhead due to frequent message passing between user-space modules",
+        "Inability to port the system to new hardware architectures",
+        "Lack of support for loadable kernel modules"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In the context of the process memory layout, which segment is responsible for storing local variables and function parameters?",
+      "explanation": "The stack contains temporary data such as function parameters, return addresses, and local variables. The heap is for dynamic allocation, data section for global variables, and text for code.",
+      "options": [
+        "Text section",
+        "Data section",
+        "Heap",
+        "Stack"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "When a process is in the 'Waiting' state, what transition must it undergo before it can reach the 'Running' state again?",
+      "explanation": "A waiting process cannot jump directly to running; it must first enter the ready queue after its wait condition (like I/O completion) is satisfied.",
+      "options": [
+        "It must be dispatched by the short-term scheduler directly",
+        "It must move to the Ready queue upon the completion of an I/O event",
+        "It must be admitted by the long-term scheduler",
+        "It must terminate and be re-forked by the parent"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In Unix-like systems, if a parent process calls fork() and the child completes its execution before the parent calls wait(), what is the child process's status?",
+      "explanation": "A process that has terminated but whose parent has not yet called wait() is known as a 'zombie.' An orphan is a process whose parent terminated without calling wait().",
+      "options": [
+        "Orphan",
+        "Zombie",
+        "Cascaded",
+        "Preempted"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the primary advantage of the 'Exactly Once' semantic in Remote Procedure Calls (RPC)?",
+      "explanation": "Exactly once semantics ensure the procedure executes exactly once by using acknowledgments and timestamps/counters to filter out duplicate requests caused by network retries.",
+      "options": [
+        "It ensures a procedure is executed at most once, even if the network is reliable",
+        "It uses timestamps to ensure duplicate messages are ignored, guaranteeing the action happens precisely once",
+        "It eliminates the need for stubs on the client side",
+        "It allows the server to perform the action and then crash without needing stable storage"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which multithreading model suffers from the 'one-to-many blocking' problem where a single thread performing a blocking system call prevents all other threads in the process from executing?",
+      "explanation": "In the many-to-one model, many user threads map to a single kernel thread. If one user thread blocks, the entire kernel thread (and thus the process) is blocked.",
+      "options": [
+        "Many-to-One model",
+        "One-to-One model",
+        "Many-to-Many model",
+        "Two-level model"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "According to Amdahl's Law, if an application is 40% serial and 60% parallel, what is the maximum speedup gain possible when moving from 1 core to an infinite number of cores?",
+      "explanation": "Amdahl’s Law states speedup approaches 1 / S as N approaches infinity. Here, S (serial portion) is 0.4, so 1 / 0.4 = 2.5.",
+      "options": [
+        "1.5x",
+        "2.5x",
+        "Infinite speedup",
+        "0.6x"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How does Thread-Local Storage (TLS) differ from standard local variables in a multithreaded application?",
+      "explanation": "Local variables only exist during a single function call. TLS is unique to each thread but persists across different function calls within that thread.",
+      "options": [
+        "TLS is shared between all threads, while local variables are unique",
+        "TLS remains visible across multiple function invocations within a single thread",
+        "Local variables are stored in the PCB, while TLS is stored in the heap",
+        "TLS is only available in the Many-to-One multithreading model"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which CPU scheduling algorithm is most likely to result in the 'Convoy Effect'?",
+      "explanation": "The convoy effect occurs in FCFS when several short processes wait for one long CPU-bound process, leading to poor device and CPU utilization.",
+      "options": [
+        "Shortest Job First (SJF)",
+        "Round Robin (RR)",
+        "First-Come, First-Served (FCFS)",
+        "Multilevel Feedback Queue"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In exponential averaging used for SJF burst prediction, if α is set to 1, what is the resulting behavior?",
+      "explanation": "If α = 1, the formula τn+1 = αtn + (1-α)τn reduces to τn+1 = tn, meaning the system only considers the actual last burst.",
+      "options": [
+        "The prediction ignores the last actual burst and relies entirely on history",
+        "The prediction relies entirely on the most recent actual CPU burst",
+        "The prediction weights history and the current burst equally",
+        "The prediction becomes constant regardless of actual behavior"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which scheduling criteria is prioritized in time-sharing systems to ensure user satisfaction?",
+      "explanation": "In time-sharing (interactive) systems, minimizing response time—the time from request submission to the start of the first response—is critical for usability.",
+      "options": [
+        "Throughput",
+        "CPU Utilization",
+        "Response Time",
+        "Turnaround Time"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The 'Aging' technique is a standard solution for which of the following scheduling problems?",
+      "explanation": "Aging gradually increases the priority of processes that wait for a long time, preventing low-priority processes from starving indefinitely.",
+      "options": [
+        "Starvation in Priority Scheduling",
+        "Convoy effect in FCFS",
+        "High overhead in Context Switching",
+        "Overfilling the Ready Queue in SJF"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is TRUE regarding the difference between a Program and a Process?",
+      "explanation": "A program is a passive entity (file on disk). It becomes an active process only when it is loaded into memory for execution.",
+      "options": [
+        "A program is an active entity, while a process is passive",
+        "A process can only represent one program, and a program can only be one process",
+        "A program becomes a process only when an executable file is loaded into memory",
+        "The stack and heap are parts of a program, but not a process"
+      ],
+      "correct": 2
+    }
+  ]
+}

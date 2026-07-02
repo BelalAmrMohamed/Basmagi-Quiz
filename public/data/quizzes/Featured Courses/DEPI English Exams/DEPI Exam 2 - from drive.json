@@ -1,0 +1,347 @@
+{
+  "meta": {
+    "title": "DEPI Exam 2   From Drive",
+    "id": "S6ASBQEG",
+    "createdAt": "2026-06-10 - 16:32",
+    "path": "quizzes/Featured Courses/DEPI English Exams/DEPI Exam 2 - from drive.json",
+    "source": "https://drive.google.com/drive/u/1/folders/1CAzicLipT1xtPuOZGt52-ka0NWQYJyeS"
+  },
+  "stats": {
+    "questionCount": 30,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "My __ brother's wife is Sara - she is my aunt.",
+      "explanation": "We need the possessive form of 'dad'. The possessive is formed by adding apostrophe + s: **dad's**.",
+      "options": [
+        "dad",
+        "dads",
+        "dad is",
+        "dad's"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "__ Chelsea play Liverpool this Saturday. Do you want to come?",
+      "explanation": "**'Going to'** is used for a planned future event. 'I'm going to see' correctly expresses a pre-arranged plan.",
+      "options": [
+        "I'm going to see",
+        "I saw",
+        "I'm see",
+        "I would see"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "My shoes are wet, __ I'll leave them in the sun to dry.",
+      "explanation": "**'So'** introduces a result or consequence. The wet shoes are the cause; leaving them in the sun is the result.",
+      "options": [
+        "however",
+        "because",
+        "so",
+        "as"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "When I feel __, my face turns red.",
+      "explanation": "After 'feel', we use an adjective describing the subject's emotional state. **'Embarrassed'** is the correct past-participial adjective here.",
+      "options": [
+        "embarrass",
+        "embarrass",
+        "embarrassed",
+        "embarrassing"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "My father said I __ as late as I want.",
+      "explanation": "Modal verbs like **'may'** must be followed by the bare infinitive. 'May stay' is correct.",
+      "options": [
+        "may stayed",
+        "may stay",
+        "may to stay",
+        "stay"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How long does it take __ from Paris to Madrid by train?",
+      "explanation": "The structure **'it takes + time + to-infinitive'** is standard. 'To get' is correct.",
+      "options": [
+        "getting",
+        "to get",
+        "get",
+        "when you get"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "You need flour, eggs and sugar __ this cake.",
+      "explanation": "**'To make'** (infinitive of purpose) expresses why you need the ingredients.",
+      "options": [
+        "making",
+        "make",
+        "for making",
+        "to make"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "I __ the newspaper when the doorbell rang.",
+      "explanation": "**Past continuous** ('was reading') describes an action in progress in the past that was interrupted by another event (the doorbell ringing).",
+      "options": [
+        "am reading",
+        "was reading",
+        "have read",
+        "read"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "I had __ very scary dream last night.",
+      "explanation": "We use the indefinite article **'a'** before a singular countable noun mentioned for the first time. 'Very' starts with a consonant sound, so 'a' (not 'an') is correct.",
+      "options": [
+        "the",
+        "—",
+        "a",
+        "an"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "We saw him, his wife and __ children at their home in Bristol.",
+      "explanation": "**'Their'** is the possessive determiner used before a noun to show belonging. 'Them' is an object pronoun and cannot precede a noun.",
+      "options": [
+        "they",
+        "them",
+        "they're",
+        "their"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "He's hurt a finger on his left hand, so he can't __ the guitar.",
+      "explanation": "After modal verbs like **'can't'**, we always use the bare infinitive. 'Play' is correct.",
+      "options": [
+        "to play",
+        "play",
+        "playing",
+        "plays"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The __ school is an excellent school; they are really learning fast.",
+      "explanation": "**'Boys''** is the plural possessive. The school belongs to multiple boys, so the apostrophe follows the plural 's'.",
+      "options": [
+        "boy's",
+        "boys'",
+        "their",
+        "boy"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "We __ anything special last weekend.",
+      "explanation": "**'Didn't do'** is the correct past simple negative. 'Didn't' alone needs the main verb 'do' to complete the sentence.",
+      "options": [
+        "didn't",
+        "don't do",
+        "didn't do",
+        "did"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "I'm going to the bar to order a beer from __ barman.",
+      "explanation": "**'The'** is used with a specific, identifiable noun — the speaker is referring to a particular barman at that bar.",
+      "options": [
+        "an",
+        "the",
+        "these",
+        "—"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "My bicycle wheel is __ bent after my crash.",
+      "explanation": "**'A little'** is used as an adverb modifying the adjective 'bent', meaning slightly. 'Little' without the article has a negative connotation and does not work as a modifier here.",
+      "options": [
+        "some",
+        "little",
+        "a little",
+        "a lot"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "We have a new picture __ the wall.",
+      "explanation": "**'On'** is the correct preposition for surfaces. Pictures are hung 'on' a wall.",
+      "options": [
+        "above",
+        "in",
+        "at",
+        "on"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "The first questions are simple and __ they get more complicated.",
+      "explanation": "**'Then'** indicates sequence — first they are simple, and after that they become more complicated.",
+      "options": [
+        "so",
+        "then",
+        "before",
+        "but"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "I work __ a bank.",
+      "explanation": "**'In'** is the correct preposition for working inside an institution or building: 'work in a bank/hospital/school'.",
+      "options": [
+        "in",
+        "under",
+        "on",
+        "from"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The schoolboys all __ wear a soft grey cap on their heads.",
+      "explanation": "**'Have to'** expresses obligation. It follows the subject directly and takes the base form of the main verb.",
+      "options": [
+        "having to",
+        "have to",
+        "to have to",
+        "haven't to"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The washing machine we __ on Tuesday doesn't work.",
+      "explanation": "**'Bought'** is the past simple of 'buy', correct here since the purchase happened on a specific day in the past.",
+      "options": [
+        "buy",
+        "buying",
+        "bought",
+        "buys"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "I __ sing very well, so I'm going to have lessons.",
+      "explanation": "**'Can't'** expresses inability. The speaker is unable to sing well, which is why they are planning to take lessons.",
+      "options": [
+        "shouldn't",
+        "doesn't",
+        "can't",
+        "won't"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "\"I'll help you.\" \"Thanks. __ very kind of you.\"",
+      "explanation": "**'That's'** (= That is) is used to comment on something just said or done. 'That's very kind of you' is a natural fixed expression in English.",
+      "options": [
+        "This is",
+        "Is",
+        "That",
+        "That's"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "I fell off my bike and __ my leg.",
+      "explanation": "**'Broke'** is the past simple of 'break', used for a completed action at a specific past moment.",
+      "options": [
+        "m broken",
+        "broke",
+        "broken",
+        "break"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "She still feels bad, __ she's going to see the doctor today.",
+      "explanation": "**'So'** introduces a result or consequence. Feeling bad is the cause; seeing the doctor is the result.",
+      "options": [
+        "or",
+        "so",
+        "because",
+        "and"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "There are several reasons __ I can't help you now.",
+      "explanation": "**'Why'** is the correct relative adverb used after 'reasons': 'reasons why I can't help'.",
+      "options": [
+        "why",
+        "where",
+        "which",
+        "when"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What sports __ at the leisure center?",
+      "explanation": "In direct questions, the auxiliary comes before the subject. **'Can we do'** follows the correct question word order: auxiliary (can) + subject (we) + main verb (do).",
+      "options": [
+        "can we do",
+        "we can do",
+        "we do",
+        "to do"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "__ the window, please?",
+      "explanation": "**'Can I open'** is correct. Modal verbs are followed by the bare infinitive, not 'to + infinitive' or the gerund.",
+      "options": [
+        "Can I to open",
+        "Can I open",
+        "Can I opening",
+        "Can open"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Please can you pass me __ cup?",
+      "explanation": "**'That'** is used for a singular noun distant from the speaker. Since the speaker is asking someone else to pass it, the cup is away from the speaker.",
+      "options": [
+        "those",
+        "this",
+        "these",
+        "that"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "My Uncle Frank is my __ brother.",
+      "explanation": "**'Dad's'** is the possessive form indicating that Uncle Frank is the brother who belongs to / is on the side of the speaker's dad.",
+      "options": [
+        "dad",
+        "dad's",
+        "dad is",
+        "dad has"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How many children __ she __?",
+      "explanation": "**'Did … have'** is the correct past simple question structure: auxiliary 'did' + subject + bare infinitive 'have'.",
+      "options": [
+        "did … have",
+        "did … having",
+        "had … have",
+        "did … has"
+      ],
+      "correct": 0
+    }
+  ]
+}

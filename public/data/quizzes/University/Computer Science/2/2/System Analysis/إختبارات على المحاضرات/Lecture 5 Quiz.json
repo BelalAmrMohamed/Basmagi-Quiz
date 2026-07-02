@@ -1,0 +1,433 @@
+{
+  "meta": {
+    "title": "Lecture 5 Quiz",
+    "id": "WH3APPWD",
+    "createdAt": "2026-05-29 - 22:07",
+    "path": "quizzes/University/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 5 Quiz.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "The Project Management Process consists of how many phases?",
+      "explanation": "The project management process involves four phases: (1) Initiating the project, (2) Planning the project, (3) Executing the project, and (4) Closing down the project.",
+      "options": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is **NOT** a phase of the Project Management Process?",
+      "explanation": "The four phases are: Initiating, Planning, Executing, and Closing Down. 'Monitoring' is not one of the listed phases in this framework.",
+      "options": [
+        "Initiating the project",
+        "Monitoring the project",
+        "Executing the project",
+        "Closing down the project"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The **critical path** in a project network diagram is defined as:",
+      "explanation": "The critical path is the shortest time in which a project can be completed. Any activity on the critical path that is delayed will delay the entire project.",
+      "options": [
+        "The path that contains the most activities",
+        "The longest possible time in which a project could be completed",
+        "The shortest time in which a project can be completed",
+        "The path with the highest associated cost"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If an activity **on the critical path** is delayed in its completion, what happens?",
+      "explanation": "Any activity on the critical path that is delayed in completion will delay the entire project, because critical path activities have zero slack time — there is no buffer to absorb delays.",
+      "options": [
+        "Only that specific activity is affected",
+        "The entire project is delayed",
+        "Slack time from other activities absorbs the delay",
+        "The project manager reallocates resources automatically"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "**Slack time** is defined as:",
+      "explanation": "Slack time is the amount of time that an activity can be delayed without delaying the overall project. Activities on the critical path have a slack time of zero.",
+      "options": [
+        "The time required to complete the most important activity",
+        "The total elapsed time from project start to finish",
+        "The amount of time an activity can be delayed without delaying the project",
+        "The difference between optimistic and pessimistic time estimates"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which formula correctly represents the **Expected Time (ET)** for an activity in PERT analysis?",
+      "explanation": "The PERT formula is $ET = \\dfrac{o + 4r + p}{6}$, where $o$ = optimistic estimate, $r$ = realistic (most likely) estimate, and $p$ = pessimistic estimate. The weights (1, 4, 1) sum to 6, giving the denominator.",
+      "options": [
+        "$ET = \\dfrac{o + r + p}{3}$",
+        "$ET = \\dfrac{o + 4r + p}{6}$",
+        "$ET = \\dfrac{o + 2r + p}{4}$",
+        "$ET = \\dfrac{2o + 3r + p}{6}$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How is **slack time** for an activity calculated?",
+      "explanation": "Slack is calculated as $Slack = T_L - T_E$, where $T_L$ is the latest expected completion time and $T_E$ is the earliest expected completion time. A result of zero indicates the activity is on the critical path.",
+      "options": [
+        "$Slack = T_E + T_L$",
+        "$Slack = T_L - T_E$",
+        "$Slack = T_E - T_L$",
+        "$Slack = \\dfrac{T_E \\times T_L}{2}$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Activities **not** on the critical path can be:",
+      "explanation": "Non-critical path activities have positive slack time, meaning they can be delayed (up to their slack amount) without affecting the project's final completion date.",
+      "options": [
+        "Delayed indefinitely without any impact on the project",
+        "Delayed for some amount of time without delaying the project's final completion",
+        "Completed in any order with no consequences",
+        "Removed from the project without consequences"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "When **two or more activities precede** an activity in a network diagram, which value is used to calculate the new activity's Earliest Expected Completion Time ($T_E$)?",
+      "explanation": "When multiple activities precede a node, the **largest** $T_E$ is used, because all predecessors must be complete before the next activity can start. For example, since Activity 8 is preceded by Activities 5 ($T_E = 18.5$) and 7 ($T_E = 21$), then $T_E(8) = 21 + ET(8) = 22$.",
+      "options": [
+        "The smallest $T_E$ among the preceding activities",
+        "The average $T_E$ of all preceding activities",
+        "The largest $T_E$ among the preceding activities",
+        "The sum of all preceding activities' $T_E$ values"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the lecture example (Activities 1–8), what is the Earliest Expected Completion Time ($T_E$) for **Activity 8 (Installation)**, given that it is preceded by Activity 5 ($T_E = 18.5$) and Activity 7 ($T_E = 21$), with $ET = 1$?",
+      "explanation": "$T_E(8) = \\max(T_E(5),\\, T_E(7)) + ET(8) = \\max(18.5,\\, 21) + 1 = 21 + 1 = 22$.",
+      "options": [
+        "20",
+        "21",
+        "22",
+        "23"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the lecture example (Activities 1–8), which is the **only activity NOT on the critical path**, with a slack time of 2.5?\n\n| Activity | $T_E$ | $T_L$ |\n|---|---|---|\n| 2 (Screen Design) | 11 | 11 |\n| 3 (Report Design) | 11 | 11 |\n| 5 (User Documentation) | 18.5 | 21 |\n| 6 (Programming) | 18 | 18 |",
+      "explanation": "Activity 5 (User Documentation) has $T_E = 18.5$ and $T_L = 21$, giving $Slack = T_L - T_E = 21 - 18.5 = 2.5$. All other activities listed have $T_L = T_E$, so their slack is 0.",
+      "options": [
+        "Activity 2 (Screen Design)",
+        "Activity 3 (Report Design)",
+        "Activity 5 (User Documentation)",
+        "Activity 6 (Programming)"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the **total project duration** for the lecture example network diagram (Activities 1–8)?",
+      "explanation": "The project duration equals $T_E$ for the final activity. Activity 8 (Installation) has $T_E = 22$, so the total project duration is **22** time units.",
+      "options": [
+        "18",
+        "20",
+        "21",
+        "22"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In the lecture example, what is the **Latest Expected Completion Time ($T_L$)** for Activity 4 (Database Design)?",
+      "explanation": "$T_L(4) = 13$, which equals $T_E(4) = 13$. The slack is $13 - 13 = 0$, confirming Activity 4 is on the critical path.",
+      "options": [
+        "11",
+        "12",
+        "13",
+        "14"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "For an activity **on the critical path**, its slack time is always:",
+      "explanation": "Critical path activities have $T_L = T_E$, so $Slack = T_L - T_E = 0$. Any positive slack indicates the activity has flexibility and is not on the critical path.",
+      "options": [
+        "Greater than 0",
+        "Equal to 0",
+        "Less than 0",
+        "Equal to its Expected Time (ET)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The primary goal of developing a **project communication plan** is to:",
+      "explanation": "The communication plan outlines how communication will occur among management, project team members, and the customer — covering reporting schedules, team coordination, and information sharing with external parties.",
+      "options": [
+        "Define the project budget and resource allocation",
+        "Outline communication procedures among management, project team members, and the customer",
+        "Assign technical roles to each team member",
+        "Create the project's Gantt chart and network diagram"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is **NOT** included in a project communication plan?",
+      "explanation": "The communication plan covers: (1) reporting procedures, (2) team coordination and announcements, and (3) external information sharing. Technical system architecture is a design deliverable, not part of the communication plan.",
+      "options": [
+        "When and how written and oral reports will be provided by the team",
+        "How team members will coordinate work and announce the project to interested parties",
+        "What information will be shared with vendors and external contractors",
+        "The detailed technical architecture of the information system"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "The **project communication matrix** is designed to ensure that:",
+      "explanation": "The project communication matrix is a summary of the overall communication plan. Its goal is to ensure the right people get the right information at the right time, and in the right format.",
+      "options": [
+        "All project tasks are completed on schedule",
+        "The right people receive the right information at the right time and in the right format",
+        "The project stays within its approved budget",
+        "All stakeholders attend every project meeting"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the Project Communication Matrix in the lecture, how does the **IT Manager** receive the Project Status Report?",
+      "explanation": "According to the communication matrix, the IT Manager receives the Project Status Report in **Hard Copy** format, due on the First Monday of each month, coordinated by Juan and Jeremy.",
+      "options": [
+        "E-mail",
+        "Project Intranet",
+        "Hard Copy",
+        "Verbal briefing"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What are the **two deliverables** identified at the end of the lecture?",
+      "explanation": "The lecture identifies two deliverables: (1) the **Network Diagram** and (2) the **Communication Matrix** — the two primary project management outputs covered in this lecture.",
+      "options": [
+        "Gantt Chart and Project Charter",
+        "Network Diagram and Communication Matrix",
+        "Work Breakdown Structure and Risk Register",
+        "Budget Plan and Resource Allocation Table"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A **natural termination** of a project occurs when:",
+      "explanation": "A natural termination occurs when the requirements of the project have been met — the project has been completed and is a success.",
+      "options": [
+        "The project budget is completely exhausted",
+        "Management decides to cancel the project mid-way",
+        "The project's requirements have been met and it has been completed successfully",
+        "The originally planned timeline has expired"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "An **unnatural termination** of a project occurs when:",
+      "explanation": "An unnatural termination occurs when the project is stopped before completion, meaning it ends prematurely without all requirements being fulfilled.",
+      "options": [
+        "All project objectives are achieved ahead of schedule",
+        "The project is stopped before completion",
+        "The system is successfully deployed to all users",
+        "The customer signs off on all deliverables"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following correctly lists the **three steps** in the Project Closedown process?",
+      "explanation": "The three project closedown steps are: (1) Closing Down the Project, (2) Conducting Postproject Reviews, and (3) Closing the Customer Contract.",
+      "options": [
+        "System Testing, Deployment, and User Training",
+        "Closing Down the Project, Conducting Postproject Reviews, and Closing the Customer Contract",
+        "Budget Review, Resource Release, and Team Evaluation",
+        "Requirements Review, Design Approval, and Final Delivery"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The project closedown phase occurs:",
+      "explanation": "The project closedown occurs after the final phase of the SDLC, formally bringing the project to an end once all system development activities are complete.",
+      "options": [
+        "At the very beginning of the Systems Development Life Cycle (SDLC)",
+        "Concurrently with project planning",
+        "After the final phase of the SDLC",
+        "Before project execution begins"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.45** — Given the project data below (start at time = 0), what is the **Earliest Finish (EF)** for Activity **C** (preceded by A, duration = 4)?\n\n| Activity | Preceding | Duration |\n|---|---|---|\n| A | — | 5 |\n| B | A | 3 |\n| C | A | 4 |\n| D | C | 6 |\n| E | B, C | 4 |\n| F | D | 1 |\n| G | D, E, F | 5 |",
+      "explanation": "$EF(A) = 0 + 5 = 5$. Since C is preceded only by A: $EF(C) = EF(A) + 4 = 5 + 4 = 9$.",
+      "options": [
+        "7",
+        "8",
+        "9",
+        "10"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.45** — Using the Ex. 3.45 data (A:5, B:3, C:4, D:6, E:4, F:1, G:5), what is the **Earliest Finish (EF)** for Activity **E** (preceded by B and C)?",
+      "explanation": "$EF(B) = 5 + 3 = 8$, and $EF(C) = 9$. Since E is preceded by both B and C: $EF(E) = \\max(EF(B),\\, EF(C)) + 4 = \\max(8,\\, 9) + 4 = 9 + 4 = 13$.",
+      "options": [
+        "11",
+        "12",
+        "13",
+        "14"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.45** — Using the Ex. 3.45 data (A:5, B:3, C:4, D:6, E:4, F:1, G:5), what is the **Latest Finish (LF)** for Activity **B**?\n\n*(Hint: The total project duration is 21, and the only successor of B is E with duration 4.)*",
+      "explanation": "Working backwards: $LF(G) = 21 \\Rightarrow LS(G) = 21 - 5 = 16$. Activity E feeds only into G, so $LF(E) = 16 \\Rightarrow LS(E) = 16 - 4 = 12$. B's only successor is E, so $LF(B) = LS(E) = 12$.",
+      "options": [
+        "8",
+        "10",
+        "12",
+        "14"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.45** — Using the Ex. 3.45 data (A:5, B:3, C:4, D:6, E:4, F:1, G:5), what is the **slack time** for Activity **E**, given $EF(E) = 13$ and $LF(E) = 16$?",
+      "explanation": "$Slack(E) = LF(E) - EF(E) = 16 - 13 = 3$. Since slack > 0, Activity E is **not** on the critical path.",
+      "options": [
+        "0",
+        "1",
+        "3",
+        "4"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.45** — Using the Ex. 3.45 data (A:5, B:3, C:4, D:6, E:4, F:1, G:5), which sequence correctly represents the **critical path**?",
+      "explanation": "Activities with zero slack are A, C, D, F, and G. The critical path is **A → C → D → F → G** with total duration $5 + 4 + 6 + 1 + 5 = 21$ time units.",
+      "options": [
+        "A → B → E → G",
+        "A → C → D → F → G",
+        "A → C → E → G",
+        "A → C → D → G"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "**Exercise 3.45** — Using the Ex. 3.45 data (A:5, B:3, C:4, D:6, E:4, F:1, G:5), what is the **total project duration**?",
+      "explanation": "$EF(G) = \\max(EF(D),\\, EF(E),\\, EF(F)) + 5 = \\max(15,\\, 13,\\, 16) + 5 = 16 + 5 = 21$. The critical path confirms this: $5 + 4 + 6 + 1 + 5 = 21$ time units.",
+      "options": [
+        "18",
+        "19",
+        "20",
+        "21"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "**Exercise 3.47** — Given the project data below (start at time = 0), what is the **Earliest Finish (EF)** for Activity **D** (preceded by A, duration = 7)?\n\n| Activity | Preceding | Duration |\n|---|---|---|\n| A | — | 4 |\n| B | A | 5 |\n| C | A | 6 |\n| D | A | 7 |\n| E | A, D | 6 |\n| F | C, E | 5 |\n| G | D, E | 4 |\n| H | E | 3 |\n| I | F, G | 4 |\n| J | H, I | 5 |",
+      "explanation": "$EF(A) = 0 + 4 = 4$. Since D is preceded only by A: $EF(D) = EF(A) + 7 = 4 + 7 = 11$.",
+      "options": [
+        "9",
+        "10",
+        "11",
+        "12"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data (A:4, B:5, C:6, D:7, E:6, F:5, G:4, H:3, I:4, J:5), what is the **Earliest Finish (EF)** for Activity **E** (preceded by A and D)?",
+      "explanation": "$EF(A) = 4$ and $EF(D) = 11$. Since E is preceded by both A and D: $EF(E) = \\max(4,\\, 11) + 6 = 11 + 6 = 17$.",
+      "options": [
+        "14",
+        "15",
+        "16",
+        "17"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data (A:4, B:5, C:6, D:7, E:6, F:5, G:4, H:3, I:4, J:5), what is the **Earliest Finish (EF)** for Activity **J** (preceded by H and I)?",
+      "explanation": "$EF(H) = 17 + 3 = 20$. $EF(F) = \\max(10,\\, 17) + 5 = 22$. $EF(G) = \\max(11,\\, 17) + 4 = 21$. $EF(I) = \\max(22,\\, 21) + 4 = 26$. Therefore $EF(J) = \\max(20,\\, 26) + 5 = \\mathbf{31}$.",
+      "options": [
+        "28",
+        "29",
+        "30",
+        "31"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data (A:4, B:5, C:6, D:7, E:6, F:5, G:4, H:3, I:4, J:5), what is the **Latest Finish (LF)** for Activity **C**?",
+      "explanation": "Working backwards: $LF(J) = 31 \\Rightarrow LS(I) = 22$. $LF(F) = LS(I) = 22 \\Rightarrow LS(F) = 22 - 5 = 17$. C's only successor is F, so $LF(C) = LS(F) = 17$.",
+      "options": [
+        "10",
+        "13",
+        "17",
+        "22"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data, what is the **slack time** for Activity **G**, given $EF(G) = 21$ and $LF(G) = 22$?",
+      "explanation": "$Slack(G) = LF(G) - EF(G) = 22 - 21 = 1$. Activity G is **not** on the critical path since its slack is 1, not 0.",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data (A:4, B:5, C:6, D:7, E:6, F:5, G:4, H:3, I:4, J:5), which sequence correctly represents the **critical path**?",
+      "explanation": "Activities with zero slack are A, D, E, F, I, and J. The critical path is **A → D → E → F → I → J** with total duration $4 + 7 + 6 + 5 + 4 + 5 = 31$ time units.",
+      "options": [
+        "A → C → F → I → J",
+        "A → D → E → H → J",
+        "A → D → E → F → I → J",
+        "A → D → G → I → J"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**Exercise 3.47** — Using the Ex. 3.47 data (A:4, B:5, C:6, D:7, E:6, F:5, G:4, H:3, I:4, J:5), what is the **total project duration**?",
+      "explanation": "$EF(J) = 31$, confirmed by the critical path: $A(4) + D(7) + E(6) + F(5) + I(4) + J(5) = 31$ time units.",
+      "options": [
+        "26",
+        "28",
+        "30",
+        "31"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Explain the **four phases** of the Project Management Process in detail, describing the key activities and objectives of each phase.",
+      "explanation": "Understanding all four phases provides a complete lifecycle framework for managing IS projects from inception through formal closure.",
+      "answer": "The Project Management Process is a controlled process consisting of four sequential phases:\n\n**1. Initiating the Project**\nThe project is formally recognized and authorized. Key activities include defining the high-level project scope, identifying stakeholders, establishing project objectives, and assessing feasibility. A project manager is typically assigned here.\n\n**2. Planning the Project**\nDetailed planning occurs, including:\n- Breaking the project into specific tasks and dependencies\n- Building schedules using Gantt charts and network diagrams (PERT/CPM)\n- Estimating activity durations using: $ET = \\dfrac{o + 4r + p}{6}$\n- Computing $T_E$, $T_L$, and slack time for each activity\n- Identifying the **critical path** (activities with zero slack)\n- Developing a **communication plan** and **communication matrix**\n- Allocating resources and preparing a budget\n\n**3. Executing the Project**\nThe project team performs the work defined in the plan. The project manager monitors progress, manages risks, resolves issues, and keeps the project on track against schedule and budget.\n\n**4. Closing Down the Project**\nThe final phase formally ends the project through three steps:\n- *Closing Down the Project*: Releasing team members and resources\n- *Conducting Postproject Reviews*: Capturing lessons learned\n- *Closing the Customer Contract*: Finalizing all agreements\n\nA project may end **naturally** (requirements fully met, project is a success) or **unnaturally** (stopped before completion). The closedown occurs after the final phase of the SDLC."
+    },
+    {
+      "q": "Describe the purpose and components of a **project communication plan**, and explain what a **project communication matrix** is, its goal, and how it is structured.",
+      "explanation": "Effective communication planning prevents misunderstandings, ensures accountability, and keeps all project stakeholders aligned throughout the project lifecycle.",
+      "answer": "**Project Communication Plan**\n\n*Purpose:* To outline the communication procedures among management, project team members, and the customer, ensuring all parties are properly informed throughout the project lifecycle.\n\n*Components:*\n1. **Reporting Procedures** — When and how written and oral reports will be provided by the team.\n2. **Team Coordination** — How team members will coordinate their work and what messages will be sent to announce the project to interested parties.\n3. **External Communication** — What kinds of information will be shared with vendors and external contractors involved with the project.\n\n---\n\n**Project Communication Matrix**\n\n*Definition:* A summary document derived from the overall communication plan.\n\n*Goal:* To ensure that the **right people** receive the **right information** at the **right time**, in the **right format**. It can be easily shared across the organization.\n\n*Typical structure:*\n\n| Stakeholder | Document | Format | Team Contact | Date Due |\n|---|---|---|---|---|\n| Team Members | Project Status Report | Project Intranet | Juan, Kim | First Monday of Month |\n| Management Supervisor | Project Status Report | Hard Copy | Juan, Kim | First Monday of Month |\n| IT Manager | Project Status Report | Hard Copy | Juan, Jeremy | First Monday of Month |\n| Internal IT Staff | Project Status Report | E-mail | Jackie, James | First Monday of Month |\n| Contract Programmers | Software Specifications | E-mail / Project Intranet | Jordan, Kim | October 4, 2015 |\n| Training Subcontractor | Implementation and Training Plan | Hard Copy | Jordan, James | January 10, 2016 |"
+    },
+    {
+      "q": "**Exercise 3.45 — Complete Solution:** For the project below (start at time = 0), compute the EF, LF, and Slack for each activity. Identify which tasks are on the critical path and state the total project duration.\n\n| Activity | Preceding | Duration |\n|---|---|---|\n| A | — | 5 |\n| B | A | 3 |\n| C | A | 4 |\n| D | C | 6 |\n| E | B, C | 4 |\n| F | D | 1 |\n| G | D, E, F | 5 |",
+      "explanation": "The forward pass finds the earliest each activity can finish; the backward pass finds the latest it can finish without delaying the project. Zero-slack activities (EF = LF) form the critical path.",
+      "answer": "**Step 1 — Forward Pass (Earliest Finish, EF):**\n\n$$EF(A) = 0 + 5 = 5$$\n$$EF(B) = 5 + 3 = 8$$\n$$EF(C) = 5 + 4 = 9$$\n$$EF(D) = 9 + 6 = 15$$\n$$EF(E) = \\max(EF(B),\\, EF(C)) + 4 = \\max(8,\\, 9) + 4 = 13$$\n$$EF(F) = 15 + 1 = 16$$\n$$EF(G) = \\max(EF(D),\\, EF(E),\\, EF(F)) + 5 = \\max(15,\\, 13,\\, 16) + 5 = 21$$\n\n**Step 2 — Backward Pass (Latest Finish, LF):**\n\n$$LF(G) = 21 \\Rightarrow LS(G) = 21 - 5 = 16$$\n$$LF(F) = LS(G) = 16 \\Rightarrow LS(F) = 16 - 1 = 15$$\n$$LF(E) = LS(G) = 16 \\Rightarrow LS(E) = 16 - 4 = 12$$\n$$LF(D) = \\min(LS(F),\\, LS(G)) = \\min(15,\\, 16) = 15 \\Rightarrow LS(D) = 15 - 6 = 9$$\n$$LF(C) = \\min(LS(D),\\, LS(E)) = \\min(9,\\, 12) = 9 \\Rightarrow LS(C) = 9 - 4 = 5$$\n$$LF(B) = LS(E) = 12 \\Rightarrow LS(B) = 12 - 3 = 9$$\n$$LF(A) = \\min(LS(B),\\, LS(C)) = \\min(9,\\, 5) = 5 \\Rightarrow LS(A) = 5 - 5 = 0$$\n\n**Step 3 — Summary Table:**\n\n| Activity | EF | LF | Slack $(LF - EF)$ | Critical Path? |\n|---|---|---|---|---|\n| A | 5 | 5 | 0 | ✓ |\n| B | 8 | 12 | 4 | ✗ |\n| C | 9 | 9 | 0 | ✓ |\n| D | 15 | 15 | 0 | ✓ |\n| E | 13 | 16 | 3 | ✗ |\n| F | 16 | 16 | 0 | ✓ |\n| G | 21 | 21 | 0 | ✓ |\n\n**Critical Path:** A → C → D → F → G\n\n**Total Project Duration:** $5 + 4 + 6 + 1 + 5 = \\mathbf{21}$ time units"
+    },
+    {
+      "q": "**Exercise 3.47 — Complete Solution:** For the project below (start at time = 0), compute the EF, LF, and Slack for each activity. Identify which tasks are on the critical path and state the total project duration.\n\n| Activity | Preceding | Duration |\n|---|---|---|\n| A | — | 4 |\n| B | A | 5 |\n| C | A | 6 |\n| D | A | 7 |\n| E | A, D | 6 |\n| F | C, E | 5 |\n| G | D, E | 4 |\n| H | E | 3 |\n| I | F, G | 4 |\n| J | H, I | 5 |",
+      "explanation": "Activity B is a terminal node with no successors, giving it the largest slack. The critical path runs through all activities where EF = LF (zero slack), forming the longest chain from start to project completion.",
+      "answer": "**Step 1 — Forward Pass (Earliest Finish, EF):**\n\n$$EF(A) = 0 + 4 = 4$$\n$$EF(B) = 4 + 5 = 9$$\n$$EF(C) = 4 + 6 = 10$$\n$$EF(D) = 4 + 7 = 11$$\n$$EF(E) = \\max(EF(A),\\, EF(D)) + 6 = \\max(4,\\, 11) + 6 = 17$$\n$$EF(F) = \\max(EF(C),\\, EF(E)) + 5 = \\max(10,\\, 17) + 5 = 22$$\n$$EF(G) = \\max(EF(D),\\, EF(E)) + 4 = \\max(11,\\, 17) + 4 = 21$$\n$$EF(H) = EF(E) + 3 = 17 + 3 = 20$$\n$$EF(I) = \\max(EF(F),\\, EF(G)) + 4 = \\max(22,\\, 21) + 4 = 26$$\n$$EF(J) = \\max(EF(H),\\, EF(I)) + 5 = \\max(20,\\, 26) + 5 = 31$$\n\n**Step 2 — Backward Pass (Latest Finish, LF):**\n\n$$LF(J) = 31 \\Rightarrow LS(J) = 31 - 5 = 26$$\n$$LF(I) = 26 \\Rightarrow LS(I) = 26 - 4 = 22$$\n$$LF(H) = 26 \\Rightarrow LS(H) = 26 - 3 = 23$$\n$$LF(G) = LS(I) = 22 \\Rightarrow LS(G) = 22 - 4 = 18$$\n$$LF(F) = LS(I) = 22 \\Rightarrow LS(F) = 22 - 5 = 17$$\n$$LF(E) = \\min(LS(F),\\, LS(G),\\, LS(H)) = \\min(17,\\, 18,\\, 23) = 17 \\Rightarrow LS(E) = 17 - 6 = 11$$\n$$LF(D) = \\min(LS(E),\\, LS(G)) = \\min(11,\\, 18) = 11 \\Rightarrow LS(D) = 11 - 7 = 4$$\n$$LF(C) = LS(F) = 17 \\Rightarrow LS(C) = 17 - 6 = 11$$\n$$LF(B) = 31\\ (\\text{no successor}) \\Rightarrow LS(B) = 31 - 5 = 26$$\n$$LF(A) = \\min(LS(B),\\, LS(C),\\, LS(D),\\, LS(E)) = \\min(26,\\, 11,\\, 4,\\, 11) = 4 \\Rightarrow LS(A) = 0$$\n\n**Step 3 — Summary Table:**\n\n| Activity | EF | LF | Slack $(LF - EF)$ | Critical Path? |\n|---|---|---|---|---|\n| A | 4 | 4 | 0 | ✓ |\n| B | 9 | 31 | 22 | ✗ |\n| C | 10 | 17 | 7 | ✗ |\n| D | 11 | 11 | 0 | ✓ |\n| E | 17 | 17 | 0 | ✓ |\n| F | 22 | 22 | 0 | ✓ |\n| G | 21 | 22 | 1 | ✗ |\n| H | 20 | 26 | 6 | ✗ |\n| I | 26 | 26 | 0 | ✓ |\n| J | 31 | 31 | 0 | ✓ |\n\n**Critical Path:** A → D → E → F → I → J\n\n**Total Project Duration:** $4 + 7 + 6 + 5 + 4 + 5 = \\mathbf{31}$ time units\n\n> **Note:** Activity B has no successor in this network, so its $LF$ defaults to the project end date (31), resulting in the maximum slack of 22."
+    }
+  ]
+}

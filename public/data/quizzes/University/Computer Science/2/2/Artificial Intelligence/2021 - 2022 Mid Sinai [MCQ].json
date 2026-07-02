@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "id": "BEV736P2",
+    "title": "2021 - 2022 Mid Sinai [MCQ]",
+    "createdAt": "3/31/2026, 8:52:41 PM",
+    "source": "https://drive.google.com/file/d/1CLX2kqpbkDWF2o0SHQ1UCpRM79Zc_XqL/view?usp=drive_link",
+    "path": "quizzes/University/Computer Science/2/2/Artificial Intelligence/2021 - 2022 Mid Sinai [MCQ].json"
+  },
+  "stats": {
+    "questionCount": 5,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which of the following correctly describes the **semantic network** representation of: *A tiger is a carnivore that has tawny color and black strips. A carnivore is a mammal that eats meat. A mammal is an animal that has hair.*",
+      "explanation": "The correct semantic network has these nodes and labeled directed edges:\n\n| From | Relation | To |\n|------|----------|----|\n| tiger | is_a | carnivore |\n| tiger | has_color | tawny |\n| tiger | has_covering | black strips |\n| carnivore | is_a | mammal |\n| carnivore | eats | meat |\n| mammal | is_a | animal |\n| mammal | has_covering | hair |\n\nProperties like `has_covering: hair` are **inherited** by tiger through the `is_a` chain.",
+      "options": [
+        "Tiger `is_a` mammal, carnivore `is_a` animal, mammal `is_a` carnivore",
+        "Tiger `is_a` carnivore, carnivore `is_a` mammal, mammal `is_a` animal, tiger `has_color` tawny, tiger `has_covering` black strips, carnivore `eats` meat, mammal `has_covering` hair",
+        "Tiger `is_a` carnivore, tiger `eats` meat, carnivore `has_color` tawny, mammal `is_a` animal",
+        "Tiger `has_color` tawny, tiger `eats` meat, carnivore `is_a` animal, mammal `has_covering` black strips"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the classification of the following Propositional Calculus sentence?\n\n$$(\\neg P \\land \\neg Q) \\rightarrow \\neg(P \\lor Q)$$",
+      "explanation": "**Truth Table:**\n\n| $P$ | $Q$ | $eg P$ | $eg Q$ | $eg P \\land eg Q$ | $P \\lor Q$ | $eg(P \\lor Q)$ | Result |\n|-----|-----|----------|----------|----------------------|------------|-----------------|--------|\n| T | T | F | F | F | T | F | **T** |\n| T | F | F | T | F | T | F | **T** |\n| F | T | T | F | F | T | F | **T** |\n| F | F | T | T | T | F | T | **T** |\n\nThe sentence is **valid** because it is **True** for all interpretations. This follows from **De Morgan's Law**: $eg P \\land eg Q \\equiv eg(P \\lor Q)$, making the implication of the form $A \\rightarrow A$, which is always true.",
+      "options": [
+        "Unsatisfiable (Contradiction) — it is always **False**",
+        "Satisfiable — it is **True** for some interpretations only",
+        "Valid (Tautology) — it is **True** for all interpretations",
+        "None of these"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which predicate calculus expression correctly translates: *\"If a person has been exposed to measles and now has a red rash and a fever, then he has the measles\"*?",
+      "explanation": "The sentence lists **three joint conditions** (exposed to measles **AND** red rash **AND** fever) that together imply measles. This requires:\n- A **universal quantifier** $\\forall X$ because the rule applies to *any* person.\n- A **conjunction** $\\land$ (not disjunction $\\lor$) in the antecedent, since all three conditions must hold simultaneously.\n- The implication arrow $\\rightarrow$ pointing toward the conclusion $\\text{has}(X, measles)$.",
+      "options": [
+        "$\\forall X\\;(\\text{has}(X, measles) \\rightarrow \\text{exposed}(X, measles) \\land \\text{has}(X, red\\_rash) \\land \\text{has}(X, fever))$",
+        "$\\forall X\\;(\\text{exposed}(X, measles) \\land \\text{has}(X, red\\_rash) \\land \\text{has}(X, fever) \\rightarrow \\text{has}(X, measles))$",
+        "$\\forall X\\;(\\text{exposed}(X, measles) \\lor \\text{has}(X, red\\_rash) \\lor \\text{has}(X, fever) \\rightarrow \\text{has}(X, measles))$",
+        "$\\exists X\\;(\\text{exposed}(X, measles) \\land \\text{has}(X, fever) \\rightarrow \\text{has}(X, measles))$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which predicate calculus expression correctly translates: *\"When someone visits a person with measles, he becomes exposed to measles\"*?",
+      "explanation": "Two variables are needed: $X$ (the visitor) and $Y$ (the visited person). The rule applies universally to **any** pair, so $\\forall X\\, \\forall Y$ is required. The antecedent must confirm that $X$ visited $Y$ **and** $Y$ has measles, leading to the conclusion that $X$ is exposed. Using $\\exists$ would restrict the rule to only *some* individuals, which is incorrect.",
+      "options": [
+        "$\\forall X\\;(\\text{visit}(X, measles) \\rightarrow \\text{exposed}(X, measles))$",
+        "$\\exists X\\, \\exists Y\\;(\\text{visit}(X, Y) \\land \\text{has}(Y, measles) \\rightarrow \\text{exposed}(X, measles))$",
+        "$\\forall X\\, \\forall Y\\;(\\text{visit}(X, Y) \\land \\text{has}(Y, measles) \\rightarrow \\text{exposed}(X, measles))$",
+        "$\\forall X\\, \\forall Y\\;(\\text{exposed}(X, measles) \\rightarrow \\text{visit}(X, Y) \\land \\text{has}(Y, measles))$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Using **unification and inference rules**, what is the result of the query $\\text{has}(tamer, measles)$? given the following facts:\n\n1. $\\forall X\\;(\\text{has}(X, high\\_temperature) \\land \\text{is}(X, disoriented) \\rightarrow \\text{has}(X, fever))$\n2. $\\forall X\\;(\\text{exposed}(X, measles) \\land \\text{has}(X, red\\_rash) \\land \\text{has}(X, fever) \\rightarrow \\text{has}(X, measles))$\n3. $\\forall X\\, \\forall Y\\;(\\text{visit}(X, Y) \\land \\text{has}(Y, measles) \\rightarrow \\text{exposed}(X, measles))$\n4. $\\text{has}(nader, measles)$\n5. $\\text{visit}(tamer, nader)$\n6. $\\text{has}(tamer, high\\_temperature) \\land \\text{is}(tamer, disoriented)$",
+      "explanation": "Backward chaining from the goal $\\text{has}(tamer, measles)$:\n\n**Step 1:** Unify with rule (2) using $\\{tamer/X\\}$ — must prove all three premises:\n- $\\text{exposed}(tamer, measles)$\n- $\\text{has}(tamer, red\\_rash)$\n- $\\text{has}(tamer, fever)$\n\n**Step 2 — exposed:** Unify with rule (3) using $\\{tamer/X, nader/Y\\}$, then facts (5) and (4) confirm $\\text{visit}(tamer, nader)$ and $\\text{has}(nader, measles)$ → $\\text{exposed}(tamer, measles)$ is **TRUE** ✓\n\n**Step 3 — fever:** From fact (6) and rule (1) via Modus Ponens → $\\text{has}(tamer, fever)$ is **TRUE** ✓\n\n**Step 4 — red rash:** $\\text{has}(tamer, red\\_rash)$ is **nowhere stated or derivable** → **FALSE** ✗\n\nSince one premise is false, the full conjunction fails and **Tamer does NOT have measles**.",
+      "options": [
+        "**True** — Tamer has measles because he visited Nader and has a fever",
+        "**True** — Tamer has measles because he has a high temperature and is disoriented",
+        "**False** — Tamer does not have measles because $\\text{has}(tamer, red\\_rash)$ is not given and cannot be derived",
+        "**False** — Tamer does not have measles because $\\text{exposed}(tamer, measles)$ cannot be proven"
+      ],
+      "correct": 2
+    }
+  ]
+}

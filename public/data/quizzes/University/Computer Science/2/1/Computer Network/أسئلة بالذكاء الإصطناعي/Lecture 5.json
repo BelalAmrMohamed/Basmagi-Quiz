@@ -1,0 +1,428 @@
+{
+  "meta": {
+    "title": "Lecture 5",
+    "id": "WPHTLLCC",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 5.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is an IP (Internet Protocol) address?",
+      "explanation": "An IP address is a unique numerical label assigned to each device connected to a computer network. [1]",
+      "options": [
+        "A unique numerical label assigned to each device on a network",
+        "A hardware serial number for a router",
+        "A software license for internet access",
+        "A name used to identify a website"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which function of an IP address allows data to be sent to the correct destination on a network?",
+      "explanation": "The address specifies where a device is located on a network, allowing data to be sent to the correct destination. [1]",
+      "options": [
+        "Identification",
+        "Location",
+        "Encryption",
+        "Compression"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How are IP addresses primarily generated according to the lecture?",
+      "explanation": "IP addresses are generated automatically using an integrated algorithm provided by the IANA. [2]",
+      "options": [
+        "Manually by every user",
+        "Automatically using an integrated algorithm provided by IANA",
+        "By the device hardware manufacturer",
+        "Randomly by the web browser"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does the acronym IANA stand for?",
+      "explanation": "IANA stands for Internet of Assigned Numbers Authority. [2]",
+      "options": [
+        "Internet Association of Network Addresses",
+        "International Agency for Network Allocation",
+        "Internet Assigned Numbers Authority",
+        "Internal Address and Name Association"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "IANA allocates IP address blocks to which organizations next in the hierarchy?",
+      "explanation": "IANA allocates IP address blocks to Regional Internet Registries (RIRs). [2]",
+      "options": [
+        "ISPs",
+        "Regional Internet Registries (RIRs)",
+        "Individual users",
+        "Local businesses"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which organization geographically distributes IP blocks to Internet Service Providers (ISPs)?",
+      "explanation": "RIRs geographically distribute address blocks to Internet Service Providers (ISPs). [2]",
+      "options": [
+        "RIRs",
+        "IANA",
+        "DHCP",
+        "IEEE"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What technique do ISPs typically use to automatically assign individual IP addresses to customers?",
+      "explanation": "ISPs typically use Dynamic Host Configuration Protocol (DHCP) to assign addresses automatically. [3]",
+      "options": [
+        "Static Routing",
+        "DNS",
+        "DHCP",
+        "NAT"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many bits are in an IPv4 address?",
+      "explanation": "IPv4 addresses are 32-bit numbers. [3]",
+      "options": [
+        "16-bit",
+        "32-bit",
+        "64-bit",
+        "128-bit"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What format is used to represent IPv4 addresses?",
+      "explanation": "IPv4 addresses are represented in a dotted-decimal format (e.g., 192.168.0.1). [3]",
+      "options": [
+        "Hexadecimal",
+        "Binary only",
+        "Dotted-decimal",
+        "Alphanumeric"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many bits are in an IPv6 address?",
+      "explanation": "IPv6 addresses are 128-bit numbers. [3]",
+      "options": [
+        "32-bit",
+        "64-bit",
+        "128-bit",
+        "256-bit"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What format is used to represent IPv6 addresses?",
+      "explanation": "IPv6 addresses are represented in a hexadecimal format. [3]",
+      "options": [
+        "Dotted-decimal",
+        "Hexadecimal",
+        "Octal",
+        "Plain Decimal"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A subnet mask is always paired with an IP address to identify which two sections?",
+      "explanation": "A subnet mask is used to identify the network section and the host section of the address. [4]",
+      "options": [
+        "Router and Switch sections",
+        "Public and Private sections",
+        "Network and Host sections",
+        "IPv4 and IPv6 sections"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In its simplest form, which number in a subnet mask represents the network part?",
+      "explanation": "In its simplest form, whenever you see 255, this is the network part of the address. [4]",
+      "options": [
+        "0",
+        "127",
+        "255",
+        "1"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In the analogy of a house address, the 'host number' is compared to what?",
+      "explanation": "Instead of house numbers you have host numbers. [5, 6]",
+      "options": [
+        "The street name",
+        "The house number",
+        "The city name",
+        "The zip code"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which IP address class is used for the range 1 – 126 in the first octet?",
+      "explanation": "Class A covers the first octet IP range of 1 – 126 (or 0-127 depending on the diagram). [7, 8]",
+      "options": [
+        "Class A",
+        "Class B",
+        "Class C",
+        "Class D"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the default subnet mask for a Class B address?",
+      "explanation": "The default mask for Class B is 255.255.0.0. [8]",
+      "options": [
+        "255.0.0.0",
+        "255.255.0.0",
+        "255.255.255.0",
+        "255.255.255.255"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which IP class is specifically reserved for Multicast addresses?",
+      "explanation": "Class D is for Multicast Addresses (range 224-239). [6, 8]",
+      "options": [
+        "Class C",
+        "Class D",
+        "Class E",
+        "Class A"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which IP class is reserved for experimental purposes?",
+      "explanation": "Class E is reserved/experimental (range 240-255). [7, 8]",
+      "options": [
+        "Class B",
+        "Class C",
+        "Class D",
+        "Class E"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the common range for Class C addresses in the first octet?",
+      "explanation": "Class C first octet range is 192 – 223. [8]",
+      "options": [
+        "0 – 127",
+        "128 – 191",
+        "192 – 223",
+        "224 – 239"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many hosts per network are possible in a Class C network (using $2^8 - 2$)?",
+      "explanation": "Class C allows for 254 hosts ($2^8 - 2$). [8]",
+      "options": [
+        "254",
+        "65,534",
+        "16,777,214",
+        "128"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Why is the number 127 'missing' from the standard address classes A, B, and C?",
+      "explanation": "The IP address 127.x.x.x is called a loopback address or local host. [8]",
+      "options": [
+        "It is reserved for loopback addresses",
+        "It is too small to be used",
+        "It is used only for IPv6",
+        "It was a calculation error in early networking"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the most commonly used loopback IP address?",
+      "explanation": "The IP address 127.0.0.1 is the commonly used loopback address. [9]",
+      "options": [
+        "127.0.0.0",
+        "127.1.1.1",
+        "127.0.0.1",
+        "192.168.1.1"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: Packets sent to a loopback address reach the local network but are ignored by other routers.",
+      "explanation": "Packets sent to this address never reach the network; they are looped through the NIC only. [8]",
+      "options": [
+        "False",
+        "True"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is a primary use for a Loopback test?",
+      "explanation": "Loopback can be used for diagnostic purposes to verify the internal path through TCP/IP protocols is working. [10]",
+      "options": [
+        "To increase internet speed",
+        "Diagnostic purposes to verify internal TCP/IP paths",
+        "To connect to a remote server",
+        "To assign a public IP"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Where is a private IP address used?",
+      "explanation": "A private IP address is assigned to a device on a local network and used to identify it within that network. [9]",
+      "options": [
+        "Directly on the public internet",
+        "Only within a local network (home or office)",
+        "Only for Google servers",
+        "To identify a country"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which IP address range is a common private address range?",
+      "explanation": "192.168.0.0 to 192.168.255.255 is one of the most common private IP address ranges. [9]",
+      "options": [
+        "192.168.0.0 to 192.168.255.255",
+        "1.0.0.0 to 126.0.0.0",
+        "224.0.0.0 to 239.0.0.0",
+        "127.0.0.0 to 127.255.255.255"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Private IP addresses are accessible outside the local network.",
+      "explanation": "Private IP addresses are not accessible outside the network and are only for internal use. [9]",
+      "options": [
+        "False",
+        "True"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which device is assigned a public IP address?",
+      "explanation": "A public IP address is assigned to a device directly connected to the internet. [9]",
+      "options": [
+        "Every individual smartphone in a house",
+        "A device directly connected to the internet (like a router's WAN interface)",
+        "A printer connected to a local switch",
+        "A computer using a loopback address"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "IANA allocates domain names like '.com' and '.org' to which organizations?",
+      "explanation": "IANA assigns top-level domain names to organizations called registrars. [11]",
+      "options": [
+        "Registrars",
+        "ISPs",
+        "RIRs",
+        "End users"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How many octets are in an IPv4 address?",
+      "explanation": "IPv4 addresses consist of four 8-bit octets. [4]",
+      "options": [
+        "2",
+        "4",
+        "6",
+        "8"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the binary representation of the decimal number 128 (first bit of an octet)?",
+      "explanation": "In binary, 128 is represented as 1 followed by seven 0s. [12]",
+      "options": [
+        "00000001",
+        "10000000",
+        "11111111",
+        "01111111"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the network ID for the host 10.0.20.5 with a default mask of 255.0.0.0?",
+      "explanation": "With a 255.0.0.0 mask, only the first octet is copied for the network ID. [13]",
+      "options": [
+        "10.0.20.0",
+        "10.0.0.5",
+        "10.0.0.0",
+        "0.0.0.0"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which class uses the first two octets for the Network ID and the last two for Host IDs?",
+      "explanation": "Class B uses N.N.H.H (Network.Network.Host.Host). [8]",
+      "options": [
+        "Class A",
+        "Class B",
+        "Class C",
+        "Class D"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: IPv6 was created primarily because the world was running out of IPv4 addresses.",
+      "explanation": "While not explicitly stated in the text provided, the introduction of the much larger 128-bit IPv6 address space follows the 32-bit IPv4 description. [3]",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a Class A network, how many possible networks are there ($2^7$)?",
+      "explanation": "Class A has 128 possible networks. [8]",
+      "options": [
+        "128",
+        "16,384",
+        "2,097,152",
+        "254"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The address range 10.0.0.0 to 10.255.255.255 is which type of address?",
+      "explanation": "The 10.x.x.x range is a common private IP address range. [9]",
+      "options": [
+        "Public IP",
+        "Loopback IP",
+        "Private IP",
+        "Multicast IP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Essay: Describe the three main functions of an IP address as listed in the lecture.",
+      "explanation": "Source: [1]",
+      "answer": "Identification (unique label for communication), Location (specifies where a device is on a network), and Data transmission (used to route packets)."
+    },
+    {
+      "q": "Essay: Explain the hierarchy of IP address distribution starting from IANA.",
+      "explanation": "Source: [2]",
+      "answer": "IANA allocates blocks to Regional Internet Registries (RIRs), which distribute them to Internet Service Providers (ISPs), who then assign them to customers."
+    },
+    {
+      "q": "Essay: What happens to a packet sent to the address 127.0.0.1?",
+      "explanation": "Source: [10]",
+      "answer": "The packet returns to the application without reaching the network; it is copied from the transmit buffer to the receive buffer on the same machine."
+    },
+    {
+      "q": "Essay: What is the purpose of a subnet mask?",
+      "explanation": "Source: [4, 14]",
+      "answer": "It is paired with an IP address to distinguish which bits belong to the network portion and which belong to the host portion."
+    }
+  ]
+}

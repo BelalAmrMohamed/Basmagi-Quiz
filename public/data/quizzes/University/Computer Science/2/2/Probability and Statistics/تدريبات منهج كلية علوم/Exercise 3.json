@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "title": "Exercise 3",
+    "id": "JV6IN5K3",
+    "createdAt": "2026-04-09 - 19:41",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Exercise 3.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Check whether the following function is a pdf or not:\n$$f(x) = \\begin{cases} \\dfrac{1}{2}, & 0 \\leq x \\leq 2 \\\\ 0, & \\text{o.w.} \\end{cases}$$",
+      "explanation": "A function qualifies as a pdf if it is non-negative everywhere and its total integral over $\\mathbb{R}$ equals 1.",
+      "answer": "For $f(x)$ to be a valid pdf, two conditions must hold:\n1. $f(x) \\geq 0$ for all $x$ — satisfied since $\\frac{1}{2} > 0$.\n2. $\\int_{-\\infty}^{\\infty} f(x)\\,dx = 1$:\n$$\\int_0^2 \\frac{1}{2}\\,dx = \\frac{1}{2} \\cdot 2 = 1 \\checkmark$$\n\nBoth conditions are satisfied, so $f(x)$ **is** a valid pdf."
+    },
+    {
+      "q": "Check whether the following is a pmf:\n$$p(x) = \\frac{1}{2^x}, \\quad x = 1, 2, 3, \\ldots$$",
+      "explanation": "This is a geometric series: $\\sum_{x=1}^{\\infty} \\left(\\frac{1}{2}\\right)^x = \\frac{a}{1-r}$ with $a = r = \\frac{1}{2}$, giving 1.",
+      "answer": "For $p(x)$ to be a valid pmf, two conditions must hold:\n1. $p(x) \\geq 0$ — satisfied since $\\frac{1}{2^x} > 0$ for all $x$.\n2. $\\sum_{x=1}^{\\infty} p(x) = 1$:\n$$\\sum_{x=1}^{\\infty} \\frac{1}{2^x} = \\frac{\\frac{1}{2}}{1 - \\frac{1}{2}} = 1 \\checkmark$$\n\nBoth conditions are satisfied, so $p(x)$ **is** a valid pmf."
+    },
+    {
+      "q": "If the pmf of a r.v $X$ is given as $p(x) = \\dfrac{x}{15}$ for $x = 1, 2, 3, 4, 5$. Find the distribution function of $X$.",
+      "explanation": "The CDF is the cumulative sum of pmf values: $F(x) = \\sum_{t \\leq x} p(t)$.",
+      "answer": "First verify: $\\sum_{x=1}^{5} \\frac{x}{15} = \\frac{1+2+3+4+5}{15} = \\frac{15}{15} = 1$ ✓\n\nThe CDF $F(x) = P(X \\leq x)$:\n\n| $x$ | $p(x)$ | $F(x)$ |\n|-----|--------|--------|\n| 1 | $\\frac{1}{15}$ | $\\frac{1}{15}$ |\n| 2 | $\\frac{2}{15}$ | $\\frac{3}{15} = \\frac{1}{5}$ |\n| 3 | $\\frac{3}{15}$ | $\\frac{6}{15} = \\frac{2}{5}$ |\n| 4 | $\\frac{4}{15}$ | $\\frac{10}{15} = \\frac{2}{3}$ |\n| 5 | $\\frac{5}{15}$ | $\\frac{15}{15} = 1$ |\n\n$$F(x) = \\begin{cases} 0 & x < 1 \\\\ \\dfrac{1}{15} & 1 \\leq x < 2 \\\\ \\dfrac{3}{15} & 2 \\leq x < 3 \\\\ \\dfrac{6}{15} & 3 \\leq x < 4 \\\\ \\dfrac{10}{15} & 4 \\leq x < 5 \\\\ 1 & x \\geq 5 \\end{cases}$$"
+    },
+    {
+      "q": "Obtain the distribution function of the total number of heads occurring in 3 tosses of an unbiased coin.",
+      "explanation": "Each toss is independent with $P(H) = \\frac{1}{2}$, so $X$ follows a Binomial distribution with $n=3$.",
+      "answer": "Let $X$ = number of heads in 3 tosses. $X \\sim B(3, \\frac{1}{2})$.\n\n$$p(x) = \\binom{3}{x}\\left(\\frac{1}{2}\\right)^3, \\quad x = 0,1,2,3$$\n\n| $x$ | $p(x)$ | $F(x)$ |\n|-----|--------|--------|\n| 0 | $\\frac{1}{8}$ | $\\frac{1}{8}$ |\n| 1 | $\\frac{3}{8}$ | $\\frac{4}{8} = \\frac{1}{2}$ |\n| 2 | $\\frac{3}{8}$ | $\\frac{7}{8}$ |\n| 3 | $\\frac{1}{8}$ | $1$ |\n\n$$F(x) = \\begin{cases} 0 & x < 0 \\\\ \\dfrac{1}{8} & 0 \\leq x < 1 \\\\ \\dfrac{4}{8} & 1 \\leq x < 2 \\\\ \\dfrac{7}{8} & 2 \\leq x < 3 \\\\ 1 & x \\geq 3 \\end{cases}$$"
+    },
+    {
+      "q": "The probability mass function of a r.v $X$ is given as follows:\n\n| $x$ | 0 | 1 | 2 | 3 | 4 | 5 |\n|-----|---|---|---|---|---|---|\n| $p(x)$ | $k^2$ | $\\dfrac{k}{4}$ | $5k^2$ | $\\dfrac{k}{4}$ | $2k^2$ | $k^2$ |\n\nFind the value of $k$.",
+      "explanation": "The sum of all probabilities in a pmf must equal 1. This gives a quadratic in $k$, and we select the positive root that keeps all probabilities non-negative.",
+      "answer": "Using $\\sum p(x) = 1$:\n$$k^2 + \\frac{k}{4} + 5k^2 + \\frac{k}{4} + 2k^2 + k^2 = 1$$\n$$9k^2 + \\frac{k}{2} = 1$$\n$$18k^2 + k - 2 = 0$$\n\nUsing the quadratic formula:\n$$k = \\frac{-1 \\pm \\sqrt{1 + 144}}{36} = \\frac{-1 \\pm \\sqrt{145}}{36}$$\n\nSince $k > 0$ (probabilities must be non-negative):\n$$k = \\frac{-1 + \\sqrt{145}}{36} \\approx \\frac{-1 + 12.042}{36} \\approx \\frac{11.042}{36} \\approx 0.307$$\n\nVerifying all $p(x) \\geq 0$ is satisfied with this value of $k$."
+    },
+    {
+      "q": "A continuous r.v $X$ has the pdf $f(x) = 3x^2$, $0 \\leq x \\leq 1$. Find $a$ and $b$ such that:\n\n(i) $P(X \\leq a) = P(X > a)$\n\n(ii) $P(X > b) = 0.05$",
+      "explanation": "For (i), the median divides the distribution in half. For (ii), we solve $\\int_b^1 f(x)\\,dx = 0.05$ which corresponds to the 95th percentile.",
+      "answer": "**(i)** Since $P(X \\leq a) + P(X > a) = 1$ and $P(X \\leq a) = P(X > a)$, each equals $\\frac{1}{2}$.\n$$\\int_0^a 3x^2\\,dx = \\frac{1}{2} \\implies [x^3]_0^a = \\frac{1}{2} \\implies a^3 = \\frac{1}{2}$$\n$$\\boxed{a = \\left(\\frac{1}{2}\\right)^{1/3} = \\frac{1}{\\sqrt[3]{2}} \\approx 0.7937}$$\n\n**(ii)** $P(X > b) = 0.05$:\n$$\\int_b^1 3x^2\\,dx = 0.05 \\implies [x^3]_b^1 = 0.05 \\implies 1 - b^3 = 0.05$$\n$$b^3 = 0.95 \\implies \\boxed{b = (0.95)^{1/3} \\approx 0.9830}$$"
+    },
+    {
+      "q": "Let the distribution function of $X$ be:\n$$F(x) = \\begin{cases} 0 & x < 0 \\\\ x & 0 \\leq x \\leq 1 \\\\ 1 & x > 1 \\end{cases}$$\nFind $P(2X + 3 > 3.6)$.",
+      "explanation": "First convert the event $\\{2X+3 > 3.6\\}$ to an equivalent event in terms of $X$, then use the CDF: $P(X > a) = 1 - F(a)$.",
+      "answer": "Solve the inequality $2X + 3 > 3.6$:\n$$2X > 0.6 \\implies X > 0.3$$\n\nTherefore:\n$$P(X > 0.3) = 1 - F(0.3) = 1 - 0.3 = \\boxed{0.7}$$"
+    },
+    {
+      "q": "If a continuous r.v $X$ has the pdf:\n$$f(x) = \\begin{cases} 2x, & 0 \\leq x \\leq 1 \\\\ 0, & \\text{o.w.} \\end{cases}$$\nFind the distribution function $F(x)$.",
+      "explanation": "The CDF is the integral of the pdf. For a piecewise pdf, integrate each piece and ensure continuity at the boundaries.",
+      "answer": "$$F(x) = \\int_{-\\infty}^{x} f(t)\\,dt$$\n\n- For $x < 0$: $F(x) = 0$\n- For $0 \\leq x \\leq 1$: $F(x) = \\int_0^x 2t\\,dt = [t^2]_0^x = x^2$\n- For $x > 1$: $F(x) = 1$\n\n$$\\boxed{F(x) = \\begin{cases} 0 & x < 0 \\\\ x^2 & 0 \\leq x \\leq 1 \\\\ 1 & x > 1 \\end{cases}}$$"
+    },
+    {
+      "q": "Suppose the life in weeks of a certain kind of computer has the pdf:\n$$f(x) = \\begin{cases} \\dfrac{100}{x^2}, & x \\geq 100 \\\\ 0, & x < 100 \\end{cases}$$\nWhat is the probability that **none** of three such computers will have to be replaced during the first 150 weeks of operation?",
+      "explanation": "Independence means we multiply individual survival probabilities. Each computer has a $\\frac{2}{3}$ chance of lasting beyond 150 weeks.",
+      "answer": "First, find $P(X > 150)$ for one computer (i.e., it survives past 150 weeks):\n$$P(X > 150) = \\int_{150}^{\\infty} \\frac{100}{x^2}\\,dx = 100\\left[-\\frac{1}{x}\\right]_{150}^{\\infty} = 100 \\cdot \\frac{1}{150} = \\frac{2}{3}$$\n\nSince the three computers operate independently, the probability that **all three** survive past 150 weeks:\n$$P = \\left(\\frac{2}{3}\\right)^3 = \\boxed{\\frac{8}{27} \\approx 0.2963}$$"
+    },
+    {
+      "q": "The amount of sugar (in kg) a certain shop is able to sell is given with the probability density:\n$$f(x) = \\begin{cases} \\dfrac{x}{25}, & 0 \\leq x < 5 \\\\ \\dfrac{10 - x}{25}, & 5 \\leq x < 10 \\end{cases}$$\nFind the probability that the sales is between 2.5 kg and 7.5 kg.",
+      "explanation": "The pdf is triangular (tent-shaped) with peak at $x=5$. By symmetry, the two integrals are equal, and the result reflects the central $\\frac{3}{4}$ of the distribution.",
+      "answer": "$$P(2.5 \\leq X \\leq 7.5) = \\int_{2.5}^{5} \\frac{x}{25}\\,dx + \\int_{5}^{7.5} \\frac{10-x}{25}\\,dx$$\n\n**First integral:**\n$$\\int_{2.5}^{5} \\frac{x}{25}\\,dx = \\frac{1}{25}\\left[\\frac{x^2}{2}\\right]_{2.5}^{5} = \\frac{1}{25}\\left(\\frac{25}{2} - \\frac{6.25}{2}\\right) = \\frac{1}{25} \\cdot \\frac{18.75}{2} = \\frac{18.75}{50} = 0.375$$\n\n**Second integral:**\n$$\\int_{5}^{7.5} \\frac{10-x}{25}\\,dx = \\frac{1}{25}\\left[10x - \\frac{x^2}{2}\\right]_{5}^{7.5}$$\n$$= \\frac{1}{25}\\left[\\left(75 - 28.125\\right) - \\left(50 - 12.5\\right)\\right] = \\frac{1}{25}(46.875 - 37.5) = \\frac{9.375}{25} = 0.375$$\n\n$$P(2.5 \\leq X \\leq 7.5) = 0.375 + 0.375 = \\boxed{0.75}$$"
+    },
+    {
+      "q": "An r.v $X$ has pdf $f(x) = k$ for $0 \\leq x \\leq 10$. Find the value of $k$. Also find $P(2 \\leq X \\leq 5)$.",
+      "explanation": "This is a Uniform distribution on $[0, 10]$. The pdf is constant and the probability of any interval is proportional to its length.",
+      "answer": "**Finding $k$:** Using $\\int_{-\\infty}^{\\infty} f(x)\\,dx = 1$:\n$$\\int_0^{10} k\\,dx = 1 \\implies 10k = 1 \\implies \\boxed{k = \\frac{1}{10}}$$\n\n**Finding $P(2 \\leq X \\leq 5)$:**\n$$P(2 \\leq X \\leq 5) = \\int_2^5 \\frac{1}{10}\\,dx = \\frac{1}{10}(5-2) = \\boxed{\\frac{3}{10} = 0.3}$$"
+    },
+    {
+      "q": "If $f(x) = \\dfrac{1}{\\theta}e^{-x/\\theta}$, $0 \\leq x < \\infty$ is the density function of a r.v $X$, find its distribution function.",
+      "explanation": "This is the Exponential distribution with parameter $\\theta$ (mean $= \\theta$). Its CDF has the well-known closed form $1 - e^{-x/\\theta}$.",
+      "answer": "$$F(x) = \\int_{-\\infty}^{x} f(t)\\,dt$$\n\n- For $x < 0$: $F(x) = 0$\n- For $x \\geq 0$:\n$$F(x) = \\int_0^x \\frac{1}{\\theta}e^{-t/\\theta}\\,dt = \\frac{1}{\\theta}\\left[-\\theta e^{-t/\\theta}\\right]_0^x = \\left[-e^{-t/\\theta}\\right]_0^x$$\n$$= -e^{-x/\\theta} + e^0 = 1 - e^{-x/\\theta}$$\n\n$$\\boxed{F(x) = \\begin{cases} 0 & x < 0 \\\\ 1 - e^{-x/\\theta} & x \\geq 0 \\end{cases}}$$"
+    }
+  ]
+}

@@ -1,0 +1,412 @@
+{
+  "meta": {
+    "title": "Revision",
+    "id": "GJIC2BEM",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Revision.json"
+  },
+  "stats": {
+    "questionCount": 36,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary purpose of a network?",
+      "explanation": "Resource sharing is the fundamental goal of connecting computers.",
+      "options": [
+        "Data encryption",
+        "Resource sharing",
+        "Hardware management",
+        "Software installation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT considered a resource in a network?",
+      "explanation": "While printers, drives, and files can be shared across a network, a mouse is a local input device.",
+      "options": [
+        "Printer",
+        "Disk drive",
+        "Mouse",
+        "File"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network classification covers a small geographic area like a home or office?",
+      "explanation": "LANs are designed for small, localized areas.",
+      "options": [
+        "Wide Area Network (WAN)",
+        "Metropolitan Area Network (MAN)",
+        "Local Area Network (LAN)",
+        "Peer-to-peer Network"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the most well-known example of a Wide Area Network (WAN)?",
+      "explanation": "The Internet is the global standard for a Wide Area Network.",
+      "options": [
+        "Intranet",
+        "Local Area Network (LAN)",
+        "Internet",
+        "Metropolitan Area Network (MAN)"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network classification interconnects users with computer resources in a region larger than a LAN but smaller than a WAN?",
+      "explanation": "MANs typically cover a city or a large campus.",
+      "options": [
+        "Local Area Network (LAN)",
+        "Wide Area Network (WAN)",
+        "Metropolitan Area Network (MAN)",
+        "Intranet"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the primary function of a server computer in a network?",
+      "explanation": "Servers are dedicated to providing specific services or resources to clients.",
+      "options": [
+        "Receive data only",
+        "Act as a workstation",
+        "Provide resources and services",
+        "Manage network cables"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a peer-to-peer network, what role do computers typically play?",
+      "explanation": "In a P2P model, every node can both request and provide services.",
+      "options": [
+        "Only servers",
+        "Only workstations",
+        "Both servers and workstations",
+        "Neither servers nor workstations"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network topology uses a central hub to connect devices?",
+      "explanation": "The Star topology relies on a central node (hub or switch) to manage connectivity.",
+      "options": [
+        "Bus",
+        "Star",
+        "Ring",
+        "Mesh"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the primary advantage of a star topology?",
+      "explanation": "Star topologies are highly scalable and easy to expand.",
+      "options": [
+        "Easy to add new workstations",
+        "Low cost of installation",
+        "High fault tolerance",
+        "Minimal cabling required"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which topology forms a unidirectional path where messages move workstation to workstation?",
+      "explanation": "In a ring topology, data travels in a single direction around the loop.",
+      "options": [
+        "Bus",
+        "Star",
+        "Ring",
+        "Mesh"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the main disadvantage of a physical ring topology?",
+      "explanation": "If one workstation or cable fails, the entire ring is often disrupted.",
+      "options": [
+        "Difficult to add new computers",
+        "High cost of installation",
+        "Low fault tolerance",
+        "Complex cabling"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which topology connects each device to every other device?",
+      "explanation": "A mesh topology features redundant connections between all nodes.",
+      "options": [
+        "Bus",
+        "Star",
+        "Ring",
+        "Mesh"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is a significant advantage of a logical mesh topology?",
+      "explanation": "Redundancy ensures that the network remains active even if a link fails.",
+      "options": [
+        "Low cost of installation",
+        "Minimal cabling required",
+        "High fault tolerance",
+        "Easy to add new computers"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network peripheral provides the physical interface between a computer and cabling?",
+      "explanation": "The NIC allows the computer to physically connect to the network medium.",
+      "options": [
+        "Network Interface Card (NIC)",
+        "Router",
+        "Hub",
+        "Switch"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does NIC stand for?",
+      "explanation": "NIC is short for Network Interface Card.",
+      "options": [
+        "Networked Internet Cable",
+        "Network Interface Card",
+        "Networked Intranet Connector",
+        "Networked Interface Controller"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which factor should be considered when choosing a NIC?",
+      "explanation": "Available settings and configuration options are vital for compatibility.",
+      "options": [
+        "Number of users",
+        "Color of the cable",
+        "Configuration options",
+        "Brand popularity"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a client/server networking model, what role do client computers primarily play?",
+      "explanation": "Clients are the endpoints that consume services from the server.",
+      "options": [
+        "Providing resources",
+        "Requesting and receiving information",
+        "Managing network connections",
+        "Controlling data flow"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of a network topology?",
+      "explanation": "Topology refers to the physical or logical arrangement of the network.",
+      "options": [
+        "Resource allocation",
+        "Data encryption",
+        "Laying out the network structure",
+        "Hardware maintenance"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which topology uses a single cable that runs to every workstation?",
+      "explanation": "The bus topology uses a central 'backbone' cable for all connections.",
+      "options": [
+        "Bus",
+        "Star",
+        "Ring",
+        "Mesh"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the primary disadvantage of a bus topology?",
+      "explanation": "A break in the main cable disables the entire network segment.",
+      "options": [
+        "Difficulty in adding workstations",
+        "High cost of installation",
+        "Low fault tolerance",
+        "Complex cabling"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which organization proposed the OSI Reference Model?",
+      "explanation": "The International Organization for Standardization (ISO) developed the model.",
+      "options": [
+        "IEEE",
+        "ISO",
+        "IETF",
+        "ITU"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How many layers are there in the OSI 7 Layer Model?",
+      "explanation": "The standard OSI model consists of seven distinct layers.",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the primary responsibility of the Physical Layer in the OSI model?",
+      "explanation": "Layer 1 is concerned with the electrical and physical transmission of data bits.",
+      "options": [
+        "Path selection",
+        "Framing data",
+        "Transmission of raw bits",
+        "Error-free communication"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which layer in the OSI model provides an error-free communication link?",
+      "explanation": "The Data Link Layer handles framing and error control for the physical link.",
+      "options": [
+        "Data Link Layer",
+        "Network Layer",
+        "Transport Layer",
+        "Presentation Layer"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which layer in the OSI model is responsible for path selection between end-systems?",
+      "explanation": "The Network Layer handles routing and finding the best path for data.",
+      "options": [
+        "Transport Layer",
+        "Session Layer",
+        "Network Layer",
+        "Presentation Layer"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which layer is responsible for establishing, managing, and terminating connections between applications?",
+      "explanation": "The Session Layer manages the dialogue between local and remote apps.",
+      "options": [
+        "Transport Layer",
+        "Presentation Layer",
+        "Session Layer",
+        "Application Layer"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What functions are typically associated with the Presentation Layer?",
+      "explanation": "The Presentation Layer ensures data is in a readable format for the application.",
+      "options": [
+        "Data encryption, data compression, data conversion",
+        "Flow control, error detection, reliable communication",
+        "Path selection, packet fragmentation, translation between network types",
+        "Multiplexing, headers, error detection"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which layer in the OSI model handles anything not provided by other layers?",
+      "explanation": "The Application Layer provides the interface for end-user services.",
+      "options": [
+        "Transport Layer",
+        "Presentation Layer",
+        "Application Layer",
+        "Data Link Layer"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What type of service involves the establishment of a logical connection between two processes?",
+      "explanation": "Connection-oriented services require a handshake before data transfer.",
+      "options": [
+        "Connection-oriented",
+        "Connectionless",
+        "Byte stream",
+        "Full-duplex"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What term describes an ordered sequence of bytes with no message boundaries?",
+      "explanation": "A byte stream is a continuous flow of data.",
+      "options": [
+        "Byte stream",
+        "Message-oriented",
+        "Full-duplex",
+        "Half-duplex"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which application layer protocol is commonly used for retrieving web pages?",
+      "explanation": "HTTP is the standard protocol for web browser communication.",
+      "options": [
+        "DNS",
+        "FTP",
+        "HTTP",
+        "Telnet"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which protocol is responsible for translating domain names into IP addresses?",
+      "explanation": "DNS acts as a directory to find IP addresses for readable hostnames.",
+      "options": [
+        "HTTP",
+        "DNS",
+        "FTP",
+        "SMTP"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What function does DHCP serve in computer networks?",
+      "explanation": "DHCP automates the IP configuration process for network devices.",
+      "options": [
+        "Transferring files",
+        "Resolving domain names",
+        "Assigning IP addresses dynamically",
+        "Transferring email"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which command is used to find out the current TCP/IP settings on a Windows machine?",
+      "explanation": "Ipconfig displays all current network configuration values.",
+      "options": [
+        "ping",
+        "tracert",
+        "nslookup",
+        "ipconfig"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "How many bits are there in an IPv4 address?",
+      "explanation": "An IPv4 address consists of four 8-bit octets.",
+      "options": [
+        "16 bits",
+        "24 bits",
+        "32 bits",
+        "64 bits"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which algorithm is commonly used to find the shortest path in a network?",
+      "explanation": "Dijkstra's algorithm is a standard for finding the shortest path between nodes.",
+      "options": [
+        "Bellman-Ford",
+        "Kruskal's",
+        "Prim's",
+        "Dijkstra's"
+      ],
+      "correct": 3
+    }
+  ]
+}

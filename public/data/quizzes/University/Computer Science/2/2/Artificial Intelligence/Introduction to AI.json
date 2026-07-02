@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "Introduction To AI",
+    "id": "6OE7S2DT",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/2/Artificial Intelligence/Introduction to AI.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What does 'AI' stand for in Computer Science?",
+      "explanation": "AI stands for Artificial Intelligence, the field of making computers simulate human-like intelligence.",
+      "options": [
+        "Apple Integration",
+        "Artificial Intelligence",
+        "Advanced Internet",
+        "Automatic Input"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of these is a common application of AI in daily life?",
+      "explanation": "Siri and Alexa use Natural Language Processing, a branch of AI, to understand you.",
+      "options": [
+        "Voice assistants like Siri or Alexa",
+        "A simple wall clock",
+        "A wooden chair",
+        "A glass of water"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the primary goal of Machine Learning?",
+      "explanation": "Machine Learning allows AI to get better at tasks by looking at examples and data.",
+      "options": [
+        "To break the computer",
+        "To allow systems to learn and improve from data",
+        "To increase the weight of the laptop",
+        "To delete all files"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which term describes a computer's ability to 'see' and interpret images?",
+      "explanation": "Computer Vision is the field of AI that trains computers to interpret and understand the visual world.",
+      "options": [
+        "Computer Vision",
+        "Hard Drive",
+        "Keyboarding",
+        "Digital Printing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Who is often considered the 'Father of Artificial Intelligence'?",
+      "explanation": "Alan Turing's work on the 'Turing Test' laid the foundation for modern AI.",
+      "options": [
+        "Albert Einstein",
+        "Alan Turing",
+        "William Shakespeare",
+        "Isaac Newton"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: An AI must always be a physical robot that looks like a human.",
+      "explanation": "AI is software; it can live in a phone, a server, or a car without needing a human-like body.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: AI can process large amounts of data faster than a human.",
+      "explanation": "Computers are designed to handle millions of calculations per second, far exceeding human speed.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: AI currently has the exact same emotions and feelings as a human.",
+      "explanation": "AI processes logic and patterns, but it does not 'feel' emotions like happiness or sadness.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Playing chess against a computer is an example of interacting with AI.",
+      "explanation": "Chess engines use search algorithms and AI to decide the best moves.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: AI can be used to recommend movies you might like on Netflix.",
+      "explanation": "Recommendation systems are a very common use of Artificial Intelligence.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In your own words, what is Artificial Intelligence?",
+      "answer": "AI is the science of making machines smart enough to perform tasks that usually require human intelligence, such as solving problems or recognizing speech."
+    },
+    {
+      "q": "Name one way AI could help a student in their studies.",
+      "answer": "AI can provide personalized tutoring, help summarize long research papers, or organize study schedules efficiently."
+    }
+  ]
+}
