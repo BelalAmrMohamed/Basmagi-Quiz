@@ -358,6 +358,7 @@ window.selectEducationType = (type) => {
   state.year = null;
   state.term = null;
   hasAutoSelected = false;
+  state.subscribedCourses = [];
   saveDraft();
   renderEducationTypeStep();
 };
@@ -390,6 +391,7 @@ window.selectFaculty = (f) => {
   state.year = null;
   state.term = null;
   hasAutoSelected = false;
+  state.subscribedCourses = [];
   saveDraft();
   renderFacultyStep();
 };
@@ -421,6 +423,7 @@ window.selectYear = (y) => {
   state.year = y;
   state.term = null;
   hasAutoSelected = false;
+  state.subscribedCourses = [];
   saveDraft();
   renderYearStep();
 };
@@ -453,6 +456,7 @@ function renderTermStep() {
 window.selectTerm = (t) => {
   state.term = t;
   hasAutoSelected = false;
+  state.subscribedCourses = [];
   saveDraft();
   renderTermStep();
 };
@@ -476,6 +480,9 @@ function renderCoursesStep() {
       year: state.year,
       term: state.term,
     });
+    
+    state.subscribedCourses = [];
+
     filterTrackCourses(categoryTree, autoFilters).forEach((c) => {
       if (!state.subscribedCourses.includes(c.id)) {
         state.subscribedCourses.push(c.id);
@@ -623,6 +630,7 @@ function skipOnboarding() {
       ? state.faculty && state.faculty !== "All"
       : true)
   ) {
+    state.subscribedCourses = [];
     filterTrackCourses(
       categoryTree,
       getTrackFilters({ year: state.year, term: state.term }),

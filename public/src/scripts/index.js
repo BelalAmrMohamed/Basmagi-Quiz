@@ -1295,6 +1295,36 @@ function renderCourseSearchResults(courses) {
       const itemCount = getCourseItemCount(course);
       const card = createCategoryCard(course.name, itemCount, true, course);
 
+      // Add info button for search results
+      const infoContainer = document.createElement("div");
+      infoContainer.className = "course-info-container";
+      
+      const infoBtn = document.createElement("button");
+      infoBtn.className = "course-info-btn";
+      infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+      infoBtn.type = "button";
+      
+      const tooltip = document.createElement("div");
+      tooltip.className = "course-info-tooltip";
+      tooltip.innerHTML = `
+        <div class="tooltip-row"><span>التعليم:</span> <span>${course.education_type || '-'}</span></div>
+        ${course.faculty && course.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${course.faculty}</span></div>` : ''}
+        <div class="tooltip-row"><span>العام:</span> <span>${course.year || '-'}</span></div>
+        <div class="tooltip-row"><span>الترم:</span> <span>${course.term || '-'}</span></div>
+      `;
+      
+      infoContainer.appendChild(infoBtn);
+      infoContainer.appendChild(tooltip);
+      
+      infoBtn.onclick = (e) => {
+        e.stopPropagation();
+        tooltip.classList.toggle("show");
+      };
+      infoBtn.onmouseenter = () => tooltip.classList.add("show");
+      infoBtn.onmouseleave = () => tooltip.classList.remove("show");
+      
+      card.appendChild(infoContainer);
+
       // Add subscribe button if in search results
       if (searchManager && searchManager.isSearchActive()) {
         addSubscribeButton(card, course);
@@ -1523,6 +1553,20 @@ function renderRootCategories() {
       subscribedCourses.forEach((course) => {
         const itemCount = getCourseItemCount(course);
         const card = createCategoryCard(course.name, itemCount, true, course);
+        
+        // Add Kebab Menu for subscribed courses
+        const kebabBtn = document.createElement("button");
+        kebabBtn.className = "course-kebab-btn";
+        kebabBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
+        kebabBtn.type = "button";
+        
+        kebabBtn.onclick = (e) => {
+          e.stopPropagation();
+          showCourseActionsOverlay(course);
+        };
+        
+        card.appendChild(kebabBtn);
+        
         card.onclick = () => renderCategory(categoryTree[course.key]);
         fragment.appendChild(card);
       });
@@ -1638,7 +1682,7 @@ function renderUserQuizzesView() {
     } else {
       const adminSignInBtn = document.createElement("a");
       adminSignInBtn.href = "sign-in.html";
-      adminSignInBtn.innerHTML = `<span>دخول المشرفين</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="15px" width="15px" fill="#e3e3e3"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>`;
+      adminSignInBtn.innerHTML = `<span>دخول المشرفين</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="15px" width="15px" fill="var(--color-text-secondary)"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>`;
       adminSignInBtn.className = "btn admin-log-in-btn";
       adminSignInBtn.setAttribute("aria-label", "لوحة دخول المشرفين");
       actionsBar.appendChild(adminSignInBtn);
@@ -3122,43 +3166,7 @@ function createCategoryCard(
   textWrap.className = "card-text";
   textWrap.appendChild(h3);
 
-  // Add course metadata if available
-  if (courseData && courseData.faculty && courseData.year && courseData.term) {
-    const profile = userProfile.getProfile();
-    const metaDiv = document.createElement("div");
-    metaDiv.className = "course-meta";
-
-    // Create individual badges
-    const facultyBadge = document.createElement("span");
-    facultyBadge.className = "course-meta-badge faculty";
-    facultyBadge.textContent = courseData.faculty;
-
-    const yearBadge = document.createElement("span");
-    yearBadge.className = "course-meta-badge year";
-    yearBadge.textContent = `العام ${courseData.year}`;
-
-    const termBadge = document.createElement("span");
-    termBadge.className = "course-meta-badge term";
-    termBadge.textContent = `الترم ${courseData.term}`;
-
-    // Show the faculty if the user didn't set their faculty, or if it's a different faculty than the user's
-    if (profile.faculty === "All" || courseData.faculty != profile.faculty)
-      metaDiv.appendChild(facultyBadge);
-
-    // Only show year and term if the user didn't set them, or they're different than the user's
-    if (
-      courseData.year != profile.year ||
-      profile.year === "All" ||
-      courseData.term != profile.term ||
-      profile.term === "All"
-    ) {
-      metaDiv.appendChild(yearBadge);
-      metaDiv.appendChild(termBadge);
-    }
-
-    textWrap.appendChild(metaDiv);
-  }
-
+  // tags removed for cleaner UI
   textWrap.appendChild(p);
 
   card.appendChild(iconDiv);
@@ -4390,4 +4398,88 @@ async function showUserQuizDownloadPopup(quiz) {
 window.addEventListener("unhandledrejection", (event) => {
   console.error("Unhandled promise rejection:", event.reason);
   // In production, send to error tracking service
+function showCourseActionsOverlay(course) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay exam-actions-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const sheet = document.createElement("div");
+  sheet.className = "exam-actions-sheet";
+
+  const infoOpt = document.createElement("button");
+  infoOpt.type = "button";
+  infoOpt.className = "exam-action-btn";
+  infoOpt.innerHTML = `${INFO_ICON_SVG || '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>'}<span>معلومات المادة</span>`;
+  infoOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    showCourseInfoModal(course);
+  };
+
+  const deleteOpt = document.createElement("button");
+  deleteOpt.type = "button";
+  deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+  deleteOpt.innerHTML = `${TRASH_ICON_SVG || '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>'}<span>إلغاء الإشتراك</span>`;
+  deleteOpt.onclick = (e) => {
+    e.stopPropagation();
+    modal.remove();
+    const subscribed = userProfile.getSubscribedCourseIds();
+    userProfile.setSubscribedCourses(subscribed.filter(id => id !== course.id));
+    
+    // Rerender DOM without page refresh
+    renderRootCategories();
+  };
+
+  sheet.appendChild(infoOpt);
+  sheet.appendChild(deleteOpt);
+  modal.appendChild(sheet);
+  document.body.appendChild(modal);
+}
+
+function showCourseInfoModal(course) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card quiz-info-modal-card";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = "معلومات المادة";
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "quiz-info-table-wrap";
+
+  const table = document.createElement("table");
+  table.className = "quiz-info-table";
+  table.innerHTML = `
+    <tbody>
+      <tr><th>نوع التعليم</th><td>${course.education_type || '-'}</td></tr>
+      ${course.faculty && course.faculty !== "All" ? `<tr><th>الكلية</th><td>${course.faculty}</td></tr>` : ''}
+      <tr><th>العام</th><td>${course.year || '-'}</td></tr>
+      <tr><th>الترم</th><td>${course.term || '-'}</td></tr>
+    </tbody>
+  `;
+  tableWrap.appendChild(table);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "close-modal";
+  closeBtn.textContent = "إغلاق";
+  closeBtn.onclick = () => modal.remove();
+
+  modalCard.appendChild(h2);
+  modalCard.appendChild(tableWrap);
+  modalCard.appendChild(closeBtn);
+  modal.appendChild(modalCard);
+  document.body.appendChild(modal);
+}
 });
