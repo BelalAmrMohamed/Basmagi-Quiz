@@ -11,6 +11,7 @@ import {
   parseImportContent,
   buildJsonQuizExport,
 } from "../shared/quiz-processor.js";
+import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
 
 let categoryTree = null;
 let searchManager = null;
@@ -3917,45 +3918,8 @@ document.addEventListener("DOMContentLoaded", () => {
  */
 function extractCategoryFromPath(path) {
   if (!path) return "";
-
-  let rawPath = path;
-
-  try {
-    const qIdx = rawPath.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-      const p = params.get("path");
-      if (p) rawPath = decodeURIComponent(p);
-    }
-  } catch (_) {
-    /* ignore malformed query strings */
-  }
-
-  rawPath = rawPath.replace(/^\/data\//, "quizzes/");
-
-  const canonical = rawPath.replace(/^\/+/, "").replace(/^quizzes\//, "");
-  const lastSlash = canonical.lastIndexOf("/");
-  if (lastSlash === -1) return "";
-
-  const dirPart = canonical.slice(0, lastSlash);
-  const segments = dirPart.split("/").filter(Boolean);
-  if (!segments.length) return "";
-
-  const root = segments[0];
-  let courseDepth;
-  if (root === "University") courseDepth = 4;
-  else if (root === "Featured Courses") courseDepth = 1;
-  else if (
-    root === "Primary-Schools" ||
-    root === "Middle-Schools" ||
-    root === "Secondary-Schools"
-  )
-    courseDepth = 3;
-  else return "";
-
-  const subfolders = segments.slice(courseDepth + 1);
+  const subfolders = extractFolderSegmentsFromQuizPath(path);
   if (subfolders.length > 0) return subfolders.join(" / ");
-
   return "";
 }
 

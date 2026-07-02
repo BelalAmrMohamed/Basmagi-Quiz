@@ -30,6 +30,8 @@
 // Call invalidateManifestCache() after an admin upload.
 // =============================================================================
 
+import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
+
 const LOCAL_MANIFEST_URL = new URL(
   "../../data/quiz-manifest.json",
   import.meta.url,
@@ -136,43 +138,7 @@ function mergeSubjects(local, db) {
  * @param {Subject[]} subjects
  * @returns {{ categoryTree: object, examList: object[] }}
  */
-function extractFolderSegmentsFromQuizPath(rawPath) {
-  let pathStr = rawPath;
-  try {
-    const qIdx = pathStr.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(pathStr.slice(qIdx + 1));
-      const pathParam = params.get("path");
-      if (pathParam) pathStr = decodeURIComponent(pathParam);
-    }
-  } catch {
-    /* ignore */
-  }
 
-  pathStr = pathStr.replace(/^\/data\//, "quizzes/");
-
-  const canonical = pathStr.replace(/^\/+/, "").replace(/^quizzes\//, "");
-  const lastSlash = canonical.lastIndexOf("/");
-  if (lastSlash === -1) return [];
-
-  const dirPart = canonical.slice(0, lastSlash);
-  const segments = dirPart.split("/").filter(Boolean);
-  if (!segments.length) return [];
-
-  const root = segments[0];
-  let courseDepth;
-  if (root === "University") courseDepth = 4;
-  else if (root === "Featured Courses") courseDepth = 1;
-  else if (
-    root === "Primary-Schools" ||
-    root === "Middle-Schools" ||
-    root === "Secondary-Schools"
-  )
-    courseDepth = 3;
-  else return [];
-
-  return segments.slice(courseDepth + 1);
-}
 
 function buildCompatStructures(subjects) {
   const categoryTree = {};
@@ -200,7 +166,8 @@ function buildCompatStructures(subjects) {
     for (const quiz of subject.quizzes ?? []) {
       let folderSegments = [];
       try {
-        folderSegments = extractFolderSegmentsFromQuizPath(quiz.path);
+        const extracted = extractFolderSegmentsFromQuizPath(quiz.path);
+        folderSegments = extracted.folderSegments || [];
       } catch (_) {}
 
       let examCategoryKey = key;
@@ -220,6 +187,7 @@ function buildCompatStructures(subjects) {
               parent: currentParentKey,
               subcategories: [],
               exams: [],
+              education_type: subject.education_type,
             };
             if (!categoryTree[currentParentKey].subcategories.includes(subKey)) {
               categoryTree[currentParentKey].subcategories.push(subKey);
@@ -234,6 +202,7 @@ function buildCompatStructures(subjects) {
         id: quiz.id,
         title: quiz.title,
         path: quiz.path,
+        education_type: quiz.education_type || subject.education_type,
         createdAt: quiz.createdAt,
         category: examCategoryKey,
         questionCount: quiz.questionCount,

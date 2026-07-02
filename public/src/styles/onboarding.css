@@ -458,15 +458,15 @@ input:checked + .toggle-switch::after {
   }
 }
 
-/* ── 15. Course List (#coursesList) ─────────────────────────────────────────── */
+/* ── 15. Course List (.course-list) ─────────────────────────────────────────── */
 
 /* Hide native checkbox — the only reliable cross-browser approach */
-#coursesList .toggle-container input[type="checkbox"] {
+.course-list .toggle-container input[type="checkbox"] {
   display: none !important;
 }
 
 /* The <label> is the full tap target */
-#coursesList .toggle-container {
+.course-list .toggle-container {
   position: relative;
   display: inline-block;
   width: 52px;
@@ -477,7 +477,7 @@ input:checked + .toggle-switch::after {
 }
 
 /* Track */
-#coursesList .toggle-switch {
+.course-list .toggle-switch {
   position: absolute;
   inset: 0;
   border-radius: var(--radius-pill);
@@ -486,7 +486,7 @@ input:checked + .toggle-switch::after {
 }
 
 /* Knob — transform-based travel, cannot escape the track */
-#coursesList .toggle-switch::after {
+.course-list .toggle-switch::after {
   content: "";
   position: absolute;
   top: 4px;
@@ -500,15 +500,15 @@ input:checked + .toggle-switch::after {
 }
 
 /* Checked state — :has() lets us style from the label outward */
-#coursesList .toggle-container:has(input:checked) .toggle-switch {
+.course-list .toggle-container:has(input:checked) .toggle-switch {
   background: var(--color-primary, #6366f1);
 }
-#coursesList .toggle-container:has(input:checked) .toggle-switch::after {
+.course-list .toggle-container:has(input:checked) .toggle-switch::after {
   transform: translateX(24px); /* 52px - 20px knob - 4px margin = 28px travel */
 }
 
 /* Course cards: single column on mobile, responsive grid above that */
-#coursesList {
+.course-list {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-sm);
@@ -520,29 +520,29 @@ input:checked + .toggle-switch::after {
   scrollbar-color: var(--color-border, #ddd) transparent;
 }
 
-#coursesList::-webkit-scrollbar {
+.course-list::-webkit-scrollbar {
   width: 6px;
 }
-#coursesList::-webkit-scrollbar-thumb {
+.course-list::-webkit-scrollbar-thumb {
   background: var(--color-border, #ddd);
   border-radius: 3px;
 }
 
 @media (min-width: 480px) {
-  #coursesList {
+  .course-list {
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     max-height: 380px;
   }
 }
 
 @media (min-width: 768px) {
-  #coursesList {
+  .course-list {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     max-height: 420px;
   }
 }
 
-#coursesList .course-item {
+.course-list .course-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -558,20 +558,20 @@ input:checked + .toggle-switch::after {
     transform 0.2s;
 }
 
-#coursesList .course-item:hover {
+.course-list .course-item:hover {
   border-color: var(--color-primary, #6366f1);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
   background: var(--color-surface, #fff);
   transform: translateY(-2px);
 }
 
-#coursesList .course-info {
+.course-list .course-info {
   flex: 1;
   min-width: 0; /* required for text-overflow: ellipsis */
   text-align: right;
 }
 
-#coursesList .course-info h4 {
+.course-list .course-info h4 {
   font-size: var(--text-sm);
   font-weight: 700;
   color: var(--color-text-primary, #111);
@@ -581,7 +581,7 @@ input:checked + .toggle-switch::after {
   text-overflow: ellipsis;
 }
 
-#coursesList .course-details {
+.course-list .course-details {
   font-size: 0.78rem;
   color: var(--color-text-secondary, #6b7280);
   margin: 0;
@@ -616,7 +616,7 @@ input:checked + .toggle-switch::after {
     font-size: 2rem;
     margin-bottom: 8px;
   }
-  #coursesList {
+  .course-list {
     max-height: 180px;
   }
 }

@@ -243,26 +243,8 @@ export function validateQuizPayload(raw) {
 }
 
 // ─── Path validator ───────────────────────────────────────────────────────────
-/**
- * Validates path components for a quiz upload.
- *
- * @param {string} categoryOrCollege
- * @param {string} subject
- * @param {string|undefined} subfolder
- */
-export function validatePath(categoryOrCollege, subject, subfolder) {
-  if (
-    !categoryOrCollege ||
-    typeof categoryOrCollege !== "string" ||
-    !categoryOrCollege.trim()
-  ) {
-    throw new Error("MISSING_PATH: college/category is required");
-  }
-  if (!subject || typeof subject !== "string" || !subject.trim()) {
-    throw new Error("MISSING_PATH: subject is required");
-  }
-
-  const parts = [categoryOrCollege, subject, subfolder].filter(Boolean);
+export function validatePath(fields) {
+  const parts = Object.values(fields).filter(v => typeof v === 'string' && v.trim());
   for (const part of parts) {
     if (!SAFE_PATH_REGEX.test(part)) {
       throw new Error(`INVALID_PATH: "${part}" contains disallowed characters`);

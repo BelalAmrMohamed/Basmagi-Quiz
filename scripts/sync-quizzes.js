@@ -22,6 +22,7 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
+import { parseDbPath } from "./lib/quizPath.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,8 +116,22 @@ async function main() {
     skipped = 0;
 
   for (const row of rows) {
-    // row.path is like "Computer Science/2/2/Artificial Intelligence"
-    const segments = row.path.split("/");
+    let rawPath = row.path;
+    let parsed = parseDbPath(rawPath);
+    
+    if (!parsed && row.education_type === 'University') {
+       console.warn(yellow(`   ⚠️  Legacy path detected: ${row.path}, appending University root`));
+       rawPath = `University/${row.path}`;
+       parsed = parseDbPath(rawPath);
+    }
+    
+    if (!parsed) {
+      console.warn(red(`   ⚠️  SKIPPED (unparseable): ${row.path}`));
+      skipped++;
+      continue;
+    }
+
+    const segments = rawPath.split("/");
     const dirPath = path.join(QUIZZES_DIR, ...segments);
 
     // Security: block path traversal

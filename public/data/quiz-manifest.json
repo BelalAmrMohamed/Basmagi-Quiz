@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-01T14:35:34.130Z",
+  "generatedAt": "2026-07-02T05:01:26.542Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -15,6 +15,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "source": "https://drive.google.com/drive/u/1/folders/1CAzicLipT1xtPuOZGt52-ka0NWQYJyeS",
           "createdAt": "2026-06-10 - 15:59"
         },
@@ -26,6 +27,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "source": "https://drive.google.com/drive/u/1/folders/1CAzicLipT1xtPuOZGt52-ka0NWQYJyeS",
           "createdAt": "2026-06-10 - 16:32"
         },
@@ -37,6 +39,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "source": "https://drive.google.com/drive/u/1/folders/1CAzicLipT1xtPuOZGt52-ka0NWQYJyeS",
           "createdAt": "2026-06-10 - 16:32"
         }
@@ -55,6 +58,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -65,6 +69,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -75,6 +80,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -86,6 +92,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -97,6 +104,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -107,6 +115,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -118,6 +127,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -129,6 +139,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -139,6 +150,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-11 - 13:27"
         },
         {
@@ -149,6 +161,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -159,6 +172,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -169,6 +183,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -179,6 +194,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -189,6 +205,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -199,6 +216,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -209,6 +227,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -219,6 +238,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:54"
         },
         {
@@ -229,6 +249,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:54"
         },
         {
@@ -239,6 +260,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:47"
         },
         {
@@ -249,6 +271,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:54"
         },
         {
@@ -259,6 +282,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "Featured",
           "createdAt": "2026-06-10 - 22:54"
         }
       ]
@@ -278,6 +302,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "Featured",
           "description": "Basmagi Quiz Platform Demo",
           "author": "بلال عمرو محمد",
           "author_email": "belalamrofficial@gmail.com",
@@ -286,6 +311,27 @@
           "createdAt": "2026-03-01 - 20:37"
         }
       ]
+    },
+    {
+      "id": "DPKOY7WH",
+      "name": "اللغة العربية",
+      "education_type": "High",
+      "quizzes": [
+        {
+          "id": "MXEQM6QU",
+          "title": "تدريب من الذكاء الإصطناعي",
+          "path": "/data/quizzes/High School/3/1/اللغة العربية/تدريب من الذكاء الإصطناعي.json",
+          "questionCount": 11,
+          "questionTypes": [
+            "Essay",
+            "MCQ"
+          ],
+          "education_type": "High",
+          "createdAt": "2026-07-02 - 05:01"
+        }
+      ],
+      "year": 3,
+      "term": 1
     },
     {
       "id": "URKXQH6G",
@@ -302,6 +348,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -324,6 +371,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "4/3/2026, 2:17:16 PM"
         }
       ],
@@ -346,6 +394,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -368,6 +417,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -390,6 +440,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -412,6 +463,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -433,6 +485,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/3/2026, 2:18:44 PM"
         }
       ],
@@ -453,6 +506,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -464,6 +518,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -475,6 +530,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -487,6 +543,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -497,6 +554,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -507,6 +565,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -517,6 +576,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -527,6 +587,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -537,6 +598,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -548,6 +610,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -559,6 +622,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -569,6 +633,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -581,6 +646,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -593,6 +659,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -605,6 +672,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -617,6 +685,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -629,6 +698,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -640,6 +710,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -652,6 +723,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -664,6 +736,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -676,6 +749,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -686,6 +760,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -696,6 +771,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -708,6 +784,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -728,6 +805,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -738,6 +816,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -748,6 +827,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -758,6 +838,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -769,6 +850,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -780,6 +862,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -790,6 +873,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -800,6 +884,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -810,6 +895,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -820,6 +906,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -830,6 +917,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -840,6 +928,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -850,6 +939,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -862,6 +952,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -872,6 +963,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -892,6 +984,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -903,6 +996,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -914,6 +1008,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -924,6 +1019,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -935,6 +1031,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -947,6 +1044,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -968,6 +1066,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -988,6 +1087,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -998,6 +1098,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1009,6 +1110,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1020,6 +1122,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1031,6 +1134,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1042,6 +1146,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1053,6 +1158,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1063,6 +1169,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1075,6 +1182,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1086,6 +1194,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1096,6 +1205,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1106,6 +1216,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1117,6 +1228,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1127,6 +1239,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1137,6 +1250,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1147,6 +1261,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1158,6 +1273,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1169,6 +1285,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1180,6 +1297,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1191,6 +1309,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1202,6 +1321,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1214,6 +1334,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1226,6 +1347,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1238,6 +1360,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1250,6 +1373,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1262,6 +1386,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1272,6 +1397,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1282,6 +1408,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1294,6 +1421,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1306,6 +1434,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1318,6 +1447,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -1338,6 +1468,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1348,6 +1479,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1358,6 +1490,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1368,6 +1501,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1378,6 +1512,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1389,6 +1524,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1400,6 +1536,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1411,6 +1548,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1422,6 +1560,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1433,6 +1572,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1444,6 +1584,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1454,6 +1595,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1465,6 +1607,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         }
       ],
@@ -1485,6 +1628,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1CLX2kqpbkDWF2o0SHQ1UCpRM79Zc_XqL/view?usp=drive_link",
           "createdAt": "3/31/2026, 8:52:41 PM"
         },
@@ -1496,6 +1640,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1CLX2kqpbkDWF2o0SHQ1UCpRM79Zc_XqL/view?usp=drive_link",
           "createdAt": "3/31/2026, 8:49:14 PM"
         },
@@ -1507,6 +1652,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1313Y23GHeI8LHTAiVu-iJzesraHtwMSl/view?usp=drive_link",
           "createdAt": "3/31/2026, 8:22:03 PM"
         },
@@ -1519,6 +1665,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1313Y23GHeI8LHTAiVu-iJzesraHtwMSl/view?usp=drive_link",
           "createdAt": "3/31/2026, 8:22:03 PM"
         },
@@ -1530,6 +1677,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "5/7/2026, 6:24:29 AM"
         },
         {
@@ -1542,6 +1690,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1554,6 +1703,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1564,6 +1714,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "5/7/2026, 6:16:46 AM"
         }
       ],
@@ -1586,6 +1737,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1596,6 +1748,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1606,6 +1759,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 16:10"
         },
         {
@@ -1617,6 +1771,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 6:56:51 AM"
         },
         {
@@ -1628,6 +1783,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/29/2026, 10:26:24 PM"
         },
         {
@@ -1639,6 +1795,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 16:45"
         },
         {
@@ -1649,6 +1806,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 15:57"
         },
         {
@@ -1661,6 +1819,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 18:14"
         },
         {
@@ -1671,6 +1830,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 15:57"
         },
         {
@@ -1681,6 +1841,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-04 - 12:33"
         },
         {
@@ -1692,6 +1853,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-06 - 16:30"
         },
         {
@@ -1703,6 +1865,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-06-06 - 16:30"
         }
       ],
@@ -1725,6 +1888,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 5:15:00 PM"
         },
         {
@@ -1737,6 +1901,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -1749,6 +1914,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 7:21:23 PM"
         },
         {
@@ -1760,6 +1926,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 6:47:21 PM"
         },
         {
@@ -1771,6 +1938,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 6:11:21 PM"
         },
         {
@@ -1782,6 +1950,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 7:18:05 PM"
         },
         {
@@ -1793,6 +1962,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 6:19:31 PM"
         },
         {
@@ -1803,6 +1973,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 7:32:06 PM"
         }
       ],
@@ -1823,6 +1994,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:07:04 PM"
         },
         {
@@ -1833,6 +2005,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:01:35 PM"
         },
         {
@@ -1843,6 +2016,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:10:59 PM"
         },
         {
@@ -1853,6 +2027,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:22:15 PM"
         },
         {
@@ -1864,6 +2039,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:12:07 PM"
         },
         {
@@ -1875,6 +2051,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 3:21:22 PM"
         },
         {
@@ -1886,6 +2063,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "6/2/2026, 7:54:22 AM"
         },
         {
@@ -1897,6 +2075,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/1/2026, 9:00:17 PM"
         },
         {
@@ -1908,6 +2087,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "author": "بلال",
           "createdAt": "3/19/2026, 2:38:43 PM"
         },
@@ -1920,6 +2100,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 9:25:56 PM"
         },
         {
@@ -1931,6 +2112,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1nY8_WFHbv7yC6j8tHALDo4UlGEx1CkaK/view?usp=drive_link",
           "createdAt": "3/30/2026, 9:36:43 PM"
         },
@@ -1943,6 +2125,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/15oGm07nAE6wSrKeH4qOoXU_ExqcOp9sM/view?usp=drive_link",
           "createdAt": "3/30/2026, 4:53:34 PM"
         },
@@ -1954,6 +2137,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/12EePqpccRI3gKTBIFW103NFIwLvdJ9Ep/view?usp=drive_link",
           "createdAt": "3/30/2026, 9:16:19 PM"
         },
@@ -1966,6 +2150,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/11I6iDgoBsUQLbZNY3FKhrJAWQbjL7Yk3/view?usp=drive_link",
           "createdAt": "3/30/2026, 4:24:28 PM"
         },
@@ -1978,6 +2163,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 2:56:02 PM"
         },
         {
@@ -1988,6 +2174,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1DGwcZl9x63x_iD60KoQ-ChH-1BqDtfVJ/view?usp=drive_link",
           "createdAt": "3/30/2026, 4:19:27 PM"
         },
@@ -2000,6 +2187,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-31 - 17:56"
         },
         {
@@ -2011,6 +2199,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-31 - 17:29"
         },
         {
@@ -2021,6 +2210,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1Bg3ZFoHs2dH4qJnZvx9wqdT78nyled_P/view?usp=drive_link",
           "createdAt": "3/30/2026, 5:02:17 PM"
         },
@@ -2033,6 +2223,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/13/2026, 6:14:13 PM"
         },
         {
@@ -2044,6 +2235,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "4/23/2026, 8:35:03 PM"
         },
         {
@@ -2055,6 +2247,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "6/1/2026, 12:23:00 PM"
         },
         {
@@ -2065,6 +2258,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "source": "https://drive.google.com/file/d/1f5WbcG8O8Vmd9DC8esdnsYUuMpTerECM/view?usp=drive_link",
           "createdAt": "2026-03-01 - 20:37"
         },
@@ -2076,6 +2270,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 8:32:38 PM"
         },
         {
@@ -2087,6 +2282,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 8:55:54 PM"
         },
         {
@@ -2097,6 +2293,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 8:56:12 PM"
         },
         {
@@ -2108,6 +2305,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 9:02:13 PM"
         },
         {
@@ -2119,6 +2317,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/30/2026, 9:02:30 PM"
         },
         {
@@ -2129,6 +2328,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
           "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
           "createdAt": "3/16/2026, 7:40:39 AM"
@@ -2141,6 +2341,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-31 - 16:51"
         },
         {
@@ -2151,6 +2352,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-31 - 17:38"
         },
         {
@@ -2161,6 +2363,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-31 - 17:27"
         },
         {
@@ -2171,6 +2374,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2181,6 +2385,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2191,6 +2396,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2201,6 +2407,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2212,6 +2419,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2223,6 +2431,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2234,6 +2443,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2245,6 +2455,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 19:41"
         },
         {
@@ -2255,6 +2466,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-04-09 - 20:19"
         }
       ],
@@ -2276,6 +2488,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/24/2026, 9:42:51 PM"
         },
         {
@@ -2287,6 +2500,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "3/24/2026, 9:47:55 PM"
         },
         {
@@ -2298,6 +2512,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "6/3/2026, 6:52:13 PM"
         },
         {
@@ -2310,6 +2525,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -2320,6 +2536,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "6/3/2026, 7:26:20 PM"
         }
       ],
@@ -2340,6 +2557,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -2351,6 +2569,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -2361,6 +2580,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -2373,6 +2593,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 9:48:30 PM"
         },
         {
@@ -2385,6 +2606,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-03-01 - 20:37"
         },
         {
@@ -2397,6 +2619,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 9:54:03 PM"
         },
         {
@@ -2409,6 +2632,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 10:12:37 PM"
         },
         {
@@ -2421,6 +2645,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 10:19:11 PM"
         },
         {
@@ -2432,6 +2657,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-29 - 22:07"
         },
         {
@@ -2442,6 +2668,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-29 - 22:01"
         },
         {
@@ -2454,6 +2681,7 @@
             "MCQ",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-29 - 22:01"
         },
         {
@@ -2464,6 +2692,7 @@
           "questionTypes": [
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-29 - 22:01"
         },
         {
@@ -2474,6 +2703,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 10:02:41 PM"
         },
         {
@@ -2485,6 +2715,7 @@
             "Essay",
             "True/False"
           ],
+          "education_type": "University",
           "createdAt": "3/28/2026, 10:04:35 PM"
         },
         {
@@ -2495,6 +2726,7 @@
           "questionTypes": [
             "Essay"
           ],
+          "education_type": "University",
           "createdAt": "3/24/2026, 12:00:00 PM"
         },
         {
@@ -2506,6 +2738,7 @@
             "Essay",
             "MCQ"
           ],
+          "education_type": "University",
           "createdAt": "2026-05-29 - 22:01"
         }
       ],

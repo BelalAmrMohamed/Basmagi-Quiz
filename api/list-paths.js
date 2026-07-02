@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
   const { data, error } = await supabase
     .from("quizzes")
-    .select("category, subject, subfolder")
+    .select("category, subject, subfolder, education_type")
     .order("category", { ascending: true });
 
   if (error) {
@@ -37,23 +37,28 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "فشل تحميل المسارات" });
   }
 
-  // Group into { category -> { subject -> Set<subfolder> } }
-  const map = {};
+  const tracks = {};
   for (const row of data) {
-    if (!map[row.category]) map[row.category] = {};
-    if (!map[row.category][row.subject])
-      map[row.category][row.subject] = new Set();
-    if (row.subfolder) map[row.category][row.subject].add(row.subfolder);
+    const track = row.education_type || "University";
+    if (!tracks[track]) tracks[track] = {};
+    if (!tracks[track][row.category]) tracks[track][row.category] = {};
+    if (!tracks[track][row.category][row.subject])
+      tracks[track][row.category][row.subject] = new Set();
+    if (row.subfolder) tracks[track][row.category][row.subject].add(row.subfolder);
   }
 
-  // Serialize Sets → sorted arrays
-  const paths = {};
-  for (const [cat, subjects] of Object.entries(map)) {
-    paths[cat] = {};
-    for (const [sub, folders] of Object.entries(subjects)) {
-      paths[cat][sub] = [...folders].sort((a, b) => a.localeCompare(b, "ar"));
+  const resultTracks = {};
+  for (const [track, cats] of Object.entries(tracks)) {
+    resultTracks[track] = {};
+    for (const [cat, subjects] of Object.entries(cats)) {
+      resultTracks[track][cat] = {};
+      for (const [sub, folders] of Object.entries(subjects)) {
+        resultTracks[track][cat][sub] = [...folders].sort((a, b) => a.localeCompare(b, "ar"));
+      }
     }
   }
 
-  return res.status(200).json({ paths });
+  const paths = resultTracks["University"] || {};
+
+  return res.status(200).json({ paths, tracks: resultTracks });
 }

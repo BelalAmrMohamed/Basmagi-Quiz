@@ -19,6 +19,7 @@ import { showNotification } from "../components/notifications.js";
 import { userProfile } from "./userProfile.js";
 import { generateQuizId } from "./quizId.js";
 import { getManifest } from "./quizManifest.js";
+import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
 
 // ─── Manifest tree (populated dynamically from getManifest()) ─────────────────
 // Structure: { college: { subject: { yearterm: [[year,term],...], subfolders: [...] } } }
@@ -69,30 +70,12 @@ function buildManifestTree(subjects) {
 
     for (const quiz of subject.quizzes ?? []) {
       try {
-        let rawPath = quiz.path;
-
-        // Decode the `path` query-parameter for DB URLs
-        // e.g. /api/quiz-data?path=quizzes%2FCollege%2F1%2F2%2FSubject%2FSubfolder%2Ffile.json
-        const qIdx = rawPath.indexOf("?");
-        if (qIdx !== -1) {
-          const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-          const pathParam = params.get("path");
-          if (pathParam) rawPath = decodeURIComponent(pathParam);
-        }
-
-        // Match the canonical segment after the subject name
-        const canonicalMatch = rawPath.match(
-          /quizzes\/[^/]+\/\d+\/\d+\/[^/]+\/(.+)/,
-        );
-        if (canonicalMatch) {
-          const rest = canonicalMatch[1]; // e.g. "SubfolderName/file.json" or "file.json"
-          const segments = rest.split("/");
-          if (segments.length > 1) {
-            const subfolder = segments.slice(0, -1).join("/");
-            if (!seenSubfolders.has(subfolder)) {
-              seenSubfolders.add(subfolder);
-              tree[college][subjectName].subfolders.push(subfolder);
-            }
+        const segments = extractFolderSegmentsFromQuizPath(quiz.path);
+        if (segments.length > 0) {
+          const subfolder = segments.join("/");
+          if (!seenSubfolders.has(subfolder)) {
+            seenSubfolders.add(subfolder);
+            tree[college][subjectName].subfolders.push(subfolder);
           }
         }
       } catch (_) {}
@@ -819,6 +802,7 @@ async function doUpload({ college, subject, year, term, subfolder, author }) {
 
   try {
     await postUpload({
+      education_type: "University",
       college,
       year,
       term,

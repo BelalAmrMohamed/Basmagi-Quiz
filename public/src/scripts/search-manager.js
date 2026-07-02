@@ -229,9 +229,7 @@ export class SearchManager {
     }
 
     // Apply scope filter (subscribed only)
-    if (this.filters.scope === "subscribed") {
-      results = this.filterBySubscribed(results);
-    }
+    results = this.filterByTrackScope(results);
 
     // Apply content type filter
     if (this.filters.contentType !== "all") {
@@ -378,6 +376,7 @@ export class SearchManager {
         course.code || "",
         course.faculty || "",
         course.description || "",
+        course.education_type || "",
         (course.tags || []).join(" "),
       ]
         .join(" ")
@@ -398,6 +397,7 @@ export class SearchManager {
         quiz.name || "", // some datasets use "name" instead of "title"
         quiz.id || "",
         quiz.description || "",
+        quiz.education_type || "",
         quiz.category || "", // e.g. "Computer Network/أسئلة الدكتورة"
         quiz._sourceCategoryName || "", // human-readable subfolder name injected by collectAllExams
       ]
@@ -423,9 +423,19 @@ export class SearchManager {
     });
   }
 
-  filterBySubscribed(courses) {
-    const subscribedIds = userProfile.getSubscribedCourseIds();
-    return courses.filter((c) => subscribedIds.includes(c.id));
+  filterByTrackScope(courses) {
+    if (this.filters.scope === "all") return courses;
+    
+    const profile = userProfile.getProfile();
+    const education_type = profile ? profile.education_type : null;
+    const ids = userProfile.getSubscribedCourseIds();
+    
+    return courses.filter((c) => {
+      if (c.education_type === "Featured") return ids.includes(c.id);
+      if (!ids.includes(c.id)) return false;
+      if (education_type && c.education_type !== education_type) return false;
+      return true;
+    });
   }
 
   filterByContentType(courses) {
@@ -585,6 +595,14 @@ export class SearchManager {
         option.textContent = faculty;
         this.elements.facultyFilter.appendChild(option);
       });
+
+    const profile = userProfile.getProfile();
+    if (profile && profile.education_type && profile.education_type !== "University") {
+      const filterGroup = this.elements.facultyFilter.closest('.filter-group');
+      if (filterGroup) {
+        filterGroup.style.display = 'none';
+      }
+    }
   }
 
   // ===========================

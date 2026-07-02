@@ -19,7 +19,13 @@ import {
   computeStats,
 } from "./_validateQuiz.js";
 import { generateQuizId } from "../scripts/lib/quizId.js";
-import { isValidEducationType } from "../scripts/lib/quizPath.js";
+import { 
+  isValidEducationType, 
+  validateTrackPath, 
+  buildDbPath, 
+  buildDbColumns, 
+  parseDbPath 
+} from "../scripts/lib/quizPath.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -57,16 +63,15 @@ export default async function handler(req, res) {
       : "University";
 
   try {
-    validatePath(college, subject, subfolder);
+    validatePath({ college, year, term, subject, subfolder });
   } catch (e) {
     return res.status(400).json({ error: e.message });
   }
 
-  if (!["1", "2"].includes(String(year))) {
-    return res.status(400).json({ error: "INVALID_PATH: year must be 1 or 2" });
-  }
-  if (!["1", "2"].includes(String(term))) {
-    return res.status(400).json({ error: "INVALID_PATH: term must be 1 or 2" });
+  try {
+    validateTrackPath(education_type, { college, year, term, subject, subfolder });
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
   }
 
   if (quiz && quiz.meta) {
@@ -80,15 +85,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: e.message });
   }
 
-  const pathParts = [
-    "University",
-    college.trim(),
-    String(year),
-    String(term),
-    subject.trim(),
-  ];
-  if (subfolder?.trim()) pathParts.push(subfolder.trim());
-  const fullPath = pathParts.join("/");
+  const fullPath = buildDbPath({ education_type, college, year, term, subject, subfolder });
+  const parsedPath = parseDbPath(fullPath);
+  const dbCols = buildDbColumns(parsedPath);
 
   const safeTitle = cleanQuiz.meta.title
     .replace(/[^\u0600-\u06FF\w\s\-]/gu, "")
@@ -142,9 +141,9 @@ export default async function handler(req, res) {
     .from("quizzes")
     .insert({
       path: fullPath,
-      category: college.trim(),
-      subject: subject.trim(),
-      subfolder: subfolder?.trim() || null,
+      category: dbCols.category,
+      subject: dbCols.subject,
+      subfolder: dbCols.subfolder,
       title: cleanQuiz.meta.title,
       filename,
       data: cleanQuiz,

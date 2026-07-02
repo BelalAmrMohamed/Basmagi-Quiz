@@ -252,6 +252,7 @@ async function build(examsDir, repoRoot) {
       path: dataRelPath,
       questionCount: stats.questionCount,
       questionTypes: stats.questionTypes,
+      education_type: metadata.parsed.education_type,
     };
 
     if (quizObj.meta.description)
@@ -278,63 +279,62 @@ async function build(examsDir, repoRoot) {
     const education_type = ROOT_MAP[rootFolder].education_type;
 
     async function walk(dir, depth, fieldValues = {}) {
-      let entries;
       try {
-        entries = await fs.readdir(dir, { withFileTypes: true });
-      } catch {
-        return;
-      }
+        const entries = await fs.readdir(dir, { withFileTypes: true });
 
-      const courseDepth = segmentLabels.length - 1;
+        const courseDepth = segmentLabels.length - 1;
 
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
 
-        if (entry.isDirectory()) {
-          if (depth < courseDepth) {
-            const label = segmentLabels[depth];
-            const next = { ...fieldValues, [label]: entry.name };
-            const indent = "  ".repeat(depth + 2);
-            console.log(`${indent}📁 ${label}: ${entry.name}`);
-            await walk(fullPath, depth + 1, next);
-          } else if (depth === courseDepth) {
-            const courseName = entry.name;
-            const parsed = {
-              education_type,
-              rootFolder,
-              college: fieldValues.college,
-              year: fieldValues.year,
-              term: fieldValues.term,
-              course: courseName,
-              subfolders: [],
-            };
-            const courseKey = buildCourseKey(parsed);
-            const courseRelDir = buildCourseRelDir(parsed);
-            console.log(
-              `        📚 Course: ${courseName} (ID: ${generateQuizId(courseRelDir)})`,
-            );
+          if (entry.isDirectory()) {
+            if (depth < courseDepth) {
+              const label = segmentLabels[depth];
+              const next = { ...fieldValues, [label]: entry.name };
+              const indent = "  ".repeat(depth + 2);
+              console.log(`${indent}📁 ${label}: ${entry.name}`);
+              await walk(fullPath, depth + 1, next);
+            } else if (depth === courseDepth) {
+              const courseName = entry.name;
+              const parsed = {
+                education_type,
+                rootFolder,
+                college: fieldValues.college,
+                year: fieldValues.year,
+                term: fieldValues.term,
+                course: courseName,
+                subfolders: [],
+              };
+              const courseKey = buildCourseKey(parsed);
+              const courseRelDir = buildCourseRelDir(parsed);
+              console.log(
+                `        📚 Course: ${courseName} (ID: ${generateQuizId(courseRelDir)})`,
+              );
 
-            await walk(fullPath, depth + 1, {
-              ...fieldValues,
-              course: courseName,
-              courseKey,
-              parsed,
-            });
-          } else {
-            await walk(fullPath, depth + 1, fieldValues);
+              await walk(fullPath, depth + 1, {
+                ...fieldValues,
+                course: courseName,
+                courseKey,
+                parsed,
+              });
+            } else {
+              await walk(fullPath, depth + 1, fieldValues);
+            }
+          } else if (
+            entry.name.endsWith(".json") ||
+            entry.name.endsWith(".js")
+          ) {
+            if (!fieldValues.courseKey) {
+              console.warn(
+                `WARNING: Quiz "${entry.name}" found outside a course, skipping`,
+              );
+              continue;
+            }
+            await processQuizFile(fullPath, entries, fieldValues);
           }
-        } else if (
-          entry.name.endsWith(".json") ||
-          entry.name.endsWith(".js")
-        ) {
-          if (!fieldValues.courseKey) {
-            console.warn(
-              `WARNING: Quiz "${entry.name}" found outside a course, skipping`,
-            );
-            continue;
-          }
-          await processQuizFile(fullPath, entries, fieldValues);
         }
+      } catch (err) {
+        console.warn(`WARNING: Failed to process directory ${dir}: ${err.message}`);
       }
     }
 

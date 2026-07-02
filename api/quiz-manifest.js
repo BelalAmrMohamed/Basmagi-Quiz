@@ -37,11 +37,24 @@ export default async function handler(req, res) {
   const subjectsMap = new Map();
 
   for (const row of data) {
-    const parsed = parseDbPath(row.path, row.filename);
+    let rawPath = row.path;
+    let parsed = parseDbPath(rawPath, row.filename);
+    
     if (!parsed) {
-      console.warn(`[quiz-manifest] Unrecognized path: ${row.path}`);
-      continue;
+      if (row.education_type === 'University') {
+        console.warn(`[quiz-manifest] Unrecognized path: ${row.path}, attempting legacy University fallback`);
+        rawPath = `University/${row.path}`;
+        parsed = parseDbPath(rawPath, row.filename);
+      }
+      
+      if (!parsed) {
+        console.warn(`[quiz-manifest] Unrecognized path: ${row.path}`);
+        continue;
+      }
     }
+
+    const education_type = row.education_type || parsed.education_type;
+    parsed.education_type = education_type;
 
     const courseKey = buildCourseKey(parsed);
 
@@ -65,6 +78,7 @@ export default async function handler(req, res) {
       path: examFetchPath,
       questionCount: quizStats.questionCount ?? 0,
       questionTypes: quizStats.questionTypes ?? [],
+      education_type,
       dbSource: "db",
     };
 
