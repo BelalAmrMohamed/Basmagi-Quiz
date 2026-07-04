@@ -20,8 +20,8 @@ showNotification(
 import {
   renderMarkdown,
   scanDirections,
-  detectDirection,
 } from "../shared/markdown.js";
+import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -889,7 +889,17 @@ function toggleView() {
 function updateBreadcrumb(meta) {
   if (!meta.path) return { courseName: "", fullBreadcrumb: "" };
 
-  const parts = meta.path.split("/");
+  // const parts = meta.path.split("/");
+  let rawPath = meta.path;
+  try {
+    const qIdx = rawPath.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
+      const p = params.get("path");
+      if (p) rawPath = decodeURIComponent(p);
+    }
+  } catch (_) {}
+  const parts = rawPath.split("/");
   let courseName = "";
   let intermediate = [];
 
@@ -1000,6 +1010,18 @@ async function loadExamModule(config) {
   }
 
   return module;
+}
+
+/**
+ * extractCategoryFromPath — derives the quiz category from a manifest path.
+ * Ported verbatim from result.js so both pages display the category
+ * identically. See result.js for the full doc comment.
+ */
+function extractCategoryFromPath(path) {
+  if (!path) return "";
+  const subfolders = extractFolderSegmentsFromQuizPath(path);
+  if (subfolders.length > 0) return subfolders.join(" / ");
+  return "";
 }
 
 async function init() {
@@ -1236,7 +1258,7 @@ async function init() {
       if (!tbody) return;
 
       // Reuse updateBreadcrumb() itself — it already computes the full
-      // course trail (e.g. "IELTS Exams → Cambridge IELTS 2020 → Test 2").
+      // course trail (e.g. "IELTS Exams/Cambridge IELTS 2020/Test 2").
       // No separate/duplicate logic here.
       const { fullBreadcrumb } = updateBreadcrumb(metaData);
 
@@ -1254,7 +1276,9 @@ async function init() {
       const ROWS = [
         { label: "العنوان", val: metaData.title },
         { label: "الوصف", val: metaData.description },
-        { label: "المادة", val: fullBreadcrumb || null },
+        // { label: "المادة", val: fullBreadcrumb || null },
+        // { label: "المادة", val: metaData.category || extractCategoryFromPath(metaData.path) || null },
+        { label: "المادة", val: metaData.path },
         { label: "التاريخ", val: formatDate(metaData.createdAt) },
         { label: "المصدر", val: metaData.source },
         { label: "صاحب الإمتحان", val: metaData.author },

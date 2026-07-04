@@ -36,7 +36,7 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 /* Breadcrumb */
@@ -61,7 +61,7 @@ body {
   color: var(--color-text-primary, #1a1a1a);
   /* Sidebar is on the RIGHT — breadcrumb anchors to the left freely */
   position: fixed;
-  z-index: 100;
+  z-index: var(--z-higher);
   top: 24px;
   left: 16px;
   right: auto;
@@ -93,14 +93,16 @@ body {
    ============================================================================ */
 .exam-more-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  background: var(--color-background-secondary);
+  top: 5px;
+  right: 5px;
+  /* background: var(--color-background-secondary); */
+  background: inherit;
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
+  /* border: 1px solid var(--color-border); */
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  border: none;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -110,9 +112,10 @@ body {
 }
 
 .exam-more-btn:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  border-color: var(--color-primary);
+  /* background: var(--color-primary-light); */
+  /* color: var(--color-primary); */
+  color: var(--color-text-primary);
+  /* border-color: var(--color-primary); */
   transform: scale(1.05);
 }
 
@@ -158,7 +161,7 @@ body {
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 10;
+  z-index: var(--z-base);
 }
 
 .course-info-container .course-info-btn {
@@ -186,12 +189,26 @@ body {
   text-align: right;
   font-size: 0.85rem;
   color: var(--color-text-primary);
+  z-index: var(--z-higher);
+}
+
+.course-info-tooltip.tooltip-interactive {
+  pointer-events: auto;
 }
 
 .course-info-tooltip.show {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .course-info-container:hover .course-info-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
 }
 
 .course-info-tooltip .tooltip-row {
@@ -206,6 +223,33 @@ body {
 .course-info-tooltip .tooltip-row span:first-child {
   color: var(--color-text-secondary);
   font-weight: 600;
+}
+
+.tooltip-divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 10px 0;
+}
+
+.tooltip-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  color: var(--color-error, #e53e3e);
+  border: none;
+  border-radius: 6px;
+  padding: 6px 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tooltip-delete-btn:hover {
+  background: var(--color-error-light, #fed7d7);
 }
 
 @media (max-width: 768px) {
@@ -224,7 +268,11 @@ body {
 
 @media (max-width: 640px) {
   .course-kebab-btn, .course-info-container {
-    position: static;
+    /* position: relative;  */
+    /* was static — kept the tooltip inside the card's
+      containing block, which clips it (.category-card has overflow:hidden),
+      so it was invisible on phones no matter what JS toggled. Positioning
+      it here instead re-anchors the tooltip to this element directly. */
     margin-left: 0;
     margin-right: auto;
     flex-shrink: 0;
@@ -232,7 +280,10 @@ body {
 }
 
 /* ============================================================================
-   exam-actions-sheet — bottom-sheet content for the "more actions" overlay.
+   exam-actions-overlay — legacy full-screen wrapper, kept only for the
+   unused/dead showCourseActionsOverlay(). The live "more actions" menus
+   (showExamActionsOverlay / showUserQuizActionsOverlay) no longer use a
+   modal-overlay wrapper at all — see .exam-dropdown-menu below.
    ============================================================================ */
 .exam-actions-overlay .modal-overlay,
 .exam-actions-overlay {
@@ -240,19 +291,236 @@ body {
   align-items: flex-end;
 }
 
-.exam-actions-sheet {
-  width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
+@media (min-width: 769px) {
+  .exam-actions-overlay .modal-overlay,
+  .exam-actions-overlay {
+    align-items: center;
+  }
+}
+
+/* ============================================================================
+   exam-dropdown-menu — non-blocking dropdown for the ⋮ "more actions"
+   button (replaces the old full-screen .exam-actions-sheet bottom sheet).
+   Appended to <body> and positioned in JS via getBoundingClientRect()
+   (see openExamDropdownMenu/positionExamDropdownMenu in index.js), so these
+   rules only cover appearance/sizing — never margin/max-width centering or
+   bottom-alignment, since placement is fully dynamic.
+   ============================================================================ */
+.exam-dropdown-menu {
+  position: fixed;
+  z-index: var(--z-header);
+  width: 240px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  /* overflow-y: auto; */
   background: var(--color-surface);
-  border-radius: 20px 20px 20px 20px;
-  padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-left: 20px;
-  margin-right: 20px;
+  gap: 6px;
+  direction: rtl;
+  animation: examDropdownIn 0.15s ease;
+}
+
+@keyframes examDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.exam-dropdown-menu .exam-action-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+/* ============================================================================
+   Submenu — nested popover for "معلومات الإمتحان" inside .exam-dropdown-menu.
+   Shows a quick info preview plus a "كل المعلومات" button that opens the
+   full quiz-info-modal-card. Reveals on hover for real pointer/mouse
+   devices, and toggles on tap/click everywhere else — see
+   createExamInfoSubmenu in index.js.
+   ============================================================================ */
+.submenu-container {
+  position: relative;
+}
+
+.submenu-trigger {
+  justify-content: space-between;
+}
+
+.submenu-trigger-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.submenu-caret {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.submenu-container.submenu-open .submenu-caret {
+  transform: rotate(-90deg);
+}
+
+.submenu-content {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
+  width: 220px;
+  max-width: calc(100vw - 16px);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(6px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
+  pointer-events: none;
+  z-index: var(--z-base);
+}
+
+.submenu-content.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.submenu-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -8px; /* Bridges the gap */
+  width: 8px;
+}
+
+.submenu-content .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  direction: rtl;
+  text-align: right;
+}
+
+.submenu-content .tooltip-row span:first-child {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.submenu-content .tooltip-row span:last-child {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  direction: ltr;
+  text-align: left;
+}
+
+.submenu-content .multiline-val {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.submenu-content .copyable-row {
+  cursor: pointer;
+  border-radius: 6px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  transition: background 0.15s ease;
+}
+
+.submenu-content .copyable-row:hover {
+  background: var(--color-background-secondary);
+}
+
+.submenu-content .copyable-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.submenu-content .copy-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.submenu-content .copy-icon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transition: opacity 0.15s ease;
+}
+
+.submenu-content .copy-icon--copy {
+  opacity: 0.6;
+}
+
+.submenu-content .copy-icon--check {
+  opacity: 0;
+  color: var(--color-success, #38a169);
+}
+
+.submenu-content .copyable-row:hover .copy-icon--copy {
+  opacity: 1;
+}
+
+.submenu-content .copyable-row.copied .copy-icon--copy {
+  opacity: 0;
+}
+
+.submenu-content .copyable-row.copied .copy-icon--check {
+  opacity: 1;
+}
+
+.submenu-more-btn {
+  margin-top: 4px;
+}
+
+/* Narrow viewports don't have room to open the submenu beside the trigger —
+   stack it below instead, matching the dropdown's own below-the-button
+   placement. */
+@media (max-width: 480px) {
+  .submenu-content {
+    position: static;
+    width: 100%;
+    margin-top: 6px;
+    box-shadow: none;
+    border-style: dashed;
+    display: none; /* Prevents taking up space when hidden */
+  }
+
+  .submenu-content.show {
+    transform: none;
+    display: flex; /* Restores layout when visible */
+  }
 }
 
 .exam-action-btn {
@@ -514,12 +782,12 @@ body {
     transparent 70%
   );
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-below);
 }
 
 .header-content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -806,7 +1074,7 @@ ANIMATIONS
   mask-composite: exclude;
 
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-below);
 }
 
 /* ── Emoji icon (RTL: rendered on visual-left after the text) ─────────────── */
@@ -819,7 +1087,7 @@ ANIMATIONS
   color: initial;
   opacity: 0.85;
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 [data-theme="dark"] #Subjects-text,
@@ -1527,6 +1795,20 @@ Container
     direction: ltr;
     /* Suppress desktop hover lift */
     transform: none !important;
+    /* The base rule sets overflow:hidden (to clip the ::before accent
+       strip to the card's rounded corners), but that also clips the
+       course-info-tooltip popover, which needs to escape the card's
+       bounds to be visible/reachable on phones. Clip the strip on its
+       own pseudo-element instead (mirrors .exam-card.user-quiz-card
+       below) and let the card itself overflow. */
+    overflow: visible;
+  }
+
+  .card::before,
+  .category-card::before,
+  .exam-card::before {
+    overflow: hidden;
+    border-radius: inherit;
   }
 
   .card:first-child,
@@ -2446,6 +2728,14 @@ Container
   background: var(--color-success-light, #d1fae5);
   color: var(--color-success, #059669);
   cursor: default;
+}
+
+@media (max-width: 640px) {
+  .subscribe-btn-container {
+    border-top: 0;
+    padding-top: 0;
+    margin-top: 0;
+  }
 }
 
 /* ============================================================================

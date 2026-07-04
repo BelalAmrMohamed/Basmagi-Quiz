@@ -233,9 +233,15 @@ export function extractFolderSegmentsFromQuizPath(rawPath) {
     /* ignore */
   }
 
-  pathStr = pathStr.replace(/^\/data\//, "quizzes/");
+  let canonical = normalizeSlashes(pathStr);
+  if (canonical.startsWith("data/quizzes/")) {
+    canonical = canonical.slice("data/quizzes/".length);
+  } else if (canonical.startsWith("data/")) {
+    canonical = canonical.slice("data/".length);
+  } else if (canonical.startsWith("quizzes/")) {
+    canonical = canonical.slice("quizzes/".length);
+  }
 
-  const canonical = stripQuizzesPrefix(pathStr);
   const lastSlash = canonical.lastIndexOf("/");
   if (lastSlash === -1) return { education_type: null, folderSegments: [] };
 

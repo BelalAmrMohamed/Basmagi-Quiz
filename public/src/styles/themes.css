@@ -139,6 +139,7 @@ html[data-theme="light"] {
   --z-below: -1;
   --z-base: 1;
   --z-above: 10;
+  --z-higher: 100;
   --z-header: 1000;
   --z-overlay: 4000;
   --z-modal: 5000;

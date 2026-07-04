@@ -1304,25 +1304,44 @@ function renderCourseSearchResults(courses) {
       infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
       infoBtn.type = "button";
       
+      const eduTypeAr = {
+        "University": "جامعي",
+        "High": "ثانوي",
+        "Middle": "إعدادي",
+        "Primary": "إبتدائي",
+        "Featured": "كورسات مميزة"
+      }[course.education_type] || course.education_type || '-';
+
       const tooltip = document.createElement("div");
-      tooltip.className = "course-info-tooltip";
-      tooltip.innerHTML = `
-        <div class="tooltip-row"><span>التعليم:</span> <span>${course.education_type || '-'}</span></div>
-        ${course.faculty && course.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${course.faculty}</span></div>` : ''}
-        <div class="tooltip-row"><span>العام:</span> <span>${course.year || '-'}</span></div>
-        <div class="tooltip-row"><span>الترم:</span> <span>${course.term || '-'}</span></div>
-      `;
+      tooltip.className = "course-info-tooltip tooltip-interactive";
+      
+      if (course.education_type === "Featured") {
+        tooltip.innerHTML = `
+          <div class="tooltip-row" style="justify-content: center;">
+            <span style="color: var(--color-primary); font-size: 1rem;">مادة مميزة</span>
+          </div>
+        `;
+      } else {
+        tooltip.innerHTML = `
+          <div class="tooltip-row"><span>التعليم:</span> <span>${eduTypeAr}</span></div>
+          ${course.faculty && course.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${course.faculty}</span></div>` : ''}
+          <div class="tooltip-row"><span>العام:</span> <span>${course.year || '-'}</span></div>
+          <div class="tooltip-row"><span>الترم:</span> <span>${course.term || '-'}</span></div>
+        `;
+      }
       
       infoContainer.appendChild(infoBtn);
       infoContainer.appendChild(tooltip);
       
       infoBtn.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        tooltip.classList.toggle("show");
+        const willShow = !tooltip.classList.contains("show");
+        tooltip.classList.toggle("show", willShow);
+        if (willShow) clampFloatingElementToViewport(tooltip);
       };
-      infoBtn.onmouseenter = () => tooltip.classList.add("show");
-      infoBtn.onmouseleave = () => tooltip.classList.remove("show");
-      
+      tooltip.onclick = (e) => e.stopPropagation();
+
       card.appendChild(infoContainer);
 
       // Add subscribe button if in search results
@@ -1480,7 +1499,7 @@ function subscribeToCourse(course, button) {
   }
 }
 
-function renderRootCategories() {
+async function renderRootCategories() {
   try {
     navigationStack = [];
     updateBreadcrumb();
@@ -1554,18 +1573,75 @@ function renderRootCategories() {
         const itemCount = getCourseItemCount(course);
         const card = createCategoryCard(course.name, itemCount, true, course);
         
-        // Add Kebab Menu for subscribed courses
-        const kebabBtn = document.createElement("button");
-        kebabBtn.className = "course-kebab-btn";
-        kebabBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
-        kebabBtn.type = "button";
+        // Add info button for all subscribed courses
+        const infoContainer = document.createElement("div");
+        infoContainer.className = "course-info-container";
         
-        kebabBtn.onclick = (e) => {
+        const infoBtn = document.createElement("button");
+        infoBtn.className = "course-info-btn";
+        infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+        infoBtn.type = "button";
+        
+        const tooltip = document.createElement("div");
+        tooltip.className = "course-info-tooltip tooltip-interactive";
+        
+        const eduTypeAr = {
+          "University": "جامعي",
+          "High": "ثانوي",
+          "Middle": "إعدادي",
+          "Primary": "إبتدائي",
+          "Featured": "كورسات مميزة"
+        }[course.education_type] || course.education_type || '-';
+
+        let courseInfoHtml = "";
+        if (course.education_type === "Featured") {
+          courseInfoHtml = `
+            <div class="tooltip-row" style="justify-content: center;">
+              <span style="color: var(--color-primary); font-size: 1rem;">مادة مميزة</span>
+            </div>
+          `;
+        } else {
+          courseInfoHtml = `
+            <div class="tooltip-row"><span>التعليم:</span> <span>${eduTypeAr}</span></div>
+            ${course.faculty && course.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${course.faculty}</span></div>` : ''}
+            <div class="tooltip-row"><span>العام:</span> <span>${course.year || '-'}</span></div>
+            <div class="tooltip-row"><span>الترم:</span> <span>${course.term || '-'}</span></div>
+          `;
+        }
+
+        tooltip.innerHTML = `
+          ${courseInfoHtml}
+          <hr class="tooltip-divider">
+          <button class="tooltip-delete-btn" type="button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            <span>إلغاء الإشتراك</span>
+          </button>
+        `;
+        
+        infoContainer.appendChild(infoBtn);
+        infoContainer.appendChild(tooltip);
+        
+        // Delete action
+        const deleteBtn = tooltip.querySelector(".tooltip-delete-btn");
+        deleteBtn.onclick = async (e) => {
           e.stopPropagation();
-          showCourseActionsOverlay(course);
+          if (await confirmationNotification("هل أنت متأكد من إلغاء الإشتراك في هذه المادة؟")) {
+            const subscribed = userProfile.getSubscribedCourseIds();
+            userProfile.setSubscribedCourses(subscribed.filter(id => id !== course.id));
+            renderRootCategories();
+          }
         };
-        
-        card.appendChild(kebabBtn);
+
+        infoBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const willShow = !tooltip.classList.contains("show");
+          tooltip.classList.toggle("show", willShow);
+          if (willShow) clampFloatingElementToViewport(tooltip);
+        };
+        tooltip.onclick = (e) => e.stopPropagation();
+
+        card.appendChild(infoContainer);
         
         card.onclick = () => renderCategory(categoryTree[course.key]);
         fragment.appendChild(card);
@@ -2722,7 +2798,7 @@ function createUserQuizCard(quiz, index) {
   moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${qz(quiz, "title") || qz(quiz, "id")}`);
   moreBtn.onclick = (e) => {
     e.stopPropagation();
-    showUserQuizActionsOverlay(quiz);
+    showUserQuizActionsOverlay(quiz, moreBtn);
   };
 
   const btnWrap = document.createElement("div");
@@ -2841,99 +2917,370 @@ const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" heigh
 // (shown on all screen sizes; no standalone card icon exists for edit anymore).
 const EDIT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
 
-/**
- * Action Overlay for user-made quizzes — styled identically to
- * showExamActionsOverlay (same .exam-actions-overlay/.exam-actions-sheet/
- * .exam-action-btn classes), but with only the two options that make sense
- * for a locally-stored, non-shareable quiz: show info and delete. No
- * copy-link/share/download here since user quizzes aren't shareable (they
- * live in localStorage, not on a server), and Download already has its own
- * dedicated button on the card.
- */
-function showUserQuizActionsOverlay(quiz) {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay exam-actions-overlay";
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
-  });
+// ============================================================================
+// Exam / user-quiz "more actions" — non-blocking dropdown menu
+// ============================================================================
+// Replaces the old full-screen .modal-overlay/.exam-actions-sheet bottom
+// sheet with a small anchored dropdown (.exam-dropdown-menu) attached to the
+// ⋮ trigger button. It's appended to <body> (not the card) and positioned
+// with getBoundingClientRect() so it's never clipped by a card's
+// overflow:hidden, then closed on outside click / Escape / scroll / resize.
+// Shared by showExamActionsOverlay and showUserQuizActionsOverlay below.
 
-  const sheet = document.createElement("div");
-  sheet.className = "exam-actions-sheet";
+/** Removes any currently-open dropdown menu(s). Defensive — normally only
+ * one can be open at a time since opening a new one closes the last. */
+function closeAllExamDropdownMenus() {
+  document.querySelectorAll(".exam-dropdown-menu").forEach((el) => el.remove());
+}
 
-  // Admin upload — only rendered for authenticated admins, and only visible
-  // on mobile (mobile-only hides it at ≥641px where the card's top-left
-  // absolute .admin-upload-btn is already shown instead).
-  if (isAdminAuthenticated() || hasAdminSessionHint()) {
-    const adminOpt = document.createElement("div");
-    adminOpt.className = "exam-action-btn mobile-only";
-    adminOpt.style.cursor = "default"; // it's a wrapper, not a button itself
-    const uploadBtn = createUploadButton(quiz);
-    adminOpt.appendChild(uploadBtn);
-    adminOpt.addEventListener("click", (e) => e.stopPropagation());
-    sheet.appendChild(adminOpt);
+/** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
+ * right-edge aligned (this is an RTL UI), clamped so it never runs off
+ * either side of the viewport. */
+function positionExamDropdownMenu(menu, triggerBtn) {
+  const rect = triggerBtn.getBoundingClientRect();
+  const gap = 6;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const menuW = menu.offsetWidth;
+  const menuH = menu.offsetHeight;
+
+  let top = rect.bottom + gap;
+  let left = rect.right - menuW;
+
+  // Flip above the button if there isn't enough room below.
+  if (top + menuH > vh - gap) {
+    const above = rect.top - menuH - gap;
+    top = above >= gap ? above : Math.max(gap, vh - menuH - gap);
   }
 
-  // ── Mobile-only Download button ─────────────────────────────────────────
-  // Mirrors showExamActionsOverlay's mobile download option. Hidden on desktop
-  // (≥641px) via the .mobile-only class — the card's own desktop-download-btn
-  // handles that form factor.
-  const userQuizPwd = qz(quiz, "password");
-  const downloadOpt = document.createElement("button");
-  downloadOpt.type = "button";
-  downloadOpt.className = userQuizPwd
-    ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
-    : "exam-action-btn mobile-only exam-action-btn--primary";
-  downloadOpt.innerHTML = userQuizPwd
-    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
-    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  if (userQuizPwd) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
-  downloadOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    showUserQuizDownloadPopup(quiz);
-  };
-  sheet.appendChild(downloadOpt);
+  // Clamp vertically within the viewport — covers menus that grow taller
+  // after being positioned (e.g. expanding the "معلومات الإمتحان" submenu
+  // inline on narrow viewports), which the flip-above check above can't
+  // account for since it only runs once at initial placement.
+  if (top + menuH > vh - gap) top = vh - menuH - gap;
+  if (top < gap) top = gap;
 
-  // ── Edit — present in the overlay on all screen sizes (desktop and mobile).
-  // There is no longer a standalone edit icon on the card itself — the overlay
-  // is the single entry-point for editing on both form factors.
-  const editOpt = document.createElement("button");
-  editOpt.type = "button";
-  editOpt.className = "exam-action-btn";
-  editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الإمتحان</span>`;
-  editOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
-  };
+  // Clamp horizontally within the viewport.
+  if (left < gap) left = gap;
+  if (left + menuW > vw - gap) left = vw - menuW - gap;
 
-  const infoOpt = document.createElement("button");
-  infoOpt.type = "button";
-  infoOpt.className = "exam-action-btn";
-  infoOpt.innerHTML = `${INFO_ICON_SVG}<span>معلومات الإمتحان</span>`;
-  infoOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    showUserQuizInfoModal(quiz);
-  };
+  menu.style.top = `${top}px`;
+  menu.style.left = `${left}px`;
+}
 
-  const deleteOpt = document.createElement("button");
-  deleteOpt.type = "button";
-  deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-  deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
-  deleteOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    deleteUserQuiz(quiz.id);
-  };
+/**
+ * Nudges an already-CSS-positioned floating element (one anchored via
+ * `position: absolute` + `right`/`top` offsets from a relatively-positioned
+ * parent) back into the viewport if it currently overflows any edge, by
+ * adding inline left/top overrides. Used for small popovers like the
+ * course-info-tooltip that rely on static CSS for the common case but can
+ * run off-screen for cards near a viewport edge.
+ */
+function clampFloatingElementToViewport(el, gap = 6) {
+  el.style.left = "";
+  el.style.right = "";
+  el.style.top = "";
 
-  sheet.appendChild(editOpt);
-  sheet.appendChild(infoOpt);
-  sheet.appendChild(deleteOpt);
-  modal.appendChild(sheet);
-  document.body.appendChild(modal);
+  const rect = el.getBoundingClientRect();
+
+  if (rect.left < gap) {
+    el.style.left = `${gap}px`;
+    el.style.right = "auto";
+  } else if (rect.right > window.innerWidth - gap) {
+    const overflow = rect.right - (window.innerWidth - gap);
+    el.style.right = `${-overflow}px`;
+  }
+
+  if (rect.bottom > window.innerHeight - gap) {
+    const overflow = rect.bottom - (window.innerHeight - gap);
+    el.style.top = `${-overflow}px`;
+  }
+}
+
+/**
+ * Opens a non-blocking dropdown menu anchored to `triggerBtn`. `buildContent`
+ * is called with (menu, closeMenu) and appends whatever option buttons it
+ * needs; each option should call closeMenu() once it has handled its click.
+ */
+function openExamDropdownMenu(triggerBtn, buildContent) {
+  closeAllExamDropdownMenus();
+
+  const menu = document.createElement("div");
+  menu.className = "exam-dropdown-menu";
+  menu.setAttribute("role", "menu");
+  menu.style.visibility = "hidden";
+
+  function closeMenu() {
+    menu.remove();
+    document.removeEventListener("click", onOutsideClick);
+    document.removeEventListener("keydown", onKeydown);
+    window.removeEventListener("resize", closeMenu);
+    window.removeEventListener("scroll", onScroll, true);
+  }
+
+  // Global click listener — closes the dropdown when the user clicks
+  // anywhere outside of it (or its trigger button).
+  function onOutsideClick(e) {
+    if (menu.contains(e.target) || triggerBtn.contains(e.target)) return;
+    closeMenu();
+  }
+
+  function onKeydown(e) {
+    if (e.key === "Escape") closeMenu();
+  }
+
+  function onScroll(e) {
+    if (menu.contains(e.target)) return; // scrolling inside the menu itself
+    closeMenu();
+  }
+
+  // Re-runs the menu's own viewport clamping. Needed because nested content
+  // (like the "معلومات الإمتحان" submenu) can change the menu's effective
+  // height/width after it's already been positioned — e.g. on narrow
+  // viewports the submenu stacks inline below the trigger, growing the
+  // menu tall enough to run off the bottom of the screen.
+  function reposition() {
+    positionExamDropdownMenu(menu, triggerBtn);
+  }
+
+  buildContent(menu, closeMenu, reposition);
+
+  document.body.appendChild(menu);
+  positionExamDropdownMenu(menu, triggerBtn);
+  menu.style.visibility = "visible";
+
+  // The click that opened this menu already had its propagation stopped by
+  // the trigger button's own onclick handler, so it's safe to attach this
+  // listener immediately without it firing on the same click.
+  document.addEventListener("click", onOutsideClick);
+  document.addEventListener("keydown", onKeydown);
+  window.addEventListener("resize", closeMenu);
+  window.addEventListener("scroll", onScroll, true);
+
+  return closeMenu;
+}
+
+/**
+ * Builds the "معلومات الإمتحان" row as a submenu: a trigger button plus a
+ * popover (.submenu-content) previewing `basicRows`, with a "كل المعلومات"
+ * button that closes the whole dropdown and calls `onShowFull` (which opens
+ * the full quiz-info-modal-card). Reveals on hover for real pointer/mouse
+ * devices, and toggles on click/tap everywhere (so it also works on desktop
+ * via keyboard/click, and is the only way in on touch devices).
+ */
+function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, reposition) {
+  const container = document.createElement("div");
+  container.className = "submenu-container";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "exam-action-btn submenu-trigger";
+  trigger.innerHTML = `<span class="submenu-trigger-label">${INFO_ICON_SVG}<span>معلومات الإمتحان</span></span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
+
+  const content = document.createElement("div");
+  content.className = "submenu-content";
+  content.innerHTML = basicRows.length
+    ? basicRows
+        .map(({ label, val, multiline, copyable }) => {
+          const valAttrs = multiline ? ` class="multiline-val"` : "";
+          const labelHtml = copyable
+            ? `<span class="copyable-label">${escapeHtml(label)}:${COPY_CHECK_ICON_SVG}</span>`
+            : `<span>${escapeHtml(label)}:</span>`;
+          return `<div class="tooltip-row">${labelHtml}<span${valAttrs}>${escapeHtml(String(val))}</span></div>`;
+        })
+        .join("")
+    : `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
+
+  // Wire up copy-to-clipboard for any copyable rows (e.g. المصدر/source).
+  // The UI indicator is a small check icon next to the label (swapped in for
+  // the copy icon briefly) rather than text next to the value, so copying
+  // never shifts or reflows the value itself.
+  const rowEls = content.querySelectorAll(".tooltip-row");
+  basicRows.forEach(({ val, copyable }, i) => {
+    if (!copyable) return;
+    const row = rowEls[i];
+    if (!row) return;
+    row.classList.add("copyable-row");
+    row.onclick = (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(String(val)).then(() => {
+        if (row.dataset.copying === "1") return;
+        row.dataset.copying = "1";
+        row.classList.add("copied");
+        setTimeout(() => {
+          row.classList.remove("copied");
+          delete row.dataset.copying;
+        }, 2000);
+      });
+    };
+  });
+
+  const moreBtn = document.createElement("button");
+  moreBtn.type = "button";
+  moreBtn.className = "exam-action-btn exam-action-btn--primary submenu-more-btn";
+  moreBtn.textContent = "كل المعلومات";
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeDropdown();
+    onShowFull();
+  };
+  content.appendChild(moreBtn);
+
+  container.appendChild(trigger);
+  container.appendChild(content);
+
+  function setOpen(open) {
+    content.classList.toggle("show", open);
+    container.classList.toggle("submenu-open", open);
+
+    if (open) {
+      // Reset any previous clamp overrides before measuring — otherwise
+      // stale inline styles from a prior open (at a different viewport
+      // size) would throw off this measurement.
+      content.style.left = "";
+      content.style.right = "";
+      content.style.top = "";
+
+      const isStacked =
+        window.matchMedia && window.matchMedia("(max-width: 480px)").matches;
+
+      if (!isStacked) {
+        // Desktop/tablet: the submenu is absolutely positioned to the left
+        // of its trigger (RTL layout). If the trigger sits near the left
+        // edge of the screen, that would run the submenu off-screen — so
+        // clamp it back into the viewport, matching the outer dropdown's
+        // own clamping in positionExamDropdownMenu.
+        const rect = content.getBoundingClientRect();
+        const gap = 6;
+        if (rect.left < gap) {
+          const shift = gap - rect.left;
+          content.style.right = `calc(100% + 8px - ${shift}px)`;
+        }
+        if (rect.bottom > window.innerHeight - gap) {
+          const overflow = rect.bottom - (window.innerHeight - gap);
+          content.style.top = `${-overflow}px`;
+        }
+      }
+    }
+
+    // The submenu opening/closing changes the dropdown menu's effective
+    // size (especially when stacked inline on narrow viewports), so the
+    // whole menu needs to be re-clamped to the viewport too.
+    if (typeof reposition === "function") reposition();
+  }
+
+  // Desktop / real pointer devices: reveal on hover.
+  if (
+    window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  ) {
+    container.addEventListener("mouseenter", () => setOpen(true));
+    container.addEventListener("mouseleave", () => setOpen(false));
+  }
+
+  // Mobile (and as a click fallback everywhere): tap the trigger to toggle.
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    setOpen(!content.classList.contains("show"));
+  };
+  content.onclick = (e) => e.stopPropagation();
+
+  return container;
+}
+
+/**
+ * Action Overlay for user-made quizzes — styled identically to
+ * showExamActionsOverlay (same .exam-dropdown-menu/.exam-action-btn
+ * classes), but with only the options that make sense for a locally-stored,
+ * non-shareable quiz: edit, info, and delete. No copy-link/share here since
+ * user quizzes aren't shareable (they live in localStorage, not on a
+ * server), and Download already has its own dedicated button on the card.
+ */
+function showUserQuizActionsOverlay(quiz, triggerBtn) {
+  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    // Admin upload — only rendered for authenticated admins, and only visible
+    // on mobile (mobile-only hides it at ≥641px where the card's top-left
+    // absolute .admin-upload-btn is already shown instead).
+    if (isAdminAuthenticated() || hasAdminSessionHint()) {
+      const adminOpt = document.createElement("div");
+      adminOpt.className = "exam-action-btn mobile-only";
+      adminOpt.style.cursor = "default"; // it's a wrapper, not a button itself
+      const uploadBtn = createUploadButton(quiz);
+      adminOpt.appendChild(uploadBtn);
+      adminOpt.addEventListener("click", (e) => e.stopPropagation());
+      menu.appendChild(adminOpt);
+    }
+
+    // ── Mobile-only Download button ───────────────────────────────────────
+    // Mirrors showExamActionsOverlay's mobile download option. Hidden on
+    // desktop (≥641px) via the .mobile-only class — the card's own
+    // desktop-download-btn handles that form factor.
+    const userQuizPwd = qz(quiz, "password");
+    const downloadOpt = document.createElement("button");
+    downloadOpt.type = "button";
+    downloadOpt.className = userQuizPwd
+      ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
+      : "exam-action-btn mobile-only exam-action-btn--primary";
+    downloadOpt.innerHTML = userQuizPwd
+      ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+      : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+    if (userQuizPwd) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+    downloadOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      showUserQuizDownloadPopup(quiz);
+    };
+    menu.appendChild(downloadOpt);
+
+    // ── Edit — present in the menu on all screen sizes (desktop and
+    // mobile). There is no standalone edit icon on the card itself — this
+    // menu is the single entry-point for editing on both form factors.
+    const editOpt = document.createElement("button");
+    editOpt.type = "button";
+    editOpt.className = "exam-action-btn";
+    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الإمتحان</span>`;
+    editOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
+    };
+    menu.appendChild(editOpt);
+
+    // ── "معلومات الإمتحان" submenu — user quizzes carry everything already
+    // in localStorage (quiz.meta/quiz.stats), so the preview builds
+    // synchronously straight from qz(). Shows only id, description,
+    // category, date, and source (المصدر is copy-to-clipboard).
+    const basicRows = [
+      { label: "ID", val: quiz.id },
+      { label: "المادة", val: qz(quiz, "category") || null, multiline: true },
+      { label: "الوصف", val: qz(quiz, "description") || null, multiline: true },
+      { label: "التاريخ", val: formatDateForInfo(qz(quiz, "createdAt")) },
+      {
+        label: "المصدر",
+        val: qz(quiz, "source") || null,
+        multiline: true,
+        copyable: true,
+      },
+    ].filter((r) => r.val);
+    const infoSubmenu = createExamInfoSubmenu(
+      basicRows,
+      () => showUserQuizInfoModal(quiz),
+      closeMenu,
+      reposition,
+    );
+    menu.appendChild(infoSubmenu);
+
+    const deleteOpt = document.createElement("button");
+    deleteOpt.type = "button";
+    deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
+    deleteOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      deleteUserQuiz(quiz.id);
+    };
+    menu.appendChild(deleteOpt);
+  });
 }
 
 /**
@@ -2979,6 +3326,7 @@ function showUserQuizInfoModal(quiz) {
   // Build config directly from already-available data — no fetch needed,
   // since user quizzes carry everything in quiz.meta/quiz.stats already.
   const config = {
+    id: qz(quiz, "id") || quiz.id,
     title: qz(quiz, "title") || quiz.id,
     description: qz(quiz, "description") || null,
     category: null, // user quizzes aren't filed under a category/path
@@ -3378,6 +3726,7 @@ function createExamCard(exam) {
       const data = await res.json();
       const questions = data.questions || [];
       const config = {
+        id: exam.id,
         title: exam.title || exam.id,
         source: exam.source || null,
         description: exam.description || null,
@@ -3484,7 +3833,7 @@ function createExamCard(exam) {
   moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${exam.title || exam.id}`);
   moreBtn.onclick = (ev) => {
     ev.stopPropagation();
-    showExamActionsOverlay(exam, showDownloadPopup);
+    showExamActionsOverlay(exam, showDownloadPopup, moreBtn);
   };
 
   const btnWrap = document.createElement("div");
@@ -3943,6 +4292,10 @@ function formatDateForInfo(raw) {
 }
 
 const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+// Small icon pair for copyable submenu rows (e.g. المصدر) — a copy glyph by
+// default, swapped via CSS (.copied) for a checkmark once the value has
+// been copied. Sits next to the label so copying never shifts the value.
+const COPY_CHECK_ICON_SVG = `<span class="copy-icon-wrap" aria-hidden="true"><svg class="copy-icon copy-icon--copy" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><svg class="copy-icon copy-icon--check" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>`;
 const SHARE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>`;
 const INFO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
 const DOWNLOAD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
@@ -3964,94 +4317,91 @@ function buildExamShareUrl(examId) {
  * @param {() => void|Promise<void>} showDownloadPopup - opens the
  *   format-picker popup (already password-gated by the caller)
  */
-function showExamActionsOverlay(exam, showDownloadPopup) {
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay exam-actions-overlay";
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
-  });
+function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
+  openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
+    const downloadOpt = document.createElement("button");
+    downloadOpt.type = "button";
+    downloadOpt.className = exam.password
+      ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
+      : "exam-action-btn mobile-only exam-action-btn--primary";
+    downloadOpt.innerHTML = exam.password
+      ? `${LOCK_ICON_SVG}<span>تحميل</span>`
+      : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
+    if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+    downloadOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      showDownloadPopup();
+    };
+    menu.appendChild(downloadOpt);
 
-  const sheet = document.createElement("div");
-  sheet.className = "exam-actions-sheet";
-
-  const copyOpt = document.createElement("button");
-  copyOpt.type = "button";
-  copyOpt.className = "exam-action-btn";
-  copyOpt.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
-  copyOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    navigator.clipboard
-      .writeText(buildExamShareUrl(exam.id))
-      .then(() =>
-        showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
-      );
-  };
-
-  const shareOpt = document.createElement("button");
-  shareOpt.type = "button";
-  shareOpt.className = "exam-action-btn";
-  shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الإمتحان</span>`;
-  shareOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    const url = buildExamShareUrl(exam.id);
-    if (navigator.share) {
-      navigator
-        .share({ title: exam.title || exam.id, url })
-        .catch(() => {});
-    } else {
+    const copyOpt = document.createElement("button");
+    copyOpt.type = "button";
+    copyOpt.className = "exam-action-btn";
+    copyOpt.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+    copyOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
       navigator.clipboard
-        .writeText(url)
+        .writeText(buildExamShareUrl(exam.id))
         .then(() =>
           showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
         );
-    }
-  };
+    };
+    menu.appendChild(copyOpt);
 
-  const infoOpt = document.createElement("button");
-  infoOpt.type = "button";
-  infoOpt.className = "exam-action-btn";
-  infoOpt.innerHTML = `${INFO_ICON_SVG}<span>معلومات الإمتحان</span>`;
-  infoOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    showQuizInfoModal(exam);
-  };
+    const shareOpt = document.createElement("button");
+    shareOpt.type = "button";
+    shareOpt.className = "exam-action-btn";
+    shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الإمتحان</span>`;
+    shareOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      const url = buildExamShareUrl(exam.id);
+      if (navigator.share) {
+        navigator
+          .share({ title: exam.title || exam.id, url })
+          .catch(() => {});
+      } else {
+        navigator.clipboard
+          .writeText(url)
+          .then(() =>
+            showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
+          );
+      }
+    };
+    menu.appendChild(shareOpt);
 
-  const downloadOpt = document.createElement("button");
-  downloadOpt.type = "button";
-  downloadOpt.className = exam.password
-    ? "exam-action-btn mobile-only exam-action-btn--primary is-password-protected"
-    : "exam-action-btn mobile-only exam-action-btn--primary";
-  downloadOpt.innerHTML = exam.password
-    ? `${LOCK_ICON_SVG}<span>تحميل</span>`
-    : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-  if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
-  downloadOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-    showDownloadPopup();
-  };
-
-  const cancelOpt = document.createElement("button");
-  cancelOpt.type = "button";
-  cancelOpt.className = "exam-action-btn exam-action-btn--cancel";
-  cancelOpt.textContent = "إلغاء";
-  cancelOpt.onclick = (e) => {
-    e.stopPropagation();
-    modal.remove();
-  };
-
-  sheet.appendChild(downloadOpt);
-  sheet.appendChild(copyOpt);
-  sheet.appendChild(shareOpt);
-  sheet.appendChild(infoOpt);
-  sheet.appendChild(cancelOpt);
-  modal.appendChild(sheet);
-  document.body.appendChild(modal);
+    // ── "معلومات الإمتحان" submenu ───────────────────────────────────────
+    // Basic preview built synchronously from the manifest entry. Shows only
+    // id, description, category, date, and source (المصدر is
+    // copy-to-clipboard). "كل المعلومات" opens the full quiz-info-modal-card
+    // via showQuizInfoModal, which does the async backfill fetch for
+    // anything still missing.
+    const basicRows = [
+      { label: "ID", val: exam.id },
+      {
+        label: "المادة",
+        val: exam.category || extractCategoryFromPath(exam.path) || null,
+        multiline: true,
+      },
+      { label: "التاريخ", val: formatDateForInfo(exam.createdAt) },
+      {
+        label: "المصدر",
+        val: exam.source || null,
+        multiline: true,
+        copyable: true,
+      },
+      { label: "الوصف", val: exam.description || null, multiline: true },
+    ].filter((r) => r.val);
+    const infoSubmenu = createExamInfoSubmenu(
+      basicRows,
+      () => showQuizInfoModal(exam),
+      closeMenu,
+      reposition,
+    );
+    menu.appendChild(infoSubmenu);
+  });
 }
 
 /**
@@ -4063,6 +4413,7 @@ function showExamActionsOverlay(exam, showDownloadPopup) {
  */
 function buildQuizInfoRows(config, questionCount) {
   return [
+    { label: "ID", val: config.id },
     { label: "العنوان", val: config.title },
     { label: "الوصف", val: config.description },
     {
@@ -4158,6 +4509,7 @@ async function showQuizInfoModal(exam) {
   // count fallback) from the raw quiz file — same approach as the download
   // path's defensive patch.
   const config = {
+    id: exam.id,
     title: exam.title || exam.id,
     description: exam.description || null,
     category: exam.category || null,
@@ -4303,6 +4655,7 @@ async function showUserQuizDownloadPopup(quiz) {
   const copyBtn = buildCopyDownloadButton(
     async () => {
       const config = {
+        id: qz(quiz, "id") || quiz.id,
         title: qz(quiz, "title") || quiz.id,
         description: qz(quiz, "description"),
         source: qz(quiz, "source"),
@@ -4398,6 +4751,8 @@ async function showUserQuizDownloadPopup(quiz) {
 window.addEventListener("unhandledrejection", (event) => {
   console.error("Unhandled promise rejection:", event.reason);
   // In production, send to error tracking service
+});
+
 function showCourseActionsOverlay(course) {
   const modal = document.createElement("div");
   modal.className = "modal-overlay exam-actions-overlay";
@@ -4462,7 +4817,15 @@ function showCourseInfoModal(course) {
   table.className = "quiz-info-table";
   table.innerHTML = `
     <tbody>
-      <tr><th>نوع التعليم</th><td>${course.education_type || '-'}</td></tr>
+      <tr><th>نوع التعليم</th><td>${
+        {
+          "University": "جامعي",
+          "High": "ثانوي",
+          "Middle": "إعدادي",
+          "Primary": "إبتدائي",
+          "Featured": "كورسات مميزة"
+        }[course.education_type] || course.education_type || '-'
+      }</td></tr>
       ${course.faculty && course.faculty !== "All" ? `<tr><th>الكلية</th><td>${course.faculty}</td></tr>` : ''}
       <tr><th>العام</th><td>${course.year || '-'}</td></tr>
       <tr><th>الترم</th><td>${course.term || '-'}</td></tr>
@@ -4482,4 +4845,3 @@ function showCourseInfoModal(course) {
   modal.appendChild(modalCard);
   document.body.appendChild(modal);
 }
-});

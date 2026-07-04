@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-02T05:01:26.542Z",
+  "generatedAt": "2026-07-04T11:52:25.534Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -319,8 +319,8 @@
       "quizzes": [
         {
           "id": "MXEQM6QU",
-          "title": "تدريب من الذكاء الإصطناعي",
-          "path": "/data/quizzes/High School/3/1/اللغة العربية/تدريب من الذكاء الإصطناعي.json",
+          "title": "تـدريب| من الـذكاء الإصطناعي",
+          "path": "/data/quizzes/High School/3/1/اللغة العربية/بالذكاء الإصطناعي/تدريـب من الـذكاء الإصطناعي.json",
           "questionCount": 11,
           "questionTypes": [
             "Essay",
