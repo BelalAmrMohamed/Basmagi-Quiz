@@ -202,6 +202,20 @@ body {
   transform: translateY(0);
 }
 
+/*
+ * When shown via a tap (as opposed to hover), positionCourseInfoTooltip()
+ * in index.js sets `position: fixed` + inline top/left on the tooltip so it
+ * escapes any clipping ancestor — most notably the mobile `.grid-container`,
+ * which uses `overflow: hidden` to clip its list-rows to a rounded border
+ * and was clipping/hiding this tooltip for cards near the bottom of the
+ * list. Bump the z-index to match `.exam-dropdown-menu` (the other
+ * fixed-position, body-escaping popover in this file) now that it's
+ * stacking against the whole page rather than just its own card.
+ */
+.course-info-tooltip.tooltip-interactive.show {
+  z-index: var(--z-header);
+}
+
 @media (hover: hover) and (pointer: fine) {
   .course-info-container:hover .course-info-tooltip {
     opacity: 1;
@@ -252,7 +266,7 @@ body {
   background: var(--color-error-light, #fed7d7);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .exam-more-btn {
     position: static;
     order: 1;
@@ -3385,4 +3399,14 @@ kbd {
 
 [data-animations="disabled"] #errorBoundary {
     animation: none;
+}
+
+/* Fix z-index stacking context for cards with active tooltips */
+.card:hover,
+.category-card:hover,
+.exam-card:hover,
+.card:has(.course-info-tooltip.show),
+.category-card:has(.course-info-tooltip.show),
+.exam-card:has(.course-info-tooltip.show) {
+  z-index: var(--z-above);
 }

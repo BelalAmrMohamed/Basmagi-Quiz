@@ -1334,11 +1334,20 @@ function renderCourseSearchResults(courses) {
       infoContainer.appendChild(tooltip);
       
       infoBtn.onclick = (e) => {
+        if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
         e.preventDefault();
         e.stopPropagation();
         const willShow = !tooltip.classList.contains("show");
+        if (willShow) {
+          document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
+            if (t !== tooltip) t.classList.remove("show");
+          });
+        }
         tooltip.classList.toggle("show", willShow);
-        if (willShow) clampFloatingElementToViewport(tooltip);
+        if (willShow) {
+          positionCourseInfoTooltip(tooltip, infoBtn);
+          attachCourseInfoTooltipDismissOnScroll(tooltip);
+        }
       };
       tooltip.onclick = (e) => e.stopPropagation();
 
@@ -1633,11 +1642,20 @@ async function renderRootCategories() {
         };
 
         infoBtn.onclick = (e) => {
+          if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
           e.preventDefault();
           e.stopPropagation();
           const willShow = !tooltip.classList.contains("show");
+          if (willShow) {
+            document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
+              if (t !== tooltip) t.classList.remove("show");
+            });
+          }
           tooltip.classList.toggle("show", willShow);
-          if (willShow) clampFloatingElementToViewport(tooltip);
+          if (willShow) {
+            positionCourseInfoTooltip(tooltip, infoBtn);
+            attachCourseInfoTooltipDismissOnScroll(tooltip);
+          }
         };
         tooltip.onclick = (e) => e.stopPropagation();
 
@@ -2975,26 +2993,109 @@ function positionExamDropdownMenu(menu, triggerBtn) {
  * adding inline left/top overrides. Used for small popovers like the
  * course-info-tooltip that rely on static CSS for the common case but can
  * run off-screen for cards near a viewport edge.
+ *
+ * NOTE: this only rescues the element from *viewport* overflow. It can't
+ * rescue it from being clipped by a scroll/clip ancestor (e.g. the mobile
+ * `.grid-container`, which uses `overflow: hidden` to clip its list-row
+ * children to a rounded border) — a `transform` on the element still keeps
+ * it inside that ancestor's clipping box. For that case, see
+ * `positionCourseInfoTooltip` below, which switches the element to
+ * `position: fixed` instead so it escapes ancestor clipping entirely.
  */
 function clampFloatingElementToViewport(el, gap = 6) {
-  el.style.left = "";
-  el.style.right = "";
-  el.style.top = "";
+  el.style.transform = "";
 
   const rect = el.getBoundingClientRect();
+  
+  let shiftX = 0;
+  let shiftY = 0;
 
   if (rect.left < gap) {
-    el.style.left = `${gap}px`;
-    el.style.right = "auto";
+    shiftX = gap - rect.left;
   } else if (rect.right > window.innerWidth - gap) {
-    const overflow = rect.right - (window.innerWidth - gap);
-    el.style.right = `${-overflow}px`;
+    shiftX = (window.innerWidth - gap) - rect.right;
   }
 
   if (rect.bottom > window.innerHeight - gap) {
-    const overflow = rect.bottom - (window.innerHeight - gap);
-    el.style.top = `${-overflow}px`;
+    shiftY = (window.innerHeight - gap) - rect.bottom;
   }
+
+  if (shiftX !== 0 || shiftY !== 0) {
+    const computed = window.getComputedStyle(el).transform;
+    const base = computed !== "none" ? computed : "";
+    el.style.transform = `${base} translate(${shiftX}px, ${shiftY}px)`;
+  }
+}
+
+/**
+ * Positions a `.course-info-tooltip` using `position: fixed` + coordinates
+ * from the trigger button's `getBoundingClientRect()`, instead of relying on
+ * its default `position: absolute` (relative to `.course-info-container`).
+ *
+ * Why: on mobile, cards live inside `.grid-container`, which sets
+ * `overflow: hidden` to clip the list-rows to a rounded border. An
+ * absolutely-positioned tooltip is a child of that clipping box, so for any
+ * card near the bottom of the list, the tooltip gets cut off / hidden
+ * instead of rendering below the list — exactly the "menu fails to display
+ * above the greater parent .grid-container" bug. `position: fixed` is
+ * positioned relative to the viewport instead, so it escapes that clipping
+ * ancestor entirely — the same trick already used for `.exam-dropdown-menu`
+ * (see openExamDropdownMenu above).
+ *
+ * Anchors below-right of the trigger (RTL UI, right-edge aligned), flipping
+ * above it if there isn't enough room below, and clamps to the viewport.
+ */
+function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
+  // Reset any inline overrides from a previous placement so measurements
+  // below reflect the tooltip's natural size.
+  tooltip.style.transform = "";
+  tooltip.style.top = "";
+  tooltip.style.left = "";
+  tooltip.style.right = "";
+  tooltip.style.position = "fixed";
+
+  const rect = triggerBtn.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const tooltipW = tooltip.offsetWidth;
+  const tooltipH = tooltip.offsetHeight;
+
+  let top = rect.bottom + gap;
+  let left = rect.right - tooltipW; // right-edge aligned with the trigger
+
+  // Flip above the trigger if there isn't enough room below.
+  if (top + tooltipH > vh - gap) {
+    const above = rect.top - tooltipH - gap;
+    top = above >= gap ? above : Math.max(gap, vh - tooltipH - gap);
+  }
+
+  // Clamp within the viewport on both axes.
+  if (left < gap) left = gap;
+  if (left + tooltipW > vw - gap) left = vw - tooltipW - gap;
+  if (top < gap) top = gap;
+  if (top + tooltipH > vh - gap) top = vh - tooltipH - gap;
+
+  tooltip.style.top = `${top}px`;
+  tooltip.style.left = `${left}px`;
+}
+
+/**
+ * Wires up close-on-scroll/resize for an open, fixed-position course-info
+ * tooltip. Fixed-position elements don't move with page scroll the way the
+ * old absolute-positioned ones did (which scrolled with their card), so
+ * without this the tooltip would visually detach from its trigger button
+ * as soon as the page scrolls. Closing it (matching the existing "outside
+ * click" behavior) is simpler and safer than re-positioning on every
+ * scroll/resize tick.
+ */
+function attachCourseInfoTooltipDismissOnScroll(tooltip) {
+  function close() {
+    tooltip.classList.remove("show");
+    window.removeEventListener("scroll", close, true);
+    window.removeEventListener("resize", close);
+  }
+  window.addEventListener("scroll", close, true);
+  window.addEventListener("resize", close);
 }
 
 /**
@@ -4845,3 +4946,20 @@ function showCourseInfoModal(course) {
   modal.appendChild(modalCard);
   document.body.appendChild(modal);
 }
+
+// Global click listener to close course info tooltips when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".course-info-container")) {
+    document.querySelectorAll(".course-info-tooltip.show").forEach((tooltip) => {
+      tooltip.classList.remove("show");
+      // Clear inline fixed-positioning styles set by positionCourseInfoTooltip()
+      // so a later desktop hover-open (which relies on the static CSS
+      // position: absolute rule) isn't affected by leftover inline styles
+      // from a previous tap-open.
+      tooltip.style.position = "";
+      tooltip.style.top = "";
+      tooltip.style.left = "";
+      tooltip.style.transform = "";
+    });
+  }
+});
