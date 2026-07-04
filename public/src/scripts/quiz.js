@@ -1012,18 +1012,6 @@ async function loadExamModule(config) {
   return module;
 }
 
-/**
- * extractCategoryFromPath — derives the quiz category from a manifest path.
- * Ported verbatim from result.js so both pages display the category
- * identically. See result.js for the full doc comment.
- */
-function extractCategoryFromPath(path) {
-  if (!path) return "";
-  const subfolders = extractFolderSegmentsFromQuizPath(path);
-  if (subfolders.length > 0) return subfolders.join(" / ");
-  return "";
-}
-
 async function init() {
   // ── Bug 2 Fix: reset all in-flight state before (re-)initialising ─────────
   // init() may be called a second time via the popstate listener when the user
@@ -1154,6 +1142,7 @@ async function init() {
 
       // Support both old flat schema (title) and new nested schema (meta.title)
       metaData = {
+        id: examId,
         title: userQuiz.meta?.title || userQuiz.title,
         category: "Your Quiz",
         createdAt: userQuiz.meta?.createdAt || null,
@@ -1189,6 +1178,7 @@ async function init() {
       const fallbackTitle = name.replace(/\b\w/g, (c) => c.toUpperCase());
       // Prefer the title from the manifest over the one derived from filename
       metaData = {
+        id: config.id,
         title: config.title || fallbackTitle,
         category: parts[parts.length - 2] || "",
         createdAt: module.meta?.createdAt || null,
@@ -1274,6 +1264,7 @@ async function init() {
 
       // Explicit ordered list of allowed fields — nothing else is ever shown
       const ROWS = [
+        { label: "ID", val: metaData.id },
         { label: "العنوان", val: metaData.title },
         { label: "الوصف", val: metaData.description },
         // { label: "المادة", val: fullBreadcrumb || null },

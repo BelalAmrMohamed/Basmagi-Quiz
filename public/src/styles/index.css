@@ -685,6 +685,7 @@ body {
   white-space: nowrap;
   width: 40%;
   text-align: right;
+  width: fit-content;
 }
 
 .quiz-info-table td {

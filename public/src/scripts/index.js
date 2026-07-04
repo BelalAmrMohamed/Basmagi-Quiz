@@ -3352,7 +3352,7 @@ function showUserQuizActionsOverlay(quiz, triggerBtn) {
     // synchronously straight from qz(). Shows only id, description,
     // category, date, and source (المصدر is copy-to-clipboard).
     const basicRows = [
-      { label: "ID", val: quiz.id },
+      { label: "ID", val: quiz.id, multiline: true, copyable: true },
       { label: "المادة", val: qz(quiz, "category") || null, multiline: true },
       { label: "الوصف", val: qz(quiz, "description") || null, multiline: true },
       { label: "التاريخ", val: formatDateForInfo(qz(quiz, "createdAt")) },
@@ -4480,12 +4480,13 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     // via showQuizInfoModal, which does the async backfill fetch for
     // anything still missing.
     const basicRows = [
-      { label: "ID", val: exam.id },
+      { label: "ID", val: exam.id, multiline: true, copyable: true },
       {
         label: "المادة",
         val: exam.category || extractCategoryFromPath(exam.path) || null,
         multiline: true,
       },
+      { label: "الوصف", val: exam.description || null, multiline: true },
       { label: "التاريخ", val: formatDateForInfo(exam.createdAt) },
       {
         label: "المصدر",
@@ -4493,7 +4494,6 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
         multiline: true,
         copyable: true,
       },
-      { label: "الوصف", val: exam.description || null, multiline: true },
     ].filter((r) => r.val);
     const infoSubmenu = createExamInfoSubmenu(
       basicRows,
@@ -4524,7 +4524,7 @@ function buildQuizInfoRows(config, questionCount) {
     { label: "التاريخ", val: formatDateForInfo(config.createdAt) },
     { label: "المصدر", val: config.source },
     { label: "صاحب الإمتحان", val: config.author },
-    { label: "نوع الإمتحان الإجباري", val: config.mode },
+    { label: "النوع الإجباري", val: config.mode },
     {
       label: "الشكل الإجباري",
       val:

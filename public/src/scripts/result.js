@@ -519,6 +519,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Explicit ordered list of allowed fields — nothing else is ever shown
     const ROWS = [
+      { label: "ID", val: config.id },
       { label: "العنوان", val: config.title },
       { label: "الوصف", val: config.description },
       { label: "المادة", val: config.category || extractCategoryFromPath(config.path) || null },
