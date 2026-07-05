@@ -17,70 +17,60 @@
       "q": "The coordinator's full name starts with Gary ___.",
       "audio": "./assets/quiz-media/Cambridge_2019/Test2 Part1.mp3",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nA coordinator named Gary is registering participants for a guitar group. Complete the form with ONE WORD AND/OR A NUMBER for each answer.",
-      "lang": "en",
       "explanation": "This is a form-completion task. Listen for the coordinator's surname following 'Gary'. Write ONE WORD AND/OR A NUMBER.",
       "answer": ""
     },
     {
       "q": "The **level** of the guitar group is ___ (Question 2).",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nThe form includes details about level, place, time, and a recommended website.",
-      "lang": "en",
       "explanation": "The level field requires ONE WORD AND/OR A NUMBER describing the group's proficiency or course level.",
       "answer": ""
     },
     {
       "q": "The place includes 'the ___ Street'. What word fills gap **3**?",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nThe place section reads: 'the ___ [Q3] ___ [Q4] Street, First floor, Room T347'.",
-      "lang": "en",
       "explanation": "Gap 3 is part of the venue name — a building or place name preceding the street name. ONE WORD AND/OR A NUMBER.",
       "answer": ""
     },
     {
       "q": "What word fills gap **4** (the street name preceding 'Street')?",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nPlace: the ___ [Q3] ___ [Q4] Street, First floor, Room T347.",
-      "lang": "en",
       "explanation": "Gap 4 is the street name. ONE WORD AND/OR A NUMBER. It forms part of the full address.",
       "answer": ""
     },
     {
       "q": "The guitar group meets on Thursday morning at **___ o'clock** (Question 5). What time?",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nTime: Thursday morning at ___ [Q5].",
-      "lang": "en",
       "explanation": "Gap 5 requires a time (number). Listen for the specific hour mentioned during the conversation.",
       "answer": ""
     },
     {
       "q": "The recommended website is called 'The perfect ___' (Question 6). What is the missing word?",
       "passage": "**Guitar Group Registration Form (Part 1, Questions 1–6)**\n\nRecommended website: 'The perfect ___ [Q6]'.",
-      "lang": "en",
       "explanation": "Gap 6 completes the website name. ONE WORD AND/OR A NUMBER. Listen for a word associated with guitar learning.",
       "answer": ""
     },
     {
       "q": "Guitars are tuned using an app or by ___ (Question 7). ONE WORD ONLY.",
       "passage": "**A Typical 45-Minute Guitar Lesson (Part 1, Questions 7–10)**\n\n| Time | Activity | Notes |\n|---|---|---|\n| 5 mins | tuning guitars | using an app or by **___ [Q7]** |\n| 10 mins | strumming chords using thumbs | keeping time while the teacher is **___ [Q8]** |\n| 15 mins | playing songs | often listening to a **___ [Q9]** of a song |\n| 10 mins | playing single notes and simple tunes | playing together, then **___ [Q10]** |\n| 5 mins | noting things to practise at home | — |",
-      "lang": "en",
       "explanation": "Gap 7 describes an alternative method of tuning guitars besides using an app. Think of a traditional tuning approach.",
       "answer": ""
     },
     {
       "q": "While students strum chords, the teacher is ___ (Question 8). ONE WORD ONLY.",
       "passage": "**A Typical 45-Minute Guitar Lesson (Part 1, Questions 7–10)**\n\nDuring strumming chords: 'keeping time while the teacher is ___ [Q8]'.",
-      "lang": "en",
       "explanation": "Gap 8 describes what the teacher does while students strum chords to keep time. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "When playing songs, students often listen to a ___ of a song (Question 9). ONE WORD ONLY.",
       "passage": "**A Typical 45-Minute Guitar Lesson (Part 1, Questions 7–10)**\n\nDuring the 'playing songs' segment: 'often listening to a ___ [Q9] of a song'.",
-      "lang": "en",
       "explanation": "Gap 9 refers to a specific version or part of a song that students listen to. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "After playing single notes together, students then ___ (Question 10). ONE WORD ONLY.",
       "passage": "**A Typical 45-Minute Guitar Lesson (Part 1, Questions 7–10)**\n\nDuring single notes and simple tunes: 'playing together, then ___ [Q10]'.",
-      "lang": "en",
       "explanation": "Gap 10 describes what happens after the group plays together — likely an individual or independent activity. ONE WORD ONLY.",
       "answer": ""
     },
@@ -88,7 +78,6 @@
       "q": "What made David leave London and move to Northsea? (Question 11)",
       "audio": "./assets/quiz-media/Cambridge_2019/Test2 Part2.mp3",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nDavid left London and moved to Northsea, where he became a lifeboat volunteer.",
-      "lang": "en",
       "explanation": "Option C is correct. David found his career in website design unfulfilling, prompting his move. Options A and B may be partially true but are not the primary reason stated.",
       "options": [
         "He was eager to develop a hobby.",
@@ -100,7 +89,6 @@
     {
       "q": "The Lifeboat Institution in Northsea was built with money provided by whom? (Question 12)",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nThe Lifeboat Institution in Northsea was established with funding from a specific source.",
-      "lang": "en",
       "explanation": "Option B is correct. The institution was funded by a local resident — an individual donor, not a group or government body.",
       "options": [
         "a local organisation",
@@ -112,7 +100,6 @@
     {
       "q": "In his health assessment, the doctor was concerned about the fact that David ___ (Question 13).",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nDavid underwent a health assessment before joining as a volunteer.",
-      "lang": "en",
       "explanation": "Option A is correct. The doctor's concern centred on possible colour blindness in David, which could affect his safety duties at sea.",
       "options": [
         "might be colour blind.",
@@ -124,7 +111,6 @@
     {
       "q": "After arriving at the lifeboat station, they aim to launch the boat within ___ (Question 14).",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nThe lifeboat station has a specific target launch time after the crew arrives.",
-      "lang": "en",
       "explanation": "Option B is correct. The target time from arrival to launch is six to eight minutes — a strict operational standard for emergency response.",
       "options": [
         "five minutes.",
@@ -136,7 +122,6 @@
     {
       "q": "As a 'helmsman' /ˈhɛlmzmən/, David has the responsibility of deciding ___ (Question 15).",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nDavid holds the role of 'helmsman' on the lifeboat.",
-      "lang": "en",
       "explanation": "Option C is correct. The helmsman's key authority is deciding whether conditions justify launching the lifeboat — a critical safety decision.",
       "options": [
         "who will be the members of his crew.",
@@ -148,7 +133,6 @@
     {
       "q": "As well as going out on the lifeboat, David ___ (Question 16).",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 11–16)**\n\nBeyond going out on the lifeboat, David has additional volunteer responsibilities.",
-      "lang": "en",
       "explanation": "Option B is correct. David contributes to the lifeboat station's funding efforts through fundraising activities in addition to active sea duty.",
       "options": [
         "gives talks on safety at sea.",
@@ -160,7 +144,6 @@
     {
       "q": "Which **TWO** things does David say about the lifeboat volunteer training? (Questions 17 and 18)",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 17–18)**\n\nDavid describes his experience of the lifeboat volunteer training programme.\n\n**Options:**\n- A: The residential course developed his leadership skills.\n- B: The training in use of ropes and knots was quite brief.\n- C: The training exercises have built up his mental strength.\n- D: The casualty care activities were particularly challenging for him.\n- E: The wave tank activities provided practice in survival techniques.",
-      "lang": "en",
       "explanation": "The correct answers are **B and E**. David mentions that rope and knot training was brief, and that the wave tank sessions gave practical experience in survival techniques. Options A, C, and D are either contradicted or not mentioned.",
       "options": [
         "A – The residential course developed his leadership skills.",
@@ -177,7 +160,6 @@
     {
       "q": "Which **TWO** things does David find most motivating about the work he does? (Questions 19 and 20)",
       "passage": "**Working as a Lifeboat Volunteer (Part 2, Questions 19–20)**\n\nDavid reflects on what motivates him to continue volunteering.\n\n**Options:**\n- A: working as part of a team\n- B: experiences when working in winter\n- C: being thanked by those he has helped\n- D: the fact that it keeps him fit\n- E: the chance to develop new equipment",
-      "lang": "en",
       "explanation": "The correct answers are **A and C**. David explicitly mentions the camaraderie of teamwork and the gratitude expressed by those he has rescued as his primary motivators. The other options are not identified as top motivators.",
       "options": [
         "A – working as part of a team",
@@ -195,7 +177,6 @@
       "q": "At first, Don thought the topic of recycling footwear might be too ___ (Question 21).",
       "audio": "./assets/quiz-media/Cambridge_2019/Test2 Part3.mp3",
       "passage": "**Recycling Footwear (Part 3, Questions 21–24)**\n\nBella and Don are students discussing a presentation topic on recycling footwear.",
-      "lang": "en",
       "explanation": "Option A is correct. Don's initial concern was that the topic was too narrow or limited — he worried it wouldn't provide enough content for a full presentation.",
       "options": [
         "limited in scope.",
@@ -207,7 +188,6 @@
     {
       "q": "When discussing trainers, Bella and Don disagree about ___ (Question 22).",
       "passage": "**Recycling Footwear (Part 3, Questions 21–24)**\n\nBella and Don discuss different types of footwear, including trainers /ˈtreɪnəz/ (British English for athletic/sports shoes).",
-      "lang": "en",
       "explanation": "Option C is correct. The disagreement centres on the durability of trainers — specifically how fast they deteriorate with regular use. 'Wear out' /wɛr aʊt/ = to become unusable through use.",
       "options": [
         "how popular they are among young people.",
@@ -219,7 +199,6 @@
     {
       "q": "Bella says that she sometimes recycles shoes because ___ (Question 23).",
       "passage": "**Recycling Footwear (Part 3, Questions 21–24)**\n\nBella shares her personal habits regarding shoe recycling.",
-      "lang": "en",
       "explanation": "Option B is correct. Bella recycles shoes primarily due to personal preference changes — she simply stops liking them, not because of size or fashion issues.",
       "options": [
         "they no longer fit.",
@@ -231,7 +210,6 @@
     {
       "q": "What did the article say that confused Don? (Question 24)",
       "passage": "**Recycling Footwear (Part 3, Questions 21–24)**\n\nDon read an article about footwear consumption and recycling statistics that confused him.",
-      "lang": "en",
       "explanation": "Option B is correct. Don was confused by data suggesting that recycling rates have actually fallen despite growing environmental awareness. He expected the opposite trend.",
       "options": [
         "Public consumption of footwear has risen.",
@@ -243,7 +221,6 @@
     {
       "q": "Match each footwear item (25–28) with the correct reason for rejection (A–F). What reason applies to the **high-heeled shoes** (Question 25)?",
       "passage": "**Recycling Footwear (Part 3, Questions 25–28)**\n\nBella and Don visited a recycling centre and spoke with a manager. The manager gave reasons for rejecting certain donated footwear items.\n\n**Reasons for rejection:**\n- A: one shoe was missing\n- B: the colour of one shoe had faded\n- C: one shoe had a hole in it\n- D: the shoes were brand new\n- E: the shoes were too dirty\n- F: the stitching on the shoes was broken\n\n**Footwear items:**\n- 25: the high-heeled shoes\n- 26: the ankle boots\n- 27: the baby shoes\n- 28: the trainers",
-      "lang": "en",
       "explanation": "The high-heeled shoes (Q25) were rejected because the colour of one shoe had faded (B). Faded /ˈfeɪdɪd/ = having lost original brightness or colour.",
       "options": [
         "A – one shoe was missing",
@@ -258,7 +235,6 @@
     {
       "q": "What reason applies to the **ankle boots** (Question 26)?",
       "passage": "**Recycling Footwear (Part 3, Questions 25–28)**\n\nThe recycling manager gave specific reasons for rejecting each type of footwear.",
-      "lang": "en",
       "explanation": "The ankle boots (Q26) were rejected because one shoe had a hole in it (C). Ankle boots /ˈæŋk(ə)l buːts/ = footwear that covers the foot and ankle.",
       "options": [
         "A – one shoe was missing",
@@ -273,7 +249,6 @@
     {
       "q": "What reason applies to the **baby shoes** (Question 27)?",
       "passage": "**Recycling Footwear (Part 3, Questions 25–28)**\n\nThe recycling manager gave specific reasons for rejecting each type of footwear.",
-      "lang": "en",
       "explanation": "The baby shoes (Q27) were rejected because one shoe was missing (A) — an incomplete pair cannot be donated or reused as a set.",
       "options": [
         "A – one shoe was missing",
@@ -288,7 +263,6 @@
     {
       "q": "What reason applies to the **trainers** (Question 28)?",
       "passage": "**Recycling Footwear (Part 3, Questions 25–28)**\n\nThe recycling manager gave specific reasons for rejecting each type of footwear.",
-      "lang": "en",
       "explanation": "The trainers (Q28) were rejected because they were too dirty (E). Despite being otherwise intact, excessive dirt made them unsuitable for redistribution.",
       "options": [
         "A – one shoe was missing",
@@ -303,7 +277,6 @@
     {
       "q": "Why did the project to make 'new' shoes out of old shoes fail? (Question 29)",
       "passage": "**Recycling Footwear (Part 3, Questions 29–30)**\n\nBella and Don discuss an initiative that attempted to create 'new' shoes from parts of old donated footwear.",
-      "lang": "en",
       "explanation": "Option C is correct. The project failed because assembled pairs from different old shoes weren't fully matching — mismatched appearance undermined consumer acceptance. 'Alike' /əˈlaɪk/ = similar or identical.",
       "options": [
         "People believed the 'new' pairs of shoes were unhygienic.",
@@ -315,7 +288,6 @@
     {
       "q": "Bella and Don agree that they can present their topic ___ (Question 30).",
       "passage": "**Recycling Footwear (Part 3, Questions 29–30)**\n\nBella and Don wrap up their planning discussion, agreeing on how they will deliver their presentation.",
-      "lang": "en",
       "explanation": "Option A is correct. Both students conclude that despite the topic seeming narrow at first, they can present it from a fresh perspective. 'From a new angle' = approaching a subject in an original or unexpected way.",
       "options": [
         "from a new angle.",
@@ -328,70 +300,60 @@
       "q": "Tardigrades are called water 'bears' due to how they ___ (Question 31). ONE WORD ONLY.",
       "audio": "./assets/quiz-media/Cambridge_2019/Test2 Part4.mp3",
       "passage": "**Tardigrades (Part 4, Questions 31–40)**\n\nA lecture about tardigrades /ˈtɑːdɪɡreɪdz/ — microscopic animals also known as water 'bears' and 'moss piglets'. They measure 0.05–1.2 millimetres and have over 1,000 known species.\n\nThey are called water 'bears' due to how they **___ [Q31]** and 'moss piglets'.",
-      "lang": "en",
       "explanation": "Gap 31 describes the movement or behaviour that gives tardigrades their nickname 'water bears'. Think of how bears move. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades have a ___ round body and four pairs of legs (Question 32). ONE WORD ONLY.",
       "passage": "**Tardigrades — Physical Appearance (Part 4, Questions 31–40)**\n\nPhysical features include: a **___ [Q32]** round body and four pairs of legs; claws or **___ [Q33]** for gripping; no respiratory organs; body filled with liquid carrying both **___ [Q34]** and blood; mouth shaped like a **___ [Q35]** with teeth called stylets.",
-      "lang": "en",
       "explanation": "Gap 32 describes the shape or characteristic of the tardigrade's body. It modifies 'round body'. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades grip surfaces using claws or ___ (Question 33). ONE WORD ONLY.",
       "passage": "**Tardigrades — Physical Appearance (Part 4, Questions 31–40)**\n\nTardigrades have claws or ___ [Q33] for gripping surfaces.",
-      "lang": "en",
       "explanation": "Gap 33 is an alternative gripping structure to claws. Think of soft, pad-like appendages. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades have a body filled with liquid that carries both ___ and blood (Question 34). ONE WORD ONLY.",
       "passage": "**Tardigrades — Physical Appearance (Part 4, Questions 31–40)**\n\nThe tardigrade's body is filled with a liquid that carries both ___ [Q34] and blood.",
-      "lang": "en",
       "explanation": "Gap 34 names a substance transported alongside blood within the tardigrade's body fluid. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "The tardigrade's mouth is shaped like a ___ with teeth called stylets (Question 35). ONE WORD ONLY.",
       "passage": "**Tardigrades — Physical Appearance (Part 4, Questions 31–40)**\n\nThe tardigrade's mouth is shaped like a ___ [Q35] with teeth called stylets /ˈstaɪlɪts/.",
-      "lang": "en",
       "explanation": "Gap 35 describes the geometric or object-like shape of the tardigrade's mouth. 'Stylets' are needle-like teeth used for piercing. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades can survive in very low or high ___ (Question 36). ONE WORD ONLY.",
       "passage": "**Tardigrades — Habitat (Part 4, Questions 31–40)**\n\nTardigrades are very resilient and can exist in very low or high ___ [Q36] environments.",
-      "lang": "en",
       "explanation": "Gap 36 refers to an environmental variable that tardigrades tolerate at extremes. Consider conditions like temperature, pressure, or radiation. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "A type of ___ ensures that tardigrades' DNA is not damaged during cryptobiosis (Question 37). ONE WORD ONLY.",
       "passage": "**Tardigrades — Cryptobiosis (Part 4, Questions 31–40)**\n\nIn dry conditions, tardigrades roll into a ball called a 'tun' /tʌn/ and enter cryptobiosis /ˌkrɪptəʊbaɪˈəʊsɪs/. A type of ___ [Q37] ensures their DNA is not damaged.",
-      "lang": "en",
       "explanation": "Gap 37 describes a biological process or protective mechanism that safeguards DNA integrity during the dormant 'tun' state. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Research is underway to find out how many days tardigrades can survive in ___ (Question 38). ONE WORD ONLY.",
       "passage": "**Tardigrades — Cryptobiosis (Part 4, Questions 31–40)**\n\nResearch is currently underway to find out how many days tardigrades can stay alive in ___ [Q38].",
-      "lang": "en",
       "explanation": "Gap 38 names a specific extreme environment being studied for tardigrade survivability. Think of a challenging natural or man-made environment. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades consume liquids found in moss or ___ (Question 39). ONE WORD ONLY.",
       "passage": "**Tardigrades — Feeding (Part 4, Questions 31–40)**\n\nTardigrades consume liquids, for example those found in moss or ___ [Q39]. They may also eat other tardigrades.",
-      "lang": "en",
       "explanation": "Gap 39 names another plant or organism whose liquids tardigrades consume. It is listed alongside 'moss' as a food source. ONE WORD ONLY.",
       "answer": ""
     },
     {
       "q": "Tardigrades are not considered to be ___ (Question 40). ONE WORD ONLY.",
       "passage": "**Tardigrades — Conservation Status (Part 4, Questions 31–40)**\n\nDespite their unusual biology and resilience, tardigrades are not considered to be ___ [Q40].",
-      "lang": "en",
       "explanation": "Gap 40 refers to a conservation classification. Given their abundance and resilience across diverse habitats, tardigrades are not classified in this category. ONE WORD ONLY.",
       "answer": ""
     }

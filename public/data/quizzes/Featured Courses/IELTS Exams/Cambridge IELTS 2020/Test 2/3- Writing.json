@@ -15,7 +15,6 @@
     {
       "q": "What is the minimum number of words required for this IELTS Writing Task 1 response?",
       "passage": "IELTS Writing Task 1: The plans show the site of Beechwood Farm in 1950 and the same site today. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
-      "lang": "en",
       "explanation": "IELTS Writing Task 1 requires candidates to write at least 150 words.",
       "options": [
         "100 words",
@@ -28,7 +27,6 @@
     {
       "q": "What is the main purpose of this Task 1 question?",
       "passage": "The plans below show the site of a farm in 1950 and the same site today.",
-      "lang": "en",
       "explanation": "The task requires candidates to compare Beechwood Farm in 1950 with the same site today.",
       "options": [
         "Describe a process",
@@ -40,7 +38,6 @@
     },
     {
       "q": "Choose the correct spelling of the word used to describe something common or representative. Pronunciation: /ˈtɪpɪkəl/",
-      "lang": "en",
       "explanation": "The correct spelling is 'typical'. The candidate's version 'tipycal' is incorrect.",
       "options": [
         "tipycal",
@@ -52,7 +49,6 @@
     },
     {
       "q": "Choose the correct expression: 'The farm has changed ___ time.'",
-      "lang": "en",
       "explanation": "The natural collocation is 'over time'.",
       "options": [
         "along the time",
@@ -64,7 +60,6 @@
     },
     {
       "q": "Which sentence best serves as an overview for the farm plans?",
-      "lang": "en",
       "explanation": "An overview should summarise the main changes without focusing on specific details.",
       "options": [
         "The farm contains fruit trees and vegetables.",
@@ -76,7 +71,6 @@
     },
     {
       "q": "Choose the correct plural form. Pronunciation: sheep /ʃiːp/",
-      "lang": "en",
       "explanation": "The plural of 'sheep' is 'sheep'.",
       "options": [
         "sheeps",
@@ -88,7 +82,6 @@
     },
     {
       "q": "Which linking expression is written correctly?",
-      "lang": "en",
       "explanation": "'Whereas' is written as one word and is commonly used to show contrast.",
       "options": [
         "Where as",
@@ -100,7 +93,6 @@
     },
     {
       "q": "Choose the best collocation.",
-      "lang": "en",
       "explanation": "'Spend valuable time' is a natural English collocation.",
       "options": [
         "spend valuable time",
@@ -113,7 +105,6 @@
     {
       "q": "What is the first question candidates must address in Task 2?",
       "passage": "In many countries, primary and secondary schools close for two months or more in the summer holidays.",
-      "lang": "en",
       "explanation": "The essay asks candidates to discuss the value of long school holidays.",
       "options": [
         "Should schools close permanently?",
@@ -126,7 +117,6 @@
     {
       "q": "What is the minimum word count required for this IELTS Writing Task 2 response?",
       "passage": "In many countries, primary and secondary schools close for two months or more in the summer holidays.",
-      "lang": "en",
       "explanation": "IELTS Writing Task 2 requires at least 250 words.",
       "options": [
         "150 words",
@@ -138,7 +128,6 @@
     },
     {
       "q": "Choose the correct phrase.",
-      "lang": "en",
       "explanation": "'Fall behind in studies' is the correct and natural expression.",
       "options": [
         "falling back in studies",
@@ -150,7 +139,6 @@
     },
     {
       "q": "Which argument in favour of longer school holidays is mentioned in the sample essay?",
-      "lang": "en",
       "explanation": "The essay states that longer holidays help children spend time with relatives and build stronger relationships.",
       "options": [
         "Students can earn money.",
@@ -162,7 +150,6 @@
     },
     {
       "q": "Which argument in favour of shorter school holidays is mentioned in the sample essay?",
-      "lang": "en",
       "explanation": "The essay argues that shorter holidays help students maintain concentration and academic performance.",
       "options": [
         "They reduce travel costs.",
@@ -174,7 +161,6 @@
     },
     {
       "q": "Choose the correct preposition: 'Education is important ___ every child.'",
-      "lang": "en",
       "explanation": "The correct phrase is 'important for every child'.",
       "options": [
         "to",
@@ -186,7 +172,6 @@
     },
     {
       "q": "Choose the correct expression.",
-      "lang": "en",
       "explanation": "'On the other side' is the correct form. In argumentative writing, 'On the other hand' is often more appropriate.",
       "options": [
         "on the otherside",
@@ -198,7 +183,6 @@
     },
     {
       "q": "Choose the correct phrase.",
-      "lang": "en",
       "explanation": "The standard expression is 'on holiday'.",
       "options": [
         "in holiday",
@@ -210,7 +194,6 @@
     },
     {
       "q": "Select the correct plural noun.",
-      "lang": "en",
       "explanation": "When referring to positive and negative aspects, we say 'both positive and negative sides'.",
       "options": [
         "side",
@@ -222,7 +205,6 @@
     },
     {
       "q": "What does the word 'sophisticated' mean in the sentence 'a new sophisticated and modern one'? Pronunciation: /səˈfɪstɪkeɪtɪd/",
-      "lang": "en",
       "explanation": "'Sophisticated' means advanced, complex, or refined.",
       "options": [
         "Simple",
@@ -234,7 +216,6 @@
     },
     {
       "q": "Choose the correct spelling. Pronunciation: /ˈkɒtɪdʒɪz/",
-      "lang": "en",
       "explanation": "The correct spelling is 'cottages'.",
       "options": [
         "cottoges",
@@ -246,7 +227,6 @@
     },
     {
       "q": "Which feature is specifically mentioned in the model overview as a modern addition to the farm?",
-      "lang": "en",
       "explanation": "The overview refers to power generation, represented by the solar panels.",
       "options": [
         "A castle",

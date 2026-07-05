@@ -44,8 +44,6 @@ function copyOptionalQuestionFields(q, out) {
   if (q.image?.trim()) out.image = q.image.trim();
   if (q.audio?.trim()) out.audio = q.audio.trim();
   if (q.video?.trim()) out.video = q.video.trim();
-  if (q.passage?.trim()) out.passage = q.passage.trim();
-  if (q.lang?.trim()) out.lang = q.lang.trim();
   if (q.explanation?.trim()) out.explanation = q.explanation.trim();
 }
 
@@ -85,10 +83,8 @@ function migrateQuiz(raw) {
   // Already new format?
   if (raw.meta && raw.questions && !raw.title && !raw.metadata) {
     const meta = { ...raw.meta };
-    if (oldMeta.lang?.trim()) meta.lang = oldMeta.lang.trim();
     if (oldMeta.view) meta.view = oldMeta.view;
     if (oldMeta.mode) meta.mode = oldMeta.mode;
-    if (oldMeta.privacy) meta.privacy = oldMeta.privacy;
     return {
       meta,
       stats: computeStats(questions),
@@ -135,7 +131,6 @@ function migrateQuiz(raw) {
   // --- preserve id and createdAt ---
   if (oldMeta.id) meta.id = oldMeta.id;
   if (oldMeta.createdAt) meta.createdAt = oldMeta.createdAt;
-  if (oldMeta.lang?.trim()) meta.lang = oldMeta.lang.trim();
 
   return {
     meta,
@@ -263,7 +258,6 @@ async function build(examsDir, repoRoot) {
     if (quizObj.meta.password) quizEntry.password = quizObj.meta.password;
     if (quizObj.meta.source) quizEntry.source = quizObj.meta.source;
     if (quizObj.meta.createdAt) quizEntry.createdAt = quizObj.meta.createdAt;
-    if (quizObj.meta.lang) quizEntry.lang = quizObj.meta.lang;
 
     const subject = ensureSubject(metadata);
     subject.quizzes.push(quizEntry);

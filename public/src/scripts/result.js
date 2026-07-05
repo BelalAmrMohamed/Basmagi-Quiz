@@ -45,8 +45,6 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-const getQuestionLang = (q) => q?.lang || null;
-
 // ── Media Helper Functions ────────────────────────────────────────────────────
 const getMediaUrlCandidates = (url) => {
   const trimmed = String(url || "").trim();

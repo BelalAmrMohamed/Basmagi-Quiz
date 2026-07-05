@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     delete cleanQuiz.meta.author_email;
   }
 
-  // view / mode / lang / privacy come from validated quiz.meta — already in cleanQuiz
+  // `view` / `mode` come from validated quiz.meta — already in cleanQuiz
 
   let passwordHash = null;
   if (cleanQuiz.meta.password) {

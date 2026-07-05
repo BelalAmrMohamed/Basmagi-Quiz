@@ -15,7 +15,6 @@
     {
       "q": "How many words should candidates write for this Task 1 report?",
       "passage": "IELTS Writing Task 1\n\nThe charts below give information about a public library in a town called Little Chalfont.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
-      "lang": "en",
       "explanation": "The task instruction states: 'Write at least 150 words.'",
       "options": [
         "At least 100 words",
@@ -27,7 +26,6 @@
     },
     {
       "q": "According to the chart, which TWO categories accounted for the largest proportion of total loans in 2016?",
-      "lang": "en",
       "explanation": "Both Adult fiction and Children's fiction represented 38% of total loans, making them the largest categories.",
       "options": [
         "Adult fiction and Children's fiction",
@@ -39,7 +37,6 @@
     },
     {
       "q": "Which age group represented the smallest proportion of library members in 2016?",
-      "lang": "en",
       "explanation": "Young adults (13–17) accounted for only 2% of library members.",
       "options": [
         "Children",
@@ -51,7 +48,6 @@
     },
     {
       "q": "Choose the best overview statement for the Little Chalfont Library charts.",
-      "lang": "en",
       "explanation": "The examiner's sample overview highlights adult membership dominance, fiction popularity, and the peak in loans by 2016.",
       "options": [
         "Library membership remained unchanged throughout the period.",
@@ -63,7 +59,6 @@
     },
     {
       "q": "The word 'majority' /məˈdʒɒr.ə.ti/ most nearly means:",
-      "lang": "en",
       "explanation": "'Majority' means more than half or the largest part of a group. Common collocation: 'the majority of members'.",
       "options": [
         "A small number",
@@ -76,7 +71,6 @@
     {
       "q": "What type of essay question is this?",
       "passage": "IELTS Writing Task 2\n\nSome people have decided to reduce the number of times they fly every year or to stop flying altogether.\n\nDo you think the environmental benefits of this development outweigh the disadvantages for individuals and businesses?\n\nWrite at least 250 words.",
-      "lang": "en",
       "explanation": "The phrase 'Do you think the environmental benefits ... outweigh the disadvantages' indicates an outweigh/advantages-disadvantages essay.",
       "options": [
         "Problem–solution essay",
@@ -88,7 +82,6 @@
     },
     {
       "q": "How many words should candidates write for Task 2?",
-      "lang": "en",
       "explanation": "The instruction clearly states: 'Write at least 250 words.'",
       "options": [
         "At least 150 words",
@@ -100,7 +93,6 @@
     },
     {
       "q": "In the Band 7.5 sample essay, what was the writer's position?",
-      "lang": "en",
       "explanation": "The writer argues that the disadvantages for individuals and businesses would be greater than the environmental benefits.",
       "options": [
         "Environmental benefits clearly outweigh disadvantages.",
@@ -112,7 +104,6 @@
     },
     {
       "q": "Which expression from the Band 7.5 essay was praised by the examiner as effective vocabulary?",
-      "lang": "en",
       "explanation": "The examiner highlighted 'potential implications' as an example of fluent and flexible vocabulary use.",
       "options": [
         "Good thing",
@@ -124,7 +115,6 @@
     },
     {
       "q": "Choose the correct meaning of 'devastating' /ˈdev.ə.steɪ.tɪŋ/ in the phrase 'devastating effects'.",
-      "lang": "en",
       "explanation": "'Devastating effects' means extremely harmful or destructive consequences. Common collocation: 'devastating effects on families'.",
       "options": [
         "Minor and temporary",
@@ -136,7 +126,6 @@
     },
     {
       "q": "According to the examiner's comments on the Band 5.0 Task 1 response, which area most needed improvement?",
-      "lang": "en",
       "explanation": "The examiner stated that the response could be improved by including an appropriate overview and greater accuracy in vocabulary and grammar.",
       "options": [
         "Using more future tenses",
@@ -148,7 +137,6 @@
     },
     {
       "q": "Which cohesive device below appeared in the Band 5.0 response and was noted as being overused?",
-      "lang": "en",
       "explanation": "The examiner listed several overused cohesive devices, including 'Nevertheless'.",
       "options": [
         "Nevertheless",
