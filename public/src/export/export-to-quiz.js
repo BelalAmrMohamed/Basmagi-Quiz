@@ -1186,7 +1186,7 @@ export async function exportToQuiz(config, questions) {
     border: 1.5px solid var(--border-color);
     border-radius: var(--radius-md);
     padding: 14px 18px;
-    text-align: left;
+    text-align: start;
     cursor: pointer;
     transition: border-color var(--t-fast), background var(--t-fast),
                 transform var(--t-fast), box-shadow var(--t-fast), color var(--t-fast);
@@ -1240,11 +1240,7 @@ export async function exportToQuiz(config, questions) {
 
   .option-label {
     flex: 1;
-    text-align: left;
-  }
-
-  .option-label.text-rtl {
-    text-align: right;
+    text-align: start;
   }
 
   .option-label p {
