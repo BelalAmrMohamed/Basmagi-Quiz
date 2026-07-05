@@ -62,7 +62,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  z-index: 2999;
+  z-index: calc(var(--z-overlay, 4000) + 1);
   box-shadow: var(--shadow-sm);
   background-color: var(--color-surface);
 }
@@ -87,6 +87,7 @@ body {
   border: 1px solid var(--color-border);
   background: var(--color-background, #fff);
   color: var(--color-text-primary, #111);
+  z-index: calc(var(--z-overlay, 500) + 2);
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -100,6 +101,19 @@ body {
 .hamburger-stats:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.hamburger-stats[aria-expanded="true"] .bar-top {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.hamburger-stats[aria-expanded="true"] .bar-mid {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.hamburger-stats[aria-expanded="true"] .bar-bottom {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .stat-item {
@@ -1246,6 +1260,10 @@ dialog.quiz-password-dialog {
 }
 
 @media (max-width: 768px) {
+  .hamburger-stats {
+    display: flex;
+  }
+
   .question-video-container .youtube-embed {
     max-height: min(280px, 45vh);
   }

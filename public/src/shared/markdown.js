@@ -139,8 +139,10 @@ window.copyCodeBlock = (btn) => {
 
 // ─── 6. Syntax highlighter ────────────────────────────────────────────────────
 // Zero-dependency tokeniser that emits <span class="sh-*"> tokens.
-// Supports: js/ts, python, css, html/xml, bash/sh, json, sql, java, c/cpp, go,
-//           rust, ruby, swift, kotlin, php, csharp, yaml, and plain text.
+// Supports: js/ts/jsx/tsx, python, css/scss/less, html/xml/svg, bash/sh/zsh,
+//           json, sql, java, c/cpp/c#, go, rust, ruby, swift, kotlin, php,
+//           yaml, toml, markdown, dockerfile, graphql, scala, dart, elixir,
+//           lua, perl, r, matlab, powershell, and plain text (escHtml fallback).
 //
 // Strategy: single-pass regex alternation on raw (un-escaped) code.
 // Each branch is mutually exclusive and tried in priority order.
@@ -173,29 +175,87 @@ export const _HL_KEYWORDS = {
     php: new Set([
     "abstract", "and", "array", "as", "break", "callable", "case", "catch", "class", "clone", "const", "continue", "declare", "default", "die", "do", "echo", "else", "elseif", "empty", "enddeclare", "endfor", "endforeach", "endif", "endswitch", "endwhile", "eval", "exit", "extends", "final", "finally", "fn", "for", "foreach", "function", "global", "goto", "if", "implements", "include", "include_once", "instanceof", "insteadof", "interface", "isset", "list", "match", "namespace", "new", "or", "print", "private", "protected", "public", "readonly", "require", "require_once", "return", "static", "switch", "throw", "trait", "try", "unset", "use", "var", "while", "xor", "yield", "null", "true", "false",   ]),   
     sql: new Set([
-    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE", "ALTER", "ADD", "DROP", "INDEX", "VIEW", "DATABASE", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK", "DEFAULT", "CONSTRAINT", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON", "GROUP", "BY", "HAVING", "ORDER", "ASC", "DESC", "LIMIT", "OFFSET", "UNION", "ALL", "DISTINCT", "AS", "IN", "IS", "NULL", "LIKE", "BETWEEN", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "OVER", "PARTITION", "FUNCTION", "PROCEDURE", "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION", "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CAST", "CONVERT", "CONCAT",   ]),   
-    bash: new Set([
-    "if", "then", "else", "elif", "fi", "for", "in", "do", "done", "while", "until", "case", "esac", "function", "return", "exit", "break", "continue", "export", "local", "readonly", "declare", "typeset", "unset", "source", "alias", "echo", "printf", "read", "test", "true", "false", "shift", "exec", "eval", "trap", "wait", "kill", "set", "unset",   ]),
+    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE", "ALTER", "ADD", "DROP", "INDEX", "VIEW", "DATABASE", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK", "DEFAULT", "CONSTRAINT", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON", "GROUP", "BY", "HAVING", "ORDER", "ASC", "DESC", "LIMIT", "OFFSET", "UNION", "ALL", "DISTINCT", "AS", "IN", "IS", "NULL", "LIKE", "BETWEEN", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "OVER", "PARTITION", "FUNCTION", "PROCEDURE", "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION", "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CAST", "CONVERT", "CONCAT",
+  ]),
+  bash: new Set([
+    "if", "then", "else", "elif", "fi", "for", "in", "do", "done", "while", "until", "case", "esac", "function", "return", "exit", "break", "continue", "export", "local", "readonly", "declare", "typeset", "unset", "source", "alias", "echo", "printf", "read", "test", "true", "false", "shift", "exec", "eval", "trap", "wait", "kill", "set", "unset",
+  ]),
+  yaml: new Set([
+    "true", "false", "null", "yes", "no", "on", "off",
+  ]),
+  toml: new Set([
+    "true", "false", "nan", "inf",
+  ]),
+  graphql: new Set([
+    "query", "mutation", "subscription", "fragment", "on", "type", "interface", "union", "enum", "input", "scalar", "schema", "directive", "extend", "implements", "true", "false", "null", "repeatable",
+  ]),
+  scala: new Set([
+    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield", "given", "then", "export", "enum", "end",
+  ]),
+  dart: new Set([
+    "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const", "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export", "extends", "extension", "external", "factory", "false", "final", "finally", "for", "Function", "get", "hide", "if", "implements", "import", "in", "interface", "is", "late", "library", "mixin", "new", "null", "on", "operator", "part", "required", "rethrow", "return", "sealed", "set", "show", "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef", "var", "void", "when", "while", "with", "yield",
+  ]),
+  elixir: new Set([
+    "after", "and", "catch", "cond", "def", "defcallback", "defdelegate", "defexception", "defimpl", "defmacro", "defmacrop", "defmodule", "defoverridable", "defp", "defprotocol", "defrecord", "defstruct", "do", "else", "end", "false", "fn", "for", "if", "import", "in", "nil", "not", "or", "raise", "receive", "require", "rescue", "super", "throw", "true", "try", "unless", "use", "when", "with",
+  ]),
+  lua: new Set([
+    "and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto", "if", "in", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while",
+  ]),
+  perl: new Set([
+    "if", "unless", "while", "until", "for", "foreach", "do", "given", "when", "default", "else", "elsif", "sub", "my", "our", "local", "use", "no", "package", "require", "return", "last", "next", "redo", "goto", "print", "say", "die", "warn", "chomp", "chop", "push", "pop", "shift", "unshift", "splice", "reverse", "sort", "map", "grep", "join", "split", "ref", "defined", "undef", "wantarray", "caller", "eval", "BEGIN", "END", "DESTROY",
+  ]),
+  r: new Set([
+    "if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE", "NULL", "Inf", "NaN", "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_", "return", "invisible", "stop", "warning", "message", "library", "require", "source", "cat", "print", "paste", "sprintf",
+  ]),
+  matlab: new Set([
+    "break", "case", "catch", "classdef", "continue", "else", "elseif", "end", "for", "function", "global", "if", "otherwise", "parfor", "persistent", "return", "spmd", "switch", "try", "while", "true", "false", "Inf", "NaN", "pi", "eps", "nargin", "nargout", "varargin", "varargout",
+  ]),
+  powershell: new Set([
+    "Begin", "Break", "Catch", "Class", "Continue", "Data", "Define", "Do", "DynamicParam", "Else", "ElseIf", "End", "Enum", "Exit", "Filter", "Finally", "For", "ForEach", "From", "Function", "Hidden", "If", "In", "InlineScript", "Param", "Process", "Return", "Sequence", "Static", "Switch", "Throw", "Trap", "Try", "Until", "Using", "Var", "While", "Workflow", "$true", "$false", "$null",
+  ]),
+  dockerfile: new Set([
+    "FROM", "RUN", "CMD", "LABEL", "EXPOSE", "ENV", "ADD", "COPY", "ENTRYPOINT", "VOLUME", "USER", "WORKDIR", "ARG", "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL", "MAINTAINER",
+  ]),
 };
 
-// Expanded Aliases (Adding complete fallback paths for C#, C++, Python, Ruby, Rust, Go)
+// ── Language aliases ──────────────────────────────────────────────────────────
+// Programming languages
 _HL_KEYWORDS.javascript = _HL_KEYWORDS.js;
 _HL_KEYWORDS.typescript = _HL_KEYWORDS.ts;
-_HL_KEYWORDS.cpp = _HL_KEYWORDS.c;
-_HL_KEYWORDS["c++"] = _HL_KEYWORDS.c;
-_HL_KEYWORDS.cxx = _HL_KEYWORDS.c;
-_HL_KEYWORDS.sh = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.shell = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.zsh = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.jsx = _HL_KEYWORDS.js;
-_HL_KEYWORDS.tsx = _HL_KEYWORDS.ts;
-_HL_KEYWORDS.cs = _HL_KEYWORDS.csharp;
-_HL_KEYWORDS["c#"] = _HL_KEYWORDS.csharp;
-_HL_KEYWORDS.py = _HL_KEYWORDS.python;
-_HL_KEYWORDS.rb = _HL_KEYWORDS.ruby;
-_HL_KEYWORDS.kt = _HL_KEYWORDS.kotlin;
-_HL_KEYWORDS.rs = _HL_KEYWORDS.rust;
-_HL_KEYWORDS.golang = _HL_KEYWORDS.go;
+_HL_KEYWORDS.jsx        = _HL_KEYWORDS.js;
+_HL_KEYWORDS.tsx        = _HL_KEYWORDS.ts;
+_HL_KEYWORDS.cpp        = _HL_KEYWORDS.c;
+_HL_KEYWORDS["c++"]     = _HL_KEYWORDS.c;
+_HL_KEYWORDS.cxx        = _HL_KEYWORDS.c;
+_HL_KEYWORDS.cs         = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS["c#"]      = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS.py         = _HL_KEYWORDS.python;
+_HL_KEYWORDS.rb         = _HL_KEYWORDS.ruby;
+_HL_KEYWORDS.kt         = _HL_KEYWORDS.kotlin;
+_HL_KEYWORDS.rs         = _HL_KEYWORDS.rust;
+_HL_KEYWORDS.golang     = _HL_KEYWORDS.go;
+_HL_KEYWORDS.ex         = _HL_KEYWORDS.elixir;
+_HL_KEYWORDS.exs        = _HL_KEYWORDS.elixir;
+_HL_KEYWORDS.scala      = _HL_KEYWORDS.scala; // keep explicit for look-up clarity
+_HL_KEYWORDS.sc         = _HL_KEYWORDS.scala;
+_HL_KEYWORDS.pl         = _HL_KEYWORDS.perl;
+_HL_KEYWORDS.pm         = _HL_KEYWORDS.perl;
+_HL_KEYWORDS.ps1        = _HL_KEYWORDS.powershell;
+_HL_KEYWORDS.psm1       = _HL_KEYWORDS.powershell;
+_HL_KEYWORDS.psd1       = _HL_KEYWORDS.powershell;
+// Shell
+_HL_KEYWORDS.sh         = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.shell      = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.zsh        = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.fish       = _HL_KEYWORDS.bash;
+// Data / config formats  (handled by dedicated highlighters; stub entries so
+// _HL_KEYWORDS look-up returns a truthy value and highlightCode doesn't skip them)
+_HL_KEYWORDS.yml        = _HL_KEYWORDS.yaml;
+_HL_KEYWORDS.json5      = _HL_KEYWORDS.yaml; // close-enough subset for now
+_HL_KEYWORDS.gql        = _HL_KEYWORDS.graphql;
+// Markup (also handled by dedicated highlighters — stubs make aliases work)
+_HL_KEYWORDS.md         = null; // markdown → dedicated highlighter (no kw set)
+_HL_KEYWORDS.markdown   = null;
 
 // JS/TS built-ins worth highlighting
 export const _HL_BUILTINS_JS = new Set([
@@ -210,14 +270,18 @@ export const _HL_BUILTINS_JS = new Set([
 export function highlightCode(code, lang) {
   const langKey = (lang || "").toLowerCase();
 
-  // Languages with no keyword set get plain escaping
+  // ── Specialised language routing ──────────────────────────────────────────
   const isHtmlLike =
     langKey === "html" || langKey === "xml" || langKey === "svg";
-  const isCss = langKey === "css" || langKey === "scss" || langKey === "less";
-  const isJson = langKey === "json";
-  const keywords = _HL_KEYWORDS[langKey] || null;
+  const isCss    = langKey === "css" || langKey === "scss" || langKey === "less";
+  const isJson   = langKey === "json" || langKey === "json5";
+  const isMd     = langKey === "markdown" || langKey === "md";
+  const isYaml   = langKey === "yaml" || langKey === "yml";
+  const isToml   = langKey === "toml";
+  const isDockerfile = langKey === "dockerfile" || langKey === "docker";
+  const keywords = _HL_KEYWORDS[langKey] ?? null; // may be null for md/markdown
 
-  if (!isHtmlLike && !isCss && !isJson && !keywords) {
+  if (!isHtmlLike && !isCss && !isJson && !isMd && !isYaml && !isToml && !isDockerfile && !keywords) {
     return escHtml(code);
   }
 
@@ -260,15 +324,222 @@ export function highlightCode(code, lang) {
     ); // leftover < not part of a tag
   }
 
+  // ── Markdown highlighter ───────────────────────────────────────────────────
+  // Strategy: escape the whole line first, then apply span-replacements on the
+  // already-escaped text so subsequent passes never double-escape the spans.
+  if (isMd) {
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Handle fenced code blocks spanning multiple lines first (stash them).
+    const mdStash = [];
+    const mdPush = (html) => {
+      const ph = `\x02MD${mdStash.length}\x02`;
+      mdStash.push(html);
+      return ph;
+    };
+    let mdCode = code.replace(
+      /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
+      (_, fl, body) =>
+        mdPush(
+          `<span class="sh-comment">\`\`\`${esc(fl)}\n${esc(body)}\`\`\`</span>`,
+        ),
+    );
+
+    const lines = mdCode.split("\n").map((raw) => {
+      // Restore stash placeholders on their own lines
+      if (/\x02MD\d+\x02/.test(raw))
+        return raw.replace(/\x02MD(\d+)\x02/g, (_, i) => mdStash[+i]);
+
+      // Escape first — all further replacements work on safe HTML
+      let line = esc(raw);
+
+      // ATX headings  # … ######
+      if (/^#{1,6}\s/.test(line))
+        return `<span class="sh-keyword">${line}</span>`;
+      // Setext underlines  ===  / ---
+      if (/^={3,}\s*$/.test(line) || /^-{3,}\s*$/.test(line))
+        return `<span class="sh-comment">${line}</span>`;
+      // Thematic breaks  ***  ---  ___
+      if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line))
+        return `<span class="sh-comment">${line}</span>`;
+      // Blockquotes
+      if (/^&gt;/.test(line))
+        return `<span class="sh-string">${line}</span>`;
+      // HTML comments  <!-- … -->
+      line = line.replace(
+        /(&lt;!--[\s\S]*?--&gt;)/g,
+        (m) => `<span class="sh-comment">${m}</span>`,
+      );
+      // Unordered list bullet markers  - * +
+      line = line.replace(
+        /^(\s*)([-*+])( )/,
+        (_, sp, mk, tr) =>
+          sp + `<span class="sh-operator">${mk}</span>` + tr,
+      );
+      // Ordered list  1.
+      line = line.replace(
+        /^(\s*)(\d+\.)( )/,
+        (_, sp, mk, tr) =>
+          sp + `<span class="sh-number">${mk}</span>` + tr,
+      );
+      // Inline code  `…`  (must come before bold/italic to protect backtick content)
+      const codeStash = [];
+      line = line.replace(
+        /`([^`]+)`/g,
+        (_, inner) => {
+          const ph = `\x03C${codeStash.length}\x03`;
+          codeStash.push(`<span class="sh-string">\`${inner}\`</span>`);
+          return ph;
+        },
+      );
+      // Images  ![alt](url)
+      line = line.replace(
+        /!\[([^\]]*?)\]\(([^)]+?)\)/g,
+        (_, alt, url) =>
+          `!<span class="sh-function">[${alt}]</span>` +
+          `<span class="sh-string">(${url})</span>`,
+      );
+      // Links  [text](url)
+      line = line.replace(
+        /\[([^\]]+?)\]\(([^)]+?)\)/g,
+        (_, text, url) =>
+          `<span class="sh-function">[${text}]</span>` +
+          `<span class="sh-string">(${url})</span>`,
+      );
+      // Bold  **…**  /  __…__
+      line = line.replace(
+        /(\*\*|__)(.+?)\1/g,
+        (_, m, inner) => `<span class="sh-type">${m}${inner}${m}</span>`,
+      );
+      // Italic  *…*  /  _…_  (only after bold so ** doesn't match as two *)
+      line = line.replace(
+        /(?<![*_])([*_])(?![*_])(.+?)(?<![*_])\1(?![*_])/g,
+        (_, m, inner) => `<span class="sh-builtin">${m}${inner}${m}</span>`,
+      );
+      // Restore inline-code stash
+      line = line.replace(/\x03C(\d+)\x03/g, (_, i) => codeStash[+i]);
+      return line;
+    });
+
+    return lines.join("\n");
+  }
+
+  // ── YAML highlighter ───────────────────────────────────────────────────────
+  if (isYaml) {
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return code
+      .split("\n")
+      .map((line) => {
+        // Comments
+        if (/^\s*#/.test(line))
+          return `<span class="sh-comment">${esc(line)}</span>`;
+        // Document markers --- / ...
+        if (/^(---|\.\.\.)\s*$/.test(line))
+          return `<span class="sh-operator">${esc(line)}</span>`;
+        let out = "";
+        // Key: value  (highlight the key)
+        out = line.replace(
+          /^(\s*)("[^"]+"|'[^']+'|[^:]+?)(:)(.*)/,
+          (_, sp, key, colon, rest) => {
+            // Value may be a string, number, boolean, or anchor/alias
+            const highlightVal = (v) => {
+              v = v.trimStart();
+              if (/^(true|false|yes|no|on|off|null|~)$/i.test(v))
+                return `<span class="sh-keyword">${esc(v)}</span>`;
+              if (/^-?\d/.test(v))
+                return `<span class="sh-number">${esc(v)}</span>`;
+              if (/^["']/.test(v))
+                return `<span class="sh-string">${esc(v)}</span>`;
+              if (/^[&*]/.test(v))
+                return `<span class="sh-builtin">${esc(v)}</span>`;
+              return esc(v);
+            };
+            return (
+              esc(sp) +
+              `<span class="sh-attr">${esc(key)}</span>` +
+              esc(colon) +
+              (rest.trim() ? " " + highlightVal(rest) : esc(rest))
+            );
+          },
+        );
+        return out || esc(line);
+      })
+      .join("\n");
+  }
+
+  // ── TOML highlighter ───────────────────────────────────────────────────────
+  if (isToml) {
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return code
+      .split("\n")
+      .map((line) => {
+        if (/^\s*#/.test(line)) return `<span class="sh-comment">${esc(line)}</span>`;
+        if (/^\[/.test(line.trim())) return `<span class="sh-keyword">${esc(line)}</span>`;
+        return line.replace(
+          /^(\s*)([A-Za-z_][A-Za-z0-9_.\-]*)(\s*=\s*)(.*)/,
+          (_, sp, key, eq, val) => {
+            let valHtml;
+            if (/^(true|false)$/i.test(val.trim()))
+              valHtml = `<span class="sh-keyword">${esc(val)}</span>`;
+            else if (/^-?\d/.test(val.trim()))
+              valHtml = `<span class="sh-number">${esc(val)}</span>`;
+            else if (/^["']|^\["'\[]/.test(val.trim()))
+              valHtml = `<span class="sh-string">${esc(val)}</span>`;
+            else
+              valHtml = esc(val);
+            return esc(sp) + `<span class="sh-attr">${esc(key)}</span>` + esc(eq) + valHtml;
+          },
+        ) || esc(line);
+      })
+      .join("\n");
+  }
+
+  // ── Dockerfile highlighter ─────────────────────────────────────────────────
+  if (isDockerfile) {
+    const esc = (s) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const DOCKER_KW = _HL_KEYWORDS.dockerfile;
+    return code
+      .split("\n")
+      .map((line) => {
+        if (/^\s*#/.test(line)) return `<span class="sh-comment">${esc(line)}</span>`;
+        return line.replace(
+          /^(\s*)([A-Z]+)(\s|$)/,
+          (_, sp, cmd, trail) =>
+            DOCKER_KW.has(cmd)
+              ? `${esc(sp)}<span class="sh-keyword">${esc(cmd)}</span>${esc(trail)}`
+              : esc(sp) + esc(cmd) + esc(trail),
+        );
+      })
+      .join("\n");
+  }
+
   // ── CSS highlighter ────────────────────────────────────────────────────────
+  // Full char-by-char tokeniser with:
+  //  • Comments, strings, numbers-with-units, CSS variables
+  //  • @at-rules (keyword)
+  //  • Selectors (tag, class, id, pseudo, combinator, universal)
+  //  • Property names (before ':')
+  //  • Property values (after ':')
   if (isCss) {
     let out = "";
     const css = code;
     let i = 0;
     const esc = (s) =>
       s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Track context: are we inside a rule block { … }?
+    // 0 = top-level (selector territory), 1 = inside rule block (property territory)
+    let depth = 0;
+    // After a '{' we're in property territory; after each ':' we're in value territory
+    // Track whether on a line we've already emitted a property name
+    let afterColon = false; // true once we've passed ':' inside a rule
+
     while (i < css.length) {
-      // Comments /* … */
+      // ── Comments /* … */ ────────────────────────────────────────────────
       if (css[i] === "/" && css[i + 1] === "*") {
         const end = css.indexOf("*/", i + 2);
         const chunk = end === -1 ? css.slice(i) : css.slice(i, end + 2);
@@ -276,7 +547,7 @@ export function highlightCode(code, lang) {
         i += chunk.length;
         continue;
       }
-      // Strings
+      // ── Strings ─────────────────────────────────────────────────────────
       if (css[i] === '"' || css[i] === "'") {
         const q = css[i];
         let j = i + 1;
@@ -289,31 +560,144 @@ export function highlightCode(code, lang) {
         i = j + 1;
         continue;
       }
-      // Numbers with optional units
-      const numMatch = css
-        .slice(i)
-        .match(
-          /^-?\d+\.?\d*(%|px|em|rem|vw|vh|vmin|vmax|pt|pc|cm|mm|in|deg|rad|turn|s|ms)?/,
-        );
-      if (numMatch && numMatch[0].length > 0 && /\d/.test(numMatch[0][0])) {
-        out += `<span class="sh-number">${esc(numMatch[0])}</span>`;
-        i += numMatch[0].length;
+      // ── Opening brace — enter rule block ────────────────────────────────
+      if (css[i] === "{") {
+        depth++;
+        afterColon = false;
+        out += `<span class="sh-operator">{</span>`;
+        i++;
         continue;
       }
-      // CSS variables --foo
+      // ── Closing brace — exit rule block ─────────────────────────────────
+      if (css[i] === "}") {
+        if (depth > 0) depth--;
+        afterColon = false;
+        out += `<span class="sh-operator">}</span>`;
+        i++;
+        continue;
+      }
+      // ── Semicolon — end of declaration ──────────────────────────────────
+      if (css[i] === ";" && depth > 0) {
+        afterColon = false;
+        out += `<span class="sh-operator">;</span>`;
+        i++;
+        continue;
+      }
+      // ── Colon (property separator, not pseudo-class) ─────────────────────
+      if (css[i] === ":" && depth > 0 && !afterColon) {
+        // Peek: pseudo-class / pseudo-element (::before, :hover) inside selector?
+        // Inside a rule block a bare ':' is a property separator.
+        afterColon = true;
+        out += `<span class="sh-operator">:</span>`;
+        i++;
+        continue;
+      }
+      // ── @at-rules ────────────────────────────────────────────────────────
+      const atMatch = css.slice(i).match(/^@[a-zA-Z\-]+/);
+      if (atMatch) {
+        out += `<span class="sh-keyword">${esc(atMatch[0])}</span>`;
+        i += atMatch[0].length;
+        continue;
+      }
+      // ── CSS custom properties  --foo ─────────────────────────────────────
       const varMatch = css.slice(i).match(/^--[a-zA-Z][a-zA-Z0-9\-_]*/);
       if (varMatch) {
         out += `<span class="sh-variable">${esc(varMatch[0])}</span>`;
         i += varMatch[0].length;
         continue;
       }
-      // Properties / selectors / at-rules
-      const propMatch = css.slice(i).match(/^@[a-zA-Z\-]+/);
-      if (propMatch) {
-        out += `<span class="sh-keyword">${esc(propMatch[0])}</span>`;
-        i += propMatch[0].length;
+      // ── Numbers with optional units ──────────────────────────────────────
+      const numMatch = css
+        .slice(i)
+        .match(
+          /^-?\d+\.?\d*(%|px|em|rem|vw|vh|vmin|vmax|svh|svw|dvh|dvw|cqw|cqh|pt|pc|cm|mm|in|deg|rad|turn|grad|s|ms|fr|ch|ex|lh|cap|ic|vb|vi)?/,
+        );
+      if (numMatch && numMatch[0].length > 0 && /\d/.test(numMatch[0][0])) {
+        out += `<span class="sh-number">${esc(numMatch[0])}</span>`;
+        i += numMatch[0].length;
         continue;
       }
+      // ── Identifiers ──────────────────────────────────────────────────────
+      const identMatch = css.slice(i).match(/^-?[a-zA-Z_][a-zA-Z0-9_\-]*/);
+      if (identMatch) {
+        const word = identMatch[0];
+        if (depth === 0) {
+          // Top level: this is a tag-selector
+          out += `<span class="sh-tag">${esc(word)}</span>`;
+        } else if (!afterColon) {
+          // Inside rule, before ':': this is a property name
+          out += `<span class="sh-attr">${esc(word)}</span>`;
+        } else {
+          // After ':': this is a value keyword (color name, keyword, etc.)
+          const CSS_VALUE_KW = new Set([
+            "auto","none","inherit","initial","unset","revert","normal","bold",
+            "italic","block","inline","flex","grid","inline-block","inline-flex",
+            "inline-grid","contents","flow-root","table","absolute","relative",
+            "fixed","sticky","static","center","left","right","top","bottom",
+            "middle","baseline","stretch","start","end","space-between",
+            "space-around","space-evenly","wrap","nowrap","row","column",
+            "row-reverse","column-reverse","visible","hidden","scroll",
+            "clip","overflow","pointer","default","text","crosshair","grab",
+            "grabbing","transparent","currentColor","solid","dashed","dotted",
+            "double","groove","ridge","inset","outset","underline","overline",
+            "line-through","uppercase","lowercase","capitalize","ease","linear",
+            "ease-in","ease-out","ease-in-out","forwards","backwards","both",
+            "infinite","alternate","reverse","paused","running","serif",
+            "sans-serif","monospace","cursive","fantasy","system-ui",
+            "max-content","min-content","fit-content","contain","cover",
+            "no-repeat","repeat","repeat-x","repeat-y","round","space",
+          ]);
+          if (CSS_VALUE_KW.has(word))
+            out += `<span class="sh-keyword">${esc(word)}</span>`;
+          else
+            out += esc(word);
+        }
+        i += word.length;
+        continue;
+      }
+      // ── Selectors: class .foo  id #foo  universal *  combinators > ~ + ──
+      if (css[i] === "." && depth === 0) {
+        const clsMatch = css.slice(i + 1).match(/^-?[a-zA-Z_][a-zA-Z0-9_\-]*/);
+        if (clsMatch) {
+          out += `<span class="sh-function">.${esc(clsMatch[0])}</span>`;
+          i += 1 + clsMatch[0].length;
+          continue;
+        }
+      }
+      if (css[i] === "#" && depth === 0) {
+        const idMatch = css.slice(i + 1).match(/^[a-zA-Z_][a-zA-Z0-9_\-]*/);
+        if (idMatch) {
+          out += `<span class="sh-variable">#${esc(idMatch[0])}</span>`;
+          i += 1 + idMatch[0].length;
+          continue;
+        }
+      }
+      if (css[i] === ":" && depth === 0) {
+        // Pseudo-class or pseudo-element  :hover  ::before
+        const extra = css[i + 1] === ":" ? 2 : 1;
+        const psMatch = css.slice(i + extra).match(/^[a-zA-Z\-]+/);
+        if (psMatch) {
+          const prefix = css.slice(i, i + extra);
+          out += `<span class="sh-operator">${esc(prefix)}${esc(psMatch[0])}</span>`;
+          i += extra + psMatch[0].length;
+          continue;
+        }
+      }
+      if ((css[i] === "*" || css[i] === ">" || css[i] === "~" || css[i] === "+") && depth === 0) {
+        out += `<span class="sh-operator">${esc(css[i])}</span>`;
+        i++;
+        continue;
+      }
+      // ── Hex colors  #rrggbb / #rgb ────────────────────────────────────────
+      if (css[i] === "#" && depth > 0) {
+        const hexMatch = css.slice(i + 1).match(/^[0-9a-fA-F]{3,8}\b/);
+        if (hexMatch) {
+          out += `<span class="sh-number">#${esc(hexMatch[0])}</span>`;
+          i += 1 + hexMatch[0].length;
+          continue;
+        }
+      }
+      // ── Class/id selectors inside at-rule parens (depth 0 edge cases) ───
       out += esc(css[i]);
       i++;
     }
@@ -343,12 +727,10 @@ export function highlightCode(code, lang) {
   const kw = keywords;
   const isSql = langKey === "sql";
   const isJsLike = [
-    "js",
-    "ts",
-    "jsx",
-    "tsx",
-    "javascript",
-    "typescript",
+    "js", "ts", "jsx", "tsx", "javascript", "typescript",
+  ].includes(langKey);
+  const isPowershell = [
+    "powershell", "ps1", "psm1", "psd1",
   ].includes(langKey);
 
   // Regex alternation (order = priority):
@@ -361,23 +743,27 @@ export function highlightCode(code, lang) {
   //  7. Word (identifier/keyword)
   //  8. Operator
   //  9. Everything else (1 char)
+  // Determine the line-comment syntax for this language
+  const usesHashComment = [
+    "py", "python", "rb", "ruby", "bash", "sh", "shell", "zsh", "fish",
+    "yaml", "yml", "toml", "r", "perl", "pl", "pm", "elixir", "ex", "exs",
+    "dockerfile", "docker", "powershell", "ps1", "psm1", "psd1",
+  ].includes(langKey);
+  const usesDashDashComment = isSql || langKey === "lua";
+  const usesPercentComment = langKey === "matlab";
+
   const TOKEN_RE = new RegExp(
     [
       // 1. line comment
       isJsLike
         ? "(\\/\\/[^\\n]*)"
-        : langKey === "py" ||
-            langKey === "python" ||
-            langKey === "rb" ||
-            langKey === "ruby" ||
-            langKey === "bash" ||
-            langKey === "sh" ||
-            langKey === "shell" ||
-            langKey === "zsh"
+        : usesHashComment
           ? "(#[^\\n]*)"
-          : isSql
+          : usesDashDashComment
             ? "(--[^\\n]*)"
-            : "(\\/\\/[^\\n]*)",
+            : usesPercentComment
+              ? "(%[^\\n]*)"
+              : "(\\/\\/[^\\n]*)",
       // 2. block comment
       "(\\/\\*[\\s\\S]*?\\*\\/)",
       // 3. template literal (JS/TS)
@@ -449,15 +835,20 @@ export function highlightCode(code, lang) {
     if (lineComment || blockComment) {
       result += `<span class="sh-comment">${escHtml(tok)}</span>`;
     } else if (templateLit) {
-      // Highlight interpolations ${…} inside template literals
+      // Highlight interpolations ${…} by recursing into the JS highlighter
       const inner = tok
         .slice(1, -1)
         .replace(
           /(\$\{)([\s\S]*?)(\})/g,
-          (_, open, expr, close) =>
-            `<span class="sh-interp">${escHtml(open)}</span>` +
-            `<span class="sh-interp-body">${escHtml(expr)}</span>` +
-            `<span class="sh-interp">${escHtml(close)}</span>`,
+          (_, open, expr, close) => {
+            // Recursively highlight the interpolated expression
+            const highlighted = highlightCode(expr, "js");
+            return (
+              `<span class="sh-interp">${escHtml(open)}</span>` +
+              `<span class="sh-interp-body">${highlighted}</span>` +
+              `<span class="sh-interp">${escHtml(close)}</span>`
+            );
+          },
         );
       result += `<span class="sh-string">\`${inner}\`</span>`;
     } else if (dqString || sqString) {
@@ -466,7 +857,7 @@ export function highlightCode(code, lang) {
       result += `<span class="sh-number">${escHtml(tok)}</span>`;
     } else if (word) {
       const check = isSql ? tok.toUpperCase() : tok;
-      if (kw.has(check)) {
+      if (kw && kw.has(check)) {
         result += `<span class="sh-keyword">${escHtml(tok)}</span>`;
       } else if (isJsLike && _HL_BUILTINS_JS.has(tok)) {
         result += `<span class="sh-builtin">${escHtml(tok)}</span>`;
@@ -499,7 +890,59 @@ export function highlightCode(code, lang) {
     result += escHtml(code.slice(lastIndex));
   }
 
+  // PowerShell: post-process to colour $variables (token regex missed them
+  // because $ is used as word-boundary anchor, not identifier start)
+  if (isPowershell) {
+    result = result.replace(
+      /(\$(?:true|false|null|[A-Za-z_][A-Za-z0-9_]*))/g,
+      `<span class="sh-variable">$1</span>`,
+    );
+  }
+
   return result;
+}
+
+// ── Language auto-detection ───────────────────────────────────────────────────
+// Inspects the raw code for distinctive patterns and returns the most likely
+// language key, or 'text' for unrecognised content.
+export function detectLang(code) {
+  if (!code || !code.trim()) return "text";
+  const t = code.trim();
+  // HTML
+  if (/^\s*<!DOCTYPE\s+html/i.test(t) || /^\s*<(?:html|head|body|div|span|p|h[1-6])[\s>]/i.test(t)) return "html";
+  // JSON
+  if (/^\s*[{\[]/.test(t) && /[}\]]\s*$/.test(t)) {
+    try { JSON.parse(t); return "json"; } catch {/* not json */}
+  }
+  // YAML (loose check)
+  if (/^---\s*$/m.test(t) || /^[a-zA-Z_][\w.\-]*\s*:/m.test(t)) return "yaml";
+  // TOML
+  if (/^\[\w/.test(t) && /^\w+\s*=/m.test(t)) return "toml";
+  // Dockerfile
+  if (/^FROM\s/m.test(t) || /^RUN\s/m.test(t)) return "dockerfile";
+  // SQL
+  if (/\b(?:SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER)\b/i.test(t)) return "sql";
+  // Python
+  if (/\bdef\s+\w+\s*\(/.test(t) || /^import\s+\w/m.test(t) || /^from\s+\w.*\simport\b/m.test(t)) return "python";
+  // TypeScript (before JS)
+  if (/:\s*(?:string|number|boolean|void|any|unknown|never)\b/.test(t) || /\binterface\s+\w/.test(t) || /\benum\s+\w/.test(t)) return "ts";
+  // JavaScript
+  if (/\b(?:const|let|var)\s+\w/.test(t) || /=>/.test(t) || /^\s*(?:function|class)\s/m.test(t)) return "js";
+  // CSS
+  if (/[{};]/.test(t) && /:\s*[\w#"']/.test(t)) return "css";
+  // Bash
+  if (/^#!\/(?:bin|usr)\/.+sh/.test(t) || /\$(?:\w+|\{\w+\})/.test(t)) return "bash";
+  // Rust
+  if (/\bfn\s+\w+/.test(t) || /\bimpl\s+\w/.test(t) || /\blet\s+mut\s+\w/.test(t)) return "rust";
+  // Go
+  if (/^package\s+\w/m.test(t) || /\bfunc\s+\w/.test(t)) return "go";
+  // Java / Kotlin
+  if (/\bpublic\s+(?:static\s+)?(?:void|class)\s+\w/.test(t)) return "java";
+  // Kotlin
+  if (/\bfun\s+\w+\s*\(/.test(t) && /\bval\b|\bvar\b/.test(t)) return "kotlin";
+  // Markdown
+  if (/^#{1,6}\s/m.test(t) || /\*\*.+\*\*/.test(t)) return "markdown";
+  return "text";
 }
 
 // ─── 7. Core renderer ─────────────────────────────────────────────────────────
@@ -558,9 +1001,12 @@ export function _renderMarkdownCore(str) {
   str = str.replace(
     /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
     (_, lang, code) => {
-      const highlighted = highlightCode(code.trim(), lang);
-      const langClass = lang ? ` language-${lang}` : "";
+      // If no explicit language tag, try to auto-detect from content
+      const effectiveLang = lang || detectLang(code.trim());
+      const highlighted = highlightCode(code.trim(), effectiveLang);
+      const langClass = lang ? ` language-${lang}` : (effectiveLang !== "text" ? ` language-${effectiveLang}` : "");
 
+      // Only show the label when the author explicitly wrote a language tag
       const langLabel = lang
         ? `<span class="code-lang-label">${escHtml(lang)}</span>`
         : "";
