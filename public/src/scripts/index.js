@@ -45,6 +45,7 @@ const General_Purpose_AI_Prompt = `You are an educational content specialist wit
 Please ensure the following:
 - Preserve the original wording of all questions without rephrasing to maintain content integrity. But use math notations and tables when needed properly.
 - Identify and supply correct answers for any unsolved or incomplete questions using authoritative sources or logical deduction.
+- The "correct" object can store a 0-based integer for the correct option, or an array of integers if there are multiple correct options. 
 - Output only the finalized JSON array without any additional text or commentary.
 
 Output ONLY the JSON in the following format:
@@ -81,7 +82,7 @@ Output ONLY the JSON in the following format:
 `;
 
 // Specialized English AI Prompt for language-focused quizzes
-const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full Markdown, tables, code blocks, LaTeX notation, audio and video references, paragraph contexts, and the language-specific field 'lang'.
+const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full Markdown, tables, code blocks, LaTeX notation, audio and video references, and paragraph contexts.
 Please ensure the following:
 - Preserve exact wording from original materials for language precision
 - Add pronunciation guides or phonetic notation for difficult words
@@ -99,22 +100,18 @@ Output ONLY the JSON in the following format:
       "correct": 0,
       "audio": "https://example.com/audio/present-simple.mp3",
       "explanation": "Present simple is used for habitual actions. Third person singular takes 'goes'.",
-      "lang": "en"
     },
     {
-      "passage": "Read the following passage and answer the question below:\\n\\n\\"Despite the heavy rain, the match continued as scheduled. The players were drenched but determined to finish the game. Spectators huddled under umbrellas, cheering loudly.\\"",
-      "q": "What is the meaning of the phrasal verb 'put up with'? Select the synonym.",
+      "q": "Read the following passage and answer the question below:\\n\\n\`\`\`passage\\nDespite the heavy rain, the match continued as scheduled. The players were drenched but determined to finish the game. Spectators huddled under umbrellas, cheering loudly.\\n\`\`\`\\n\\nWhat is the meaning of the phrasal verb 'put up with'? Select the synonym.",
       "options": ["tolerate", "delay", "construct", "display"],
       "video": "https://example.com/video/present-simple.mp4",
       "correct": 0,
       "explanation": "'Put up with' means to tolerate or endure something unpleasant. Common in British English.",
-      "lang": "en"
     },
     {
       "q": "My __ brother's wife is Sara - she is my aunt.",
       "answer": "maternal",
       "explanation": "We need the possessive form of 'dad'. The possessive is formed by adding apostrophe + s: dad's.",
-      "lang": "en"
     }
   ]
 }
@@ -132,6 +129,7 @@ Please ensure the following:
 - Include relevant formulas in explanation tables
 - Distinguish between computational and conceptual questions
 - Mark conceptual difficulty appropriately
+- The "correct" object can store a 0-based integer for the correct option, or an array of integers if there are multiple correct options. 
 - Output only the finalized JSON array without additional text
 
 Output ONLY the JSON in the following format:
