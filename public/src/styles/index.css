@@ -29,6 +29,15 @@ body {
   padding-left: 24px; /* physical left — the non-sidebar side */
   position: relative;
   overflow-x: hidden;
+  /*
+   * Flex column so .container (the only real layout child) can stretch to
+   * fill the remaining viewport height. This lets .watermark push itself to
+   * the bottom via margin-top: auto instead of floating mid-page on short
+   * content pages. The hamburger button, backdrop, and side-menu <aside> are
+   * all position:fixed/absolute, so they're unaffected by this.
+   */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Container */
@@ -37,6 +46,15 @@ body {
   margin: 0 auto;
   position: relative;
   z-index: var(--z-base);
+  /*
+   * Stretch to fill body's remaining height and lay children out in a column
+   * so .watermark (its last child) can be pinned to the bottom via
+   * margin-top: auto when the page content above it is short.
+   */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
 }
 
 /* Breadcrumb */
@@ -2163,7 +2181,14 @@ Container
    ============================================================================ */
 .watermark {
   text-align: center;
-  margin-top: 40px;
+  /*
+   * auto (not a fixed length) so it consumes any leftover space in the
+   * flex-column .container, pinning the footer to the bottom on short
+   * pages instead of leaving it stranded mid-screen. On pages with enough
+   * content to fill the viewport, this collapses to 0 and behaves exactly
+   * like the old fixed 40px margin did.
+   */
+  margin-top: auto;
   padding-top: 40px;
   border-top: 1px solid var(--color-border-light);
   font-size: 0.8rem;
@@ -2173,6 +2198,7 @@ Container
   align-items: center;
   justify-content: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .watermark p {
