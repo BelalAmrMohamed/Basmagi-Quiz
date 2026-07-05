@@ -181,6 +181,29 @@ import "../shared/console-core.js";
     log.rule('═', 60);
   }, 'check service worker registration and online/offline status');
  
+  registerCommand('search', (query) => {
+    log.rule('═', 60);
+    log.title('🔍 Search');
+    if (!query) {
+      log.warn('  usage: basmagy.search("query")');
+      log.rule('═', 60);
+      return;
+    }
+    if (!searchManager) {
+      log.warn('  search isn\'t ready yet — the page may still be loading.');
+      log.dim('  try again in a moment.');
+      log.rule('═', 60);
+      return;
+    }
+    searchManager.search(query);
+    const results = safe(() => searchManager.getResults(), []);
+    log.kv('  query:', query);
+    log.kv('  context:', searchManager.currentContext || 'unknown');
+    log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
+    log.dim('  (opened the search bar with this query — same as typing it in)');
+    log.rule('═', 60);
+  }, 'basmagy.search("query") — run a search as if typed into the search bar');
+ 
   // --------------------------------------------------------------------------
   // GO
   // --------------------------------------------------------------------------

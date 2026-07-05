@@ -466,15 +466,24 @@
                 </svg>
                 <input type="text" id="courseSearch" placeholder="ابحث عن مادة..." class="search-input"
                     autocomplete="off" aria-label="البحث عن المواد والاختبارات" />
-                <button class="search-clear" id="searchClear" style="display:none;" aria-label="مسح البحث">×</button>
-                <button class="search-close" id="searchClose" aria-label="إغلاق البحث">
+                <!-- Single merged button: clears the text if there's any, otherwise closes the search bar. -->
+                <button class="search-close" id="searchClose" aria-label="إغلاق البحث" title="إغلاق البحث" type="button">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" aria-hidden="true">
                         <path d="M18 6L6 18M6 6l12 12" />
                     </svg>
                 </button>
-                <button class="search-filters-toggle" id="filterToggle" aria-label="فتح الفلاتر" aria-expanded="false">
-                    <span class="filter-icon" aria-hidden="true">⚙️</span>
+                <button class="search-filters-toggle" id="filterToggle" aria-label="فتح الفلاتر" aria-expanded="false" type="button">
+                    <svg class="filter-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <line x1="4" y1="6" x2="20" y2="6"></line>
+                        <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+                        <line x1="4" y1="12" x2="20" y2="12"></line>
+                        <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+                        <line x1="4" y1="18" x2="20" y2="18"></line>
+                        <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+                    </svg>
                 </button>
             </div>
 
@@ -512,7 +521,35 @@
                     </div>
                 </div>
 
+                <!-- Education-type filter — new. Faculty section below is only shown when "University" is picked here. -->
                 <div class="filter-section">
+                    <h4>المرحلة التعليمية</h4>
+                    <div class="filter-options">
+                        <label class="filter-chip">
+                            <input type="radio" name="educationType" value="all" checked>
+                            <span>الكل</span>
+                        </label>
+                        <label class="filter-chip">
+                            <input type="radio" name="educationType" value="University">
+                            <span>جامعي</span>
+                        </label>
+                        <label class="filter-chip">
+                            <input type="radio" name="educationType" value="High-School">
+                            <span>ثانوي</span>
+                        </label>
+                        <label class="filter-chip">
+                            <input type="radio" name="educationType" value="Middle-School">
+                            <span>إعدادي</span>
+                        </label>
+                        <label class="filter-chip">
+                            <input type="radio" name="educationType" value="Primary">
+                            <span>ابتدائي</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Faculty only applies to University courses; JS toggles this section's visibility. -->
+                <div class="filter-section" id="facultyFilterGroup">
                     <h4>الكلية</h4>
                     <select id="facultyFilter" class="filter-select" aria-label="اختر الكلية">
                         <option value="all">جميع الكليات</option>
@@ -531,7 +568,7 @@
                 </div>
 
                 <div class="filter-actions">
-                    <button class="btn-reset-filters" id="resetFilters">إعادة تعيين</button>
+                    <button class="btn-reset-filters" id="resetFilters" type="button">إعادة تعيين</button>
                 </div>
             </div>
 
@@ -541,7 +578,7 @@
                 <div class="active-filters" id="activeFilterTags"></div>
             </div>
         </div>
-
+    
         <main id="contentArea" role="main" aria-live="polite" aria-busy="true" aria-label="محتوى الصفحة الرئيسية">
             <!-- Shimmer skeleton shown while async data loads. JS replaces this on ready. -->
             <div class="skeleton-grid" id="skeletonLoader" aria-hidden="true">
@@ -596,9 +633,8 @@
 
         <footer class="watermark" role="contentinfo">
             <p>
-                صُنع بواسطة
                 <a href="https://portfolio-of-belal.vercel.app/" target="_blank" rel="noopener noreferrer"
-                    aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">بلال عمرو</a> |
+                    aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">المطور</a> |
                 <a href="privacy-policy.html">سياسة الخصوصية</a> | <a href="terms-of-service.html">شروط الخدمة</a>
             </p>
         </footer>

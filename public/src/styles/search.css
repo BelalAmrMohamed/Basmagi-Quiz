@@ -94,13 +94,6 @@
   max-width: 420px;
 }
 
-.search-bar:focus-within {
-  border-color: var(--color-primary, #0088cc);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.06),
-    0 0 0 3px var(--color-primary-light, rgba(0, 136, 204, 0.1));
-}
-
 .search-icon {
   width: 16px;
   height: 16px;
@@ -132,7 +125,6 @@
   font-weight: 400;
 }
 
-.search-clear,
 .search-close,
 .search-filters-toggle {
   display: flex;
@@ -153,21 +145,19 @@
   line-height: 1;
 }
 
-.search-clear:hover,
 .search-close:hover,
 .search-filters-toggle:hover {
   background: var(--color-background-secondary, #f5f5f5);
   color: var(--color-text-primary, #1a1a1a);
 }
 
-.search-clear:focus-visible,
 .search-close:focus-visible,
 .search-filters-toggle:focus-visible {
   outline: 2px solid var(--color-primary, #0088cc);
   outline-offset: 2px;
 }
 
-/* Divider between close and filters buttons */
+/* Divider between the close/clear button and the filters toggle */
 .search-close {
   opacity: 0.7;
   border-left: 1px solid var(--color-border, #e0e0e0);
@@ -180,13 +170,22 @@
   opacity: 1;
 }
 
+/* When there's text to clear, give the merged button a touch more presence
+   so it reads as an active, meaningful action rather than a static close icon. */
+.search-close.mode-clear {
+  opacity: 1;
+  color: var(--color-primary, #0088cc);
+}
+
 .search-filters-toggle.active {
   background: var(--color-primary-light, #e8f0fe);
   color: var(--color-primary, #0088cc);
 }
 
 .filter-icon {
-  font-size: 0.9rem;
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 /* ===========================
@@ -511,7 +510,6 @@
     font-size: 0.82rem;
   }
 
-  .search-clear,
   .search-close,
   .search-filters-toggle {
     width: 24px;
@@ -520,7 +518,8 @@
   }
 
   .filter-icon {
-    font-size: 0.85rem;
+    width: 14px;
+    height: 14px;
   }
 
   .filter-chip {
@@ -564,7 +563,7 @@
   .search-filters,
   .search-results-summary,
   .search-bar,
-  .search-clear,
+  .search-close,
   .search-filters-toggle,
   .filter-chip,
   .filter-tag,

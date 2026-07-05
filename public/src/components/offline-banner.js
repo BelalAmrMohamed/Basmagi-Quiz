@@ -26,6 +26,7 @@ let connectivityCheckInterval = null;
 let probeUrl = "";
 const PROBE_TIMEOUT_MS = 4000;
 let wasOfflineDuringSession = false;
+let bannerResizeObserver = null; // keeps reserved page space in sync with banner height
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -44,6 +45,52 @@ function getOrCreateBanner() {
   return el;
 }
 
+/**
+ * The banner is `position: fixed`, so it sits on top of the page rather
+ * than taking up layout space. Left alone, that means it permanently
+ * overlaps whatever is at the bottom of the page (e.g. a footer with
+ * privacy/terms links) and the page can't be scrolled far enough to
+ * reveal the content underneath it.
+ *
+ * To fix that, whenever the banner is visible we measure its real
+ * rendered height and reserve that much space at the bottom of the page
+ * via `body` padding, so the footer is pushed up above the banner instead
+ * of being hidden behind it.
+ */
+function reserveBannerSpace() {
+  if (!banner) return;
+  const height = banner.getBoundingClientRect().height;
+  document.documentElement.style.setProperty(
+    "--offline-banner-height",
+    `${height}px`,
+  );
+}
+
+/** Shows the banner and reserves matching space at the bottom of the page. */
+function showBanner() {
+  banner.classList.add("is-visible");
+  document.body.classList.add("has-offline-banner");
+  reserveBannerSpace();
+
+  // The banner's text can wrap onto a second line on narrow screens, or on
+  // orientation change, which changes its height while it's still visible.
+  // Keep the reserved space in sync so the footer never gets re-covered.
+  if (!bannerResizeObserver && "ResizeObserver" in window) {
+    bannerResizeObserver = new ResizeObserver(reserveBannerSpace);
+    bannerResizeObserver.observe(banner);
+  }
+}
+
+/** Hides the banner and releases the reserved page space. */
+function hideBanner() {
+  banner.classList.remove("is-visible");
+  document.body.classList.remove("has-offline-banner");
+  if (bannerResizeObserver) {
+    bannerResizeObserver.disconnect();
+    bannerResizeObserver = null;
+  }
+}
+
 /** Switches the banner to the offline (amber) state and shows it. */
 function setOffline() {
   wasOfflineDuringSession = true;
@@ -56,10 +103,12 @@ function setOffline() {
 
   banner.innerHTML = `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
 
-  // Use the warning token (amber) — defined in every theme in themes.css
-  banner.style.background = "var(--color-warning, #f59e0b)";
-
-  banner.classList.add("is-visible");
+  // Glass tint is driven by CSS classes now (see offline-banner.css), not an
+  // inline background, so the amber gradient/rim-light can be composited
+  // with the blur instead of painting over it.
+  banner.classList.remove("state-online");
+  banner.classList.add("state-offline");
+  showBanner();
 }
 
 /**
@@ -75,11 +124,14 @@ function setOnline() {
 
   banner.innerHTML = `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
 
-  // Use the success token (green) — defined in every theme in themes.css
-  banner.style.background = "var(--color-success, #10b981)";
+  // Glass tint is driven by CSS classes now (see offline-banner.css), not an
+  // inline background, so the green gradient/rim-light can be composited
+  // with the blur instead of painting over it.
+  banner.classList.remove("state-offline");
+  banner.classList.add("state-online");
 
   // Make sure the banner is visible (it may already be if we were offline)
-  banner.classList.add("is-visible");
+  showBanner();
 
   if (navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({
@@ -92,7 +144,7 @@ function setOnline() {
 
   // Auto-hide after the flash duration
   onlineFlashTimer = setTimeout(() => {
-    banner.classList.remove("is-visible");
+    hideBanner();
     onlineFlashTimer = null;
   }, ONLINE_FLASH_DURATION);
 }
@@ -127,7 +179,7 @@ async function updateBannerState({ isInitialCheck = false } = {}) {
       setOnline();
     } else if (isInitialCheck && banner) {
       // Normal fresh online load: keep banner hidden.
-      banner.classList.remove("is-visible");
+      hideBanner();
     }
   } else {
     setOffline();

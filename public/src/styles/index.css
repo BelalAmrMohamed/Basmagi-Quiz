@@ -2163,7 +2163,7 @@ Container
    ============================================================================ */
 .watermark {
   text-align: center;
-  margin-top: 80px;
+  margin-top: 40px;
   padding-top: 40px;
   border-top: 1px solid var(--color-border-light);
   font-size: 0.8rem;
@@ -2750,6 +2750,9 @@ Container
     border-top: 0;
     padding-top: 0;
     margin-top: 0;
+
+    /* Leave area for the `course-info-btn` button */
+    margin-right: 40px;
   }
 }
 
@@ -2824,58 +2827,13 @@ Container
    Responsive adjustments
    ============================================================================ */
 @media (max-width: 768px) {
-  .faculty-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-  }
-
-  .faculty-option {
-    padding: 20px 12px;
-  }
-
-  .faculty-option .faculty-icon {
-    font-size: 2rem;
-  }
-
-  .year-pill {
-    padding: 14px 24px;
-    font-size: 1rem;
-  }
-
-  .term-btn {
-    padding: 16px 20px;
-    font-size: 1.1rem;
+  .watermark {
+    margin-bottom: 20px;
+    padding-top: 20px;
   }
 
   .watermark p {
     font-size: small;
-  }
-}
-
-@media (max-width: 480px) {
-  .faculty-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .faculty-option .faculty-name {
-    font-size: 0.85rem;
-  }
-
-  .year-pills {
-    gap: 8px;
-  }
-
-  .year-pill {
-    padding: 12px 20px;
-    font-size: 0.95rem;
-  }
-
-  .term-toggle {
-    gap: 12px;
-  }
-
-  .term-btn {
-    padding: 14px 16px;
   }
 }
 

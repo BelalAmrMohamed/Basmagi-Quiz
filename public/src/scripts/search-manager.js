@@ -25,9 +25,24 @@ export class SearchManager {
       searchQuery: "",
       scope: "all", // 'all' | 'subscribed'
       contentType: "all", // 'all' | 'courses' | 'exams'
+      educationType: "all", // 'all' | 'University' | 'High-School' | 'Middle-School' | 'Primary'
       faculty: "all",
       sortBy: "relevance", // 'relevance' | 'name' | 'recent' | 'progress'
     };
+
+    // Persisted search preferences (separate from one-off search history).
+    // educationType defaults to the user's own profile so results are relevant
+    // out of the box, but the user's explicit choice (once made) always wins
+    // and is remembered across sessions/pages.
+    this.settings = this.loadSearchSettings();
+    if (this.settings.educationType) {
+      this.filters.educationType = this.settings.educationType;
+    } else {
+      const profile = userProfile.getProfile();
+      if (profile && profile.education_type) {
+        this.filters.educationType = profile.education_type;
+      }
+    }
 
     this.searchHistory = this.loadSearchHistory();
     this.debounceTimer = null;
@@ -46,16 +61,28 @@ export class SearchManager {
     this.filteredCourses = coursesData;
     this.categoryTree = categoryTree;
     this.cacheElements();
+    this.syncEducationTypeUI();
     this.bindSearchInput();
     this.bindFilterControls();
-    this.bindClearButton();
     this.bindFilterToggle();
     this.bindHeaderSearchBtn(); // NEW
-    this.bindSearchClose(); // NEW
+    this.bindSearchClose(); // NEW — also handles clearing (merged button)
     this.populateFacultyFilter();
     this.bindResetFilters();
     this.setupKeyboardShortcuts();
     this.updateContextVisibility();
+  }
+
+  /**
+   * Reflects the resolved initial education-type (from saved settings or the
+   * user's profile) onto the filter-chip radios before the user touches them.
+   */
+  syncEducationTypeUI() {
+    document
+      .querySelectorAll('input[name="educationType"]')
+      .forEach((radio) => {
+        radio.checked = radio.value === this.filters.educationType;
+      });
   }
 
   /**
@@ -64,14 +91,14 @@ export class SearchManager {
   cacheElements() {
     this.elements = {
       searchInput: document.getElementById("courseSearch"),
-      searchClear: document.getElementById("searchClear"),
-      searchClose: document.getElementById("searchClose"), // NEW: collapses the bar
+      searchClose: document.getElementById("searchClose"), // merged clear+close button
       headerSearchBtn: document.getElementById("headerSearchBtn"), // NEW: header icon trigger
       filterToggle: document.getElementById("filterToggle"),
       searchFilters: document.getElementById("searchFilters"),
       searchSummary: document.getElementById("searchSummary"),
       resultCount: document.getElementById("resultCount"),
       activeFilterTags: document.getElementById("activeFilterTags"),
+      facultyFilterGroup: document.getElementById("facultyFilterGroup"),
       facultyFilter: document.getElementById("facultyFilter"),
       sortBy: document.getElementById("sortBy"),
       applyFilters: document.getElementById("applyFilters"),
@@ -153,9 +180,7 @@ export class SearchManager {
     if (this.elements.searchInput) {
       this.elements.searchInput.value = "";
     }
-    if (this.elements.searchClear) {
-      this.elements.searchClear.style.display = "none";
-    }
+    this.updateCloseButtonMode("");
     if (this.elements.searchSummary) {
       this.elements.searchSummary.style.display = "none";
     }
@@ -184,10 +209,8 @@ export class SearchManager {
   }
 
   handleSearchInput(query) {
-    // Show/hide clear button
-    if (this.elements.searchClear) {
-      this.elements.searchClear.style.display = query ? "flex" : "none";
-    }
+    // The single close/clear button's behavior depends on whether there's text
+    this.updateCloseButtonMode(query);
 
     // Clear previous debounce timer
     clearTimeout(this.debounceTimer);
@@ -197,6 +220,24 @@ export class SearchManager {
       this.filters.searchQuery = query;
       this.performSearch();
     }, this.searchConfig.debounceDelay);
+  }
+
+  /**
+   * The merged close/clear button (#searchClose) does double duty:
+   *  - text present  → clears the text, keeps the bar open
+   *  - text empty     → closes the whole search bar
+   * This just updates its label/title so it's accessible; the click handler
+   * itself checks the input value at click-time (see bindSearchClose).
+   */
+  updateCloseButtonMode(query) {
+    if (!this.elements.searchClose) return;
+    const hasText = Boolean(query);
+    this.elements.searchClose.setAttribute(
+      "aria-label",
+      hasText ? "مسح البحث" : "إغلاق البحث",
+    );
+    this.elements.searchClose.title = hasText ? "مسح البحث" : "إغلاق البحث";
+    this.elements.searchClose.classList.toggle("mode-clear", hasText);
   }
 
   // ===========================
@@ -236,7 +277,12 @@ export class SearchManager {
       results = this.filterByContentType(results);
     }
 
-    // Apply faculty filter
+    // Apply education-type filter
+    if (this.filters.educationType !== "all") {
+      results = this.filterByEducationType(results);
+    }
+
+    // Apply faculty filter (only meaningful within University results)
     if (this.filters.faculty !== "all") {
       results = this.filterByFaculty(results);
     }
@@ -454,6 +500,16 @@ export class SearchManager {
     });
   }
 
+  filterByEducationType(courses) {
+    return courses.filter((c) => {
+      // Featured is a course-level tag, not an education level — it isn't one
+      // of the choices in the education-type filter, so it's never excluded
+      // by it (mirrors how filterByTrackScope treats Featured).
+      if (c.education_type === "Featured") return true;
+      return c.education_type === this.filters.educationType;
+    });
+  }
+
   filterByFaculty(courses) {
     return courses.filter((c) => c.faculty === this.filters.faculty);
   }
@@ -552,6 +608,19 @@ export class SearchManager {
       });
     });
 
+    // Education-type radio buttons
+    document
+      .querySelectorAll('input[name="educationType"]')
+      .forEach((radio) => {
+        radio.addEventListener("change", (e) => {
+          this.filters.educationType = e.target.value;
+          this.setEducationTypeSetting(e.target.value);
+          this.updateFacultyVisibility();
+          this.performSearch();
+          this.updateActiveFilters();
+        });
+      });
+
     // Faculty filter
     if (this.elements.facultyFilter) {
       this.elements.facultyFilter.addEventListener("change", (e) => {
@@ -574,10 +643,12 @@ export class SearchManager {
   populateFacultyFilter() {
     if (!this.elements.facultyFilter) return;
 
-    // Extract unique faculties from all courses
+    // Extract unique faculties from University-track courses only — faculty
+    // is a University-only concept, so School/Middle/Primary courses (which
+    // never carry a meaningful faculty) shouldn't pollute this list.
     const faculties = new Set();
     this.allCourses.forEach((course) => {
-      if (course.faculty) {
+      if (course.faculty && course.education_type === "University") {
         faculties.add(course.faculty);
       }
     });
@@ -596,11 +667,27 @@ export class SearchManager {
         this.elements.facultyFilter.appendChild(option);
       });
 
-    const profile = userProfile.getProfile();
-    if (profile && profile.education_type && profile.education_type !== "University") {
-      const filterGroup = this.elements.facultyFilter.closest('.filter-group');
-      if (filterGroup) {
-        filterGroup.style.display = 'none';
+    this.updateFacultyVisibility();
+  }
+
+  /**
+   * Faculty only makes sense for University courses (schools don't have
+   * faculties), so the whole filter section is hidden unless the education-
+   * type filter is explicitly set to "University".
+   */
+  updateFacultyVisibility() {
+    const group = this.elements.facultyFilterGroup;
+    if (!group) return;
+
+    const show = this.filters.educationType === "University";
+    group.style.display = show ? "" : "none";
+
+    // If the section is hidden, the faculty filter should not silently keep
+    // narrowing results the user can no longer see or change.
+    if (!show && this.filters.faculty !== "all") {
+      this.filters.faculty = "all";
+      if (this.elements.facultyFilter) {
+        this.elements.facultyFilter.value = "all";
       }
     }
   }
@@ -608,14 +695,6 @@ export class SearchManager {
   // ===========================
   // UI CONTROLS
   // ===========================
-
-  bindClearButton() {
-    if (!this.elements.searchClear) return;
-
-    this.elements.searchClear.addEventListener("click", () => {
-      this.clearSearch();
-    });
-  }
 
   /**
    * NEW: Bind the header icon button that opens the search bar
@@ -633,13 +712,22 @@ export class SearchManager {
   }
 
   /**
-   * NEW: Bind the × close button inside the search bar (collapses bar + resets view)
+   * Bind the single merged close/clear button:
+   *  - if there's text in the input, clear it (bar stays open)
+   *  - if the input is already empty, close the whole search bar
    */
   bindSearchClose() {
     if (!this.elements.searchClose) return;
 
     this.elements.searchClose.addEventListener("click", () => {
-      this.closeSearchBar();
+      const hasText = Boolean(
+        this.elements.searchInput && this.elements.searchInput.value,
+      );
+      if (hasText) {
+        this.clearSearch();
+      } else {
+        this.closeSearchBar();
+      }
     });
   }
 
@@ -713,10 +801,9 @@ export class SearchManager {
   clearSearch() {
     if (this.elements.searchInput) {
       this.elements.searchInput.value = "";
+      this.elements.searchInput.focus();
     }
-    if (this.elements.searchClear) {
-      this.elements.searchClear.style.display = "none";
-    }
+    this.updateCloseButtonMode("");
     this.filters.searchQuery = "";
     // Re-run search with empty query so results show all items again
     this.performSearch();
@@ -752,6 +839,7 @@ export class SearchManager {
       searchQuery: this.filters.searchQuery, // Keep search query
       scope: "all",
       contentType: "all",
+      educationType: "all",
       faculty: "all",
       sortBy: "relevance",
     };
@@ -765,6 +853,12 @@ export class SearchManager {
       radio.checked = radio.value === "all";
     });
 
+    document
+      .querySelectorAll('input[name="educationType"]')
+      .forEach((radio) => {
+        radio.checked = radio.value === "all";
+      });
+
     if (this.elements.facultyFilter) {
       this.elements.facultyFilter.value = "all";
     }
@@ -772,6 +866,8 @@ export class SearchManager {
     if (this.elements.sortBy) {
       this.elements.sortBy.value = "relevance";
     }
+
+    this.updateFacultyVisibility();
 
     // Re-run search with reset filters
     this.performSearch();
@@ -813,6 +909,7 @@ export class SearchManager {
       this.filters.searchQuery.length >= this.searchConfig.minSearchLength ||
       this.filters.scope !== "all" ||
       this.filters.contentType !== "all" ||
+      this.filters.educationType !== "all" ||
       this.filters.faculty !== "all" ||
       this.filters.sortBy !== "relevance"
     );
@@ -833,6 +930,22 @@ export class SearchManager {
       tags.push({ label: "مواد فقط", key: "contentType" });
     } else if (this.filters.contentType === "exams") {
       tags.push({ label: "امتحانات فقط", key: "contentType" });
+    }
+
+    // Education-type filter tag
+    if (this.filters.educationType !== "all") {
+      const educationTypeLabels = {
+        University: "جامعي",
+        "High-School": "ثانوي",
+        "Middle-School": "إعدادي",
+        Primary: "ابتدائي",
+      };
+      tags.push({
+        label:
+          educationTypeLabels[this.filters.educationType] ||
+          this.filters.educationType,
+        key: "educationType",
+      });
     }
 
     // Faculty filter tag
@@ -890,6 +1003,16 @@ export class SearchManager {
             radio.checked = radio.value === "all";
           });
         break;
+      case "educationType":
+        this.filters.educationType = "all";
+        this.setEducationTypeSetting("all");
+        document
+          .querySelectorAll('input[name="educationType"]')
+          .forEach((radio) => {
+            radio.checked = radio.value === "all";
+          });
+        this.updateFacultyVisibility();
+        break;
       case "faculty":
         this.filters.faculty = "all";
         if (this.elements.facultyFilter) {
@@ -906,6 +1029,40 @@ export class SearchManager {
 
     this.performSearch();
     this.updateActiveFilters();
+  }
+
+  // ===========================
+  // SEARCH SETTINGS (persisted preferences)
+  // ===========================
+
+  loadSearchSettings() {
+    try {
+      const raw = localStorage.getItem("quiz_search_settings");
+      return raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      console.error("Error loading search settings:", error);
+      return {};
+    }
+  }
+
+  saveSearchSettings() {
+    try {
+      localStorage.setItem(
+        "quiz_search_settings",
+        JSON.stringify(this.settings),
+      );
+    } catch (error) {
+      console.error("Error saving search settings:", error);
+    }
+  }
+
+  /**
+   * Persist the user's explicit education-type choice so it's remembered
+   * next time they open search, even if their profile changes later.
+   */
+  setEducationTypeSetting(educationType) {
+    this.settings.educationType = educationType;
+    this.saveSearchSettings();
   }
 
   // ===========================
@@ -1039,12 +1196,18 @@ export class SearchManager {
   }
 
   /**
-   * Manually trigger search
+   * Manually trigger search — also used by basmagy.search(query) in the
+   * console. Opens the bar if it's closed so the results are actually visible,
+   * and keeps the merged close/clear button's mode in sync.
    */
   search(query) {
+    if (!this.isBarOpen) {
+      this.openSearchBar();
+    }
     if (this.elements.searchInput) {
       this.elements.searchInput.value = query;
     }
+    this.updateCloseButtonMode(query);
     this.filters.searchQuery = query;
     this.performSearch();
   }
