@@ -1,4 +1,4 @@
-// src/scripts/quiz.js - Performance Optimized
+// src/scripts/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
 import { getManifest } from "./quizManifest.js";
 import { gameEngine } from "../shared/gameEngine.js";
 import {
@@ -972,7 +972,7 @@ async function loadExamModule(config) {
 
   // Resolve the fetch URL.
   // Paths starting with "/" are origin-relative (e.g. "/data/quizzes/...")
-  // Paths starting with "http" are already absolute (DB quizzes).
+  // Paths starting with "http" are already absolute (supabase DB quizzes).
   // Legacy relative paths are resolved against import.meta.url.
   console.log(`[Quiz] Loading exam: ${config.id}`);
   let quizUrl;
