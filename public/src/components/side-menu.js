@@ -374,13 +374,11 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================================
 // CHANGE USERNAME
 // ============================================================================
-import { updateWelcomeMessage } from "../scripts/index.js";
 import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 import { showNotification } from "./notifications.js";
-import { refreshUI } from "../scripts/dashboard.js";
 import { validateUsername } from "../shared/user-name-validation.js";
 
-window.changeUsername = function () {
+window.changeUsername = async function () {
   try {
     const currentName = getFromStorage("username", "User");
     const newName = prompt("أدخل الإسم الجديد", currentName);
@@ -400,10 +398,12 @@ window.changeUsername = function () {
         window.location.pathname.startsWith("/index") ||
         window.location.pathname === "/"
       ) {
+        const { updateWelcomeMessage } = await import("../scripts/index.js");
         updateWelcomeMessage();
       }
       // For the leaderboard name in dashboard page
       else if (window.location.pathname.startsWith("/dashboard")) {
+        const { refreshUI } = await import("../scripts/dashboard.js");
         refreshUI();
       } else if (window.location.pathname.startsWith("/settings")) {
         const settingsNameInput = document.getElementById("settingsName");

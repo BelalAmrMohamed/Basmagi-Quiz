@@ -1026,7 +1026,20 @@ async function init() {
   // decodeURIComponent(null) produces the string "null", which is truthy and
   // bypasses the !examId guard below — leading to a confusing "Exam not found"
   // error.  Guard against null explicitly before decoding.
-  const rawId = params.get("id");
+  //
+  // SSR fallback: Under the /q/:id URL structure, there is no ?id= query
+  // param. The server-side render-quiz function injects a
+  // <meta name="quiz:id" content="…"> tag instead. Fall back to that, then
+  // to extracting the ID from the /q/:id pathname as a last resort.
+  let rawId = params.get("id");
+  if (rawId === null) {
+    const metaEl = document.querySelector('meta[name="quiz:id"]');
+    rawId = metaEl ? metaEl.getAttribute("content") : null;
+  }
+  if (rawId === null) {
+    const pathMatch = window.location.pathname.match(/^\/q\/(.+)/);
+    if (pathMatch) rawId = decodeURIComponent(pathMatch[1]);
+  }
   examId = rawId !== null ? decodeURIComponent(rawId) : null;
 
   // ── Quiz Mode ────────────────────────────────────────────────────────────

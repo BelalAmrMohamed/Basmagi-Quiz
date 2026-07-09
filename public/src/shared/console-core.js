@@ -163,7 +163,8 @@ const LOGO = "منصة إمتحانات بصمجي";
     global.basmagy[name] = fn;
   }
 
-  const BUILD_TAG = 'core@6.0.6';
+  // This should dynamically pull the version from the service-worker, or from the package.json if possible.
+  const BUILD_TAG = 'core@6.0.7';
 
   function printHelp() {
     log.rule('═', 64);

@@ -5,19 +5,20 @@
 !README.md
 !CHANGELOG.MD
 
-# Visula Studio files
+# Local FilesStudio files
+.cursor/
 .vscode/
+.vercel/
+node_modules/
+docs/
+.env*
+.env*.local
 
 # Service Worker cache
 sw-cache/
 
-.vercel/
-.env*.local
 
 # Git files
 .git/
 
-# Node modules
-node_modules/
-
-docs/
+.vercel
