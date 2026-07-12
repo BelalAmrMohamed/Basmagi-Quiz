@@ -13,8 +13,7 @@
   },
   "questions": [
     {
-      "q": "According to the diagram, what happens immediately after bamboo is harvested?",
-      "passage": "The diagram below shows how fabric is manufactured from bamboo.\n\nMain stages: Plant bamboo plants (Spring) → Harvest (Autumn) → Cut into strips → Crush strips (to make liquid pulp) → Filter (separate long fibres from liquid) → Soften fibres (add water and amine oxide) → Spin (to make yarn) → Weave (to make fabric).",
+      "q": "```passage\nThe diagram below shows how fabric is manufactured from bamboo.\n\nMain stages: Plant bamboo plants (Spring) → Harvest (Autumn) → Cut into strips → Crush strips (to make liquid pulp) → Filter (separate long fibres from liquid) → Soften fibres (add water and amine oxide) → Spin (to make yarn) → Weave (to make fabric).\n```\nAccording to the diagram, what happens immediately after bamboo is harvested?",
       "explanation": "After harvesting, the bamboo is cut into strips before being crushed into liquid pulp.",
       "options": [
         "Filter the fibres",
@@ -25,8 +24,7 @@
       "correct": 1
     },
     {
-      "q": "What is the main purpose of the filtering stage?",
-      "passage": "The diagram below shows how fabric is manufactured from bamboo.",
+      "q": "```passage\nThe diagram below shows how fabric is manufactured from bamboo.\n```\nWhat is the main purpose of the filtering stage?",
       "explanation": "The filtering stage separates the long fibres from the liquid pulp.",
       "options": [
         "To soften the fibres",
@@ -59,8 +57,7 @@
       "correct": 1
     },
     {
-      "q": "Which season is associated with planting bamboo plants?",
-      "passage": "The first stage, obviously, consists of planting and growing bamboo plants, usually happening in spring.",
+      "q": "```passage\nThe first stage, obviously, consists of planting and growing bamboo plants, usually happening in spring.\n```\nWhich season is associated with planting bamboo plants?",
       "explanation": "The diagram indicates that bamboo plants are planted in spring.",
       "options": [
         "Winter",
@@ -71,8 +68,7 @@
       "correct": 3
     },
     {
-      "q": "What is the primary purpose of an IELTS Task 1 overview?",
-      "passage": "Example overview:\n\nThe main stages of bamboo fabric production include harvesting bamboo plants, putting them through processes to extract the fibres, then spinning and weaving those fibres to create fabric.",
+      "q": "```passage\nExample overview:\n\nThe main stages of bamboo fabric production include harvesting bamboo plants, putting them through processes to extract the fibres, then spinning and weaving those fibres to create fabric.\n```\nWhat is the primary purpose of an IELTS Task 1 overview?",
       "explanation": "An overview should summarize the key features and major stages rather than describe every detail.",
       "options": [
         "To describe every detail of every stage",
@@ -83,8 +79,7 @@
       "correct": 1
     },
     {
-      "q": "What is the meaning of the word 'influenced' in this context?",
-      "passage": "Many aspects of the way people dress today are influenced by global fashion trends.",
+      "q": "```passage\nMany aspects of the way people dress today are influenced by global fashion trends.\n```\nWhat is the meaning of the word 'influenced' in this context?",
       "explanation": "'Influenced' means 'affected by' or 'having an impact on'. Pronunciation: /ˈɪnfluənst/. Common collocations: heavily influenced, strongly influenced.",
       "options": [
         "ignored by",
@@ -95,8 +90,7 @@
       "correct": 1
     },
     {
-      "q": "Select the synonym closest in meaning to 'a great deal'.",
-      "passage": "Not surprisingly, global fashion has influenced people’s tastes in clothing a great deal.",
+      "q": "```passage\nNot surprisingly, global fashion has influenced people’s tastes in clothing a great deal.\n```\nSelect the synonym closest in meaning to 'a great deal'.",
       "explanation": "'A great deal' means 'to a large extent' or 'very much'.",
       "options": [
         "slightly",
@@ -107,8 +101,7 @@
       "correct": 3
     },
     {
-      "q": "What does the idiom 'looking on the bright side' mean?",
-      "passage": "Looking on the bright side, there’s absolutely no harm in getting advice from the fashion industry on what to wear this season.",
+      "q": "```passage\nLooking on the bright side, there’s absolutely no harm in getting advice from the fashion industry on what to wear this season.\n```\nWhat does the idiom 'looking on the bright side' mean?",
       "explanation": "'Looking on the bright side' means focusing on the positive aspects of a situation. Common collocation: look on the bright side.",
       "options": [
         "Ignoring a problem",
@@ -130,8 +123,7 @@
       "correct": 2
     },
     {
-      "q": "According to the response, which factor is NOT mentioned as influencing fashion choices?",
-      "passage": "The response mentions celebrities on TV and the Internet, famous icons like Marilyn Monroe, and fashion designers as influences on people's clothing choices.",
+      "q": "```passage\nThe response mentions celebrities on TV and the Internet, famous icons like Marilyn Monroe, and fashion designers as influences on people's clothing choices.\n```\nAccording to the response, which factor is NOT mentioned as influencing fashion choices?",
       "explanation": "Government regulations are not mentioned as a factor influencing fashion choices.",
       "options": [
         "Celebrities",
@@ -142,8 +134,7 @@
       "correct": 3
     },
     {
-      "q": "Which IELTS Speaking Part 2 skill is primarily being tested by this cue card?",
-      "passage": "Describe a time when you had a long discussion about a news story.\n\nYou should say:\n• what the news story was about\n• who you discussed this news story with\n• what people’s opinions were\n• and explain why you had such a long discussion about this news story.",
+      "q": "```passage\nDescribe a time when you had a long discussion about a news story.\n\nYou should say:\n• what the news story was about\n• who you discussed this news story with\n• what people’s opinions were\n• and explain why you had such a long discussion about this news story.\n```\nWhich IELTS Speaking Part 2 skill is primarily being tested by this cue card?",
       "explanation": "Speaking Part 2 requires candidates to describe and develop a personal experience with relevant details and explanations.",
       "options": [
         "Describing a personal experience in detail",

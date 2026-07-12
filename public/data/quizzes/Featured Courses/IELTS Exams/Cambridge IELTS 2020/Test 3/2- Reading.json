@@ -13,8 +13,7 @@
   },
   "questions": [
     {
-      "q": "Q1 – Note Completion: People conserved the nutritional value of ___ using a method of freezing then drying. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"Two thousand years ago, the inhabitants of South America's Andean mountains had a unique means of conserving potatoes for later consumption. They froze them overnight, then trampled them to squeeze out the moisture, then dried them in the sun. This preserved their nutritional value—if not their aesthetic appeal.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"Two thousand years ago, the inhabitants of South America's Andean mountains had a unique means of conserving potatoes for later consumption. They froze them overnight, then trampled them to squeeze out the moisture, then dried them in the sun. This preserved their nutritional value—if not their aesthetic appeal.\"\n```\nQ1 – Note Completion: People conserved the nutritional value of ___ using a method of freezing then drying. (ONE WORD ONLY)",
       "explanation": "The passage explicitly states that the Andean people preserved **potatoes** by freezing, trampling to remove moisture, then sun-drying. 'Potatoes' is the exact one-word answer. \n\n📌 **Collocation tip:** *conserve nutritional value* = to keep the health benefits of food intact.",
       "options": [
         "potatoes",
@@ -25,8 +24,7 @@
       "correct": 0
     },
     {
-      "q": "Q2 – Note Completion: ___ was kept cool by ice during transportation in specially adapted trains. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1851, railroads first began putting blocks of ice in insulated rail cars to send butter from Ogdensburg, New York, to Boston.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1851, railroads first began putting blocks of ice in insulated rail cars to send butter from Ogdensburg, New York, to Boston.\"\n```\nQ2 – Note Completion: ___ was kept cool by ice during transportation in specially adapted trains. (ONE WORD ONLY)",
       "explanation": "The passage clearly states that **butter** was transported from Ogdensburg to Boston in insulated rail cars packed with ice blocks in 1851.\n\n📌 **Vocabulary note:** *insulated* /ˈɪn.sjʊ.leɪ.tɪd/ = protected from temperature change by special material.",
       "options": [
         "Butter",
@@ -37,8 +35,7 @@
       "correct": 0
     },
     {
-      "q": "Q3 – Note Completion: Two kinds of ___ were the first frozen food shipped to England. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1880, a shipment of Australian beef and mutton was sent, frozen, to England.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1880, a shipment of Australian beef and mutton was sent, frozen, to England.\"\n```\nQ3 – Note Completion: Two kinds of ___ were the first frozen food shipped to England. (ONE WORD ONLY)",
       "explanation": "The passage mentions **beef** and **mutton** — both types of **meat** — were shipped frozen from Australia to England in 1880. The note requires the category word that covers both items.\n\n📌 **Vocabulary:** *mutton* /ˈmʌt.ən/ = meat from an adult sheep. *beef* /biːf/ = meat from a cow.",
       "options": [
         "meat",
@@ -49,8 +46,7 @@
       "correct": 0
     },
     {
-      "q": "Q4 – Note Completion: Clarence Birdseye developed quick-freezing methods, so that ___ did not spoil the food. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"During the freezing process, crystals formed within the cells of the food, and when the ice expanded and the cells burst, this spoilt the flavor and texture of the food.\"\n\n\"Birdseye was responsible for several key innovations that made the frozen food industry possible. He developed quick-freezing techniques that reduced the damage that crystals caused...\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"During the freezing process, crystals formed within the cells of the food, and when the ice expanded and the cells burst, this spoilt the flavor and texture of the food.\"\n\n\"Birdseye was responsible for several key innovations that made the frozen food industry possible. He developed quick-freezing techniques that reduced the damage that crystals caused...\"\n```\nQ4 – Note Completion: Clarence Birdseye developed quick-freezing methods, so that ___ did not spoil the food. (ONE WORD ONLY)",
       "explanation": "The passage states that ice **crystals** formed during freezing would burst food cells, damaging flavor and texture. Birdseye's quick-freezing techniques specifically reduced the damage caused by **crystals**.\n\n📌 **Phonetics:** *crystals* /ˈkrɪs.təlz/ — plural noun. Common collocation: *ice crystals*.",
       "options": [
         "crystals",
@@ -61,8 +57,7 @@
       "correct": 0
     },
     {
-      "q": "Q5 – Note Completion: Birdseye introduced packaging products with ___, so the product was visible. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"He also introduced the use of cellophane, the first transparent material for food packaging, which allowed consumers to see the quality of the product.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"He also introduced the use of cellophane, the first transparent material for food packaging, which allowed consumers to see the quality of the product.\"\n```\nQ5 – Note Completion: Birdseye introduced packaging products with ___, so the product was visible. (ONE WORD ONLY)",
       "explanation": "The passage states Birdseye introduced **cellophane** — the first *transparent* material for food packaging — allowing consumers to see the product's quality.\n\n📌 **Vocabulary:** *cellophane* /ˈsel.ə.feɪn/ = thin, clear wrapping material. *transparent* = see-through.",
       "options": [
         "cellophane",
@@ -73,8 +68,7 @@
       "correct": 0
     },
     {
-      "q": "Q6 – Note Completion: Frozen food became popular in the early 1940s because of a shortage of ___. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"Sales increased in the early 1940s, when World War II gave a boost to the frozen food industry because tin was being used for munitions. Canned foods were rationed to save tin for the war effort, while frozen foods were abundant and cheap.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"Sales increased in the early 1940s, when World War II gave a boost to the frozen food industry because tin was being used for munitions. Canned foods were rationed to save tin for the war effort, while frozen foods were abundant and cheap.\"\n```\nQ6 – Note Completion: Frozen food became popular in the early 1940s because of a shortage of ___. (ONE WORD ONLY)",
       "explanation": "During WWII, **tin** was redirected for making munitions (weapons/ammunition). This caused canned goods to be rationed, making frozen food the more accessible alternative.\n\n📌 **Vocabulary:** *rationed* /ˈræʃ.ənd/ = officially limited in supply. *munitions* /mjuːˈnɪʃ.ənz/ = military weapons and ammunition.",
       "options": [
         "tin",
@@ -85,8 +79,7 @@
       "correct": 0
     },
     {
-      "q": "Q7 – Note Completion: In the 1950s, a large number of homes now had a ___. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"Finally, by the 1950s, refrigerator technology had developed far enough to make these appliances affordable for the average family. By 1953, 33 million US families owned a refrigerator...\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"Finally, by the 1950s, refrigerator technology had developed far enough to make these appliances affordable for the average family. By 1953, 33 million US families owned a refrigerator...\"\n```\nQ7 – Note Completion: In the 1950s, a large number of homes now had a ___. (ONE WORD ONLY)",
       "explanation": "The passage states that by 1953, **33 million** US families owned a **refrigerator**, marking the widespread adoption of home refrigeration.\n\n📌 **Phonetics:** *refrigerator* /rɪˈfrɪdʒ.ər.eɪ.tər/ — informal short form: *fridge* /frɪdʒ/.",
       "options": [
         "refrigerator",
@@ -97,8 +90,7 @@
       "correct": 0
     },
     {
-      "q": "Q8 – True/False/Not Given: The ice transportation business made some Boston ship owners very wealthy in the early 1800s.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"In the early 1800s, ship owners from Boston, USA, had enormous blocks of Arctic ice towed all over the Atlantic for the purpose of food preservation.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"In the early 1800s, ship owners from Boston, USA, had enormous blocks of Arctic ice towed all over the Atlantic for the purpose of food preservation.\"\n```\nQ8 – True/False/Not Given: The ice transportation business made some Boston ship owners very wealthy in the early 1800s.",
       "explanation": "The passage mentions Boston ship owners transported Arctic ice but says **nothing about whether this made them wealthy**. Since there is no information provided about their financial gains, the answer is **NOT GIVEN**.\n\n📌 **Exam tip:** NOT GIVEN ≠ False. It simply means the text neither confirms nor contradicts the statement.",
       "options": [
         "TRUE",
@@ -108,8 +100,7 @@
       "correct": 2
     },
     {
-      "q": "Q9 – True/False/Not Given: A disadvantage of the freezing process invented in Australia was that it affected the taste of food.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"While the food frozen this way was still palatable, there was some deterioration. During the freezing process, crystals formed within the cells of the food, and when the ice expanded and the cells burst, this spoilt the flavor and texture of the food.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"While the food frozen this way was still palatable, there was some deterioration. During the freezing process, crystals formed within the cells of the food, and when the ice expanded and the cells burst, this spoilt the flavor and texture of the food.\"\n```\nQ9 – True/False/Not Given: A disadvantage of the freezing process invented in Australia was that it affected the taste of food.",
       "explanation": "The passage confirms this is **TRUE** — it states the early freezing process caused crystals to form and burst food cells, which *spoilt the flavor and texture*. **Flavor** relates directly to **taste**.\n\n📌 **Vocabulary:** *palatable* /ˈpæl.ə.tə.bəl/ = acceptable in taste. *deterioration* /dɪˌtɪə.ri.əˈreɪ.ʃən/ = decline in quality.",
       "options": [
         "TRUE",
@@ -119,8 +110,7 @@
       "correct": 0
     },
     {
-      "q": "Q10 – True/False/Not Given: Clarence Birdseye travelled to Labrador in order to learn how the Inuit people froze fish.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1912, a biology student in Massachusetts, USA, named Clarence Birdseye, ran out of money and went to Labrador in Canada to trap and trade furs. While he was there, he became fascinated with how the Inuit would quickly freeze fish in the Arctic air.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"In 1912, a biology student in Massachusetts, USA, named Clarence Birdseye, ran out of money and went to Labrador in Canada to trap and trade furs. While he was there, he became fascinated with how the Inuit would quickly freeze fish in the Arctic air.\"\n```\nQ10 – True/False/Not Given: Clarence Birdseye travelled to Labrador in order to learn how the Inuit people froze fish.",
       "explanation": "This is **FALSE**. Birdseye went to Labrador to **trap and trade furs** (because he ran out of money) — learning about Inuit fish-freezing was a secondary discovery, not his original purpose.\n\n📌 **Exam tip:** Watch for statements that distort the *reason* or *purpose* of an event. The destination is correct, but the motivation stated in Q10 is wrong.",
       "options": [
         "TRUE",
@@ -130,8 +120,7 @@
       "correct": 1
     },
     {
-      "q": "Q11 – True/False/Not Given: Swanson Foods invested a great deal of money in the promotion of the TV Dinner.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"1950s families were also looking for convenience at mealtimes, so the moment was right for the arrival of the 'TV Dinner'. Swanson Foods was a large, nationally recognized producer of canned and frozen poultry. In 1954, the company adapted some of Birdseye's freezing techniques, and with the help of a clever name and a **huge advertising budget**, it launched the first 'TV Dinner'.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"1950s families were also looking for convenience at mealtimes, so the moment was right for the arrival of the 'TV Dinner'. Swanson Foods was a large, nationally recognized producer of canned and frozen poultry. In 1954, the company adapted some of Birdseye's freezing techniques, and with the help of a clever name and a **huge advertising budget**, it launched the first 'TV Dinner'.\"\n```\nQ11 – True/False/Not Given: Swanson Foods invested a great deal of money in the promotion of the TV Dinner.",
       "explanation": "**TRUE.** The passage explicitly states Swanson used a *huge advertising budget* to launch the TV Dinner. 'Invested a great deal of money in promotion' is a paraphrase of this.\n\n📌 **Paraphrase recognition:** *huge advertising budget* = *invested a great deal of money in promotion*. This is a key IELTS reading skill.",
       "options": [
         "TRUE",
@@ -141,8 +130,7 @@
       "correct": 0
     },
     {
-      "q": "Q12 – True/False/Not Given: Swanson Foods developed a new style of container for the launch of the TV Dinner.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"This consisted of frozen turkey, potatoes and vegetables served in the same segmented aluminum tray that was used by airlines.\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"This consisted of frozen turkey, potatoes and vegetables served in the same segmented aluminum tray that was used by airlines.\"\n```\nQ12 – True/False/Not Given: Swanson Foods developed a new style of container for the launch of the TV Dinner.",
       "explanation": "**FALSE.** The passage says the segmented aluminum tray used was *the same* as those used by airlines — meaning it was **not a new invention** by Swanson Foods.\n\n📌 **Key word:** *same* — this word directly contradicts 'new style of container' in the question.",
       "options": [
         "TRUE",
@@ -152,8 +140,7 @@
       "correct": 1
     },
     {
-      "q": "Q13 – True/False/Not Given: The US frozen food industry is currently the largest in the world.",
-      "passage": "Read the following passage from **Passage 1 – Frozen Food**:\n\n\"Today, the US frozen food industry has a turnover of over $67 billion annually...\"",
+      "q": "```passage\nRead the following passage from **Passage 1 – Frozen Food**:\n\n\"Today, the US frozen food industry has a turnover of over $67 billion annually...\"\n```\nQ13 – True/False/Not Given: The US frozen food industry is currently the largest in the world.",
       "explanation": "**NOT GIVEN.** While the passage provides impressive revenue figures for the US frozen food industry ($67 billion), it makes **no comparison** with other countries' industries. Therefore, we cannot determine if it is the *largest in the world*.\n\n📌 **Exam trap:** Large numbers may imply dominance, but the text must *explicitly state* a comparison for it to be TRUE.",
       "options": [
         "TRUE",
@@ -163,8 +150,7 @@
       "correct": 2
     },
     {
-      "q": "Q14 – Heading Match: Choose the best heading for Section A of Passage 2.",
-      "passage": "Read the following passage from **Passage 2 – Can the planet's coral reefs be saved?** (Section A):\n\n\"Conservationists have put the final touches to a giant artificial reef they have been assembling at the world-renowned Zoological Society of London (London Zoo)... 'Coral reefs are the most diverse ecosystems on Earth and we want to show people how wonderful they are,' said Paul Pearce-Kelly... 'However, we also want to highlight the research and conservation efforts that are now being carried out to try to save them from the threat of global warming.'\"",
+      "q": "```passage\nRead the following passage from **Passage 2 – Can the planet's coral reefs be saved?** (Section A):\n\n\"Conservationists have put the final touches to a giant artificial reef they have been assembling at the world-renowned Zoological Society of London (London Zoo)... 'Coral reefs are the most diverse ecosystems on Earth and we want to show people how wonderful they are,' said Paul Pearce-Kelly... 'However, we also want to highlight the research and conservation efforts that are now being carried out to try to save them from the threat of global warming.'\"\n```\nQ14 – Heading Match: Choose the best heading for Section A of Passage 2.",
       "explanation": "Section A describes **two goals**: (1) to show people how wonderful coral reefs are, and (2) to highlight conservation efforts. This matches heading **v. Two clear educational goals**.\n\n📌 **Strategy:** Identify the *main purpose* of each section rather than focusing on specific details.",
       "options": [
         "v. Two clear educational goals",
@@ -175,8 +161,7 @@
       "correct": 0
     },
     {
-      "q": "Q15 – Heading Match: Choose the best heading for Section B of Passage 2.",
-      "passage": "Read the following passage from **Passage 2** (Section B):\n\n\"Corals are composed of tiny animals, known as polyps, with tentacles for capturing small marine creatures in the sea water. These polyps are transparent but get their brilliant tones of pink, orange, blue, green, etc. from algae that live within them, which in turn get protection, while their photosynthesising of the sun's rays provides nutrients for the polyps.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section B):\n\n\"Corals are composed of tiny animals, known as polyps, with tentacles for capturing small marine creatures in the sea water. These polyps are transparent but get their brilliant tones of pink, orange, blue, green, etc. from algae that live within them, which in turn get protection, while their photosynthesising of the sun's rays provides nutrients for the polyps.\"\n```\nQ15 – Heading Match: Choose the best heading for Section B of Passage 2.",
       "explanation": "Section B describes the **symbiotic relationship** between coral polyps and algae — polyps provide shelter; algae provide nutrients and colour. This mutual *cooperation* underwater matches heading **ii. Cooperation beneath the waves**.\n\n📌 **Vocabulary:** *symbiotic* /ˌsɪm.baɪˈɒt.ɪk/ = mutually beneficial relationship between two organisms.",
       "options": [
         "ii. Cooperation beneath the waves",
@@ -187,8 +172,7 @@
       "correct": 0
     },
     {
-      "q": "Q16 – Heading Match: Choose the best heading for Section C of Passage 2.",
-      "passage": "Read the following passage from **Passage 2** (Section C):\n\n\"As a result, coral reefs are often described as the 'rainforests of the sea', though the comparison is dismissed by some naturalists, including David Attenborough. 'People say you cannot beat the rainforest,' Attenborough has stated. 'But that is simply not true...'\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section C):\n\n\"As a result, coral reefs are often described as the 'rainforests of the sea', though the comparison is dismissed by some naturalists, including David Attenborough. 'People say you cannot beat the rainforest,' Attenborough has stated. 'But that is simply not true...'\"\n```\nQ16 – Heading Match: Choose the best heading for Section C of Passage 2.",
       "explanation": "Section C focuses on the disputed phrase *'rainforests of the sea'* — some use it, but naturalists like Attenborough disagree with the comparison. This matches heading **iv. Disagreement about the accuracy of a certain phrase**.\n\n📌 **Vocabulary:** *dismissed* = rejected or refused to accept as valid.",
       "options": [
         "iv. Disagreement about the accuracy of a certain phrase",
@@ -199,8 +183,7 @@
       "correct": 0
     },
     {
-      "q": "Q17 – Heading Match: Choose the best heading for Section D of Passage 2.",
-      "passage": "Read the following passage from **Passage 2** (Section D):\n\n\"Unfortunately, these majestic sights are now under very serious threat... Rising ocean temperatures are triggering bleaching events... scientists advise that more than 90% of reefs could be lost by 2050 unless urgent action is taken to tackle global heating and greenhouse gas emissions.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section D):\n\n\"Unfortunately, these majestic sights are now under very serious threat... Rising ocean temperatures are triggering bleaching events... scientists advise that more than 90% of reefs could be lost by 2050 unless urgent action is taken to tackle global heating and greenhouse gas emissions.\"\n```\nQ17 – Heading Match: Choose the best heading for Section D of Passage 2.",
       "explanation": "Section D presents multiple **threats** to coral reefs — thermal stress, acidification, pollution, and the prediction that 90% could be lost by 2050. This matches heading **vii. A warning of further trouble ahead**.\n\n📌 **Vocabulary:** *bleaching* = when coral loses its colour and weakens due to stress (especially heat).",
       "options": [
         "vii. A warning of further trouble ahead",
@@ -211,8 +194,7 @@
       "correct": 0
     },
     {
-      "q": "Q18 – Heading Match: Choose the best heading for Section E of Passage 2.",
-      "passage": "Read the following passage from **Passage 2** (Section E):\n\n\"However, scientists are trying to pinpoint hardy types of coral that could survive our overheated oceans... One aim will be to carry out research on species to find those that can survive best in warm, acidic waters. Another will be to try to increase coral breeding rates.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section E):\n\n\"However, scientists are trying to pinpoint hardy types of coral that could survive our overheated oceans... One aim will be to carry out research on species to find those that can survive best in warm, acidic waters. Another will be to try to increase coral breeding rates.\"\n```\nQ18 – Heading Match: Choose the best heading for Section E of Passage 2.",
       "explanation": "Section E describes active scientific **research efforts** to find heat-resistant coral and increase breeding rates — direct attempts to address the damage. This matches heading **iii. Working to lessen the problems**.\n\n📌 **Vocabulary:** *pinpoint* = to identify precisely. *hardy* /ˈhɑː.di/ = strong, able to survive difficult conditions.",
       "options": [
         "iii. Working to lessen the problems",
@@ -223,8 +205,7 @@
       "correct": 0
     },
     {
-      "q": "Q19 – Heading Match: Choose the best heading for Section F of Passage 2.",
-      "passage": "Read the following passage from **Passage 2** (Section F):\n\n\"'The crucial point is that the progress we make in making coral better able to survive in a warming world can be shown to the public and encourage them to believe that we can do something to save the planet's reefs,' said Pearce-Kelly.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section F):\n\n\"'The crucial point is that the progress we make in making coral better able to survive in a warming world can be shown to the public and encourage them to believe that we can do something to save the planet's reefs,' said Pearce-Kelly.\"\n```\nQ19 – Heading Match: Choose the best heading for Section F of Passage 2.",
       "explanation": "Section F emphasises that scientific progress should be shared with the public to **inspire hope** and belief that reefs can be saved. This matches heading **vi. Promoting hope**.\n\n📌 **Exam tip:** Look for the *emotional tone* of a section — Section F is optimistic and forward-looking, pointing clearly to 'hope'.",
       "options": [
         "vi. Promoting hope",
@@ -235,8 +216,7 @@
       "correct": 0
     },
     {
-      "q": "Q20–21 – Multiple Choice: Which TWO causes of damage to coral reefs are mentioned in Passage 2? Choose TWO letters.",
-      "passage": "Read the following passage from **Passage 2** (Section D):\n\n\"Other menaces include ocean acidification, sea level increase, **pollution by humans**, deoxygenation and **ocean current changes**, while the climate crisis is also increasing habitat destruction.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section D):\n\n\"Other menaces include ocean acidification, sea level increase, **pollution by humans**, deoxygenation and **ocean current changes**, while the climate crisis is also increasing habitat destruction.\"\n```\nQ20–21 – Multiple Choice: Which TWO causes of damage to coral reefs are mentioned in Passage 2? Choose TWO letters.",
       "explanation": "The correct answers are **C** and **E**.\n\n- **C** = *pollution by humans* → contamination of the sea from waste ✓\n- **E** = *ocean current changes* → alterations in the usual flow of water ✓\n\nOptions A, B, and D are **not mentioned** in the passage.\n\n📌 **Paraphrase recognition:**\n- *pollution by humans* → *contamination from waste*\n- *ocean current changes* → *alterations in the usual flow of water*",
       "options": [
         "A. A rising number of extreme storms",
@@ -248,8 +228,7 @@
       "correct": 2
     },
     {
-      "q": "Q22–23 – Multiple Choice: Which TWO statements are true of the researchers at London Zoo? Choose TWO letters.",
-      "passage": "Read the following passage from **Passage 2** (Section E):\n\n\"One aim will be to carry out research on species to find those that can survive best in warm, acidic waters. Another will be to try to increase coral breeding rates. 'Coral spawn just once a year,' he added. 'However, aquarium-based research has enabled some corals to spawn artificially...'\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section E):\n\n\"One aim will be to carry out research on species to find those that can survive best in warm, acidic waters. Another will be to try to increase coral breeding rates. 'Coral spawn just once a year,' he added. 'However, aquarium-based research has enabled some corals to spawn artificially...'\"\n```\nQ22–23 – Multiple Choice: Which TWO statements are true of the researchers at London Zoo? Choose TWO letters.",
       "explanation": "The correct answers are **B** and **D**.\n\n- **B** = Finding species that *survive best in warm, acidic waters* → identifying corals that cope with changed sea conditions ✓\n- **D** = *Increasing coral breeding rates* + *enabling corals to spawn artificially* → speeding up reproduction ✓\n\nOptions A, C, and E are **not supported** by the text.\n\n📌 **Vocabulary:** *spawn* /spɔːn/ = to reproduce (used for fish, coral, and other aquatic creatures).",
       "options": [
         "A. They are hoping to expand the numbers of different corals being bred in laboratories.",
@@ -261,8 +240,7 @@
       "correct": 1
     },
     {
-      "q": "Q24 – Sentence Completion: Corals have a number of ___ which they use to collect their food. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 2** (Section B):\n\n\"Corals are composed of tiny animals, known as polyps, with **tentacles** for capturing small marine creatures in the sea water.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section B):\n\n\"Corals are composed of tiny animals, known as polyps, with **tentacles** for capturing small marine creatures in the sea water.\"\n```\nQ24 – Sentence Completion: Corals have a number of ___ which they use to collect their food. (ONE WORD ONLY)",
       "explanation": "The passage states polyps have **tentacles** for *capturing* small marine creatures — this is how they collect their food.\n\n📌 **Phonetics:** *tentacles* /ˈten.tə.kəlz/ — plural noun. \n**Collocation:** *tentacles for capturing prey*.",
       "options": [
         "tentacles",
@@ -273,8 +251,7 @@
       "correct": 0
     },
     {
-      "q": "Q25 – Sentence Completion: Algae gain ___ from being inside the coral. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 2** (Section B):\n\n\"These polyps are transparent but get their brilliant tones... from algae that live within them, which in turn get **protection**, while their photosynthesising of the sun's rays provides nutrients for the polyps.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section B):\n\n\"These polyps are transparent but get their brilliant tones... from algae that live within them, which in turn get **protection**, while their photosynthesising of the sun's rays provides nutrients for the polyps.\"\n```\nQ25 – Sentence Completion: Algae gain ___ from being inside the coral. (ONE WORD ONLY)",
       "explanation": "The passage explicitly states that algae *get protection* from living inside the polyps, while in return they provide nutrients and colour.\n\n📌 **Grammar note:** The sentence structure mirrors the passive benefit: algae *gain* protection = coral *gives* protection to algae.",
       "options": [
         "protection",
@@ -285,8 +262,7 @@
       "correct": 0
     },
     {
-      "q": "Q26 – Sentence Completion: Increases in the warmth of the sea water can remove the ___ from coral. (ONE WORD ONLY)",
-      "passage": "Read the following passage from **Passage 2** (Section D):\n\n\"Rising ocean temperatures are triggering bleaching events that strip reefs of their **colour** and eventually kill them.\"",
+      "q": "```passage\nRead the following passage from **Passage 2** (Section D):\n\n\"Rising ocean temperatures are triggering bleaching events that strip reefs of their **colour** and eventually kill them.\"\n```\nQ26 – Sentence Completion: Increases in the warmth of the sea water can remove the ___ from coral. (ONE WORD ONLY)",
       "explanation": "The passage states that bleaching events — caused by rising temperatures — *strip reefs of their colour*. So increased sea warmth removes the **colour** from coral.\n\n📌 **Vocabulary:** *bleaching* = loss of colour caused by thermal stress. When algae leave the coral, it turns white (loses colour) and eventually dies.",
       "options": [
         "colour",
@@ -297,8 +273,7 @@
       "correct": 0
     },
     {
-      "q": "Q30 – Expert Matching: 'We may have to start considering whether we are treating robots fairly.' — Which expert expressed this view?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Rees mentions robots that are advanced enough to beat humans at chess, but then goes on to say, 'Robots are still limited in their ability to sense their environment... Later this century, however, their more advanced successors may relate to their surroundings, and to people, as adeptly as we do. Moral questions then arise... Should we feel guilty about exploiting [sophisticated robots]? Should we fret if they are underemployed, frustrated, or bored?'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Rees mentions robots that are advanced enough to beat humans at chess, but then goes on to say, 'Robots are still limited in their ability to sense their environment... Later this century, however, their more advanced successors may relate to their surroundings, and to people, as adeptly as we do. Moral questions then arise... Should we feel guilty about exploiting [sophisticated robots]? Should we fret if they are underemployed, frustrated, or bored?'\"\n```\nQ30 – Expert Matching: 'We may have to start considering whether we are treating robots fairly.' — Which expert expressed this view?",
       "explanation": "**A. Martin Rees** raises the moral question of whether it is fair to exploit robots, and whether we should feel guilty if they are underemployed or bored. This directly reflects considering fair treatment of robots.\n\n📌 **Vocabulary:** *exploit* /ɪkˈsplɔɪt/ = to use unfairly for one's own benefit. *adeptly* /əˈdept.li/ = very skillfully.",
       "options": [
         "A. Martin Rees",
@@ -308,8 +283,7 @@
       "correct": 0
     },
     {
-      "q": "Q29 – Expert Matching: 'It will take many decades for robot intelligence to be as imaginative as human intelligence.' — Which expert expressed this view?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Wolpert's response to the question about machine intelligence outstripping human intelligence was this: '...Expecting a machine close to the creative intelligence of a human within the next 50 years would be highly ambitious.'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Wolpert's response to the question about machine intelligence outstripping human intelligence was this: '...Expecting a machine close to the creative intelligence of a human within the next 50 years would be highly ambitious.'\"\n```\nQ29 – Expert Matching: 'It will take many decades for robot intelligence to be as imaginative as human intelligence.' — Which expert expressed this view?",
       "explanation": "**B. Daniel Wolpert** states that expecting machines to match human *creative intelligence* within 50 years is 'highly ambitious' — meaning it is very unlikely to happen that quickly. This paraphrases 'will take many decades.'\n\n📌 **Paraphrase:** *within 50 years would be highly ambitious* → *will take many decades*.",
       "options": [
         "A. Martin Rees",
@@ -319,8 +293,7 @@
       "correct": 1
     },
     {
-      "q": "Q33 – Expert Matching: 'There are those who look forward to robots developing greater intelligence.' — Which expert expressed this view?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson believes that our fear of machines becoming too advanced has more to do with human nature than anything intrinsic to the machines themselves... 'Not all fear [robots]; many people welcome machine intelligence.'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson believes that our fear of machines becoming too advanced has more to do with human nature than anything intrinsic to the machines themselves... 'Not all fear [robots]; many people welcome machine intelligence.'\"\n```\nQ33 – Expert Matching: 'There are those who look forward to robots developing greater intelligence.' — Which expert expressed this view?",
       "explanation": "**C. Kathleen Richardson** states that *many people welcome machine intelligence* — meaning some people look forward to it, not fear it.\n\n📌 **Paraphrase:** *welcome machine intelligence* → *look forward to robots developing greater intelligence*.",
       "options": [
         "A. Martin Rees",
@@ -330,8 +303,7 @@
       "correct": 2
     },
     {
-      "q": "Q37 – Multiple Choice: What point does Richardson make about fear of machines?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson believes that our fear of machines becoming too advanced has more to do with human nature than anything intrinsic to the machines themselves. In her view, it stems from humans' tendency to **personify** inanimate objects: we create machines based on representations of ourselves, imagine that machines think and behave as we do, and therefore see them as an autonomous threat.\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson believes that our fear of machines becoming too advanced has more to do with human nature than anything intrinsic to the machines themselves. In her view, it stems from humans' tendency to **personify** inanimate objects: we create machines based on representations of ourselves, imagine that machines think and behave as we do, and therefore see them as an autonomous threat.\"\n```\nQ37 – Multiple Choice: What point does Richardson make about fear of machines?",
       "explanation": "Richardson says fear of machines stems from humans' tendency to **personify** (give human traits to) inanimate objects — we imagine machines think like us and thus fear them as threats. This matches **B**.\n\n📌 **Vocabulary:** *personify* /pəˈsɒn.ɪ.faɪ/ = to attribute human qualities to something non-human. *intrinsic* /ɪnˈtrɪn.zɪk/ = belonging naturally to something.",
       "options": [
         "A. It has grown alongside the development of ever more advanced robots.",
@@ -342,8 +314,7 @@
       "correct": 1
     },
     {
-      "q": "Q38 – Multiple Choice: What potential advance does Rees see as a cause for concern?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Rees replied, 'Those who should be worried are the futurologists who believe in the so-called \"singularity\"... And another worry is that we are increasingly dependent on computer networks, and that these could behave like a single \"brain\" with a mind of its own, and with goals that may be contrary to human welfare.'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Rees replied, 'Those who should be worried are the futurologists who believe in the so-called \"singularity\"... And another worry is that we are increasingly dependent on computer networks, and that these could behave like a single \"brain\" with a mind of its own, and with goals that may be contrary to human welfare.'\"\n```\nQ38 – Multiple Choice: What potential advance does Rees see as a cause for concern?",
       "explanation": "Rees worries about computer networks behaving like a single *brain with a mind of its own* — this is AI developing **independent thought** (its own goals contrary to human welfare). This matches **C**.\n\n📌 **Vocabulary:** *singularity* = the hypothetical moment when AI surpasses human intelligence and begins self-improvement. *contrary to* = opposite to / against.",
       "options": [
         "A. Robots outnumbering people",
@@ -354,8 +325,7 @@
       "correct": 2
     },
     {
-      "q": "Q39 – Multiple Choice: What does Wolpert emphasise in his response to the question about science fiction?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Wolpert commented, 'Science fiction has often been remarkable at predicting the future... Science fiction has painted a vivid spectrum of possible futures, from cute and helpful robots to dystopian robotic societies. Interestingly, **almost no science fiction envisages a future without robots**.'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Wolpert commented, 'Science fiction has often been remarkable at predicting the future... Science fiction has painted a vivid spectrum of possible futures, from cute and helpful robots to dystopian robotic societies. Interestingly, **almost no science fiction envisages a future without robots**.'\"\n```\nQ39 – Multiple Choice: What does Wolpert emphasise in his response to the question about science fiction?",
       "explanation": "Wolpert highlights that robots appear in *almost all* science fiction — they are **fundamental** (central/essential) to the genre itself. This matches **B**.\n\n📌 **Vocabulary:** *envisage* /ɪnˈvɪz.ɪdʒ/ = to imagine or picture a future situation. *dystopian* /dɪsˈtəʊ.pi.ən/ = relating to an imagined, deeply unpleasant future society.",
       "options": [
         "A. How science fiction influences our attitudes to robots",
@@ -366,8 +336,7 @@
       "correct": 1
     },
     {
-      "q": "Q40 – Multiple Choice: What is Richardson doing in her comment about reality and fantasy?",
-      "passage": "Read the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson pointed out that in modern society, people tend to think there is reality on the one hand, and fiction and fantasy on the other... scientists and technologists made this separation because they wanted to carve out the sphere of their work. 'But the divide is not so clear cut... In some cases, we need to bring these different understandings together to get a whole perspective. Perhaps then, we won't be so frightened that something we create as a copy of ourselves will be a [threat] to us.'\"",
+      "q": "```passage\nRead the following passage from **Passage 3 – Robots and Us**:\n\n\"Richardson pointed out that in modern society, people tend to think there is reality on the one hand, and fiction and fantasy on the other... scientists and technologists made this separation because they wanted to carve out the sphere of their work. 'But the divide is not so clear cut... In some cases, we need to bring these different understandings together to get a whole perspective. Perhaps then, we won't be so frightened that something we create as a copy of ourselves will be a [threat] to us.'\"\n```\nQ40 – Multiple Choice: What is Richardson doing in her comment about reality and fantasy?",
       "explanation": "Richardson is **recommending** that people stop treating reality and fiction as completely separate and instead combine both perspectives to gain a fuller understanding — and reduce fear of robots. This matches **C**.\n\n📌 **Vocabulary:** *carve out* = to establish or create a defined area or role. *clear cut* = easy to understand, with no ambiguity.",
       "options": [
         "A. Warning people not to confuse one with the other",

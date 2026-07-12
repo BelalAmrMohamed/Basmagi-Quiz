@@ -13,8 +13,7 @@
   },
   "questions": [
     {
-      "q": "What is the minimum number of words required for this IELTS Writing Task 1 response?",
-      "passage": "IELTS Writing Task 1: The plans show the site of Beechwood Farm in 1950 and the same site today. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+      "q": "```passage\nIELTS Writing Task 1: The plans show the site of Beechwood Farm in 1950 and the same site today. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.\n```\nWhat is the minimum number of words required for this IELTS Writing Task 1 response?",
       "explanation": "IELTS Writing Task 1 requires candidates to write at least 150 words.",
       "options": [
         "100 words",
@@ -25,8 +24,7 @@
       "correct": 1
     },
     {
-      "q": "What is the main purpose of this Task 1 question?",
-      "passage": "The plans below show the site of a farm in 1950 and the same site today.",
+      "q": "```passage\nThe plans below show the site of a farm in 1950 and the same site today.\n```\nWhat is the main purpose of this Task 1 question?",
       "explanation": "The task requires candidates to compare Beechwood Farm in 1950 with the same site today.",
       "options": [
         "Describe a process",
@@ -103,8 +101,7 @@
       "correct": 0
     },
     {
-      "q": "What is the first question candidates must address in Task 2?",
-      "passage": "In many countries, primary and secondary schools close for two months or more in the summer holidays.",
+      "q": "```passage\nIn many countries, primary and secondary schools close for two months or more in the summer holidays.\n```\nWhat is the first question candidates must address in Task 2?",
       "explanation": "The essay asks candidates to discuss the value of long school holidays.",
       "options": [
         "Should schools close permanently?",
@@ -115,8 +112,7 @@
       "correct": 1
     },
     {
-      "q": "What is the minimum word count required for this IELTS Writing Task 2 response?",
-      "passage": "In many countries, primary and secondary schools close for two months or more in the summer holidays.",
+      "q": "```passage\nIn many countries, primary and secondary schools close for two months or more in the summer holidays.\n```\nWhat is the minimum word count required for this IELTS Writing Task 2 response?",
       "explanation": "IELTS Writing Task 2 requires at least 250 words.",
       "options": [
         "150 words",

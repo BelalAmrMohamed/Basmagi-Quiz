@@ -33,6 +33,13 @@ const SITE_ORIGIN = process.env.SITE_ORIGIN
 
 const BACKGROUND_IMAGE_URL = `${SITE_ORIGIN}/assets/images/thumbnails/quiz-thumbnail-customizable.png`;
 
+// ── Local quiz manifest (relative-path quizzes) ──────────────────────────────
+// Relative-path quizzes are never written to Supabase — their metadata lives
+// only in this static file. Edge runtime has no `fs`, so fetch it over HTTP
+// the same way the background image and font are fetched. Served from
+// public/data/quiz-manifest.json (see render-quiz.js for the disk-side path).
+const MANIFEST_URL = `${SITE_ORIGIN}/data/quiz-manifest.json`;
+
 // ── Text column geometry ──────────────────────────────────────────────────────
 // Measured against the 1200×630 background PNG:
 //   URL pill:  x 545–814,  y 147–189
@@ -124,7 +131,7 @@ export default async function handler(req) {
   const quizId = searchParams.get("quizId");
 
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
-  const [fontData, quizData, bgImageArrayBuffer] = await Promise.all([
+  const [fontData, quizData, bgImageArrayBuffer, manifestData] = await Promise.all([
     loadFont(),
     quizId ? fetchQuizMeta(quizId) : null,
     fetch(BACKGROUND_IMAGE_URL).then((res) => {
@@ -134,9 +141,13 @@ export default async function handler(req) {
       console.error("[og] bg image fetch error:", err);
       return null;
     }),
+    quizId ? fetchManifest() : null,
   ]);
 
-  const meta = quizData ? quizData : null;
+  // Supabase only holds DB-uploaded quizzes. A miss there is expected and
+  // normal for relative-path quizzes — fall back to the local manifest
+  // before giving up and using generic defaults.
+  const meta = quizData || (manifestData ? findQuizInManifest(manifestData, quizId) : null);
 
   // ── 2. Build display strings ──────────────────────────────────────────────
   const rawTitle = meta ? (meta.title || quizId || "إمتحان") : "منصة إمتحانات بصمجي";
@@ -311,6 +322,55 @@ async function fetchQuizMeta(quizId) {
     console.error("[og] fetchQuizMeta error:", err);
     return null;
   }
+}
+
+// ── Manifest cache (survives across warm invocations) ────────────────────────
+let _manifestPromise = null;
+
+/**
+ * Fetches quiz-manifest.json — the source of truth for relative-path quizzes,
+ * which are never written to Supabase. Cached at module level like loadFont(),
+ * since the manifest only changes on deploy.
+ *
+ * @returns {Promise<{subjects: Array}|null>}
+ */
+function fetchManifest() {
+  if (_manifestPromise) return _manifestPromise;
+  _manifestPromise = fetch(MANIFEST_URL)
+    .then((res) => {
+      if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status}`);
+      return res.json();
+    })
+    .catch((err) => {
+      console.error("[og] fetchManifest error:", err);
+      _manifestPromise = null; // allow retry on next request rather than caching a failure
+      return null;
+    });
+  return _manifestPromise;
+}
+
+/**
+ * Finds a quiz entry by ID across all subjects in the manifest and shapes it
+ * to match fetchQuizMeta's return shape.
+ *
+ * @param {{subjects: Array}} manifest
+ * @param {string} quizId
+ * @returns {{title:string, description:string|null, questionCount:number|null, questionTypes:string|null}|null}
+ */
+function findQuizInManifest(manifest, quizId) {
+  for (const subject of manifest.subjects ?? []) {
+    for (const quiz of subject.quizzes ?? []) {
+      if (quiz.id === quizId) {
+        return {
+          title: quiz.title || quizId,
+          description: quiz.description || null,
+          questionCount: quiz.questionCount != null ? quiz.questionCount : null,
+          questionTypes: formatQuestionTypes(quiz.questionTypes),
+        };
+      }
+    }
+  }
+  return null;
 }
 
 // =============================================================================

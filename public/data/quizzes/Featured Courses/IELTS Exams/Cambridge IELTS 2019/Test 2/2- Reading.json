@@ -14,8 +14,7 @@
   },
   "questions": [
     {
-      "q": "In Watt and Boulton's steam engine, the movement of the __________ was linked to a gear system.",
-      "passage": "READING PASSAGE 1\n\nThe Industrial Revolution began in Britain in the mid-1700s... [full passage summary for context: steam engines by Newcomen and Watt, textile innovations, iron smelting with coke, Luddites, etc.]",
+      "q": "```passage\nREADING PASSAGE 1\n\nThe Industrial Revolution began in Britain in the mid-1700s... [full passage summary for context: steam engines by Newcomen and Watt, textile innovations, iron smelting with coke, Luddites, etc.]\n```\nIn Watt and Boulton's steam engine, the movement of the __________ was linked to a gear system.",
       "explanation": "From the passage: 'Watt later worked with... to invent a new steam engine driven by both the forward and backward strokes of the piston, while the gear mechanism it was connected to produced rotary motion.'",
       "answer": "piston"
     },
@@ -50,8 +49,7 @@
       "answer": "sanitation"
     },
     {
-      "q": "Britain's canal network grew rapidly so that more goods could be transported around the country. Does this statement agree with the information in the passage?",
-      "passage": "READING PASSAGE 1 (continued)",
+      "q": "```passage\nREADING PASSAGE 1 (continued)\n```\nBritain's canal network grew rapidly so that more goods could be transported around the country. Does this statement agree with the information in the passage?",
       "explanation": "NOT GIVEN. The passage mentions steam-powered boats and ships on canals but does not state that the canal network itself grew rapidly.",
       "options": [
         "TRUE",
@@ -91,8 +89,7 @@
       "correct": 0
     },
     {
-      "q": "Which paragraph contains reference to two chemical compounds which impact on performance?",
-      "passage": "READING PASSAGE 2\n\nAthletes and stress... [Paragraphs A-F on performance stress, challenge vs threat states, adrenaline, cortisol, anxiety, strategies]",
+      "q": "```passage\nREADING PASSAGE 2\n\nAthletes and stress... [Paragraphs A-F on performance stress, challenge vs threat states, adrenaline, cortisol, anxiety, strategies]\n```\nWhich paragraph contains reference to two chemical compounds which impact on performance?",
       "explanation": "Paragraph D discusses adrenaline and cortisol (stress hormones).",
       "options": [
         "A",
@@ -151,8 +148,7 @@
       "answer": "visualisation"
     },
     {
-      "q": "Which TWO facts about Emma Raducanu's withdrawal from the Wimbledon tournament are mentioned?",
-      "passage": "READING PASSAGE 2 (Questions 23 and 24)",
+      "q": "```passage\nREADING PASSAGE 2 (Questions 23 and 24)\n```\nWhich TWO facts about Emma Raducanu's withdrawal from the Wimbledon tournament are mentioned?",
       "explanation": "B (difficulty regulating breathing and heart rate) and D (larger audience, higher expectations, more skilful opponent).",
       "options": [
         "the stage at which she dropped out of the tournament",
@@ -167,8 +163,7 @@
       ]
     },
     {
-      "q": "Maryam Mirzakhani is regarded as __________ in the field of mathematics because she was the only female holder of the Fields Medal.",
-      "passage": "READING PASSAGE 3\n\nAn inquiry into the existence of the gifted child... [Maryam Mirzakhani, Einstein, high performance learning, Ericsson, Bloom]",
+      "q": "```passage\nREADING PASSAGE 3\n\nAn inquiry into the existence of the gifted child... [Maryam Mirzakhani, Einstein, high performance learning, Ericsson, Bloom]\n```\nMaryam Mirzakhani is regarded as __________ in the field of mathematics because she was the only female holder of the Fields Medal.",
       "explanation": "Option H from the list. The passage highlights her as the only woman to win it.",
       "answer": "unique"
     },

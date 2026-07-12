@@ -13,8 +13,7 @@
   },
   "questions": [
     {
-      "q": "Question 1: She studied art, then worked as a ___ in various places in the USA.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"For seven decades, Georgia O'Keeffe (1887–1986) was a major figure in American art. Remarkably, she remained independent from shifting art trends and her work stayed true to her own vision, which was based on finding the essential, abstract forms in nature.\"\n\n**Questions 1–7: Complete the notes. Choose ONE WORD ONLY from the passage.**\n\n**The life and work of Georgia O'Keeffe**\n- studied art, then worked as a **[1]** in various places in the USA\n- created drawings using **[2]** which were exhibited in New York City\n- moved to New York and became famous for her paintings of the city's **[3]**\n- produced a series of innovative close-up paintings of **[4]**\n- went to New Mexico and was initially inspired to paint the many **[5]** that could be found there\n- continued to paint various features that together formed the dramatic **[6]** of New Mexico for over forty years\n- travelled widely by plane in later years, and painted pictures of clouds and **[7]** seen from above",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"For seven decades, Georgia O'Keeffe (1887–1986) was a major figure in American art. Remarkably, she remained independent from shifting art trends and her work stayed true to her own vision, which was based on finding the essential, abstract forms in nature.\"\n\n**Questions 1–7: Complete the notes. Choose ONE WORD ONLY from the passage.**\n\n**The life and work of Georgia O'Keeffe**\n- studied art, then worked as a **[1]** in various places in the USA\n- created drawings using **[2]** which were exhibited in New York City\n- moved to New York and became famous for her paintings of the city's **[3]**\n- produced a series of innovative close-up paintings of **[4]**\n- went to New Mexico and was initially inspired to paint the many **[5]** that could be found there\n- continued to paint various features that together formed the dramatic **[6]** of New Mexico for over forty years\n- travelled widely by plane in later years, and painted pictures of clouds and **[7]** seen from above\n```\nQuestion 1: She studied art, then worked as a ___ in various places in the USA.",
       "explanation": "The passage states: 'After attending university and then training college, she became an **art teacher** and taught in elementary schools, high schools, and colleges in Virginia, Texas, and South Carolina from 1911 to 1918.' The answer is **teacher**.\n\n📝 *Phonetic guide:* /ˈtiːtʃər/ — stress on first syllable.",
       "options": [
         "teacher",
@@ -25,8 +24,7 @@
       "correct": 0
     },
     {
-      "q": "Question 2: She created drawings using ___ which were exhibited in New York City.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"During this period, O'Keeffe began to experiment with creating abstract compositions in charcoal, and produced a series of innovative drawings that led her art in a new direction. She sent some of these drawings to a friend in New York, who showed them to art collector and photographer Alfred Stieglitz in January 1916.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"During this period, O'Keeffe began to experiment with creating abstract compositions in charcoal, and produced a series of innovative drawings that led her art in a new direction. She sent some of these drawings to a friend in New York, who showed them to art collector and photographer Alfred Stieglitz in January 1916.\"\n```\nQuestion 2: She created drawings using ___ which were exhibited in New York City.",
       "explanation": "The passage explicitly states O'Keeffe 'began to experiment with creating abstract compositions in **charcoal**.' The answer is **charcoal**.\n\n📝 *Phonetic guide:* /ˈtʃɑːrkəʊl/ — two syllables, stress on first.\n\n💡 *Collocation:* 'charcoal drawing', 'charcoal sketch', 'draw in charcoal'.",
       "options": [
         "charcoal",
@@ -37,8 +35,7 @@
       "correct": 0
     },
     {
-      "q": "Question 3: She moved to New York and became famous for her paintings of the city's ___.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"By the mid-1920s, O'Keeffe was recognized as one of America's most important and successful artists, widely known for the architectural pictures that dramatically depict the soaring skyscrapers of New York.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"By the mid-1920s, O'Keeffe was recognized as one of America's most important and successful artists, widely known for the architectural pictures that dramatically depict the soaring skyscrapers of New York.\"\n```\nQuestion 3: She moved to New York and became famous for her paintings of the city's ___.",
       "explanation": "The passage says she was 'widely known for the architectural pictures that dramatically depict the soaring **skyscrapers** of New York.' The answer is **skyscrapers**.\n\n📝 *Phonetic guide:* /ˈskaɪˌskreɪpərz/ — stress on first syllable.\n\n💡 *Collocation:* 'soaring skyscrapers', 'towering skyscrapers'.",
       "options": [
         "skyscrapers",
@@ -49,8 +46,7 @@
       "correct": 0
     },
     {
-      "q": "Question 4: She produced a series of innovative close-up paintings of ___.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"But most often, she painted botanical subjects, inspired by annual trips to the Stieglitz family summer home. In her magnified images depicting flowers, begun in 1924, O'Keeffe brings the viewer right into the picture. Enlarging the tiniest details to fill an entire metre-wide canvas emphasized their shapes and lines and made them appear abstract.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"But most often, she painted botanical subjects, inspired by annual trips to the Stieglitz family summer home. In her magnified images depicting flowers, begun in 1924, O'Keeffe brings the viewer right into the picture. Enlarging the tiniest details to fill an entire metre-wide canvas emphasized their shapes and lines and made them appear abstract.\"\n```\nQuestion 4: She produced a series of innovative close-up paintings of ___.",
       "explanation": "The passage refers to 'her magnified images depicting **flowers**,' begun in 1924, in which she brings the viewer right into the picture. The answer is **flowers**.\n\n📝 *Note:* 'close-up paintings' maps to 'magnified images' — a key paraphrase used in IELTS.",
       "options": [
         "flowers",
@@ -61,8 +57,7 @@
       "correct": 0
     },
     {
-      "q": "Question 5: She went to New Mexico and was initially inspired to paint the many ___ that could be found there.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"There, O'Keeffe found new inspiration: at first, it was the numerous sun-bleached bones she came across in the state's rugged terrain that sparked her imagination. Two of her earliest and most celebrated Southwestern paintings exquisitely reproduce a cow skull's weathered surfaces, jagged edges, and irregular openings.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"There, O'Keeffe found new inspiration: at first, it was the numerous sun-bleached bones she came across in the state's rugged terrain that sparked her imagination. Two of her earliest and most celebrated Southwestern paintings exquisitely reproduce a cow skull's weathered surfaces, jagged edges, and irregular openings.\"\n```\nQuestion 5: She went to New Mexico and was initially inspired to paint the many ___ that could be found there.",
       "explanation": "The passage states: 'at first, it was the numerous sun-bleached **bones** she came across in the state's rugged terrain that sparked her imagination.' The key word is **initially/at first**. The answer is **bones**.\n\n📝 *Vocabulary note:* 'sun-bleached' = made pale/white by the sun. Common descriptor in descriptive writing.",
       "options": [
         "bones",
@@ -73,8 +68,7 @@
       "correct": 0
     },
     {
-      "q": "Question 6: She continued to paint various features that together formed the dramatic ___ of New Mexico for over forty years.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"However, it was the region's spectacular landscape, with its unusual geological formations, vivid colours, clarity of light, and exotic vegetation, that held the artist's imagination for more than four decades. Often, she painted the rocks, cliffs, and mountains in striking close-up, just as she had done with her botanical subjects.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"However, it was the region's spectacular landscape, with its unusual geological formations, vivid colours, clarity of light, and exotic vegetation, that held the artist's imagination for more than four decades. Often, she painted the rocks, cliffs, and mountains in striking close-up, just as she had done with her botanical subjects.\"\n```\nQuestion 6: She continued to paint various features that together formed the dramatic ___ of New Mexico for over forty years.",
       "explanation": "The passage states it was 'the region's spectacular **landscape**... that held the artist's imagination for more than four decades.' The answer must be ONE word from the passage: **landscape**.\n\n📝 *Phonetic guide:* /ˈlændskeɪp/ — stress on first syllable.\n\n💡 *Collocation:* 'dramatic landscape', 'spectacular landscape', 'rugged landscape'.",
       "options": [
         "landscape",
@@ -85,8 +79,7 @@
       "correct": 0
     },
     {
-      "q": "Question 7: She travelled widely by plane in later years, and painted pictures of clouds and ___ seen from above.",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"From the 1950s into the 1970s, O'Keeffe travelled widely, making trips to Asia, the Middle East, and Europe. Flying in planes inspired her last two major series – aerial views of rivers and expansive paintings of the sky viewed from just above clouds.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n\"From the 1950s into the 1970s, O'Keeffe travelled widely, making trips to Asia, the Middle East, and Europe. Flying in planes inspired her last two major series – aerial views of rivers and expansive paintings of the sky viewed from just above clouds.\"\n```\nQuestion 7: She travelled widely by plane in later years, and painted pictures of clouds and ___ seen from above.",
       "explanation": "The passage states flying in planes inspired 'aerial views of **rivers** and expansive paintings of the sky viewed from just above clouds.' The answer is **rivers**.\n\n📝 *IELTS Strategy:* The question rephrases 'aerial views of rivers' as '[rivers] seen from above.' Recognising such paraphrases is key to success.",
       "options": [
         "rivers",
@@ -97,8 +90,7 @@
       "correct": 0
     },
     {
-      "q": "Question 8: Georgia O'Keeffe's style was greatly influenced by the changing fashions in art over the seven decades of her career. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n**Questions 8–13: Do the following statements agree with the information given in Reading Passage 1?**\n- **TRUE** if the statement agrees with the information\n- **FALSE** if the statement contradicts the information\n- **NOT GIVEN** if there is no information on this\n\n*Statement 8:* \"Georgia O'Keeffe's style was greatly influenced by the changing fashions in art over the seven decades of her career.\"\n\nPassage text: \"Remarkably, she remained **independent** from shifting art trends and her work stayed true to her own vision.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n**Questions 8–13: Do the following statements agree with the information given in Reading Passage 1?**\n- **TRUE** if the statement agrees with the information\n- **FALSE** if the statement contradicts the information\n- **NOT GIVEN** if there is no information on this\n\n*Statement 8:* \"Georgia O'Keeffe's style was greatly influenced by the changing fashions in art over the seven decades of her career.\"\n\nPassage text: \"Remarkably, she remained **independent** from shifting art trends and her work stayed true to her own vision.\"\n```\nQuestion 8: Georgia O'Keeffe's style was greatly influenced by the changing fashions in art over the seven decades of her career. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**FALSE.** The passage says she 'remained **independent** from shifting art trends.' This directly contradicts the statement that her style was 'greatly influenced' by changing fashions.\n\n📝 *IELTS Tip:* When a statement is the **opposite** of what the passage says, the answer is FALSE — not NOT GIVEN. NOT GIVEN means the topic is not mentioned at all.",
       "options": [
         "TRUE",
@@ -108,8 +100,7 @@
       "correct": 1
     },
     {
-      "q": "Question 9: When O'Keeffe finished high school, she had already made her mind up about the career that she wanted. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 9:* \"When O'Keeffe finished high school, she had already made her mind up about the career that she wanted.\"\n\nPassage text: \"By the time she graduated from high school in 1905, she had **determined to make her way as an artist**.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 9:* \"When O'Keeffe finished high school, she had already made her mind up about the career that she wanted.\"\n\nPassage text: \"By the time she graduated from high school in 1905, she had **determined to make her way as an artist**.\"\n```\nQuestion 9: When O'Keeffe finished high school, she had already made her mind up about the career that she wanted. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**TRUE.** The passage states 'By the time she graduated from high school in 1905, she had **determined to make her way as an artist**.' This matches the statement perfectly.\n\n📝 *Paraphrase awareness:* 'made her mind up about the career' = 'determined to make her way as an artist'.",
       "options": [
         "TRUE",
@@ -119,8 +110,7 @@
       "correct": 0
     },
     {
-      "q": "Question 10: Alfred Stieglitz first discovered O'Keeffe's work when she sent some abstract drawings to his gallery in New York City. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 10:* \"Alfred Stieglitz first discovered O'Keeffe's work when she sent some abstract drawings to his gallery in New York City.\"\n\nPassage text: \"She sent some of these drawings to a **friend in New York**, who showed them to art collector and photographer Alfred Stieglitz in January 1916.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 10:* \"Alfred Stieglitz first discovered O'Keeffe's work when she sent some abstract drawings to his gallery in New York City.\"\n\nPassage text: \"She sent some of these drawings to a **friend in New York**, who showed them to art collector and photographer Alfred Stieglitz in January 1916.\"\n```\nQuestion 10: Alfred Stieglitz first discovered O'Keeffe's work when she sent some abstract drawings to his gallery in New York City. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**FALSE.** O'Keeffe sent the drawings to a **friend**, not to Stieglitz's gallery. It was the friend who then showed them to Stieglitz. The statement incorrectly says she sent them directly to his gallery.",
       "options": [
         "TRUE",
@@ -130,8 +120,7 @@
       "correct": 1
     },
     {
-      "q": "Question 11: O'Keeffe was the subject of Stieglitz's photographic work for many years. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 11:* \"O'Keeffe was the subject of Stieglitz's photographic work for many years.\"\n\nPassage text: \"The ups and downs of their personal and professional relationship were recorded in Stieglitz's celebrated **black-and-white portraits of O'Keeffe**, taken over the course of twenty years (1917–37).\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 11:* \"O'Keeffe was the subject of Stieglitz's photographic work for many years.\"\n\nPassage text: \"The ups and downs of their personal and professional relationship were recorded in Stieglitz's celebrated **black-and-white portraits of O'Keeffe**, taken over the course of twenty years (1917–37).\"\n```\nQuestion 11: O'Keeffe was the subject of Stieglitz's photographic work for many years. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**TRUE.** The passage confirms Stieglitz took 'black-and-white portraits of O'Keeffe... over the course of **twenty years** (1917–37).' She was indeed the subject of his photographic work for many years.\n\n📝 *Vocabulary:* 'photographic work' = 'portraits' (portraits are a form of photographic work).",
       "options": [
         "TRUE",
@@ -141,8 +130,7 @@
       "correct": 0
     },
     {
-      "q": "Question 12: O'Keeffe's paintings of the patio of her house in Abiquiú were among the artist's favourite works. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 12:* \"O'Keeffe's paintings of the patio of her house in Abiquiú were among the artist's favourite works.\"\n\nPassage text: \"In more than thirty pictures between 1946 and 1960, she reinvented the patio into an abstract arrangement of geometric shapes.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 12:* \"O'Keeffe's paintings of the patio of her house in Abiquiú were among the artist's favourite works.\"\n\nPassage text: \"In more than thirty pictures between 1946 and 1960, she reinvented the patio into an abstract arrangement of geometric shapes.\"\n```\nQuestion 12: O'Keeffe's paintings of the patio of her house in Abiquiú were among the artist's favourite works. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**NOT GIVEN.** The passage confirms she painted the patio many times, but never states these were her **favourite works**. This information is simply not provided in the text.\n\n📝 *IELTS Tip:* Be careful not to infer. If the passage doesn't explicitly state something, the answer is NOT GIVEN — even if it seems likely.",
       "options": [
         "TRUE",
@@ -152,8 +140,7 @@
       "correct": 2
     },
     {
-      "q": "Question 13: O'Keeffe produced a greater quantity of work during the 1950s to 1970s than at any other time in her life. (TRUE / FALSE / NOT GIVEN)",
-      "passage": "**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 13:* \"O'Keeffe produced a greater quantity of work during the 1950s to 1970s than at any other time in her life.\"\n\nPassage text: \"The last two decades of the artist's life were relatively **unproductive** as ill health and blindness hindered her ability to work.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 1: Georgia O'Keeffe**\n\n*Statement 13:* \"O'Keeffe produced a greater quantity of work during the 1950s to 1970s than at any other time in her life.\"\n\nPassage text: \"The last two decades of the artist's life were relatively **unproductive** as ill health and blindness hindered her ability to work.\"\n```\nQuestion 13: O'Keeffe produced a greater quantity of work during the 1950s to 1970s than at any other time in her life. (TRUE / FALSE / NOT GIVEN)",
       "explanation": "**NOT GIVEN.** While the passage says her final decades were 'unproductive,' it does not compare the output of the 1950s–1970s to other periods. We cannot confirm or deny that those decades were her most productive.\n\n📝 *IELTS Tip:* 'NOT GIVEN' and 'FALSE' are commonly confused. FALSE = directly contradicted. NOT GIVEN = no comparison or relevant data provided.",
       "options": [
         "TRUE",
@@ -163,8 +150,7 @@
       "correct": 2
     },
     {
-      "q": "Question 14: Which paragraph describes how a type of plant functions as a natural protection for coastlines?",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Paragraphs A–F** describe different climate adaptation strategies around the world.\n\n**Questions 14–17: Which paragraph (A–F) contains the following information?**\n\n*Paragraph C (Java, Indonesia):* \"There have been many attempts to restore the island's coastal mangroves: ecosystems of trees and shrubs that help defend coastal areas by **trapping sediment in their net-like root systems**, elevating the sea bed and dampening the energy of waves and tidal currents.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Paragraphs A–F** describe different climate adaptation strategies around the world.\n\n**Questions 14–17: Which paragraph (A–F) contains the following information?**\n\n*Paragraph C (Java, Indonesia):* \"There have been many attempts to restore the island's coastal mangroves: ecosystems of trees and shrubs that help defend coastal areas by **trapping sediment in their net-like root systems**, elevating the sea bed and dampening the energy of waves and tidal currents.\"\n```\nQuestion 14: Which paragraph describes how a type of plant functions as a natural protection for coastlines?",
       "explanation": "**Paragraph C.** This paragraph describes mangroves — plants whose root systems trap sediment, elevate the sea bed, and dampen wave energy, acting as natural coastal protection.\n\n📝 *Key vocabulary:* **mangroves** /ˈmænɡrəʊvz/ — tropical coastal trees with tangled roots.\n💡 *Collocation:* 'coastal mangroves', 'mangrove ecosystem', 'mangrove restoration'.",
       "options": [
         "A",
@@ -177,8 +163,7 @@
       "correct": 2
     },
     {
-      "q": "Question 15: Which paragraph contains a prediction about how long it could take to stop noticing the effects of climate change?",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph A:* \"Even if we stopped all CO2 emissions tomorrow, we would continue to see the impact of the CO2 already released since industrial times, with scientists forecasting that **global warming would continue for around 40 years**.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph A:* \"Even if we stopped all CO2 emissions tomorrow, we would continue to see the impact of the CO2 already released since industrial times, with scientists forecasting that **global warming would continue for around 40 years**.\"\n```\nQuestion 15: Which paragraph contains a prediction about how long it could take to stop noticing the effects of climate change?",
       "explanation": "**Paragraph A.** Scientists forecast that 'global warming would continue for around **40 years**' even if all CO2 emissions stopped immediately — a clear prediction about the duration of climate change effects.\n\n📝 *Paraphrase:* 'stop noticing the effects' = stop seeing the impact of warming.",
       "options": [
         "A",
@@ -191,8 +176,7 @@
       "correct": 0
     },
     {
-      "q": "Question 16: Which paragraph contains a reference to the fact that a solution is particularly cost-effective?",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph D (Mekong Delta, Vietnam):* \"It's much **cheaper** than permanently elevating houses, English explains – about **a third of what it would cost** to completely replace a building's foundations.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph D (Mekong Delta, Vietnam):* \"It's much **cheaper** than permanently elevating houses, English explains – about **a third of what it would cost** to completely replace a building's foundations.\"\n```\nQuestion 16: Which paragraph contains a reference to the fact that a solution is particularly cost-effective?",
       "explanation": "**Paragraph D.** Elizabeth English explains that retrofitting amphibious (floating) houses is much cheaper — about a third of the cost of replacing foundations. This is a clear reference to cost-effectiveness.\n\n📝 *Vocabulary:* **cost-effective** /ˌkɒst ɪˈfektɪv/ — giving good value for money.\n💡 *Collocation:* 'cost-effective solution', 'cost-effective approach'.",
       "options": [
         "A",
@@ -205,8 +189,7 @@
       "correct": 3
     },
     {
-      "q": "Question 17: Which paragraph contains a mention of a technology used to locate areas most in need of intervention?",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph F (Los Angeles, USA):* \"Using a **Geographic Information System data mapping tool**, the programme identified streets with low tree canopy cover in three of the city's neighbourhoods and covered them with a light-grey, light-reflecting coating.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Paragraph F (Los Angeles, USA):* \"Using a **Geographic Information System data mapping tool**, the programme identified streets with low tree canopy cover in three of the city's neighbourhoods and covered them with a light-grey, light-reflecting coating.\"\n```\nQuestion 17: Which paragraph contains a mention of a technology used to locate areas most in need of intervention?",
       "explanation": "**Paragraph F.** The Cool Streets LA programme used a **Geographic Information System (GIS) data mapping tool** to identify which streets had the least tree cover — i.e., areas most needing intervention.\n\n📝 *Acronym:* GIS = Geographic Information System — used for mapping and spatial analysis.",
       "options": [
         "A",
@@ -219,8 +202,7 @@
       "correct": 5
     },
     {
-      "q": "Question 18: The stormwater-management programme in Miami Beach has involved the installation of efficient ___.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Questions 18–22: Complete the sentences. Choose ONE WORD ONLY from the passage.**\n\n*Passage (Paragraph B, Miami Beach):* \"In addition to the road adaptations, the city has set up new **pumps** that can remove up to 75,000 litres of water per minute.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Questions 18–22: Complete the sentences. Choose ONE WORD ONLY from the passage.**\n\n*Passage (Paragraph B, Miami Beach):* \"In addition to the road adaptations, the city has set up new **pumps** that can remove up to 75,000 litres of water per minute.\"\n```\nQuestion 18: The stormwater-management programme in Miami Beach has involved the installation of efficient ___.",
       "explanation": "**pumps.** The passage states Miami Beach 'set up new **pumps** that can remove up to 75,000 litres of water per minute' as part of its stormwater-management programme.\n\n📝 *Phonetic guide:* /pʌmps/ — short vowel sound.\n💡 *Collocation:* 'water pumps', 'install pumps', 'efficient pumps'.",
       "options": [
         "pumps",
@@ -231,8 +213,7 @@
       "correct": 0
     },
     {
-      "q": "Question 19: The construction of ___ was the first stage of a project to ensure the success of mangroves in Indonesia.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph C, Java):* \"So, Wetlands International started out with a different approach, building **semi-permeable dams**, made from bamboo poles and brushwood, to mimic the role of mangrove roots and create favourable conditions for mangroves to grow back naturally.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph C, Java):* \"So, Wetlands International started out with a different approach, building **semi-permeable dams**, made from bamboo poles and brushwood, to mimic the role of mangrove roots and create favourable conditions for mangroves to grow back naturally.\"\n```\nQuestion 19: The construction of ___ was the first stage of a project to ensure the success of mangroves in Indonesia.",
       "explanation": "**dams.** Wetlands International built 'semi-permeable **dams**' made of bamboo and brushwood to mimic mangrove roots and encourage natural mangrove regrowth.\n\n📝 *Vocabulary:* **semi-permeable** /ˌsemiˈpɜːmiəbl/ — allowing some substances to pass through but not others.",
       "options": [
         "dams",
@@ -243,8 +224,7 @@
       "correct": 0
     },
     {
-      "q": "Question 20: As a response to rising floodwaters in the Mekong Delta, a not-for-profit organisation has been building houses that can ___.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph D, Mekong Delta):* \"As the floodwaters rose in the rice fields of the Mekong Delta in September 2018, four small houses rose with them. Homes in this part of Vietnam are traditionally built on stilts but these ones had been built to **float**.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph D, Mekong Delta):* \"As the floodwaters rose in the rice fields of the Mekong Delta in September 2018, four small houses rose with them. Homes in this part of Vietnam are traditionally built on stilts but these ones had been built to **float**.\"\n```\nQuestion 20: As a response to rising floodwaters in the Mekong Delta, a not-for-profit organisation has been building houses that can ___.",
       "explanation": "**float.** The Buoyant Foundation Project retrofitted houses 'to **float**' — they rise with the floodwaters rather than being submerged or raised permanently.\n\n📝 *Phonetic guide:* /fləʊt/ — long 'o' sound.\n💡 *Collocation:* 'amphibious houses', 'floating homes', 'built to float'.",
       "options": [
         "float",
@@ -255,8 +235,7 @@
       "correct": 0
     },
     {
-      "q": "Question 21: Rising sea levels in Bangladesh have made it necessary to introduce various ___ that are suitable for areas of high salt content.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph E, Bangladesh):* \"ICCO Cooperation has been working with 10,000 farmers in Bangladesh to start cultivating naturally salt-tolerant **crops** in the region. Certain varieties of carrot, potato, kohlrabi, cabbage and beetroot have been found to be better suited to salty soil.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph E, Bangladesh):* \"ICCO Cooperation has been working with 10,000 farmers in Bangladesh to start cultivating naturally salt-tolerant **crops** in the region. Certain varieties of carrot, potato, kohlrabi, cabbage and beetroot have been found to be better suited to salty soil.\"\n```\nQuestion 21: Rising sea levels in Bangladesh have made it necessary to introduce various ___ that are suitable for areas of high salt content.",
       "explanation": "**crops.** The passage refers to introducing naturally salt-tolerant '**crops**' such as carrot, potato, kohlrabi, cabbage, and beetroot.\n\n📝 *Vocabulary:* **salt-tolerant** — able to grow in salty conditions.\n💡 *Collocation:* 'cultivate crops', 'salt-tolerant crops', 'crop varieties'.",
       "options": [
         "crops",
@@ -267,8 +246,7 @@
       "correct": 0
     },
     {
-      "q": "Question 22: A project in LA has increased the number of ___ on the city's streets.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph F, Los Angeles):* \"Using a Geographic Information System data mapping tool, the programme identified streets with low **tree** canopy cover in three of the city's neighbourhoods.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Passage (Paragraph F, Los Angeles):* \"Using a Geographic Information System data mapping tool, the programme identified streets with low **tree** canopy cover in three of the city's neighbourhoods.\"\n```\nQuestion 22: A project in LA has increased the number of ___ on the city's streets.",
       "explanation": "**trees.** The Cool Streets LA programme used GIS to identify areas with low **tree** canopy cover and address them. The planting of trees is one component of the pilot projects.\n\n📝 *Vocabulary:* **canopy** /ˈkænəpi/ — the uppermost layer of a forest or tree cover.\n💡 *Collocation:* 'tree canopy', 'canopy cover', 'street trees'.",
       "options": [
         "trees",
@@ -279,8 +257,7 @@
       "correct": 0
     },
     {
-      "q": "Question 23: It is essential to adopt strategies which involve and help residents of the region.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Questions 23–26: Match each statement with the correct person (A–E).**\n\n- A. Yanira Pineda | B. Susanna Tol | C. Elizabeth English | D. Raisa Chowdhury | E. Greg Spotts\n\n*Statement 23:* \"It is essential to adopt strategies which involve and help residents of the region.\"\n\n*Susanna Tol (Paragraph C):* 'For long-term success, it's critical that we transition towards multifunctional approaches that **embed natural processes** and that **engage and benefit communities and local decision-makers**.'",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n**Questions 23–26: Match each statement with the correct person (A–E).**\n\n- A. Yanira Pineda | B. Susanna Tol | C. Elizabeth English | D. Raisa Chowdhury | E. Greg Spotts\n\n*Statement 23:* \"It is essential to adopt strategies which involve and help residents of the region.\"\n\n*Susanna Tol (Paragraph C):* 'For long-term success, it's critical that we transition towards multifunctional approaches that **embed natural processes** and that **engage and benefit communities and local decision-makers**.'\n```\nQuestion 23: It is essential to adopt strategies which involve and help residents of the region.",
       "explanation": "**B. Susanna Tol.** She states it is 'critical that we transition towards multifunctional approaches that... **engage and benefit communities and local decision-makers**.' This matches 'involve and help residents.'\n\n📝 *Paraphrase:* 'involve and help residents' = 'engage and benefit communities'.",
       "options": [
         "A. Yanira Pineda",
@@ -292,8 +269,7 @@
       "correct": 1
     },
     {
-      "q": "Question 24: Interventions which reduce heat are absolutely vital for our survival in this location.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 24:* \"Interventions which reduce heat are absolutely vital for our survival in this location.\"\n\n*Greg Spotts (Paragraph F):* **'Urban cooling is literally a matter of life and death for our future in LA.'**",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 24:* \"Interventions which reduce heat are absolutely vital for our survival in this location.\"\n\n*Greg Spotts (Paragraph F):* **'Urban cooling is literally a matter of life and death for our future in LA.'**\n```\nQuestion 24: Interventions which reduce heat are absolutely vital for our survival in this location.",
       "explanation": "**E. Greg Spotts.** He says 'Urban **cooling** is literally a **matter of life and death** for our future in LA.' This matches 'reduce heat' (cooling) and 'vital for survival' (life and death).\n\n📝 *Idiom:* 'a matter of life and death' = something critically important.",
       "options": [
         "A. Yanira Pineda",
@@ -305,8 +281,7 @@
       "correct": 4
     },
     {
-      "q": "Question 25: More work will need to be done in future decades to deal with the impact of rising water levels.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 25:* \"More work will need to be done in future decades to deal with the impact of rising water levels.\"\n\n*Yanira Pineda (Paragraph B):* 'We know that in **20, 30, 40 years**, we'll need to go back in there and **adjust to the changing environment**.'",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 25:* \"More work will need to be done in future decades to deal with the impact of rising water levels.\"\n\n*Yanira Pineda (Paragraph B):* 'We know that in **20, 30, 40 years**, we'll need to go back in there and **adjust to the changing environment**.'\n```\nQuestion 25: More work will need to be done in future decades to deal with the impact of rising water levels.",
       "explanation": "**A. Yanira Pineda.** She acknowledges that future adjustments will be needed: 'in 20, 30, 40 years, we'll need to go back in there and **adjust to the changing environment**.'\n\n📝 *Paraphrase:* 'future decades' = '20, 30, 40 years'; 'more work' = 'go back in there and adjust'.",
       "options": [
         "A. Yanira Pineda",
@@ -318,8 +293,7 @@
       "correct": 0
     },
     {
-      "q": "Question 26: The number of locations requiring action to adapt to flooding has grown in recent years.",
-      "passage": "**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 26:* \"The number of locations requiring action to adapt to flooding has grown in recent years.\"\n\n*Elizabeth English (Paragraph D):* 'this technology is **becoming necessary in places that didn't previously need it**.'",
+      "q": "```passage\n**Test 4 – Reading Passage 2: Adapting to the effects of climate change**\n\n*Statement 26:* \"The number of locations requiring action to adapt to flooding has grown in recent years.\"\n\n*Elizabeth English (Paragraph D):* 'this technology is **becoming necessary in places that didn't previously need it**.'\n```\nQuestion 26: The number of locations requiring action to adapt to flooding has grown in recent years.",
       "explanation": "**C. Elizabeth English.** She states that amphibious house technology is 'becoming necessary in **places that didn't previously need it**' — implying that more locations now require flood adaptation.\n\n📝 *Paraphrase:* 'number of locations growing' = 'places that didn't previously need it [now do]'.",
       "options": [
         "A. Yanira Pineda",
@@ -331,8 +305,7 @@
       "correct": 2
     },
     {
-      "q": "Question 27: Which paragraph gives an example of how one predator has been protected by the introduction of livestock guard dogs?",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 27–31: Which paragraph (A–G) contains the following information?**\n\n*Paragraph D:* \"In Namibia, more than 90 per cent of **cheetahs** live outside protected areas, close to humans raising livestock... When guard dogs were introduced, more than 90 per cent of farmers reported a dramatic reduction in livestock losses, and said that as a result they were **less likely to kill predators**.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 27–31: Which paragraph (A–G) contains the following information?**\n\n*Paragraph D:* \"In Namibia, more than 90 per cent of **cheetahs** live outside protected areas, close to humans raising livestock... When guard dogs were introduced, more than 90 per cent of farmers reported a dramatic reduction in livestock losses, and said that as a result they were **less likely to kill predators**.\"\n```\nQuestion 27: Which paragraph gives an example of how one predator has been protected by the introduction of livestock guard dogs?",
       "explanation": "**Paragraph D.** It describes how guard dogs in Namibia reduced livestock losses, making farmers **less likely to kill cheetahs** — a clear example of a predator (cheetah) being protected by guard dog introduction.\n\n📝 *Vocabulary:* **predator** /ˈpredətər/ — an animal that hunts others for food.",
       "options": [
         "A",
@@ -346,8 +319,7 @@
       "correct": 3
     },
     {
-      "q": "Question 28: Which paragraph contains an optimistic suggestion about the possible positive developments in the use of livestock guard dogs?",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph G:* \"The evidence so far, however, indicates that these consequences aren't always negative. Guard dogs can deliver **unexpected benefits** by protecting vulnerable wildlife from predators... So if we can get this right, there may be a **bright future** for guard dogs in promoting harmonious coexistence between humans and wildlife.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph G:* \"The evidence so far, however, indicates that these consequences aren't always negative. Guard dogs can deliver **unexpected benefits** by protecting vulnerable wildlife from predators... So if we can get this right, there may be a **bright future** for guard dogs in promoting harmonious coexistence between humans and wildlife.\"\n```\nQuestion 28: Which paragraph contains an optimistic suggestion about the possible positive developments in the use of livestock guard dogs?",
       "explanation": "**Paragraph G.** It ends with an optimistic outlook: 'there may be a **bright future** for guard dogs in promoting harmonious coexistence between humans and wildlife.'\n\n📝 *Vocabulary:* **optimistic** /ˌɒptɪˈmɪstɪk/ — hopeful about the future.\n💡 *Collocation:* 'bright future', 'unexpected benefits', 'harmonious coexistence'.",
       "options": [
         "A",
@@ -361,8 +333,7 @@
       "correct": 6
     },
     {
-      "q": "Question 29: Which paragraph contains a description of the methods used by livestock guard dogs to keep predators away?",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph B:* \"The dogs will **place themselves between the livestock and any threat**, barking loudly. If necessary, they will **chase away predators**, but often their mere presence is sufficient.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph B:* \"The dogs will **place themselves between the livestock and any threat**, barking loudly. If necessary, they will **chase away predators**, but often their mere presence is sufficient.\"\n```\nQuestion 29: Which paragraph contains a description of the methods used by livestock guard dogs to keep predators away?",
       "explanation": "**Paragraph B.** It describes the guard dogs' methods: positioning between livestock and threats, **barking loudly**, and **chasing away predators** — or simply using their presence as a deterrent.\n\n📝 *Vocabulary:* **deterrent** /dɪˈterənt/ — something that discourages an action.",
       "options": [
         "A",
@@ -376,8 +347,7 @@
       "correct": 1
     },
     {
-      "q": "Question 30: Which paragraph contains claims by different academics that the use of livestock guard dogs is a successful way of protecting farmers' herds?",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph C:* Silvia Ribeiro found '**more than 90 per cent** of farmers... rate the performance of the dogs as very good or excellent.' Linda van Bommel found 'more than **65 per cent** of herders reported that predation stopped completely after they got the dogs.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph C:* Silvia Ribeiro found '**more than 90 per cent** of farmers... rate the performance of the dogs as very good or excellent.' Linda van Bommel found 'more than **65 per cent** of herders reported that predation stopped completely after they got the dogs.'\n```\nQuestion 30: Which paragraph contains claims by different academics that the use of livestock guard dogs is a successful way of protecting farmers' herds?",
       "explanation": "**Paragraph C.** Two different researchers — Silvia Ribeiro and Linda van Bommel — both present data showing guard dogs are highly effective at protecting farmers' herds from predators.\n\n📝 *Academic language:* 'claims by different academics' = separate studies by Ribeiro and van Bommel presented together.",
       "options": [
         "A",
@@ -391,8 +361,7 @@
       "correct": 2
     },
     {
-      "q": "Question 31: Which paragraph contains a reference to how livestock guard dogs gain their skills?",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph B:* \"These dogs are **raised from an early age** with the animals they will be watching and eventually these animals become the dog's family... 'Their initial training is to make them understand that livestock is going to be their life,' says Dan Macon.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph B:* \"These dogs are **raised from an early age** with the animals they will be watching and eventually these animals become the dog's family... 'Their initial training is to make them understand that livestock is going to be their life,' says Dan Macon.\"\n```\nQuestion 31: Which paragraph contains a reference to how livestock guard dogs gain their skills?",
       "explanation": "**Paragraph B.** It explains that guard dogs are 'raised from an early age' with the livestock, and their 'initial training' focuses on bonding with livestock as their core purpose — describing how they acquire their guarding skills.\n\n📝 *Vocabulary:* **socialisation** — the process by which an animal learns to bond with a group.",
       "options": [
         "A",
@@ -406,8 +375,7 @@
       "correct": 1
     },
     {
-      "q": "Question 32: The use of guard dogs may save the lives of both livestock and wild animals.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 32–36: Match each statement with the correct person (A–E).**\n\n- A. Dan Macon | B. Silvia Ribeiro | C. Linda van Bommel | D. Julie Young | E. Bethany Smith\n\n*Statement 32:* \"The use of guard dogs may save the lives of both livestock and wild animals.\"\n\n*Julie Young (Paragraph D):* 'There is common ground from the livestock perspective and from the conservation perspective... If ranchers don't have a dead cow, they will not make a call to apply for a permit to kill a wolf.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 32–36: Match each statement with the correct person (A–E).**\n\n- A. Dan Macon | B. Silvia Ribeiro | C. Linda van Bommel | D. Julie Young | E. Bethany Smith\n\n*Statement 32:* \"The use of guard dogs may save the lives of both livestock and wild animals.\"\n\n*Julie Young (Paragraph D):* 'There is common ground from the livestock perspective and from the conservation perspective... If ranchers don't have a dead cow, they will not make a call to apply for a permit to kill a wolf.'\n```\nQuestion 32: The use of guard dogs may save the lives of both livestock and wild animals.",
       "explanation": "**D. Julie Young.** She describes 'common ground from the livestock perspective and from the conservation perspective' — meaning guard dogs protect livestock AND reduce killing of wild predators (wolves).\n\n📝 *Paraphrase:* 'save lives of livestock AND wild animals' = livestock + conservation perspectives aligned.",
       "options": [
         "A. Dan Macon",
@@ -419,8 +387,7 @@
       "correct": 3
     },
     {
-      "q": "Question 33: Claims of a change in behaviour from those using livestock guard dogs may not be totally accurate.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 33:* \"Claims of a change in behaviour from those using livestock guard dogs may not be totally accurate.\"\n\n*Bethany Smith (Paragraph E):* 'up to 88 per cent of farmers said they no longer killed predators after using dogs – but **warned that such self-reported results must be taken with a pinch of salt**.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 33:* \"Claims of a change in behaviour from those using livestock guard dogs may not be totally accurate.\"\n\n*Bethany Smith (Paragraph E):* 'up to 88 per cent of farmers said they no longer killed predators after using dogs – but **warned that such self-reported results must be taken with a pinch of salt**.'\n```\nQuestion 33: Claims of a change in behaviour from those using livestock guard dogs may not be totally accurate.",
       "explanation": "**E. Bethany Smith.** She cautions that self-reported results about farmers no longer killing predators 'must be **taken with a pinch of salt**' — meaning they may not be fully accurate.\n\n📝 *Idiom:* 'take with a pinch of salt' = be sceptical about; don't fully trust.\n📝 *Phonetic:* sceptical /ˈskeptɪkəl/",
       "options": [
         "A. Dan Macon",
@@ -432,8 +399,7 @@
       "correct": 4
     },
     {
-      "q": "Question 34: There may be negative results if the use of livestock guard dogs is not sufficiently widespread.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 34:* \"There may be negative results if the use of livestock guard dogs is not sufficiently widespread.\"\n\n*Silvia Ribeiro (Paragraph E):* 'If we are not working with everybody, we are **transferring the wolf pressure to the neighbour's herd** and he can use poison and kill an entire pack of wolves.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 34:* \"There may be negative results if the use of livestock guard dogs is not sufficiently widespread.\"\n\n*Silvia Ribeiro (Paragraph E):* 'If we are not working with everybody, we are **transferring the wolf pressure to the neighbour's herd** and he can use poison and kill an entire pack of wolves.'\n```\nQuestion 34: There may be negative results if the use of livestock guard dogs is not sufficiently widespread.",
       "explanation": "**B. Silvia Ribeiro.** She warns that if guard dogs are not used by all farmers, wolf predation is simply 'transferred' to unprotected neighbouring herds — with potentially catastrophic consequences.\n\n📝 *Paraphrase:* 'not sufficiently widespread' = 'not working with everybody'.",
       "options": [
         "A. Dan Macon",
@@ -445,8 +411,7 @@
       "correct": 1
     },
     {
-      "q": "Question 35: Livestock guard dogs are the best way of protecting farm animals, as long as the dogs are appropriately handled.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 35:* \"Livestock guard dogs are the best way of protecting farm animals, as long as the dogs are appropriately handled.\"\n\n*Linda van Bommel (Paragraph C):* '**If they are managed and used properly**, livestock guard dogs are the **most efficient control method** that we have in terms of the amount of livestock that they save from predation.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 35:* \"Livestock guard dogs are the best way of protecting farm animals, as long as the dogs are appropriately handled.\"\n\n*Linda van Bommel (Paragraph C):* '**If they are managed and used properly**, livestock guard dogs are the **most efficient control method** that we have in terms of the amount of livestock that they save from predation.'\n```\nQuestion 35: Livestock guard dogs are the best way of protecting farm animals, as long as the dogs are appropriately handled.",
       "explanation": "**C. Linda van Bommel.** She states that guard dogs are 'the **most efficient control method**... **if they are managed and used properly**' — both conditions (best method + proper handling) match the statement.\n\n📝 *Paraphrase:* 'best way' = 'most efficient method'; 'appropriately handled' = 'managed and used properly'.",
       "options": [
         "A. Dan Macon",
@@ -458,8 +423,7 @@
       "correct": 2
     },
     {
-      "q": "Question 36: Teaching a livestock guard dog how to do its work needs a different focus from teaching a house guard dog.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 36:* \"Teaching a livestock guard dog how to do its work needs a different focus from teaching a house guard dog.\"\n\n*Dan Macon (Paragraph B):* 'A fluffy white puppy is fun to be around, but **too much human affection makes it a great dog for guarding the front porch, rather than a great livestock guard dog**.'",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Statement 36:* \"Teaching a livestock guard dog how to do its work needs a different focus from teaching a house guard dog.\"\n\n*Dan Macon (Paragraph B):* 'A fluffy white puppy is fun to be around, but **too much human affection makes it a great dog for guarding the front porch, rather than a great livestock guard dog**.'\n```\nQuestion 36: Teaching a livestock guard dog how to do its work needs a different focus from teaching a house guard dog.",
       "explanation": "**A. Dan Macon.** He contrasts a dog raised with human affection (suitable for guarding a porch/house) versus one trained to bond with livestock — showing the training focus must differ.\n\n📝 *Paraphrase:* 'different focus' = different upbringing (human affection vs livestock bonding).",
       "options": [
         "A. Dan Macon",
@@ -471,8 +435,7 @@
       "correct": 0
     },
     {
-      "q": "Question 37: In Namibia, guard dogs protecting livestock from cheetahs led to a rise in deaths of other predators, particularly ___.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 37–40: Complete the summary. Choose ONE WORD ONLY from the passage.**\n\n**Unintended ecological effects of using guard dogs**\n\n*Paragraph F:* \"In 2015, researchers reported that in spite of the impact farmers obtaining guard dogs had on cheetahs, the number of **jackals** killed by dogs and people actually increased.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n**Questions 37–40: Complete the summary. Choose ONE WORD ONLY from the passage.**\n\n**Unintended ecological effects of using guard dogs**\n\n*Paragraph F:* \"In 2015, researchers reported that in spite of the impact farmers obtaining guard dogs had on cheetahs, the number of **jackals** killed by dogs and people actually increased.\"\n```\nQuestion 37: In Namibia, guard dogs protecting livestock from cheetahs led to a rise in deaths of other predators, particularly ___.",
       "explanation": "**jackals.** The passage (Paragraph F) states that while cheetah deaths fell, 'the number of **jackals** killed by dogs and people actually increased.'\n\n📝 *Phonetic guide:* **jackal** /ˈdʒækəl/ — a wild dog-like animal found in Africa and Asia.\n💡 *Collocation:* 'black-backed jackal', 'jackal predation'.",
       "options": [
         "jackals",
@@ -483,8 +446,7 @@
       "correct": 0
     },
     {
-      "q": "Question 38: It has been suggested that guard dogs could have spread ___ which may affect other species.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph F:* \"Guard dogs have other ecological impacts too. They have been found to **spread diseases** to wild animals, including endangered Ethiopian wolves.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph F:* \"Guard dogs have other ecological impacts too. They have been found to **spread diseases** to wild animals, including endangered Ethiopian wolves.\"\n```\nQuestion 38: It has been suggested that guard dogs could have spread ___ which may affect other species.",
       "explanation": "**diseases.** The passage states guard dogs 'have been found to **spread diseases** to wild animals, including endangered Ethiopian wolves.'\n\n📝 *Vocabulary:* **spread diseases** — to transmit illness from one animal or group to another.\n💡 *Collocation:* 'spread disease', 'disease transmission', 'infectious disease'.",
       "options": [
         "diseases",
@@ -495,8 +457,7 @@
       "correct": 0
     },
     {
-      "q": "Question 39: Guard dogs may reduce the amount of ___ available to certain wild animals.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph F:* \"They may also **compete with other carnivores for food**.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph F:* \"They may also **compete with other carnivores for food**.\"\n```\nQuestion 39: Guard dogs may reduce the amount of ___ available to certain wild animals.",
       "explanation": "**food.** The passage says guard dogs 'may also compete with other carnivores for **food**' — meaning they could reduce the food supply available to wild carnivores.\n\n📝 *Vocabulary:* **carnivore** /ˈkɑːrnɪvɔːr/ — an animal that eats meat.\n💡 *Collocation:* 'compete for food', 'food competition', 'food availability'.",
       "options": [
         "food",
@@ -507,8 +468,7 @@
       "correct": 0
     },
     {
-      "q": "Question 40: Guard dogs may help birds by protecting their nests. These might otherwise be threatened by predators such as ___.",
-      "passage": "**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph G:* \"Guard dogs can deliver unexpected benefits by protecting vulnerable wildlife from predators. For example, their presence has been found to protect birds which build their nests on the ground in fields, where **foxes** would normally raid them.\"",
+      "q": "```passage\n**Test 4 – Reading Passage 3: A new role for livestock guard dogs**\n\n*Paragraph G:* \"Guard dogs can deliver unexpected benefits by protecting vulnerable wildlife from predators. For example, their presence has been found to protect birds which build their nests on the ground in fields, where **foxes** would normally raid them.\"\n```\nQuestion 40: Guard dogs may help birds by protecting their nests. These might otherwise be threatened by predators such as ___.",
       "explanation": "**foxes.** Paragraph G states that guard dogs protect ground-nesting birds from **foxes**, which would normally raid their nests.\n\n📝 *Phonetic guide:* **fox** /fɒks/ — a cunning wild canine.\n💡 *Collocation:* 'fox predation', 'ground-nesting birds', 'raid nests'.\n\n🎓 *IELTS Strategy Reminder:* In summary completion tasks, always look for the exact word used in the passage — synonyms will not be accepted as the instruction says 'ONE WORD ONLY from the passage.'",
       "options": [
         "foxes",

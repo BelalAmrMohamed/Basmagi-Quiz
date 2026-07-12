@@ -13,8 +13,7 @@
   },
   "questions": [
     {
-      "q": "How many words should candidates write for this Task 1 report?",
-      "passage": "IELTS Writing Task 1\n\nThe charts below give information about a public library in a town called Little Chalfont.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.",
+      "q": "```passage\nIELTS Writing Task 1\n\nThe charts below give information about a public library in a town called Little Chalfont.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.\n\nWrite at least 150 words.\n```\nHow many words should candidates write for this Task 1 report?",
       "explanation": "The task instruction states: 'Write at least 150 words.'",
       "options": [
         "At least 100 words",
@@ -69,8 +68,7 @@
       "correct": 2
     },
     {
-      "q": "What type of essay question is this?",
-      "passage": "IELTS Writing Task 2\n\nSome people have decided to reduce the number of times they fly every year or to stop flying altogether.\n\nDo you think the environmental benefits of this development outweigh the disadvantages for individuals and businesses?\n\nWrite at least 250 words.",
+      "q": "```passage\nIELTS Writing Task 2\n\nSome people have decided to reduce the number of times they fly every year or to stop flying altogether.\n\nDo you think the environmental benefits of this development outweigh the disadvantages for individuals and businesses?\n\nWrite at least 250 words.\n```\nWhat type of essay question is this?",
       "explanation": "The phrase 'Do you think the environmental benefits ... outweigh the disadvantages' indicates an outweigh/advantages-disadvantages essay.",
       "options": [
         "Problem–solution essay",
