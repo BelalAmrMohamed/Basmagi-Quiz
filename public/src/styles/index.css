@@ -1718,6 +1718,33 @@ Container
   }
 }
 
+/*
+ * 641–768px: same fix as the ≥769px block above, for the same reason.
+ * This range was previously ungoverned (see note above), so .exam-card
+ * stayed a non-flex block and .exam-card-actions-wrap's `margin-top: auto`
+ * had no effect — the wrap sat wherever its content pushed it instead of
+ * pinned to the card bottom, and (lacking justify-content) wasn't
+ * horizontally centered either. Mirrors the desktop fix: flex-column card
+ * + wrap pinned to the bottom via margin-top: auto, with justify-content
+ * added so the buttons center horizontally within the wrap.
+ */
+@media (min-width: 641px) and (max-width: 768px) {
+  .exam-card:not(.user-quiz-card) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    width: 100%;
+    margin-top: auto;
+    justify-content: center;
+  }
+}
+
 /* Mobile: restore to normal flex flow so btnWrap sits on the RIGHT */
 @media (max-width: 640px) {
   /*
