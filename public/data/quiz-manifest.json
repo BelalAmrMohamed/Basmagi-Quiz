@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T11:52:25.534Z",
+  "generatedAt": "2026-07-12T11:12:43.440Z",
   "dataRoot": "data/quizzes",
   "subjects": [
     {
@@ -319,7 +319,7 @@
       "quizzes": [
         {
           "id": "MXEQM6QU",
-          "title": "تـدريب| من الـذكاء الإصطناعي",
+          "title": "تـدريب | من الـذكاء الإصطناعي",
           "path": "/data/quizzes/High School/3/1/اللغة العربية/بالذكاء الإصطناعي/تدريـب من الـذكاء الإصطناعي.json",
           "questionCount": 11,
           "questionTypes": [
@@ -2740,6 +2740,45 @@
           ],
           "education_type": "University",
           "createdAt": "2026-05-29 - 22:01"
+        }
+      ],
+      "faculty": "Computer Science",
+      "year": 2,
+      "term": 2
+    },
+    {
+      "id": "DUCJDOCZ",
+      "name": "Website Demo",
+      "education_type": "University",
+      "quizzes": [
+        {
+          "id": "KOWL74KJ",
+          "title": "Essays on Machine Learning",
+          "path": "/data/quizzes/University/Computer Science/2/2/Website Demo/Essays_on_Machine_Learning.json",
+          "questionCount": 3,
+          "questionTypes": [
+            "Essay"
+          ],
+          "education_type": "University",
+          "author": "بلال عمرو",
+          "author_email": "belalamrofficial@gmail.com",
+          "createdAt": "5/7/2026, 6:24:29 AM"
+        },
+        {
+          "id": "RVO5XMTZ",
+          "title": "منصة إمتحانات بصمجي",
+          "path": "/data/quizzes/University/Computer Science/2/2/Website Demo/منصة_إمتحانات_بصمجي.json",
+          "questionCount": 12,
+          "questionTypes": [
+            "Essay",
+            "MCQ",
+            "True/False"
+          ],
+          "education_type": "University",
+          "description": "Basmagi Quiz Platform Demo",
+          "author": "بلال عمرو محمد",
+          "source": "https://www.w3schools.com/CPP/default.asp",
+          "createdAt": "7/1/2026, 4:26:25 PM"
         }
       ],
       "faculty": "Computer Science",
