@@ -260,7 +260,49 @@ export class SearchManager {
   searchCourses() {
     let results = [...this.allCourses];
 
-    // Apply search query
+    // Apply scope filter (subscribed only)
+    let scopedCourses = this.filterByTrackScope(results);
+
+    // Apply education-type filter
+    if (this.filters.educationType !== "all") {
+      scopedCourses = this.filterByEducationType(scopedCourses);
+    }
+
+    // Apply faculty filter (only meaningful within University results)
+    if (this.filters.faculty !== "all") {
+      scopedCourses = this.filterByFaculty(scopedCourses);
+    }
+
+    // DEEP SEARCH LOGIC
+    if (
+      this.filters.contentType === "exams" &&
+      this.filters.searchQuery &&
+      this.filters.searchQuery.length >= this.searchConfig.minSearchLength
+    ) {
+      const allExams = [];
+      const visited = new Set();
+      scopedCourses.forEach((course) => {
+        allExams.push(...this.collectAllExams(course, visited));
+      });
+      
+      const quizResults = this.filterQuizzesBySearchQuery(allExams);
+      this.addToSearchHistory(this.filters.searchQuery);
+      
+      const sortedQuizzes = this.sortQuizzes(quizResults);
+      
+      this.filteredCourses = sortedQuizzes;
+      this.updateUI(sortedQuizzes);
+      
+      if (this.onSearchCallback) {
+        this.onSearchCallback(sortedQuizzes, "quizzes");
+      }
+      return;
+    }
+
+    // NORMAL COURSE SEARCH
+    results = scopedCourses;
+
+    // Apply search query to courses
     if (
       this.filters.searchQuery &&
       this.filters.searchQuery.length >= this.searchConfig.minSearchLength
@@ -269,22 +311,9 @@ export class SearchManager {
       this.addToSearchHistory(this.filters.searchQuery);
     }
 
-    // Apply scope filter (subscribed only)
-    results = this.filterByTrackScope(results);
-
-    // Apply content type filter
+    // Apply content type filter (for courses)
     if (this.filters.contentType !== "all") {
       results = this.filterByContentType(results);
-    }
-
-    // Apply education-type filter
-    if (this.filters.educationType !== "all") {
-      results = this.filterByEducationType(results);
-    }
-
-    // Apply faculty filter (only meaningful within University results)
-    if (this.filters.faculty !== "all") {
-      results = this.filterByFaculty(results);
     }
 
     // Apply sorting
@@ -419,6 +448,7 @@ export class SearchManager {
     return courses.filter((course) => {
       const searchableText = [
         course.name || "",
+        course.id || "",
         course.code || "",
         course.faculty || "",
         course.description || "",
@@ -501,12 +531,19 @@ export class SearchManager {
   }
 
   filterByEducationType(courses) {
+    // Map HTML filter values back to manifest values
+    const educationTypeMap = {
+      "High-School": "High",
+      "Middle-School": "Middle",
+    };
+    const mappedFilter = educationTypeMap[this.filters.educationType] || this.filters.educationType;
+
     return courses.filter((c) => {
       // Featured is a course-level tag, not an education level — it isn't one
       // of the choices in the education-type filter, so it's never excluded
       // by it (mirrors how filterByTrackScope treats Featured).
       if (c.education_type === "Featured") return true;
-      return c.education_type === this.filters.educationType;
+      return c.education_type === mappedFilter;
     });
   }
 

@@ -224,11 +224,18 @@ function injectStyles() {
       background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
       color:#fff; border:none; border-radius:6px;
       font-size:.8rem; font-weight:700; cursor:pointer;
-      transition:transform .2s,box-shadow .2s;
-      display:flex; align-items:center; gap:5px; white-space:nowrap;
+      transition:all .3s ease;
+      display:flex; align-items:center; justify-content:center; gap:0; white-space:nowrap;
     }
+    .upload-to-db-btn span { max-width:0; overflow:hidden; opacity:0; transition:all .3s ease; }
+    .upload-to-db-btn:hover span { max-width:300px; opacity:1; margin-right:5px; }
     .upload-to-db-btn:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(124,58,237,.4); }
     .upload-to-db-btn svg { width:13px; height:13px; flex-shrink:0; }
+    @media (max-width: 768px) {
+      .upload-to-db-btn { width: 100%; gap: 5px; }
+      .upload-to-db-btn span { max-width: none; opacity: 1; margin-right: 0; }
+      .upload-to-db-btn:hover span { margin-right: 0; }
+    }
 
     /* Spinner */
     .adm-spinner { display:inline-block; width:15px; height:15px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:admSpin .7s linear infinite; margin-left:6px; }
@@ -990,7 +997,7 @@ export function createUploadButton(quiz) {
       <line x1="12" y1="12" x2="12" y2="21"/>
       <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
     </svg>
-    رفع لقاعدة البيانات`;
+    <span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     openModal(quiz);

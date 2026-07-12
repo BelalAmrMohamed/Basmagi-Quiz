@@ -13,6 +13,7 @@ node_modules/
 docs/
 .env*
 .env*.local
+.env.local
 
 # Service Worker cache
 sw-cache/

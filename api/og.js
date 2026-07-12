@@ -123,11 +123,20 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const quizId = searchParams.get("quizId");
 
-  // ── 1. Fetch quiz metadata + font in parallel ────────────────────────────
-  const [meta, fontData] = await Promise.all([
-    quizId ? fetchQuizMeta(quizId) : null,
+  // ── 1. Fetch external assets in parallel ─────────────────────────────────
+  const [fontData, quizData, bgImageArrayBuffer] = await Promise.all([
     loadFont(),
+    quizId ? fetchQuizMeta(quizId) : null,
+    fetch(BACKGROUND_IMAGE_URL).then((res) => {
+      if (!res.ok) throw new Error(`Failed to load background image: ${res.status}`);
+      return res.arrayBuffer();
+    }).catch(err => {
+      console.error("[og] bg image fetch error:", err);
+      return null;
+    }),
   ]);
+
+  const meta = quizData ? quizData : null;
 
   // ── 2. Build display strings ──────────────────────────────────────────────
   const rawTitle = meta ? (meta.title || quizId || "إمتحان") : "منصة إمتحانات بصمجي";
@@ -137,6 +146,11 @@ export default async function handler(req) {
 
   // Shrink font further as either the title or the column gets tighter.
   const titleFontSize = title.length > 40 ? "38px" : title.length > 25 ? "46px" : "54px";
+
+  // Build Base64 background image
+  const bgImageBase64 = bgImageArrayBuffer
+    ? `url(data:image/png;base64,${Buffer.from(bgImageArrayBuffer).toString("base64")})`
+    : `none`;
 
   // ── 3. Build image element (plain objects — no JSX) ───────────────────────
   const element = {
@@ -148,9 +162,10 @@ export default async function handler(req) {
         height: "100%",
         position: "relative",
         fontFamily: "Tajawal",
-        backgroundImage: `url(${BACKGROUND_IMAGE_URL})`,
+        backgroundImage: bgImageBase64,
         backgroundSize: "1200px 630px",
         backgroundRepeat: "no-repeat",
+        backgroundColor: "#0f172a", // Fallback color
       },
       children: [
         // ── Text column, absolutely positioned over the background ───────

@@ -1593,7 +1593,6 @@ function renderQuizSearchResults(exams) {
 
     // Get current category from navigation stack
     const currentCategory = navigationStack[navigationStack.length - 1];
-    if (!currentCategory) return;
 
     container.innerHTML = "";
     container.className = "grid-container";
@@ -1603,6 +1602,7 @@ function renderQuizSearchResults(exams) {
 
     // Render subcategories first (if any)
     if (
+      currentCategory &&
       currentCategory.subcategories &&
       currentCategory.subcategories.length > 0
     ) {
@@ -1625,7 +1625,7 @@ function renderQuizSearchResults(exams) {
 
     if (
       exams.length === 0 &&
-      (!currentCategory.subcategories ||
+      (!currentCategory || !currentCategory.subcategories ||
         currentCategory.subcategories.length === 0)
     ) {
       // Empty state for no results
@@ -1884,6 +1884,68 @@ async function renderRootCategories() {
           true,
           category,
         );
+
+        // Add info button for courses
+        const infoContainer = document.createElement("div");
+        infoContainer.className = "course-info-container";
+        
+        const infoBtn = document.createElement("button");
+        infoBtn.className = "course-info-btn";
+        infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
+        infoBtn.type = "button";
+        
+        const tooltip = document.createElement("div");
+        tooltip.className = "course-info-tooltip tooltip-interactive";
+        
+        const eduTypeAr = {
+          "University": "جامعي",
+          "High": "ثانوي",
+          "Middle": "إعدادي",
+          "Primary": "إبتدائي",
+          "Featured": "كورسات مميزة"
+        }[category.education_type] || category.education_type || '-';
+
+        let courseInfoHtml = "";
+        if (category.education_type === "Featured") {
+          courseInfoHtml = `
+            <div class="tooltip-row" style="justify-content: center;">
+              <span style="color: var(--color-primary); font-size: 1rem;">مادة مميزة</span>
+            </div>
+          `;
+        } else {
+          courseInfoHtml = `
+            <div class="tooltip-row"><span>التعليم:</span> <span>${eduTypeAr}</span></div>
+            ${category.faculty && category.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${category.faculty}</span></div>` : ''}
+            <div class="tooltip-row"><span>العام:</span> <span>${category.year || '-'}</span></div>
+            <div class="tooltip-row"><span>الترم:</span> <span>${category.term || '-'}</span></div>
+          `;
+        }
+
+        tooltip.innerHTML = courseInfoHtml;
+        
+        infoContainer.appendChild(infoBtn);
+        infoContainer.appendChild(tooltip);
+        
+        infoBtn.onclick = (e) => {
+          if (window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const willShow = !tooltip.classList.contains("show");
+          if (willShow) {
+            document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
+              if (t !== tooltip) t.classList.remove("show");
+            });
+          }
+          tooltip.classList.toggle("show", willShow);
+          if (willShow) {
+            positionCourseInfoTooltip(tooltip, infoBtn);
+            attachCourseInfoTooltipDismissOnScroll(tooltip);
+          }
+        };
+        tooltip.onclick = (e) => e.stopPropagation();
+
+        card.appendChild(infoContainer);
+
         card.onclick = () => renderCategory(category);
         fragment.appendChild(card);
       });
@@ -1955,28 +2017,9 @@ function renderUserQuizzesView() {
     if (isAdminAuthenticated()) {
       const adminSignOutBtn = document.createElement("button");
       adminSignOutBtn.type = "button";
-      adminSignOutBtn.textContent = "🚪 تسجيل الخروج";
-      adminSignOutBtn.className = "btn";
+      adminSignOutBtn.innerHTML = `<span>تسجيل الخروج</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="15px" width="15px" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
+      adminSignOutBtn.className = "btn admin-log-out-btn";
       adminSignOutBtn.setAttribute("aria-label", "تسجيل خروج المشرف");
-      adminSignOutBtn.style.cssText = `display: inline-block;
-        padding: 10px 18px;
-        background: var(--color-error-light, #fed7d7);
-        border: 1.5px solid var(--color-error, #f56565);
-        color: var(--color-error, #c53030);
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        cursor: pointer;
-        transition: all 0.2s;
-        margin-left: 10px;`;
-      adminSignOutBtn.onmouseover = () => {
-        adminSignOutBtn.style.background = "var(--color-error, #e53e3e)";
-        adminSignOutBtn.style.color = "#ffffff";
-      };
-      adminSignOutBtn.onmouseout = () => {
-        adminSignOutBtn.style.background = "var(--color-error-light, #fed7d7)";
-        adminSignOutBtn.style.color = "var(--color-error, #c53030)";
-      };
       adminSignOutBtn.onclick = () => {
         signOut();
         window.location.reload();
@@ -3700,7 +3743,7 @@ function renderCategory(category) {
     const fragment = document.createDocumentFragment();
 
     // Render subcategories
-    category.subcategories.forEach((subCatKey) => {
+    (category.subcategories || []).forEach((subCatKey) => {
       const subCat = categoryTree[subCatKey];
       if (subCat) {
         const itemCount = getCourseItemCount(subCat);
@@ -3717,7 +3760,7 @@ function renderCategory(category) {
     });
 
     // Render exams
-    category.exams.forEach((exam) => {
+    (category.exams || []).forEach((exam) => {
       const card = createExamCard(exam);
       fragment.appendChild(card);
     });
@@ -3725,7 +3768,7 @@ function renderCategory(category) {
     container.appendChild(fragment);
 
     // Show empty state if no content
-    if (category.subcategories.length === 0 && category.exams.length === 0) {
+    if ((category.subcategories || []).length === 0 && (category.exams || []).length === 0) {
       container.innerHTML = `
         <div class="empty-state" role="status">
           <div class="empty-state-icon" aria-hidden="true">🔭</div>

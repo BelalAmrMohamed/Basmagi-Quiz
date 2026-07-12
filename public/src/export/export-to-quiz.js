@@ -124,7 +124,9 @@ const buildQuizInfoRows = (config, questionCount) => {
 // defines what highlightCode expects to find in scope.
 const serializeHlKeywords = (hlKeywords) => {
   const entries = Object.entries(hlKeywords).map(([lang, set]) => {
-    const items = Array.from(set).map((w) => JSON.stringify(w)).join(", ");
+    const items = set
+      ? Array.from(set).map((w) => JSON.stringify(w)).join(", ")
+      : "";
     return `  ${JSON.stringify(lang)}: new Set([${items}])`;
   });
   return `{\n${entries.join(",\n")}\n}`;
