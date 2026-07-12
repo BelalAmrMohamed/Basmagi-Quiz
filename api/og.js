@@ -28,8 +28,15 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 // ── Brand constants ──────────────────────────────────────────────────────────
 const BRAND_BLUE = "#0088cc";
 
-const SITE_ORIGIN = process.env.SITE_ORIGIN
-  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://basmagi-quiz.vercel.app");
+// IMPORTANT: VERCEL_URL is the ephemeral, deployment-specific *.vercel.app
+// domain (different for every deploy), not the stable production domain.
+// Depending on project settings, unauthenticated requests to that domain can
+// be redirected/gated, causing internal fetch() calls below (manifest,
+// background image) to silently receive an HTML page instead of the real
+// asset — this is what broke the manifest fetch. Always prefer the known
+// production origin; set SITE_ORIGIN as an env var if this ever needs to
+// point elsewhere (e.g. a genuine staging domain).
+const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi-quiz.vercel.app";
 
 const BACKGROUND_IMAGE_URL = `${SITE_ORIGIN}/assets/images/thumbnails/quiz-thumbnail-customizable.png`;
 
@@ -247,6 +254,14 @@ export default async function handler(req) {
   };
 
   // ── 4. Return ImageResponse ───────────────────────────────────────────────
+  // Only cache aggressively when the render is fully correct (background
+  // image loaded AND — if a quizId was given — metadata was found). A
+  // transient failure (e.g. manifest/Supabase hiccup, bg image fetch error)
+  // would otherwise be locked into the CDN for a year via the immutable
+  // cache below, silently breaking that quiz's thumbnail until OG_IMAGE_VERSION
+  // is bumped project-wide.
+  const renderIsComplete = bgImageArrayBuffer !== null && (!quizId || meta !== null);
+
   return new ImageResponse(element, {
     width: 1200,
     height: 630,
@@ -259,8 +274,9 @@ export default async function handler(req) {
       },
     ],
     headers: {
-      "Cache-Control":
-        "public, immutable, no-transform, max-age=31536000, s-maxage=31536000",
+      "Cache-Control": renderIsComplete
+        ? "public, immutable, no-transform, max-age=31536000, s-maxage=31536000"
+        : "public, s-maxage=300, stale-while-revalidate=3600",
     },
   });
 }

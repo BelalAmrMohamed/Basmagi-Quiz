@@ -94,6 +94,30 @@ const OG_IMAGE_VERSION = 1;
 // ── Canonical site origin ────────────────────────────────────────────────────
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
+// ── Question type translation (Arabic) ────────────────────────────────────────
+// Mirrors og.js's QUESTION_TYPE_AR — kept in sync so the page <title>/OG title
+// and the generated thumbnail always show the same translated labels.
+// The quiz-scanning script always emits these exact, case-sensitive English
+// labels; we translate them for display only.
+const QUESTION_TYPE_AR = {
+  "MCQ": "إختياري",
+  "Essay": "مقالي",
+  "True/False": "صح/خطأ",
+};
+
+/**
+ * Translates a questionTypes string (already joined with " · ") into Arabic
+ * when isArabic is true, by exact-matching each known English label.
+ * Order and separators are preserved; unrecognized labels pass through as-is.
+ */
+function translateQuestionTypes(questionTypesStr, isArabic) {
+  if (!questionTypesStr || !isArabic) return questionTypesStr;
+  return questionTypesStr
+    .split(" · ")
+    .map((part) => QUESTION_TYPE_AR[part] || part)
+    .join(" · ");
+}
+
 // =============================================================================
 // Handler
 // =============================================================================
@@ -256,15 +280,16 @@ function buildTitle(meta) {
     firstLetterMatch &&
     /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(firstLetterMatch[0]);
   const label = isArabic ? "سؤال" : "Questions";
+  const translatedTypes = translateQuestionTypes(meta.questionTypes, isArabic);
 
   let details = "";
   if (meta.questionCount != null) {
     details = `${meta.questionCount} ${label}`;
-    if (meta.questionTypes) {
-      details += ` (${meta.questionTypes})`;
+    if (translatedTypes) {
+      details += ` (${translatedTypes})`;
     }
-  } else if (meta.questionTypes) {
-    details = meta.questionTypes;
+  } else if (translatedTypes) {
+    details = translatedTypes;
   }
 
   return details ? `${meta.title}: ${details}` : meta.title;
