@@ -164,7 +164,7 @@ const LOGO = "منصة إمتحانات بصمجي";
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
-  const BUILD_TAG = 'core@6.0.10';
+  const BUILD_TAG = 'core@6.0.11';
 
   function printHelp() {
     log.rule('═', 64);
