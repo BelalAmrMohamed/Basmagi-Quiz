@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v6.0.15";
+const CACHE_VERSION = "basmagi-v6.0.16";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -155,6 +155,22 @@ function isImageRequest(request) {
     request.destination === "image" ||
     /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(new URL(request.url).pathname)
   );
+}
+
+// Helper: Check if request is for a dynamically-generated OG image route.
+// These come back as streamed ImageResponse bodies (no file extension, and
+// destination is often "document" when hit via direct navigation), so the
+// extension/destination checks in isImageRequest() miss them. They must
+// never go through networkFirstStrategy's cache.put(), since attempting to
+// clone+cache a streamed Satori response can throw and abort the response
+// the browser actually receives, producing a blank page.
+function isDynamicOGImageRequest(request) {
+  try {
+    const url = new URL(request.url);
+    return url.origin === self.location.origin && url.pathname === "/api/og";
+  } catch {
+    return false;
+  }
 }
 
 // Helper: Check if request is for audio/video media (should bypass cache to prevent stale media on reload)
@@ -317,6 +333,15 @@ self.addEventListener("fetch", (event) => {
         });
       }),
     );
+  } else if (isDynamicOGImageRequest(request)) {
+    // Network-only, no clone/cache.put(). /api/og returns a streamed
+    // ImageResponse (Satori) body with no file extension, so it never
+    // matched isImageRequest() and was falling into networkFirstStrategy's
+    // catch-all — which clones the response and calls cache.put() on it.
+    // That clone/put on a streamed body can throw, aborting the response
+    // the browser receives and resulting in a blank page instead of the
+    // thumbnail. Pass it straight through untouched.
+    event.respondWith(fetch(request));
   } else if (isImageRequest(request)) {
     // Cache-first strategy for images
     event.respondWith(cacheFirstStrategy(request, IMAGE_CACHE));
