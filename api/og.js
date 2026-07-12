@@ -93,35 +93,47 @@ function translateQuestionTypes(questionTypesStr, isArabic) {
 let _fontDataPromise = null;
 
 /**
- * Fetches the Tajawal Bold woff2 font from Google Fonts.
+ * Fetches the Tajawal Bold TTF font from Google Fonts.
  * Result is cached at module level so warm Edge invocations skip the fetch.
+ *
+ * IMPORTANT: @vercel/og's ImageResponse (Satori's font parser) does NOT
+ * support WOFF2 — passing woff2 bytes throws "Unsupported OpenType
+ * signature wOF2" inside ImageResponse, which is uncaught here and results
+ * in a broken/empty function response (the blank-thumbnail bug). Only
+ * TTF/OTF/WOFF(v1) are supported. Google Fonts picks the format to serve
+ * based on User-Agent — modern browser UAs get woff2, but a legacy UA that
+ * doesn't advertise woff2 support gets TTF instead. We spoof an old UA here
+ * specifically to force the TTF variant.
  */
 function loadFont() {
   if (_fontDataPromise) return _fontDataPromise;
   _fontDataPromise = (async () => {
-    // Request CSS with a desktop user-agent so Google returns woff2 format.
+    // Request CSS with a legacy user-agent so Google Fonts falls back to
+    // serving TTF (woff2 is unsupported by Satori's font parser).
     const cssRes = await fetch(
       "https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap",
       {
         headers: {
+          // Old Android browser UA — predates woff2 support, so Google
+          // Fonts' UA sniffing serves .ttf in the @font-face src instead.
           "User-Agent":
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Linux; U; Android 2.3.3; en-us; Nexus S Build/GRI40) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1",
         },
       },
     );
     const css = await cssRes.text();
 
-    // Extract the woff2 URL for weight 700 (bold).
+    // Extract the ttf URL for weight 700 (bold).
     // The CSS contains multiple @font-face blocks; grab the one for 700.
     const bold700Block = css.split("@font-face").find((block) =>
       block.includes("font-weight: 700"),
     );
     const fontUrl = (bold700Block || css).match(
-      /src:\s*url\(([^)]+\.woff2[^)]*)\)/,
+      /src:\s*url\(([^)]+\.ttf[^)]*)\)/,
     )?.[1];
 
     if (!fontUrl) {
-      throw new Error("[og] Could not extract Tajawal woff2 URL from CSS");
+      throw new Error("[og] Could not extract Tajawal ttf URL from CSS");
     }
 
     const fontRes = await fetch(fontUrl);
@@ -139,7 +151,14 @@ export default async function handler(req) {
 
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
   const [fontData, quizData, bgImageArrayBuffer, manifestData] = await Promise.all([
-    loadFont(),
+    // If the font fetch/parse ever fails again (network hiccup, Google
+    // Fonts markup change, etc.), fall back to null rather than letting
+    // the whole handler throw — ImageResponse still renders fine without
+    // a custom font entry, just with the system default instead of Tajawal.
+    loadFont().catch((err) => {
+      console.error("[og] font load error:", err);
+      return null;
+    }),
     quizId ? fetchQuizMeta(quizId) : null,
     fetch(BACKGROUND_IMAGE_URL).then((res) => {
       if (!res.ok) throw new Error(`Failed to load background image: ${res.status}`);
@@ -255,24 +274,30 @@ export default async function handler(req) {
 
   // ── 4. Return ImageResponse ───────────────────────────────────────────────
   // Only cache aggressively when the render is fully correct (background
-  // image loaded AND — if a quizId was given — metadata was found). A
-  // transient failure (e.g. manifest/Supabase hiccup, bg image fetch error)
-  // would otherwise be locked into the CDN for a year via the immutable
-  // cache below, silently breaking that quiz's thumbnail until OG_IMAGE_VERSION
-  // is bumped project-wide.
-  const renderIsComplete = bgImageArrayBuffer !== null && (!quizId || meta !== null);
+  // image loaded, font loaded, AND — if a quizId was given — metadata was
+  // found). A transient failure (e.g. manifest/Supabase hiccup, bg image or
+  // font fetch error) would otherwise be locked into the CDN for a year via
+  // the immutable cache below, silently breaking that quiz's thumbnail until
+  // OG_IMAGE_VERSION is bumped project-wide.
+  const renderIsComplete =
+    bgImageArrayBuffer !== null && fontData !== null && (!quizId || meta !== null);
 
   return new ImageResponse(element, {
     width: 1200,
     height: 630,
-    fonts: [
-      {
-        name: "Tajawal",
-        data: fontData,
-        weight: 700,
-        style: "normal",
-      },
-    ],
+    // Only pass a fonts entry when the font actually loaded — ImageResponse
+    // falls back to a default system font if the array is empty, which is
+    // preferable to crashing the whole render over a font hiccup.
+    fonts: fontData
+      ? [
+          {
+            name: "Tajawal",
+            data: fontData,
+            weight: 700,
+            style: "normal",
+          },
+        ]
+      : [],
     headers: {
       "Cache-Control": renderIsComplete
         ? "public, immutable, no-transform, max-age=31536000, s-maxage=31536000"

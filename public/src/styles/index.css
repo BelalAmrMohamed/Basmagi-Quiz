@@ -1671,12 +1671,12 @@ Container
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 20px;
+  position: static;
+  margin-top: auto;
   width: 100%;
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+  /* bottom: 16px; */
+  /* left: 16px; */
+  /* right: 16px; */
   width: calc(100% - 32px);
 }
 
@@ -2320,44 +2320,6 @@ Container
 
   .header-badge {
     display: none;
-  }
-}
-
-/*
- * Tablet-only card/grid overrides — MUST be scoped to min-width: 641px.
- *
- * WHY: The mobile list-row layout lives in @media (max-width: 640px) at an
- * earlier position in this file. Without the min-width guard, a plain
- * @media (max-width: 768px) block here (later in the cascade) would override
- * the 640px block's display:flex, padding:0 16px, etc. — completely breaking
- * the mobile UI. The guard ensures these tablet styles only apply between
- * 641px and 768px, never below 641px.
- */
-@media (min-width: 641px) and (max-width: 768px) {
-  .grid-container {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
-
-  .card,
-  .category-card,
-  .exam-card {
-    padding: 24px;
-  }
-
-  .category-card {
-    padding: 15px;
-  }
-
-  .card p,
-  .category-card p,
-  .exam-card p {
-    margin-bottom: 5px;
-  }
-
-  .category-card .icon {
-    font-size: 2.5rem;
-    margin-bottom: 0;
   }
 }
 

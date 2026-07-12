@@ -89,7 +89,7 @@ function findQuizInManifest(quizId) {
 
 // ── OG image version bump ────────────────────────────────────────────────────
 // Increment this when you change the /api/og layout to bust Telegram's cache.
-const OG_IMAGE_VERSION = 1;
+const OG_IMAGE_VERSION = 2;
 
 // ── Canonical site origin ────────────────────────────────────────────────────
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
