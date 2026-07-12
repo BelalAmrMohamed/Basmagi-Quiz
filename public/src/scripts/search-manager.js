@@ -151,11 +151,15 @@ export class SearchManager {
             this.elements.headerSearchBtn.style.display = "flex";
           }
         } else {
-          // No exams — hide the trigger button and close the bar if open
+          // No exams — hide the trigger button and close the bar if open.
+          // silent=true: this is a UI-visibility sync, not a user closing
+          // search, so it must NOT cascade into onSearchCallback(isReset)
+          // -> renderRootCategories(), which would wipe the URL/view we're
+          // in the middle of navigating to (see index.js renderCategory()).
           if (this.elements.headerSearchBtn) {
             this.elements.headerSearchBtn.style.display = "none";
           }
-          this.closeSearchBar();
+          this.closeSearchBar(true);
         }
       }
     }
@@ -790,7 +794,7 @@ export class SearchManager {
   /**
    * NEW: Collapse the search bar and reset search state + view
    */
-  closeSearchBar() {
+  closeSearchBar(silent = false) {
     if (!this.container) return;
     this.isBarOpen = false;
     this.container.classList.remove("is-open");
@@ -809,13 +813,22 @@ export class SearchManager {
         this.elements.filterToggle.setAttribute("aria-expanded", "false");
       }
     }
-    // Trigger a reset (restores original view)
-    if (this.filters.searchQuery || this.hasActiveFilters()) {
+    // Trigger a reset (restores original view) — but ONLY for a genuine
+    // user-initiated close (× button / Escape). Callers that are merely
+    // syncing UI visibility (e.g. updateContextVisibility() when a category
+    // has no exams) pass silent=true so we don't cascade into
+    // onSearchCallback -> renderRootCategories(), which would wipe out
+    // whatever view/URL the app just navigated to.
+    if (!silent && (this.filters.searchQuery || this.hasActiveFilters())) {
       this._resetSearchState();
       // Signal a full reset to index.js so it can re-render the proper root view
       if (this.onSearchCallback) {
         this.onSearchCallback(null, this.currentContext, true /* isReset */);
       }
+    } else if (silent) {
+      // Still clear internal state so a stale query/filter doesn't linger,
+      // just without firing the reset callback.
+      this._resetSearchState();
     }
   }
 
