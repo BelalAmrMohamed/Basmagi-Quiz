@@ -3714,6 +3714,13 @@ function renderCategory(category) {
     const catKey = category.key || Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
+    console.log("[DEBUG renderCategory]", {
+      categoryName: category && category.name,
+      categoryKey: category && category.key,
+      resolvedCatKey: catKey,
+      isRestoringState: _isRestoringState,
+      category,
+    });
     if (catKey) {
       const slugPath = catKey.split("/").map(toSlug).join("/");
       // Encode each segment individually (encodeURIComponent handles Arabic,
