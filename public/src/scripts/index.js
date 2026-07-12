@@ -1730,6 +1730,7 @@ async function renderRootCategories() {
     if (_isRestoringState) {
       history.replaceState({ view: "root" }, "", window.location.pathname);
     } else {
+      console.log("[DEBUG renderRootCategories] pushState to ROOT — this strips any hash!", new Error("stack trace").stack);
       history.pushState({ view: "root" }, "", window.location.pathname);
     }
 
@@ -3732,11 +3733,28 @@ function renderCategory(category) {
       // ── Bug 1 Fix: record this navigation in the browser history ───────────
       // pushState so back fires popstate → restoreViewFromURL(); during popstate
       // restoration only replaceState so we don't create a phantom entry.
-      if (!_isRestoringState) {
-        history.pushState({ view: "category", slugPath }, "", url);
-      } else {
-        history.replaceState({ view: "category", slugPath }, "", url);
+      try {
+        if (!_isRestoringState) {
+          history.pushState({ view: "category", slugPath }, "", url);
+        } else {
+          history.replaceState({ view: "category", slugPath }, "", url);
+        }
+        console.log("[DEBUG renderCategory] pushState/replaceState SUCCEEDED", {
+          urlAttempted: url,
+          hrefAfterCall: window.location.href,
+          hashAfterCall: window.location.hash,
+        });
+      } catch (pushErr) {
+        console.error("[DEBUG renderCategory] pushState/replaceState THREW", pushErr, {
+          urlAttempted: url,
+        });
       }
+      setTimeout(() => {
+        console.log("[DEBUG renderCategory] URL 0ms after render (post-microtask check)", {
+          hrefNow: window.location.href,
+          hashNow: window.location.hash,
+        });
+      }, 0);
     }
     // Update search context when entering a category
     if (searchManager) {
