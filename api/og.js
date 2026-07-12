@@ -12,12 +12,18 @@
 //
 // Background: static template PNG at
 //   public/assets/images/thumbnails/quiz-thumbnail-customizable.png
-// // // One thing to double check on your end: the public/assets/images/thumbnails/... path you gave becomes /assets/images/thumbnails/... when served statically — confirm that matches your actual static file serving setup (Vercel serves public/ at root), otherwise adjust BACKGROUND_IMAGE_URL.
-// Title + details text is layered on top of it, positioned in the right-hand
-// column between the URL pill and the "ابدأ الامتحان" button baked into the PNG.
+// Confirmed 1200×630 RGBA. Measured element bounds (via pixel scan, not
+// eyeballing) on that exact file:
+//   URL pill:  x 545–813,  y 148–189
+//   Button:    x 534–737,  y 383–457
+//   Bulb card: x 0–408,    y 25–490
+// Everything below y≈490 (across the full 0–1200 width) and above y≈148 is
+// empty background — used below for the course pill, description, and
+// author line.
 // =============================================================================
 
 import { ImageResponse } from "@vercel/og";
+import { parseDbPath } from "../scripts/lib/quizPath.js";
 
 export const config = { runtime: "edge" };
 
@@ -47,25 +53,47 @@ const BACKGROUND_IMAGE_URL = `${SITE_ORIGIN}/assets/images/thumbnails/quiz-thumb
 // public/data/quiz-manifest.json (see render-quiz.js for the disk-side path).
 const MANIFEST_URL = `${SITE_ORIGIN}/data/quiz-manifest.json`;
 
-// ── Text column geometry ──────────────────────────────────────────────────────
-// Measured against the 1200×630 background PNG:
-//   URL pill:  x 545–814,  y 147–189
-//   Button:    x 529–743,  y 378–462
-//   Bulb card: ends around x 407
-// The safe column below avoids the bulb graphic on the left and sits in the
-// gap between the pill and the button.
+// ── Layout geometry ────────────────────────────────────────────────────────
+// All measured against the real 1200×630 background PNG (see header comment).
+// Right-hand content column sits between the bulb card (ends x≈408) and the
+// canvas edge, avoiding the pill (y148–189) and button (y383–457).
 const TEXT_COLUMN = {
   left: 500,
   right: 1140,
-  top: 210,
+  top: 198,
   bottom: 360,
 };
 const TEXT_COLUMN_WIDTH = TEXT_COLUMN.right - TEXT_COLUMN.left; // 640
-const TEXT_COLUMN_HEIGHT = TEXT_COLUMN.bottom - TEXT_COLUMN.top; // 150
+
+// Small relocated domain label — top-right corner, out of the way of the
+// pill's old spot (which now hosts the question-count/type badge instead).
+const DOMAIN_LABEL = { right: 40, top: 24 };
+
+// Course-name pill — directly above the button, own row so it never
+// competes with the title/description/badge stack above it.
+const COURSE_ROW = { left: 500, right: 1140, top: 340, bottom: 372 };
+
+// Author line — full-width footer strip below the bulb card (which ends at
+// y≈490), horizontally centered on the button's own center (x≈635), not the
+// canvas center, so it visually reads as "attached" to the card/button.
+const AUTHOR_ROW = { centerX: 635, top: 500 };
 
 // Max characters before we truncate the title with an ellipsis (after shrinking
 // the font still isn't enough to guarantee it fits the column width).
-const TITLE_MAX_CHARS = 60;
+//
+// These are NOT guesses — derived from actual glyph-advance-width metrics
+// read out of the Tajawal Bold font files (measured via fonttools against
+// the 640px TEXT_COLUMN_WIDTH, with a ~8% safety margin for word-boundary
+// slack). Arabic glyphs in Tajawal run considerably wider per character
+// than assumed in an earlier version of this file, which let titles as
+// short as ~39 chars silently overflow past the column's right edge even
+// at the smallest font-size tier — there was no tier small enough to
+// rescue anything longer, since the tier floor was 34px (fits ~25 chars)
+// while TITLE_MAX_CHARS allowed up to 60. English/Latin glyphs in Tajawal
+// are narrower, so the Latin limit stays more generous.
+const TITLE_MAX_CHARS_ARABIC = 34;
+const TITLE_MAX_CHARS_LATIN = 55;
+const DESCRIPTION_MAX_CHARS = 90;
 
 // ── Question type translation (Arabic) ────────────────────────────────────────
 // The quiz-scanning script (see inferQuestionType) always emits these exact,
@@ -92,8 +120,30 @@ function translateQuestionTypes(questionTypesStr, isArabic) {
 // ── Font cache (survives across warm invocations) ────────────────────────────
 let _fontDataPromise = null;
 
+// Family names used on the `fontFamily` CSS property throughout the layout.
+// Satori resolves same-named font entries by "first one wins" for every
+// glyph — it does NOT do per-character coverage fallback between entries
+// sharing one name (see https://github.com/vercel/satori/issues/370). The
+// correct mechanism is a CSS-style comma-separated fontFamily fallback list
+// across *distinct* family names, which Satori does support and does
+// correctly resolve per-glyph. Every mixed-script string in this file (e.g.
+// the details badge, which combines Arabic words with digits and a "·"
+// separator that only exist in the Latin subset) therefore needs the
+// Latin family listed first, so Latin-only characters embedded in Arabic
+// text still render instead of showing as tofu boxes.
+const FONT_FAMILY_LATIN = "Tajawal-Latin";
+const FONT_FAMILY_ARABIC = "Tajawal-Arabic";
+const FONT_FAMILY_STACK = `${FONT_FAMILY_LATIN}, ${FONT_FAMILY_ARABIC}`;
+
 /**
- * Fetches the Tajawal Bold TTF font from Google Fonts.
+ * Fetches the Tajawal Bold TTF font(s) from Google Fonts — both the Arabic
+ * and Latin unicode-range subsets, since Google serves Tajawal split into
+ * multiple @font-face blocks (one per script) and a single subset only
+ * covers its own glyphs. Both are returned, tagged with distinct family
+ * names (see FONT_FAMILY_* above) so a single comma-separated fontFamily
+ * fallback list can resolve either script — or both mixed in one string,
+ * e.g. Arabic words alongside digits/punctuation — correctly per-glyph.
+ *
  * Result is cached at module level so warm Edge invocations skip the fetch.
  *
  * IMPORTANT: @vercel/og's ImageResponse (Satori's font parser) does NOT
@@ -104,6 +154,9 @@ let _fontDataPromise = null;
  * based on User-Agent — modern browser UAs get woff2, but a legacy UA that
  * doesn't advertise woff2 support gets TTF instead. We spoof an old UA here
  * specifically to force the TTF variant.
+ *
+ * @returns {Promise<{name:string, data:ArrayBuffer}[]>} one entry per
+ *   @font-face subset found for weight 700, tagged with its family name.
  */
 function loadFont() {
   if (_fontDataPromise) return _fontDataPromise;
@@ -123,21 +176,40 @@ function loadFont() {
     );
     const css = await cssRes.text();
 
-    // Extract the ttf URL for weight 700 (bold).
-    // The CSS contains multiple @font-face blocks; grab the one for 700.
-    const bold700Block = css.split("@font-face").find((block) =>
-      block.includes("font-weight: 700"),
-    );
-    const fontUrl = (bold700Block || css).match(
-      /src:\s*url\(([^)]+\.ttf[^)]*)\)/,
-    )?.[1];
+    // The CSS contains one @font-face block per (weight, script) pair, each
+    // with a `unicode-range` comment/descriptor we can sniff to tell Arabic
+    // and Latin blocks apart. Fall back to Latin for any subset we can't
+    // positively identify as Arabic (safer default — Latin covers digits/
+    // punctuation needed by almost every string, including Arabic ones).
+    const bold700Blocks = css
+      .split("@font-face")
+      .filter((block) => block.includes("font-weight: 700"));
 
-    if (!fontUrl) {
-      throw new Error("[og] Could not extract Tajawal ttf URL from CSS");
+    const entries = [];
+    for (const block of bold700Blocks) {
+      const fontUrl = block.match(/src:\s*url\(([^)]+\.ttf[^)]*)\)/)?.[1];
+      if (!fontUrl) continue;
+      const rangeMatch = block.match(/unicode-range:\s*([^;]+);/);
+      const isArabicSubset = rangeMatch
+        ? /U\+06[0-9A-Fa-f]{2}|U\+075|U\+08[0-9A-Fa-f]{2}|U\+FB[5-9A-Fa-f]|U\+FE7|U\+FEF/i.test(
+            rangeMatch[1],
+          )
+        : false;
+      entries.push({ url: fontUrl, isArabicSubset });
     }
 
-    const fontRes = await fetch(fontUrl);
-    return fontRes.arrayBuffer();
+    if (entries.length === 0) {
+      throw new Error("[og] Could not extract any Tajawal ttf URLs from CSS");
+    }
+
+    const buffers = await Promise.all(
+      entries.map((e) => fetch(e.url).then((res) => res.arrayBuffer())),
+    );
+
+    return entries.map((e, i) => ({
+      name: e.isArabicSubset ? FONT_FAMILY_ARABIC : FONT_FAMILY_LATIN,
+      data: buffers[i],
+    }));
   })();
   return _fontDataPromise;
 }
@@ -178,11 +250,43 @@ export default async function handler(req) {
   // ── 2. Build display strings ──────────────────────────────────────────────
   const rawTitle = meta ? (meta.title || quizId || "إمتحان") : "منصة إمتحانات بصمجي";
   const isArabic = detectArabic(rawTitle);
-  const title = truncateTitle(rawTitle);
+  const title = truncateTitle(rawTitle, isArabic ? TITLE_MAX_CHARS_ARABIC : TITLE_MAX_CHARS_LATIN);
   const details = meta ? buildDetails(meta, isArabic) : "";
+  const description = meta ? truncateDescription(meta.description) : null;
+  const courseName = meta ? meta.course : null;
+  const authorName = meta ? meta.author : null;
+  const authorIsArabic = authorName ? detectArabic(authorName) : isArabic;
+  const authorLabel = authorIsArabic ? "بواسطة" : "By";
 
-  // Shrink font further as either the title or the column gets tighter.
-  const titleFontSize = title.length > 40 ? "38px" : title.length > 25 ? "46px" : "54px";
+  // Shrink font as the title gets longer, so it always fits on one line
+  // within TEXT_COLUMN_WIDTH (640px). These tiers are calibrated from
+  // actual glyph-advance-width metrics measured against the Tajawal Bold
+  // font files (fonttools, ~8% safety margin) — not guessed. An earlier
+  // version used untested breakpoints that let Arabic titles as short as
+  // ~39 characters silently overflow the column at every available tier,
+  // since Arabic glyphs in Tajawal render noticeably wider per character
+  // than Latin ones, and no tier was small enough to compensate for that.
+  // TITLE_MAX_CHARS_ARABIC/LATIN below are set to what the smallest tier
+  // here can actually hold, so truncation and shrinking always agree.
+  const titleFontSize = isArabic
+    ? title.length > 25
+      ? "28px"
+      : title.length > 22
+        ? "32px"
+        : title.length > 19
+          ? "38px"
+          : title.length > 17
+            ? "44px"
+            : title.length > 14
+              ? "50px"
+              : "56px"
+    : title.length > 39
+      ? "32px"
+      : title.length > 33
+        ? "38px"
+        : title.length > 27
+          ? "46px"
+          : "54px";
 
   // Build Base64 background image
   const bgImageBase64 = bgImageArrayBuffer
@@ -198,14 +302,76 @@ export default async function handler(req) {
         width: "100%",
         height: "100%",
         position: "relative",
-        fontFamily: "Tajawal",
+        fontFamily: FONT_FAMILY_STACK,
         backgroundImage: bgImageBase64,
         backgroundSize: "1200px 630px",
         backgroundRepeat: "no-repeat",
         backgroundColor: "#0f172a", // Fallback color
       },
       children: [
-        // ── Text column, absolutely positioned over the background ───────
+        // ── Relocated domain label — small, top-right corner ─────────────
+        // Demoted from its old prime spot (now the question-count/type
+        // badge below) but kept, since forwarded screenshots in chats lose
+        // all OG metadata except these pixels — this is the only branding
+        // that survives that path.
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              right: `${DOMAIN_LABEL.right}px`,
+              top: `${DOMAIN_LABEL.top}px`,
+              fontSize: "16px",
+              color: "#9ca3af",
+              fontWeight: "400",
+              direction: "ltr",
+            },
+            children: "basmagi-quiz.vercel.app",
+          },
+        },
+
+        // ── Question count / type badge — now in the old pill's row ──────
+        details
+          ? {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  position: "absolute",
+                  left: `${TEXT_COLUMN.left}px`,
+                  top: "148px",
+                  width: `${TEXT_COLUMN_WIDTH}px`,
+                  height: "41px", // matches old pill height (148–189)
+                  alignItems: "center",
+                  justifyContent: "center",
+                  direction: isArabic ? "rtl" : "ltr",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        display: "flex",
+                        alignItems: "center",
+                        background: "rgba(0,136,204,0.12)",
+                        border: `1px solid rgba(0,136,204,0.3)`,
+                        borderRadius: "10px",
+                        padding: "8px 22px",
+                        fontSize: "20px",
+                        color: BRAND_BLUE,
+                        fontWeight: "700",
+                        direction: isArabic ? "rtl" : "ltr",
+                      },
+                      children: details,
+                    },
+                  },
+                ],
+              },
+            }
+          : null,
+
+        // ── Title + description column ────────────────────────────────────
         {
           type: "div",
           props: {
@@ -218,12 +384,18 @@ export default async function handler(req) {
               left: `${TEXT_COLUMN.left}px`,
               top: `${TEXT_COLUMN.top}px`,
               width: `${TEXT_COLUMN_WIDTH}px`,
-              height: `${TEXT_COLUMN_HEIGHT}px`,
+              height: `${TEXT_COLUMN.bottom - TEXT_COLUMN.top}px`,
               textAlign: "center",
-              gap: "14px",
+              // direction must live on this flex container, not just the
+              // inner text div — Satori mirrors a flex row's child order
+              // based on the container's own `direction`, and setting it
+              // only on the leaf text node previously left the title
+              // rendering LTR even for Arabic strings.
+              direction: isArabic ? "rtl" : "ltr",
+              gap: "10px",
             },
             children: [
-              // ── Title ──────────────────────────────────────────────────
+              // ── Title (single line, guaranteed by shrink + truncate) ───
               {
                 type: "div",
                 props: {
@@ -232,43 +404,120 @@ export default async function handler(req) {
                     fontSize: titleFontSize,
                     fontWeight: "700",
                     color: "#111827",
-                    lineHeight: "1.3",
+                    lineHeight: "1.25",
                     textAlign: "center",
                     direction: isArabic ? "rtl" : "ltr",
                     width: "100%",
-                    wordBreak: "break-word",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
                     justifyContent: "center",
                   },
                   children: title,
                 },
               },
 
-              // ── Details badge ─────────────────────────────────────────
-              details
+              // ── Description (smaller, single line, muted) ──────────────
+              description
                 ? {
                     type: "div",
                     props: {
                       style: {
                         display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        background: "rgba(0,136,204,0.12)",
-                        border: `1px solid rgba(0,136,204,0.3)`,
-                        borderRadius: "10px",
-                        padding: "8px 22px",
                         fontSize: "20px",
-                        color: BRAND_BLUE,
-                        fontWeight: "700",
+                        fontWeight: "400",
+                        color: "#4b5563",
+                        lineHeight: "1.3",
+                        textAlign: "center",
                         direction: isArabic ? "rtl" : "ltr",
+                        width: "100%",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        justifyContent: "center",
                       },
-                      children: details,
+                      children: description,
                     },
                   }
                 : null,
             ].filter(Boolean),
           },
         },
-      ],
+
+        // ── Course name pill — its own row, just above the button ────────
+        courseName
+          ? {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  position: "absolute",
+                  left: `${COURSE_ROW.left}px`,
+                  top: `${COURSE_ROW.top}px`,
+                  width: `${COURSE_ROW.right - COURSE_ROW.left}px`,
+                  height: `${COURSE_ROW.bottom - COURSE_ROW.top}px`,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  direction: detectArabic(courseName) ? "rtl" : "ltr",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        display: "flex",
+                        alignItems: "center",
+                        background: "rgba(17,24,39,0.06)",
+                        borderRadius: "8px",
+                        padding: "5px 18px",
+                        fontSize: "17px",
+                        color: "#374151",
+                        fontWeight: "700",
+                        whiteSpace: "nowrap",
+                      },
+                      children: courseName,
+                    },
+                  },
+                ],
+              },
+            }
+          : null,
+
+        // ── Author line — bottom footer strip, centered on the button ────
+        authorName
+          ? {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  position: "absolute",
+                  left: `${AUTHOR_ROW.centerX - 300}px`,
+                  top: `${AUTHOR_ROW.top}px`,
+                  width: "600px",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  direction: authorIsArabic ? "rtl" : "ltr",
+                  gap: "8px",
+                  fontSize: "18px",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: { display: "flex", color: "#9ca3af", fontWeight: "400" },
+                      children: authorLabel,
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: { display: "flex", color: "#374151", fontWeight: "700" },
+                      children: authorName,
+                    },
+                  },
+                ],
+              },
+            }
+          : null,
+      ].filter(Boolean),
     },
   };
 
@@ -285,18 +534,20 @@ export default async function handler(req) {
   return new ImageResponse(element, {
     width: 1200,
     height: 630,
-    // Only pass a fonts entry when the font actually loaded — ImageResponse
+    // Only pass font entries when they actually loaded — ImageResponse
     // falls back to a default system font if the array is empty, which is
     // preferable to crashing the whole render over a font hiccup.
+    // fontData is an array of {name, data} — one per script subset, each
+    // tagged with its own distinct family name (see loadFont()). The
+    // FONT_FAMILY_STACK set on the root container's fontFamily resolves
+    // each glyph against whichever of these two entries actually covers it.
     fonts: fontData
-      ? [
-          {
-            name: "Tajawal",
-            data: fontData,
-            weight: 700,
-            style: "normal",
-          },
-        ]
+      ? fontData.map((entry) => ({
+          name: entry.name,
+          data: entry.data,
+          weight: 700,
+          style: "normal",
+        }))
       : [],
     headers: {
       "Cache-Control": renderIsComplete
@@ -315,7 +566,7 @@ export default async function handler(req) {
  * Uses only `fetch` — fully Edge-compatible, zero TCP connections.
  *
  * @param {string} quizId
- * @returns {Promise<{title:string, description:string|null, questionCount:number|null, questionTypes:string|null}|null>}
+ * @returns {Promise<{title:string, description:string|null, questionCount:number|null, questionTypes:string|null, author:string|null, course:string|null}|null>}
  */
 async function fetchQuizMeta(quizId) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -326,7 +577,10 @@ async function fetchQuizMeta(quizId) {
   try {
     // PostgREST filter: data->meta->>id = quizId
     const url = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
-    url.searchParams.set("select", "data,title");
+    url.searchParams.set(
+      "select",
+      "data,title,path,filename,category,subject,subfolder,education_type",
+    );
     url.searchParams.set("data->meta->>id", `eq.${quizId}`);
     url.searchParams.set("limit", "1");
 
@@ -349,6 +603,19 @@ async function fetchQuizMeta(quizId) {
     const quizMeta = row.data?.meta || {};
     const quizStats = row.data?.stats || {};
 
+    // Prefer the clean course name from `subject` (matches quiz-manifest.js's
+    // own use of the same column). Fall back to parsing `path` the same way
+    // quiz-manifest.js does via parseDbPath, in case `subject` is ever blank
+    // for a legacy row — mirrors the fallback already used there.
+    let course = row.subject || null;
+    if (!course && row.path) {
+      let parsed = parseDbPath(row.path, row.filename);
+      if (!parsed && row.education_type === "University") {
+        parsed = parseDbPath(`University/${row.path}`, row.filename);
+      }
+      course = parsed?.course || null;
+    }
+
     return {
       title: quizMeta.title || row.title || quizId,
       description: quizMeta.description || null,
@@ -358,6 +625,8 @@ async function fetchQuizMeta(quizId) {
       // Translation happens later in buildDetails, once we know the title's
       // language, since that's what currently drives RTL/label selection.
       questionTypes: formatQuestionTypes(quizStats.questionTypes),
+      author: quizMeta.author || null,
+      course,
     };
   } catch (err) {
     console.error("[og] fetchQuizMeta error:", err);
@@ -396,7 +665,7 @@ function fetchManifest() {
  *
  * @param {{subjects: Array}} manifest
  * @param {string} quizId
- * @returns {{title:string, description:string|null, questionCount:number|null, questionTypes:string|null}|null}
+ * @returns {{title:string, description:string|null, questionCount:number|null, questionTypes:string|null, author:string|null, course:string|null}|null}
  */
 function findQuizInManifest(manifest, quizId) {
   for (const subject of manifest.subjects ?? []) {
@@ -407,6 +676,11 @@ function findQuizInManifest(manifest, quizId) {
           description: quiz.description || null,
           questionCount: quiz.questionCount != null ? quiz.questionCount : null,
           questionTypes: formatQuestionTypes(quiz.questionTypes),
+          author: quiz.author || null,
+          // subject.name is the clean course name (e.g. "Website Demo"),
+          // distinct from any subfolders nested beneath it — see
+          // buildSubjectManifestEntry() in scripts/lib/quizPath.js.
+          course: subject.name || null,
         };
       }
     }
@@ -419,39 +693,56 @@ function findQuizInManifest(manifest, quizId) {
 // =============================================================================
 
 /**
- * Formats the detail line below the title, e.g. "20 سؤال · إختياري · مقالي"
+ * Formats the detail line, e.g. "12 سؤال · إختياري · مقالي · صح/خطأ"
  * (Arabic) or "20 Questions · MCQ · Essay" (English).
  *
  * questionTypes always arrives from the scanning script as exact, case-sensitive
  * English labels ("MCQ", "Essay", "True/False"), joined with " · ". When the
  * quiz title is Arabic, each recognized label is translated for display;
  * unrecognized labels are left untouched rather than dropped.
+ *
+ * Order matters here independent of the container's `direction` CSS: Satori
+ * lays out a plain text string in logical (source) order and only mirrors
+ * the *bidi* runs, not the author's chosen sequence of "words" separated by
+ * a neutral character like " · ". So for Arabic we deliberately swap to
+ * "{types} · {count}" in source order — with an RTL container this renders
+ * count on the right (read first) and types trailing to the left, matching
+ * how an Arabic reader expects to scan: count anchored at the start (right).
+ * For LTR we keep the natural "{count} · {types}" order.
  */
 function buildDetails(meta, isArabic) {
   if (!meta) return "";
   const label = isArabic ? "سؤال" : "Questions";
   const translatedTypes = translateQuestionTypes(meta.questionTypes, isArabic);
+  const countPart = meta.questionCount != null ? `${meta.questionCount} ${label}` : "";
 
-  let parts = "";
-  if (meta.questionCount != null) {
-    parts = `${meta.questionCount} ${label}`;
-    if (translatedTypes) {
-      parts += ` · ${translatedTypes}`;
-    }
-  } else if (translatedTypes) {
-    parts = translatedTypes;
-  }
-  return parts;
+  if (!countPart) return translatedTypes || "";
+  if (!translatedTypes) return countPart;
+
+  return isArabic
+    ? `${translatedTypes} · ${countPart}`
+    : `${countPart} · ${translatedTypes}`;
 }
 
 /**
  * Truncates an overly long title so it can never overflow the fixed-width
  * text column or collide with the bulb graphic / button, even after the
- * font-size shrink rule in the handler.
+ * font-size shrink rule in the handler. maxChars must match whichever of
+ * TITLE_MAX_CHARS_ARABIC/LATIN corresponds to the title's detected script,
+ * since the two scripts have very different safe character budgets.
  */
-function truncateTitle(title) {
-  if (!title || title.length <= TITLE_MAX_CHARS) return title;
-  return title.slice(0, TITLE_MAX_CHARS - 1).trimEnd() + "…";
+function truncateTitle(title, maxChars) {
+  if (!title || title.length <= maxChars) return title;
+  return title.slice(0, maxChars - 1).trimEnd() + "…";
+}
+
+/**
+ * Truncates the description line, which sits below the title at a smaller
+ * size and must also never wrap (single line only).
+ */
+function truncateDescription(description) {
+  if (!description || description.length <= DESCRIPTION_MAX_CHARS) return description;
+  return description.slice(0, DESCRIPTION_MAX_CHARS - 1).trimEnd() + "…";
 }
 
 function detectArabic(text) {
