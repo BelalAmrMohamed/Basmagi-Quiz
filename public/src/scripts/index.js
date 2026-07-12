@@ -3715,13 +3715,6 @@ function renderCategory(category) {
     const catKey = category.key || Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
-    console.log("[DEBUG renderCategory]", {
-      categoryName: category && category.name,
-      categoryKey: category && category.key,
-      resolvedCatKey: catKey,
-      isRestoringState: _isRestoringState,
-      category,
-    });
     if (catKey) {
       const slugPath = catKey.split("/").map(toSlug).join("/");
       // Encode each segment individually (encodeURIComponent handles Arabic,
@@ -3739,11 +3732,6 @@ function renderCategory(category) {
         } else {
           history.replaceState({ view: "category", slugPath }, "", url);
         }
-        console.log("[DEBUG renderCategory] pushState/replaceState SUCCEEDED", {
-          urlAttempted: url,
-          hrefAfterCall: window.location.href,
-          hashAfterCall: window.location.hash,
-        });
       } catch (pushErr) {
         console.error("[DEBUG renderCategory] pushState/replaceState THREW", pushErr, {
           urlAttempted: url,

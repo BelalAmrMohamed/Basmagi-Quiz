@@ -123,11 +123,20 @@ export default async function handler(req, res) {
 
   // ── 5. Respond ────────────────────────────────────────────────────────────
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  // Cache at the edge for 1 hour; serve stale for up to 24 h while revalidating.
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=3600, stale-while-revalidate=86400",
-  );
+  if (meta) {
+    // Metadata injection succeeded — safe to cache at the edge for 1 hour,
+    // serving stale for up to 24 h while revalidating in the background.
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=3600, stale-while-revalidate=86400",
+    );
+  } else {
+    // No metadata (Supabase miss/error) — this response only has default
+    // OG tags. Never cache it, so the next request (including the next
+    // scraper hit) gets a fresh attempt instead of the fallback being
+    // baked into the CDN for up to a day.
+    res.setHeader("Cache-Control", "no-store");
+  }
   return res.status(200).send(html);
 }
 
@@ -151,6 +160,13 @@ async function fetchQuizMeta(quizId) {
     .filter("data->meta->>id", "eq", quizId)
     .limit(1)
     .maybeSingle();
+
+  // TEMP DIAGNOSTIC — remove once root cause of the OG bug is confirmed.
+  console.log(
+    "[render-quiz][debug] quizId:", quizId,
+    "error:", error ? JSON.stringify(error) : null,
+    "data:", JSON.stringify(data),
+  );
 
   if (error) {
     console.error("[render-quiz] Supabase error:", error.message);
