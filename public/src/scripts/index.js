@@ -3711,7 +3711,7 @@ function renderCategory(category) {
     // Each "/" segment of the categoryTree key is passed through toSlug().
     // Literal hyphens in names are double-encoded ("--") so they survive a
     // round-trip; spaces become single "-".
-    const catKey = Object.keys(categoryTree || {}).find(
+    const catKey = category.key || Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
     if (catKey) {

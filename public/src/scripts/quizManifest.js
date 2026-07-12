@@ -149,6 +149,7 @@ function buildCompatStructures(subjects) {
 
     if (!categoryTree[key]) {
       categoryTree[key] = {
+        key: key,
         id: subject.id,
         name: subject.name,
         faculty: subject.faculty,
@@ -182,6 +183,7 @@ function buildCompatStructures(subjects) {
 
           if (!categoryTree[subKey]) {
             categoryTree[subKey] = {
+              key: subKey,
               name: segment,
               path: [...currentPathArr],
               parent: currentParentKey,
