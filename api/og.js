@@ -107,14 +107,23 @@ const TEXT_COLUMN_WIDTH = TEXT_COLUMN.right - TEXT_COLUMN.left; // 640
 // pill's old spot (which now hosts the question-count/type badge instead).
 const DOMAIN_LABEL = { right: 40, top: 24 };
 
+// Black "ابدأ الامتحان" button — pixel-measured bounds from the header
+// comment (x 534–737, y 383–457). Used as the alignment anchor for the
+// badge and course pill above it, so both line up on the button's own
+// left edge rather than an independent column edge.
+const BUTTON_ROW = { left: 534, right: 737, top: 383, bottom: 457 };
+
 // Course-name pill — directly above the button, own row so it never
-// competes with the title/description/badge stack above it.
-const COURSE_ROW = { left: 500, right: 1140, top: 340, bottom: 372 };
+// competes with the title/description/badge stack above it. Left edge
+// matches BUTTON_ROW.left so the pill sits flush above the button.
+const COURSE_ROW = { left: BUTTON_ROW.left, right: 1140, top: 340, bottom: 372 };
 
 // Author line — full-width footer strip below the bulb card (which ends at
 // y≈490), horizontally centered on the button's own center (x≈635), not the
 // canvas center, so it visually reads as "attached" to the card/button.
-const AUTHOR_ROW = { centerX: 635, top: 500 };
+// Pushed down near the bottom edge (canvas height 630px) with a modest
+// margin left for breathing room under the larger font size below.
+const AUTHOR_ROW = { centerX: 635, top: 588 };
 
 // Max characters before we truncate the title with an ellipsis (after shrinking
 // the font still isn't enough to guarantee it fits the column width).
@@ -377,12 +386,16 @@ export default async function handler(req) {
                 style: {
                   display: "flex",
                   position: "absolute",
-                  left: `${TEXT_COLUMN.left}px`,
+                  // Left edge pinned to the button's own left edge (x≈534,
+                  // see BUTTON_ROW below) rather than centered across the
+                  // full text column, so the badge's left side lines up
+                  // vertically with the button's left side underneath it.
+                  left: `${BUTTON_ROW.left}px`,
                   top: "148px",
-                  width: `${TEXT_COLUMN_WIDTH}px`,
+                  width: `${TEXT_COLUMN.right - BUTTON_ROW.left}px`,
                   height: "41px", // matches old pill height (148–189)
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent: "flex-start",
                   direction: isArabic ? "rtl" : "ltr",
                 },
                 children: [
@@ -401,7 +414,7 @@ export default async function handler(req) {
                         fontWeight: "700",
                         direction: isArabic ? "rtl" : "ltr",
                       },
-                      children: details,
+                      children: renderBidiText(details, isArabic),
                     },
                   },
                 ],
@@ -450,7 +463,7 @@ export default async function handler(req) {
                     overflow: "hidden",
                     justifyContent: "center",
                   },
-                  children: title,
+                  children: renderBidiText(title, isArabic),
                 },
               },
 
@@ -472,7 +485,7 @@ export default async function handler(req) {
                         overflow: "hidden",
                         justifyContent: "center",
                       },
-                      children: description,
+                      children: renderBidiText(description, isArabic),
                     },
                   }
                 : null,
@@ -493,7 +506,10 @@ export default async function handler(req) {
                   width: `${COURSE_ROW.right - COURSE_ROW.left}px`,
                   height: `${COURSE_ROW.bottom - COURSE_ROW.top}px`,
                   alignItems: "center",
-                  justifyContent: "center",
+                  // flex-start (not center): the pill's own left edge must
+                  // line up with the button's left edge directly below it,
+                  // matching the stats badge's alignment above.
+                  justifyContent: "flex-start",
                   direction: detectArabic(courseName) ? "rtl" : "ltr",
                 },
                 children: [
@@ -511,7 +527,7 @@ export default async function handler(req) {
                         fontWeight: "700",
                         whiteSpace: "nowrap",
                       },
-                      children: courseName,
+                      children: renderBidiText(courseName, detectArabic(courseName)),
                     },
                   },
                 ],
@@ -534,7 +550,7 @@ export default async function handler(req) {
                   justifyContent: "center",
                   direction: authorIsArabic ? "rtl" : "ltr",
                   gap: "8px",
-                  fontSize: "18px",
+                  fontSize: "22px",
                 },
                 children: [
                   {
@@ -548,7 +564,7 @@ export default async function handler(req) {
                     type: "div",
                     props: {
                       style: { display: "flex", color: "#374151", fontWeight: "700" },
-                      children: authorName,
+                      children: renderBidiText(authorName, authorIsArabic),
                     },
                   },
                 ],
@@ -789,6 +805,36 @@ function detectArabic(text) {
     firstLetter &&
     /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/.test(firstLetter[0])
   );
+}
+
+/**
+ * Satori does NOT run the Unicode Bidirectional Algorithm — it lays out a
+ * text node's characters/words in raw source (storage) order, regardless of
+ * the `direction: "rtl"` CSS on its container. `direction: rtl` only
+ * reverses the *paint order of flex children*; for a single leaf text
+ * string there are no children to reverse, so Arabic strings render with
+ * their words in the wrong order (e.g. "منصة إمتحانات بصمجي" — stored as
+ * word1 word2 word3 — paints left-to-right as word1 word2 word3 instead of
+ * mirroring to word3 word2 word1, which is what an RTL reader expects).
+ *
+ * Within any single Arabic *word*, the glyphs themselves are already stored
+ * in correct visual order (Arabic script glyphs don't need per-character
+ * reversal) — only the ordering of whitespace-separated words/tokens needs
+ * to be mirrored. So the fix is: split on whitespace, reverse the token
+ * order, rejoin. Numbers and Latin/punctuation tokens embedded in an
+ * Arabic string (e.g. "12", "·") are treated as atomic tokens and simply
+ * move with the reversal — they are NOT internally reversed, so "12" never
+ * becomes "21".
+ *
+ * Only call this for strings that will be painted as a single text leaf.
+ * Do not apply it to strings that are split across multiple sibling
+ * elements (e.g. the author label/name pair below), since in that case
+ * *flexbox* is already doing the reversal via `direction: rtl` on their
+ * shared container, and applying this too would double-flip them.
+ */
+function renderBidiText(text, isArabic) {
+  if (!text || !isArabic) return text;
+  return text.split(" ").reverse().join(" ");
 }
 
 function formatQuestionTypes(qt) {
