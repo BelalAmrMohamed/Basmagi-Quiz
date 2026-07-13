@@ -113,7 +113,7 @@ async function initSupabase() {
   } else if (tab === "access-code" || path.endsWith("/access-code")) {
     switchTab("access-code");
   } else {
-    switchTab("access-code");
+    switchTab("email"); // Email tab is the default tab.
   }
 
   // 2. Admin session check
@@ -401,7 +401,21 @@ function handleSSO(provider) {
   _ssoPopup = window.open("about:blank", "bq_oauth_popup", popupFeatures);
 
   if (!_ssoPopup) {
-    showError("email", "تعذّر فتح نافذة تسجيل الدخول. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+    // Popup was blocked — fall back to full-page redirect (same as the original behavior)
+    console.warn("[SSO] Popup blocked — falling back to full-page redirect.");
+    (async () => {
+      try {
+        const redirectDest = window.location.origin + "/sign-in.html?redirect=" + encodeURIComponent(getRedirectUrl());
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider,
+          options: { redirectTo: redirectDest },
+        });
+        if (error) throw error;
+        // signInWithOAuth with no skipBrowserRedirect navigates the tab — nothing to do here
+      } catch (err) {
+        showError("email", "فشل تسجيل الدخول بواسطة " + provider);
+      }
+    })();
     return;
   }
 

@@ -42,8 +42,8 @@ body.has-offline-banner {
   justify-content: center;
   gap: 0.6rem;
   padding: 0.85rem 1.25rem;
-  min-height: 3rem; /* was a hard max-height: 30px, which clipped the label + icon */
-
+  max-height: 30px;
+  
   /* ── Glass fill (neutral default): angled light hitting a physical pane ── */
   background: linear-gradient(
     135deg,
