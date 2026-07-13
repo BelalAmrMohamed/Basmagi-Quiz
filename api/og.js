@@ -46,7 +46,7 @@ export function parseDbPath(dbPath, filename = "") {
 
   const subfolders = rest.slice(labels.length);
 
-  return {
+  return { 
     education_type,
     rootFolder,
     college: fields.college,
