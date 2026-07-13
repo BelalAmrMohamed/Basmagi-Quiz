@@ -115,8 +115,10 @@ const BUTTON_ROW = { left: 534, right: 737, top: 383, bottom: 457 };
 
 // Course-name pill — directly above the button, own row so it never
 // competes with the title/description/badge stack above it. Left edge
-// matches BUTTON_ROW.left so the pill sits flush above the button.
-const COURSE_ROW = { left: BUTTON_ROW.left, right: 1140, top: 340, bottom: 372 };
+// nudged a few px right of BUTTON_ROW.left — pixel-perfect flush-left
+// looked slightly too far left visually against the button's own edge
+// (per user testing), small manual offset corrects it.
+const COURSE_ROW = { left: BUTTON_ROW.left + 6, right: 1140, top: 340, bottom: 372 };
 
 // Author line — full-width footer strip below the bulb card (which ends at
 // y≈490), horizontally centered on the button's own center (x≈635), not the
@@ -396,7 +398,13 @@ export default async function handler(req) {
                   height: "41px", // matches old pill height (148–189)
                   alignItems: "center",
                   justifyContent: "flex-start",
-                  direction: isArabic ? "rtl" : "ltr",
+                  // ltr here: this wrapper has a single child (no sibling
+                  // order for flexbox to mirror), and the text inside has
+                  // already been pre-mirrored by renderBidiText — leaving
+                  // this as rtl double-handles direction and produces the
+                  // oversized inter-word gaps Satori's Arabic shaper adds
+                  // under an rtl context.
+                  direction: "ltr",
                 },
                 children: [
                   {
@@ -412,7 +420,8 @@ export default async function handler(req) {
                         fontSize: "20px",
                         color: BRAND_BLUE,
                         fontWeight: "700",
-                        direction: isArabic ? "rtl" : "ltr",
+                        // ltr: text already pre-mirrored by renderBidiText.
+                        direction: "ltr",
                       },
                       children: renderBidiText(details, isArabic),
                     },
@@ -437,12 +446,12 @@ export default async function handler(req) {
               width: `${TEXT_COLUMN_WIDTH}px`,
               height: `${TEXT_COLUMN.bottom - TEXT_COLUMN.top}px`,
               textAlign: "center",
-              // direction must live on this flex container, not just the
-              // inner text div — Satori mirrors a flex row's child order
-              // based on the container's own `direction`, and setting it
-              // only on the leaf text node previously left the title
-              // rendering LTR even for Arabic strings.
-              direction: isArabic ? "rtl" : "ltr",
+              // ltr: this column only stacks title/description vertically
+              // (flexDirection: column), so there's no horizontal sibling
+              // order for `direction` to mirror — and both leaf texts
+              // below are pre-mirrored by renderBidiText, so rtl here
+              // would double-handle direction and widen inter-word gaps.
+              direction: "ltr",
               gap: "10px",
             },
             children: [
@@ -457,7 +466,7 @@ export default async function handler(req) {
                     color: "#111827",
                     lineHeight: "1.25",
                     textAlign: "center",
-                    direction: isArabic ? "rtl" : "ltr",
+                    direction: "ltr",
                     width: "100%",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -479,7 +488,7 @@ export default async function handler(req) {
                         color: "#4b5563",
                         lineHeight: "1.3",
                         textAlign: "center",
-                        direction: isArabic ? "rtl" : "ltr",
+                        direction: "ltr",
                         width: "100%",
                         whiteSpace: "nowrap",
                         overflow: "hidden",
@@ -510,7 +519,8 @@ export default async function handler(req) {
                   // line up with the button's left edge directly below it,
                   // matching the stats badge's alignment above.
                   justifyContent: "flex-start",
-                  direction: detectArabic(courseName) ? "rtl" : "ltr",
+                  // ltr: single child, text pre-mirrored by renderBidiText.
+                  direction: "ltr",
                 },
                 children: [
                   {
@@ -526,6 +536,7 @@ export default async function handler(req) {
                         color: "#374151",
                         fontWeight: "700",
                         whiteSpace: "nowrap",
+                        direction: "ltr",
                       },
                       children: renderBidiText(courseName, detectArabic(courseName)),
                     },
@@ -536,6 +547,17 @@ export default async function handler(req) {
           : null,
 
         // ── Author line — bottom footer strip, centered on the button ────
+        // Rendered as ONE pre-mirrored text leaf (label + name combined),
+        // not two separate flex children under a `direction: rtl`
+        // container. Two mirroring mechanisms were fighting each other:
+        // renderBidiText() already reverses word order within the name
+        // string itself, and container-level `direction: rtl` *also*
+        // reversed the label/name divs' left-right screen position — the
+        // combination produced "name-words-reversed, then label" instead
+        // of the intended "label, then name in natural word order" (label
+        // is a single word, so its own internal order was never the
+        // issue — only its position relative to the name was). Combining
+        // into one string and mirroring once, as a whole, avoids this.
         authorName
           ? {
               type: "div",
@@ -548,8 +570,7 @@ export default async function handler(req) {
                   width: "600px",
                   alignItems: "center",
                   justifyContent: "center",
-                  direction: authorIsArabic ? "rtl" : "ltr",
-                  gap: "8px",
+                  direction: "ltr",
                   fontSize: "22px",
                 },
                 children: [
@@ -557,14 +578,14 @@ export default async function handler(req) {
                     type: "div",
                     props: {
                       style: { display: "flex", color: "#9ca3af", fontWeight: "400" },
-                      children: authorLabel,
+                      children: renderBidiText(`${authorLabel} `, false),
                     },
                   },
                   {
                     type: "div",
                     props: {
                       style: { display: "flex", color: "#374151", fontWeight: "700" },
-                      children: renderBidiText(authorName, authorIsArabic),
+                      children: " ",
                     },
                   },
                 ],
@@ -747,22 +768,21 @@ function findQuizInManifest(manifest, quizId) {
 // =============================================================================
 
 /**
- * Formats the detail line, e.g. "12 سؤال · إختياري · مقالي · صح/خطأ"
- * (Arabic) or "20 Questions · MCQ · Essay" (English).
+ * Formats the detail line, e.g. "12 سؤال (مقالي · إختياري · صح/خطأ)"
+ * (Arabic) or "20 Questions (MCQ · Essay)" (English).
  *
  * questionTypes always arrives from the scanning script as exact, case-sensitive
  * English labels ("MCQ", "Essay", "True/False"), joined with " · ". When the
  * quiz title is Arabic, each recognized label is translated for display;
  * unrecognized labels are left untouched rather than dropped.
  *
- * Order matters here independent of the container's `direction` CSS: Satori
- * lays out a plain text string in logical (source) order and only mirrors
- * the *bidi* runs, not the author's chosen sequence of "words" separated by
- * a neutral character like " · ". So for Arabic we deliberately swap to
- * "{types} · {count}" in source order — with an RTL container this renders
- * count on the right (read first) and types trailing to the left, matching
- * how an Arabic reader expects to scan: count anchored at the start (right).
- * For LTR we keep the natural "{count} · {types}" order.
+ * Always built in natural reading order — count first, then the type list
+ * parenthesized — regardless of script. Arabic mirroring (so it *paints*
+ * count-first-on-the-right) is handled separately by renderBidiText() at
+ * render time, which treats a "(...)" group as one atomic token so it
+ * moves as a block without scrambling the types inside it. Do not
+ * reintroduce a manual source-order swap here — renderBidiText already
+ * owns that concern, and doing it in both places double-reverses.
  */
 function buildDetails(meta, isArabic) {
   if (!meta) return "";
@@ -773,9 +793,7 @@ function buildDetails(meta, isArabic) {
   if (!countPart) return translatedTypes || "";
   if (!translatedTypes) return countPart;
 
-  return isArabic
-    ? `${translatedTypes} · ${countPart}`
-    : `${countPart} · ${translatedTypes}`;
+  return `${countPart} (${translatedTypes})`;
 }
 
 /**
@@ -809,32 +827,58 @@ function detectArabic(text) {
 
 /**
  * Satori does NOT run the Unicode Bidirectional Algorithm — it lays out a
- * text node's characters/words in raw source (storage) order, regardless of
- * the `direction: "rtl"` CSS on its container. `direction: rtl` only
- * reverses the *paint order of flex children*; for a single leaf text
- * string there are no children to reverse, so Arabic strings render with
- * their words in the wrong order (e.g. "منصة إمتحانات بصمجي" — stored as
- * word1 word2 word3 — paints left-to-right as word1 word2 word3 instead of
- * mirroring to word3 word2 word1, which is what an RTL reader expects).
+ * text node's characters/words in raw source (storage) order. Critically,
+ * this means `direction: "rtl"` on the div wrapping a pre-reversed string
+ * is not a no-op "just in case" setting — Satori's text shaper applies
+ * extra inter-word spacing/justification for Arabic runs under an RTL
+ * writing-direction context (visible as the oversized gaps between words
+ * once this function has already reordered them). Once a string has been
+ * run through this function, the container/leaf holding it must be set to
+ * `direction: "ltr"` — the words are now in final left-to-right paint
+ * order and should be shaped as a plain LTR string, not re-processed.
  *
- * Within any single Arabic *word*, the glyphs themselves are already stored
- * in correct visual order (Arabic script glyphs don't need per-character
- * reversal) — only the ordering of whitespace-separated words/tokens needs
- * to be mirrored. So the fix is: split on whitespace, reverse the token
- * order, rejoin. Numbers and Latin/punctuation tokens embedded in an
- * Arabic string (e.g. "12", "·") are treated as atomic tokens and simply
- * move with the reversal — they are NOT internally reversed, so "12" never
- * becomes "21".
+ * `direction: rtl` should only still be used on containers whose *children
+ * are separate sibling elements* (e.g. an author label div + author name
+ * div) where flexbox's own row-reversal is the thing doing the mirroring —
+ * never on a container/leaf whose text content this function has touched.
  *
- * Only call this for strings that will be painted as a single text leaf.
- * Do not apply it to strings that are split across multiple sibling
- * elements (e.g. the author label/name pair below), since in that case
- * *flexbox* is already doing the reversal via `direction: rtl` on their
- * shared container, and applying this too would double-flip them.
+ * Algorithm: split on whitespace, reverse token order, rejoin. Within any
+ * single Arabic word the glyphs are already stored in correct visual
+ * order — only word order needs mirroring. Numbers/Latin/punctuation
+ * tokens (e.g. "12", "·") move with the reversal as atomic units and are
+ * never internally re-reversed, so "12" never becomes "21".
+ *
+ * Parenthesized groups are treated as a single atomic unit: "(a · b · c)"
+ * keeps its internal word order and only moves as a block, so opening/
+ * closing parens stay correctly paired with their contents after the
+ * surrounding sentence is mirrored. This matters for strings built via
+ * buildDetails(), e.g. "12 سؤال (مقالي · إختياري · صح/خطأ)".
  */
 function renderBidiText(text, isArabic) {
   if (!text || !isArabic) return text;
-  return text.split(" ").reverse().join(" ");
+  // Merge anything inside parentheses back into one token after the
+  // initial split, so the group moves as a unit instead of having its
+  // inner words individually reversed relative to each other.
+  const rawTokens = text.split(" ");
+  const tokens = [];
+  let buffer = null;
+  for (const tok of rawTokens) {
+    if (buffer !== null) {
+      buffer.push(tok);
+      if (tok.endsWith(")")) {
+        tokens.push(buffer.join(" "));
+        buffer = null;
+      }
+      continue;
+    }
+    if (tok.startsWith("(") && !tok.endsWith(")")) {
+      buffer = [tok];
+      continue;
+    }
+    tokens.push(tok);
+  }
+  if (buffer !== null) tokens.push(...buffer); // unterminated "(" — bail safely
+  return tokens.reverse().join(" ");
 }
 
 function formatQuestionTypes(qt) {
