@@ -25,44 +25,6 @@
 import { ImageResponse } from "@vercel/og";
 // import { parseDbPath } from "../scripts/lib/quizPath.js";
 
-export function parseDbPath(dbPath, filename = "") {
-  const segments = normalizeSlashes(dbPath).split("/").filter(Boolean);
-  if (!segments.length) return null;
-
-  const rootFolder = segments[0];
-  const config = ROOT_MAP[rootFolder];
-  if (!config) return null;
-
-  const rest = segments.slice(1);
-  const { education_type, segments: labels } = config;
-
-  const fields = {};
-  for (let i = 0; i < labels.length; i++) {
-    fields[labels[i]] = rest[i];
-  }
-
-  const course = fields.course;
-  if (!course) return null;
-
-  const subfolders = rest.slice(labels.length);
-
-  return { 
-    education_type,
-    rootFolder,
-    college: fields.college,
-    year: fields.year,
-    term: fields.term,
-    course,
-    subfolders,
-    filename: filename || undefined,
-    dbPath: filename ? `${dbPath}/${filename}` : dbPath,
-  };
-}
-
-export function normalizeSlashes(p) {
-  return p.replace(/\\/g, "/").replace(/^\/+/, "");
-}
-
 export const config = { runtime: "edge" };
 
 // ── Supabase REST config (Edge-safe, no supabase-js needed) ──────────────────
@@ -885,4 +847,42 @@ function formatQuestionTypes(qt) {
   if (!qt) return null;
   if (Array.isArray(qt)) return qt.length ? qt.join(" · ") : null;
   return String(qt) || null;
+}
+
+export function parseDbPath(dbPath, filename = "") {
+  const segments = normalizeSlashes(dbPath).split("/").filter(Boolean);
+  if (!segments.length) return null;
+
+  const rootFolder = segments[0];
+  const config = ROOT_MAP[rootFolder];
+  if (!config) return null;
+
+  const rest = segments.slice(1);
+  const { education_type, segments: labels } = config;
+
+  const fields = {};
+  for (let i = 0; i < labels.length; i++) {
+    fields[labels[i]] = rest[i];
+  }
+
+  const course = fields.course;
+  if (!course) return null;
+
+  const subfolders = rest.slice(labels.length);
+
+  return { 
+    education_type,
+    rootFolder,
+    college: fields.college,
+    year: fields.year,
+    term: fields.term,
+    course,
+    subfolders,
+    filename: filename || undefined,
+    dbPath: filename ? `${dbPath}/${filename}` : dbPath,
+  };
+}
+
+export function normalizeSlashes(p) {
+  return p.replace(/\\/g, "/").replace(/^\/+/, "");
 }
