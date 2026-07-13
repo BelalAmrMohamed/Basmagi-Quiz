@@ -218,23 +218,88 @@ function injectStyles() {
     .adm-btn-primary { background:var(--gradient-accent); color:#fff; }
     .adm-btn-ghost   { background:var(--color-background-secondary); border:1.5px solid var(--color-border); color:var(--color-text); }
 
-    /* Upload button on quiz card */
+    /* Base Button Styles */
     .upload-to-db-btn {
-      padding:7px 11px;
-      background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
-      color:#fff; border:none; border-radius:6px;
-      font-size:.8rem; font-weight:700; cursor:pointer;
-      transition:all .3s ease;
-      display:flex; align-items:center; justify-content:center; gap:0; white-space:nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px; /* Slightly larger padding for better touch area */
+      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px; /* Slightly softer corners */
+      font-size: 0.875rem; /* Increased slightly for better legibility (14px) */
+      font-weight: 600; /* 600 is often cleaner for Arabic fonts than 700 */
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      
+      /* Visual Polish: Subtle inset shadow gives a premium 3D feel */
+      box-shadow: 0 2px 4px rgba(91, 33, 182, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      
+      /* Smoother animation curve */
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
     }
-    .upload-to-db-btn span { max-width:0; overflow:hidden; opacity:0; transition:all .3s ease; }
-    .upload-to-db-btn:hover span { max-width:300px; opacity:1; margin-right:5px; }
-    .upload-to-db-btn:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(124,58,237,.4); }
-    .upload-to-db-btn svg { width:13px; height:13px; flex-shrink:0; }
+
+    .upload-to-db-btn svg {
+      width: 16px; /* Slightly scaled up to match standard icon sizing */
+      height: 16px;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+
+    .upload-to-db-btn span {
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* --- Hover State --- */
+    .upload-to-db-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .upload-to-db-btn:hover span {
+      max-width: 200px; /* Reduced from 300px to prevent layout snapping issues */
+      opacity: 1;
+      /* margin-inline-start correctly adds spacing between icon and text in both RTL and LTR layouts */
+      margin-inline-start: 8px; 
+    }
+
+    .upload-to-db-btn:hover svg {
+      transform: translateY(-1px); /* Adds a playful micro-interaction to the icon */
+    }
+
+    /* --- Interaction & Accessibility States --- */
+    .upload-to-db-btn:active {
+      transform: translateY(0) scale(0.98); /* Squish effect when clicked */
+      box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
+    }
+
+    .upload-to-db-btn:focus-visible {
+      outline: 2px solid #a78bfa; /* Clear focus ring for keyboard navigation */
+      outline-offset: 2px;
+    }
+
+    /* --- Mobile Adjustments --- */
     @media (max-width: 768px) {
-      .upload-to-db-btn { width: 100%; gap: 5px; }
-      .upload-to-db-btn span { max-width: none; opacity: 1; margin-right: 0; }
-      .upload-to-db-btn:hover span { margin-right: 0; }
+      .upload-to-db-btn {
+        width: 100%;
+        padding: 10px 16px; /* Taller button for mobile tapping */
+      }
+      
+      .upload-to-db-btn span {
+        max-width: none;
+        opacity: 1;
+        margin-inline-start: 8px;
+      }
+      
+      .upload-to-db-btn:hover {
+        transform: none; /* Disable the hover jump on touch devices */
+        box-shadow: 0 2px 4px rgba(91, 33, 182, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      }
     }
 
     /* Spinner */
@@ -991,13 +1056,15 @@ export function createUploadButton(quiz) {
   btn.className = "upload-to-db-btn";
   btn.setAttribute("aria-label", `رفع "${quiz.title}" إلى قاعدة البيانات`);
   btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="16 16 12 12 8 16"/>
-      <line x1="12" y1="12" x2="12" y2="21"/>
-      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-    </svg>
-    <span>رفع لقاعدة البيانات</span>`;
+    <button class="upload-to-db-btn" aria-label="رفع لقاعدة البيانات">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="16 16 12 12 8 16"/>
+        <line x1="12" y1="12" x2="12" y2="21"/>
+        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+      </svg>
+      <span>رفع لقاعدة البيانات</span>
+    </button>`;
   btn.addEventListener("click", (e) => {
     e.stopPropagation();
     openModal(quiz);
