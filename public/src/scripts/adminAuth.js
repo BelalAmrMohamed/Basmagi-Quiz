@@ -152,6 +152,32 @@ export function signOut() {
 }
 
 /**
+ * Full sign-out: clears the local admin JWT (sessionStorage) AND, if a
+ * Supabase client is provided, ends the underlying Supabase session too.
+ *
+ * WHY THIS EXISTS:
+ *   signIn() via email/OTP or SSO creates a Supabase session that Supabase
+ *   itself persists in localStorage (survives tab close + browser restart).
+ *   Plain signOut() only ever cleared OUR sessionStorage-based JWT, so the
+ *   Supabase session kept living underneath — sign-in.html would find it
+ *   on next load and silently re-authenticate ("logout loop" / "ghost
+ *   session" bugs). Always prefer this over calling signOut() directly on
+ *   any page that has access to a Supabase client instance.
+ *
+ * @param {object|null} supabaseClient - initialized Supabase client, or null
+ */
+export async function fullSignOut(supabaseClient) {
+  if (supabaseClient) {
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (err) {
+      console.error("Error signing out of Supabase:", err);
+    }
+  }
+  signOut();
+}
+
+/**
  * Alias kept for backwards-compatibility with index.js imports.
  * isAdminAuthenticated() already covers this — both check the same token.
  * @returns {boolean}

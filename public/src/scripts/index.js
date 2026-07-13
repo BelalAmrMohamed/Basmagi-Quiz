@@ -227,6 +227,56 @@ import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
 let categoryTree = null;
 let searchManager = null;
 
+// ── Supabase session sync (index.html side) ─────────────────────────────────
+// WHY THIS EXISTS:
+//   index.html previously only ever checked isAdminAuthenticated(), which
+//   reads a sessionStorage-scoped JWT. Supabase itself keeps a SEPARATE,
+//   longer-lived session in localStorage. sign-in.html already checked that
+//   Supabase session on load (see initSupabase() in sign-in.js) but index.html
+//   never did — so the two pages could disagree about whether the user was
+//   logged in ("ghost session" bug). This mirrors that same check here so
+//   both pages agree on the same source of truth.
+let _indexSupabaseClient = null;
+
+async function syncAdminSessionWithSupabase() {
+  try {
+    const res = await fetch("/api/env");
+    const data = await res.json();
+    if (!data.supabaseUrl || !data.supabaseAnonKey) return;
+
+    _indexSupabaseClient = window.supabase.createClient(
+      data.supabaseUrl,
+      data.supabaseAnonKey,
+    );
+
+    const {
+      data: { session },
+    } = await _indexSupabaseClient.auth.getSession();
+
+    if (session && !isAdminAuthenticated()) {
+      // Supabase still has a live session but our local admin JWT is gone
+      // (e.g. new tab / browser restart wiped sessionStorage) — re-derive
+      // the admin JWT from the existing Supabase session instead of
+      // silently showing "logged out" while sign-in.html would show
+      // "logged in".
+      const ok = await signInWithSupabase(session.access_token);
+      // Admin-dependent UI (log-in/out button, upload buttons) is rendered
+      // across several view functions rather than one central place, so a
+      // full reload is the reliable way to make every view reflect the
+      // corrected auth state — mirrors the reload already used on logout.
+      if (ok) window.location.reload();
+    } else if (!session && isAdminAuthenticated()) {
+      // Local admin JWT still exists but Supabase's own session is gone
+      // (e.g. it expired, or was revoked elsewhere) — don't keep showing
+      // an authenticated admin UI based on stale local state.
+      fullSignOut(null); // no supabaseClient.auth.signOut() needed, already gone
+      window.location.reload();
+    }
+  } catch (err) {
+    console.error("Failed to sync admin session with Supabase:", err);
+  }
+}
+
 // Download functions
 import { exportToQuiz } from "../export/export-to-quiz.js";
 import { exportToHtml } from "../export/export-to-html.js";
@@ -236,7 +286,12 @@ import { exportToPptx } from "../export/export-to-pptx.js";
 import { exportToMarkdown } from "../export/export-to-markdown.js";
 import { buildQuizText } from "../export/export-to-text.js";
 import { createUploadButton } from "./adminUpload.js";
-import { isAdminAuthenticated, hasAdminSessionHint, signOut } from "./adminAuth.js";
+import {
+  isAdminAuthenticated,
+  hasAdminSessionHint,
+  signInWithSupabase,
+  fullSignOut,
+} from "./adminAuth.js";
 
 // Helper utilities
 import { getSubscribedCourses } from "../shared/filterUtils.js";
@@ -2021,8 +2076,13 @@ function renderUserQuizzesView() {
       adminSignOutBtn.innerHTML = `<span>تسجيل الخروج</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" height="15px" width="15px" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>`;
       adminSignOutBtn.className = "btn admin-log-out-btn";
       adminSignOutBtn.setAttribute("aria-label", "تسجيل خروج المشرف");
-      adminSignOutBtn.onclick = () => {
-        signOut();
+      adminSignOutBtn.onclick = async () => {
+        // Must clear BOTH the local admin JWT and the Supabase session.
+        // Clearing only the local JWT left the Supabase session alive in
+        // localStorage, so sign-in.html would find it moments later and
+        // silently re-authenticate the same account (the "logout loop").
+        adminSignOutBtn.disabled = true;
+        await fullSignOut(_indexSupabaseClient);
         window.location.reload();
       };
       actionsBar.appendChild(adminSignOutBtn);
@@ -4543,6 +4603,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const isIndexPage =
     p === "/" || p.endsWith("/index.html") || p.endsWith("/index");
   if (!isIndexPage) return;
+
+  // Sync local admin session state with Supabase before anything renders
+  // admin-dependent UI (log-in/log-out button, admin upload buttons, etc.)
+  // so index.html and sign-in.html can never disagree about auth state.
+  syncAdminSessionWithSupabase();
 
   // Initial load
   updateWelcomeMessage();

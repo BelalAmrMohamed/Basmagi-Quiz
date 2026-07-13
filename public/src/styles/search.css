@@ -9,7 +9,7 @@
 .header-search-btn {
   position: absolute;
   bottom: 16px;
-  right: 16px; /* RTL: left = visual right */
+  right: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,7 +68,7 @@
 }
 
 .search-container.is-open {
-  max-height: 500px; /* large enough for filters panel */
+  max-height: 600px; /* large enough for filters panel */
   opacity: 1;
   margin-bottom: 20px;
   animation: none; /* override old fadeInUp */
@@ -437,10 +437,10 @@
 
 @media (max-width: 768px) {
   .header-search-btn {
-    width: 34px;
-    height: 34px;
-    bottom: 12px;
-    left: 12px;
+    width: 30px;
+    height: 30px;
+    bottom: 8px;
+    right: 8px;
   }
 
   .header-search-icon {

@@ -23,7 +23,6 @@
 // =============================================================================
 
 import { ImageResponse } from "@vercel/og";
-// import { parseDbPath } from "../scripts/lib/quizPath.js";
 
 export const config = { runtime: "edge" };
 
