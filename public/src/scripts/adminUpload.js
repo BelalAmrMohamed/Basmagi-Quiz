@@ -218,87 +218,92 @@ function injectStyles() {
     .adm-btn-primary { background:var(--gradient-accent); color:#fff; }
     .adm-btn-ghost   { background:var(--color-background-secondary); border:1.5px solid var(--color-border); color:var(--color-text); }
 
-    /* Base Button Styles */
+    /* --- Optimized Admin Upload Button --- */
     .upload-to-db-btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 8px 12px; /* Slightly larger padding for better touch area */
+      /* Compact base padding */
+      padding: 5px 10px; 
       background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
       color: #ffffff;
       border: none;
-      border-radius: 8px; /* Slightly softer corners */
-      font-size: 0.875rem; /* Increased slightly for better legibility (14px) */
-      font-weight: 600; /* 600 is often cleaner for Arabic fonts than 700 */
+      /* Keep standard roundness */
+      border-radius: 6px; 
+      /* Compact font size (12px) for card context */
+      font-size: 0.75rem; 
+      font-weight: 700;
       font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
       
-      /* Visual Polish: Subtle inset shadow gives a premium 3D feel */
-      box-shadow: 0 2px 4px rgba(91, 33, 182, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      /* Retain simple, light shadow for visibility */
+      box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2); 
       
-      /* Smoother animation curve */
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      /* Smoother, faster transition */
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+      
+      /* Start with no gap to allow smooth expansion */
+      gap: 0;
     }
-
+      
     .upload-to-db-btn svg {
-      width: 16px; /* Slightly scaled up to match standard icon sizing */
-      height: 16px;
+      /* Smaller icons (14px) */
+      width: 14px; 
+      height: 14px;
       flex-shrink: 0;
-      transition: transform 0.3s ease;
+      color: inherit;
     }
-
+      
     .upload-to-db-btn span {
       max-width: 0;
       overflow: hidden;
       opacity: 0;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Match the parent transition */
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
     }
-
-    /* --- Hover State --- */
+      
+    /* --- Optimized Hover State --- */
     .upload-to-db-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+      /* Very subtle micro-lift */
+      transform: translateY(-1px); 
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.4);
+      /* Apply the centered gap only on hover */
+      gap: 5px; 
     }
-
+      
     .upload-to-db-btn:hover span {
-      max-width: 200px; /* Reduced from 300px to prevent layout snapping issues */
+      /* Restrict max text expansion */
+      max-width: 200px; 
       opacity: 1;
-      /* margin-inline-start correctly adds spacing between icon and text in both RTL and LTR layouts */
-      margin-inline-start: 8px; 
     }
-
-    .upload-to-db-btn:hover svg {
-      transform: translateY(-1px); /* Adds a playful micro-interaction to the icon */
-    }
-
-    /* --- Interaction & Accessibility States --- */
-    .upload-to-db-btn:active {
-      transform: translateY(0) scale(0.98); /* Squish effect when clicked */
-      box-shadow: 0 2px 4px rgba(124, 58, 237, 0.3);
-    }
-
-    .upload-to-db-btn:focus-visible {
-      outline: 2px solid #a78bfa; /* Clear focus ring for keyboard navigation */
-      outline-offset: 2px;
-    }
-
-    /* --- Mobile Adjustments --- */
-    @media (max-width: 768px) {
+      
+    /* --- Optimized Mobile Adjustments --- */@media (max-width: 768px) {
       .upload-to-db-btn {
-        width: 100%;
-        padding: 10px 16px; /* Taller button for mobile tapping */
+        /* Critical fix: removed width: 100% and added centering */
+        width: auto; 
+        margin: 0 auto;
+        
+        /* Keep the small padding */
+        padding: 5px 10px; 
+        
+        /* Gap is always on for mobile to save a step */
+        gap: 5px; 
+        transition: none; /* Optimize mobile performance by removing unnecessary transition */
       }
       
       .upload-to-db-btn span {
         max-width: none;
         opacity: 1;
-        margin-inline-start: 8px;
+        text-align: center;
       }
       
-      .upload-to-db-btn:hover {
-        transform: none; /* Disable the hover jump on touch devices */
-        box-shadow: 0 2px 4px rgba(91, 33, 182, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      /* Simplify mobile interaction, disable the hover jump */
+      .upload-to-db-btn:hover,
+      .upload-to-db-btn:focus-visible {
+        transform: none;
+        box-shadow: 0 2px 6px rgba(124, 58, 237, 0.2);
       }
     }
 

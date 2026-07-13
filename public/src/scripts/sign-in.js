@@ -343,20 +343,132 @@ if (changeEmailBtn) {
   });
 }
 
-// ── SSO ───────────────────────────────────────────────────────────────────────
+// ── SSO (Popup-based OAuth) ───────────────────────────────────────────────────
+//
+// WHY POPUP INSTEAD OF FULL-PAGE REDIRECT:
+//   signInWithOAuth normally navigates the entire tab to Google/GitHub.
+//   Instead, we use skipBrowserRedirect:true to get the auth URL without
+//   navigating, then open it in a small popup. The popup loads oauth-callback.html
+//   which captures the Supabase session and notifies us via postMessage.
+//
+// POPUP-BLOCKER WORKAROUND:
+//   Browsers block window.open() calls that happen after an await (they're
+//   no longer considered "directly caused by a user gesture"). We open a
+//   blank popup SYNCHRONOUSLY inside the click handler, then set its URL
+//   after the async SDK call resolves. This keeps the popup unblocked.
 
-async function handleSSO(provider) {
-  if (!supabaseClient) return;
-  try {
-    const redirectDest = window.location.origin + "/sign-in.html?redirect=" + encodeURIComponent(getRedirectUrl());
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: redirectDest },
-    });
-    if (error) throw error;
-  } catch (err) {
-    showError("email", "فشل تسجيل الدخول بواسطة " + provider);
+let _ssoPopup = null;
+let _ssoPopupPollInterval = null;
+let _ssoMessageHandler = null;
+
+function cleanupSSOState() {
+  if (_ssoPopupPollInterval) {
+    clearInterval(_ssoPopupPollInterval);
+    _ssoPopupPollInterval = null;
   }
+  if (_ssoMessageHandler) {
+    window.removeEventListener("message", _ssoMessageHandler);
+    _ssoMessageHandler = null;
+  }
+  _ssoPopup = null;
+}
+
+function setSSOLoading(on, provider) {
+  const btn = provider === "google" ? btnGoogle : btnGitHub;
+  if (!btn) return;
+  btn.disabled = on;
+  const span = btn.querySelector("span");
+  if (span) span.textContent = on ? "جارٍ الاتصال..." : (provider === "google" ? "Google" : "GitHub");
+  // Also disable the other SSO button during the flow
+  const other = provider === "google" ? btnGitHub : btnGoogle;
+  if (other) other.disabled = on;
+}
+
+function handleSSO(provider) {
+  if (!supabaseClient) return;
+
+  // 1. Open blank popup SYNCHRONOUSLY (must be inside the click handler to avoid popup blocker)
+  const popupFeatures = [
+    "width=480",
+    "height=640",
+    `left=${Math.round(window.screenX + (window.outerWidth - 480) / 2)}`,
+    `top=${Math.round(window.screenY + (window.outerHeight - 640) / 2)}`,
+    "scrollbars=yes",
+    "resizable=yes",
+    "noreferrer",
+  ].join(",");
+
+  _ssoPopup = window.open("about:blank", "bq_oauth_popup", popupFeatures);
+
+  if (!_ssoPopup) {
+    showError("email", "تعذّر فتح نافذة تسجيل الدخول. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.");
+    return;
+  }
+
+  setSSOLoading(true, provider);
+  clearError("email");
+
+  // 2. Async: get the OAuth URL without triggering navigation
+  (async () => {
+    try {
+      const callbackUrl = window.location.origin + "/oauth-callback.html";
+      const { data, error } = await supabaseClient.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: callbackUrl,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error || !data?.url) {
+        throw new Error(error?.message || "فشل الحصول على رابط تسجيل الدخول");
+      }
+
+      // 3. Send the popup to the real OAuth URL
+      _ssoPopup.location.href = data.url;
+
+      // 4. Listen for the postMessage from oauth-callback.html
+      _ssoMessageHandler = async (event) => {
+        // Security: only trust messages from our own origin
+        if (event.origin !== window.location.origin) return;
+
+        if (event.data?.type === "BQ_OAUTH_SUCCESS") {
+          cleanupSSOState();
+          setSSOLoading(false, provider);
+          const session = event.data.session;
+          if (session?.access_token) {
+            if (!isAdminAuthenticated()) {
+              const { signInWithSupabase } = await import("./adminAuth.js");
+              await signInWithSupabase(session.access_token);
+            }
+            redirectToApp();
+          }
+        } else if (event.data?.type === "BQ_OAUTH_ERROR") {
+          cleanupSSOState();
+          setSSOLoading(false, provider);
+          showError("email", "فشل تسجيل الدخول: " + (event.data.error || "خطأ غير معروف"));
+        }
+      };
+
+      window.addEventListener("message", _ssoMessageHandler);
+
+      // 5. Poll for popup being closed manually (user dismissed without completing sign-in)
+      _ssoPopupPollInterval = setInterval(() => {
+        if (_ssoPopup && _ssoPopup.closed) {
+          cleanupSSOState();
+          setSSOLoading(false, provider);
+        }
+      }, 500);
+
+    } catch (err) {
+      if (_ssoPopup && !_ssoPopup.closed) {
+        try { _ssoPopup.close(); } catch (_) {}
+      }
+      cleanupSSOState();
+      setSSOLoading(false, provider);
+      showError("email", "فشل تسجيل الدخول بواسطة " + provider + ": " + (err.message || ""));
+    }
+  })();
 }
 
 if (btnGoogle) btnGoogle.addEventListener("click", () => handleSSO("google"));

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>جارٍ تسجيل الدخول... | بصمجي</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- Supabase JS SDK — must load before inline script -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f0f1a;
+            color: #e0d6c8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(212, 168, 64, 0.2);
+            border-top-color: #D4A840;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        p { font-size: 0.95rem; color: #8A7A5A; }
+        .error { color: #E74C3C; font-size: 0.9rem; display: none; }
+    </style>
+</head>
+
+<body>
+    <div class="spinner"></div>
+    <p>جارٍ استكمال تسجيل الدخول...</p>
+    <p class="error" id="errorMsg"></p>
+
+    <script>
+        (async function handleOAuthCallback() {
+            // If opened without an opener (direct navigation), send user to sign-in
+            if (!window.opener || window.opener.closed) {
+                window.location.href = '/sign-in.html';
+                return;
+            }
+
+            const targetOrigin = window.location.origin;
+
+            try {
+                // Fetch Supabase credentials from the API
+                const envRes = await fetch('/api/env');
+                const envData = await envRes.json();
+                if (!envData.supabaseUrl || !envData.supabaseAnonKey) {
+                    throw new Error('Missing Supabase configuration');
+                }
+
+                const supabaseClient = window.supabase.createClient(
+                    envData.supabaseUrl,
+                    envData.supabaseAnonKey,
+                    {
+                        auth: {
+                            // Let Supabase read the URL hash / code for us
+                            detectSessionInUrl: true,
+                            persistSession: true,
+                        }
+                    }
+                );
+
+                // getSession() will parse the OAuth code/hash from the URL and
+                // exchange it for a real session (PKCE flow or implicit flow).
+                // We poll a couple of times in case the SDK needs a moment.
+                let session = null;
+                for (let i = 0; i < 10; i++) {
+                    const { data, error } = await supabaseClient.auth.getSession();
+                    if (error) throw error;
+                    if (data?.session) { session = data.session; break; }
+                    await new Promise(r => setTimeout(r, 300));
+                }
+
+                if (!session) {
+                    throw new Error('تعذّر الحصول على جلسة بعد تسجيل الدخول');
+                }
+
+                // Notify the opener and close this popup
+                window.opener.postMessage(
+                    { type: 'BQ_OAUTH_SUCCESS', session },
+                    targetOrigin
+                );
+                window.close();
+            } catch (err) {
+                console.error('[oauth-callback] Error:', err);
+                // Notify opener of failure so it can reset button state
+                try {
+                    window.opener.postMessage(
+                        { type: 'BQ_OAUTH_ERROR', error: err.message },
+                        targetOrigin
+                    );
+                } catch (_) {}
+
+                const errEl = document.getElementById('errorMsg');
+                errEl.textContent = 'حدث خطأ: ' + (err.message || 'غير معروف');
+                errEl.style.display = 'block';
+
+                // Close after a short delay so user can see the error
+                setTimeout(() => { try { window.close(); } catch (_) {} }, 3000);
+            }
+        })();
+    </script>
+</body>
+
+</html>
