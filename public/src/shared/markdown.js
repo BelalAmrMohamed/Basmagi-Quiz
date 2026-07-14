@@ -1018,7 +1018,7 @@ export function _renderMarkdownCore(str) {
                  onclick="window.copyCodeBlock(this)"
                  aria-label="Copy code">` +
           ICON_COPY +
-          `<span class="copy-label">Copy</span>` +
+          `<span class="copy-label">نسخ</span>` +
           `</button>` +
           `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
           `</div>`,

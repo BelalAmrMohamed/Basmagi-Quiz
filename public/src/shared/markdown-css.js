@@ -21,11 +21,17 @@
 // • export-to-html does not define --font-mono, so the CSS fallback stack
 //   kicks in — identical to what those rules contained before this refactor.
 
-export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-quiz) ── */
+export const MARKDOWN_CSS = `
+/* ══════════════════════════════════════════════════════════════════════════════
+   DIRECTION + OVERFLOW UTILITIES
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 .ltr {
   direction: ltr;
 }
 
+/* Every element that receives renderMarkdown() output should opt in to
+   overflow-wrap so long tokens, URLs, and KaTeX never escape their card. */
 .md-content,
 .question-text,
 .option-label,
@@ -37,6 +43,10 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   word-break: break-word;
   min-width: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   HEADINGS
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .md-h1,
 .md-h2,
@@ -54,7 +64,7 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   border-bottom: 2px solid var(--color-border);
   padding-bottom: 4px;
 }
-
+  
 .md-h2 {
   font-size: 1.35em;
   border-bottom: 1px solid var(--color-border);
@@ -78,11 +88,19 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   opacity: 0.85;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   HORIZONTAL RULE
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 .md-hr {
   border: none;
   border-top: 2px solid var(--color-border);
   margin: 0.8em 0;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   BLOCKQUOTE
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .md-blockquote {
   border-right: 4px solid var(--color-primary);
@@ -94,16 +112,68 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   font-style: italic;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   PARAGRAPHS  (Fix 4 — replaces the old bare-line + <br> approach)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Every block of consecutive text lines is now wrapped in a <p class="md-p">.
+   Vertical rhythm comes from margin rather than injected <br> tags. */
+.md-p {
+  margin: 0.35em 0;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+}
+.md-p:first-child {
+  margin-top: 0;
+}
+.md-p:last-child {
+  margin-bottom: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LISTS
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 .md-list {
-  margin: 0.4em 0 0.4em 1.4em;
+  /* Fix 1 (RTL): use logical properties so indentation tracks the
+     inline-start edge in both LTR and RTL contexts.
+     Physical margin-left was the culprit: in RTL layouts it pushed list
+     markers off the wrong (right) side of the container. */
+  margin-block: 0.4em;
+  margin-inline-start: 1.4em;
+  margin-inline-end: 0;
   padding: 0;
   color: var(--color-text-primary);
 }
-
 .md-list li {
   margin-bottom: 4px;
   line-height: 1.6;
 }
+
+/* ── Nested list indentation & bullet-style progression (Fix 2) ─────────────
+   Each level of nesting gets its own list-style-type so readers can
+   distinguish depth at a glance: disc → circle → square for <ul>.
+   Nested <ol> inherits decimal numbering by default.                        */
+
+/* Extra breathing room around any nested list */
+.md-list .md-list {
+  margin-block-start: 4px;
+  margin-block-end: 2px;
+}
+
+/* Level 2 unordered: open circle */
+ul.md-list > li > ul.md-list {
+  list-style-type: circle;
+}
+
+/* Level 3+ unordered: filled square */
+ul.md-list > li > ul.md-list > li > ul.md-list {
+  list-style-type: square;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   INLINE LINK & IMAGE
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .md-link {
   color: var(--color-primary);
@@ -118,6 +188,10 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   margin: 4px 0;
   display: block;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   KATEX / MATH
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .math-block,
 .katex-display {
@@ -135,7 +209,7 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
 }
 
 .math-raw {
-  font-family: var(--font-mono, "Courier New", Courier, monospace);
+  font-family: "Courier New", Courier, monospace;
   font-size: 0.92em;
   background: var(--color-background);
   border: 1px solid var(--color-border);
@@ -144,23 +218,34 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   color: var(--color-text-primary);
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   INLINE CODE
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 .inline-code {
-  font-family: var(--font-mono, "SF Mono", "Fira Code", Consolas, monospace);
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
   font-size: 0.88em;
-  background: var(--color-background-secondary, rgba(99, 102, 241, 0.1));
-  border: 1px solid var(--color-border);
+
+  background: color(srgb 0.7634 0.7595 0.7166 / 0.05);
+  border: 0.727273px solid color(srgb 0.8856 0.88196 0.8544 / 0.25);
+  color: rgb(244, 169, 169);
+
   border-radius: 5px;
   padding: 1px 6px;
-  color: var(--color-primary, #6366f1);
+
   white-space: normal;
   word-break: break-all;
 }
 
-[data-theme="dark"] .inline-code,
-[data-theme="dark-slate"] .inline-code {
-  background: rgba(203, 166, 247, 0.15);
-  color: #cba6f7;
+[data-theme="light"] .inline-code {
+  background: black;
+  border-color: gray;
+  color: white;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   MODERN TERMINAL CODE BLOCKS + INDESTRUCTIBLE 3-COLUMN HEADER
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 .code-block-wrapper {
   display: grid;
@@ -320,66 +405,48 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
 .sh-tag       { color: #ff79c6; }
 .sh-attr      { color: #50fa7b; }
 
-
 /* ══════════════════════════════════════════════════════════════════════════════
-   LIGHT THEME ADJUSTMENTS
+   GFM TABLES
    ══════════════════════════════════════════════════════════════════════════════ */
 
-[data-theme="light"] .code-block-wrapper {
-  background: #f8f9fa;
-  border-color: #e1e1e6;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .code-block-wrapper::before {
-  background: #edf0f2;
-  border-bottom-color: #e1e1e6;
-}
-
-[data-theme="light"] .code-lang-label {
-  color: #62626a;
-}
-
-[data-theme="light"] .copy-code-btn {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.08);
-  color: #62626a;
-}
-
-[data-theme="light"] .code-block code {
-  color: #24292e;
-}
-
-[data-theme="light"] .code-block::-webkit-scrollbar-thumb {
-  background: #d1d1d6;
-}
-
-/* Custom Token Highlighting (Light Theme) */
-[data-theme="light"] .sh-comment   { color: #8e908c; font-style: italic; }
-[data-theme="light"] .sh-keyword   { color: #a71d5d; font-weight: 600; }
-[data-theme="light"] .sh-string    { color: #183691; }
-[data-theme="light"] .sh-number    { color: #0086b3; }
-[data-theme="light"] .sh-type      { color: #795da3; }
-[data-theme="light"] .sh-function  { color: #795da3; }
-[data-theme="light"] .sh-property  { color: #0086b3; }
-[data-theme="light"] .sh-builtin   { color: #ed6a43; }
-[data-theme="light"] .sh-operator  { color: #a71d5d; }
-[data-theme="light"] .sh-tag       { color: #63a35c; }
-[data-theme="light"] .sh-attr      { color: #795da3; }
-
+/* Outer scroll container — owns the glass aesthetic */
 .md-table-wrapper {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   margin: 16px 0;
   border-radius: 14px;
+
+  /* Glassmorphism */
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.07));
-  background-image: linear-gradient(to left, rgba(255, 255, 255, 0.06) 20%, transparent), linear-gradient(to right, rgba(255, 255, 255, 0.06) 20%, transparent), radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.12), transparent), radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.12), transparent);
-  background-size: 40px 100%, 40px 100%, 12px 100%, 12px 100%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.07));
+
+  /*
+   * Scroll-shadow technique: CSS-only affordance that appears at the edges
+   * only when there is content to scroll.
+   * background-attachment: local  — the gradient moves with scroll,
+   * disappearing when the edge is reached.
+   * background-attachment: scroll — fixed to the viewport, always visible.
+   */
+  background-image:
+    linear-gradient(to left, rgba(255, 255, 255, 0.06) 20%, transparent),
+    linear-gradient(to right, rgba(255, 255, 255, 0.06) 20%, transparent),
+    radial-gradient(
+      farthest-side at 100% 50%,
+      rgba(0, 0, 0, 0.12),
+      transparent
+    ),
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.12), transparent);
+  background-size:
+    40px 100%,
+    40px 100%,
+    12px 100%,
+    12px 100%;
   background-position: right, left, right, left;
   background-repeat: no-repeat;
   background-attachment: local, local, scroll, scroll;
@@ -387,7 +454,7 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
 }
 
 .md-table {
-  min-width: max-content;
+  min-width: max-content; /* lets the table grow naturally; wrapper scrolls */
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
@@ -396,8 +463,9 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   text-align: left;
 }
 
+/* Header row — frosted accent layer */
 .md-table thead tr {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.1); /* primary tint */
   border-bottom: 2px solid rgba(99, 102, 241, 0.22);
 }
 
@@ -405,11 +473,13 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   padding: 11px 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  white-space: nowrap;
+  white-space: nowrap; /* keep headers on one line */
   letter-spacing: 0.01em;
+  /* Subtle inset highlight on each header cell top edge */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+/* Body cells */
 .md-table td {
   padding: 10px 16px;
   vertical-align: top;
@@ -419,33 +489,52 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Alternating rows — very subtle frosted stripe */
 .md-table tbody tr:nth-child(even) {
   background: var(--color-background-secondary, rgba(0, 0, 0, 0.025));
 }
 
+/* Row hover — lift the glass slightly */
 .md-table tbody tr {
-  transition: background 0.14s ease, box-shadow 0.14s ease;
+  transition:
+    background 0.14s ease,
+    box-shadow 0.14s ease;
 }
-
 .md-table tbody tr:hover {
   background: rgba(99, 102, 241, 0.07);
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.12);
 }
 
+/* Last row — no bottom border so it doesn't double-up with wrapper border */
 .md-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+/* ── Light-theme table overrides ───────────────────────────────────────────── */
 [data-theme="light"] .md-table-wrapper {
   background: rgba(0, 0, 0, 0.02);
   border-color: rgba(0, 0, 0, 0.08);
-  background-image: linear-gradient(to left, rgba(0, 0, 0, 0.02) 20%, transparent), linear-gradient(to right, rgba(0, 0, 0, 0.02) 20%, transparent), radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.08), transparent), radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.08), transparent);
-  background-size: 40px 100%, 40px 100%, 12px 100%, 12px 100%;
+  background-image:
+    linear-gradient(to left, rgba(0, 0, 0, 0.02) 20%, transparent),
+    linear-gradient(to right, rgba(0, 0, 0, 0.02) 20%, transparent),
+    radial-gradient(
+      farthest-side at 100% 50%,
+      rgba(0, 0, 0, 0.08),
+      transparent
+    ),
+    radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.08), transparent);
+  background-size:
+    40px 100%,
+    40px 100%,
+    12px 100%,
+    12px 100%;
   background-position: right, left, right, left;
   background-repeat: no-repeat;
   background-attachment: local, local, scroll, scroll;
   background-color: rgba(0, 0, 0, 0.02);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.06));
 }
 
 [data-theme="light"] .md-table thead tr {
@@ -466,6 +555,7 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.1);
 }
 
+/* ── Dark-slate table overrides ────────────────────────────────────────────── */
 [data-theme="dark-slate"] .md-table thead tr {
   background: rgba(99, 102, 241, 0.14);
   border-bottom-color: rgba(99, 102, 241, 0.28);
@@ -486,17 +576,41 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
   background: rgba(99, 102, 241, 0.09);
 }
 
+/* ── Dark-theme table overrides ────────────────────────────────────────────── */
 [data-theme="dark"] .md-table-wrapper,
 [data-theme="dark-slate"] .md-table-wrapper {
-  background: linear-gradient(to left, var(--color-background) 20%, transparent) right, linear-gradient(to right, var(--color-background) 20%, transparent) left, radial-gradient(farthest-side at 100% 50%, rgba(255, 255, 255, 0.07), transparent) right, radial-gradient(farthest-side at 0% 50%, rgba(255, 255, 255, 0.07), transparent) left;
+  background:
+    linear-gradient(to left, var(--color-background) 20%, transparent) right,
+    linear-gradient(to right, var(--color-background) 20%, transparent) left,
+    radial-gradient(
+        farthest-side at 100% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      right,
+    radial-gradient(
+        farthest-side at 0% 50%,
+        rgba(255, 255, 255, 0.07),
+        transparent
+      )
+      left;
   background-color: var(--color-background);
   background-repeat: no-repeat;
-  background-size: 40px 100%, 40px 100%, 10px 100%, 10px 100%;
+  background-size:
+    40px 100%,
+    40px 100%,
+    10px 100%,
+    10px 100%;
   background-attachment: local, local, scroll, scroll;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   MOBILE OVERRIDES
+   ══════════════════════════════════════════════════════════════════════════════ */
+
 @media (max-width: 480px) {
   .copy-code-btn {
+    /* Always visible on touch devices — no hover event */
     opacity: 1;
   }
 
@@ -510,4 +624,250 @@ export const MARKDOWN_CSS = `/* ── Markdown + KaTeX (mirrored from create-qu
     padding: 8px 12px;
     font-size: 0.85rem;
   }
+}
+
+/* ─── Reading Passage ─────────────────────────────────────────────────────── */
+.reading-passage {
+  max-height: min(420px, 55vh);
+  overflow-y: auto;
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-secondary);
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.75;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  margin-bottom: 20px;
+}
+
+.passage-content {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .reading-passage {
+    max-height: min(360px, 50vh);
+    padding: 16px 18px;
+    font-size: 1rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   SYNTAX HIGHLIGHTING TOKENS  (used by highlightCode() in markdown.js)
+   ══════════════════════════════════════════════════════════════════════════════
+   Token classes:
+     .sh-keyword    — language keywords (if, return, class, …)
+     .sh-string     — string/template literals
+     .sh-number     — numeric literals
+     .sh-comment    — line and block comments
+     .sh-function   — function / method call identifiers
+     .sh-type       — PascalCase type / class names
+     .sh-builtin    — well-known built-ins (console, Math, …)
+     .sh-operator   — operators (+ - * / = < > … )
+     .sh-attr       — HTML attrs / object properties
+     .sh-property   — object properties (alias of sh-attr)
+     .sh-tag        — HTML / XML tag names
+     .sh-variable   — CSS custom properties (--foo)
+     .sh-interp     — template-literal interpolation delimiters 
+     .sh-interp-body— expression inside 
+
+   Colours are tuned for a dark background (the default .code-block uses
+   a near-black bg).  A separate [data-theme="light"] block overrides them
+   for light mode.  The palette is intentionally cohesive with the primary
+   colour (#6366f1 indigo / Catppuccin-inspired) used elsewhere in the UI.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── Default / Dark palette ─────────────────────────────────────────────────
+   Page bg ≈ #1a1a2e (near-black, slight purple tint)
+   Code block ≈ slightly lighter dark surface
+   Goal: rich but not neon — purples feel at home, accents are warm not garish
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.code-block .sh-keyword {
+  color: #c792ea; /* soft violet — kept, it harmonizes with the purple-tinted bg */
+  font-weight: 600;
+}
+
+.code-block .sh-string {
+  color: #a8d8a8; /* sage green — replaces neon lime, warm and readable */
+}
+
+.code-block .sh-number {
+  color: #f78c6c; /* soft coral — replaces bubblegum pink, mature accent */
+}
+
+.code-block .sh-comment {
+  color: #4e5a6a; /* deeper blue-grey — recedes cleanly on this near-black bg */
+  font-style: italic;
+}
+
+.code-block .sh-function {
+  color: #82aaff; /* periwinkle blue — softer than sky, less clinical */
+}
+
+.code-block .sh-type {
+  color: #ffcb6b; /* warm gold — amber was close, this is richer and less harsh */
+}
+
+.code-block .sh-builtin {
+  color: #f78c6c; /* same coral as numbers — related category, consistent family */
+}
+
+.code-block .sh-operator {
+  color: #7986a8; /* muted blue-slate — visible but not competing */
+}
+
+.code-block .sh-attr,
+.code-block .sh-property {
+  color: #89ddff; /* cool sky — distinct from functions, feels like metadata */
+}
+
+.code-block .sh-tag {
+  color: #f07178; /* muted rose-red — replaces hot pink, same role but calmer */
+}
+
+.code-block .sh-variable {
+  color: #c792ea; /* same violet as keywords — CSS vars share the keyword family */
+}
+
+.code-block .sh-interp {
+  color: #f78c6c; /* coral — consistent with numbers/builtins, signals injection */
+  font-weight: 700;
+}
+
+.code-block .sh-interp-body {
+  color: #cdd5e0; /* soft blue-white — cooler than near-white, fits the tinted bg */
+}
+
+/* ── Light-theme overrides ───────────────────────────────────────────────────── */
+
+[data-theme="light"] .code-block .sh-keyword {
+  color: #569cd6; /* cool blue — classic keyword blue */
+  font-weight: 600;
+}
+
+[data-theme="light"] .code-block .sh-string {
+  color: #ce9178; /* warm terracotta — easy on dark bg */
+}
+
+[data-theme="light"] .code-block .sh-number {
+  color: #b5cea8; /* soft sage green */
+}
+
+[data-theme="light"] .code-block .sh-comment {
+  color: #6a9955; /* muted green — readable but recedes */
+  font-style: italic;
+}
+
+[data-theme="light"] .code-block .sh-function {
+  color: #dcdcaa; /* warm yellow — functions stand out */
+}
+
+[data-theme="light"] .code-block .sh-type {
+  color: #4ec9b0; /* teal — types feel structural */
+}
+
+[data-theme="light"] .code-block .sh-builtin {
+  color: #4ec9b0; /* same teal family as types */
+}
+
+[data-theme="light"] .code-block .sh-operator {
+  color: #d4d4d4; /* near-white — punctuation stays neutral */
+}
+
+[data-theme="light"] .code-block .sh-attr,
+[data-theme="light"] .code-block .sh-property {
+  color: #9cdcfe; /* light sky blue — properties feel accessible */
+}
+
+[data-theme="light"] .code-block .sh-tag {
+  color: #569cd6; /* same blue as keywords — HTML tags fit */
+}
+
+[data-theme="light"] .code-block .sh-variable {
+  color: #9cdcfe; /* sky blue — consistent with properties */
+}
+
+[data-theme="light"] .code-block .sh-interp {
+  color: #c586c0; /* soft violet — interpolation markers pop */
+  font-weight: 700;
+}
+
+[data-theme="light"] .code-block .sh-interp-body {
+  color: #d4d4d4; /* same neutral as operators */
+}
+
+/* ── Dark-slate theme ────────────────────────────────────────────────────────
+   Page bg ≈ deep navy, code block ≈ slightly lighter slate
+   Goal: warm, sophisticated — no neon, no pastels that clash with cool blues
+   ─────────────────────────────────────────────────────────────────────────── */
+
+[data-theme="dark-slate"] .code-block .sh-keyword {
+  color: #82aaff; /* periwinkle blue — softer than purple, fits navy context */
+  font-weight: 600;
+}
+
+[data-theme="dark-slate"] .code-block .sh-string {
+  color: #c3e88d; /* muted lime-green — warm but not neon */
+}
+
+[data-theme="dark-slate"] .code-block .sh-number {
+  color: #f78c6c; /* soft coral — replaces bubblegum pink, feels mature */
+}
+
+[data-theme="dark-slate"] .code-block .sh-comment {
+  color: #546e7a; /* blue-grey — recedes into the slate without disappearing */
+  font-style: italic;
+}
+
+[data-theme="dark-slate"] .code-block .sh-function {
+  color: #82aaff; /* same family as keywords — cohesive, not competing */
+}
+
+[data-theme="dark-slate"] .code-block .sh-type {
+  color: #ffcb6b; /* warm gold — structural types deserve warmth */
+}
+
+[data-theme="dark-slate"] .code-block .sh-builtin {
+  color: #89ddff; /* cool sky — distinct from types, fits the slate palette */
+}
+
+[data-theme="dark-slate"] .code-block .sh-operator {
+  color: #89ddff; /* same sky — operators stay light and neutral */
+}
+
+[data-theme="dark-slate"] .code-block .sh-attr,
+[data-theme="dark-slate"] .code-block .sh-property {
+  color: #b2ccd6; /* desaturated steel blue — calm and readable */
+}
+
+[data-theme="dark-slate"] .code-block .sh-tag {
+  color: #f07178; /* muted rose-red — replaces bubblegum, still distinct */
+}
+
+[data-theme="dark-slate"] .code-block .sh-variable {
+  color: #eeffff; /* near-white with a cool tint — variables are plain text */
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp {
+  color: #f78c6c; /* coral — matches numbers, signals interpolation clearly */
+  font-weight: 700;
+}
+
+[data-theme="dark-slate"] .code-block .sh-interp-body {
+  color: #b2ccd6; /* matches properties — calm body text */
+}
+
+/* Dynamic Direction Utilities */
+.text-ltr {
+  direction: ltr;
+  text-align: left;
+}
+
+.text-rtl {
+  direction: rtl;
+  text-align: right;
 }`;

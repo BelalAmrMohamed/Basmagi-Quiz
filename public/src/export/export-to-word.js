@@ -584,7 +584,7 @@ export async function exportToWord(config, questions, userAnswers = []) {
       // Render options
       if (isEssay) {
         // Essay Answer
-        const userText = sanitizeText(userAns || "Not answered");
+        const userText = sanitizeText(userAns || "لم تُجِب");
         const formalAnswer = sanitizeText(question.answer);
 
         // User Answer Box

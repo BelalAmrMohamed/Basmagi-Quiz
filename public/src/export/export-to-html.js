@@ -32,8 +32,8 @@ export async function exportToHtml(config, questions, userAnswers = []) {
     else hasMCQ = true;
   });
 
-  let questionType = "Multiple Choice";
-  if (hasEssay && !hasMCQ && !hasTrueFalse) questionType = "Essay/Definitions";
+  let questionType = "إختياري";
+  if (hasEssay && !hasMCQ && !hasTrueFalse) questionType = "مقالي";
   else if (hasEssay) questionType = "Mixed (MCQ, True/False, Essay)";
 
   const date = new Date().toLocaleDateString();
@@ -282,7 +282,7 @@ export async function exportToHtml(config, questions, userAnswers = []) {
         htmlContent += `
           <div class="essay-box" style="border-left: 3px solid #3b82f6;">
               <strong style="color: #60a5fa; display:block; margin-bottom:5px;">Your Answer:</strong>
-              ${renderMarkdown(userText || "Not answered")}
+              ${renderMarkdown(userText || "لم تُجِب")}
           </div>
           <div class="essay-score ${scoreClass}">
             Score: ${score}/5 &nbsp;<span style="font-size:1.1em;color:#f59e0b">${stars}</span>

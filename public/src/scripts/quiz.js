@@ -1822,7 +1822,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
+      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
     } else {
       if (isMultiple) {
         isCorrect =
@@ -1833,7 +1833,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
     }
   }
 
@@ -1877,7 +1877,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       html: `
         ${header}
         <div class="essay-container">
-          <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="Type your answer here..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
+          <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
         ${
@@ -2130,7 +2130,7 @@ function buildQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>Explanation</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
+      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
     } else {
       if (Array.isArray(correctIdx)) {
         isCorrect =
@@ -2141,7 +2141,7 @@ function buildQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>Explanation</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
     }
   }
 
@@ -2189,7 +2189,7 @@ function buildQuestionBodyHTML(q, idx) {
           <textarea 
             id="essayInput" 
             class="essay-textarea ${isLocked ? "locked" : ""}" 
-            placeholder="Type your answer here..."
+            placeholder="اكتب إجابتك هنا..."
             ${isLocked ? "disabled" : ""}
             oninput="window.handleEssayInput()"
           >${escapeHtml(userSelected || "")}</textarea>

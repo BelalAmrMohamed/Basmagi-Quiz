@@ -80,7 +80,7 @@ export function buildQuizText(config, questions, userAnswers = []) {
         const userText = userAns || "";
         const score = gradeEssay(userText, q.answer);
         const stars = "★".repeat(score) + "☆".repeat(5 - score);
-        text += `   Your Answer: ${userText || "Not answered"}\n`;
+        text += `   Your Answer: ${userText || "لم تُجِب"}\n`;
         text += `   Score        : ${score}/5  ${stars}\n\n`;
       }
       text += `   Formal Answer: ${q.answer || ""}\n`;

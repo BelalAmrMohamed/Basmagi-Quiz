@@ -1498,8 +1498,8 @@ body.is-resizing-media .media-container.resizable-media {
   transition: all 0.3s ease;
   direction: ltr;
   unicode-bidi: plaintext;
-  text-align: start;
-  /* background: var(--color-surface); */
+  /* text-align: start; */
+  direction: rtl;
 }
 
 [data-theme="dark-slate"] .essay-textarea,

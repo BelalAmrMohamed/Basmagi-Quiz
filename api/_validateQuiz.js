@@ -17,7 +17,6 @@ const ALLOWED_META_KEYS = new Set([
   "createdAt",
   "author",
   "author_email",
-  // Phase 2 — access control & default settings
   "password",
   "view",
   "mode",

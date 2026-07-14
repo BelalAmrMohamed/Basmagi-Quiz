@@ -112,7 +112,7 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
         const score = gradeEssay(userText, q.answer);
         const stars = "★".repeat(score) + "☆".repeat(5 - score);
         const scoreLabel = score >= 3 ? "✅" : score >= 1 ? "⚠️" : "❌";
-        markdown += `**Your Answer:**\n\n${mdLineBreaks(userText || "Not answered")}\n\n`;
+        markdown += `**Your Answer:**\n\n${mdLineBreaks(userText || "لم تُجِب")}\n\n`;
         markdown += `**Score:** ${scoreLabel} ${score}/5  ${stars}\n\n`;
       }
       markdown += `**Formal Answer:** ${mdLineBreaks(q.answer)}\n\n`;

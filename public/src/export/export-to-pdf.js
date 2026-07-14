@@ -2363,7 +2363,7 @@ export async function exportToPdf(
 
         // User answer box (results mode)
         if (isResultsMode) {
-          const userText = sanitizeText(userAns || "Not answered");
+          const userText = sanitizeText(userAns || "لم تُجِب");
           const uContentH = calcTextHeight(userText, IW, SIZES.optFont);
           const uBoxH = Math.max(uContentH + 10, 16);
           const _uText = userText,

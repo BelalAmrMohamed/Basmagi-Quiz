@@ -140,7 +140,7 @@ export async function exportToQuiz(config, questions) {
   const quizInfoRowsHtml = buildQuizInfoRows(config, questions.length);
 
   const quizHTML = `<!DOCTYPE html>
-  <html lang="en">
+  <html lang="ar" dir="rtl">
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -465,7 +465,8 @@ export async function exportToQuiz(config, questions) {
   .menu-section h3 {
     font-size: 11px;
     color: var(--text-muted);
-    text-transform: uppercase;
+    direction: rtl;
+    text-align: right;
     letter-spacing: 1px;
     margin-bottom: 10px;
     font-weight: 700;
@@ -1350,7 +1351,7 @@ export async function exportToQuiz(config, questions) {
   .explanation  { background: var(--info-bg);    border-color: var(--info);    color: var(--info-text);    }
   .model-answer { background: var(--success-bg); border-color: var(--success); color: var(--success-text); }
 
-  /* Labels like "💡 Explanation" / "✓ Model Answer" are fixed English
+  /* Labels like "💡 الشرح" / "✓ Model Answer" are fixed English
      captions, not part of the (possibly Arabic/RTL) answer content, so
      they must always render centered and LTR regardless of which
      direction TextDirectionEngine applies to their parent container. */
@@ -1623,7 +1624,7 @@ export async function exportToQuiz(config, questions) {
   .modal-buttons {
     display: flex;
     gap: 10px;
-    justify-content: flex-end;
+    justify-content: center;
     flex-wrap: wrap;
     margin-top: 20px;
     padding-top: 16px;
@@ -1634,9 +1635,6 @@ export async function exportToQuiz(config, questions) {
     flex-shrink: 0;
   }
 
-  .review-summary {
-    text-align: left;
-  }
 
   .review-summary .warning {
     color: var(--warning-text);
@@ -1653,6 +1651,7 @@ export async function exportToQuiz(config, questions) {
     gap: 10px;
     margin-top: 16px;
     flex-wrap: wrap;
+    justify-content: center;
   }
 
   @keyframes modalSlideIn {
@@ -1859,18 +1858,18 @@ export async function exportToQuiz(config, questions) {
   
   <div class="side-menu" id="sideMenu" role="dialog" aria-label="Quiz navigation menu">
     <div class="side-menu-header">
-      <h2>Quiz Navigator</h2>
-      <p>Jump to any question</p>
+      <h2>التنقل بين الأسئلة</h2>
+      <p>اذهب إلى أيّ سؤال</p>
     </div>
     
     <div class="side-menu-content">
       <div class="menu-section">
-        <h3>Settings</h3>
+        <h3>الإعدادات</h3>
         
         <div class="toggle-option" id="darkModeToggle" role="switch" aria-checked="false" tabindex="0">
           <div class="toggle-label">
             <span id="themeIcon" aria-hidden="true">🌙</span>
-            <span>Dark Mode</span>
+            <span>خلفية سوداء</span>
           </div>
           <div class="toggle-switch" id="darkModeSwitch">
             <div class="toggle-slider"></div>
@@ -1879,14 +1878,14 @@ export async function exportToQuiz(config, questions) {
       </div>
       
       <div class="menu-section">
-        <h3>Actions</h3>
+        <h3>الإجراءات</h3>
         <button class="btn btn-secondary btn-block" onclick="quizApp.printQuiz()">
-          🖨️ Print Quiz
+          🖨️ إطبع الامتحان
         </button>
       </div>
       
       <div class="menu-section">
-        <h3>Questions</h3>
+        <h3>الأسئلة</h3>
         <div class="nav-grid" id="navGrid"></div>
       </div>
     </div>
@@ -1895,10 +1894,10 @@ export async function exportToQuiz(config, questions) {
   <div class="container">
     <header class="header">
       <div class="quiz-title-row" id="quizTitleRow">
-        <h1 id="quiz-title">${escHtml(config.title || "Practice Quiz")}</h1>
         <button class="quiz-info-btn" id="quizInfoBtn" type="button" aria-label="Quiz info" aria-haspopup="dialog">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
         </button>
+        <h1 id="quiz-title">${escHtml(config.title || "Practice Quiz")}</h1>
       </div>
       <div class="header-meta">
         <span class="quiz-timer">⏱️ <span id="timerDisplay">0:00</span></span>
@@ -1906,7 +1905,7 @@ export async function exportToQuiz(config, questions) {
       <div class="progress-container">
         <div class="progress-bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
       </div>
-      <div class="progress-text" id="progressText">0 of ${questions.length} answered</div>
+      <div class="progress-text" id="progressText">أجبت على 0 من ${questions.length} سؤال</div>
     </header>
 
     <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle">
@@ -1927,21 +1926,21 @@ export async function exportToQuiz(config, questions) {
 
     <main id="main-content" class="quiz-body"></main>
     
-    <div class="controls">
-      <button class="btn btn-secondary" onclick="quizApp.enterReviewMode()" id="reviewBtn">
-        👁️ Review
-      </button>
-      <button class="btn btn-secondary" onclick="quizApp.reset()">
-        🔄 Reset Quiz
-      </button>
+    <div class="controls">      
       <button class="btn btn-primary" onclick="quizApp.submit()" id="submitBtn">
-        <span class="btn-text">✓ Submit Quiz</span>
+        <span class="btn-text">✓ تسليم الامتحان</span>
         <span class="btn-loader">
           <svg class="spinner" viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5"></circle>
           </svg>
         </span>
       </button>
+      <button class="btn btn-secondary" onclick="quizApp.reset()">
+        🔄 إعادة الامتحان
+      </button>
+      <button class="btn btn-secondary" onclick="quizApp.enterReviewMode()" id="reviewBtn">
+        👁️ مراجعة
+      </button>      
     </div>
     
     <div id="results" class="results" role="region" aria-label="Quiz results"></div>
@@ -1952,8 +1951,8 @@ export async function exportToQuiz(config, questions) {
       <h3 id="modalTitle">Confirm Action</h3>
       <div id="modalBody"></div>
       <div class="modal-buttons">
-        <button class="btn btn-secondary modal-btn" onclick="quizApp.closeModal()">Cancel</button>
-        <button class="btn btn-primary modal-btn" id="modalConfirm">Confirm</button>
+        <button class="btn btn-primary modal-btn" id="modalConfirm">تأكيد</button>
+        <button class="btn btn-secondary modal-btn" onclick="quizApp.closeModal()">إلغاء</button>
       </div>
     </div>
   </div>
@@ -2089,7 +2088,7 @@ export async function exportToQuiz(config, questions) {
             
             setTimeout(() => {
               this.restoreUIState();
-              this.showToast('Previous progress restored', 'info');
+              this.showToast('تم استعادة إجاباتك السابقة', 'info');
             }, 500);
           }
         } catch (e) {
@@ -2406,8 +2405,9 @@ export async function exportToQuiz(config, questions) {
     },
   
     renderQuestion(q, i) {
+      // There is a missing feature here: It doesn't recognise True/False questions.
       const isEssay = isEssayQuestion(q);
-      const badgeText = isEssay ? "Essay" : "Multiple Choice";
+      const badgeText = isEssay ? "مقالي" : "إختياري";
       const badgeClass = isEssay ? "essay" : "";
   
       let optionsHtml = "";
@@ -2417,12 +2417,12 @@ export async function exportToQuiz(config, questions) {
           <textarea 
             class="essay-input" 
             id="essay\${i}" 
-            placeholder="Type your answer here..." 
+            placeholder="اكتب إجابتك هنا..."
             oninput="quizApp.handleEssayInput(\${i}, this.value)"
             aria-label="Essay answer for question \${i + 1}"
           >\${savedAnswer}</textarea>
           <div class="char-count" id="charCount\${i}">
-            \${savedAnswer.length} characters
+            \${savedAnswer.length} حروف
           </div>
           <div class="model-answer" id="modelAns\${i}">
             <strong class="answer-label">✓ Model Answer</strong><br>
@@ -2462,7 +2462,7 @@ export async function exportToQuiz(config, questions) {
       return \`
         <div class="question-card" id="q\${i}">
           <div class="question-header">
-            <div class="question-num">Question \${i + 1}</div>
+            <div class="question-num">سؤال\${i + 1}</div>
             <div class="question-actions">
               <div class="question-badge \${badgeClass}">\${badgeText}</div>
               <button class="flag-btn" id="flag\${i}" 
@@ -2547,7 +2547,7 @@ export async function exportToQuiz(config, questions) {
     updateCharCount(qIndex, value) {
       const charCount = document.getElementById(\`charCount\${qIndex}\`);
       if (charCount) {
-        charCount.textContent = \`\${value.length} characters\`;
+        charCount.textContent = \`\${value.length} حروف\`;
       }
     },
   
@@ -2564,7 +2564,7 @@ export async function exportToQuiz(config, questions) {
       
       progressBar.style.width = \`\${percent}%\`;
       progressBar.setAttribute('aria-valuenow', percent);
-      progressText.textContent = \`\${answered} of \${total} answered\`;
+      progressText.textContent = \`أجبت على \${answered} من \${questions.length} سؤال\`;
     },
   
     updateNavButton(qIndex) {
@@ -2609,28 +2609,28 @@ export async function exportToQuiz(config, questions) {
       
       let summaryHTML = '<div class="review-summary">';
       // summaryHTML += '<h3>Quiz Review</h3>';
-      summaryHTML += \`<p><strong>Answered:</strong> \${this.userAnswers.filter(a => a !== null && (!Array.isArray(a) || a.length > 0)).length}/\${questions.length}</p>\`;
+      summaryHTML += \`<p><strong>أسئلة مجابة:</strong> \${this.userAnswers.filter(a => a !== null && (!Array.isArray(a) || a.length > 0)).length}/\${questions.length}</p>\`;
       
       if (unanswered.length > 0) {
-        summaryHTML += \`<p class="warning">⚠️ <strong>Unanswered:</strong> Questions \${unanswered.join(', ')}</p>\`;
+        summaryHTML += \`<p class="warning">⚠️ <strong>أسئلة غير مجابة:</strong> \${unanswered.join(', ')}</p>\`;
       }
       
       if (flagged.length > 0) {
-        summaryHTML += \`<p>🚩 <strong>Flagged for review:</strong> Questions \${flagged.join(', ')}</p>\`;
+        summaryHTML += \`<p>🚩 <strong>أسئلة عليها علامة مراجعة:</strong> \${flagged.join(', ')}</p>\`;
       }
       
       if (unanswered.length === 0 && flagged.length === 0) {
-        summaryHTML += '<p style="color: var(--success);">✓ All questions answered, none flagged.</p>';
+        summaryHTML += '<p style="color: var(--success);">✓ كل الأسئلة مجابة ، ولا يوجد علامات للمراجعة</p>';
       }
       
       summaryHTML += \`
         <div class="review-actions">
-          <button class="btn btn-secondary modal-btn" onclick="quizApp.closeModal()">Continue Editing</button>
-          <button class="btn btn-primary modal-btn" onclick="quizApp.performSubmit()">Submit Now</button>
+          <button class="btn btn-primary modal-btn" onclick="quizApp.performSubmit()">تسليم الامتحان الآن</button>
+          <button class="btn btn-secondary modal-btn" onclick="quizApp.closeModal()">استمر في الامتحان</button>
         </div>
       </div>\`;
       
-      this.showModal('Review Quiz', summaryHTML);
+      this.showModal('مراجعة الامتحان', summaryHTML);
     },
   
     submit() {
@@ -2641,11 +2641,11 @@ export async function exportToQuiz(config, questions) {
       
       let message = '<p>Are you sure you want to submit your quiz?</p>';
       if (unanswered > 0) {
-        message = \`<p>You have <strong>\${unanswered}</strong> unanswered question(s).</p><p>Are you sure you want to submit anyway?</p>\`;
+        message = \`<p>لديك <strong>\${unanswered}</strong> سؤالاً غير مجاب</p><p>هل انت متأكد من أنك تريد التسليم؟</p>\`;
       }
       
       this.showModal(
-        "Confirm Submission",
+        "تأكيد التسليم",
         message,
         () => this.performSubmit()
       );
@@ -2768,14 +2768,14 @@ export async function exportToQuiz(config, questions) {
         const essayPct = Math.round((essayScore / essayMaxScore) * 100);
         const essayStars = "★".repeat(Math.round(essayScore / essayMaxScore * 5)) + "☆".repeat(5 - Math.round(essayScore / essayMaxScore * 5));
         scoreBreakdown = \`
-          <p><strong>Total Score:</strong> \${totalScore} / \${totalPossible}</p>
-          <p><strong>MCQ:</strong> \${mcqCorrect} / \${mcqTotal} correct</p>
-          <p><strong>Essays:</strong> \${essayScore} / \${essayMaxScore} pts &nbsp;<span style="color:#f59e0b">\${essayStars}</span></p>
+          <p><strong>جميع الأسئلة:</strong> \${totalScore} / \${totalPossible}</p>
+          <p><strong>الإختياري:</strong> صحيح \${mcqCorrect} / \${mcqTotal}</p>
+          <p><strong>المقالي:</strong> نقطة &nbsp; \${essayScore} / \${essayMaxScore} <span style="color:#f59e0b">\${essayStars}</span></p>
         \`;
       } else if (hasEssay) {
         const essayStars = "★".repeat(Math.round(essayScore / essayMaxScore * 5)) + "☆".repeat(5 - Math.round(essayScore / essayMaxScore * 5));
         scoreBreakdown = \`
-          <p><strong>Essay Score:</strong> \${essayScore} / \${essayMaxScore} pts</p>
+          <p><strong>Essay Score:</strong> نقطة \${essayScore} / \${essayMaxScore}</p>
           <p><strong>Rating:</strong> <span style="color:#f59e0b;font-size:1.15em">\${essayStars}</span></p>
         \`;
       } else {
@@ -2787,15 +2787,15 @@ export async function exportToQuiz(config, questions) {
         <div class="score-circle \${passed ? "pass" : "fail"}">
           \${percent}%
         </div>
-        <h2>\${passed ? "🎉 Great Job!" : "📚 Keep Practicing!"}</h2>
+        <h2>\${passed ? "🎉 Great Job!" : "📚 استمر في المذاكرة!"}</h2>
         <div class="results-detail">
           \${scoreBreakdown}
-          <p><strong>Overall Score:</strong> <span>\${percent}%</span></p>
-          \${(hasMcq && hasEssay) ? \`<p><strong>MCQ Score:</strong> <span>\${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></p>\` : ""}
-          <p><strong>Status:</strong> <span>\${passed ? "✓ Passed" : "✗ Not Passed"}</span></p>
-          <p><strong>Time Taken:</strong> <span>\${document.getElementById('timerDisplay').textContent}</span></p>
+          <p><strong>الدرجة النهائية:</strong> <span>\${percent}%</span></p>
+          \${(hasMcq && hasEssay) ? \`<p><strong>درجة الإختياري:</strong> <span>\${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></p>\` : ""}
+          <p><strong>الحالة:</strong> <span>\${passed ? "✓ ناجح" : "✗ ساقط"}</span></p>
+          <p><strong>الوقت:</strong> <span>\${document.getElementById('timerDisplay').textContent}</span></p>
         </div>
-        <p style="margin-top:20px;color:var(--text-muted)">Scroll up to review explanations and answers</p>
+        <p style="margin-top:20px;color:var(--text-muted)">اذهب للأعلى لمراجعة الإجابات الصحيحة</p>
       \`;
       
       resultsDiv.classList.add("show");
@@ -2808,8 +2808,8 @@ export async function exportToQuiz(config, questions) {
   
     reset() {
       this.showModal(
-        "Reset Quiz",
-        "<p>Are you sure you want to reset the quiz? All your answers will be lost.</p>",
+        "إعادة الامتحان",
+        "<p>هل أنت متأكد من إعادة الامتحان؟ ستفقد جميع إجاباتك.</p>",
         () => this.performReset()
       );
     },
@@ -3047,8 +3047,8 @@ export async function exportToQuiz(config, questions) {
   URL.revokeObjectURL(url);
 
   showNotification(
-    "Quiz downloaded successfully.",
-    "You have it now",
+    "تم تحميل الامتحان بنجاح",
+    "هو لديك الآن",
     "./favicon.png",
   );
 }

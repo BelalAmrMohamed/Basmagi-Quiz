@@ -1047,70 +1047,26 @@
                 <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:8px;">
                     يدعم: JSON · نص مرقّم (1. سؤال / A. خيار / Correct: A / Explanation: ...)
                 </p>
-                <textarea id="importTextarea" rows="7" placeholder='Title: Advanced C++ Stress Test
-Description: Tests multi-line questions, LaTeX math, Markdown formatting, code snippets in options, and all three question types.
-Source: https://cppreference.com
-
-1. Consider the following time complexity formula for a nested loop algorithm:
-
-   $$T(n) = \sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\frac{n(n+1)}{2}$$
-
-   Given $n = 8$, which value correctly represents the **total number of iterations**?
-
-   A. 64
-   B. 36
-   C. 28
-   D. 72
-
-Correct: B. 36
-
-Explanation: The correct answer is **d. Data Link**.
-
-From Lec1, the PDU hierarchy is:
-| Loop Type | Formula | Result for $n=8$ |
-|---|---|---|
-| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |
-| Full double loop | $n^2$ | 64 |
-
-
-
-2. In C++, a `const` member function can modify a `mutable` data member.
-
-   A. True
-   B. False
-
-   Correct: A. True
-
-Explanation: The `mutable` keyword explicitly **opts a member out** of the `const` contract.
-This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
-```cpp
-   class Counter {
-       mutable int cache_ = 0;    // may be written even in const context
-   public:
-       int value() const {
-           cache_++;              // legal because cache_ is mutable
-           return cache_;
-       }
-   };
-```
-
-
-3. Write a C++ function template that returns the **larger** of two values.
-The function must work for any type that supports `operator>`.
-
-Answer: The function uses `template`:
-```cpp
-template <typename T>
-T maxOf(T a, T b) {
-    return (a > b) ? a : b;
-}
-```
-
-
-Explanation: The `typename T` template parameter is deduced at the call site,
-so `maxOf(3, 7)` works for `int`, `maxOf(3.14, 2.71)` for `double`, and
-`maxOf(std::string("apple"), std::string("banana"))` for `std::string` —
-as long as `operator>` is defined for the type.' aria-label="محتوى الأسئلة للاستيراد"></textarea>
+                <textarea id="importTextarea" rows="7" placeholder='{
+  "questions": [
+    {
+      "q": "«إنَّ مستشارِي الغدِ مُهيَّؤون لِحمْلِ الأمانةِ.»\\n\\nعند وضع الفعل (عسى) بدلاً من الحرف الناسخ (إنّ)، تصبح الجملة الصحيحة:",
+      "explanation": "الفعل (عسى) من أفعال الرجاء يعمل عمل كان برفع الاسم ونصب الخبر، ويشترط في خبره أن يكون جملة فعلية فعلها مضارع ويكثر اقترانها بـ (أن). وبناءً عليه: اسم عسى مرفوع وعلامة رفعه الواو لأنه جمع مذكر سالم وحذفت النون للإضافة فيصبح (مستشارو)، والخبر المقترن بأن الناصبة يصبح الفعل المضارع بعده منصوبًا بحذف النون (أن يُهيَّؤوا).",
+      "options": [
+        "عسى مستشاري الغدِ أنْ يُهيَّؤوا لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ مُهيَّئين لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ أنْ يُهيَّؤوا لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ يُهيَّؤون لِحملِ الأمانةِ."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "«من أخلص في عمله، نال تقدير مجتمعه.»\\n\\nصُغ من الجملة السابقة أسلوب شرط مستخدمًا (مَنْ) الشرطية الجازمة، مع جعل فعل جواب الشرط مقترنًا بالفاء، واضبط الفعلين بالشكل.",
+      "explanation": "عند تحويل أسلوب الشرط للمضارع الجازم، يُجزم فعل الشرط بالسكون لأنه صحيح الآخر. واقتران جواب الشرط بالفاء يستوجب وجود مسوغ (اسمية طلبية وبجامد وبما وقد وبلن وبالتنفيس)، وعند اختيار السين أو سوف يرتفع المضارع بعدها وتصبح الجملة في محل جزم.",
+      "answer": "الصياغة الصحيحة للأسلوب هي:\\n**«مَنْ يُخْلِصْ في عمله، فَسَيَنَالُ تقدير مجتمعه.»** (أو: فَقَدْ يَنَالُ / فَسَوْفَ يَنَالُ)\\n\\n**ضبط الفعلين بالشكل:**\\n1. **يُخْلِصْ:** فعل مضارع مجزوم (فعل الشرط) وعلامة جزمه السكون.\\n2. **يَنَالُ:** فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة، لأن اقتران جواب الشرط بالفاء ودخول السين/سوف يمنع الجزم المباشر عن الفعل، وتصبح الجملة الفعلية بأكملها (فسينال...) في محل جزم جواب الشرط."
+    }
+  ]
+}' aria-label="محتوى الأسئلة للاستيراد"></textarea>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="processImport()"><svg xmlns="http://www.w3.org/2000/svg"

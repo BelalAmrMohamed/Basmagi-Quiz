@@ -2081,7 +2081,7 @@ body {
    RESPONSIVE — MODAL FIXES
    ============================================================================ */
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .modal-card {
     border-radius: 12px;
     max-height: 95vh;
@@ -2104,6 +2104,11 @@ body {
 
   .modal-header {
     padding: 12px;
+  }
+
+  /* Autosave Indicator - on the left on phones, not to be under the hamburger menu */
+  .autosave-indicator {
+    margin-right: auto;
   }
 
   /* ============================================================================
@@ -3052,16 +3057,6 @@ body {
   font-size: 0.9rem;
 }
 
-/* ── Section header: sticky for better UX on long lists ────────────────────── */
-.section-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--color-surface);
-  padding-bottom: 16px;
-  margin-bottom: 16px;
-}
-
 /* ── Action bar: two-column layout on wider screens ────────────────────────── */
 @media (min-width: 768px) {
   .action-bar {
@@ -3450,7 +3445,7 @@ body {
    RESPONSIVE — option-cards on small screens
    ============================================================================ */
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .option-cards {
     grid-template-columns: 1fr;
   }

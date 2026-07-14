@@ -255,12 +255,12 @@ function renderLeaderboard(user) {
   if (!leaderboardEl) return;
 
   const mockUsers = [
-    { name: "QuizMaster Pro", points: 3000 },
-    { name: "Sarah Johnson", points: 2000 },
-    { name: "Alex Chen", points: 1500 },
-    { name: "Emma Williams", points: 1000 },
-    { name: "Michael Brown", points: 500 },
-    { name: "Jessica Davis", points: 100 },
+    { name: "عم فوزي الحريف", points: 3000 },
+    { name: "سيد سِكّة", points: 2000 },
+    { name: "زيزو حركات", points: 1500 },
+    { name: "علي علكّه", points: 1000 },
+    { name: "شيكو الغلبان", points: 500 },
+    { name: "زيزي على الهادي", points: 100 },
   ];
 
   const displayName = localStorage.getItem("username") || "User";
