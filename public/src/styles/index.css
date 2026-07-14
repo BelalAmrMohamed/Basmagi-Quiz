@@ -3762,6 +3762,13 @@ kbd {
     transform var(--transition-fast, 0.15s ease);
 }
 
+.bulk-action-bar .btn:hover{
+  background: var(--color-text-secondary);
+  color: var(--color-surface);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+  transform: translateY(-1px);
+}
+
 .bulk-action-bar .bulk-delete-btn {
   background: var(--color-error-light, #fed7d7);
   color: var(--color-error, #e53e3e);
@@ -3769,7 +3776,7 @@ kbd {
 
 .bulk-action-bar .bulk-delete-btn:hover {
   background: var(--color-error, #e53e3e);
-  color: #fff;
+  color: var(--color-surface);
   box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
   transform: translateY(-1px);
 }
