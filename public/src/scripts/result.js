@@ -1,4 +1,8 @@
 // src/scripts/result.js
+
+// Temporary | For performance debugging
+console.log("result.js loaded successfully")
+
 import { getManifest } from "./quizManifest.js";
 
 // Download functions

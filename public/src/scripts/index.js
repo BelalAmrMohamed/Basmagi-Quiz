@@ -3,213 +3,216 @@
 // All original functionality preserved + improvements added
 // ============================================================================
 
+// Temporary | For performance debugging
+console.log("index.js loaded successfully")
+
 // ============================================================================
 // --- Console UI ---
 // ============================================================================
 import "../shared/console-core.js";
 
-(function initIndexConsole(global) {
-  'use strict';
-  const core = global.__basmagyCore;
-  if (!core) {
-    console.log('%c[basmagy] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
-    return;
-  }
+// (function initIndexConsole(global) {
+//   'use strict';
+//   const core = global.__basmagyCore;
+//   if (!core) {
+//     console.log('%c[basmagy] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
+//     return;
+//   }
  
-  const { THEME, styles, log, rule, printLogo, runBootSequence, registerCommand, registry } = core;
+//   const { THEME, styles, log, rule, printLogo, runBootSequence, registerCommand, registry } = core;
  
-  registry.pageId = 'index';
-  registry.pageLabel = 'الصفحة الرئيسية';
+//   registry.pageId = 'index';
+//   registry.pageLabel = 'الصفحة الرئيسية';
  
-  // --------------------------------------------------------------------------
-  // MOCK / LIVE DATA HOOKS
-  //   In production, swap these getters for real reads from your app state
-  //   (e.g. a store, window.__APP_STATE__, or a small fetch). Kept sync +
-  //   defensive so a missing global never throws inside a console.log call.
-  // --------------------------------------------------------------------------
-  function safe(fn, fallback) {
-    try { return fn(); } catch (e) { return fallback; }
-  }
+//   // --------------------------------------------------------------------------
+//   // MOCK / LIVE DATA HOOKS
+//   //   In production, swap these getters for real reads from your app state
+//   //   (e.g. a store, window.__APP_STATE__, or a small fetch). Kept sync +
+//   //   defensive so a missing global never throws inside a console.log call.
+//   // --------------------------------------------------------------------------
+//   function safe(fn, fallback) {
+//     try { return fn(); } catch (e) { return fallback; }
+//   }
  
-  function getLoadStats() {
-    const nav = safe(() => performance.getEntriesByType('navigation')[0], null);
-    return {
-      loadMs: nav ? Math.round(nav.duration) : safe(() => Math.round(performance.now()), 0),
-      resources: safe(() => performance.getEntriesByType('resource').length, 0),
-    };
-  }
+//   function getLoadStats() {
+//     const nav = safe(() => performance.getEntriesByType('navigation')[0], null);
+//     return {
+//       loadMs: nav ? Math.round(nav.duration) : safe(() => Math.round(performance.now()), 0),
+//       resources: safe(() => performance.getEntriesByType('resource').length, 0),
+//     };
+//   }
  
-  // `categoryTree` (module-scope, populated async by initApp()) is a FLAT
-  // map of key -> node; node.subcategories is an array of sibling keys, not
-  // nested objects (see getCourseItemCount above). Counting entries + total
-  // exam leaves this way stays accurate and never throws pre-manifest-load.
-  function getCategoryTreeStats(tree) {
-    if (!tree || typeof tree !== 'object') return { categories: 0, exams: 0 };
-    const keys = Object.keys(tree);
-    let exams = 0;
-    for (const key of keys) {
-      const node = tree[key];
-      if (node && Array.isArray(node.exams)) exams += node.exams.length;
-    }
-    return { categories: keys.length, exams };
-  }
+//   // `categoryTree` (module-scope, populated async by initApp()) is a FLAT
+//   // map of key -> node; node.subcategories is an array of sibling keys, not
+//   // nested objects (see getCourseItemCount above). Counting entries + total
+//   // exam leaves this way stays accurate and never throws pre-manifest-load.
+//   function getCategoryTreeStats(tree) {
+//     if (!tree || typeof tree !== 'object') return { categories: 0, exams: 0 };
+//     const keys = Object.keys(tree);
+//     let exams = 0;
+//     for (const key of keys) {
+//       const node = tree[key];
+//       if (node && Array.isArray(node.exams)) exams += node.exams.length;
+//     }
+//     return { categories: keys.length, exams };
+//   }
  
-  // --------------------------------------------------------------------------
-  // BOOT SEQUENCE — the animated startup, next-level version of the original
-  // console.clear() + 3 console.log() calls.
-  // --------------------------------------------------------------------------
-  function boot() {
-    console.clear();
+//   // --------------------------------------------------------------------------
+//   // BOOT SEQUENCE — the animated startup, next-level version of the original
+//   // console.clear() + 3 console.log() calls.
+//   // --------------------------------------------------------------------------
+//   function boot() {
+//     console.clear();
  
-    const stats = getLoadStats();
+//     const stats = getLoadStats();
  
-    runBootSequence([
-      { fn: () => printLogo(), delay: 120 },
-      { fn: () => log.sub('  منصة إمتحانات بصمجي | الصفحة الرئيسية'), delay: 140 },
-      { fn: () => log.rule('─', 64), delay: 80 },
-      { fn: () => log.status('› booting index.js ...'), delay: 160 },
-      { fn: () => log.status('› checking session ...'), delay: 140 },
-      { fn: () => log.kv('  session:', safe(() => (global.__APP_STATE__.user ? 'authenticated' : 'guest (no sign-in required for students)'), 'guest (no sign-in required for students)')), delay: 140 },
-      { fn: () => log.status('› loading course catalog ...'), delay: 160 },
-      { fn: () => log.rule('─', 64), delay: 60 },
-      { fn: () => {
-          log.raw('  ⚡ SYSTEM DIAGNOSTIC', styles.warn);
-          log.kv('  page load:', `${stats.loadMs}ms`);
-          log.kv('  resources fetched:', String(stats.resources));
-          log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
-        }, delay: 140 },
-      { fn: () => log.rule('═', 64), delay: 60 },
-      { fn: () => log.title('✔ index.js initialized successfully') , delay: 100},
-      { fn: () => log.sub('  اكتب الأمر التالي لعرض كل الأوامر المتاحة:'), delay: 80 },
-      { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
-    ]);
-  }
+//     runBootSequence([
+//       { fn: () => printLogo(), delay: 120 },
+//       { fn: () => log.sub('  منصة إمتحانات بصمجي | الصفحة الرئيسية'), delay: 140 },
+//       { fn: () => log.rule('─', 64), delay: 80 },
+//       { fn: () => log.status('› booting index.js ...'), delay: 160 },
+//       { fn: () => log.status('› checking session ...'), delay: 140 },
+//       { fn: () => log.kv('  session:', safe(() => (global.__APP_STATE__.user ? 'authenticated' : 'guest (no sign-in required for students)'), 'guest (no sign-in required for students)')), delay: 140 },
+//       { fn: () => log.status('› loading course catalog ...'), delay: 160 },
+//       { fn: () => log.rule('─', 64), delay: 60 },
+//       { fn: () => {
+//           log.raw('  ⚡ SYSTEM DIAGNOSTIC', styles.warn);
+//           log.kv('  page load:', `${stats.loadMs}ms`);
+//           log.kv('  resources fetched:', String(stats.resources));
+//           log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
+//         }, delay: 140 },
+//       { fn: () => log.rule('═', 64), delay: 60 },
+//       { fn: () => log.title('✔ index.js initialized successfully') , delay: 100},
+//       { fn: () => log.sub('  اكتب الأمر التالي لعرض كل الأوامر المتاحة:'), delay: 80 },
+//       { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
+//     ]);
+//   }
  
   // --------------------------------------------------------------------------
   // COMMANDS — visible, documented, discoverable via basmagy.help()
   // --------------------------------------------------------------------------
  
-  registerCommand('perf', () => {
-    const stats = getLoadStats();
-    log.rule('═', 60);
-    log.title('⚡ Performance Snapshot');
-    log.kv('  page load:', `${stats.loadMs}ms`);
-    log.kv('  resources:', String(stats.resources));
-    log.kv('  DOM nodes:', String(safe(() => document.getElementsByTagName('*').length, 0)));
-    log.dim('  Run this after every deploy — we\'re actively chasing a perf bug.');
-    log.rule('═', 60);
-  }, 'print a live performance snapshot of this page');
+//   registerCommand('perf', () => {
+//     const stats = getLoadStats();
+//     log.rule('═', 60);
+//     log.title('⚡ Performance Snapshot');
+//     log.kv('  page load:', `${stats.loadMs}ms`);
+//     log.kv('  resources:', String(stats.resources));
+//     log.kv('  DOM nodes:', String(safe(() => document.getElementsByTagName('*').length, 0)));
+//     log.dim('  Run this after every deploy — we\'re actively chasing a perf bug.');
+//     log.rule('═', 60);
+//   }, 'print a live performance snapshot of this page');
  
-  registerCommand('theme', () => {
-    log.rule('═', 60);
-    log.title('🎨 Console Theme');
-    Object.entries(THEME).forEach(([name, value]) => {
-      console.log(`%c ${name.padEnd(10)} ${value}`, `color:${typeof value === 'string' && value.startsWith('rgb') ? value : THEME.grey}; font-family:monospace;`);
-    });
-    log.rule('═', 60);
-  }, 'preview the color palette used across this console UI');
+//   registerCommand('theme', () => {
+//     log.rule('═', 60);
+//     log.title('🎨 Console Theme');
+//     Object.entries(THEME).forEach(([name, value]) => {
+//       console.log(`%c ${name.padEnd(10)} ${value}`, `color:${typeof value === 'string' && value.startsWith('rgb') ? value : THEME.grey}; font-family:monospace;`);
+//     });
+//     log.rule('═', 60);
+//   }, 'preview the color palette used across this console UI');
  
-  registerCommand('courses', () => {
-    log.rule('═', 60);
-    log.title('📚 Subscribed Courses');
-    const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
-    const subscribedCourses = safe(() => getSubscribedCourses(categoryTree, subscribedIds), []);
-    if (!subscribedCourses || subscribedCourses.length === 0) {
-      log.warn('  no subscribed courses yet.');
-      log.dim('  subscribe to a course from the home screen to see it here.');
-    } else {
-      console.table(
-        subscribedCourses.map((c) => ({
-          name: c.name,
-          id: c.id,
-          education_type: c.education_type || '-',
-          faculty: c.faculty && c.faculty !== 'All' ? c.faculty : '-',
-          year: c.year || '-',
-          term: c.term || '-',
-          items: safe(() => getCourseItemCount(c), '-'),
-        })),
-      );
-    }
-    log.rule('═', 60);
-  }, 'list your subscribed courses');
+//   registerCommand('courses', () => {
+//     log.rule('═', 60);
+//     log.title('📚 Subscribed Courses');
+//     const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
+//     const subscribedCourses = safe(() => getSubscribedCourses(categoryTree, subscribedIds), []);
+//     if (!subscribedCourses || subscribedCourses.length === 0) {
+//       log.warn('  no subscribed courses yet.');
+//       log.dim('  subscribe to a course from the home screen to see it here.');
+//     } else {
+//       console.table(
+//         subscribedCourses.map((c) => ({
+//           name: c.name,
+//           id: c.id,
+//           education_type: c.education_type || '-',
+//           faculty: c.faculty && c.faculty !== 'All' ? c.faculty : '-',
+//           year: c.year || '-',
+//           term: c.term || '-',
+//           items: safe(() => getCourseItemCount(c), '-'),
+//         })),
+//       );
+//     }
+//     log.rule('═', 60);
+//   }, 'list your subscribed courses');
  
-  registerCommand('stats', () => {
-    log.rule('═', 60);
-    log.title('📊 Platform Stats');
-    const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
-    const userQuizzes = safe(() => JSON.parse(getFromStorage('user_quizzes', '[]')), []);
-    const treeStats = getCategoryTreeStats(categoryTree);
-    log.kv('  subscribed courses:', String(subscribedIds.length));
-    log.kv('  categories loaded:', String(treeStats.categories));
-    log.kv('  exams in catalog:', String(treeStats.exams));
-    log.kv('  your saved quizzes:', String(Array.isArray(userQuizzes) ? userQuizzes.length : 0));
-    log.dim(categoryTree ? '  (catalog loaded)' : '  (catalog still loading — try again in a moment)');
-    log.rule('═', 60);
-  }, 'show a quick summary of your courses, catalog, and saved quizzes');
+//   registerCommand('stats', () => {
+//     log.rule('═', 60);
+//     log.title('📊 Platform Stats');
+//     const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
+//     const userQuizzes = safe(() => JSON.parse(getFromStorage('user_quizzes', '[]')), []);
+//     const treeStats = getCategoryTreeStats(categoryTree);
+//     log.kv('  subscribed courses:', String(subscribedIds.length));
+//     log.kv('  categories loaded:', String(treeStats.categories));
+//     log.kv('  exams in catalog:', String(treeStats.exams));
+//     log.kv('  your saved quizzes:', String(Array.isArray(userQuizzes) ? userQuizzes.length : 0));
+//     log.dim(categoryTree ? '  (catalog loaded)' : '  (catalog still loading — try again in a moment)');
+//     log.rule('═', 60);
+//   }, 'show a quick summary of your courses, catalog, and saved quizzes');
  
-  registerCommand('session', () => {
-    log.rule('═', 60);
-    log.title('🔐 Session Info');
-    const username = safe(() => getFromStorage('username', 'User'), 'User');
-    const isAdmin = safe(() => isAdminAuthenticated(), false);
-    const hasAdminHint = safe(() => hasAdminSessionHint(), false);
-    log.kv('  username:', username);
-    log.kv('  admin authenticated:', isAdmin ? 'yes' : 'no');
-    log.kv('  admin session hint:', hasAdminHint ? 'yes' : 'no');
-    log.dim('  "hint" means a local trace of a past admin session exists, without full re-verification.');
-    log.rule('═', 60);
-  }, 'show current session / auth status (does not expose credentials)');
+//   registerCommand('session', () => {
+//     log.rule('═', 60);
+//     log.title('🔐 Session Info');
+//     const username = safe(() => getFromStorage('username', 'User'), 'User');
+//     const isAdmin = safe(() => isAdminAuthenticated(), false);
+//     const hasAdminHint = safe(() => hasAdminSessionHint(), false);
+//     log.kv('  username:', username);
+//     log.kv('  admin authenticated:', isAdmin ? 'yes' : 'no');
+//     log.kv('  admin session hint:', hasAdminHint ? 'yes' : 'no');
+//     log.dim('  "hint" means a local trace of a past admin session exists, without full re-verification.');
+//     log.rule('═', 60);
+//   }, 'show current session / auth status (does not expose credentials)');
  
-  registerCommand('pwa', () => {
-    log.rule('═', 60);
-    log.title('📶 PWA / Offline Status');
-    const online = safe(() => navigator.onLine, null);
-    const hasSW = safe(() => 'serviceWorker' in navigator, false);
-    log.kv('  online:', online === null ? 'unknown' : (online ? 'yes' : 'no (offline)'));
-    log.kv('  service worker support:', hasSW ? 'yes' : 'no');
-    if (hasSW) {
-      safe(() => {
-        navigator.serviceWorker.getRegistrations().then((regs) => {
-          log.kv('  active registrations:', String(regs.length));
-          regs.forEach((r, i) => {
-            log.dim(`  [${i}] scope: ${r.scope} — state: ${r.active ? r.active.state : 'n/a'}`);
-          });
-        });
-      }, null);
-    }
-    log.dim('  (registration lookup above resolves asynchronously)');
-    log.rule('═', 60);
-  }, 'check service worker registration and online/offline status');
+//   registerCommand('pwa', () => {
+//     log.rule('═', 60);
+//     log.title('📶 PWA / Offline Status');
+//     const online = safe(() => navigator.onLine, null);
+//     const hasSW = safe(() => 'serviceWorker' in navigator, false);
+//     log.kv('  online:', online === null ? 'unknown' : (online ? 'yes' : 'no (offline)'));
+//     log.kv('  service worker support:', hasSW ? 'yes' : 'no');
+//     if (hasSW) {
+//       safe(() => {
+//         navigator.serviceWorker.getRegistrations().then((regs) => {
+//           log.kv('  active registrations:', String(regs.length));
+//           regs.forEach((r, i) => {
+//             log.dim(`  [${i}] scope: ${r.scope} — state: ${r.active ? r.active.state : 'n/a'}`);
+//           });
+//         });
+//       }, null);
+//     }
+//     log.dim('  (registration lookup above resolves asynchronously)');
+//     log.rule('═', 60);
+//   }, 'check service worker registration and online/offline status');
  
-  registerCommand('search', (query) => {
-    log.rule('═', 60);
-    log.title('🔍 Search');
-    if (!query) {
-      log.warn('  usage: basmagy.search("query")');
-      log.rule('═', 60);
-      return;
-    }
-    if (!searchManager) {
-      log.warn('  search isn\'t ready yet — the page may still be loading.');
-      log.dim('  try again in a moment.');
-      log.rule('═', 60);
-      return;
-    }
-    searchManager.search(query);
-    const results = safe(() => searchManager.getResults(), []);
-    log.kv('  query:', query);
-    log.kv('  context:', searchManager.currentContext || 'unknown');
-    log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
-    log.dim('  (opened the search bar with this query — same as typing it in)');
-    log.rule('═', 60);
-  }, 'basmagy.search("query") — run a search as if typed into the search bar');
+//   registerCommand('search', (query) => {
+//     log.rule('═', 60);
+//     log.title('🔍 Search');
+//     if (!query) {
+//       log.warn('  usage: basmagy.search("query")');
+//       log.rule('═', 60);
+//       return;
+//     }
+//     if (!searchManager) {
+//       log.warn('  search isn\'t ready yet — the page may still be loading.');
+//       log.dim('  try again in a moment.');
+//       log.rule('═', 60);
+//       return;
+//     }
+//     searchManager.search(query);
+//     const results = safe(() => searchManager.getResults(), []);
+//     log.kv('  query:', query);
+//     log.kv('  context:', searchManager.currentContext || 'unknown');
+//     log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
+//     log.dim('  (opened the search bar with this query — same as typing it in)');
+//     log.rule('═', 60);
+//   }, 'basmagy.search("query") — run a search as if typed into the search bar');
  
-  // --------------------------------------------------------------------------
-  // GO
-  // --------------------------------------------------------------------------
-  boot();
+//   // --------------------------------------------------------------------------
+//   // GO
+//   // --------------------------------------------------------------------------
+//   boot();
  
-})(window);
+// })(window);
 
 // ============================================================================
 // --- Imports ---
@@ -2514,89 +2517,75 @@ function openInlineCreateQuizModal() {
     document.head.appendChild(style);
   }
 
-  modalCard.innerHTML = `
-    <h2 id="inlineCreateQuizTitle" style="margin-bottom: 12px; font-size: 1.5rem; display: flex; align-items: center; gap: 10px; color: var(--color-text-primary);">
-      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus" style="color: var(--color-primary);"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
+modalCard.innerHTML = `
+    <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
       إنشاء إمتحان جديد
-      <button type="button" id="copyAiPromptBtn" style="margin-right: auto; font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; border: 1.5px solid var(--color-border); background: var(--color-background-secondary); color: var(--color-text-secondary); display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; font-family: inherit; font-weight: 600;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+      <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
         Prompt
+        <span id="createQuizPromptHintArrow" class="create-quiz-modal__prompt-hint-arrow" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="44" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
+        </span>
       </button>
     </h2>
-    <p style="margin-bottom:24px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">الصق أو اكتب أسئلة الإمتحان في الحقل التالي، أو قم باستيراد ملف، وسنحوّلها تلقائيًا إلى امتحان.</p>
-    <div class="form-group" style="margin-bottom: 18px;">
-      <label for="inlineQuizTitle" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-text-primary); font-size: 0.9rem;">عنوان الإمتحان</label>
-      <input type="text" id="inlineQuizTitle" placeholder="Arrays in C++" style="width: 100%; padding: 14px 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 1rem; transition: all 0.2s; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';"/>
+    <p class="create-quiz-modal__subtitle">الصق أو اكتب أسئلة الإمتحان في الحقل التالي، أو قم باستيراد ملف، وسنحوّلها تلقائيًا إلى امتحان.</p>
+    <div class="create-quiz-modal__form-group">
+      <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الإمتحان</label>
+      <input type="text" id="inlineQuizTitle" class="create-quiz-modal__input" placeholder="Arrays in C++" />
     </div>
-    <div class="form-group" style="margin-bottom: 24px;">
-      <label for="inlineQuizContent" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--color-text-primary); font-size: 0.9rem;">محتوى الإمتحان</label>
-<textarea id="inlineQuizContent" class="inline-quiz-textarea" rows="4" style="width: 100%; padding: 16px; direction: ltr; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; line-height: 1.6; transition: all 0.2s; outline: none; resize: vertical; box-sizing: border-box;" onfocus="this.style.borderColor='var(--color-primary)'; this.style.boxShadow='0 0 0 4px var(--color-primary-light)';" placeholder="1. Consider the following time complexity formula for a nested loop algorithm:
-
-$$T(n) = \\sum_{i=1}^{n} sum_{j=i}^{n} 1 = \\\\frac{n(n+1)}{2}$$
-
-Given $n = 8$, which value correctly represents the **total number of iterations**?
-
-A. 64
-B. 36
-C. 28
-D. 72
-
-Correct: B. 36
-
-Explanation: The correct answer is **d. Data Link**.
-
-From Lec1, the PDU hierarchy is:
-| Loop Type | Formula | Result for $n=8$ |
-|---|---|---|
-| **Nested (this)** | $frac{n(n+1)}{2}$ | **36** |
-| Full double loop | $n^2$ | 64 |
-
-
-2. In C++, a \`const\` member function can modify a \`mutable\` data member.
-
-A. True
-B. False
-
-Correct: A. True
-
-Explanation: The \`mutable\` keyword explicitly **opts a member out** of the \`const\` contract.
-This is intentional and well-defined behaviour, commonly used for internal caches or mutexes:
-\`\`\`cpp
-   class Counter {
-       mutable int cache_ = 0;    // may be written even in const context
-   public:
-       int value() const {
-           cache_++;              // legal because cache_ is mutable
-           return cache_;
-       }
-   };
-\`\`\`
-
-
-3. Write a C++ function template that returns the **larger** of two values.
-The function must work for any type that supports \`operator>\`.
-
-Answer: The function uses \`template\`:
-\`\`\`cpp
-template <typename T>
-T maxOf(T a, T b) {
-    return (a > b) ? a : b;
-}
-\`\`\`
-
-Explanation: The \`typename T\` template parameter is deduced at the call site, so \`maxOf(3, 7)\` works for \`int\`, \`maxOf(3.14, 2.71)\` for \`double\`, and \`maxOf(std::string(\&quot;apple\&quot;), std::string(\&quot;banana\&quot;))\` for \`std::string\` — as long as \`operator\&gt;\` is defined for the type." onblur="this.style.borderColor='var(--color-border)'; this.style.boxShadow='none';"></textarea>    </div>
-    <div class="create-quiz-actions">
-      <div class="main-actions">
-        <button type="button" id="inlineQuizImport" class="inline-quiz-btn" style="border: 1.5px solid var(--color-border); background: var(--color-background-secondary); color: var(--color-text-primary);">
+    <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
+      <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الإمتحان</label>
+      <textarea id="inlineQuizContent" class="inline-quiz-textarea create-quiz-modal__textarea" rows="4"></textarea>
+    </div>
+    <div class="create-quiz-modal__actions">
+      <div class="create-quiz-modal__main-actions">
+        <button type="button" id="inlineQuizImport" class="inline-quiz-btn create-quiz-modal__btn create-quiz-modal__btn--import">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
           استيراد ملف
         </button>
-        <button type="button" id="inlineQuizCreate" class="inline-quiz-btn" style="background: var(--gradient-accent); color: white; box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4); border: none;">إنشاء  ✨</button>
+        <button type="button" id="inlineQuizCreate" class="inline-quiz-btn create-quiz-modal__btn create-quiz-modal__btn--create">إنشاء  ✨</button>
       </div>
-      <button type="button" id="inlineQuizCancel">إلغاء</button>
+      <button type="button" id="inlineQuizCancel" class="create-quiz-modal__btn create-quiz-modal__btn--cancel">إلغاء</button>
     </div>
-    <input type="file" id="inlineQuizFileInput" accept=".txt,.docx,.pdf,.pptx,.json" style="display: none;" />
+    <input type="file" id="inlineQuizFileInput" class="create-quiz-modal__file-input" accept=".txt,.docx,.pdf,.pptx,.json" />
   `;
+
+  // Set the JSON example via JS (avoids escaping a huge quoted blob inside an HTML attribute)
+  const placeholderJSON = `{
+  "questions": [
+    {
+      "q": "«إنَّ مستشارِي الغدِ مُهيَّؤون لِحمْلِ الأمانةِ.»\\n\\nعند وضع الفعل (عسى) بدلاً من الحرف الناسخ (إنّ)، تصبح الجملة الصحيحة:",
+      "explanation": "الفعل (عسى) من أفعال الرجاء يعمل عمل كان برفع الاسم ونصب الخبر، ويشترط في خبره أن يكون جملة فعلية فعلها مضارع ويكثر اقترانها بـ (أن). وبناءً عليه: اسم عسى مرفوع وعلامة رفعه الواو لأنه جمع مذكر سالم وحذفت النون للإضافة فيصبح (مستشارو)، والخبر المقترن بأن الناصبة يصبح الفعل المضارع بعده منصوبًا بحذف النون (أن يُهيَّؤوا).",
+      "options": [
+        "عسى مستشاري الغدِ أنْ يُهيَّؤوا لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ مُهيَّئين لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ أنْ يُهيَّؤوا لِحملِ الأمانةِ.",
+        "عسى مستشارو الغدِ يُهيَّؤون لِحملِ الأمانةِ."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "«من أخلص في عمله، نال تقدير مجتمعه.»\\n\\nصُغ من الجملة السابقة أسلوب شرط مستخدمًا (مَنْ) الشرطية الجازمة، مع جعل فعل جواب الشرط مقترنًا بالفاء، واضبط الفعلين بالشكل.",
+      "explanation": "عند تحويل أسلوب الشرط للمضارع الجازم، يُجزم فعل الشرط بالسكون لأنه صحيح الآخر. واقتران جواب الشرط بالفاء يستوجب وجود مسوغ (اسمية طلبية وبجامد وبما وقد وبلن وبالتنفيس)، وعند اختيار السين أو سوف يرتفع المضارع بعدها وتصبح الجملة في محل جزم.",
+      "answer": "الصياغة الصحيحة للأسلوب هي:\\n**«مَنْ يُخْلِصْ في عمله، فَسَيَنَالُ تقدير مجتمعه.»** (أو: فَقَدْ يَنَالُ / فَسَوْفَ يَنَالُ)\\n\\n**ضبط الفعلين بالشكل:**\\n1. **يُخْلِصْ:** فعل مضارع مجزوم (فعل الشرط) وعلامة جزمه السكون.\\n2. **يَنَالُ:** فعل مضارع مرفوع وعلامة رفعه الضمة الظاهرة، لأن اقتران جواب الشرط بالفاء ودخول السين/سوف يمنع الجزم المباشر عن الفعل، وتصبح الجملة الفعلية بأكملها (فسينال...) في محل جزم جواب الشرط."
+    }
+  ]
+}`;
+
+  const inlineQuizContentEl = modalCard.querySelector("#inlineQuizContent");
+  inlineQuizContentEl.placeholder = placeholderJSON;
+
+  // Bouncing hint arrow above the Prompt button — dismiss it once the user
+  // actually notices/clicks the button, so it doesn't nag indefinitely.
+  const copyAiPromptBtn = modalCard.querySelector("#copyAiPromptBtn");
+  const promptHintArrow = modalCard.querySelector("#createQuizPromptHintArrow");
+
+  const dismissPromptHint = () => {
+    promptHintArrow.classList.add("create-quiz-modal__prompt-hint-arrow--hidden");
+  };
+
+  copyAiPromptBtn.addEventListener("click", dismissPromptHint, { once: true });
 
   overlay.appendChild(modalCard);
   document.body.appendChild(overlay);
@@ -3797,12 +3786,14 @@ function renderCategory(category) {
           urlAttempted: url,
         });
       }
-      setTimeout(() => {
-        console.log("[DEBUG renderCategory] URL 0ms after render (post-microtask check)", {
-          hrefNow: window.location.href,
-          hashNow: window.location.hash,
-        });
-      }, 0);
+
+      // //  This was temporary for debugging an issue that turned out to be caused by search-manager.js
+      // setTimeout(() => {
+      //   console.log("[DEBUG renderCategory] URL 0ms after render (post-microtask check)", {
+      //     hrefNow: window.location.href,
+      //     hashNow: window.location.hash,
+      //   });
+      // }, 0);
     }
     // Update search context when entering a category
     if (searchManager) {

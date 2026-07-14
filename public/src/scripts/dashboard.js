@@ -1,4 +1,8 @@
 // src/scripts/dashboard.js - Enhanced with All Features
+
+// Temporary | For performance debugging
+console.log("dashboard.js loaded successfully")
+
 import { gameEngine, BADGES } from "../shared/gameEngine.js";
 import { getManifest } from "./quizManifest.js";
 

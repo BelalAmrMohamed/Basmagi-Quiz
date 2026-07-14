@@ -1,4 +1,9 @@
 // settings.js - Settings page: name, education type, faculty, year, term, quiz style, default mode
+
+// Temporary | For performance debugging
+console.log("settings.js loaded successfully")
+
+
 import { getManifest } from "./quizManifest.js";
 import { userProfile } from "./userProfile.js";
 import {

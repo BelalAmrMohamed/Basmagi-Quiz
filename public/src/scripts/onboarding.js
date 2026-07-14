@@ -1,3 +1,8 @@
+// src/scripts/onboarding.js
+
+// Temporary | For performance debugging
+console.log("onboarding.js loaded successfully")
+
 import { userProfile } from "./userProfile.js";
 import { getManifest } from "./quizManifest.js";
 import {

@@ -1,5 +1,8 @@
 // src/scripts/create-quiz.js
 
+// Temporary | For performance debugging
+console.log("create-quiz.js loaded successfully")
+
 import {
   showNotification,
   confirmationNotification,

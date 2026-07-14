@@ -3280,6 +3280,210 @@ kbd {
   }
 }
 
+/* ==========================================================================
+   Create Quiz Modal
+   (inline-create-quiz flow triggered from the dashboard "New Quiz" action)
+   ========================================================================== */
+
+.create-quiz-modal__title {
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-primary);
+  overflow: visible;
+}
+
+.create-quiz-modal__title-icon {
+  color: var(--color-primary);
+}
+
+.create-quiz-modal__copy-prompt-btn {
+  position: relative;
+  margin-right: auto;
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.create-quiz-modal__copy-prompt-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.create-quiz-modal__copy-prompt-btn-icon {
+  flex-shrink: 0;
+}
+
+.create-quiz-modal__subtitle {
+  margin-bottom: 24px;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.create-quiz-modal__form-group {
+  margin-bottom: 18px;
+}
+
+.create-quiz-modal__form-group--content {
+  margin-bottom: 24px;
+}
+
+.create-quiz-modal__label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+}
+
+.create-quiz-modal__input,
+.create-quiz-modal__textarea {
+  width: 100%;
+  direction: ltr;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  transition: all 0.2s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.create-quiz-modal__input {
+  padding: 14px 16px;
+  font-size: 1rem;
+}
+
+.create-quiz-modal__textarea {
+  padding: 16px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.create-quiz-modal__input:focus,
+.create-quiz-modal__textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-light);
+}
+
+.create-quiz-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-quiz-modal__main-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.create-quiz-modal__main-actions .create-quiz-modal__btn {
+  flex: 1;
+  justify-content: center;
+}
+
+.create-quiz-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-quiz-modal__btn--import {
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+
+.create-quiz-modal__btn--import:hover {
+  border-color: var(--color-primary);
+  background: var(--color-background);
+}
+
+.create-quiz-modal__btn--create {
+  background: var(--gradient-accent);
+  color: white;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4);
+  border: none;
+}
+
+.create-quiz-modal__btn--create:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
+}
+
+.create-quiz-modal__btn--cancel {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 10px 12px;
+  transition: color 0.2s;
+}
+
+.create-quiz-modal__btn--cancel:hover {
+  color: var(--color-text-primary);
+}
+
+.create-quiz-modal__file-input {
+  display: none;
+}
+
+/* --- Bouncing hint arrow pointing at the "Prompt" button --- */
+
+.create-quiz-modal__prompt-hint-arrow {
+  position: absolute;
+  top: 50%;
+  right: -52px;
+  transform: translateY(-50%);
+  color: var(--color-primary);
+  pointer-events: none;
+  animation: create-quiz-modal-arrow-bounce 1.2s ease-in-out infinite;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.create-quiz-modal__prompt-hint-arrow--hidden {
+  opacity: 0;
+  transform: translateY(-50%) translateX(-6px) scale(0.8);
+  animation: none;
+}
+
+@keyframes create-quiz-modal-arrow-bounce {
+  0%,
+  100% {
+    transform: translateY(-50%) translateX(0);
+  }
+  50% {
+    transform: translateY(-50%) translateX(-6px);
+  }
+}
+
 #errorBoundary {
     position: fixed;
     top: 20px;

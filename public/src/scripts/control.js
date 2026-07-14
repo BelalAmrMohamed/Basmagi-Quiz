@@ -16,6 +16,9 @@ import {
     signInWithSupabase,
 } from './adminAuth.js';
 
+// Temporary | For performance debugging
+console.log("control.js loaded successfully")
+
 const API_URL = '/api/admin-control';
 
 // Module-scoped Supabase client — set once in init(), used in logout()

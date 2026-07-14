@@ -1,4 +1,8 @@
 // src/scripts/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
+
+// Temporary | For performance debugging
+console.log("quiz.js loaded successfully")
+
 import { getManifest } from "./quizManifest.js";
 import { gameEngine } from "../shared/gameEngine.js";
 import {

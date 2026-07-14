@@ -3,6 +3,9 @@
 // Sign-in page logic.
 // =============================================================================
 
+// Temporary | For performance debugging
+console.log("sign-in.js loaded successfully")
+
 import { signIn, isAdminAuthenticated, getToken } from "./adminAuth.js";
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
