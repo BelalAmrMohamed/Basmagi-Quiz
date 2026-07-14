@@ -375,15 +375,15 @@ document.addEventListener("DOMContentLoaded", () => {
 // CHANGE USERNAME
 // ============================================================================
 import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
-import { showNotification } from "./notifications.js";
+import { prompt_user, showNotification } from "./notifications.js";
 import { validateUsername } from "../shared/user-name-validation.js";
 
 window.changeUsername = async function () {
   try {
     const currentName = getFromStorage("username", "User");
-    const newName = prompt("أدخل الإسم الجديد", currentName);
+    const newName = await prompt_user("أدخل الإسم الجديد", currentName);
 
-    if (!newName) return;
+    if (newName === null) return;
 
     const validation = validateUsername(newName);
     if (!validation.valid) {

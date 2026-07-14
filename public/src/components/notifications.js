@@ -243,3 +243,118 @@ export function confirmationNotification(message) {
     });
   });
 }
+
+/* ============================
+    Prompt Modal
+    Drop-in async replacement for window.prompt()
+    Usage: const answer = await prompt_user("Your name?", "Guest");
+    Resolves with the entered string, or null if cancelled
+    (matches native prompt() semantics exactly).
+   ============================ */
+
+export function prompt_user(message, defaultValue = "") {
+  return new Promise((resolve) => {
+    // 1. Create Overlay
+    const overlay = document.createElement("div");
+    overlay.className = "confirmation-overlay";
+
+    // 2. Create Modal
+    const modal = document.createElement("div");
+    modal.className = "confirmation-modal prompt-modal";
+
+    // 3. Content
+    modal.innerHTML = `
+      <div class="confirmation-content">
+        <p class="confirmation-message">${escapeHtml(message)}</p>
+        <input type="text" class="prompt-input" value="${escapeHtml(defaultValue)}" />
+        <div class="confirmation-actions">
+          <button class="confirmation-btn confirm">نعم</button>
+          <button class="confirmation-btn cancel">لا</button>
+        </div>
+      </div>
+    `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // 4. Focus Management
+    const input = modal.querySelector(".prompt-input");
+    const confirmBtn = modal.querySelector(".confirm");
+    const cancelBtn = modal.querySelector(".cancel");
+    const previousActiveElement = document.activeElement;
+
+    // Animation entry
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      modal.classList.add("show");
+      input.focus();
+      input.select();
+    });
+
+    // 5. Cleanup function
+    const cleanup = () => {
+      window.removeEventListener("keydown", handleKeydown);
+      overlay.classList.remove("show");
+      modal.classList.remove("show");
+
+      // Wait for animation to finish
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (
+          previousActiveElement &&
+          document.body.contains(previousActiveElement)
+        ) {
+          previousActiveElement.focus();
+        }
+      }, 300);
+    };
+
+    const handleConfirm = () => {
+      const value = input.value;
+      cleanup();
+      resolve(value); // native prompt() returns "" on empty OK, never null on confirm
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(null); // native prompt() returns null on cancel
+    };
+
+    // 6. Keyboard support (Enter to confirm, Escape to cancel, Tab trapping)
+    const handleKeydown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleCancel();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleConfirm();
+      } else if (e.key === "Tab") {
+        const focusable = [input, confirmBtn, cancelBtn];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    // Event Listeners
+    confirmBtn.addEventListener("click", handleConfirm);
+    cancelBtn.addEventListener("click", handleCancel);
+    window.addEventListener("keydown", handleKeydown);
+
+    // Click outside treats as cancel
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) handleCancel();
+    });
+  });
+}
