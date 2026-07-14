@@ -23,11 +23,11 @@ import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
 
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
-  University: "\u062c\u0627\u0645\u0639\u064a",
-  High:       "\u062b\u0627\u0646\u0648\u064a (High School)",
-  Middle:     "\u0625\u0639\u062f\u0627\u062f\u064a (Middle School)",
-  Primary:    "\u0627\u0628\u062a\u062f\u0627\u0626\u064a (Primary School)",
-  Featured:   "\u0643\u0648\u0631\u0633\u0627\u062a \u0645\u0645\u064a\u0632\u0629 (Featured Courses)",
+  University: "جامعي",
+  High:       "ثانوي",
+  Middle:     "إعدادي",
+  Primary:    "ابتدائي",
+  Featured:   "كورسات مميزة",
 };
 
 // University requires a College; school tracks do not.
@@ -86,17 +86,17 @@ function _extractSubfolders(quizzes, entry) {
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 const YEAR_LABELS = {
-  1: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0648\u0644\u0649",
-  2: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062b\u0627\u0646\u064a\u0629",
-  3: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062b\u0627\u0644\u062b\u0629",
-  4: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0631\u0627\u0628\u0639\u0629",
-  5: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062e\u0627\u0645\u0633\u0629",
-  6: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0633\u0627\u062f\u0633\u0629",
+  1: "السنة الأولى",
+  2: "السنة الثانية",
+  3: "السنة الثالثة",
+  4: "السنة الرابعة",
+  5: "السنة الخامسة",
+  6: "السنة السادسة",
 };
 const TERM_LABELS = {
-  1: "\u0627\u0644\u062a\u0631\u0645 \u0627\u0644\u0623\u0648\u0644",
-  2: "\u0627\u0644\u062a\u0631\u0645 \u0627\u0644\u062b\u0627\u0646\u064a",
-  3: "\u0627\u0644\u062a\u0631\u0645 \u0627\u0644\u062b\u0627\u0644\u062b",
+  1: "الترم الأول",
+  2: "الترم الثاني",
+  3: "الترم الثالث",
 };
 
 // ─── Persist last-used selections ─────────────────────────────────────────────
@@ -218,23 +218,68 @@ function injectStyles() {
     .adm-btn-ghost   { background:var(--color-background-secondary); border:1.5px solid var(--color-border); color:var(--color-text); }
 
     .upload-to-db-btn {
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:5px 10px; background:linear-gradient(135deg,#7c3aed 0%,#5b21b6 100%);
-      color:#fff; border:none; border-radius:6px; font-size:.75rem; font-weight:700;
-      font-family:inherit; cursor:pointer; white-space:nowrap;
-      box-shadow:0 2px 6px rgba(124,58,237,.2);
-      transition:all .2s cubic-bezier(.4,0,.2,1); gap:0;
-    }
-    .upload-to-db-btn svg { width:14px; height:14px; flex-shrink:0; }
-    .upload-to-db-btn span { max-width:0; overflow:hidden; opacity:0; transition:all .2s cubic-bezier(.4,0,.2,1); }
-    .upload-to-db-btn:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(124,58,237,.4); gap:5px; }
-    .upload-to-db-btn:hover span { max-width:200px; opacity:1; }
-    @media (max-width:768px) {
-      .upload-to-db-btn { width:auto; margin:0 auto; padding:5px 10px; gap:5px; transition:none; }
-      .upload-to-db-btn span { max-width:none; opacity:1; }
-      .upload-to-db-btn:hover,.upload-to-db-btn:focus-visible { transform:none; box-shadow:0 2px 6px rgba(124,58,237,.2); }
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: .75rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(124, 58, 237, .2);
+      transition: all .2s cubic-bezier(.4, 0, .2, 1);
+      gap: 0;
     }
 
+    .upload-to-db-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+
+    .upload-to-db-btn span {
+      max-width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: all .2s cubic-bezier(.4, 0, .2, 1);
+    }
+
+    .upload-to-db-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, .4);
+      gap: 5px;
+    }
+
+    .upload-to-db-btn:hover span {
+      max-width: 200px;
+      opacity: 1;
+    }
+
+    @media (max-width: 640px) {
+      .upload-to-db-btn {
+        width: auto;
+        margin: 0 auto;
+        padding: 5px 10px;
+        gap: 5px;
+        transition: none;
+      }
+
+      .upload-to-db-btn span {
+        max-width: none;
+        opacity: 1;
+      }
+
+      .upload-to-db-btn:hover,
+      .upload-to-db-btn:focus-visible {
+        transform: none;
+        box-shadow: 0 2px 6px rgba(124, 58, 237, .2);
+      }
+    }
     .adm-spinner { display:inline-block; width:15px; height:15px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:admSpin .7s linear infinite; margin-left:6px; }
     @keyframes admSpin { to{transform:rotate(360deg)} }
 
@@ -258,7 +303,7 @@ let _overlay = null;
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders() {
   const token = getToken();
-  if (!token) { signOut(); throw new Error("\u0627\u0646\u062a\u0647\u062a \u0627\u0644\u062c\u0644\u0633\u0629. \u064a\u0631\u062c\u0649 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0645\u062c\u062f\u062f\u064b\u0627."); }
+  if (!token) { signOut(); throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا."); }
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
@@ -268,7 +313,7 @@ async function postUpload(payload) {
   });
   let body = {};
   try { body = await res.json(); } catch (_) {}
-  if (!res.ok) throw new Error(body.error || "\u0641\u0634\u0644 \u0627\u0644\u0631\u0641\u0639");
+  if (!res.ok) throw new Error(body.error || "فشل الرفع");
   return body;
 }
 
@@ -283,12 +328,12 @@ function makeOverlay() {
 }
 
 function stepsHTML(cur) {
-  const steps = ["\u0627\u0644\u0645\u0633\u0627\u0631", "\u0645\u0631\u0627\u062c\u0639\u0629", "\u0631\u0641\u0639"];
+  const steps = ["المسار", "مراجعة", "رفع"];
   return `<div class="adm-steps">${steps.map((lbl, i) => {
     const n = i + 1, cls = n < cur ? "done" : n === cur ? "active" : "";
     return `${i > 0 ? `<div class="adm-step-line ${n <= cur ? "done" : ""}"></div>` : ""}
       <div class="adm-step ${cls}">
-        <div class="adm-step-circle">${n < cur ? "\u2713" : n}</div>
+        <div class="adm-step-circle">${n < cur ? "✓" : n}</div>
         <span class="adm-step-lbl">${lbl}</span>
       </div>`;
   }).join("")}</div>`;
@@ -296,8 +341,8 @@ function stepsHTML(cur) {
 
 function hdr(title) {
   return `<div class="adm-header">
-    <h2>\u2601\ufe0f ${title}</h2>
-    <button class="adm-close" onclick="window.__admClose()">\u2715</button>
+    <h2>☁️ ${title}</h2>
+    <button class="adm-close" onclick="window.__admClose()">✕</button>
   </div>`;
 }
 
@@ -311,64 +356,64 @@ function renderStep1(saved = {}) {
     `<option value="${c}" ${lastSaved.college === c ? "selected" : ""}>${c}</option>`).join("");
 
   _overlay.innerHTML = `<div class="adm-card">
-    ${hdr("\u0631\u0641\u0639 \u0625\u0644\u0649 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a")}
+    ${hdr("رفع إلى قاعدة البيانات")}
     ${stepsHTML(1)}
     <div class="adm-body">
-      <p class="adm-hint">\u062d\u062f\u0651\u062f \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u0627\u0631 \u0648\u0645\u0648\u0642\u0639 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631 \u0641\u064a \u0645\u0643\u062a\u0628\u0629 \u0627\u0644\u0645\u0646\u0635\u0629</p>
+      <p class="adm-hint">حدّد نوع المسار وموقع الاختبار في مكتبة المنصة</p>
 
       <div class="adm-field">
-        <label for="adm-edu-type">\u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u0627\u0631 \u0627\u0644\u062a\u0639\u0644\u064a\u0645\u064a <span class="adm-badge adm-badge-fixed">\u0645\u0637\u0644\u0648\u0628</span></label>
+        <label for="adm-edu-type">نوع المسار التعليمي <span class="adm-badge adm-badge-fixed">مطلوب</span></label>
         <select id="adm-edu-type">
           ${Object.entries(TRACK_LABELS).map(([k,v]) => `<option value="${k}" ${k === selType ? "selected" : ""}>${v}</option>`).join("")}
         </select>
       </div>
 
       <div class="adm-field" id="adm-college-wrap" style="${hasColl ? "" : "display:none;"}">
-        <label for="adm-college">\u0627\u0644\u0643\u0644\u064a\u0629 / \u0627\u0644\u0642\u0633\u0645 <span class="adm-badge adm-badge-fixed">\u062b\u0627\u0628\u062a</span></label>
-        <select id="adm-college"><option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0643\u0644\u064a\u0629 \u2014</option>${collegeOpts}</select>
+        <label for="adm-college">الكلية / القسم <span class="adm-badge adm-badge-fixed">ثابت</span></label>
+        <select id="adm-college"><option value="">— اختر الكلية —</option>${collegeOpts}</select>
       </div>
 
       <div class="adm-field">
-        <label for="adm-subject">\u0627\u0644\u0645\u0627\u062f\u0629 / \u0627\u0644\u0643\u0648\u0631\u0633 <span class="adm-badge adm-badge-choose">\u0627\u062e\u062a\u0631 \u0623\u0648 \u0623\u0646\u0634\u0626</span></label>
+        <label for="adm-subject">المادة / الكورس <span class="adm-badge adm-badge-choose">اختر أو أنشئ</span></label>
         <select id="adm-subject" ${hasColl && !lastSaved.college ? "disabled" : ""}>
-          <option value="">\u2014 \u0627\u062e\u062a\u0631 ${hasColl ? "\u0627\u0644\u0643\u0644\u064a\u0629" : "\u0627\u0644\u0645\u0633\u0627\u0631"} \u0623\u0648\u0644\u0627\u064b \u2014</option>
+          <option value="">— اختر ${hasColl ? "الكلية" : "المسار"} أولاً —</option>
         </select>
       </div>
       <div class="adm-field" id="adm-new-subject-wrap" style="display:none;">
-        <label for="adm-new-subject">\u0627\u0633\u0645 \u0627\u0644\u0645\u0627\u062f\u0629 \u0627\u0644\u062c\u062f\u064a\u062f\u0629</label>
-        <input type="text" id="adm-new-subject" placeholder="\u0645\u062b\u0627\u0644: Software Engineering" maxlength="80" value="${lastSaved.newSubject || ""}" />
+        <label for="adm-new-subject">اسم المادة الجديدة</label>
+        <input type="text" id="adm-new-subject" placeholder="مثال: Software Engineering" maxlength="80" value="${lastSaved.newSubject || ""}" />
       </div>
 
       <div id="adm-yearterm-wrap" style="display:none;">
         <div class="adm-row2">
           <div class="adm-field">
-            <label for="adm-year">\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062f\u0631\u0627\u0633\u064a\u0629 <span class="adm-badge adm-badge-choose">\u0627\u062e\u062a\u0631</span></label>
-            <select id="adm-year"><option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0633\u0646\u0629 \u2014</option></select>
+            <label for="adm-year">السنة الدراسية <span class="adm-badge adm-badge-choose">اختر</span></label>
+            <select id="adm-year"><option value="">— اختر السنة —</option></select>
           </div>
           <div class="adm-field">
-            <label for="adm-term">\u0627\u0644\u062a\u0631\u0645 <span class="adm-badge adm-badge-choose">\u0627\u062e\u062a\u0631</span></label>
-            <select id="adm-term"><option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u062a\u0631\u0645 \u2014</option></select>
+            <label for="adm-term">الترم <span class="adm-badge adm-badge-choose">اختر</span></label>
+            <select id="adm-term"><option value="">— اختر الترم —</option></select>
           </div>
         </div>
       </div>
 
       <div class="adm-field">
-        <label for="adm-subfolder">\u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a <span class="adm-badge adm-badge-opt">\u0627\u062e\u062a\u064a\u0627\u0631\u064a</span></label>
-        <select id="adm-subfolder" disabled><option value="">\u2014 \u0628\u062f\u0648\u0646 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u2014</option></select>
+        <label for="adm-subfolder">مجلد فرعي <span class="adm-badge adm-badge-opt">اختياري</span></label>
+        <select id="adm-subfolder" disabled><option value="">— بدون مجلد فرعي —</option></select>
       </div>
       <div class="adm-field" id="adm-new-subfolder-wrap" style="display:none;">
-        <label for="adm-new-subfolder">\u0627\u0633\u0645 \u0627\u0644\u0645\u062c\u0644\u062f \u0627\u0644\u0641\u0631\u0639\u064a \u0627\u0644\u062c\u062f\u064a\u062f</label>
-        <input type="text" id="adm-new-subfolder" placeholder="\u0645\u062b\u0627\u0644: \u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u062f\u0643\u062a\u0648\u0631" maxlength="80" value="${lastSaved.newSubfolder || ""}" />
+        <label for="adm-new-subfolder">اسم المجلد الفرعي الجديد</label>
+        <input type="text" id="adm-new-subfolder" placeholder="مثال: أسئلة الدكتور" maxlength="80" value="${lastSaved.newSubfolder || ""}" />
       </div>
 
       <div class="adm-field">
-        <label for="adm-author">\u0627\u0633\u0645 \u0627\u0644\u0645\u0634\u0631\u0641 \u0635\u0627\u062d\u0628 \u0627\u0644\u0625\u0645\u062a\u062d\u0627\u0646 <span class="adm-badge adm-badge-opt">\u0627\u062e\u062a\u064a\u0627\u0631\u064a</span></label>
-        <input type="text" id="adm-author" placeholder="\u0645\u062b\u0627\u0644: \u062f. \u0623\u062d\u0645\u062f \u0645\u062d\u0645\u062f" maxlength="100" value="${lastSaved.author || ""}" />
+        <label for="adm-author">اسم المشرف صاحب الإمتحان <span class="adm-badge adm-badge-opt">اختياري</span></label>
+        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${lastSaved.author || ""}" />
       </div>
 
       <div class="adm-btns">
-        <button class="adm-btn adm-btn-ghost" onclick="window.__admClose()">\u0625\u0644\u063a\u0627\u0621</button>
-        <button class="adm-btn adm-btn-primary" id="adm-s1-next">\u0627\u0644\u062a\u0627\u0644\u064a \u2190</button>
+        <button class="adm-btn adm-btn-ghost" onclick="window.__admClose()">إلغاء</button>
+        <button class="adm-btn adm-btn-primary" id="adm-s1-next">التالي ←</button>
       </div>
     </div>
   </div>`;
@@ -397,9 +442,9 @@ function renderStep1(saved = {}) {
     } else if (college) {
       populateSubjects(type, college, subEl, folEl, yearEl, termEl, sv);
     } else {
-      subEl.innerHTML = `<option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0643\u0644\u064a\u0629 \u0623\u0648\u0644\u0627\u064b \u2014</option>`;
+      subEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
       subEl.disabled = true;
-      folEl.innerHTML = `<option value="">\u2014 \u0628\u062f\u0648\u0646 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u2014</option>`;
+      folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
       folEl.disabled = true;
     }
   }
@@ -420,9 +465,9 @@ function renderStep1(saved = {}) {
       subEl.disabled = false;
       populateSubjects(getType(), college, subEl, folEl, yearEl, termEl, {});
     } else {
-      subEl.innerHTML = `<option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0643\u0644\u064a\u0629 \u0623\u0648\u0644\u0627\u064b \u2014</option>`;
+      subEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
       subEl.disabled = true;
-      folEl.innerHTML = `<option value="">\u2014 \u0628\u062f\u0648\u0646 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u2014</option>`;
+      folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
       folEl.disabled = true;
     }
   });
@@ -471,8 +516,8 @@ function getSubjectMap(type, college) {
 
 function populateSubjects(type, college, subEl, folEl, yearEl, termEl, saved) {
   subEl.disabled = false;
-  subEl.innerHTML = `<option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0645\u0627\u062f\u0629 \u2014</option>`;
-  folEl.innerHTML = `<option value="">\u2014 \u0628\u062f\u0648\u0646 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u2014</option>`;
+  subEl.innerHTML = `<option value="">— اختر المادة —</option>`;
+  folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   folEl.disabled = false;
   document.getElementById("adm-new-subject-wrap").style.display = "none";
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
@@ -482,7 +527,7 @@ function populateSubjects(type, college, subEl, folEl, yearEl, termEl, saved) {
     value: s, textContent: s, selected: saved.subject === s,
   })));
   subEl.appendChild(Object.assign(document.createElement("option"), {
-    value: "__new__", textContent: "\u2795 \u0625\u0646\u0634\u0627\u0621 \u0645\u0627\u062f\u0629 \u062c\u062f\u064a\u062f\u0629",
+    value: "__new__", textContent: "➕ إنشاء مادة جديدة",
     selected: saved.subject === "__new__",
   }));
 
@@ -509,9 +554,9 @@ function populateYearOptions(type, college, yearEl, selectedYear = "") {
     for (const [y] of data.yearterm || []) yearsSet.add(y);
   if (yearsSet.size === 0) [1,2,3,4,5,6].forEach(n => yearsSet.add(String(n)));
   const years = [...yearsSet].sort();
-  yearEl.innerHTML = `<option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u0633\u0646\u0629 \u2014</option>`;
+  yearEl.innerHTML = `<option value="">— اختر السنة —</option>`;
   years.forEach(y => yearEl.appendChild(Object.assign(document.createElement("option"), {
-    value: y, textContent: YEAR_LABELS[y] || `\u0633\u0646\u0629 ${y}`, selected: y === selectedYear,
+    value: y, textContent: YEAR_LABELS[y] || `سنة ${y}`, selected: y === selectedYear,
   })));
 }
 
@@ -522,9 +567,9 @@ function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
       if (!year || y === year) termsSet.add(t);
   if (termsSet.size === 0) [1, 2].forEach(n => termsSet.add(String(n)));
   const terms = [...termsSet].sort();
-  termEl.innerHTML = `<option value="">\u2014 \u0627\u062e\u062a\u0631 \u0627\u0644\u062a\u0631\u0645 \u2014</option>`;
+  termEl.innerHTML = `<option value="">— اختر الترم —</option>`;
   terms.forEach(t => termEl.appendChild(Object.assign(document.createElement("option"), {
-    value: t, textContent: TERM_LABELS[t] || `\u062a\u0631\u0645 ${t}`, selected: t === selectedTerm,
+    value: t, textContent: TERM_LABELS[t] || `ترم ${t}`, selected: t === selectedTerm,
   })));
 }
 
@@ -534,22 +579,22 @@ function autoFillYearTerm(type, college, subject, yearEl, termEl) {
   const [year, term] = info.yearterm[0] || [];
   if (year) {
     if (!yearEl.querySelector(`option[value="${year}"]`))
-      yearEl.appendChild(new Option(YEAR_LABELS[year] || `\u0633\u0646\u0629 ${year}`, year));
+      yearEl.appendChild(new Option(YEAR_LABELS[year] || `سنة ${year}`, year));
     yearEl.value = year; yearEl.disabled = true;
   } else { yearEl.disabled = false; }
   if (term) {
     if (!termEl.querySelector(`option[value="${term}"]`))
-      termEl.appendChild(new Option(TERM_LABELS[term] || `\u062a\u0631\u0645 ${term}`, term));
+      termEl.appendChild(new Option(TERM_LABELS[term] || `ترم ${term}`, term));
     termEl.value = term; termEl.disabled = true;
   } else { termEl.disabled = false; }
 }
 
 function populateSubfolders(type, college, subject, folEl, saved) {
-  folEl.innerHTML = `<option value="">\u2014 \u0628\u062f\u0648\u0646 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u2014</option>`;
+  folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
   if (!subject || subject === "__new__") {
     folEl.appendChild(Object.assign(document.createElement("option"), {
-      value: "__new__", textContent: "\u2795 \u0625\u0646\u0634\u0627\u0621 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u062c\u062f\u064a\u062f",
+      value: "__new__", textContent: "➕ إنشاء مجلد فرعي جديد",
     }));
     return;
   }
@@ -559,7 +604,7 @@ function populateSubfolders(type, college, subject, folEl, saved) {
     value: sf, textContent: sf, selected: saved.subfolder === sf,
   })));
   folEl.appendChild(Object.assign(document.createElement("option"), {
-    value: "__new__", textContent: "\u2795 \u0625\u0646\u0634\u0627\u0621 \u0645\u062c\u0644\u062f \u0641\u0631\u0639\u064a \u062c\u062f\u064a\u062f",
+    value: "__new__", textContent: "➕ إنشاء مجلد فرعي جديد",
     selected: saved.subfolder === "__new__",
   }));
   if (saved.subfolder === "__new__")
@@ -587,11 +632,11 @@ function getStep1Values() {
 async function step1Validate() {
   const vals = getStep1Values();
   const { educationType, college, subject, year, term } = vals;
-  if (!educationType)                                         { showNotification("\u0627\u0644\u0631\u062c\u0627\u0621 \u0627\u062e\u062a\u064a\u0627\u0631 \u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u0627\u0631", "error"); return; }
-  if (TRACKS_WITH_COLLEGE.has(educationType) && !college)   { showNotification("\u0627\u0644\u0631\u062c\u0627\u0621 \u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u0643\u0644\u064a\u0629", "error"); return; }
-  if (!subject)                                              { showNotification("\u0627\u0644\u0631\u062c\u0627\u0621 \u0627\u062e\u062a\u064a\u0627\u0631 \u0623\u0648 \u0625\u062f\u062e\u0627\u0644 \u0627\u0644\u0645\u0627\u062f\u0629", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !year)     { showNotification("\u0627\u0644\u0631\u062c\u0627\u0621 \u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u062f\u0631\u0627\u0633\u064a\u0629", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !term)     { showNotification("\u0627\u0644\u0631\u062c\u0627\u0621 \u0627\u062e\u062a\u064a\u0627\u0631 \u0627\u0644\u062a\u0631\u0645", "error"); return; }
+  if (!educationType)                                         { showNotification("الرجاء اختيار نوع المسار", "error"); return; }
+  if (TRACKS_WITH_COLLEGE.has(educationType) && !college)   { showNotification("الرجاء اختيار الكلية", "error"); return; }
+  if (!subject)                                              { showNotification("الرجاء اختيار أو إدخال المادة", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !year)     { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !term)     { showNotification("الرجاء اختيار الترم", "error"); return; }
   persistSaved({ educationType, college, subject, year, term, author: vals.author });
   await renderStep2(vals);
 }
@@ -605,7 +650,7 @@ async function renderStep2({ educationType, college, subject, year, term, subfol
 
   const pathParts = [];
   if (TRACKS_WITH_COLLEGE.has(educationType) && college) pathParts.push(college);
-  if (TRACKS_WITH_YEARTERM.has(educationType) && year)   pathParts.push(YEAR_LABELS[year] || `\u0633\u0646\u0629 ${year}`, TERM_LABELS[term] || `\u062a\u0631\u0645 ${term}`);
+  if (TRACKS_WITH_YEARTERM.has(educationType) && year)   pathParts.push(YEAR_LABELS[year] || `سنة ${year}`, TERM_LABELS[term] || `ترم ${term}`);
   pathParts.push(subject);
   if (subfolder) pathParts.push(subfolder);
   const locationLabel = pathParts.join(" / ");
@@ -613,12 +658,12 @@ async function renderStep2({ educationType, college, subject, year, term, subfol
   let contentHTML = "";
   if (isBatch) {
     contentHTML = `
-      <p class="adm-hint" style="margin-bottom:8px;">\u0633\u064a\u062a\u0645 \u0631\u0641\u0639 ${_quizzes.length} \u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a \u0625\u0644\u0649:</p>
+      <p class="adm-hint" style="margin-bottom:8px;">سيتم رفع ${_quizzes.length} اختبارات إلى:</p>
       <span class="adm-path-chip">${locationLabel}</span>
       <ul class="adm-batch-list">${_quizzes.map(q => {
-        const t = q.meta?.title || q.title || "\u0628\u062f\u0648\u0646 \u0639\u0646\u0648\u0627\u0646";
+        const t = q.meta?.title || q.title || "بدون عنوان";
         const c = q.stats?.questionCount ?? q.questions?.length ?? 0;
-        return `<li class="adm-batch-item"><span class="adm-batch-item-count">${c} \u0633\u0624\u0627\u0644</span><span class="adm-batch-item-title">${t}</span></li>`;
+        return `<li class="adm-batch-item"><span class="adm-batch-item-count">${c} سؤال</span><span class="adm-batch-item-title">${t}</span></li>`;
       }).join("")}</ul>`;
   } else {
     const q = _quizzes[0];
@@ -627,28 +672,28 @@ async function renderStep2({ educationType, college, subject, year, term, subfol
     contentHTML = `
       <span class="adm-path-chip">${locationLabel}</span>
       <div class="adm-preview">
-        <div class="adm-preview-row"><span class="adm-preview-lbl">\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631</span><span class="adm-preview-val">${qT}</span></div>
-        <div class="adm-preview-row"><span class="adm-preview-lbl">\u0639\u062f\u062f \u0627\u0644\u0623\u0633\u0626\u0644\u0629</span><span class="adm-preview-val">${qC} \u0633\u0624\u0627\u0644</span></div>
-        <div class="adm-preview-row"><span class="adm-preview-lbl">\u0646\u0648\u0639 \u0627\u0644\u0645\u0633\u0627\u0631</span><span class="adm-preview-val">${trackLbl}</span></div>
-        ${college ? `<div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u0643\u0644\u064a\u0629</span><span class="adm-preview-val">${college}</span></div>` : ""}
-        <div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u0645\u0627\u062f\u0629</span><span class="adm-preview-val">${subject}</span></div>
-        ${year ? `<div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u0633\u0646\u0629</span><span class="adm-preview-val">${yearLbl}</span></div>` : ""}
-        ${term ? `<div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u062a\u0631\u0645</span><span class="adm-preview-val">${termLbl}</span></div>` : ""}
-        ${subfolder ? `<div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u0645\u062c\u0644\u062f \u0627\u0644\u0641\u0631\u0639\u064a</span><span class="adm-preview-val">${subfolder}</span></div>` : ""}
-        ${author ? `<div class="adm-preview-row"><span class="adm-preview-lbl">\u0627\u0644\u0645\u0634\u0631\u0641</span><span class="adm-preview-val">${author}</span></div>` : ""}
+        <div class="adm-preview-row"><span class="adm-preview-lbl">عنوان الاختبار</span><span class="adm-preview-val">${qT}</span></div>
+        <div class="adm-preview-row"><span class="adm-preview-lbl">عدد الأسئلة</span><span class="adm-preview-val">${qC} سؤال</span></div>
+        <div class="adm-preview-row"><span class="adm-preview-lbl">نوع المسار</span><span class="adm-preview-val">${trackLbl}</span></div>
+        ${college ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الكلية</span><span class="adm-preview-val">${college}</span></div>` : ""}
+        <div class="adm-preview-row"><span class="adm-preview-lbl">المادة</span><span class="adm-preview-val">${subject}</span></div>
+        ${year ? `<div class="adm-preview-row"><span class="adm-preview-lbl">السنة</span><span class="adm-preview-val">${yearLbl}</span></div>` : ""}
+        ${term ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الترم</span><span class="adm-preview-val">${termLbl}</span></div>` : ""}
+        ${subfolder ? `<div class="adm-preview-row"><span class="adm-preview-lbl">المجلد الفرعي</span><span class="adm-preview-val">${subfolder}</span></div>` : ""}
+        ${author ? `<div class="adm-preview-row"><span class="adm-preview-lbl">المشرف</span><span class="adm-preview-val">${author}</span></div>` : ""}
       </div>`;
   }
 
   _overlay.innerHTML = `<div class="adm-card">
-    ${hdr("\u0645\u0631\u0627\u062c\u0639\u0629 \u0627\u0644\u0631\u0641\u0639")}
+    ${hdr("مراجعة الرفع")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u062a\u0641\u0627\u0635\u064a\u0644 \u0642\u0628\u0644 \u0627\u0644\u0631\u0641\u0639</p>
+      <p class="adm-hint">تحقق من التفاصيل قبل الرفع</p>
       ${contentHTML}
       <div class="adm-btns">
-        <button class="adm-btn adm-btn-ghost" id="adm-s2-back">\u2190 \u062a\u0639\u062f\u064a\u0644</button>
+        <button class="adm-btn adm-btn-ghost" id="adm-s2-back">→ تعديل</button>
         <button class="adm-btn adm-btn-primary" id="adm-s2-upload">
-          ${isBatch ? `\u0631\u0641\u0639 ${_quizzes.length} \u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a \u2601\ufe0f` : "\u0631\u0641\u0639 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631 \u2601\ufe0f"}
+          ${isBatch ? `رفع ${_quizzes.length} اختبارات ☁️` : "رفع الاختبار ☁️"}
         </button>
       </div>
     </div>
@@ -669,22 +714,22 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   const items   = _quizzes.map((q, i) => ({
     quiz:  q,
     id:    `adm-prog-${i}`,
-    title: q.meta?.title || q.title || `\u0627\u062e\u062a\u0628\u0627\u0631 ${i + 1}`,
+    title: q.meta?.title || q.title || `اختبار ${i + 1}`,
   }));
 
   _overlay.innerHTML = `<div class="adm-card">
-    ${hdr(isBatch ? `\u0631\u0641\u0639 ${_quizzes.length} \u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a` : "\u0631\u0641\u0639 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631")}
+    ${hdr(isBatch ? `رفع ${_quizzes.length} اختبارات` : "رفع الاختبار")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint" id="adm-s3-hint">\u062c\u0627\u0631\u064d \u0631\u0641\u0639 \u0627\u0644\u0627\u062e\u062a\u0628\u0627\u0631\u0627\u062a\u2026</p>
+      <p class="adm-hint" id="adm-s3-hint">جارٍ رفع الاختبارات…</p>
       <ul class="adm-progress-list">
         ${items.map(item => `<li class="adm-progress-item" id="${item.id}">
-          <span class="adm-progress-icon">\u23f3</span>
+          <span class="adm-progress-icon">⏳</span>
           <span class="adm-progress-name">${item.title}</span>
         </li>`).join("")}
       </ul>
       <div class="adm-btns" id="adm-s3-btns" style="display:none;">
-        <button class="adm-btn adm-btn-primary" onclick="window.__admClose()">\u0625\u063a\u0644\u0627\u0642</button>
+        <button class="adm-btn adm-btn-primary" onclick="window.__admClose()">إغلاق</button>
       </div>
     </div>
   </div>`;
@@ -699,14 +744,14 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     if (state === "uploading") {
       iconEl.innerHTML = `<span class="adm-spinner" style="border-top-color:var(--color-primary);border-color:var(--color-border);width:14px;height:14px;margin:0;"></span>`;
       if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
-      msgEl.textContent = "\u062c\u0627\u0631\u064d \u0627\u0644\u0631\u0641\u0639\u2026";
+      msgEl.textContent = "جارٍ الرفع…";
     } else if (state === "done") {
-      iconEl.textContent = "\u2705";
+      iconEl.textContent = "✅";
       if (msgEl) msgEl.remove();
     } else if (state === "error") {
-      iconEl.textContent = "\u274c";
+      iconEl.textContent = "❌";
       if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
-      msgEl.textContent = msg || "\u0641\u0634\u0644";
+      msgEl.textContent = msg || "فشل";
     }
   }
 
@@ -728,9 +773,9 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       setItemState(item, "done");
       successCount++;
     } catch (err) {
-      setItemState(item, "error", err.message || "\u0641\u0634\u0644");
+      setItemState(item, "error", err.message || "فشل");
       errorCount++;
-      if (err.message?.includes("\u062c\u0644\u0633\u0629") || err.message?.includes("\u0645\u0635\u0631\u062d")) {
+      if (err.message?.includes("جلسة") || err.message?.includes("مصرح")) {
         showNotification(err.message, "error");
         setTimeout(() => { signOut(); window.location.href = "sign-in.html"; }, 2000);
         return;
@@ -741,13 +786,13 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   const hintEl = document.getElementById("adm-s3-hint");
   if (hintEl) {
     if (errorCount === 0) {
-      hintEl.textContent = `\u2705 \u062a\u0645 \u0631\u0641\u0639 ${successCount} \u0627\u062e\u062a\u0628\u0627\u0631 \u0628\u0646\u062c\u0627\u062d!`;
+      hintEl.textContent = `✅ تم رفع ${successCount} اختبار بنجاح!`;
       hintEl.style.color = "#22c55e";
-      showNotification(`\u062a\u0645 \u0627\u0644\u0631\u0641\u0639 \u0628\u0646\u062c\u0627\u062d \u2705 (${successCount} \u0627\u062e\u062a\u0628\u0627\u0631)`, "success");
+      showNotification(`تم الرفع بنجاح ✅ (${successCount} اختبار)`, "success");
     } else {
-      hintEl.textContent = `\u062a\u0645 \u0631\u0641\u0639 ${successCount} \u2022 \u0641\u0634\u0644 ${errorCount}`;
+      hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (successCount > 0) showNotification(`\u062a\u0645 ${successCount} \u0627\u062e\u062a\u0628\u0627\u0631 (\u0641\u0634\u0644 ${errorCount})`, "warning");
+      if (successCount > 0) showNotification(`تم ${successCount} اختبار (فشل ${errorCount})`, "warning");
     }
   }
   const btnsEl = document.getElementById("adm-s3-btns");
@@ -796,7 +841,7 @@ function normalizeQuizSchema(quiz) {
 // ─── Modal lifecycle ──────────────────────────────────────────────────────────
 async function _openWizard(quizzes) {
   if (!isAdminAuthenticated()) {
-    showNotification("\u064a\u062c\u0628 \u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644 \u0643\u0645\u0634\u0631\u0641 \u0623\u0648\u0644\u0627\u064b", "error");
+    showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
     setTimeout(() => { window.location.href = "sign-in.html"; }, 1500);
     return;
   }
@@ -808,8 +853,8 @@ async function _openWizard(quizzes) {
   document.body.style.overflow = "hidden";
 
   _overlay.innerHTML = `<div class="adm-card">
-    ${hdr("\u0631\u0641\u0639 \u0625\u0644\u0649 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a")}
-    <div class="adm-loading"><span class="adm-spinner"></span> \u062c\u0627\u0631\u064d \u062a\u062d\u0645\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0646\u0635\u0629\u2026</div>
+    ${hdr("رفع إلى قاعدة البيانات")}
+    <div class="adm-loading"><span class="adm-spinner"></span> جارٍ تحميل بيانات المنصة…</div>
   </div>`;
   window.__admClose = closeModal;
 
@@ -819,7 +864,7 @@ async function _openWizard(quizzes) {
   } catch (err) {
     console.error("[adminUpload] Failed to load manifest:", err);
     MANIFEST_TREE = {};
-    showNotification("\u062a\u0639\u0630\u0651\u0631 \u062a\u062d\u0645\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0645\u0646\u0635\u0629\u060c \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u062a\u0635\u0627\u0644\u0643", "error");
+    showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
   }
 
   const saved = getSaved();
@@ -850,7 +895,7 @@ export function createUploadButton(quiz) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "upload-to-db-btn";
-  btn.setAttribute("aria-label", `\u0631\u0641\u0639 "${quiz.title}" \u0625\u0644\u0649 \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a`);
+  btn.setAttribute("aria-label", `رفع "${quiz.title}" إلى قاعدة البيانات`);
   btn.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -858,7 +903,7 @@ export function createUploadButton(quiz) {
       <line x1="12" y1="12" x2="12" y2="21"/>
       <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
     </svg>
-    <span>\u0631\u0641\u0639 \u0644\u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a</span>`;
+    <span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openModal(quiz); });
   return btn;
 }
