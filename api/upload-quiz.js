@@ -99,19 +99,29 @@ export default async function handler(req, res) {
   cleanQuiz.meta.id = generateQuizId(cleanQuiz.meta.path);
   cleanQuiz.stats = computeStats(cleanQuiz.questions);
 
-  if (author && typeof author === "string" && author.trim()) {
-    cleanQuiz.meta.author = author.trim();
-  } else {
-    delete cleanQuiz.meta.author;
+  // Fetch admin profile to enforce server-side identity
+  let adminId = null;
+  let adminHandle = null;
+  let adminDisplayName = "مشرف";
+
+  if (adminPayload?.email) {
+    const { data: adminData, error: adminErr } = await supabase
+      .from("admin_users")
+      .select("id, handle, display_name")
+      .eq("email", adminPayload.email)
+      .maybeSingle();
+
+    if (adminData && !adminErr) {
+      adminId = adminData.id;
+      adminHandle = adminData.handle || null;
+      adminDisplayName = adminData.display_name || "مشرف";
+    }
   }
 
-  if (author_email && typeof author_email === "string" && author_email.trim()) {
-    cleanQuiz.meta.author_email = author_email.trim();
-  } else if (adminPayload?.email) {
-    cleanQuiz.meta.author_email = adminPayload.email;
-  } else {
-    delete cleanQuiz.meta.author_email;
-  }
+  // Enforce identity (overriding client values)
+  delete cleanQuiz.meta.author_email;
+  cleanQuiz.meta.author_handle = adminHandle;
+  cleanQuiz.meta.author = adminDisplayName;
 
   // `view` / `mode` come from validated quiz.meta — already in cleanQuiz
 
@@ -149,6 +159,10 @@ export default async function handler(req, res) {
       data: cleanQuiz,
       education_type,
       password: passwordHash,
+      college: dbCols.college || null,
+      year: dbCols.year || null,
+      term: dbCols.term || null,
+      uploaded_by: adminId,
     })
     .select("id")
     .single();

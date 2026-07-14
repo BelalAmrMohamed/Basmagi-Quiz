@@ -176,17 +176,13 @@ html[data-theme="light"] {
 html[data-theme="dark-slate"] {
   color-scheme: dark;
 
-  /* Backgrounds
-     --color-surface is now a step lighter than --color-background-secondary,
-     matching the pattern in Light mode where surface (cards/panels) sits
-     above the secondary background in elevation. */
+  /* Backgrounds */
   --color-background: #0f172a;
   --color-background-light: #1e293b;
-  --color-background-secondary: #1e293b;
-  --color-surface: #253247;
+  --color-background-secondary: #253247;
+  --color-surface: #1e293b;
 
-  /* Borders — border-light is a lighter step up from border, for subtler
-     dividers on top of surface/elevated backgrounds */
+  /* Borders */
   --color-border: #334155;
   --color-border-light: #475569;
 
@@ -230,13 +226,13 @@ html[data-theme="dark-slate"] {
   --gradient-secondary: linear-gradient(135deg, #475569 0%, #334155 100%);
   --gradient-loading-skeleton: linear-gradient(
     90deg,
-    #1a1e29 0%,
-    #1a1e29 20%,
-    #242b3d 40%,
-    #2c3448 50%,
-    #242b3d 60%,
-    #1a1e29 80%,
-    #1a1e29 100%
+    #293548 0%,
+    #293548 20%,
+    #35435c 40%,
+    #3f4f6b 50%,
+    #35435c 60%,
+    #293548 80%,
+    #293548 100%
   );
 
   /* Shadows — higher opacity for dark backgrounds */

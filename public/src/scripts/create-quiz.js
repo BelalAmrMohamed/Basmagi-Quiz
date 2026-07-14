@@ -1560,25 +1560,6 @@ function loadDraftFromLocalStorage() {
 
       // Restore Phase 2 fields
       if (data.meta) {
-        if (data.meta.privacy) {
-          const pubRadio = document.querySelector(
-            'input[name="quizPrivacy"][value="public"]',
-          );
-          const privRadio = document.querySelector(
-            'input[name="quizPrivacy"][value="private"]',
-          );
-          if (data.meta.privacy === "private" && privRadio) {
-            privRadio.checked = true;
-            if (typeof updateOptionCards === "function")
-              updateOptionCards(privRadio);
-          } else if (pubRadio) {
-            pubRadio.checked = true;
-            if (typeof updateOptionCards === "function")
-              updateOptionCards(pubRadio);
-          }
-          if (typeof togglePrivacySettings === "function")
-            togglePrivacySettings();
-        }
         if (data.meta.password) {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = data.meta.password;
@@ -1661,25 +1642,7 @@ function loadQuizFromLocalStorage(quizId) {
 
       // Restore Phase 2 fields
       if (quiz.meta) {
-        if (quiz.meta.privacy) {
-          const pubRadio = document.querySelector(
-            'input[name="quizPrivacy"][value="public"]',
-          );
-          const privRadio = document.querySelector(
-            'input[name="quizPrivacy"][value="private"]',
-          );
-          if (quiz.meta.privacy === "private" && privRadio) {
-            privRadio.checked = true;
-            if (typeof updateOptionCards === "function")
-              updateOptionCards(privRadio);
-          } else if (pubRadio) {
-            pubRadio.checked = true;
-            if (typeof updateOptionCards === "function")
-              updateOptionCards(pubRadio);
-          }
-          if (typeof togglePrivacySettings === "function")
-            togglePrivacySettings();
-        }
+        // Restore password
         if (quiz.meta.password) {
           const passEl = document.getElementById("quizPassword");
           if (passEl) passEl.value = quiz.meta.password;
@@ -1773,15 +1736,14 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   if (quizToSave.source?.trim()) meta.source = quizToSave.source.trim();
 
   // Read Phase 2 fields
-  const privacyVal =
-    document.querySelector('input[name="quizPrivacy"]:checked')?.value ||
-    "public";
-  meta.privacy = privacyVal;
-
-  if (privacyVal === "private") {
-    const pwd = document.getElementById("quizPassword")?.value?.trim();
-    if (pwd) meta.password = pwd;
+  const pwd = document.getElementById("quizPassword")?.value?.trim();
+  if (pwd) {
+    meta.password = pwd;
+  } else {
+    delete meta.password;
   }
+  delete meta.privacy;
+  delete meta.lang;
   const viewVal = document.querySelector(
     'input[name="quizView"]:checked',
   )?.value;
@@ -1906,14 +1868,14 @@ window.exportQuiz = function () {
             source: quizData.source,
           };
 
-          const privacyVal =
-            document.querySelector('input[name="quizPrivacy"]:checked')
-              ?.value || "public";
-          exportMeta.privacy = privacyVal;
-          if (privacyVal === "private") {
-            const pwd = document.getElementById("quizPassword")?.value?.trim();
-            if (pwd) exportMeta.password = pwd;
+          const pwd = document.getElementById("quizPassword")?.value?.trim();
+          if (pwd) {
+            exportMeta.password = pwd;
+          } else {
+            delete exportMeta.password;
           }
+          delete exportMeta.privacy;
+          delete exportMeta.lang;
 
           const viewVal = document.querySelector(
             'input[name="quizView"]:checked',
@@ -2220,19 +2182,7 @@ window.updateShortcutsModal = function (show) {
 // PHASE 2: NEW UI HANDLERS
 // ============================================================================
 
-window.togglePrivacySettings = function () {
-  const privacyVal = document.querySelector(
-    'input[name="quizPrivacy"]:checked',
-  )?.value;
-  const privateSection = document.getElementById("privateSettingsSection");
-  if (privateSection) {
-    if (privacyVal === "private") {
-      privateSection.style.display = "block";
-    } else {
-      privateSection.style.display = "none";
-    }
-  }
-};
+
 
 window.updateOptionCards = function (radioInput) {
   const name = radioInput.name;

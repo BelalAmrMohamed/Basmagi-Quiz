@@ -1,4 +1,4 @@
--- Supabase-DB-context.sql | Last updated on version `v6.0.21`
+-- Supabase-DB-context.sql | Last updated on version `v6.0.22`
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
@@ -15,6 +15,10 @@ CREATE TABLE public.quizzes (
   created_at timestamp with time zone DEFAULT now(),
   education_type text CHECK (education_type = ANY (ARRAY['Primary'::text, 'Middle'::text, 'High'::text, 'University'::text, 'Featured'::text])),
   password text,
+  college text,
+  year text,
+  term text,
+  uploaded_by uuid REFERENCES public.admin_users(id),
   CONSTRAINT quizzes_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.quiz_access (
@@ -31,6 +35,8 @@ CREATE TABLE public.admin_users (
   added_by text NOT NULL,
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  handle text UNIQUE,
+  display_name text,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.app_settings (

@@ -76,7 +76,7 @@ export function buildDbPath({ education_type, college, year, term, subject, subf
 
 export function buildDbColumns(parsed) {
   if (!parsed) return null;
-  const { education_type, college, year, course: subject, subfolders } = parsed;
+  const { education_type, college, year, term, course: subject, subfolders } = parsed;
   let category = "";
   if (education_type === "University") {
     category = college;
@@ -88,6 +88,9 @@ export function buildDbColumns(parsed) {
   return {
     category,
     subject,
+    college,
+    year,
+    term,
     subfolder: subfolders && subfolders.length ? subfolders.join("/") : null,
   };
 }

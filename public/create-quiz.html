@@ -457,35 +457,10 @@
                     </svg> إعدادات الخصوصية والوصول</h2>
 
                 <div class="form-group">
-                    <label>حالة الاختبار</label>
-                    <div class="option-cards">
-                        <label class="option-card selected">
-                            <input type="radio" name="quizPrivacy" value="public" checked
-                                onchange="updateOptionCards(this); togglePrivacySettings();">
-                            <div class="option-card-content">
-                                <div class="option-card-title">عام (Public)</div>
-                                <div class="option-card-desc">متاح لجميع الطلاب</div>
-                            </div>
-                        </label>
-                        <label class="option-card">
-                            <input type="radio" name="quizPrivacy" value="private"
-                                onchange="updateOptionCards(this); togglePrivacySettings();">
-                            <div class="option-card-content">
-                                <div class="option-card-title">خاص (Private)</div>
-                                <div class="option-card-desc">يتطلب كلمة مرور</div>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div id="privateSettingsSection"
-                    style="display: none; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);">
-                    <div class="form-group">
-                        <label for="quizPassword">كلمة المرور (اختياري)</label>
-                        <input type="text" id="quizPassword" class="ltr" placeholder="أدخل كلمة المرور..."
-                            aria-describedby="passwordHelp">
-                        <small id="passwordHelp">إذا تم تعيينها، يمكن لأي شخص يمتلك كلمة المرور الدخول للاختبار</small>
-                    </div>
+                    <label for="quizPassword">كلمة المرور (اختياري)</label>
+                    <input type="text" id="quizPassword" class="ltr" placeholder="أدخل كلمة المرور..."
+                        aria-describedby="passwordHelp">
+                    <small id="passwordHelp">إذا تم تعيينها، سيتطلب الاختبار كلمة المرور هذه للوصول إليه.</small>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 // src/scripts/export-to-quiz.js
 // Downloads the quiz as a standalone file (.html)
-// Deals with the export from both main page and results page
+// Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.
 
 import { showNotification } from "../components/notifications.js";

@@ -17,6 +17,7 @@ const ALLOWED_META_KEYS = new Set([
   "createdAt",
   "author",
   "author_email",
+  "author_handle",
   "password",
   "view",
   "mode",
@@ -158,13 +159,23 @@ export function validateQuizPayload(raw) {
     }
   }
 
-  // meta.author_email — optional string
+  // meta.author_email — optional string (legacy)
   if (meta.author_email !== undefined) {
     if (typeof meta.author_email !== "string") {
       throw new Error("INVALID_META_FIELD: author_email must be a string");
     }
     if (meta.author_email.length > 150) {
       throw new Error("INVALID_META_FIELD: author exceeds 150 characters");
+    }
+  }
+
+  // meta.author_handle — optional string
+  if (meta.author_handle !== undefined) {
+    if (typeof meta.author_handle !== "string") {
+      throw new Error("INVALID_META_FIELD: author_handle must be a string");
+    }
+    if (meta.author_handle.length > 50) {
+      throw new Error("INVALID_META_FIELD: author_handle exceeds 50 characters");
     }
   }
 
