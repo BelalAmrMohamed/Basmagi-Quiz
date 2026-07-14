@@ -3,216 +3,213 @@
 // All original functionality preserved + improvements added
 // ============================================================================
 
-// Temporary | For performance debugging
-console.log("index.js loaded successfully")
-
 // ============================================================================
 // --- Console UI ---
 // ============================================================================
 import "../shared/console-core.js";
 
-// (function initIndexConsole(global) {
-//   'use strict';
-//   const core = global.__basmagyCore;
-//   if (!core) {
-//     console.log('%c[basmagy] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
-//     return;
-//   }
+(function initIndexConsole(global) {
+  'use strict';
+  const core = global.__basmagyCore;
+  if (!core) {
+    console.log('%c[basmagy] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
+    return;
+  }
  
-//   const { THEME, styles, log, rule, printLogo, runBootSequence, registerCommand, registry } = core;
+  const { THEME, styles, log, rule, printLogo, runBootSequence, registerCommand, registry } = core;
  
-//   registry.pageId = 'index';
-//   registry.pageLabel = 'الصفحة الرئيسية';
- 
-//   // --------------------------------------------------------------------------
-//   // MOCK / LIVE DATA HOOKS
-//   //   In production, swap these getters for real reads from your app state
-//   //   (e.g. a store, window.__APP_STATE__, or a small fetch). Kept sync +
-//   //   defensive so a missing global never throws inside a console.log call.
-//   // --------------------------------------------------------------------------
-//   function safe(fn, fallback) {
-//     try { return fn(); } catch (e) { return fallback; }
-//   }
- 
-//   function getLoadStats() {
-//     const nav = safe(() => performance.getEntriesByType('navigation')[0], null);
-//     return {
-//       loadMs: nav ? Math.round(nav.duration) : safe(() => Math.round(performance.now()), 0),
-//       resources: safe(() => performance.getEntriesByType('resource').length, 0),
-//     };
-//   }
- 
-//   // `categoryTree` (module-scope, populated async by initApp()) is a FLAT
-//   // map of key -> node; node.subcategories is an array of sibling keys, not
-//   // nested objects (see getCourseItemCount above). Counting entries + total
-//   // exam leaves this way stays accurate and never throws pre-manifest-load.
-//   function getCategoryTreeStats(tree) {
-//     if (!tree || typeof tree !== 'object') return { categories: 0, exams: 0 };
-//     const keys = Object.keys(tree);
-//     let exams = 0;
-//     for (const key of keys) {
-//       const node = tree[key];
-//       if (node && Array.isArray(node.exams)) exams += node.exams.length;
-//     }
-//     return { categories: keys.length, exams };
-//   }
- 
-//   // --------------------------------------------------------------------------
-//   // BOOT SEQUENCE — the animated startup, next-level version of the original
-//   // console.clear() + 3 console.log() calls.
-//   // --------------------------------------------------------------------------
-//   function boot() {
-//     console.clear();
- 
-//     const stats = getLoadStats();
- 
-//     runBootSequence([
-//       { fn: () => printLogo(), delay: 120 },
-//       { fn: () => log.sub('  منصة إمتحانات بصمجي | الصفحة الرئيسية'), delay: 140 },
-//       { fn: () => log.rule('─', 64), delay: 80 },
-//       { fn: () => log.status('› booting index.js ...'), delay: 160 },
-//       { fn: () => log.status('› checking session ...'), delay: 140 },
-//       { fn: () => log.kv('  session:', safe(() => (global.__APP_STATE__.user ? 'authenticated' : 'guest (no sign-in required for students)'), 'guest (no sign-in required for students)')), delay: 140 },
-//       { fn: () => log.status('› loading course catalog ...'), delay: 160 },
-//       { fn: () => log.rule('─', 64), delay: 60 },
-//       { fn: () => {
-//           log.raw('  ⚡ SYSTEM DIAGNOSTIC', styles.warn);
-//           log.kv('  page load:', `${stats.loadMs}ms`);
-//           log.kv('  resources fetched:', String(stats.resources));
-//           log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
-//         }, delay: 140 },
-//       { fn: () => log.rule('═', 64), delay: 60 },
-//       { fn: () => log.title('✔ index.js initialized successfully') , delay: 100},
-//       { fn: () => log.sub('  اكتب الأمر التالي لعرض كل الأوامر المتاحة:'), delay: 80 },
-//       { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
-//     ]);
-//   }
+  registry.pageId = 'index';
+  registry.pageLabel = 'الصفحة الرئيسية';
  
   // --------------------------------------------------------------------------
-  // COMMANDS — visible, documented, discoverable via basmagy.help()
+  // MOCK / LIVE DATA HOOKS
+  //   In production, swap these getters for real reads from your app state
+  //   (e.g. a store, window.__APP_STATE__, or a small fetch). Kept sync +
+  //   defensive so a missing global never throws inside a console.log call.
   // --------------------------------------------------------------------------
+  function safe(fn, fallback) {
+    try { return fn(); } catch (e) { return fallback; }
+  }
  
-//   registerCommand('perf', () => {
-//     const stats = getLoadStats();
-//     log.rule('═', 60);
-//     log.title('⚡ Performance Snapshot');
-//     log.kv('  page load:', `${stats.loadMs}ms`);
-//     log.kv('  resources:', String(stats.resources));
-//     log.kv('  DOM nodes:', String(safe(() => document.getElementsByTagName('*').length, 0)));
-//     log.dim('  Run this after every deploy — we\'re actively chasing a perf bug.');
-//     log.rule('═', 60);
-//   }, 'print a live performance snapshot of this page');
+  function getLoadStats() {
+    const nav = safe(() => performance.getEntriesByType('navigation')[0], null);
+    return {
+      loadMs: nav ? Math.round(nav.duration) : safe(() => Math.round(performance.now()), 0),
+      resources: safe(() => performance.getEntriesByType('resource').length, 0),
+    };
+  }
  
-//   registerCommand('theme', () => {
-//     log.rule('═', 60);
-//     log.title('🎨 Console Theme');
-//     Object.entries(THEME).forEach(([name, value]) => {
-//       console.log(`%c ${name.padEnd(10)} ${value}`, `color:${typeof value === 'string' && value.startsWith('rgb') ? value : THEME.grey}; font-family:monospace;`);
-//     });
-//     log.rule('═', 60);
-//   }, 'preview the color palette used across this console UI');
+  // `categoryTree` (module-scope, populated async by initApp()) is a FLAT
+  // map of key -> node; node.subcategories is an array of sibling keys, not
+  // nested objects (see getCourseItemCount above). Counting entries + total
+  // exam leaves this way stays accurate and never throws pre-manifest-load.
+  function getCategoryTreeStats(tree) {
+    if (!tree || typeof tree !== 'object') return { categories: 0, exams: 0 };
+    const keys = Object.keys(tree);
+    let exams = 0;
+    for (const key of keys) {
+      const node = tree[key];
+      if (node && Array.isArray(node.exams)) exams += node.exams.length;
+    }
+    return { categories: keys.length, exams };
+  }
  
-//   registerCommand('courses', () => {
-//     log.rule('═', 60);
-//     log.title('📚 Subscribed Courses');
-//     const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
-//     const subscribedCourses = safe(() => getSubscribedCourses(categoryTree, subscribedIds), []);
-//     if (!subscribedCourses || subscribedCourses.length === 0) {
-//       log.warn('  no subscribed courses yet.');
-//       log.dim('  subscribe to a course from the home screen to see it here.');
-//     } else {
-//       console.table(
-//         subscribedCourses.map((c) => ({
-//           name: c.name,
-//           id: c.id,
-//           education_type: c.education_type || '-',
-//           faculty: c.faculty && c.faculty !== 'All' ? c.faculty : '-',
-//           year: c.year || '-',
-//           term: c.term || '-',
-//           items: safe(() => getCourseItemCount(c), '-'),
-//         })),
-//       );
-//     }
-//     log.rule('═', 60);
-//   }, 'list your subscribed courses');
+  // --------------------------------------------------------------------------
+  // BOOT SEQUENCE — the animated startup, next-level version of the original
+  // console.clear() + 3 console.log() calls.
+  // --------------------------------------------------------------------------
+  function boot() {
+    console.clear();
  
-//   registerCommand('stats', () => {
-//     log.rule('═', 60);
-//     log.title('📊 Platform Stats');
-//     const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
-//     const userQuizzes = safe(() => JSON.parse(getFromStorage('user_quizzes', '[]')), []);
-//     const treeStats = getCategoryTreeStats(categoryTree);
-//     log.kv('  subscribed courses:', String(subscribedIds.length));
-//     log.kv('  categories loaded:', String(treeStats.categories));
-//     log.kv('  exams in catalog:', String(treeStats.exams));
-//     log.kv('  your saved quizzes:', String(Array.isArray(userQuizzes) ? userQuizzes.length : 0));
-//     log.dim(categoryTree ? '  (catalog loaded)' : '  (catalog still loading — try again in a moment)');
-//     log.rule('═', 60);
-//   }, 'show a quick summary of your courses, catalog, and saved quizzes');
+    const stats = getLoadStats();
  
-//   registerCommand('session', () => {
-//     log.rule('═', 60);
-//     log.title('🔐 Session Info');
-//     const username = safe(() => getFromStorage('username', 'User'), 'User');
-//     const isAdmin = safe(() => isAdminAuthenticated(), false);
-//     const hasAdminHint = safe(() => hasAdminSessionHint(), false);
-//     log.kv('  username:', username);
-//     log.kv('  admin authenticated:', isAdmin ? 'yes' : 'no');
-//     log.kv('  admin session hint:', hasAdminHint ? 'yes' : 'no');
-//     log.dim('  "hint" means a local trace of a past admin session exists, without full re-verification.');
-//     log.rule('═', 60);
-//   }, 'show current session / auth status (does not expose credentials)');
+    runBootSequence([
+      { fn: () => printLogo(), delay: 120 },
+      { fn: () => log.sub('  منصة إمتحانات بصمجي | الصفحة الرئيسية'), delay: 140 },
+      { fn: () => log.rule('─', 64), delay: 80 },
+      { fn: () => log.status('› booting index.js ...'), delay: 160 },
+      { fn: () => log.status('› checking session ...'), delay: 140 },
+      { fn: () => log.kv('  session:', safe(() => (global.__APP_STATE__.user ? 'authenticated' : 'guest (no sign-in required for students)'), 'guest (no sign-in required for students)')), delay: 140 },
+      { fn: () => log.status('› loading course catalog ...'), delay: 160 },
+      { fn: () => log.rule('─', 64), delay: 60 },
+      { fn: () => {
+          log.raw('  ⚡ SYSTEM DIAGNOSTIC', styles.warn);
+          log.kv('  page load:', `${stats.loadMs}ms`);
+          log.kv('  resources fetched:', String(stats.resources));
+          log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
+        }, delay: 140 },
+      { fn: () => log.rule('═', 64), delay: 60 },
+      { fn: () => log.title('✔ index.js initialized successfully') , delay: 100},
+      { fn: () => log.sub('  اكتب الأمر التالي لعرض كل الأوامر المتاحة:'), delay: 80 },
+      { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
+    ]);
+  }
  
-//   registerCommand('pwa', () => {
-//     log.rule('═', 60);
-//     log.title('📶 PWA / Offline Status');
-//     const online = safe(() => navigator.onLine, null);
-//     const hasSW = safe(() => 'serviceWorker' in navigator, false);
-//     log.kv('  online:', online === null ? 'unknown' : (online ? 'yes' : 'no (offline)'));
-//     log.kv('  service worker support:', hasSW ? 'yes' : 'no');
-//     if (hasSW) {
-//       safe(() => {
-//         navigator.serviceWorker.getRegistrations().then((regs) => {
-//           log.kv('  active registrations:', String(regs.length));
-//           regs.forEach((r, i) => {
-//             log.dim(`  [${i}] scope: ${r.scope} — state: ${r.active ? r.active.state : 'n/a'}`);
-//           });
-//         });
-//       }, null);
-//     }
-//     log.dim('  (registration lookup above resolves asynchronously)');
-//     log.rule('═', 60);
-//   }, 'check service worker registration and online/offline status');
+// --------------------------------------------------------------------------
+// COMMANDS — visible, documented, discoverable via basmagy.help()
+// --------------------------------------------------------------------------
  
-//   registerCommand('search', (query) => {
-//     log.rule('═', 60);
-//     log.title('🔍 Search');
-//     if (!query) {
-//       log.warn('  usage: basmagy.search("query")');
-//       log.rule('═', 60);
-//       return;
-//     }
-//     if (!searchManager) {
-//       log.warn('  search isn\'t ready yet — the page may still be loading.');
-//       log.dim('  try again in a moment.');
-//       log.rule('═', 60);
-//       return;
-//     }
-//     searchManager.search(query);
-//     const results = safe(() => searchManager.getResults(), []);
-//     log.kv('  query:', query);
-//     log.kv('  context:', searchManager.currentContext || 'unknown');
-//     log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
-//     log.dim('  (opened the search bar with this query — same as typing it in)');
-//     log.rule('═', 60);
-//   }, 'basmagy.search("query") — run a search as if typed into the search bar');
+  registerCommand('perf', () => {
+    const stats = getLoadStats();
+    log.rule('═', 60);
+    log.title('⚡ Performance Snapshot');
+    log.kv('  page load:', `${stats.loadMs}ms`);
+    log.kv('  resources:', String(stats.resources));
+    log.kv('  DOM nodes:', String(safe(() => document.getElementsByTagName('*').length, 0)));
+    log.dim('  Run this after every deploy — we\'re actively chasing a perf bug.');
+    log.rule('═', 60);
+  }, 'print a live performance snapshot of this page');
  
-//   // --------------------------------------------------------------------------
-//   // GO
-//   // --------------------------------------------------------------------------
-//   boot();
+  registerCommand('theme', () => {
+    log.rule('═', 60);
+    log.title('🎨 Console Theme');
+    Object.entries(THEME).forEach(([name, value]) => {
+      console.log(`%c ${name.padEnd(10)} ${value}`, `color:${typeof value === 'string' && value.startsWith('rgb') ? value : THEME.grey}; font-family:monospace;`);
+    });
+    log.rule('═', 60);
+  }, 'preview the color palette used across this console UI');
  
-// })(window);
+  registerCommand('courses', () => {
+    log.rule('═', 60);
+    log.title('📚 Subscribed Courses');
+    const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
+    const subscribedCourses = safe(() => getSubscribedCourses(categoryTree, subscribedIds), []);
+    if (!subscribedCourses || subscribedCourses.length === 0) {
+      log.warn('  no subscribed courses yet.');
+      log.dim('  subscribe to a course from the home screen to see it here.');
+    } else {
+      console.table(
+        subscribedCourses.map((c) => ({
+          name: c.name,
+          id: c.id,
+          education_type: c.education_type || '-',
+          faculty: c.faculty && c.faculty !== 'All' ? c.faculty : '-',
+          year: c.year || '-',
+          term: c.term || '-',
+          items: safe(() => getCourseItemCount(c), '-'),
+        })),
+      );
+    }
+    log.rule('═', 60);
+  }, 'list your subscribed courses');
+ 
+  registerCommand('stats', () => {
+    log.rule('═', 60);
+    log.title('📊 Platform Stats');
+    const subscribedIds = safe(() => userProfile.getSubscribedCourseIds(), []);
+    const userQuizzes = safe(() => JSON.parse(getFromStorage('user_quizzes', '[]')), []);
+    const treeStats = getCategoryTreeStats(categoryTree);
+    log.kv('  subscribed courses:', String(subscribedIds.length));
+    log.kv('  categories loaded:', String(treeStats.categories));
+    log.kv('  exams in catalog:', String(treeStats.exams));
+    log.kv('  your saved quizzes:', String(Array.isArray(userQuizzes) ? userQuizzes.length : 0));
+    log.dim(categoryTree ? '  (catalog loaded)' : '  (catalog still loading — try again in a moment)');
+    log.rule('═', 60);
+  }, 'show a quick summary of your courses, catalog, and saved quizzes');
+ 
+  registerCommand('session', () => {
+    log.rule('═', 60);
+    log.title('🔐 Session Info');
+    const username = safe(() => getFromStorage('username', 'User'), 'User');
+    const isAdmin = safe(() => isAdminAuthenticated(), false);
+    const hasAdminHint = safe(() => hasAdminSessionHint(), false);
+    log.kv('  username:', username);
+    log.kv('  admin authenticated:', isAdmin ? 'yes' : 'no');
+    log.kv('  admin session hint:', hasAdminHint ? 'yes' : 'no');
+    log.dim('  "hint" means a local trace of a past admin session exists, without full re-verification.');
+    log.rule('═', 60);
+  }, 'show current session / auth status (does not expose credentials)');
+ 
+  registerCommand('pwa', () => {
+    log.rule('═', 60);
+    log.title('📶 PWA / Offline Status');
+    const online = safe(() => navigator.onLine, null);
+    const hasSW = safe(() => 'serviceWorker' in navigator, false);
+    log.kv('  online:', online === null ? 'unknown' : (online ? 'yes' : 'no (offline)'));
+    log.kv('  service worker support:', hasSW ? 'yes' : 'no');
+    if (hasSW) {
+      safe(() => {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          log.kv('  active registrations:', String(regs.length));
+          regs.forEach((r, i) => {
+            log.dim(`  [${i}] scope: ${r.scope} — state: ${r.active ? r.active.state : 'n/a'}`);
+          });
+        });
+      }, null);
+    }
+    log.dim('  (registration lookup above resolves asynchronously)');
+    log.rule('═', 60);
+  }, 'check service worker registration and online/offline status');
+ 
+  registerCommand('search', (query) => {
+    log.rule('═', 60);
+    log.title('🔍 Search');
+    if (!query) {
+      log.warn('  usage: basmagy.search("query")');
+      log.rule('═', 60);
+      return;
+    }
+    if (!searchManager) {
+      log.warn('  search isn\'t ready yet — the page may still be loading.');
+      log.dim('  try again in a moment.');
+      log.rule('═', 60);
+      return;
+    }
+    searchManager.search(query);
+    const results = safe(() => searchManager.getResults(), []);
+    log.kv('  query:', query);
+    log.kv('  context:', searchManager.currentContext || 'unknown');
+    log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
+    log.dim('  (opened the search bar with this query — same as typing it in)');
+    log.rule('═', 60);
+  }, 'basmagy.search("query") — run a search as if typed into the search bar');
+ 
+  // --------------------------------------------------------------------------
+  // GO
+  // --------------------------------------------------------------------------
+  boot();
+ 
+})(window);
 
 // ============================================================================
 // --- Imports ---
@@ -2035,11 +2032,15 @@ async function renderRootCategories() {
   }
 }
 
+let selectedUserQuizzes = new Set();
+
 /**
  * Render user-created quizzes VIEW (Folder Content)
  */
 function renderUserQuizzesView() {
   try {
+    selectedUserQuizzes.clear();
+    
     // Update Navigation Stack
     navigationStack.push({ name: "إمتحاناتك" });
     updateBreadcrumb();
@@ -2143,6 +2144,8 @@ function renderUserQuizzesView() {
     quizzesContainer.prepend(inlineCreateCard);
 
     container.appendChild(quizzesContainer);
+    
+    renderBulkActionBar();
   } catch (error) {
     console.error("Error rendering user quizzes view:", error);
     if (container) {
@@ -2181,6 +2184,108 @@ function setupUserQuizzesDropZone() {
     if (!files.length) return;
     await handleUserQuizzesDrop(files);
   });
+}
+
+// ─── Bulk Action Helpers ────────────────────────────────────────────────────────
+
+function downloadQuizAsJson(quiz) {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quiz, null, 2));
+  const dlAnchorElem = document.createElement('a');
+  dlAnchorElem.setAttribute("href", dataStr);
+  const safeTitle = (quiz.meta?.title || quiz.title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF\s-_]/g, "").trim();
+  dlAnchorElem.setAttribute("download", safeTitle + ".json");
+  dlAnchorElem.click();
+}
+
+function updateBulkActionBar() {
+  const bar = document.getElementById("bulk-action-bar");
+  if (!bar) return;
+  if (selectedUserQuizzes.size > 0) {
+    bar.style.display = "flex";
+    bar.querySelector(".bulk-count").textContent = `تم تحديد ${selectedUserQuizzes.size}`;
+  } else {
+    bar.style.display = "none";
+  }
+}
+
+function renderBulkActionBar() {
+  if (!document.getElementById("bulk-action-styles")) {
+    const s = document.createElement("style");
+    s.id = "bulk-action-styles";
+    s.textContent = `
+      .bulk-action-bar {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: 12px; padding: 12px 24px; box-shadow: var(--shadow-xl);
+        display: flex; align-items: center; gap: 20px; z-index: 1000;
+        animation: slideUp 0.3s ease;
+      }
+      .bulk-action-bar .bulk-count { font-weight: bold; color: var(--color-text-primary); }
+      .bulk-action-bar .bulk-actions { display: flex; gap: 10px; }
+      .user-quiz-card .user-quiz-select-checkbox {
+        position: absolute; top: 12px; left: 12px; width: 22px; height: 22px;
+        cursor: pointer; z-index: 5; accent-color: var(--color-primary);
+      }
+      @media (max-width: 600px) {
+        .bulk-action-bar { width: 90%; flex-direction: column; gap: 10px; }
+        .bulk-action-bar .bulk-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
+
+  let bar = document.getElementById("bulk-action-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "bulk-action-bar";
+    bar.className = "bulk-action-bar";
+    bar.style.display = "none";
+    
+    let uploadBtnHtml = "";
+    if (isAdminAuthenticated()) {
+      uploadBtnHtml = `<button class="btn bulk-upload-btn" style="background:var(--color-primary);color:#fff;border:none;">رفع المحدد ☁️</button>`;
+    }
+    
+    bar.innerHTML = `
+      <div class="bulk-count">تم تحديد 0</div>
+      <div class="bulk-actions">
+        <button class="btn bulk-delete-btn" style="background:var(--color-error);color:#fff;border:none;">حذف</button>
+        <button class="btn bulk-extract-btn" style="background:var(--color-background-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);">استخراج</button>
+        ${uploadBtnHtml}
+      </div>
+    `;
+    document.body.appendChild(bar);
+    
+    bar.querySelector(".bulk-delete-btn").onclick = async () => {
+       if (confirm("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
+          let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+          userQuizzes = userQuizzes.filter(q => !selectedUserQuizzes.has(q.id || q.meta?.id));
+          setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+          selectedUserQuizzes.clear();
+          renderUserQuizzesView();
+       }
+    };
+    
+    bar.querySelector(".bulk-extract-btn").onclick = async () => {
+       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+       const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
+       for (const q of selected) {
+         downloadQuizAsJson(q);
+         await new Promise(r => setTimeout(r, 500));
+       }
+    };
+    
+    if (isAdminAuthenticated()) {
+      bar.querySelector(".bulk-upload-btn").onclick = () => {
+         const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+         const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
+         import("./adminUpload.js").then(mod => {
+            mod.openAdminUploadModal(selected);
+         });
+      };
+    }
+  }
+  updateBulkActionBar();
 }
 
 async function handleUserQuizzesDrop(files) {
@@ -3063,8 +3168,25 @@ function createUserQuizCard(quiz, index) {
   );
   card.style.position = "relative";
 
+  const quizId = qz(quiz, "id") || quiz.id;
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "user-quiz-select-checkbox";
+  checkbox.checked = selectedUserQuizzes.has(quizId);
+  checkbox.onclick = (e) => {
+    e.stopPropagation();
+    if (checkbox.checked) {
+      selectedUserQuizzes.add(quizId);
+    } else {
+      selectedUserQuizzes.delete(quizId);
+    }
+    updateBulkActionBar();
+  };
+  card.appendChild(checkbox);
+
   const h = document.createElement("h3");
-  h.innerHTML = `<span class="user-quiz--phone-only-emoji">👤</span> ${qz(quiz, "title") || qz(quiz, "id")}`;
+  h.innerHTML = `<span class="user-quiz--phone-only-emoji">👤</span> ${qz(quiz, "title") || quizId}`;
 
   const questionCountLine = document.createElement("p");
   questionCountLine.className = "exam-question-count";

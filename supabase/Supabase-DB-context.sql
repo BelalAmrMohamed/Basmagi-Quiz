@@ -3,6 +3,10 @@
 -- Table order and constraints may not be valid for execution.
 
 CREATE TABLE public.quizzes (
+  college text,
+  year text,
+  term text,
+  uploaded_by uuid,
   path text NOT NULL,
   category text NOT NULL,
   subject text NOT NULL,
@@ -15,11 +19,8 @@ CREATE TABLE public.quizzes (
   created_at timestamp with time zone DEFAULT now(),
   education_type text CHECK (education_type = ANY (ARRAY['Primary'::text, 'Middle'::text, 'High'::text, 'University'::text, 'Featured'::text])),
   password text,
-  college text,
-  year text,
-  term text,
-  uploaded_by uuid REFERENCES public.admin_users(id),
-  CONSTRAINT quizzes_pkey PRIMARY KEY (id)
+  CONSTRAINT quizzes_pkey PRIMARY KEY (id),
+  CONSTRAINT quizzes_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.admin_users(id)
 );
 CREATE TABLE public.quiz_access (
   quiz_path text NOT NULL UNIQUE,
@@ -31,12 +32,12 @@ CREATE TABLE public.quiz_access (
   CONSTRAINT quiz_access_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.admin_users (
+  handle text UNIQUE,
+  display_name text,
   email text NOT NULL UNIQUE,
   added_by text NOT NULL,
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  handle text UNIQUE,
-  display_name text,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.app_settings (
