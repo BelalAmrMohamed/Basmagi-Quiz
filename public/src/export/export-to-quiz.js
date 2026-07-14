@@ -403,16 +403,12 @@ export async function exportToQuiz(config, questions) {
     z-index: 1000;
     transition: right var(--t-slow), visibility var(--t-slow);
     visibility: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
   }
-
-  .side-menu::-webkit-scrollbar       { width: 4px; }
-  .side-menu::-webkit-scrollbar-track { background: transparent; }
-  .side-menu::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
   .side-menu.open {
     right: 0;
@@ -459,7 +455,13 @@ export async function exportToQuiz(config, questions) {
   .side-menu-content {
     flex: 1;
     padding: 22px;
+    overflow-y: auto;
   }
+
+  .side-menu-content::-webkit-scrollbar       { width: 4px; }
+  .side-menu-content::-webkit-scrollbar-track { background: transparent; }
+  .side-menu-content::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
 
   .menu-section {
     margin-bottom: 28px;
