@@ -1393,46 +1393,6 @@ Container
     content: "↓";
     font-size: 0.85rem;
   }
-
-  /* ── Skeleton adapts to list rows ────────────────────────────────────────── */
-  .skeleton-card {
-    flex-direction: row;
-    align-items: center;
-    padding: 0 14px;
-    min-height: 52px;
-    border-radius: 0;
-    gap: 12px;
-    border-bottom: none;
-    border-top: 1px solid var(--color-border);
-    box-shadow: none;
-    direction: ltr;
-  }
-
-  .skeleton-card:first-child {
-    border-top: none;
-  }
-
-  .skeleton-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    flex-shrink: 0;
-    margin: 0;
-  }
-
-  .skeleton-title {
-    height: 11px;
-    width: 50%;
-    border-radius: 6px;
-    flex-shrink: 0;
-  }
-
-  .skeleton-text {
-    height: 9px;
-    width: 30%;
-    border-radius: 6px;
-    flex-shrink: 0;
-  }
 }
 
 .user-quizzes-drop-zone {
@@ -2508,7 +2468,7 @@ Container
   .skeleton-grid {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 0px;
   }
 }
 
@@ -2526,16 +2486,26 @@ Container
 
 .skeleton-block {
   border-radius: 10px;
-  background: linear-gradient(
+  background-color: #2a2a2a; /* dark base, matches your UI */
+  background-image: linear-gradient(
     90deg,
-    var(--color-border, #e5e7eb) 0%,
-    var(--color-border-light, #f3f4f6) 40%,
-    var(--color-border, #e5e7eb) 80%
+    #2a2a2a 0%,
+    #2a2a2a 20%,
+    #3a3a3a 40%,
+    #454545 50%,
+    #3a3a3a 60%,
+    #2a2a2a 80%,
+    #2a2a2a 100%
   );
   background-size: 1200px 100%;
-}
-[data-animations="enabled"] .skeleton-block {
+  background-repeat: no-repeat;
   animation: shimmer 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-block {
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
 }
 
 .skeleton-icon {
@@ -2565,7 +2535,6 @@ Container
  */
 @media (max-width: 640px) {
   .skeleton-grid {
-    /* Wrap skeleton rows in the same grouped container as real cards */
     border: 1px solid var(--color-border);
     border-radius: 14px;
     overflow: hidden;
@@ -2578,9 +2547,10 @@ Container
     min-height: 52px;
     border-radius: 0;
     gap: 12px;
-    border: none;
+    border-bottom: none;
     border-top: 1px solid var(--color-border);
     box-shadow: none;
+    direction: ltr;
   }
 
   .skeleton-card:first-child {

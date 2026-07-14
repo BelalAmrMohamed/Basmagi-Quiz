@@ -1,0 +1,42 @@
+-- Supabase-DB-context.sql | Last updated on version `v6.0.21`
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.quizzes (
+  path text NOT NULL,
+  category text NOT NULL,
+  subject text NOT NULL,
+  subfolder text,
+  title text NOT NULL,
+  filename text NOT NULL,
+  data jsonb NOT NULL,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  synced_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  education_type text CHECK (education_type = ANY (ARRAY['Primary'::text, 'Middle'::text, 'High'::text, 'University'::text, 'Featured'::text])),
+  password text,
+  CONSTRAINT quizzes_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.quiz_access (
+  quiz_path text NOT NULL UNIQUE,
+  password_hash text,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  is_private boolean DEFAULT false,
+  allowed_emails ARRAY DEFAULT '{}'::text[],
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT quiz_access_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.admin_users (
+  email text NOT NULL UNIQUE,
+  added_by text NOT NULL,
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT admin_users_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.app_settings (
+  key text NOT NULL,
+  value text NOT NULL,
+  updated_by text,
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT app_settings_pkey PRIMARY KEY (key)
+);
