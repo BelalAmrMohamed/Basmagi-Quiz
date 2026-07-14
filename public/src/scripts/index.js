@@ -1777,6 +1777,13 @@ async function renderRootCategories() {
     navigationStack = [];
     updateBreadcrumb();
 
+    // Leaving the "إمتحاناتك" view entirely — selection mode and the
+    // floating bulk action bar belong to that view only. The bar lives on
+    // document.body (not inside `container`), so it wouldn't otherwise get
+    // cleaned up just because the view underneath it changed.
+    selectedUserQuizzes.clear();
+    updateBulkActionBar(false);
+
     // ── Bug 1 Fix: update history entry ──────────────────────────────────────
     // • During popstate restoration (_isRestoringState = true): the URL is
     //   already correct — just stamp the state object via replaceState.
@@ -2101,9 +2108,9 @@ function renderUserQuizzesView() {
     } else {
       const adminSignInBtn = document.createElement("a");
       adminSignInBtn.href = "sign-in.html";
-      adminSignInBtn.innerHTML = `<span>تسجيل المشرفين</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="15px" width="15px" fill="var(--color-text-secondary)"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>`;
+      adminSignInBtn.innerHTML = `<span>دخول المشرفين</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="15px" width="15px" fill="var(--color-text-secondary)"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>`;
       adminSignInBtn.className = "btn admin-log-in-btn";
-      adminSignInBtn.setAttribute("aria-label", "لوحة تسجيل المشرفين");
+      adminSignInBtn.setAttribute("aria-label", "لوحة دخول المشرفين");
       actionsBar.appendChild(adminSignInBtn);
     }
 
@@ -2162,8 +2169,8 @@ function renderUserQuizzesView() {
       `;
       emptyState.innerHTML = `
         <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;" aria-hidden="true">📝</div>
-        <h3 style="margin-bottom: 10px;">لا يوجد امتحانات</h3>
-        <p style="color: var(--color-text-secondary);">انقر على 'إنشاء امتحان' الموجود في الأعلى للبدء</p>
+        <h3 style="margin-bottom: 10px;">لم تقم بإنشاء أي اختبارات حتى الآن</h3>
+        <p style="color: var(--color-text-secondary);">انقر على الزر الذي في الأعلى للبدء</p>
       `;
       quizzesContainer.appendChild(emptyState);
     } else {
@@ -2506,7 +2513,7 @@ function openPromptSelectionModal() {
     </svg>
       اختر البرومبت
     </h2>
-    <p style="margin-bottom: 20px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">اختر الـ 'Prompt' الأنسب لنوع الامتحان الذي تريد إنشاءه</p>
+    <p style="margin-bottom: 20px; color: var(--color-text-secondary); font-size: 0.95rem; line-height: 1.5;">اختر النموذج الأنسب لنوع الامتحان الذي تريد إنشاءه</p>
     
     <div class="prompt-buttons-container" style="display: flex; flex-direction: column; gap: 12px;">
       <button type="button" class="prompt-btn prompt-btn-general" data-prompt="general" style="padding: 14px 16px; border: 1.5px solid var(--color-border); border-radius: 12px; background: var(--color-background-secondary); color: var(--color-text-primary); font-family: inherit; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-align: right;">
@@ -2652,7 +2659,7 @@ function createInlineCreateQuizCard() {
   card.setAttribute("role", "button");
   card.setAttribute("tabindex", "0");
   card.setAttribute("title", "تحويل نص ← امتحان");
-  card.setAttribute("aria-label", "إنشاء امتحان من نص");
+  card.setAttribute("aria-label", "إنشاء إمتحان جديد من نص");
 
   // Desktop-only large centered icon (hidden on mobile via CSS)
   const icon = document.createElement("div");
@@ -2665,12 +2672,12 @@ function createInlineCreateQuizCard() {
   textWrap.className = "card-text";
 
   const titleEl = document.createElement("h3");
-  titleEl.innerHTML = `<span class="user-quiz--phone-only-emoji">➕</span> إنشاء امتحان`;
+  titleEl.innerHTML = `<span class="user-quiz--phone-only-emoji">➕</span> إنشاء إمتحان جديد`;
 
   const desc = document.createElement("p");
   desc.className = "create-quiz-card-subtitle";
   desc.textContent =
-    "استخدم 'Prompt' جاهزًا؛ لتحويل أيّ امتحانات تملكها باستخدام الذكاء الاصطناعي";
+    "الصق أسئلة الإمتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
 
   textWrap.appendChild(titleEl);
   textWrap.appendChild(desc);
@@ -2719,7 +2726,7 @@ function openInlineCreateQuizModal() {
 modalCard.innerHTML = `
     <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
       <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
-      إنشاء امتحان
+      إنشاء إمتحان جديد
       <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
         Prompt
@@ -2734,7 +2741,7 @@ modalCard.innerHTML = `
       <input type="text" id="inlineQuizTitle" class="create-quiz-modal__input" placeholder="Arrays in C++" />
     </div>
     <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
-      <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الإمتحان (الصق الكود هنا)</label>
+      <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الإمتحان</label>
       <textarea id="inlineQuizContent" class="inline-quiz-textarea create-quiz-modal__textarea" rows="4"></textarea>
     </div>
     <div class="create-quiz-modal__actions">
