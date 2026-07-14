@@ -2099,6 +2099,24 @@ function renderUserQuizzesView() {
       actionsBar.appendChild(adminSignInBtn);
     }
 
+    const toggleSelectionBtn = document.createElement("button");
+    toggleSelectionBtn.type = "button";
+    toggleSelectionBtn.className = "btn selection-toggle-btn";
+    toggleSelectionBtn.innerHTML = `<span>تحديد الامتحانات</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-square"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
+    toggleSelectionBtn.onclick = () => {
+       const qzContainer = container.querySelector(".user-quizzes-container");
+       if (qzContainer) {
+          qzContainer.classList.toggle("selection-mode-active");
+          toggleSelectionBtn.classList.toggle("active", qzContainer.classList.contains("selection-mode-active"));
+          if (!qzContainer.classList.contains("selection-mode-active")) {
+             selectedUserQuizzes.clear();
+             document.querySelectorAll(".user-quiz-select-checkbox").forEach(cb => cb.checked = false);
+             updateBulkActionBar();
+          }
+       }
+    };
+    actionsBar.appendChild(toggleSelectionBtn);
+
     container.appendChild(actionsBar);
 
     // Inline create-quiz card (always visible in this view)
@@ -2209,31 +2227,6 @@ function updateBulkActionBar() {
 }
 
 function renderBulkActionBar() {
-  if (!document.getElementById("bulk-action-styles")) {
-    const s = document.createElement("style");
-    s.id = "bulk-action-styles";
-    s.textContent = `
-      .bulk-action-bar {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: var(--color-surface); border: 1px solid var(--color-border);
-        border-radius: 12px; padding: 12px 24px; box-shadow: var(--shadow-xl);
-        display: flex; align-items: center; gap: 20px; z-index: 1000;
-        animation: slideUp 0.3s ease;
-      }
-      .bulk-action-bar .bulk-count { font-weight: bold; color: var(--color-text-primary); }
-      .bulk-action-bar .bulk-actions { display: flex; gap: 10px; }
-      .user-quiz-card .user-quiz-select-checkbox {
-        position: absolute; top: 12px; left: 12px; width: 22px; height: 22px;
-        cursor: pointer; z-index: 5; accent-color: var(--color-primary);
-      }
-      @media (max-width: 600px) {
-        .bulk-action-bar { width: 90%; flex-direction: column; gap: 10px; }
-        .bulk-action-bar .bulk-actions { width: 100%; justify-content: center; flex-wrap: wrap; }
-      }
-    `;
-    document.head.appendChild(s);
-  }
-
   let bar = document.getElementById("bulk-action-bar");
   if (!bar) {
     bar = document.createElement("div");
@@ -2243,23 +2236,26 @@ function renderBulkActionBar() {
     
     let uploadBtnHtml = "";
     if (isAdminAuthenticated()) {
-      uploadBtnHtml = `<button class="btn bulk-upload-btn" style="background:var(--color-primary);color:#fff;border:none;">رفع المحدد ☁️</button>`;
+      uploadBtnHtml = `<button class="btn bulk-upload-btn">رفع المحدد ☁️</button>`;
     }
     
     bar.innerHTML = `
       <div class="bulk-count">تم تحديد 0</div>
       <div class="bulk-actions">
-        <button class="btn bulk-delete-btn" style="background:var(--color-error);color:#fff;border:none;">حذف</button>
-        <button class="btn bulk-extract-btn" style="background:var(--color-background-secondary);color:var(--color-text-primary);border:1px solid var(--color-border);">استخراج</button>
+        <button class="btn bulk-delete-btn">حذف</button>
+        <button class="btn bulk-extract-btn">استخراج</button>
         ${uploadBtnHtml}
       </div>
     `;
     document.body.appendChild(bar);
     
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
-       if (confirm("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
+       if (await confirmationNotification("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
           let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-          userQuizzes = userQuizzes.filter(q => !selectedUserQuizzes.has(q.id || q.meta?.id));
+          userQuizzes = userQuizzes.filter(q => {
+              const qId = qz(q, "id") || q.id;
+              return !selectedUserQuizzes.has(qId);
+          });
           setInStorage("user_quizzes", JSON.stringify(userQuizzes));
           selectedUserQuizzes.clear();
           renderUserQuizzesView();
@@ -2268,11 +2264,16 @@ function renderBulkActionBar() {
     
     bar.querySelector(".bulk-extract-btn").onclick = async () => {
        const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-       const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
-       for (const q of selected) {
-         downloadQuizAsJson(q);
-         await new Promise(r => setTimeout(r, 500));
-       }
+       const selected = userQuizzes.filter(q => {
+           const qId = qz(q, "id") || q.id;
+           return selectedUserQuizzes.has(qId);
+       });
+       if (selected.length === 0) return;
+       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selected, null, 2));
+       const dlAnchorElem = document.createElement('a');
+       dlAnchorElem.setAttribute("href", dataStr);
+       dlAnchorElem.setAttribute("download", `my-personal-quizzes__${selected.length}.json`);
+       dlAnchorElem.click();
     };
     
     if (isAdminAuthenticated()) {
@@ -2327,6 +2328,23 @@ async function handleUserQuizzesDrop(files) {
         "error",
       );
       continue;
+    }
+
+    if (file.name.toLowerCase().endsWith(".json")) {
+       let parsedJson = null;
+       try {
+          parsedJson = JSON.parse(text);
+       } catch(e) {}
+       
+       if (Array.isArray(parsedJson) && parsedJson.length > 0 && (parsedJson[0].questions || parsedJson[0].id)) {
+           for (const q of parsedJson) {
+               if (q.questions) {
+                   existingQuizzes.push(q);
+                   importedCount++;
+               }
+           }
+           continue; 
+       }
     }
 
     const defaultTitle = file.name
