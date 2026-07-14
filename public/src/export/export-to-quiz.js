@@ -109,8 +109,8 @@ const buildQuizInfoRows = (config, questionCount) => {
       ? `<a href="${escHtml(v)}" target="_blank" rel="noopener noreferrer">${escHtml(v)}</a>`
       : escHtml(v);
     return `<tr>
-        <td>${displayVal}</td>
         <th scope="row">${escHtml(label)}</th>
+        <td>${displayVal}</td>
       </tr>`;
   }).join("");
 };
@@ -152,7 +152,7 @@ export async function exportToQuiz(config, questions) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
+  <!-- ========== Markdown + KaTeX integration ==========
        Classic (non-deferred) script so window.katex is synchronously
        available before the inline quiz <script> at the bottom of <body> runs.
        No SRI hashes. Pinned to 0.16.9 exactly — do NOT add defer/async. -->
@@ -401,7 +401,8 @@ export async function exportToQuiz(config, questions) {
     background: var(--bg-primary);
     box-shadow: -8px 0 48px rgba(0, 0, 0, 0.2);
     z-index: 1000;
-    transition: right var(--t-slow);
+    transition: right var(--t-slow), visibility var(--t-slow);
+    visibility: hidden;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -415,6 +416,7 @@ export async function exportToQuiz(config, questions) {
 
   .side-menu.open {
     right: 0;
+    visibility: visible;
   }
 
   .side-menu-overlay {
@@ -435,6 +437,7 @@ export async function exportToQuiz(config, questions) {
   }
 
   .side-menu-header {
+    text-align: center;
     background: var(--gradient);
     color: #fff;
     padding: 28px 22px 22px;
@@ -1771,7 +1774,7 @@ export async function exportToQuiz(config, questions) {
       width: 100%;
       height: 72vh;
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-      transition: bottom var(--t-slow);
+      transition: bottom var(--t-slow), visibility var(--t-slow);
     }
 
     .side-menu.open { bottom: 0; right: 0; }
@@ -1836,10 +1839,14 @@ export async function exportToQuiz(config, questions) {
 
   .live-region {
     position: absolute;
-    left: -10000px;
     width: 1px;
     height: 1px;
+    padding: 0;
+    margin: -1px;
     overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
   </style>
   </head>
@@ -2639,7 +2646,7 @@ export async function exportToQuiz(config, questions) {
       // Always show confirmation before submitting
       const unanswered = this.userAnswers.filter(a => a === null || (Array.isArray(a) && a.length === 0)).length;
       
-      let message = '<p>Are you sure you want to submit your quiz?</p>';
+      let message = '<p>هل أنت متأكد من تسليم الامتحان؟</p>';
       if (unanswered > 0) {
         message = \`<p>لديك <strong>\${unanswered}</strong> سؤالاً غير مجاب</p><p>هل انت متأكد من أنك تريد التسليم؟</p>\`;
       }
