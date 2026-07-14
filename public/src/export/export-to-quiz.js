@@ -200,7 +200,37 @@ export async function exportToQuiz(config, questions) {
     padding: 0;
     box-sizing: border-box;
   }
-  html { scroll-behavior: smooth; }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #6b6ed3 transparent;
+  }
+
+  html::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb {
+    background-color: #6b6ed3;
+    border-radius: 10px;
+  }
+
+  /* Accessibility */
+  *:focus-visible {
+    outline: 3px solid rgba(99, 102, 241, 0.45);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+
+  ::selection {
+    background: rgba(99, 102, 241, 0.12);
+    color: #6366f1;
+  }
 
   /* ── Design Tokens ───────────────────────────────────────────── */
   :root {
@@ -2779,13 +2809,13 @@ export async function exportToQuiz(config, questions) {
         scoreBreakdown = \`
           <p><strong>جميع الأسئلة:</strong> \${totalScore} / \${totalPossible}</p>
           <p><strong>الإختياري:</strong> صحيح \${mcqCorrect} / \${mcqTotal}</p>
-          <p><strong>المقالي:</strong> نقطة &nbsp; \${essayScore} / \${essayMaxScore} <span style="color:#f59e0b">\${essayStars}</span></p>
+          <p><strong>المقالي:</strong><span style="color:#f59e0b">\${essayStars}</span> نقطة &nbsp; \${essayScore} / \${essayMaxScore}</p>
         \`;
       } else if (hasEssay) {
         const essayStars = "★".repeat(Math.round(essayScore / essayMaxScore * 5)) + "☆".repeat(5 - Math.round(essayScore / essayMaxScore * 5));
         scoreBreakdown = \`
-          <p><strong>Essay Score:</strong> نقطة \${essayScore} / \${essayMaxScore}</p>
-          <p><strong>Rating:</strong> <span style="color:#f59e0b;font-size:1.15em">\${essayStars}</span></p>
+          <p><strong>المقالي:</strong> نقطة \${essayScore} / \${essayMaxScore}</p>
+          <p><strong>التقييم:</strong> <span style="color:#f59e0b;font-size:1.15em">\${essayStars}</span></p>
         \`;
       } else {
         scoreBreakdown = \`<p><strong>Score:</strong> \${mcqCorrect} / \${mcqTotal} correct</p>\`;
@@ -2812,7 +2842,7 @@ export async function exportToQuiz(config, questions) {
         resultsDiv.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 300);
       
-      this.showToast(\`Quiz complete! You scored \${percent}%\`, 'success');
+      this.showToast(\`انتهى الامتحان! درجتك هي: \${percent}%\`, 'success');
     },
   
     reset() {
