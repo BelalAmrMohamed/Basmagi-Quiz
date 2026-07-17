@@ -232,7 +232,6 @@ let searchManager = null;
 //   index.html previously only ever checked isAdminAuthenticated(), which
 //   reads a sessionStorage-scoped JWT. Supabase itself keeps a SEPARATE,
 //   longer-lived session in localStorage. sign-in.html already checked that
-//   Supabase session on load (see initSupabase() in sign-in.js) but index.html
 //   never did — so the two pages could disagree about whether the user was
 //   logged in ("ghost session" bug). This mirrors that same check here so
 //   both pages agree on the same source of truth.
@@ -260,11 +259,31 @@ async function syncAdminSessionWithSupabase() {
       // silently showing "logged out" while sign-in.html would show
       // "logged in".
       const ok = await signInWithSupabase(session.access_token);
-      // Admin-dependent UI (log-in/out button, upload buttons) is rendered
-      // across several view functions rather than one central place, so a
-      // full reload is the reliable way to make every view reflect the
-      // corrected auth state — mirrors the reload already used on logout.
-      if (ok) window.location.reload();
+      if (ok) {
+        // Admin-dependent UI is rendered across several view functions
+        // rather than one central place — full reload is the reliable way
+        // to make every view reflect the corrected auth state.
+        window.location.reload();
+      } else {
+        // ── Phase 4 fix: non-admin rejection ─────────────────────────────────
+        // /api/auth returned 403 — this user is authenticated with Supabase
+        // but is NOT an admin. Without explicitly destroying the Supabase
+        // session here, this function would be called again on the next
+        // interaction, get 403 again, call fullSignOut(), reload, and loop
+        // forever.
+        //
+        // Fix: destroy the Supabase session immediately so this branch
+        // never triggers again for this non-admin account. Do NOT reload —
+        // the page renders fine without admin features.
+        await fullSignOut(_indexSupabaseClient);
+        // Also clear any Supabase localStorage keys for belt-and-suspenders
+        try {
+          Object.keys(localStorage)
+            .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
+            .forEach((k) => localStorage.removeItem(k));
+        } catch (_) {}
+        // No reload needed — page renders correctly without admin mode.
+      }
     } else if (!session && isAdminAuthenticated()) {
       // Local admin JWT still exists but Supabase's own session is gone
       // (e.g. it expired, or was revoked elsewhere) — don't keep showing
@@ -277,7 +296,6 @@ async function syncAdminSessionWithSupabase() {
   }
 }
 
-// Download functions
 import { exportToQuiz } from "../export/export-to-quiz.js";
 import { exportToHtml } from "../export/export-to-html.js";
 import { exportToPdf } from "../export/export-to-pdf.js";
@@ -292,6 +310,7 @@ import {
   signInWithSupabase,
   fullSignOut,
 } from "./adminAuth.js";
+import { openSignInDialog } from "./sign-in-dialog.js";
 
 // Helper utilities
 import { getSubscribedCourses } from "../shared/filterUtils.js";
@@ -2106,11 +2125,13 @@ function renderUserQuizzesView() {
       };
       actionsBar.appendChild(adminSignOutBtn);
     } else {
-      const adminSignInBtn = document.createElement("a");
-      adminSignInBtn.href = "sign-in.html";
+      const adminSignInBtn = document.createElement("button");
+      adminSignInBtn.type = "button";
       adminSignInBtn.innerHTML = `<span>دخول المشرفين</span> <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="15px" width="15px" fill="var(--color-text-secondary)"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/></svg>`;
       adminSignInBtn.className = "btn admin-log-in-btn";
       adminSignInBtn.setAttribute("aria-label", "لوحة دخول المشرفين");
+      // Opens the sign-in dialog directly — no full-page navigation.
+      adminSignInBtn.onclick = () => openSignInDialog();
       actionsBar.appendChild(adminSignInBtn);
     }
 

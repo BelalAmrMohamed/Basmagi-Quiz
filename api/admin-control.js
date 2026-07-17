@@ -1,3 +1,12 @@
+// =============================================================================
+// api/admin-control.js
+// Owner-only endpoint for managing platform admins.
+//
+// GET  → returns { admins, platformStats }
+// POST → actions: add_admin | remove_admin
+//
+// NOTE: The "change_code" / access-code actions were removed in v6.1.
+// =============================================================================
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { createClient } from "@supabase/supabase-js";
 
@@ -14,7 +23,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Internal server error" });
   }
 
-  // Only owners can access this API
+  // Only owners can access this API.
   if (!payload.isOwner) {
     return res.status(403).json({ error: "You do not have owner privileges" });
   }
@@ -26,30 +35,40 @@ export default async function handler(req, res) {
 
   const { method } = req;
 
+  // ── GET: list admins + platform stats ────────────────────────────────────────
   if (method === "GET") {
-    // 1. Get all admins
     const { data: admins, error: adminsError } = await supabase
       .from("admin_users")
       .select("id, email, created_at, added_by")
       .order("created_at", { ascending: false });
 
-    // 2. Get current access code setting
-    const { data: setting, error: settingError } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "ADMIN_SECRET")
-      .single();
-
-    if (adminsError || settingError) {
+    if (adminsError) {
       return res.status(500).json({ error: "Failed to fetch data" });
     }
 
+    // Platform stats — quiz & category counts from the quizzes table.
+    const { count: quizCount } = await supabase
+      .from("quizzes")
+      .select("id", { count: "exact", head: true });
+
+    const { data: catData } = await supabase
+      .from("quizzes")
+      .select("category");
+
+    const uniqueCategories = new Set((catData || []).map((r) => r.category));
+
     return res.status(200).json({
       admins: admins || [],
-      accessCode: setting?.value || "Not set"
+      platformStats: {
+        totalQuizzes: quizCount ?? 0,
+        totalCategories: uniqueCategories.size,
+        totalAdmins: (admins || []).length,
+        ownerEmail: payload.email,
+      },
     });
   }
 
+  // ── POST: admin management actions ───────────────────────────────────────────
   if (method === "POST") {
     const { action } = req.body;
 
@@ -64,7 +83,7 @@ export default async function handler(req, res) {
         .single();
 
       if (error) {
-        if (error.code === '23505') { // Unique violation
+        if (error.code === "23505") {
           return res.status(400).json({ error: "Admin already exists" });
         }
         return res.status(500).json({ error: "Failed to add admin" });
@@ -84,28 +103,6 @@ export default async function handler(req, res) {
 
       if (error) {
         return res.status(500).json({ error: "Failed to remove admin" });
-      }
-
-      return res.status(200).json({ success: true });
-    }
-
-    if (action === "change_code") {
-      const { newCode } = req.body;
-      if (!newCode || newCode.length < 4) {
-        return res.status(400).json({ error: "Access code must be at least 4 characters long" });
-      }
-
-      const { error } = await supabase
-        .from("app_settings")
-        .upsert({
-          key: "ADMIN_SECRET",
-          value: newCode,
-          updated_by: payload.email,
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        return res.status(500).json({ error: "Failed to change access code" });
       }
 
       return res.status(200).json({ success: true });

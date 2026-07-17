@@ -10,7 +10,7 @@
  *    - a global command registry -> window.basmagy
  *    - a couple of hidden, undocumented surprises
  *
- *  Each page (index.js, dashboard.js, creat-quiz.js, settings.js, sign-in.js)
+ *  Each page (index.js, dashboard.js, creat-quiz.js, settings.js)
  *  loads this core FIRST, then registers its own page-specific commands and
  *  fires its own boot banner. See `index.js` for an example.
  * ============================================================================
@@ -164,7 +164,7 @@ const LOGO = "منصة إمتحانات بصمجي";
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
-  const BUILD_TAG = 'core@6.0.23';
+  const BUILD_TAG = 'core@6.1.0';
 
   function printHelp() {
     log.rule('═', 64);

@@ -42,9 +42,9 @@
 
     <script>
         (async function handleOAuthCallback() {
-            // If opened without an opener (direct navigation), send user to sign-in
+            // If opened without an opener (direct navigation), send user to the main page
             if (!window.opener || window.opener.closed) {
-                window.location.href = '/sign-in.html';
+                window.location.href = '/';
                 return;
             }
 

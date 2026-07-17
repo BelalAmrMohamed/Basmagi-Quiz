@@ -1,6 +1,9 @@
--- Supabase-DB-context.sql | Last updated on version `v6.0.23`
+-- Supabase-DB-context.sql | Last updated on version `v6.1` (auth refactor)
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
+--
+-- NOTE: `app_settings` table was DROPPED in v6.1.0 migration.
+--       Access-code authentication has been fully deprecated.
 
 CREATE TABLE public.quizzes (
   college text,
@@ -22,6 +25,7 @@ CREATE TABLE public.quizzes (
   CONSTRAINT quizzes_pkey PRIMARY KEY (id),
   CONSTRAINT quizzes_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.admin_users(id)
 );
+
 CREATE TABLE public.quiz_access (
   quiz_path text NOT NULL UNIQUE,
   password_hash text,
@@ -31,6 +35,7 @@ CREATE TABLE public.quiz_access (
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT quiz_access_pkey PRIMARY KEY (id)
 );
+
 CREATE TABLE public.admin_users (
   handle text UNIQUE,
   display_name text,
@@ -39,11 +44,4 @@ CREATE TABLE public.admin_users (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.app_settings (
-  key text NOT NULL,
-  value text NOT NULL,
-  updated_by text,
-  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  CONSTRAINT app_settings_pkey PRIMARY KEY (key)
 );

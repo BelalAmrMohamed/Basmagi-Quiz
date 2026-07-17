@@ -49,14 +49,14 @@
     <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/control-thumbnail.png?v=3">
     <meta name="twitter:image:alt" content="صفحة المطوّر | منصة إمتحانات بصمجي">
 
-
-    <!-- Canonical: points to this page itself, not sign-in.html -->
+    <!-- Canonical: points to this page itself -->
     <link rel="canonical" href="/control.html" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <link rel="stylesheet" href="src/styles/control.css">
+    <link rel="stylesheet" href="src/styles/control-stats.css">
 </head>
 
 <body>
@@ -95,31 +95,53 @@
             </div>
         </div>
 
-        <!-- RIGHT: ACCESS CODE -->
+        <!-- RIGHT: PLATFORM STATS & OWNER INFO -->
         <div class="panel">
             <div class="panel-header">
-                <div class="panel-title">إدارة رمز الدخول</div>
+                <div class="panel-title">إحصائيات المنصة</div>
             </div>
             <div class="panel-body">
-                <div class="code-display-box">
-                    <div>
-                        <div class="code-label">رمز الدخول السري الحالي:</div>
-                        <div id="currentCodeDisplay" data-revealed="false">جاري التحميل...</div>
+                <!-- Stats Grid -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-value" id="statQuizzes">—</div>
+                        <div class="stat-label">إجمالي الامتحانات</div>
                     </div>
-                    <div class="code-actions">
-                        <button class="btn-copy" id="revealCodeBtn" onclick="toggleCodeVisibility()" title="إظهار/إخفاء">
-                            &#128065;
-                        </button>
-                        <button class="btn-copy" onclick="copyCode()" title="نسخ">
-                            &#10697;
-                        </button>
+                    <div class="stat-card">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-value" id="statCategories">—</div>
+                        <div class="stat-label">المواد والتصنيفات</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="statAdmins">—</div>
+                        <div class="stat-label">المشرفون النشطون</div>
                     </div>
                 </div>
-                <div class="field-group">
-                    <input type="text" id="newCodeInput"
-                        placeholder="أدخل رمز الدخول الجديد (4 أحرف أو أرقام على الأقل)" minlength="4">
-                    <button class="btn-primary" style="width:100%; padding:12px;" onclick="submitChangeCode()">تحديث
-                        الرمز</button>
+
+                <!-- Owner Info -->
+                <div class="owner-info-box" id="ownerInfoBox">
+                    <div class="owner-info-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        معلومات المالك
+                    </div>
+                    <div class="owner-info-row">
+                        <span class="owner-info-label">الحساب المسجّل:</span>
+                        <span class="owner-info-value" id="ownerEmailDisplay">جاري التحميل...</span>
+                    </div>
+                    <div class="owner-info-row">
+                        <span class="owner-info-label">مستوى الصلاحية:</span>
+                        <span class="owner-badge">Owner ✓</span>
+                    </div>
+                    <div class="owner-info-row">
+                        <span class="owner-info-label">نظام المصادقة:</span>
+                        <span class="owner-info-value">Email / OAuth فقط</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,7 +149,7 @@
     </div>
 
 
-    <!-- CONFIRM MODAL (generic — reused for admin removal and access-code changes) -->
+    <!-- CONFIRM MODAL (generic — reused for admin removal) -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal">
             <div class="modal-icon" id="modalIcon">&#9888;</div>
