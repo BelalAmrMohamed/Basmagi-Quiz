@@ -444,9 +444,9 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
         const { updateWelcomeMessage } = await import("../scripts/index.js");
         updateWelcomeMessage();
       }
-      // For the leaderboard name in dashboard page
-      else if (window.location.pathname.startsWith("/dashboard")) {
-        const { refreshUI } = await import("../scripts/dashboard.js");
+      // For the leaderboard name in profile page
+      else if (window.location.pathname.startsWith("/profile")) {
+        const { refreshUI } = await import("../scripts/profile.js");
         refreshUI();
       } else if (window.location.pathname.startsWith("/settings")) {
         const settingsNameInput = document.getElementById("settingsName");

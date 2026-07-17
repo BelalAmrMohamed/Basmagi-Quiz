@@ -802,10 +802,10 @@ body.sidebar-expanded {
 
   /* The sheet opened by "المزيد" reuses the desktop sidebar's <nav>, so hide
      the 4 links that are now duplicated as their own bottom-nav tabs
-     (الرئيسية / اللائحة / إنشاء / الإعدادات). Only the leftover links
+     (الرئيسية / الحساب / إنشاء / الإعدادات). Only the leftover links
      (change name, theme, animations, contact dev, install app) remain. */
   .sidebar nav > a[href="/"],
-  .sidebar nav > a[href="dashboard.html"],
+  .sidebar nav > a[href="profile.html"],
   .sidebar nav > a[href="create-quiz.html"],
   .sidebar nav > a[href="settings.html"] {
     display: none;

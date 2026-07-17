@@ -85,10 +85,10 @@
       ]
     },
     {
-      "name": "اللائحة",
-      "short_name": "اللائحة",
+      "name": "الحساب",
+      "short_name": "الحساب",
       "description": "عرض تقدمك في الإمتحانات والأوسمة التي حصلت عليها",
-      "url": "/dashboard.html",
+      "url": "/profile.html",
       "icons": [
         {
           "src": "assets/images/icon-192.png",

@@ -1,7 +1,7 @@
-// src/scripts/dashboard.js - Enhanced with All Features
+// src/scripts/profile.js - Enhanced with All Features
 
 // Temporary | For performance debugging
-console.log("dashboard.js loaded successfully")
+console.log("profile.js loaded successfully")
 
 import { gameEngine, BADGES } from "../shared/gameEngine.js";
 import { getManifest } from "./quizManifest.js";
@@ -56,7 +56,7 @@ window.removeBookmark = async function (key) {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // Guard: Only run dashboard initialisation if we're on the dashboard page
+  // Guard: Only run profile initialisation if we're on the profile page
   if (!document.getElementById("totalPoints")) return;
 
   try {

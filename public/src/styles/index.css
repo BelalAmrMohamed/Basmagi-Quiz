@@ -3272,7 +3272,7 @@ kbd {
 
 /* ==========================================================================
    Create Quiz Modal
-   (inline-create-quiz flow triggered from the dashboard "New Quiz" action)
+   (inline-create-quiz flow triggered from the profile "New Quiz" action)
    ========================================================================== */
 
 .create-quiz-modal__title {

@@ -597,11 +597,11 @@ export const gameEngine = {
     }
     this.saveUserData(user);
     if (!this.isBookmarked(examId, questionIdx))
-      showNotification(`تم مسح سؤال ${questionIdx + 1} من اللائحة`);
+      showNotification(`تم مسح سؤال ${questionIdx + 1} من الحساب`);
     else
       showNotification(
         `تم حفظ سؤال ${questionIdx + 1}`,
-        `انظر في اللائحة`,
+        `انظر في الحساب`,
         "success",
       );
     return !!user.bookmarks[key];

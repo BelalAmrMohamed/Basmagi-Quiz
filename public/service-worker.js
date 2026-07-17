@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v6.1.7";
+const CACHE_VERSION = "basmagi-v6.1.8";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -42,7 +42,7 @@ const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/create-quiz.html",
-  "/dashboard.html",
+  "/profile.html",
   "/onboarding.html",
   "/quiz.html",
   "/result.html",
@@ -53,7 +53,7 @@ const STATIC_ASSETS = [
 
   "/src/styles/index.css",
   "/src/styles/create-quiz.css",
-  "/src/styles/dashboard.css",
+  "/src/styles/profile.css",
   "/src/styles/onboarding.css",
   "/src/styles/quiz.css",
   "/src/styles/result.css",
@@ -66,7 +66,7 @@ const STATIC_ASSETS = [
   // JS (entry points)
   "/src/scripts/index.js",
   "/src/scripts/create-quiz.js",
-  "/src/scripts/dashboard.js",
+  "/src/scripts/profile.js",
   "/src/scripts/onboarding.js",
   "/src/scripts/quiz.js",
   "/src/scripts/result.js",

@@ -1,4 +1,4 @@
-/* src/styles/dashboard.css - Cleaned Dashboard Page Styles */
+/* src/styles/profile.css - Cleaned Dashboard Page Styles */
 /* All theme variables are now in themes.css */
 /* All animations are now in animations.css */
 
@@ -190,7 +190,7 @@ body {
 }
 
 /* Dashboard Layout */
-.dashboard-layout {
+.profile-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 32px;
@@ -202,7 +202,7 @@ body {
  * by side-menu.css, but we add an explicit max-width cap on the layout to
  * guarantee the 1fr column never overlaps the sidebar even on narrow desktops.
  */
-.dashboard-layout > *:last-child {
+.profile-layout > *:last-child {
   min-width: 0; /* prevent grid blowout */
 }
 
@@ -456,7 +456,7 @@ body {
     /* padding-right is controlled by side-menu.css (16px on mobile) */
   }
 
-  .dashboard-layout {
+  .profile-layout {
     grid-template-columns: 1fr;
   }
 
