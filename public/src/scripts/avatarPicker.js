@@ -57,18 +57,21 @@ function applyAvatar(dataUrl) {
   }
 }
 
-async function handleFileInput(e) {
-  const file = e.target.files && e.target.files[0];
+async function processAndApplyFile(file) {
   if (!file) return;
-
   try {
     const dataUrl = await avatarEngine.processImageFile(file);
     applyAvatar(dataUrl);
   } catch (err) {
     showNotification(err.message || "تعذّر معالجة الصورة", "", "error");
-  } finally {
-    e.target.value = "";
   }
+}
+
+async function handleFileInput(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  await processAndApplyFile(file);
+  e.target.value = "";
 }
 
 async function startCamera() {
@@ -162,6 +165,7 @@ export function initAvatarPicker() {
   const closeBtn = document.getElementById("avatarPickerCloseBtn");
   const fileInput = document.getElementById("avatarFileInput");
   const uploadBtn = document.getElementById("avatarUploadBtn");
+  const dropzone = document.getElementById("avatarDropzone");
   const cameraStartBtn = document.getElementById("avatarCameraStartBtn");
   const cameraCaptureBtn = document.getElementById("avatarCameraCaptureBtn");
   const removeBtn = document.getElementById("avatarRemoveBtn");
@@ -179,6 +183,41 @@ export function initAvatarPicker() {
 
   uploadBtn && uploadBtn.addEventListener("click", () => fileInput && fileInput.click());
   fileInput && fileInput.addEventListener("change", handleFileInput);
+
+  if (dropzone) {
+    // dragenter/dragover must both preventDefault, or the browser's own
+    // "open this file" navigation runs instead of firing "drop".
+    let dragDepth = 0; // counts nested enter/leave so a drag over a child
+                        // element (the button, the hint text) doesn't
+                        // prematurely clear the active state on dragleave.
+
+    dropzone.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      dragDepth++;
+      dropzone.classList.add("drag-over");
+    });
+
+    dropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    });
+
+    dropzone.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      dragDepth = Math.max(0, dragDepth - 1);
+      if (dragDepth === 0) dropzone.classList.remove("drag-over");
+    });
+
+    dropzone.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      dragDepth = 0;
+      dropzone.classList.remove("drag-over");
+
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      await processAndApplyFile(file);
+    });
+  }
 
   cameraStartBtn && cameraStartBtn.addEventListener("click", startCamera);
   cameraCaptureBtn && cameraCaptureBtn.addEventListener("click", captureFromCamera);

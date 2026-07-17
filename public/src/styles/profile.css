@@ -774,6 +774,36 @@ html[dir="ltr"] .history-item:hover {
   color: var(--color-error);
 }
 
+.avatar-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.avatar-dropzone .avatar-action-btn {
+  width: 100%;
+}
+
+.avatar-dropzone-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.avatar-dropzone.drag-over {
+  border-color: var(--color-primary);
+  background: var(--color-hover-overlay);
+}
+
+.avatar-dropzone.drag-over .avatar-dropzone-hint {
+  color: var(--color-primary);
+}
+
 .avatar-camera-preview {
   width: 100%;
   border-radius: 12px;

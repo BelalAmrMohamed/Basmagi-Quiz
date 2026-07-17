@@ -59,6 +59,65 @@
         })();
     </script>
 
+    <!-- CRITICAL: Nav avatar anti-flash script
+         Resolves the avatar (or a generated initial-avatar, same as
+         avatarEngine.generateDefaultAvatarDataUrl) into window.__navAvatarDataUrl
+         BEFORE the browser paints. The actual <img src="..."> assignment
+         happens in a tiny inline script placed right after the nav markup
+         in <body> (scripts run as soon as they're parsed, before the rest
+         of the page below them paints), so the nav account icon shows the
+         right image on the very first frame — no placeholder-then-swap.
+         Kept dependency-free (no module import) on purpose: it must run
+         synchronously, before any `type="module"` script (which is always
+         deferred). avatarEngine.js remains the single source of truth for
+         writes; this script only ever reads. -->
+    <script>
+        (function () {
+            try {
+                var AVATAR_KEY = "quiz_user_avatar";
+                var PALETTE = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#14b8a6"];
+
+                function colorForName(name) {
+                    var str = (name || "?").trim();
+                    var hash = 0;
+                    for (var i = 0; i < str.length; i++) {
+                        hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+                    }
+                    return PALETTE[hash % PALETTE.length];
+                }
+
+                function initialForName(name) {
+                    var str = (name || "").trim();
+                    if (!str) return "؟";
+                    var diacritics = /[\u064B-\u065F\u0670]/;
+                    for (var ch of str) {
+                        if (diacritics.test(ch)) continue;
+                        return ch.toUpperCase();
+                    }
+                    return "؟";
+                }
+
+                function defaultAvatarDataUrl(name) {
+                    var initial = initialForName(name).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                    var color = colorForName(name);
+                    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">' +
+                        '<rect width="100" height="100" rx="50" fill="' + color + '"/>' +
+                        '<text x="50" y="50" font-family="IBM Plex Sans Arabic, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">' + initial + '</text></svg>';
+                    return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svg)));
+                }
+
+                var name = localStorage.getItem("username") || "مستخدم";
+                window.__navAvatarDataUrl = localStorage.getItem(AVATAR_KEY) || defaultAvatarDataUrl(name);
+            } catch (err) {
+                // localStorage unavailable (private mode, quota, corrupt entry, etc.)
+                // — leave __navAvatarDataUrl unset; nav keeps the default SVG
+                // icon already present in the markup. Never throw here: this
+                // script runs before <body>, an uncaught error would block render.
+                console.error("Nav avatar anti-flash: failed to resolve avatar", err);
+            }
+        })();
+    </script>
+
     <!-- Fonts: Inter (Latin) + Tajawal (Arabic) — optimized loading -->
     <link
         href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap"
@@ -78,6 +137,9 @@
     <link rel="stylesheet" href="src/components/notifications.css">
 
     <script type="module" src="src/shared/theme-controller.js"></script>
+    <link rel="modulepreload" href="src/components/side-menu.js">
+    <link rel="modulepreload" href="src/scripts/avatarPicker.js">
+    <link rel="modulepreload" href="src/shared/avatarEngine.js">
 </head>
 
 <body>
@@ -338,7 +400,43 @@
             </span>
             <span class="bottom-nav-label">المزيد</span>
         </button>
-    </nav>    <!-- End of Bottom Navigation Bar -->
+    </nav>    
+    <!-- End of Bottom Navigation Bar -->
+
+    <!-- CRITICAL: Paints the nav avatar synchronously, right where the nav
+         markup ends, so it happens before the rest of the page below it is
+         parsed/painted. Uses window.__navAvatarDataUrl set in <head>.
+         Assigns `src` directly (no async decode-probe) so there is zero
+         delay before the first frame — an Image().onload probe would only
+         fire after this same event loop turn anyway, defeating the point.
+         If a data URL somehow fails to decode, the browser's own broken-
+         image behavior is a rare edge case (avatarEngine.js only ever
+         writes canvas-encoded JPEGs or well-formed generated SVGs), and
+         syncNavAvatars() from avatarEngine.js still runs shortly after via
+         side-menu.js and re-validates with its own decode-probe, correcting
+         course if needed. If window.__navAvatarDataUrl is unset (localStorage
+         failure), the default SVG icons already in the markup stay visible. -->
+    <script>
+        (function () {
+            var dataUrl = window.__navAvatarDataUrl;
+            if (!dataUrl) return;
+
+            var targets = [
+                { imgId: "navSidebarAvatar", iconClass: "menu-item-default-icon" },
+                { imgId: "navBottomAvatar", iconClass: "bottom-nav-default-icon" },
+            ];
+
+            targets.forEach(function (t) {
+                var img = document.getElementById(t.imgId);
+                if (!img) return;
+                var icon = img.parentElement ? img.parentElement.querySelector("." + t.iconClass) : null;
+
+                img.src = dataUrl;
+                img.style.display = "";
+                if (icon) icon.style.display = "none";
+            });
+        })();
+    </script>
 
     <div class="container">
         <div class="header">
@@ -584,16 +682,19 @@
             <div class="avatar-picker-section">
                 <span class="avatar-picker-section-label">أو</span>
                 <div class="avatar-picker-actions">
-                    <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <path d="M17 8l-5-5-5 5" />
-                            <path d="M12 3v12" />
-                        </svg>
-                        رفع صورة من جهازك
-                    </button>
+                    <div class="avatar-dropzone" id="avatarDropzone">
+                        <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <path d="M17 8l-5-5-5 5" />
+                                <path d="M12 3v12" />
+                            </svg>
+                            رفع صورة من جهازك
+                        </button>
+                        <span class="avatar-dropzone-hint">أو اسحب وأفلت الصورة هنا</span>
+                    </div>
                     <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
 
                     <button type="button" class="avatar-action-btn" id="avatarCameraStartBtn">
