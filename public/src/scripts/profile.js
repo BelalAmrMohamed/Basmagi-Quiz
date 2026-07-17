@@ -38,7 +38,7 @@ export function refreshUI() {
   if (nameDisplay) {
     nameDisplay.textContent = currentName;
     // Update page title
-    document.title = `لائحة ${currentName}`;
+    document.title = currentName;
   }
 
   // Update header greeting with the user's name, falling back to the
