@@ -384,26 +384,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   syncNavAvatars();
 
   window.addEventListener("avatarUpdated", () => {
-    renderAvatar(gameEngine.getUserData());
     syncNavAvatars();
   });
 });
-
-function renderAvatar(user) {
-  const img = document.getElementById("avatarImage");
-  if (!img) return;
-
-  const stored = avatarEngine.getAvatar();
-  const name = localStorage.getItem("username") || "مستخدم";
-
-  if (stored) {
-    img.src = stored;
-  } else {
-    const svg = avatarEngine.generateDefaultAvatarSVG(name);
-    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-  }
-  img.alt = `الصورة الشخصية لـ ${name}`;
-}
 
 
 // ============================================================================

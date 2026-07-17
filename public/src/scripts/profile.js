@@ -92,6 +92,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   initAvatarPicker();
   refreshUI();
+
+  window.addEventListener("avatarUpdated", () => {
+    renderAvatar(gameEngine.getUserData());
+  });
 });
 
 function renderAvatar(user) {
