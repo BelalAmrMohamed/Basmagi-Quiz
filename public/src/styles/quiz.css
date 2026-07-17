@@ -128,6 +128,653 @@ body {
   font-size: 1.25rem;
 }
 
+/* ============================================================================
+   QUIZ PAGE — Isolated Side Navigation
+   Self-contained: does not rely on side-menu.css. Desktop: 64px collapsed ↔
+   240px expanded icon-rail (right-anchored, RTL). Mobile (≤768px): bottom
+   sheet with backdrop. Layout/behavior is unchanged from the previous
+   shared-sidebar implementation — only the source of these rules changed.
+   ============================================================================ */
+
+/* ── CSS Variables ────────────────────────────────────────────────────────── */
+:root {
+  --sidebar-collapsed-width: 64px;
+  --sidebar-expanded-width: 240px;
+}
+
+/* ── Body padding shifts with sidebar (RTL: sidebar is on the right) ────── */
+body {
+  padding-right: calc(var(--sidebar-collapsed-width) + 16px);
+  transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-expanded {
+  padding-right: calc(var(--sidebar-expanded-width) + 16px);
+}
+
+/* ── Sidebar Panel ────────────────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  right: 0; /* RTL: anchored to right edge */
+  left: auto;
+  height: 100%;
+  width: var(--sidebar-collapsed-width);
+  background: var(--color-background);
+  border-left: 1px solid var(--color-border);
+  z-index: var(--z-overlay, 500);
+  display: flex;
+  flex-direction: column;
+  transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.expanded {
+  width: var(--sidebar-expanded-width);
+}
+
+/* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-background-secondary, #f5f5f5);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  position: absolute;
+  top: 22px;
+  left: -14px;
+  right: auto;
+  z-index: 10;
+  color: var(--color-text);
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.12));
+}
+
+.sidebar-toggle:hover {
+  background: var(--color-primary-light, #e8f0fe);
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+.sidebar-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Collapsed → points LEFT (‹) meaning "expand"
+   Expanded  → rotate 180° → points RIGHT (›) meaning "collapse" */
+.toggle-chevron {
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.expanded .toggle-chevron {
+  transform: rotate(180deg);
+}
+
+[data-theme="light"] .hamburger-icon {
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark-slate"] .hamburger-icon,
+[data-theme="dark"] .hamburger-icon {
+  color: var(--color-text-primary);
+}
+
+.hamburger-icon .bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 0.25s ease,
+    opacity 0.2s ease;
+}
+
+/* ── Backdrop (mobile overlay) ───────────────────────────────────────────── */
+.side-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+  z-index: calc(var(--z-overlay, 500) - 1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.side-menu-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Nav Scroll Container ────────────────────────────────────────────────── */
+.sidebar nav {
+  flex: 1;
+  /*
+   * overflow-x: clip (not hidden) so children's transforms (e.g.
+   * theme-selector-btn:hover translateY(-2px)) aren't clipped by a BFC.
+   */
+  overflow-y: auto;
+  overflow-x: clip;
+  padding: 8px 8px 24px; /* .sidebar-logo is in-flow above nav, so no extra top clearance needed */
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+  /* RTL scrollbar fix: keeps the scrollbar on the right edge, closer to the
+     sidebar's inner border, while .menu-item children set direction: rtl. */
+  direction: ltr;
+}
+
+.sidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar nav::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+/* ── Sidebar Logo ─────────────────────────────────────────────────────────── */
+.sidebar.expanded nav {
+  padding-top: 15px;
+}
+
+.sidebar:not(.expanded) .sidebar-logo {
+  display: none;
+}
+
+.sidebar.expanded .sidebar-logo {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  margin-bottom: 0px;
+}
+
+.sidebar-logo {
+  pointer-events: none;
+}
+
+/* ── Menu Items ──────────────────────────────────────────────────────────── */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  text-decoration: none;
+  border-radius: 10px;
+  margin-bottom: 2px;
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: right;
+  direction: rtl;
+  white-space: nowrap;
+  position: relative;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.menu-item svg {
+  flex-shrink: 0;
+  min-width: 22px;
+}
+
+/* Collapsed: center icons perfectly. gap must be 0 — the .menu-label still
+   exists in the DOM with max-width: 0, but the flex gap would still push
+   the icon off-center otherwise. */
+.sidebar:not(.expanded) .menu-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+/* Labels: hidden when collapsed */
+.menu-label {
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition:
+    opacity 0s,
+    max-width 0s;
+  pointer-events: none;
+  flex: 1;
+}
+
+.sidebar.expanded .menu-label {
+  opacity: 1;
+  max-width: 180px;
+  pointer-events: auto;
+  transition:
+    opacity 120ms ease 80ms,
+    max-width 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+.menu-item:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.menu-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+.menu-item.active {
+  background: var(--color-primary-light, #e8f0fe);
+  color: var(--color-primary);
+}
+
+[data-theme="dark-slate"] .menu-item.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+}
+
+[data-theme="dark"] .menu-item.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+/* ── Tooltips (collapsed state, desktop only) ────────────────────────────── */
+/* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon */
+.sidebar:not(.expanded) [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: calc(100% + 10px);
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-surface, #fff);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: var(--shadow-md);
+  transition: opacity 0.15s ease 0.35s;
+  z-index: 1000;
+  direction: rtl;
+}
+
+.sidebar:not(.expanded) [data-tooltip]:hover::after {
+  opacity: 1;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+.menu-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin-block: 8px;
+  margin-inline: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Section header labels: must NOT stretch (flex:1 is for menu-items only) */
+.theme-section-header .menu-label,
+.animation-section-header .menu-label {
+  flex: none;
+}
+
+/* ── Theme Controls Section ──────────────────────────────────────────────── */
+.theme-controls-section {
+  margin-top: 4px;
+}
+
+.sidebar:not(.expanded) .theme-controls-section {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.sidebar:not(.expanded) .animation-section-header {
+  margin-block: 0;
+}
+
+.theme-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-tertiary, #888);
+  white-space: nowrap;
+  position: relative;
+}
+
+.sidebar:not(.expanded) .theme-section-header {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+/* ── Items visible only when expanded ────────────────────────────────────── */
+.sidebar:not(.expanded) .animation-toggle-container,
+.sidebar:not(.expanded) .animation-section-header,
+.sidebar:not(.expanded) .animation-toggle-label,
+.sidebar:not(.expanded) .theme-section-header,
+.sidebar:not(.expanded) .theme-selector-grid,
+.sidebar:not(.expanded) .menu-divider.sidebar-expanded-only,
+.sidebar:not(.expanded) .toggle-switch {
+  display: none;
+}
+
+.sidebar-expanded-only {
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+  pointer-events: none;
+  margin: 0;
+  transition:
+    opacity 0s,
+    max-height 0s;
+}
+
+.sidebar.expanded .sidebar-expanded-only {
+  opacity: 1;
+  max-height: 600px;
+  overflow: visible; /* allow theme-selector-btn translateY(-2px) not to clip */
+  pointer-events: auto;
+  transition:
+    opacity 150ms ease 100ms,
+    max-height 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+/* ── Theme Selector Grid ─────────────────────────────────────────────────── */
+.theme-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-block: 4px 6px;
+  margin-inline: 4px;
+  padding-top: 4px;
+  overflow: visible;
+}
+
+.theme-selector-btn {
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 4px;
+  cursor: pointer;
+  background: none;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+[data-theme="dark-slate"] .theme-selector-btn,
+[data-theme="dark"] .theme-selector-btn {
+  color: #ffffff;
+}
+
+.theme-selector-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-selector-btn[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  border-width: 2.5px;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.theme-btn-icon {
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+}
+
+.theme-selector-btn[aria-pressed="true"] .theme-btn-icon {
+  transform: scale(1.12);
+}
+
+.theme-btn-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+[data-theme="dark-slate"] .theme-btn-label,
+[data-theme="dark"] .theme-btn-label {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+[data-theme="light"] .theme-selector-btn .theme-btn-label {
+  color: var(--color-text-primary) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark-slate"] .theme-selector-btn .theme-btn-label,
+[data-theme="dark"] .theme-selector-btn .theme-btn-label {
+  color: var(--color-text-primary) !important;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.theme-selector-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Animation Toggle ────────────────────────────────────────────────────── */
+.animation-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-tertiary, #888);
+  margin-block: 10px 8px;
+  margin-inline: 4px;
+  padding: 0 4px;
+}
+
+.animation-toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  margin-block-end: 8px;
+  margin-inline: 4px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.animation-toggle-container:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--color-primary);
+}
+
+.animation-toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 100px;
+  background: var(--color-border, #ccc);
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch.active {
+  background: var(--color-primary);
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.toggle-input:checked ~ .toggle-switch {
+  background: var(--color-primary, #4f6ef7);
+}
+
+.toggle-input:checked ~ .toggle-switch::after {
+  left: 23px;
+}
+
+.toggle-input:focus-visible ~ .toggle-switch {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ── Responsive: Mobile (≤768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Slide up from BOTTOM — full-width bottom sheet */
+  .sidebar {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: auto;
+    max-height: 85dvh; /* respects mobile browser chrome */
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: 24px 24px 0 0;
+    transform: translateY(100%); /* hidden below the viewport */
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    overflow-y: hidden; /* nav handles scrolling so header can stay sticky */
+    overflow-x: hidden;
+  }
+
+  .sidebar.expanded {
+    transform: translateY(0); /* slide up into view */
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Drag handle pill at the top of the sheet */
+  .sidebar::before {
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    margin: 12px auto 4px;
+    flex-shrink: 0;
+  }
+
+  /* No body padding shift on mobile — sidebar is an overlay */
+  body,
+  body.sidebar-expanded {
+    padding-right: 16px !important;
+  }
+
+  /* Full labels always visible on mobile */
+  .sidebar .menu-item {
+    justify-content: flex-start !important;
+    padding: 11px 14px !important;
+  }
+
+  .sidebar .menu-label {
+    opacity: 1 !important;
+    max-width: 200px !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    transition: none !important;
+  }
+
+  .sidebar-expanded-only {
+    opacity: 1 !important;
+    max-height: 600px !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+    transition: none !important;
+  }
+
+  .theme-section-header,
+  .animation-section-header {
+    justify-content: center !important;
+    padding: 8px 14px !important;
+  }
+
+  .sidebar-toggle {
+    display: none;
+  }
+
+  /* Nav: logo lives above nav in-flow (sticky), so nav itself just scrolls */
+  .sidebar nav {
+    padding-top: 8px;
+    overflow-y: auto;
+    overflow-x: visible;
+  }
+
+  /* Suppress desktop tooltips on mobile */
+  .sidebar:not(.expanded) [data-tooltip]::after {
+    display: none;
+  }
+}
+
+/* ── Reduced Motion ──────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .hamburger-icon .bar,
+  .toggle-switch,
+  .toggle-switch::after,
+  .side-menu-backdrop,
+  .menu-item,
+  .theme-selector-btn,
+  .sidebar-toggle,
+  .toggle-chevron,
+  .menu-label,
+  .sidebar-expanded-only,
+  body {
+    transition: none !important;
+  }
+}
+
 /* ─── 4. Sidebar Menu & Navigation ──────────────────────────────────────── */
 .menu-nav-header {
   font-size: 0.875rem;
@@ -2209,8 +2856,9 @@ body.is-resizing-media .media-container.resizable-media {
 /* ─── 17. Quiz Page — Mobile Hamburger & Sidebar Overrides ─────────────────
    Scoped strictly to phone viewports so desktop layout is never touched.
    We do NOT modify side-menu.css or side-menu.js.
+   (Core sidebar/nav rules now live in the isolated section near the top of
+   this file — see "QUIZ PAGE — Isolated Side Navigation".)
    ─────────────────────────────────────────────────────────────────────────── */
-
 
 @media (max-width: 768px) {
   .sidebar-logo.sidebar-expanded-only {

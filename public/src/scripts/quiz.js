@@ -1396,10 +1396,6 @@ async function init() {
     };
 
     window.shareQuestion = async () => {
-      // close menu first
-      const closeBtn = document.getElementById("closeMenuBtn");
-      if (closeBtn) closeBtn.click();
-
       const questionCard =
         quizStyle === "vertical"
           ? document.getElementById(`q-${currentIdx}`)
@@ -2839,7 +2835,8 @@ init();
 
 
 // ============================================================================
-// side-menu — Persistent collapsible icon-rail sidebar
+// Quiz page — Persistent collapsible icon-rail sidebar navigation
+// Self-contained: isolated from the shared side-menu.js implementation.
 // Desktop: 64px collapsed ↔ 240px expanded, state in localStorage
 // Mobile (≤768px): bottom sheet with backdrop
 // ============================================================================
@@ -2848,7 +2845,6 @@ init();
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.getElementById("sideMenuBackdrop");
   const hamburgerBtn = document.getElementById("menuBtn"); // mobile-only
-  const closeBtn = document.getElementById("closeMenuBtn"); // mobile-only
   const toggleBtn = document.getElementById("sidebarToggle"); // desktop-only
   const animationToggle = document.getElementById("animationToggle");
 
@@ -2955,12 +2951,6 @@ init();
     });
   }
 
-  // ── Mobile Close Button ─────────────────────────────────────────────────────
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", closeMobileSidebar);
-  }
-
   // ── Backdrop Click ──────────────────────────────────────────────────────────
 
   if (backdrop) {
@@ -3025,22 +3015,13 @@ init();
       const action = btn.dataset.action;
       const fn = window[action];
       if (typeof fn === "function") {
-        // For PWA install, we trigger it immediately to preserve user gesture
         fn();
       }
-      // Close sidebar on mobile, unless it's the install app button (the browser prompt will cover it)
-      if (isMobile() && action !== "installApp") {
+      if (isMobile()) {
         closeMobileSidebar();
       }
     });
   });
-
-  // ── Action buttons (data-action) ────────────────────────────────────────────
-  const nameDisplay = document.getElementById("userNameDisplay");
-  if (nameDisplay) {
-    const currentName = localStorage.getItem("username") || "مستخدم";
-    nameDisplay.textContent = currentName;
-  }
 
   // ── Theme buttons ───────────────────────────────────────────────────────────
 
@@ -3063,35 +3044,6 @@ init();
       if (typeof themeManager !== "undefined" && themeManager.applyAnimations) {
         themeManager.applyAnimations(animationToggle.checked);
       }
-    });
-  }
-
-  // ── Contact Developer button ────────────────────────────────────────────────
-
-  const contactDevBtn = document.getElementById("contactDevBtn");
-  if (contactDevBtn) {
-    contactDevBtn.addEventListener("click", () => {
-      if (isMobile()) closeMobileSidebar();
-      else {
-        // The side bar is expanded
-        const sideBarIsNotExpanded = !sidebar.classList.contains("expanded");
-
-        if (!sideBarIsNotExpanded) {
-          applyDesktopState(sideBarIsNotExpanded);
-          try {
-            localStorage.setItem(STORAGE_KEY, String(sideBarIsNotExpanded));
-          } catch (_) {}
-        }
-      }
-
-      setTimeout(
-        () => {
-          if (typeof window.openContactOverlay === "function") {
-            window.openContactOverlay();
-          }
-        },
-        isMobile() ? 150 : 0,
-      );
     });
   }
 
