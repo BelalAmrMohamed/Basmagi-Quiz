@@ -155,7 +155,7 @@
     <!-- Backdrop (mobile overlay) -->
     <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
 
-    <!-- Side-menu (using side-menu.js and side-menu.css) -->
+    <!-- Side-menu -->
     <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true"
         tabindex="-1">
 
@@ -399,7 +399,6 @@
     </dialog>
 
     <script type="module" src="src/scripts/quiz.js"></script>
-    <script type="module" src="src/components/side-menu.js"></script>
     <script type="module">
         import { getShortcutModalHTML } from './src/scripts/keyboard-nav.js';
         document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
