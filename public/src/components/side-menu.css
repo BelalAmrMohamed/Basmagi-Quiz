@@ -92,75 +92,13 @@ body.sidebar-expanded {
    Hidden entirely on desktop; desktop sidebar is untouched.
    ============================================================================ */
 .bottom-nav {
-  display: none; /* shown only inside the mobile media query below */
-}
-
-/* ── Mobile Hamburger (hidden on desktop) ────────────────────────────────── */
-.hamburger {
   display: none;
-  position: fixed;
-  top: 14px;
-  right: 14px;
-  z-index: calc(var(--z-overlay, 500) + 2);
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--color-border);
-  background: var(--color-background, #fff);
-  color: var(--color-text-primary, #111);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.hamburger:hover {
-  transform: scale(1.07);
-  box-shadow: var(--shadow-lg);
-}
-
-.hamburger:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-.hamburger-icon .bar {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 0.25s ease,
-    opacity 0.2s ease;
-}
-
-[data-theme="light"] .hamburger-icon {
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark-slate"] .hamburger-icon,
-[data-theme="dark"] .hamburger-icon {
-  color: var(--color-text-primary);
 }
 
 [data-theme="dark-slate"] #breadcrumb,
 [data-theme="dark"] #breadcrumb {
   background: var(--color-surface);
   border-color: var(--color-border);
-}
-
-.hamburger[aria-expanded="true"] .bar-top {
-  transform: translateY(6px) rotate(45deg);
-}
-
-.hamburger[aria-expanded="true"] .bar-mid {
-  opacity: 0;
-  transform: scaleX(0);
-}
-
-.hamburger[aria-expanded="true"] .bar-bottom {
-  transform: translateY(-6px) rotate(-45deg);
 }
 
 /* Solution for showing the side bar at the right, and the rest normally rtl */
@@ -730,12 +668,6 @@ body.sidebar-expanded {
 
 /* ── Responsive: Mobile (≤768px) ─────────────────────────────────────────── */
 @media (max-width: 768px) {
-  /* Old hamburger trigger is fully retired on mobile — replaced by the
-     bottom nav bar's "المزيد" (More) button, which opens the same sheet. */
-  .hamburger {
-    display: none !important;
-  }
-
   .bottom-nav {
     display: flex;
   }
@@ -743,12 +675,11 @@ body.sidebar-expanded {
   /* Slide up from BOTTOM — full-width bottom sheet */
   .sidebar {
     top: auto;
-    bottom: 0;
+    bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     width: 100% !important;
     height: auto;
-    max-height: 85dvh; /* use dvh so it respects mobile browser chrome */
     border-left: none;
     border-top: 1px solid var(--color-border);
     border-radius: 24px 24px 0 0;
@@ -757,11 +688,13 @@ body.sidebar-expanded {
     box-shadow: none;
     overflow-y: hidden; /* nav handles scrolling so header can stay sticky */
     overflow-x: hidden;
+    max-height: calc(85dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.expanded {
     transform: translateY(0); /* slide up into view */
     box-shadow: var(--shadow-xl);
+    bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
   }
 
   /* Drag handle pill at the top of the sheet */
@@ -1059,7 +992,6 @@ body.sidebar-expanded {
 /* ── Reduced Motion ──────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .sidebar,
-  .hamburger-icon .bar,
   .toggle-switch,
   .toggle-switch::after,
   .side-menu-backdrop,

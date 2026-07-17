@@ -78,7 +78,6 @@
 (function () {
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.getElementById("sideMenuBackdrop");
-  const hamburgerBtn = document.getElementById("menuBtn"); // mobile-only (legacy, hidden but kept for compatibility)
   const closeBtn = document.getElementById("closeMenuBtn"); // mobile-only
   const toggleBtn = document.getElementById("sidebarToggle"); // desktop-only
   const animationToggle = document.getElementById("animationToggle");
@@ -111,7 +110,6 @@
   function openMobileSidebar() {
     sidebar.classList.add("expanded");
     backdrop.classList.add("visible");
-    if (hamburgerBtn) hamburgerBtn.setAttribute("aria-expanded", "true");
     if (moreBtn) {
       moreBtn.setAttribute("aria-expanded", "true");
       moreBtn.classList.add("active");
@@ -127,7 +125,6 @@
   function closeMobileSidebar() {
     sidebar.classList.remove("expanded");
     backdrop.classList.remove("visible");
-    if (hamburgerBtn) hamburgerBtn.setAttribute("aria-expanded", "false");
     if (moreBtn) {
       moreBtn.setAttribute("aria-expanded", "false");
       moreBtn.classList.remove("active");
@@ -135,7 +132,6 @@
     sidebar.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     if (moreBtn) moreBtn.focus();
-    else if (hamburgerBtn) hamburgerBtn.focus();
   }
 
   /**
@@ -207,18 +203,6 @@
       try {
         localStorage.setItem(STORAGE_KEY, String(willExpand));
       } catch (_) {}
-    });
-  }
-
-  // ── Mobile Hamburger ────────────────────────────────────────────────────────
-
-  if (hamburgerBtn) {
-    hamburgerBtn.addEventListener("click", () => {
-      if (sidebar.classList.contains("expanded")) {
-        closeMobileSidebar();
-      } else {
-        openMobileSidebar();
-      }
     });
   }
 
