@@ -204,7 +204,7 @@ function injectStyles() {
       background:var(--color-background-secondary); transition:background .3s, border-color .3s;
     }
     .adm-progress-item.uploading { border-color:var(--color-primary); background:var(--color-primary-light); }
-    .adm-progress-item.done      { border-color:#22c55e; background:#f0fdf4; }
+    .adm-progress-item.done      { border-color:#22c55e; background:#f0fdf4; color: var(--color-text-primary); }
     .adm-progress-item.error     { border-color:var(--color-error); background:var(--color-error-light); }
     .adm-progress-icon { font-size:1rem; flex-shrink:0; min-width:20px; text-align:center; }
     .adm-progress-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
