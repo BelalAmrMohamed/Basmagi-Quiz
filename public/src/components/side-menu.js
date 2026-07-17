@@ -378,10 +378,10 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 import { prompt_user, showNotification } from "./notifications.js";
 import { validateUsername } from "../shared/user-name-validation.js";
 
-window.changeUsername = async function () {
+window.changeUsername = async function (message = "أدخل الإسم الجديد") {
   try {
     const currentName = getFromStorage("username", "User");
-    const newName = await prompt_user("أدخل الإسم الجديد", currentName);
+    const newName = await prompt_user(message, currentName);
 
     if (newName === null) return;
 

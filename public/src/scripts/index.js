@@ -265,16 +265,18 @@ async function syncAdminSessionWithSupabase() {
         // to make every view reflect the corrected auth state.
         window.location.reload();
       } else {
-        // ── Phase 4 fix: non-admin rejection ─────────────────────────────────
+        // ── Non-admin rejection ───────────────────────────────────────────────
         // /api/auth returned 403 — this user is authenticated with Supabase
         // but is NOT an admin. Without explicitly destroying the Supabase
         // session here, this function would be called again on the next
         // interaction, get 403 again, call fullSignOut(), reload, and loop
         // forever.
         //
-        // Fix: destroy the Supabase session immediately so this branch
-        // never triggers again for this non-admin account. Do NOT reload —
-        // the page renders fine without admin features.
+        // Fix: show the user a clear rejection message FIRST, then destroy
+        // the Supabase session so this branch never triggers again for this
+        // non-admin account. Do NOT reload — the page renders fine without
+        // admin features and the sign-in dialog will show the error.
+        alert("أنت لست من مشرفين المنصة. تم رفض الوصول.");
         await fullSignOut(_indexSupabaseClient);
         // Also clear any Supabase localStorage keys for belt-and-suspenders
         try {
@@ -1803,11 +1805,6 @@ async function renderRootCategories() {
     selectedUserQuizzes.clear();
     updateBulkActionBar(false);
 
-    // ── Bug 1 Fix: update history entry ──────────────────────────────────────
-    // • During popstate restoration (_isRestoringState = true): the URL is
-    //   already correct — just stamp the state object via replaceState.
-    // • During forward navigation (breadcrumb click, search reset, etc.):
-    //   push a new root entry so the back button can return here.
     if (_isRestoringState) {
       history.replaceState({ view: "root" }, "", window.location.pathname);
     } else {
@@ -2079,10 +2076,6 @@ function renderUserQuizzesView() {
     }
     updateBreadcrumb();
 
-    // ── Bug 1 Fix: record this navigation in the browser history ─────────────
-    // pushState so the back button can return to root after entering this view.
-    // During popstate restoration only stamp the state — do not create a new
-    // forward entry, which would confuse the back/forward stack.
     if (!_isRestoringState) {
       history.pushState({ view: "my-quizzes" }, "", "#my-quizzes");
     } else {
@@ -2115,10 +2108,6 @@ function renderUserQuizzesView() {
       adminSignOutBtn.className = "btn admin-log-out-btn";
       adminSignOutBtn.setAttribute("aria-label", "تسجيل خروج المشرف");
       adminSignOutBtn.onclick = async () => {
-        // Must clear BOTH the local admin JWT and the Supabase session.
-        // Clearing only the local JWT left the Supabase session alive in
-        // localStorage, so sign-in.html would find it moments later and
-        // silently re-authenticate the same account (the "logout loop").
         adminSignOutBtn.disabled = true;
         await fullSignOut(_indexSupabaseClient);
         window.location.reload();

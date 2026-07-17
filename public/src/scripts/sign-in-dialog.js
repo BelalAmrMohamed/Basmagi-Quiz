@@ -12,7 +12,10 @@
 //   • Non-admin rejections (HTTP 403 from /api/auth) explicitly destroy the
 //     Supabase session BEFORE showing the error, preventing the reload loop
 //     where syncAdminSessionWithSupabase() finds the live session and re-tries.
-//   • OAuth popup flow includes zombie-window cleanup (Phase 3 fix).
+//   • OAuth popup flow includes zombie-window cleanup and a hard timeout.
+//   • `prompt: 'select_account'` is passed to OAuth so Google/GitHub always
+//     show the account picker — this prevents a non-admin's live session from
+//     silently re-authenticating on the next sign-in attempt.
 // =============================================================================
 
 import { signInWithSupabase } from "./adminAuth.js";
@@ -27,6 +30,10 @@ let _initialized = false;
 let _ssoPopup = null;
 let _ssoPopupPollInterval = null;
 let _ssoMessageHandler = null;
+let _ssoTimeoutId = null; // Bug 2 fix: hard timeout tracker
+
+// Resend OTP cooldown tracking (Bug 3 fix)
+let _resendOtpTimeoutId = null;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -84,6 +91,7 @@ function _resetDialog() {
   const ssoButtons = _q("sd-ssoButtonsContainer");
   const emailInput = _q("sd-emailInput");
   const otpInput = _q("sd-otpInput");
+  const resendOtpBtn = _q("sd-resendOtpBtn"); // Bug 3 fix
 
   if (emailStep) emailStep.style.display = "";
   if (otpStep) otpStep.style.display = "none";
@@ -91,6 +99,14 @@ function _resetDialog() {
   if (ssoButtons) ssoButtons.style.display = "";
   if (emailInput) emailInput.value = "";
   if (otpInput) otpInput.value = "";
+  if (resendOtpBtn) resendOtpBtn.disabled = false; // Bug 3 fix: reset on reopen
+
+  // Bug 3 fix: clear any pending resend cooldown timer so a stale timer
+  // from a previous dialog session can't interfere with the new one.
+  if (_resendOtpTimeoutId) {
+    clearTimeout(_resendOtpTimeoutId);
+    _resendOtpTimeoutId = null;
+  }
 
   _clearError();
   _clearSuccess();
@@ -156,7 +172,7 @@ function _onSignedIn() {
   window.location.reload();
 }
 
-// ── Non-admin rejection — Phase 4 fix ─────────────────────────────────────────
+// ── Non-admin rejection ───────────────────────────────────────────────────────
 //
 // When /api/auth returns 403 (user authenticated with Supabase but is not an
 // admin), the Supabase session is still alive in localStorage. Without
@@ -186,7 +202,7 @@ async function _handleNonAdminRejection(errorMsg) {
   _showError(errorMsg || "هذا الحساب ليس لديه صلاحيات المشرف.");
 }
 
-// ── Email → OTP flow ──────────────────────────────────────────────────────────
+// ── Email → OTP / Magic Link flow ────────────────────────────────────────────
 
 let _currentEmailForOtp = "";
 
@@ -213,7 +229,9 @@ function _initEmailForm() {
     _clearSuccess();
 
     try {
-      const callbackUrl = window.location.origin + "/oauth-callback.html";
+      // redirectTo points to /#my-quizzes so Magic Link clicks land correctly.
+      // The OTP code flow still works alongside this for users who prefer it.
+      const callbackUrl = window.location.origin + "/#my-quizzes";
       const { error } = await _supabaseClient.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: callbackUrl },
@@ -221,7 +239,7 @@ function _initEmailForm() {
       if (error) throw error;
 
       _currentEmailForOtp = email;
-      _showSuccess("تم إرسال رمز التحقق إلى بريدك الإلكتروني.");
+      _showSuccess("تم إرسال رابط تسجيل الدخول إلى بريدك الإلكتروني. يمكنك أيضاً إدخال رمز التحقق المكون من 6 أرقام.");
 
       // Switch to OTP step
       const emailStep = _q("sd-emailStep");
@@ -295,14 +313,20 @@ function _initResendOtp() {
     _clearSuccess();
     try {
       resendOtpBtn.disabled = true;
-      const callbackUrl = window.location.origin + "/oauth-callback.html";
+      // redirectTo points to /#my-quizzes to support both OTP and Magic Link.
+      const callbackUrl = window.location.origin + "/#my-quizzes";
       const { error } = await _supabaseClient.auth.signInWithOtp({
         email: _currentEmailForOtp,
         options: { emailRedirectTo: callbackUrl },
       });
       if (error) throw error;
       _showSuccess("تمت إعادة إرسال رمز التحقق.");
-      setTimeout(() => { resendOtpBtn.disabled = false; }, 30000);
+
+      // Bug 3 fix: track the timer ID so _resetDialog() can cancel it
+      _resendOtpTimeoutId = setTimeout(() => {
+        resendOtpBtn.disabled = false;
+        _resendOtpTimeoutId = null;
+      }, 30000);
     } catch (err) {
       _showError("حدث خطأ أثناء إعادة إرسال الرمز.");
       resendOtpBtn.disabled = false;
@@ -334,19 +358,21 @@ function _initChangeEmail() {
   });
 }
 
-// ── SSO (Popup + Fallback) — Phase 3 fixes ───────────────────────────────────
+// ── SSO (Popup + Fallback) ────────────────────────────────────────────────────
 //
 // WHY POPUP:
 //   skipBrowserRedirect:true gets the OAuth URL without navigating the tab.
 //   We open a blank popup SYNCHRONOUSLY (inside the click handler) to avoid
 //   popup blocker, then set its href after the async SDK call.
 //
-// PHASE 3 FIXES:
-//   1. _ssoPopup.location.href assignment is wrapped in try-catch — if
-//      browser shields block the navigation (Brave/Edge), the SecurityError
-//      is caught, the zombie window is closed, and we fall back to
-//      full-page redirect automatically.
-//   2. The full-page redirect URL is now "/#my-quizzes" (not /sign-in.html).
+// FIXES APPLIED:
+//   Bug 1: _setSSOLoading(false) moved to AFTER signInWithSupabase resolves.
+//   Bug 2: 2-minute hard timeout added to handle hung popups.
+//   Bug 4: Removed `noreferrer` from popup features (browser-inconsistent).
+//   Plan:  `prompt: 'select_account'` added to force account picker on each
+//          OAuth attempt — prevents non-admin ghost-session silent re-auth.
+
+const SSO_TIMEOUT_MS = 120_000; // 2 minutes — Bug 2 fix
 
 function _cleanupSSOState() {
   if (_ssoPopupPollInterval) {
@@ -356,6 +382,11 @@ function _cleanupSSOState() {
   if (_ssoMessageHandler) {
     window.removeEventListener("message", _ssoMessageHandler);
     _ssoMessageHandler = null;
+  }
+  // Bug 2 fix: clear hard timeout so it doesn't fire after normal completion
+  if (_ssoTimeoutId) {
+    clearTimeout(_ssoTimeoutId);
+    _ssoTimeoutId = null;
   }
   _ssoPopup = null;
 }
@@ -378,7 +409,10 @@ function _fallbackFullPageRedirect(provider) {
     try {
       const { error } = await _supabaseClient.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: window.location.origin + "/#my-quizzes" },
+        options: {
+          redirectTo: window.location.origin + "/#my-quizzes",
+          queryParams: { prompt: "select_account" },
+        },
       });
       if (error) throw error;
       // signInWithOAuth without skipBrowserRedirect navigates the tab — done.
@@ -392,6 +426,8 @@ function _handleSSO(provider) {
   if (!_supabaseClient) return;
 
   // 1. Open blank popup SYNCHRONOUSLY to beat popup blocker
+  // Bug 4 fix: removed `noreferrer` — it's browser-inconsistent and breaks
+  // the `_ssoPopup` reference that we depend on for .location.href and .closed.
   const popupFeatures = [
     "width=480",
     "height=640",
@@ -399,7 +435,6 @@ function _handleSSO(provider) {
     `top=${Math.round(window.screenY + (window.outerHeight - 640) / 2)}`,
     "scrollbars=yes",
     "resizable=yes",
-    "noreferrer",
   ].join(",");
 
   _ssoPopup = window.open("about:blank", "bq_oauth_popup", popupFeatures);
@@ -423,6 +458,9 @@ function _handleSSO(provider) {
         options: {
           redirectTo: callbackUrl,
           skipBrowserRedirect: true,
+          // Plan fix: force account picker so non-admin ghost sessions can't
+          // silently re-authenticate and trigger the sign-in loop.
+          queryParams: { prompt: "select_account" },
         },
       });
 
@@ -430,7 +468,7 @@ function _handleSSO(provider) {
         throw new Error(error?.message || "فشل الحصول على رابط تسجيل الدخول");
       }
 
-      // 3. Navigate the popup — wrapped in try-catch for Phase 3 fix:
+      // 3. Navigate the popup — wrapped in try-catch:
       //    Brave/Edge with shields can block the navigation and throw a
       //    SecurityError even though _ssoPopup is non-null.
       try {
@@ -447,25 +485,34 @@ function _handleSSO(provider) {
       }
 
       // 4. Listen for postMessage from oauth-callback.html
+      // Bug 1 fix: _setSSOLoading(false) is moved to AFTER signInWithSupabase
+      // resolves so the SSO buttons stay disabled during the async admin check,
+      // preventing a second click from starting a concurrent sign-in attempt.
       _ssoMessageHandler = async (event) => {
         // Only trust messages from our own origin
         if (event.origin !== window.location.origin) return;
 
         if (event.data?.type === "BQ_OAUTH_SUCCESS") {
           _cleanupSSOState();
-          _setSSOLoading(false, provider);
+          // Bug 1 fix: do NOT call _setSSOLoading(false) here — wait for the
+          // async signInWithSupabase call to finish first (see below).
 
           const session = event.data.session;
           if (session?.access_token) {
             const ok = await signInWithSupabase(session.access_token);
+            // Bug 1 fix: buttons re-enabled only NOW, after the check resolves
+            _setSSOLoading(false, provider);
             if (!ok) {
-              // Non-admin: destroy Supabase session before showing error (Phase 4)
               await _handleNonAdminRejection(
                 "هذا الحساب ليس لديه صلاحيات المشرف."
               );
               return;
             }
             _onSignedIn();
+          } else {
+            // No access_token in the message — re-enable buttons defensively
+            _setSSOLoading(false, provider);
+            _showError("لم يتم استلام بيانات الجلسة. حاول مرة أخرى.");
           }
         } else if (event.data?.type === "BQ_OAUTH_ERROR") {
           _cleanupSSOState();
@@ -483,6 +530,17 @@ function _handleSSO(provider) {
           _setSSOLoading(false, provider);
         }
       }, 500);
+
+      // 6. Bug 2 fix: hard timeout — if no message arrives and the popup isn't
+      //    closed manually within 2 minutes, give up and show an error.
+      _ssoTimeoutId = setTimeout(() => {
+        if (_ssoPopup) {
+          try { _ssoPopup.close(); } catch (_) {}
+        }
+        _cleanupSSOState();
+        _setSSOLoading(false, provider);
+        _showError("انتهت مهلة تسجيل الدخول. حاول مرة أخرى.");
+      }, SSO_TIMEOUT_MS);
 
     } catch (err) {
       // Close any open popup and clean up
