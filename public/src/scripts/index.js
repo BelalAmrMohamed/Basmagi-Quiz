@@ -231,7 +231,7 @@ let searchManager = null;
 // WHY THIS EXISTS:
 //   index.html previously only ever checked isAdminAuthenticated(), which
 //   reads a sessionStorage-scoped JWT. Supabase itself keeps a SEPARATE,
-//   longer-lived session in localStorage. sign-in.html already checked that
+//   longer-lived session in localStorage. sign-in already checked that
 //   never did — so the two pages could disagree about whether the user was
 //   logged in ("ghost session" bug). This mirrors that same check here so
 //   both pages agree on the same source of truth.
@@ -256,7 +256,7 @@ async function syncAdminSessionWithSupabase() {
       // Supabase still has a live session but our local admin JWT is gone
       // (e.g. new tab / browser restart wiped sessionStorage) — re-derive
       // the admin JWT from the existing Supabase session instead of
-      // silently showing "logged out" while sign-in.html would show
+      // silently showing "logged out" while sign-in would show
       // "logged in".
       const ok = await signInWithSupabase(session.access_token);
       if (ok) {
@@ -4830,7 +4830,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Sync local admin session state with Supabase before anything renders
   // admin-dependent UI (log-in/log-out button, admin upload buttons, etc.)
-  // so index.html and sign-in.html can never disagree about auth state.
+  // so index.html and sign-in can never disagree about auth state.
   syncAdminSessionWithSupabase();
 
   // Initial load

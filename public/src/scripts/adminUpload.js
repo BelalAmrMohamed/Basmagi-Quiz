@@ -777,7 +777,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       errorCount++;
       if (err.message?.includes("جلسة") || err.message?.includes("مصرح")) {
         showNotification(err.message, "error");
-        setTimeout(() => { signOut(); window.location.href = "sign-in.html"; }, 2000);
+        setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2000);
         return;
       }
     }
@@ -842,7 +842,7 @@ function normalizeQuizSchema(quiz) {
 async function _openWizard(quizzes) {
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
-    setTimeout(() => { window.location.href = "sign-in.html"; }, 1500);
+    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
     return;
   }
   injectStyles();

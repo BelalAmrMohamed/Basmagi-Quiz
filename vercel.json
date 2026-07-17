@@ -13,9 +13,6 @@
       "has": [{ "type": "header", "key": "host", "value": "localhost(.*)" }],
       "destination": "/api/local-asset?file=data/quizzes/:file*"
     },
-    { "source": "/q/:id", "destination": "/api/render-quiz?id=:id" },
-    { "source": "/sign-in.html/:tab", "destination": "/sign-in.html" },
-    { "source": "/sign-in/:tab", "destination": "/sign-in.html" },
-    { "source": "/sign-in", "destination": "/sign-in.html" }
+    { "source": "/q/:id", "destination": "/api/render-quiz?id=:id" }
   ]
 }

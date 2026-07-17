@@ -3,8 +3,6 @@
 //
 // WHY sessionStorage (not pure memory):
 //   The original design stored the JWT only in a JS module variable.
-//   That works within a single page but is wiped the moment the browser
-//   navigates to a new URL (sign-in.html → index.html is a full reload).
 //   sessionStorage survives same-tab navigation, is automatically cleared
 //   when the tab closes, and cannot be read from other tabs or origins.
 //   Real security still lives on the server — every request is re-validated
@@ -36,8 +34,6 @@ let _token = null;
 
 /**
  * Authenticates with the server using the given Admin ID.
- * On success the JWT is stored in sessionStorage so it survives
- * navigation from sign-in.html → index.html.
  *
  * @param {string} adminId
  * @throws {Error} with Arabic message on failure
@@ -159,7 +155,7 @@ export function signOut() {
  *   signIn() via email/OTP or SSO creates a Supabase session that Supabase
  *   itself persists in localStorage (survives tab close + browser restart).
  *   Plain signOut() only ever cleared OUR sessionStorage-based JWT, so the
- *   Supabase session kept living underneath — sign-in.html would find it
+ *   Supabase session kept living underneath — sign-in would find it
  *   on next load and silently re-authenticate ("logout loop" / "ghost
  *   session" bugs). Always prefer this over calling signOut() directly on
  *   any page that has access to a Supabase client instance.
