@@ -346,7 +346,7 @@ function _initChangeEmail() {
 //      browser shields block the navigation (Brave/Edge), the SecurityError
 //      is caught, the zombie window is closed, and we fall back to
 //      full-page redirect automatically.
-//   2. The full-page redirect URL is now "/" (not /sign-in.html).
+//   2. The full-page redirect URL is now "/#my-quizzes" (not /sign-in.html).
 
 function _cleanupSSOState() {
   if (_ssoPopupPollInterval) {
@@ -378,7 +378,7 @@ function _fallbackFullPageRedirect(provider) {
     try {
       const { error } = await _supabaseClient.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: window.location.origin + "/" },
+        options: { redirectTo: window.location.origin + "/#my-quizzes" },
       });
       if (error) throw error;
       // signInWithOAuth without skipBrowserRedirect navigates the tab — done.
