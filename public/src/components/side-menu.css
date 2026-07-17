@@ -913,12 +913,9 @@ body.sidebar-expanded {
     transform: translateY(-1px);
   }
 
-  [data-theme="dark-slate"] .bottom-nav-item.active {
-    color: #818cf8;
-  }
-
+  [data-theme="dark-slate"] .bottom-nav-item.active,
   [data-theme="dark"] .bottom-nav-item.active {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 
   .bottom-nav-item:not(.active):hover {
@@ -938,15 +935,12 @@ body.sidebar-expanded {
     background: var(--color-primary);
   }
 
+  [data-theme="dark"] .bottom-nav-item.active::before,
   [data-theme="dark-slate"] .bottom-nav-item.active::before {
-    background: #818cf8;
+    background: var(--color-accent);
   }
-
-  [data-theme="dark"] .bottom-nav-item.active::before {
-    background: #60a5fa;
-  }
-
-  /* "إنشاء" (Create) — emphasized as the primary action, Play-Store-esque */
+  
+  /* "الحساب" (Profile) — emphasized as the primary action, Play-Store-esque */
   .bottom-nav-icon-profile {
     width: 34px;
     height: 34px;
@@ -980,12 +974,9 @@ body.sidebar-expanded {
     color: var(--color-primary);
   }
 
+  [data-theme="dark"] .bottom-nav-item[aria-expanded="true"],
   [data-theme="dark-slate"] .bottom-nav-item[aria-expanded="true"] {
-    color: #818cf8;
-  }
-
-  [data-theme="dark"] .bottom-nav-item[aria-expanded="true"] {
-    color: #60a5fa;
+    color: var(--color-accent);
   }
 }
 
