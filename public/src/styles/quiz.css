@@ -258,7 +258,7 @@ body.sidebar-expanded {
    */
   overflow-y: auto;
   overflow-x: clip;
-  padding: 8px 8px 24px; /* .sidebar-logo is in-flow above nav, so no extra top clearance needed */
+  padding: 64px 8px 24px; /* .sidebar-logo is in-flow above nav, so no extra top clearance needed */
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
