@@ -199,27 +199,47 @@ body {
   border-radius: 12px;
   margin-bottom: 16px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
+  gap: 12px 16px;
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-light);
 }
 
+/*
+ * translateX direction is logical-flow aware: in RTL (the platform default)
+ * "forward" is toward the left edge, so this reads as a natural hover-lift
+ * in both ltr and rtl documents without needing a separate rule per direction.
+ */
 .history-item:hover {
-  transform: translateX(5px);
+  transform: translateX(-5px);
   box-shadow: var(--shadow-md);
 }
 
+html[dir="ltr"] .history-item:hover {
+  transform: translateX(5px);
+}
+
 .history-info {
-  flex: 1;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.history-info h4 {
+  overflow-wrap: break-word;
 }
 
 .history-actions {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .delete-btn,
@@ -230,22 +250,52 @@ body {
   border-radius: 8px;
   cursor: pointer;
   font-size: 1.2rem;
-  transition: all 0.2s ease;
+  line-height: 1;
+  transition:
+    transform 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .delete-btn {
   background: var(--color-error-light);
   color: var(--color-error);
+  border-color: transparent;
 }
 
 .delete-btn:hover {
-  transform: scale(1.1);
+  background: var(--color-error);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.delete-btn:active {
+  transform: scale(0.96);
+}
+
+.unstar-btn {
+  color: var(--color-text-secondary);
 }
 
 .unstar-btn:hover {
-  transform: scale(1.1);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: scale(1.06);
+}
+
+.unstar-btn:active {
+  transform: scale(0.96);
+}
+
+.delete-btn:focus-visible,
+.unstar-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
 }
 
 .history-score {
@@ -253,6 +303,7 @@ body {
   font-size: 1.25rem;
   padding: 8px 16px;
   border-radius: 8px;
+  white-space: nowrap;
 }
 
 .history-score.pass {
@@ -263,6 +314,25 @@ body {
 .history-score.fail {
   background: var(--color-error-light);
   color: var(--color-error);
+}
+
+.history-actions .nav-btn.primary {
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.history-actions .nav-btn.primary:hover {
+  transform: scale(1.04);
+}
+
+.history-actions .nav-btn.primary:active {
+  transform: scale(0.97);
+}
+
+.history-actions .nav-btn.primary:focus-visible {
+  outline: 3px solid var(--color-focus-ring, var(--color-primary));
+  outline-offset: 2px;
 }
 
 /* Sidebar Cards */
@@ -451,9 +521,35 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .history-actions {
+  .history-item {
     flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .history-info {
+    flex-basis: auto;
+  }
+
+  .history-actions {
+    width: 100%;
+    flex-wrap: nowrap;
+    justify-content: space-between;
     gap: 8px;
+  }
+
+  .history-actions .nav-btn.primary {
+    flex: 1;
+    text-align: center;
+  }
+
+  .history-score {
+    flex-shrink: 0;
+  }
+
+  .delete-btn,
+  .unstar-btn {
+    flex-shrink: 0;
   }
 
   .badge-display-grid {
@@ -484,6 +580,25 @@ body {
 
   .header p {
     font-size: 1rem;
+  }
+
+  .history-actions {
+    flex-wrap: wrap;
+  }
+
+  .history-actions .nav-btn.primary {
+    order: 3;
+    flex: 1 1 100%;
+  }
+
+  .history-score {
+    order: 1;
+  }
+
+  .delete-btn,
+  .unstar-btn {
+    order: 2;
+    margin-inline-start: auto;
   }
 }
 

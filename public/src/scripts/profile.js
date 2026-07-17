@@ -1,8 +1,5 @@
 // src/scripts/profile.js - Enhanced with All Features
 
-// Temporary | For performance debugging
-console.log("profile.js loaded successfully")
-
 import { gameEngine, BADGES } from "../shared/gameEngine.js";
 import { avatarEngine } from "../shared/avatarEngine.js";
 import { getManifest } from "./quizManifest.js";
@@ -36,11 +33,21 @@ export function refreshUI() {
 
   // Update username display
   const nameDisplay = document.getElementById("userNameDisplay");
+  const hasCustomName = !!localStorage.getItem("username");
+  const currentName = localStorage.getItem("username") || "مستخدم";
   if (nameDisplay) {
-    const currentName = localStorage.getItem("username") || "مستخدم";
     nameDisplay.textContent = currentName;
     // Update page title
     document.title = `لائحة ${currentName}`;
+  }
+
+  // Update header greeting with the user's name, falling back to the
+  // generic title when no username has been set yet
+  const headerTitle = document.getElementById("userNameHeader");
+  if (headerTitle) {
+    const greeting = hasCustomName ? `أهلاً، ${currentName}` : "لوحة تحكم المستخدم";
+    headerTitle.textContent = greeting;
+    headerTitle.setAttribute("data-text", greeting);
   }
 }
 
@@ -84,10 +91,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   initAvatarPicker();
-  window.addEventListener("avatarUpdated", () => {
-    renderAvatar(gameEngine.getUserData());
-  });
-
   refreshUI();
 });
 

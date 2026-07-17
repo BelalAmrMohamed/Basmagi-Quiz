@@ -1022,6 +1022,30 @@ body.sidebar-expanded {
   margin-left: 0;
 }
 
+
+/* ==================== Global Nav Avatar ==================== */
+/*
+ * These mirror the SVG icon they replace: same box, circular crop.
+ * JS toggles which one is visible; both exist in the DOM at all times so a
+ * failed avatar load (corrupt localStorage entry, decode error, etc.) can
+ * fall back to the default icon without a layout shift.
+ */
+.menu-item-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.bottom-nav-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 /* ============================================================================
    CONTACT DEVELOPER OVERLAY
    ============================================================================ */

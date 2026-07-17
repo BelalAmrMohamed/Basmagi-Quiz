@@ -146,4 +146,58 @@ export const avatarEngine = {
       <text x="50" y="50" font-family="IBM Plex Sans Arabic, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${escaped}</text>
     </svg>`;
   },
+
+  // 8. Same as generateDefaultAvatarSVG, but pre-encoded as a data URL
+  //    ready to drop straight into an <img src>.
+  generateDefaultAvatarDataUrl(name) {
+    const svg = this.generateDefaultAvatarSVG(name);
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  },
 };
+
+// 9. Global nav avatar sync — intended to run on EVERY page, not just the
+// profile page, so the sidebar/bottom-nav account icon reflects whatever
+// avatar (custom or generated-default) the user currently has.
+//
+// Deliberately defensive: localStorage may be empty, corrupted, or the
+// target elements may not exist on a given page yet. Any failure here must
+// silently fall back to the default SVG icon that already ships in the
+// markup - it must never leave the nav in a broken or blank state.
+export function syncNavAvatars() {
+  const targets = [
+    { imgId: "navSidebarAvatar", iconClass: "menu-item-default-icon" },
+    { imgId: "navBottomAvatar", iconClass: "bottom-nav-default-icon" },
+  ];
+
+  let dataUrl = null;
+  try {
+    const name = localStorage.getItem("username") || "مستخدم";
+    dataUrl = avatarEngine.getAvatar() || avatarEngine.generateDefaultAvatarDataUrl(name);
+  } catch (err) {
+    console.error("syncNavAvatars: failed to resolve avatar, keeping default icon", err);
+    return;
+  }
+
+  if (!dataUrl) return;
+
+  targets.forEach(({ imgId, iconClass }) => {
+    const img = document.getElementById(imgId);
+    if (!img) return; // Guard: element not present on this page
+
+    const icon = img.parentElement ? img.parentElement.querySelector(`.${iconClass}`) : null;
+
+    // Verify the image actually decodes before swapping it in, so a
+    // corrupt data URL can never blank out the nav icon.
+    const probe = new Image();
+    probe.onload = () => {
+      img.src = dataUrl;
+      img.style.display = "";
+      if (icon) icon.style.display = "none";
+    };
+    probe.onerror = () => {
+      img.style.display = "none";
+      if (icon) icon.style.display = "";
+    };
+    probe.src = dataUrl;
+  });
+}
