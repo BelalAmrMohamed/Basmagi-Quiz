@@ -2,7 +2,7 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 --
--- NOTE: `app_settings` table was DROPPED in v6.1.5 migration.
+-- NOTE: `app_settings` table was DROPPED in v6.1.6 migration.
 --       Access-code authentication has been fully deprecated.
 
 CREATE TABLE public.quizzes (

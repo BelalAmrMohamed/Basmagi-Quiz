@@ -1014,7 +1014,7 @@ body.sidebar-expanded {
   }
 
   /* "إنشاء" (Create) — emphasized as the primary action, Play-Store-esque */
-  .bottom-nav-icon-create {
+  .bottom-nav-icon-profile {
     width: 34px;
     height: 34px;
     border-radius: var(--radius-full, 9999px);
@@ -1024,21 +1024,21 @@ body.sidebar-expanded {
     box-shadow: var(--shadow-md);
   }
 
-  .bottom-nav-icon-create svg {
+  .bottom-nav-icon-profile svg {
     width: 18px;
     height: 18px;
     stroke: #fff;
   }
 
-  .bottom-nav-item-create.active {
+  .bottom-nav-item-profile.active {
     color: var(--color-text-tertiary); /* label stays neutral; icon carries the emphasis */
   }
 
-  .bottom-nav-item-create.active::before {
+  .bottom-nav-item-profile.active::before {
     content: none; /* the raised pill icon is indicator enough */
   }
 
-  .bottom-nav-item-create:active .bottom-nav-icon-create {
+  .bottom-nav-item-profile:active .bottom-nav-icon-profile {
     transform: scale(0.92);
   }
 
