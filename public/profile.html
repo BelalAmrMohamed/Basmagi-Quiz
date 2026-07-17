@@ -757,6 +757,10 @@
     </div>
 
     <script type="module" src="src/scripts/profile.js"></script>
+    <script type="module">
+        import { initHeatmapOverflowSync } from "./src/scripts/heatmapOverflow.js";
+        document.addEventListener("DOMContentLoaded", () => initHeatmapOverflowSync());
+    </script>
     <script type="module" src="src/components/side-menu.js"></script>
     <script type="module" src="src/shared/canvas-animation.js"></script>
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
