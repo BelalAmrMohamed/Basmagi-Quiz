@@ -1,0 +1,149 @@
+// src/shared/avatarEngine.js - Client-side Avatar Storage & Processing
+// All avatar data lives in localStorage since non-admin users have no
+// Supabase account. Kept in its own key (separate from quiz_user_profile)
+// so avatar payloads never bloat the read/write path of the main profile
+// object, and a corrupt/oversized avatar can never break quiz progress.
+
+const AVATAR_KEY = "quiz_user_avatar";
+const AVATAR_SIZE = 256; // px, output square dimension
+const JPEG_QUALITY = 0.82;
+
+// A small, deterministic palette pulled from the site's own accent family
+// (see themes.css --color-primary / --gradient-accent stops) so generated
+// avatars always feel native to the product rather than random colors.
+const DEFAULT_AVATAR_PALETTE = [
+  "#6366f1",
+  "#8b5cf6",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#ef4444",
+  "#14b8a6",
+];
+
+export const avatarEngine = {
+  // 1. Get the stored avatar (base64 data URL) or null if none set
+  getAvatar() {
+    try {
+      return localStorage.getItem(AVATAR_KEY) || null;
+    } catch (err) {
+      console.error("Failed to read avatar from storage:", err);
+      return null;
+    }
+  },
+
+  // 2. Save a data URL directly (used for default/preset avatars, already small)
+  saveAvatar(dataUrl) {
+    try {
+      localStorage.setItem(AVATAR_KEY, dataUrl);
+      return true;
+    } catch (err) {
+      console.error("Failed to save avatar to storage:", err);
+      return false;
+    }
+  },
+
+  // 3. Remove the stored avatar, falling back to the generated default
+  removeAvatar() {
+    try {
+      localStorage.removeItem(AVATAR_KEY);
+    } catch (err) {
+      console.error("Failed to remove avatar from storage:", err);
+    }
+  },
+
+  // 4. Process a File (upload or camera capture) into a compressed,
+  //    square, base64-encoded JPEG sized for localStorage.
+  //    Returns a Promise<string> resolving to the data URL.
+  async processImageFile(file) {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      throw new Error("الملف المختار ليس صورة صالحة");
+    }
+
+    const bitmap = await this._loadImage(file);
+    const dataUrl = this._resizeAndCompress(bitmap);
+
+    // Guard: localStorage entries are realistically capped well under 5MB
+    // per key across browsers. A 256x256 JPEG at q=0.82 is normally tens
+    // of KB, but if a pathological image still comes out huge, fail loudly
+    // rather than silently corrupting storage.
+    const approxBytes = Math.round((dataUrl.length * 3) / 4);
+    if (approxBytes > 1.5 * 1024 * 1024) {
+      throw new Error("الصورة كبيرة جداً، جرّب صورة أخرى");
+    }
+
+    return dataUrl;
+  },
+
+  _loadImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("تعذّر قراءة الصورة"));
+      };
+      img.src = url;
+    });
+  },
+
+  // Crop to center square, downscale to AVATAR_SIZE, encode as JPEG
+  _resizeAndCompress(img) {
+    const side = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    const sx = ((img.naturalWidth || img.width) - side) / 2;
+    const sy = ((img.naturalHeight || img.height) - side) / 2;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(img, sx, sy, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+    return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+  },
+
+  // 5. Deterministic color pick for a given name, so the same name always
+  //    gets the same default-avatar color across sessions/devices.
+  colorForName(name) {
+    const str = (name || "?").trim();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    return DEFAULT_AVATAR_PALETTE[hash % DEFAULT_AVATAR_PALETTE.length];
+  },
+
+  // 6. First "letter" of a name, Arabic-aware. Arabic has no case, and
+  //    combining marks (tashkeel) shouldn't be picked as the initial, so
+  //    skip them. Falls back to "؟" if nothing usable is found.
+  initialForName(name) {
+    const str = (name || "").trim();
+    if (!str) return "؟";
+
+    const arabicDiacritics = /[\u064B-\u065F\u0670]/;
+    for (const ch of str) {
+      if (arabicDiacritics.test(ch)) continue;
+      return ch.toUpperCase();
+    }
+    return "؟";
+  },
+
+  // 7. Build a default avatar as an inline SVG data URL (not stored,
+  //    computed on demand so it always reflects the current username).
+  generateDefaultAvatarSVG(name) {
+    const initial = this.initialForName(name);
+    const color = this.colorForName(name);
+    const escaped = initial.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" rx="50" fill="${color}"/>
+      <text x="50" y="50" font-family="IBM Plex Sans Arabic, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${escaped}</text>
+    </svg>`;
+  },
+};

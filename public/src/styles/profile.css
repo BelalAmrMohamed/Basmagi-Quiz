@@ -176,19 +176,6 @@ body {
   opacity: 0.95;
 }
 
-/*
- * Badges card: JS moves this out of the right sidebar column and inserts it
- * after .level-progress-card so it never hides under the fixed side-menu.
- * Make it full-width and display the grid properly outside the 2-col layout.
- */
-.sidebar-card.badges-relocated {
-  margin-bottom: 30px;
-}
-
-.sidebar-card.badges-relocated .badge-display-grid {
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-}
-
 /* Dashboard Layout */
 .profile-layout {
   display: grid;
@@ -497,5 +484,384 @@ body {
 
   .header p {
     font-size: 1rem;
+  }
+}
+
+/* ==================== Header: Avatar + Weekly Recap ==================== */
+.header-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.avatar-wrapper img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--color-surface);
+  box-shadow: var(--shadow-lg);
+  display: block;
+  background: var(--color-background-secondary);
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  border: 2px solid var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.15s ease;
+}
+
+.avatar-edit-btn:hover {
+  transform: scale(1.08);
+}
+
+.weekly-recap {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+  padding: 8px 18px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border-light);
+}
+
+/* ==================== Avatar Picker Overlay ==================== */
+.avatar-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: 20px;
+}
+
+.avatar-picker-overlay.open {
+  opacity: 1;
+}
+
+.avatar-picker-card {
+  background: var(--color-surface);
+  border-radius: 20px;
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border-light);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.avatar-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.avatar-picker-header h3 {
+  font-size: 1.15rem;
+}
+
+.avatar-picker-close-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 4px;
+  display: flex;
+}
+
+.avatar-picker-section {
+  margin-bottom: 24px;
+}
+
+.avatar-picker-section-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 12px;
+  display: block;
+}
+
+.avatar-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.avatar-preset-btn {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.avatar-preset-btn:hover {
+  transform: scale(1.06);
+  border-color: var(--color-text-primary);
+}
+
+.avatar-picker-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avatar-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+
+.avatar-action-btn:hover {
+  background: var(--color-hover-overlay);
+}
+
+.avatar-action-btn.danger {
+  color: var(--color-error);
+}
+
+.avatar-camera-preview {
+  width: 100%;
+  border-radius: 12px;
+  margin-top: 10px;
+  display: none;
+  background: #000;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+/* ==================== Activity Heatmap ==================== */
+.heatmap-widget-card {
+  margin-bottom: 30px;
+}
+
+.heatmap-grid {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.heatmap-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heatmap-cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--color-background-secondary);
+  display: inline-block;
+}
+
+.heatmap-cell[data-level="1"] {
+  background: var(--color-primary-light);
+}
+
+.heatmap-cell[data-level="2"] {
+  background: color-mix(in srgb, var(--color-primary) 45%, var(--color-primary-light));
+}
+
+.heatmap-cell[data-level="3"] {
+  background: color-mix(in srgb, var(--color-primary) 75%, transparent);
+}
+
+.heatmap-cell[data-level="4"] {
+  background: var(--color-primary);
+}
+
+.heatmap-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==================== Category Mastery ==================== */
+.category-mastery-card {
+  margin-bottom: 30px;
+}
+
+.mastery-row {
+  margin-bottom: 16px;
+}
+
+.mastery-row:last-child {
+  margin-bottom: 0;
+}
+
+.mastery-row-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+}
+
+.mastery-title {
+  font-weight: 500;
+}
+
+.mastery-value {
+  font-weight: 700;
+}
+
+.mastery-bar-track {
+  height: 8px;
+  background: var(--color-background-secondary);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.mastery-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.5s ease;
+}
+
+.mastery-bar-fill.mastery-success {
+  background: var(--color-success);
+}
+
+.mastery-bar-fill.mastery-warning {
+  background: var(--color-warning);
+}
+
+.mastery-bar-fill.mastery-error {
+  background: var(--color-error);
+}
+
+.mastery-attempts {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+  display: inline-block;
+}
+
+/* ==================== Next Badge Teasers ==================== */
+.next-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.next-badge-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 36px;
+  text-align: center;
+}
+
+.next-badge-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.next-badge-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+}
+
+.next-badge-title {
+  font-weight: 500;
+}
+
+.next-badge-fraction {
+  color: var(--color-text-tertiary);
+}
+
+.next-badge-bar-track {
+  height: 6px;
+  background: var(--color-background-secondary);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.next-badge-bar-fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: 100px;
+  transition: width 0.5s ease;
+}
+
+/* ==================== Flagged Questions ==================== */
+.flagged-questions-card {
+  margin-bottom: 30px;
+}
+
+/* ==================== Infinite Scroll ==================== */
+.infinite-scroll-sentinel {
+  height: 1px;
+}
+
+/* ==================== Responsive ==================== */
+@media (max-width: 768px) {
+  .avatar-wrapper,
+  .avatar-wrapper img {
+    width: 76px;
+    height: 76px;
+  }
+
+  .heatmap-cell {
+    width: 11px;
+    height: 11px;
+  }
+
+  .avatar-preset-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

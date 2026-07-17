@@ -4,19 +4,35 @@
 console.log("profile.js loaded successfully")
 
 import { gameEngine, BADGES } from "../shared/gameEngine.js";
+import { avatarEngine } from "../shared/avatarEngine.js";
 import { getManifest } from "./quizManifest.js";
+import { InfiniteList } from "../shared/infiniteScroll.js";
+import { initAvatarPicker } from "./avatarPicker.js";
+import {
+  renderActivityHeatmap,
+  renderCategoryMastery,
+  renderNextBadges,
+  renderFlaggedQuestions,
+} from "./profileWidgets.js";
 
 import { confirmationNotification } from "../components/notifications.js";
 
 let examList = [];
+let historyList = null;
+let bookmarksList = null;
 
 export function refreshUI() {
   const user = gameEngine.getUserData();
   renderStats(user);
+  renderAvatar(user);
   renderHistory(user);
   renderBookmarks(user);
   renderBadges(user);
   renderLeaderboard(user);
+  renderActivityHeatmap(user);
+  renderCategoryMastery(user, examList);
+  renderNextBadges(user);
+  renderFlaggedQuestions(user, examList);
 
   // Update username display
   const nameDisplay = document.getElementById("userNameDisplay");
@@ -62,11 +78,34 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     const manifest = await getManifest();
     examList = manifest.examList || [];
+    window.__examListCache = examList;
   } catch (err) {
     console.error("Failed to load quiz manifest:", err);
   }
+
+  initAvatarPicker();
+  window.addEventListener("avatarUpdated", () => {
+    renderAvatar(gameEngine.getUserData());
+  });
+
   refreshUI();
 });
+
+function renderAvatar(user) {
+  const img = document.getElementById("avatarImage");
+  if (!img) return;
+
+  const stored = avatarEngine.getAvatar();
+  const name = localStorage.getItem("username") || "مستخدم";
+
+  if (stored) {
+    img.src = stored;
+  } else {
+    const svg = avatarEngine.generateDefaultAvatarSVG(name);
+    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+  img.alt = `الصورة الشخصية لـ ${name}`;
+}
 
 function renderStats(user) {
   const levelInfo = gameEngine.calculateLevel(user.totalPoints);
@@ -148,26 +187,45 @@ function renderStats(user) {
       ` ${user.streaks?.longestStreak === 1 ? "يوم:" : "أيام:"}  ${user.streaks?.longestStreak || 0} `,
     );
   }
+
+  // This-week recap strip
+  renderWeeklyRecap(user);
 }
 
-function renderHistory(user) {
-  const historyList = document.getElementById("historyList");
-  if (!historyList) return;
+function renderWeeklyRecap(user) {
+  const el = document.getElementById("weeklyRecap");
+  if (!el) return;
 
-  if (!user.history || user.history.length === 0) {
-    historyList.innerHTML = `<div class="empty-state"><h3>No History Yet</h3></div>`;
+  const now = new Date();
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const recent = (user.history || []).filter((h) => {
+    const d = new Date(h.date);
+    return !isNaN(d) && d >= weekAgo && d <= now;
+  });
+
+  if (recent.length === 0) {
+    el.textContent = "لم تقم بأي اختبار هذا الأسبوع، ابدأ الآن!";
     return;
   }
 
-  historyList.innerHTML = user.history
-    .map((attempt, index) => {
-      const exam = examList.find((e) => e.id === attempt.examId);
-      const title = exam ? exam.title : "Deleted Quiz";
-      const date = new Date(attempt.date).toLocaleDateString();
-      const percentage =
-        attempt.percentage || Math.round((attempt.score / attempt.total) * 100);
+  const avgPct = Math.round(
+    recent.reduce((sum, h) => sum + (h.percentage || 0), 0) / recent.length,
+  );
+  const points = recent.reduce((sum, h) => sum + (h.pointsEarned || 0), 0);
 
-      return `
+  el.textContent = `هذا الأسبوع: ${recent.length} ${recent.length === 1 ? "اختبار" : "اختبارات"} • متوسط ${avgPct}% • +${points.toLocaleString()} نقطة`;
+}
+
+function historyItemHtml(attempt, index) {
+  const exam = examList.find((e) => e.id === attempt.examId);
+  const title = exam ? exam.title : "Deleted Quiz";
+  const date = new Date(attempt.date).toLocaleDateString();
+  const percentage =
+    attempt.percentage || Math.round((attempt.score / attempt.total) * 100);
+
+  return `
       <div class="history-item">
         <div class="history-info">
           <h4>${title}</h4>
@@ -181,32 +239,27 @@ function renderHistory(user) {
           <button class="delete-btn" onclick="deleteHistory(${index})"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
-    })
-    .join("");
 }
 
-function renderBookmarks(user) {
-  // Ensure we don't duplicate the section if refreshUI is called
-  let bookmarkSection = document.getElementById("bookmarks-section");
-  if (!bookmarkSection) {
-    bookmarkSection = document.createElement("div");
-    bookmarkSection.id = "bookmarks-section";
-    document.querySelector(".main-content").appendChild(bookmarkSection);
-  }
+function renderHistory(user) {
+  const container = document.getElementById("historyList");
+  if (!container) return;
 
-  const keys = Object.keys(user.bookmarks || {});
+  if (historyList) historyList.destroy();
 
-  bookmarkSection.innerHTML = `
-    <h2 style="margin-top:40px;">⭐ الأسئلة المفضلة</h2>
-    <div class="history-list">
-      ${
-        keys.length === 0
-          ? "<p>لم تقم بتفضيل أية أسئلة</p>"
-          : keys
-              .map((key) => {
-                const [examId, qIdx] = key.split("_");
-                const exam = examList.find((e) => e.id === examId);
-                return `
+  historyList = new InfiniteList({
+    containerEl: container,
+    items: user.history || [],
+    renderItem: historyItemHtml,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>No History Yet</h3></div>`,
+  });
+  historyList.mount();
+}
+
+function bookmarkItemHtml(key) {
+  const [examId, qIdx] = key.split("_");
+  const exam = examList.find((e) => e.id === examId);
+  return `
           <div class="history-item">
             <div class="history-info">
               <h4>${exam ? exam.title : examId}</h4>
@@ -217,10 +270,34 @@ function renderBookmarks(user) {
               <button class="unstar-btn" onclick="removeBookmark('${key}')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-off-icon lucide-star-off"><path d="m10.344 4.688 1.181-2.393a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.237 3.152"/><path d="m17.945 17.945.43 2.505a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a8 8 0 0 0 .4-.099"/><path d="m2 2 20 20"/></svg></button>
             </div>
           </div>`;
-              })
-              .join("")
-      }
-    </div>`;
+}
+
+function renderBookmarks(user) {
+  // Ensure we don't duplicate the section if refreshUI is called
+  let bookmarkSection = document.getElementById("bookmarks-section");
+  if (!bookmarkSection) {
+    bookmarkSection = document.createElement("div");
+    bookmarkSection.id = "bookmarks-section";
+    bookmarkSection.innerHTML = `
+      <h2 style="margin-top:40px;">⭐ الأسئلة المفضلة</h2>
+      <div id="bookmarksListContainer" class="history-list"></div>`;
+    document.querySelector(".main-content").appendChild(bookmarkSection);
+  }
+
+  const container = document.getElementById("bookmarksListContainer");
+  if (!container) return;
+
+  const keys = Object.keys(user.bookmarks || {});
+
+  if (bookmarksList) bookmarksList.destroy();
+
+  bookmarksList = new InfiniteList({
+    containerEl: container,
+    items: keys,
+    renderItem: bookmarkItemHtml,
+    emptyHtml: `<p>لم تقم بتفضيل أية أسئلة</p>`,
+  });
+  bookmarksList.mount();
 }
 
 function renderBadges(user) {
@@ -236,18 +313,6 @@ function renderBadges(user) {
           : "";
       })
       .join("") || "Earn badges by completing quizzes!";
-
-  // Move the badges sidebar-card out of the right column and into the main
-  // content area, right after the level-progress-card. Prevents it from
-  // being hidden behind the fixed side-menu and makes it visible on mobile.
-  const badgeCard = container.closest(".sidebar-card");
-  const levelCard = document.querySelector(".level-progress-card");
-  if (badgeCard && levelCard && levelCard.parentNode) {
-    if (!badgeCard.classList.contains("badges-relocated")) {
-      badgeCard.classList.add("badges-relocated");
-      levelCard.parentNode.insertBefore(badgeCard, levelCard.nextSibling);
-    }
-  }
 }
 
 function renderLeaderboard(user) {

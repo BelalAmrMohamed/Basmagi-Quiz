@@ -123,16 +123,6 @@
                 <span class="menu-label">الصفحة الرئيسية</span>
             </a>
 
-            <a href="profile.html" title="الحساب" class="menu-item active" data-tooltip="الحساب">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true">
-                    <path d="m12 14 4-4" />
-                    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-                </svg>
-                <span class="menu-label">الحساب</span>
-            </a>
-
             <a href="create-quiz.html" title="إنشاء امتحانات" class="menu-item" data-tooltip="إنشاء إمتحانات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -143,6 +133,16 @@
                         d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
                 </svg>
                 <span class="menu-label">إنشاء إمتحانات</span>
+            </a>
+
+            <a href="profile.html" title="الحساب" class="menu-item active" data-tooltip="الحساب">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="m12 14 4-4" />
+                    <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                </svg>
+                <span class="menu-label">الحساب</span>
             </a>
 
             <div class="menu-divider" role="separator"></div>
@@ -340,6 +340,21 @@
 
     <div class="container">
         <div class="header">
+            <div class="header-identity">
+                <div class="avatar-wrapper">
+                    <img id="avatarImage" src="" alt="الصورة الشخصية" width="96" height="96">
+                    <button type="button" class="avatar-edit-btn" id="avatarEditBtn" title="تغيير الصورة الشخصية"
+                        aria-label="تغيير الصورة الشخصية">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path
+                                d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                        </svg>
+                    </button>
+                </div>
+                <span class="weekly-recap" id="weeklyRecap">جارِ التحميل...</span>
+            </div>
             <h1 class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم">لوحة تحكم المستخدم</h1>
             <p class="advanced-link-transition-animation">تتبع تقدمك وإنجازاتك</p>
         </div>
@@ -396,10 +411,28 @@
             </div>
         </div>
 
+        <!-- Activity Heatmap -->
+        <div class="sidebar-card heatmap-widget-card">
+            <h3>📈 نشاطك</h3>
+            <div id="activityHeatmap"></div>
+        </div>
+
+        <!-- Category Mastery -->
+        <div class="sidebar-card category-mastery-card">
+            <h3>🧠 نقاط قوتك</h3>
+            <div id="categoryMastery"></div>
+        </div>
+
         <div class="profile-layout">
             <div class="main-content">
                 <h2>📜 التاريخ</h2>
                 <div id="historyList" class="history-list">
+                </div>
+
+                <div class="sidebar-card flagged-questions-card" style="margin-top:40px;">
+                    <h3>🚩 أسئلة للمراجعة</h3>
+                    <div id="flaggedList" class="history-list">
+                    </div>
                 </div>
             </div>
 
@@ -407,6 +440,12 @@
                 <div class="sidebar-card">
                     <h3>🏅 شاراتك</h3>
                     <div id="badgeContainer" class="badge-display-grid">
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3>🎯 الشارات القادمة</h3>
+                    <div id="nextBadges">
                     </div>
                 </div>
 
@@ -515,6 +554,77 @@
             </div>
             <div class="contact-overlay-footer">
                 <button class="cancel-contact-overlay-button" onclick="closeContactOverlay()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avatar Picker Overlay -->
+    <div id="avatarPickerOverlay" class="avatar-picker-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="avatarPickerTitle">
+        <div class="avatar-picker-card">
+            <div class="avatar-picker-header">
+                <h3 id="avatarPickerTitle">تغيير الصورة الشخصية</h3>
+                <button type="button" class="avatar-picker-close-btn" id="avatarPickerCloseBtn" aria-label="إغلاق">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="avatar-picker-section">
+                <span class="avatar-picker-section-label">اختر لوناً افتراضياً</span>
+                <div class="avatar-preset-grid" id="avatarPresetGrid"></div>
+            </div>
+
+            <div class="avatar-picker-section">
+                <span class="avatar-picker-section-label">أو</span>
+                <div class="avatar-picker-actions">
+                    <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <path d="M17 8l-5-5-5 5" />
+                            <path d="M12 3v12" />
+                        </svg>
+                        رفع صورة من جهازك
+                    </button>
+                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
+
+                    <button type="button" class="avatar-action-btn" id="avatarCameraStartBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path
+                                d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                            <circle cx="12" cy="13" r="3" />
+                        </svg>
+                        التقاط صورة بالكاميرا
+                    </button>
+                    <button type="button" class="avatar-action-btn" id="avatarCameraCaptureBtn" style="display:none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                        </svg>
+                        التقاط الآن
+                    </button>
+                    <video id="avatarCameraFeed" class="avatar-camera-preview" autoplay playsinline muted></video>
+
+                    <button type="button" class="avatar-action-btn danger" id="avatarRemoveBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        إزالة الصورة الحالية
+                    </button>
+                </div>
             </div>
         </div>
     </div>
