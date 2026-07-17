@@ -87,6 +87,14 @@ body.sidebar-expanded {
   transform: rotate(180deg);
 }
 
+/* ============================================================================
+   BOTTOM NAVIGATION BAR — Play Store style (mobile only, ≤768px)
+   Hidden entirely on desktop; desktop sidebar is untouched.
+   ============================================================================ */
+.bottom-nav {
+  display: none; /* shown only inside the mobile media query below */
+}
+
 /* ── Mobile Hamburger (hidden on desktop) ────────────────────────────────── */
 .hamburger {
   display: none;
@@ -722,7 +730,13 @@ body.sidebar-expanded {
 
 /* ── Responsive: Mobile (≤768px) ─────────────────────────────────────────── */
 @media (max-width: 768px) {
+  /* Old hamburger trigger is fully retired on mobile — replaced by the
+     bottom nav bar's "المزيد" (More) button, which opens the same sheet. */
   .hamburger {
+    display: none !important;
+  }
+
+  .bottom-nav {
     display: flex;
   }
 
@@ -799,10 +813,13 @@ body.sidebar-expanded {
     display: none !important;
   }
 
-  /* No body padding shift on mobile — sidebar is an overlay */
+  /* No body padding shift on mobile — sidebar is an overlay.
+     padding-bottom reserves space for the fixed bottom nav bar so page
+     content (and things like the footer) are never hidden behind it. */
   body,
   body.sidebar-expanded {
     padding-right: 16px !important;
+    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
   }
 
   /* Full labels always visible on mobile */
@@ -848,6 +865,194 @@ body.sidebar-expanded {
   /* Suppress desktop tooltips on mobile */
   .sidebar:not(.expanded) [data-tooltip]::after {
     display: none;
+  }
+
+  /* The sheet opened by "المزيد" reuses the desktop sidebar's <nav>, so hide
+     the 4 links that are now duplicated as their own bottom-nav tabs
+     (الرئيسية / اللائحة / إنشاء / الإعدادات). Only the leftover links
+     (change name, theme, animations, contact dev, install app) remain. */
+  .sidebar nav > a[href="/"],
+  .sidebar nav > a[href="dashboard.html"],
+  .sidebar nav > a[href="create-quiz.html"],
+  .sidebar nav > a[href="settings.html"] {
+    display: none;
+  }
+
+  /* The divider that used to separate the create-quiz link from settings
+     would otherwise leave an orphaned line at the very top of the sheet. */
+  .sidebar nav > .menu-divider:first-of-type {
+    display: none;
+  }
+
+  /* ── Bottom Navigation Bar ────────────────────────────────────────────── */
+  :root {
+    --bottom-nav-height: 64px;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    z-index: calc(var(--z-overlay, 500) + 1);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  [data-theme="dark-slate"] .bottom-nav,
+  [data-theme="dark"] .bottom-nav {
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px 0;
+    background: none;
+    border: none;
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    transition:
+      color 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .bottom-nav-item:active {
+    transform: scale(0.94);
+  }
+
+  .bottom-nav-item:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+    border-radius: 8px;
+  }
+
+  .bottom-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    transition: transform 0.18s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  }
+
+  .bottom-nav-icon svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2;
+    transition: stroke-width 0.18s ease;
+  }
+
+  .bottom-nav-label {
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Active / inactive states */
+  .bottom-nav-item.active {
+    color: var(--color-primary);
+  }
+
+  .bottom-nav-item.active .bottom-nav-icon svg {
+    stroke-width: 2.4;
+  }
+
+  .bottom-nav-item.active .bottom-nav-icon {
+    transform: translateY(-1px);
+  }
+
+  [data-theme="dark-slate"] .bottom-nav-item.active {
+    color: #818cf8;
+  }
+
+  [data-theme="dark"] .bottom-nav-item.active {
+    color: #60a5fa;
+  }
+
+  .bottom-nav-item:not(.active):hover {
+    color: var(--color-text-secondary);
+  }
+
+  /* Small active-state indicator dot above the icon */
+  .bottom-nav-item.active::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 3px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-primary);
+  }
+
+  [data-theme="dark-slate"] .bottom-nav-item.active::before {
+    background: #818cf8;
+  }
+
+  [data-theme="dark"] .bottom-nav-item.active::before {
+    background: #60a5fa;
+  }
+
+  /* "إنشاء" (Create) — emphasized as the primary action, Play-Store-esque */
+  .bottom-nav-icon-create {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--gradient-accent);
+    color: #fff;
+    margin-top: -14px;
+    box-shadow: var(--shadow-md);
+  }
+
+  .bottom-nav-icon-create svg {
+    width: 18px;
+    height: 18px;
+    stroke: #fff;
+  }
+
+  .bottom-nav-item-create.active {
+    color: var(--color-text-tertiary); /* label stays neutral; icon carries the emphasis */
+  }
+
+  .bottom-nav-item-create.active::before {
+    content: none; /* the raised pill icon is indicator enough */
+  }
+
+  .bottom-nav-item-create:active .bottom-nav-icon-create {
+    transform: scale(0.92);
+  }
+
+  /* More button opened state (drawer visible) */
+  .bottom-nav-item[aria-expanded="true"] {
+    color: var(--color-primary);
+  }
+
+  [data-theme="dark-slate"] .bottom-nav-item[aria-expanded="true"] {
+    color: #818cf8;
+  }
+
+  [data-theme="dark"] .bottom-nav-item[aria-expanded="true"] {
+    color: #60a5fa;
   }
 }
 

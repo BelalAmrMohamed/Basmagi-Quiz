@@ -78,10 +78,12 @@
 (function () {
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.getElementById("sideMenuBackdrop");
-  const hamburgerBtn = document.getElementById("menuBtn"); // mobile-only
+  const hamburgerBtn = document.getElementById("menuBtn"); // mobile-only (legacy, hidden but kept for compatibility)
   const closeBtn = document.getElementById("closeMenuBtn"); // mobile-only
   const toggleBtn = document.getElementById("sidebarToggle"); // desktop-only
   const animationToggle = document.getElementById("animationToggle");
+  const bottomNav = document.getElementById("bottomNav"); // mobile-only
+  const moreBtn = document.getElementById("bottomNavMoreBtn"); // mobile-only, opens the sheet
 
   const MOBILE_BP = 768;
   const STORAGE_KEY = "sidebar_expanded";
@@ -109,7 +111,11 @@
   function openMobileSidebar() {
     sidebar.classList.add("expanded");
     backdrop.classList.add("visible");
-    hamburgerBtn.setAttribute("aria-expanded", "true");
+    if (hamburgerBtn) hamburgerBtn.setAttribute("aria-expanded", "true");
+    if (moreBtn) {
+      moreBtn.setAttribute("aria-expanded", "true");
+      moreBtn.classList.add("active");
+    }
     sidebar.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden"; // prevent scroll behind sheet
     // Focus first focusable item
@@ -121,10 +127,37 @@
   function closeMobileSidebar() {
     sidebar.classList.remove("expanded");
     backdrop.classList.remove("visible");
-    hamburgerBtn.setAttribute("aria-expanded", "false");
+    if (hamburgerBtn) hamburgerBtn.setAttribute("aria-expanded", "false");
+    if (moreBtn) {
+      moreBtn.setAttribute("aria-expanded", "false");
+      moreBtn.classList.remove("active");
+    }
     sidebar.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
-    hamburgerBtn.focus();
+    if (moreBtn) moreBtn.focus();
+    else if (hamburgerBtn) hamburgerBtn.focus();
+  }
+
+  /**
+   * Keep the bottom nav's active tab in sync with the current page.
+   * Mirrors the same `active` class already hardcoded per-page on the
+   * desktop sidebar's matching <a class="menu-item active">. Also handles
+   * pages (like the quiz page) that don't have a matching bottom-nav tab,
+   * in which case nothing is marked active.
+   */
+  function syncBottomNavActiveState() {
+    if (!bottomNav) return;
+    const path = window.location.pathname.split("/").pop() || "index.html";
+    const items = bottomNav.querySelectorAll(".bottom-nav-item[href]");
+    items.forEach((item) => {
+      const href = item.getAttribute("href");
+      const itemPath = href === "/" ? "index.html" : href;
+      const isActive =
+        itemPath === path || (href === "/" && (path === "" || path === "index.html"));
+      item.classList.toggle("active", isActive);
+      if (isActive) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    });
   }
 
   // ── Initialise ─────────────────────────────────────────────────────────────
@@ -160,6 +193,9 @@
         document.documentElement.getAttribute("data-animations") !== "disabled";
       animationToggle.checked = animsEnabled;
     }
+
+    // Sync bottom nav active tab (mobile)
+    syncBottomNavActiveState();
   }
 
   // ── Desktop Toggle ──────────────────────────────────────────────────────────
@@ -178,6 +214,20 @@
 
   if (hamburgerBtn) {
     hamburgerBtn.addEventListener("click", () => {
+      if (sidebar.classList.contains("expanded")) {
+        closeMobileSidebar();
+      } else {
+        openMobileSidebar();
+      }
+    });
+  }
+
+  // ── Bottom Nav "المزيد" (More) Button ───────────────────────────────────────
+  // Opens the same bottom-sheet drawer as the legacy hamburger, containing
+  // whatever nav links don't fit in the 5 main bottom-nav tabs.
+
+  if (moreBtn) {
+    moreBtn.addEventListener("click", () => {
       if (sidebar.classList.contains("expanded")) {
         closeMobileSidebar();
       } else {
@@ -239,6 +289,10 @@
       sidebar.setAttribute("aria-hidden", "false");
       const saved = localStorage.getItem(STORAGE_KEY);
       applyDesktopState(saved === "true");
+      if (moreBtn) {
+        moreBtn.setAttribute("aria-expanded", "false");
+        moreBtn.classList.remove("active");
+      }
     } else {
       // Switched to mobile — close/reset
       sidebar.classList.remove("expanded");
@@ -246,6 +300,11 @@
       backdrop.classList.remove("visible");
       sidebar.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
+      if (moreBtn) {
+        moreBtn.setAttribute("aria-expanded", "false");
+        moreBtn.classList.remove("active");
+      }
+      syncBottomNavActiveState();
     }
   });
 
