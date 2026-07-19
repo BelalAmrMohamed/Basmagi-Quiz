@@ -45,7 +45,7 @@ export function refreshUI() {
   // generic title when no username has been set yet
   const headerTitle = document.getElementById("userNameHeader");
   if (headerTitle) {
-    const greeting = hasCustomName ? `أهلاً، ${currentName}` : "لوحة تحكم المستخدم";
+    const greeting = hasCustomName ? currentName : "لوحة تحكم المستخدم";
     headerTitle.textContent = greeting;
     headerTitle.setAttribute("data-text", greeting);
   }

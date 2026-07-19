@@ -118,10 +118,17 @@ export default async function handler(req, res) {
     }
   }
 
-  // Enforce identity (overriding client values)
+  // Identity enforcement:
+  // - `uploaded_by` (adminId) and `author_handle` are ALWAYS server-derived and
+  //   never trusted from the client — these are the stable identifiers the
+  //   future admin profile page depends on (see admin-upload-wizard-overhaul.md §2).
+  // - `author` (the display byline) is cosmetic and per-quiz editable (Step 3 of
+  //   the wizard), so a trimmed client-provided value takes precedence over the
+  //   admin's current `display_name`, falling back to it when omitted/blank.
   delete cleanQuiz.meta.author_email;
   cleanQuiz.meta.author_handle = adminHandle;
-  cleanQuiz.meta.author = adminDisplayName;
+  const clientAuthor = typeof author === "string" ? author.trim() : "";
+  cleanQuiz.meta.author = clientAuthor || adminDisplayName;
 
   // `view` / `mode` come from validated quiz.meta — already in cleanQuiz
 
@@ -172,5 +179,10 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "فشل رفع الاختبار. حاول مجددًا." });
   }
 
-  return res.status(201).json({ success: true, id: data.id, path: fullPath });
+  return res.status(201).json({
+    success: true,
+    id: data.id,
+    quizId: cleanQuiz.meta.id,
+    path: fullPath,
+  });
 }

@@ -1,6 +1,15 @@
 // =============================================================================
 // public/src/scripts/adminUpload.js
-// Admin quiz upload workflow - 3-step modal.
+// Admin quiz upload workflow - 4-step modal.
+//
+// Steps:
+//   1. Track & Position  - Education Type -> College (conditional) -> Year/Term
+//   2. Course & Placement - Subject (filtered by step 1) -> Subfolder
+//   3. Admin Info         - Editable display name + full review of the upload
+//   4. Confirmation       - Upload progress, then success links to the quiz(zes)
+//
+// Placement (course + subfolder) applies once per batch, not per-quiz — see
+// docs/other/admin-upload-wizard-overhaul.md §Step 2 for rationale.
 //
 // Tracks supported:
 //   University    - College -> Year -> Term -> Subject
@@ -328,7 +337,7 @@ function makeOverlay() {
 }
 
 function stepsHTML(cur) {
-  const steps = ["المسار", "مراجعة", "رفع"];
+  const steps = ["المسار", "المادة", "المشرف", "رفع"];
   return `<div class="adm-steps">${steps.map((lbl, i) => {
     const n = i + 1, cls = n < cur ? "done" : n === cur ? "active" : "";
     return `${i > 0 ? `<div class="adm-step-line ${n <= cur ? "done" : ""}"></div>` : ""}
@@ -346,11 +355,12 @@ function hdr(title) {
   </div>`;
 }
 
-// ─── Step 1 ───────────────────────────────────────────────────────────────────
+// ─── Step 1: Track & Position ──────────────────────────────────────────────────
 function renderStep1(saved = {}) {
   const lastSaved = { ...getSaved(), ...saved };
   const selType   = lastSaved.educationType || "University";
   const hasColl   = TRACKS_WITH_COLLEGE.has(selType);
+  const hasYT     = TRACKS_WITH_YEARTERM.has(selType);
   const colleges  = selType === "University" ? Object.keys(MANIFEST_TREE["University"] || {}).sort() : [];
   const collegeOpts = colleges.map(c =>
     `<option value="${c}" ${lastSaved.college === c ? "selected" : ""}>${c}</option>`).join("");
@@ -373,42 +383,17 @@ function renderStep1(saved = {}) {
         <select id="adm-college"><option value="">— اختر الكلية —</option>${collegeOpts}</select>
       </div>
 
-      <div class="adm-field">
-        <label for="adm-subject">المادة / الكورس <span class="adm-badge adm-badge-choose">اختر أو أنشئ</span></label>
-        <select id="adm-subject" ${hasColl && !lastSaved.college ? "disabled" : ""}>
-          <option value="">— اختر ${hasColl ? "الكلية" : "المسار"} أولاً —</option>
-        </select>
-      </div>
-      <div class="adm-field" id="adm-new-subject-wrap" style="display:none;">
-        <label for="adm-new-subject">اسم المادة الجديدة</label>
-        <input type="text" id="adm-new-subject" placeholder="مثال: Software Engineering" maxlength="80" value="${lastSaved.newSubject || ""}" />
-      </div>
-
-      <div id="adm-yearterm-wrap" style="display:none;">
+      <div id="adm-yearterm-wrap" style="${hasYT ? "" : "display:none;"}">
         <div class="adm-row2">
           <div class="adm-field">
             <label for="adm-year">السنة الدراسية <span class="adm-badge adm-badge-choose">اختر</span></label>
-            <select id="adm-year"><option value="">— اختر السنة —</option></select>
+            <select id="adm-year" ${hasColl && !lastSaved.college ? "disabled" : ""}><option value="">— اختر السنة —</option></select>
           </div>
           <div class="adm-field">
             <label for="adm-term">الترم <span class="adm-badge adm-badge-choose">اختر</span></label>
-            <select id="adm-term"><option value="">— اختر الترم —</option></select>
+            <select id="adm-term" ${hasColl && !lastSaved.college ? "disabled" : ""}><option value="">— اختر الترم —</option></select>
           </div>
         </div>
-      </div>
-
-      <div class="adm-field">
-        <label for="adm-subfolder">مجلد فرعي <span class="adm-badge adm-badge-opt">اختياري</span></label>
-        <select id="adm-subfolder" disabled><option value="">— بدون مجلد فرعي —</option></select>
-      </div>
-      <div class="adm-field" id="adm-new-subfolder-wrap" style="display:none;">
-        <label for="adm-new-subfolder">اسم المجلد الفرعي الجديد</label>
-        <input type="text" id="adm-new-subfolder" placeholder="مثال: أسئلة الدكتور" maxlength="80" value="${lastSaved.newSubfolder || ""}" />
-      </div>
-
-      <div class="adm-field">
-        <label for="adm-author">اسم المشرف صاحب الإمتحان <span class="adm-badge adm-badge-opt">اختياري</span></label>
-        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${lastSaved.author || ""}" />
       </div>
 
       <div class="adm-btns">
@@ -422,8 +407,6 @@ function renderStep1(saved = {}) {
 
   const eduEl  = document.getElementById("adm-edu-type");
   const colEl  = document.getElementById("adm-college");
-  const subEl  = document.getElementById("adm-subject");
-  const folEl  = document.getElementById("adm-subfolder");
   const yearEl = document.getElementById("adm-year");
   const termEl = document.getElementById("adm-term");
 
@@ -431,77 +414,40 @@ function renderStep1(saved = {}) {
   const getCollege = () => colEl.value?.trim() || "";
 
   function applyTrackVisibility(type) {
-    document.getElementById("adm-college-wrap").style.display   = TRACKS_WITH_COLLEGE.has(type)  ? "" : "none";
-    document.getElementById("adm-yearterm-wrap").style.display  = "none";
-    document.getElementById("adm-new-subject-wrap").style.display = "none";
+    document.getElementById("adm-college-wrap").style.display  = TRACKS_WITH_COLLEGE.has(type) ? "" : "none";
+    document.getElementById("adm-yearterm-wrap").style.display = TRACKS_WITH_YEARTERM.has(type) ? "" : "none";
   }
 
-  function triggerSubjectPopulate(type, college, sv) {
-    if (type !== "University") {
-      populateSubjects(type, "", subEl, folEl, yearEl, termEl, sv);
-    } else if (college) {
-      populateSubjects(type, college, subEl, folEl, yearEl, termEl, sv);
+  function triggerYearTermPopulate(type, college, sv) {
+    if (!TRACKS_WITH_YEARTERM.has(type)) return;
+    if (type !== "University" || college) {
+      yearEl.disabled = false; termEl.disabled = false;
+      populateYearOptions(type, college, yearEl, sv.year || "");
+      populateTermOptions(type, college, sv.year || "", termEl, sv.term || "");
     } else {
-      subEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
-      subEl.disabled = true;
-      folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
-      folEl.disabled = true;
+      yearEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
+      termEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
+      yearEl.disabled = true; termEl.disabled = true;
     }
   }
 
   // Initial state
   applyTrackVisibility(selType);
-  triggerSubjectPopulate(selType, lastSaved.college || "", lastSaved);
+  triggerYearTermPopulate(selType, lastSaved.college || "", lastSaved);
 
   eduEl.addEventListener("change", () => {
     const type = getType();
     applyTrackVisibility(type);
-    triggerSubjectPopulate(type, "", {});
+    triggerYearTermPopulate(type, "", {});
   });
 
   colEl.addEventListener("change", () => {
-    const college = getCollege();
-    if (college) {
-      subEl.disabled = false;
-      populateSubjects(getType(), college, subEl, folEl, yearEl, termEl, {});
-    } else {
-      subEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
-      subEl.disabled = true;
-      folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
-      folEl.disabled = true;
-    }
-  });
-
-  subEl.addEventListener("change", () => {
-    const type = getType(), college = getCollege();
-    const isNew = subEl.value === "__new__";
-    const hasYT = TRACKS_WITH_YEARTERM.has(type);
-    const ytWrap = document.getElementById("adm-yearterm-wrap");
-    document.getElementById("adm-new-subject-wrap").style.display = isNew ? "block" : "none";
-    if (isNew && hasYT) {
-      ytWrap.style.display = "block";
-      populateYearOptions(type, college, yearEl);
-      populateTermOptions(type, college, "", termEl);
-      yearEl.value = ""; termEl.value = "";
-      yearEl.disabled = false; termEl.disabled = false;
-    } else if (!isNew && hasYT && subEl.value) {
-      ytWrap.style.display = "none";
-      autoFillYearTerm(type, college, subEl.value, yearEl, termEl);
-    } else {
-      ytWrap.style.display = "none";
-    }
-    populateSubfolders(type, college, subEl.value, folEl, {});
+    triggerYearTermPopulate(getType(), getCollege(), {});
   });
 
   yearEl.addEventListener("change", () => {
-    if (subEl.value !== "__new__") return;
     populateTermOptions(getType(), getCollege(), yearEl.value, termEl);
     termEl.value = "";
-  });
-
-  folEl.addEventListener("change", () => {
-    document.getElementById("adm-new-subfolder-wrap").style.display =
-      folEl.value === "__new__" ? "block" : "none";
   });
 
   document.getElementById("adm-s1-next").addEventListener("click", step1Validate);
@@ -514,7 +460,13 @@ function getSubjectMap(type, college) {
     : (MANIFEST_TREE[type] || {});
 }
 
-function populateSubjects(type, college, subEl, folEl, yearEl, termEl, saved) {
+/**
+ * Populates the Step 2 subject dropdown, filtered to subjects whose existing
+ * year/term (if the track has one) matches the year/term fixed in Step 1.
+ * A brand-new subject always shows up as an option regardless of filter,
+ * via the "__new__" entry.
+ */
+function populateSubjects(type, college, year, term, subEl, folEl, saved) {
   subEl.disabled = false;
   subEl.innerHTML = `<option value="">— اختر المادة —</option>`;
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
@@ -522,29 +474,29 @@ function populateSubjects(type, college, subEl, folEl, yearEl, termEl, saved) {
   document.getElementById("adm-new-subject-wrap").style.display = "none";
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
 
-  const subjects = Object.keys(getSubjectMap(type, college)).sort((a, b) => a.localeCompare(b));
+  const hasYT = TRACKS_WITH_YEARTERM.has(type);
+  const subjectMap = getSubjectMap(type, college);
+  const subjects = Object.entries(subjectMap)
+    .filter(([, data]) => {
+      if (!hasYT || (!year && !term)) return true;
+      return (data.yearterm || []).some(([y, t]) =>
+        (!year || y === year) && (!term || t === term));
+    })
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b));
+
   subjects.forEach(s => subEl.appendChild(Object.assign(document.createElement("option"), {
     value: s, textContent: s, selected: saved.subject === s,
   })));
   subEl.appendChild(Object.assign(document.createElement("option"), {
     value: "__new__", textContent: "➕ إنشاء مادة جديدة",
-    selected: saved.subject === "__new__",
+    selected: saved.subject === "__new__" || subjects.length === 0,
   }));
 
-  const hasYT  = TRACKS_WITH_YEARTERM.has(type);
-  const ytWrap = document.getElementById("adm-yearterm-wrap");
-
-  if (saved.subject && saved.subject !== "__new__") {
-    if (hasYT) { ytWrap.style.display = "none"; autoFillYearTerm(type, college, saved.subject, yearEl, termEl); }
+  if (saved.subject && saved.subject !== "__new__" && subjects.includes(saved.subject)) {
     populateSubfolders(type, college, saved.subject, folEl, saved);
-  } else if (saved.subject === "__new__") {
+  } else if (saved.subject === "__new__" || subjects.length === 0) {
     document.getElementById("adm-new-subject-wrap").style.display = "block";
-    if (hasYT) {
-      ytWrap.style.display = "block";
-      populateYearOptions(type, college, yearEl, saved.year || "");
-      populateTermOptions(type, college, saved.year || "", termEl, saved.term || "");
-      yearEl.disabled = false; termEl.disabled = false;
-    }
   }
 }
 
@@ -573,22 +525,6 @@ function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
   })));
 }
 
-function autoFillYearTerm(type, college, subject, yearEl, termEl) {
-  const info = getSubjectMap(type, college)[subject];
-  if (!info || !info.yearterm || info.yearterm.length === 0) { yearEl.disabled = false; termEl.disabled = false; return; }
-  const [year, term] = info.yearterm[0] || [];
-  if (year) {
-    if (!yearEl.querySelector(`option[value="${year}"]`))
-      yearEl.appendChild(new Option(YEAR_LABELS[year] || `سنة ${year}`, year));
-    yearEl.value = year; yearEl.disabled = true;
-  } else { yearEl.disabled = false; }
-  if (term) {
-    if (!termEl.querySelector(`option[value="${term}"]`))
-      termEl.appendChild(new Option(TERM_LABELS[term] || `ترم ${term}`, term));
-    termEl.value = term; termEl.disabled = true;
-  } else { termEl.disabled = false; }
-}
-
 function populateSubfolders(type, college, subject, folEl, saved) {
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
@@ -614,35 +550,110 @@ function populateSubfolders(type, college, subject, folEl, saved) {
 // ─── Read Step 1 values ───────────────────────────────────────────────────────
 function getStep1Values() {
   const educationType = document.getElementById("adm-edu-type")?.value || "University";
-  const college  = document.getElementById("adm-college")?.value?.trim() || "";
-  const subRaw   = document.getElementById("adm-subject")?.value;
-  const subject  = subRaw === "__new__"
-    ? document.getElementById("adm-new-subject")?.value?.trim()
-    : subRaw?.trim();
-  const year     = document.getElementById("adm-year")?.value || "";
-  const term     = document.getElementById("adm-term")?.value || "";
-  const folRaw   = document.getElementById("adm-subfolder")?.value;
-  const subfolder = folRaw === "__new__"
-    ? document.getElementById("adm-new-subfolder")?.value?.trim()
-    : folRaw === "" ? "" : folRaw?.trim();
-  const author   = document.getElementById("adm-author")?.value?.trim() || "";
-  return { educationType, college, subject, year, term, subfolder, author };
+  const college = document.getElementById("adm-college")?.value?.trim() || "";
+  const year    = document.getElementById("adm-year")?.value || "";
+  const term    = document.getElementById("adm-term")?.value || "";
+  return { educationType, college, year, term };
 }
 
 async function step1Validate() {
   const vals = getStep1Values();
-  const { educationType, college, subject, year, term } = vals;
-  if (!educationType)                                         { showNotification("الرجاء اختيار نوع المسار", "error"); return; }
-  if (TRACKS_WITH_COLLEGE.has(educationType) && !college)   { showNotification("الرجاء اختيار الكلية", "error"); return; }
-  if (!subject)                                              { showNotification("الرجاء اختيار أو إدخال المادة", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !year)     { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !term)     { showNotification("الرجاء اختيار الترم", "error"); return; }
-  persistSaved({ educationType, college, subject, year, term, author: vals.author });
+  const { educationType, college, year, term } = vals;
+  if (!educationType)                                       { showNotification("الرجاء اختيار نوع المسار", "error"); return; }
+  if (TRACKS_WITH_COLLEGE.has(educationType) && !college)  { showNotification("الرجاء اختيار الكلية", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !year)    { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !term)    { showNotification("الرجاء اختيار الترم", "error"); return; }
+  persistSaved({ educationType, college, year, term });
   await renderStep2(vals);
 }
 
-// ─── Step 2: Preview / Summary ────────────────────────────────────────────────
-async function renderStep2({ educationType, college, subject, year, term, subfolder, author }) {
+// ─── Step 2: Course & Placement ────────────────────────────────────────────────
+async function renderStep2({ educationType, college, year, term }) {
+  const saved   = getSaved();
+  const hasColl = TRACKS_WITH_COLLEGE.has(educationType);
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع إلى قاعدة البيانات")}
+    ${stepsHTML(2)}
+    <div class="adm-body">
+      <p class="adm-hint">اختر المادة ومكان الاختبار داخلها</p>
+
+      <div class="adm-field">
+        <label for="adm-subject">المادة / الكورس <span class="adm-badge adm-badge-choose">اختر أو أنشئ</span></label>
+        <select id="adm-subject">
+          <option value="">— اختر المادة —</option>
+        </select>
+      </div>
+      <div class="adm-field" id="adm-new-subject-wrap" style="display:none;">
+        <label for="adm-new-subject">اسم المادة الجديدة</label>
+        <input type="text" id="adm-new-subject" placeholder="مثال: Software Engineering" maxlength="80" value="${saved.newSubject || ""}" />
+      </div>
+
+      <div class="adm-field">
+        <label for="adm-subfolder">مجلد فرعي <span class="adm-badge adm-badge-opt">اختياري</span></label>
+        <select id="adm-subfolder" disabled><option value="">— بدون مجلد فرعي —</option></select>
+      </div>
+      <div class="adm-field" id="adm-new-subfolder-wrap" style="display:none;">
+        <label for="adm-new-subfolder">اسم المجلد الفرعي الجديد</label>
+        <input type="text" id="adm-new-subfolder" placeholder="مثال: أسئلة الدكتور" maxlength="80" value="${saved.newSubfolder || ""}" />
+      </div>
+
+      ${_quizzes.length > 1 ? `<p class="adm-hint" style="margin-top:2px;">سيتم رفع ${_quizzes.length} اختبارات إلى نفس المادة/المجلد المحدد هنا.</p>` : ""}
+
+      <div class="adm-btns">
+        <button class="adm-btn adm-btn-ghost" id="adm-s2-back">→ رجوع</button>
+        <button class="adm-btn adm-btn-primary" id="adm-s2-next">التالي ←</button>
+      </div>
+    </div>
+  </div>`;
+
+  window.__admClose = closeModal;
+
+  const subEl = document.getElementById("adm-subject");
+  const folEl = document.getElementById("adm-subfolder");
+
+  populateSubjects(educationType, college, year, term, subEl, folEl, saved);
+
+  subEl.addEventListener("change", () => {
+    const isNew = subEl.value === "__new__";
+    document.getElementById("adm-new-subject-wrap").style.display = isNew ? "block" : "none";
+    populateSubfolders(educationType, college, subEl.value, folEl, {});
+  });
+
+  folEl.addEventListener("change", () => {
+    document.getElementById("adm-new-subfolder-wrap").style.display =
+      folEl.value === "__new__" ? "block" : "none";
+  });
+
+  document.getElementById("adm-s2-back").addEventListener("click", () => {
+    renderStep1({ educationType, college, year, term });
+  });
+  document.getElementById("adm-s2-next").addEventListener("click", () => step2Validate({ educationType, college, year, term }));
+}
+
+// ─── Read Step 2 values ───────────────────────────────────────────────────────
+function getStep2Values() {
+  const subRaw   = document.getElementById("adm-subject")?.value;
+  const subject  = subRaw === "__new__"
+    ? document.getElementById("adm-new-subject")?.value?.trim()
+    : subRaw?.trim();
+  const folRaw   = document.getElementById("adm-subfolder")?.value;
+  const subfolder = folRaw === "__new__"
+    ? document.getElementById("adm-new-subfolder")?.value?.trim()
+    : folRaw === "" ? "" : folRaw?.trim();
+  return { subject, subfolder };
+}
+
+function step2Validate(step1Vals) {
+  const { subject, subfolder } = getStep2Values();
+  if (!subject) { showNotification("الرجاء اختيار أو إدخال المادة", "error"); return; }
+  persistSaved({ subject, subfolder });
+  renderStep3({ ...step1Vals, subject, subfolder });
+}
+
+// ─── Step 3: Admin Info & Review ───────────────────────────────────────────────
+function renderStep3({ educationType, college, year, term, subject, subfolder }) {
+  const saved    = getSaved();
   const isBatch  = _quizzes.length > 1;
   const trackLbl = TRACK_LABELS[educationType] || educationType;
   const yearLbl  = YEAR_LABELS[year] || year;
@@ -655,44 +666,48 @@ async function renderStep2({ educationType, college, subject, year, term, subfol
   if (subfolder) pathParts.push(subfolder);
   const locationLabel = pathParts.join(" / ");
 
-  let contentHTML = "";
+  let listHTML = "";
   if (isBatch) {
-    contentHTML = `
-      <p class="adm-hint" style="margin-bottom:8px;">سيتم رفع ${_quizzes.length} اختبارات إلى:</p>
-      <span class="adm-path-chip">${locationLabel}</span>
-      <ul class="adm-batch-list">${_quizzes.map(q => {
-        const t = q.meta?.title || q.title || "بدون عنوان";
-        const c = q.stats?.questionCount ?? q.questions?.length ?? 0;
-        return `<li class="adm-batch-item"><span class="adm-batch-item-count">${c} سؤال</span><span class="adm-batch-item-title">${t}</span></li>`;
-      }).join("")}</ul>`;
+    listHTML = `<ul class="adm-batch-list">${_quizzes.map(q => {
+      const t = q.meta?.title || q.title || "بدون عنوان";
+      const c = q.stats?.questionCount ?? q.questions?.length ?? 0;
+      return `<li class="adm-batch-item"><span class="adm-batch-item-count">${c} سؤال</span><span class="adm-batch-item-title">${t}</span></li>`;
+    }).join("")}</ul>`;
   } else {
-    const q = _quizzes[0];
+    const q  = _quizzes[0];
     const qT = q?.meta?.title || q?.title || "";
     const qC = q?.stats?.questionCount ?? q?.questions?.length ?? 0;
-    contentHTML = `
+    listHTML = `
+      <div class="adm-preview-row"><span class="adm-preview-lbl">عنوان الاختبار</span><span class="adm-preview-val">${qT}</span></div>
+      <div class="adm-preview-row"><span class="adm-preview-lbl">عدد الأسئلة</span><span class="adm-preview-val">${qC} سؤال</span></div>`;
+  }
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("بيانات المشرف")}
+    ${stepsHTML(3)}
+    <div class="adm-body">
+      <p class="adm-hint">راجع بيانات ${isBatch ? "الرفعة" : "الاختبار"} واسم المشرف الذي سيظهر عليه</p>
+
       <span class="adm-path-chip">${locationLabel}</span>
+
+      <div class="adm-field">
+        <label for="adm-author">اسم المشرف صاحب الإمتحان <span class="adm-badge adm-badge-opt">اختياري</span></label>
+        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${saved.author || ""}" />
+      </div>
+
       <div class="adm-preview">
-        <div class="adm-preview-row"><span class="adm-preview-lbl">عنوان الاختبار</span><span class="adm-preview-val">${qT}</span></div>
-        <div class="adm-preview-row"><span class="adm-preview-lbl">عدد الأسئلة</span><span class="adm-preview-val">${qC} سؤال</span></div>
         <div class="adm-preview-row"><span class="adm-preview-lbl">نوع المسار</span><span class="adm-preview-val">${trackLbl}</span></div>
         ${college ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الكلية</span><span class="adm-preview-val">${college}</span></div>` : ""}
         <div class="adm-preview-row"><span class="adm-preview-lbl">المادة</span><span class="adm-preview-val">${subject}</span></div>
         ${year ? `<div class="adm-preview-row"><span class="adm-preview-lbl">السنة</span><span class="adm-preview-val">${yearLbl}</span></div>` : ""}
         ${term ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الترم</span><span class="adm-preview-val">${termLbl}</span></div>` : ""}
         ${subfolder ? `<div class="adm-preview-row"><span class="adm-preview-lbl">المجلد الفرعي</span><span class="adm-preview-val">${subfolder}</span></div>` : ""}
-        ${author ? `<div class="adm-preview-row"><span class="adm-preview-lbl">المشرف</span><span class="adm-preview-val">${author}</span></div>` : ""}
-      </div>`;
-  }
+        ${listHTML}
+      </div>
 
-  _overlay.innerHTML = `<div class="adm-card">
-    ${hdr("مراجعة الرفع")}
-    ${stepsHTML(2)}
-    <div class="adm-body">
-      <p class="adm-hint">تحقق من التفاصيل قبل الرفع</p>
-      ${contentHTML}
       <div class="adm-btns">
-        <button class="adm-btn adm-btn-ghost" id="adm-s2-back">→ تعديل</button>
-        <button class="adm-btn adm-btn-primary" id="adm-s2-upload">
+        <button class="adm-btn adm-btn-ghost" id="adm-s3-back">→ رجوع</button>
+        <button class="adm-btn adm-btn-primary" id="adm-s3-upload">
           ${isBatch ? `رفع ${_quizzes.length} اختبارات ☁️` : "رفع الاختبار ☁️"}
         </button>
       </div>
@@ -700,15 +715,24 @@ async function renderStep2({ educationType, college, subject, year, term, subfol
   </div>`;
 
   window.__admClose = closeModal;
-  document.getElementById("adm-s2-back").addEventListener("click", () => {
-    renderStep1({ educationType, college, subject, year, term, subfolder, author });
+  document.getElementById("adm-s3-back").addEventListener("click", () => {
+    renderStep2({ educationType, college, year, term });
   });
-  document.getElementById("adm-s2-upload").addEventListener("click", () => {
+  document.getElementById("adm-s3-upload").addEventListener("click", () => {
+    const author = document.getElementById("adm-author")?.value?.trim() || "";
+    persistSaved({ author });
     doUpload({ educationType, college, subject, year, term, subfolder, author });
   });
 }
 
-// ─── Step 3: Upload with progress checklist ───────────────────────────────────
+// ─── Step 4: Upload with progress checklist + confirmation links ──────────────
+// Quiz links point at /#quiz/{quizId} using the routable quiz content id
+// (quiz.meta.id) returned by the API — the same id the manifest/router use
+// elsewhere (see api/quiz-manifest.js), NOT the Supabase row id.
+function quizLinkHref(quizId) {
+  return `/#quiz/${encodeURIComponent(quizId)}`;
+}
+
 async function doUpload({ educationType, college, subject, year, term, subfolder, author }) {
   const isBatch = _quizzes.length > 1;
   const items   = _quizzes.map((q, i) => ({
@@ -719,16 +743,17 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr(isBatch ? `رفع ${_quizzes.length} اختبارات` : "رفع الاختبار")}
-    ${stepsHTML(3)}
+    ${stepsHTML(4)}
     <div class="adm-body">
-      <p class="adm-hint" id="adm-s3-hint">جارٍ رفع الاختبارات…</p>
+      <p class="adm-hint" id="adm-s4-hint">جارٍ رفع الاختبارات…</p>
       <ul class="adm-progress-list">
         ${items.map(item => `<li class="adm-progress-item" id="${item.id}">
           <span class="adm-progress-icon">⏳</span>
           <span class="adm-progress-name">${item.title}</span>
         </li>`).join("")}
       </ul>
-      <div class="adm-btns" id="adm-s3-btns" style="display:none;">
+      <div id="adm-s4-links"></div>
+      <div class="adm-btns" id="adm-s4-btns" style="display:none;">
         <button class="adm-btn adm-btn-primary" onclick="window.__admClose()">إغلاق</button>
       </div>
     </div>
@@ -756,11 +781,12 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   }
 
   let successCount = 0, errorCount = 0;
+  const successLinks = []; // { title, quizId }
 
   for (const item of items) {
     setItemState(item, "uploading");
     try {
-      await postUpload({
+      const result = await postUpload({
         education_type: educationType,
         college:   TRACKS_WITH_COLLEGE.has(educationType)  ? college || undefined : undefined,
         year:      TRACKS_WITH_YEARTERM.has(educationType) ? year    || undefined : undefined,
@@ -772,6 +798,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       });
       setItemState(item, "done");
       successCount++;
+      if (result?.quizId) successLinks.push({ title: item.title, quizId: result.quizId });
     } catch (err) {
       setItemState(item, "error", err.message || "فشل");
       errorCount++;
@@ -783,7 +810,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     }
   }
 
-  const hintEl = document.getElementById("adm-s3-hint");
+  const hintEl = document.getElementById("adm-s4-hint");
   if (hintEl) {
     if (errorCount === 0) {
       hintEl.textContent = `✅ تم رفع ${successCount} اختبار بنجاح!`;
@@ -795,8 +822,44 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       if (successCount > 0) showNotification(`تم ${successCount} اختبار (فشل ${errorCount})`, "warning");
     }
   }
-  const btnsEl = document.getElementById("adm-s3-btns");
+
+  const linksEl = document.getElementById("adm-s4-links");
+  if (linksEl && successLinks.length > 0) {
+    linksEl.innerHTML = renderConfirmationLinks(successLinks);
+    const toggleBtn = document.getElementById("adm-links-toggle");
+    if (toggleBtn) {
+      toggleBtn.addEventListener("click", () => {
+        const list = document.getElementById("adm-links-list");
+        const collapsed = list.style.display === "none";
+        list.style.display = collapsed ? "block" : "none";
+        toggleBtn.textContent = collapsed ? "إخفاء الروابط ▲" : `عرض الروابط (${successLinks.length}) ▼`;
+      });
+    }
+  }
+
+  const btnsEl = document.getElementById("adm-s4-btns");
   if (btnsEl) btnsEl.style.display = "flex";
+}
+
+function renderConfirmationLinks(links) {
+  const propagationNote = `<p class="adm-hint" style="margin:10px 0 6px;">⏱️ يستغرق ظهور الاختبار على المنصة حوالي 60 ثانية بعد الرفع.</p>`;
+
+  if (links.length === 1) {
+    return `${propagationNote}
+      <a class="adm-path-chip" href="${quizLinkHref(links[0].quizId)}" style="text-decoration:none;display:block;">
+        فتح الاختبار: ${links[0].title} ↗
+      </a>`;
+  }
+
+  return `${propagationNote}
+    <button type="button" id="adm-links-toggle" class="adm-btn adm-btn-ghost" style="width:100%;margin-bottom:8px;">
+      عرض الروابط (${links.length}) ▼
+    </button>
+    <ul class="adm-batch-list" id="adm-links-list" style="display:none;">
+      ${links.map(l => `<li class="adm-batch-item">
+        <a href="${quizLinkHref(l.quizId)}" style="text-decoration:none;color:inherit;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.title} ↗</a>
+      </li>`).join("")}
+    </ul>`;
 }
 
 // ─── Schema normalizer ────────────────────────────────────────────────────────
