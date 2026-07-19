@@ -157,11 +157,11 @@ function injectStyles() {
       background:var(--color-border); color:var(--color-text-tertiary); transition:all .25s;
     }
     .adm-step.active .adm-step-circle { background:var(--color-primary); color:#fff; border-color:var(--color-primary); box-shadow:0 0 0 4px var(--color-primary-light); }
-    .adm-step.done   .adm-step-circle { background:#22c55e; color:#fff; border-color:#22c55e; }
+    .adm-step.done   .adm-step-circle { background:var(--color-success); color:#fff; border-color:var(--color-success); }
     .adm-step-lbl { font-size:.66rem; font-weight:600; color:var(--color-text-tertiary); }
     .adm-step.active .adm-step-lbl { color:var(--color-primary); }
     .adm-step-line { flex:1; height:2px; background:var(--color-border); align-self:center; margin-bottom:16px; transition:background .25s; }
-    .adm-step-line.done { background:#22c55e; }
+    .adm-step-line.done { background:var(--color-success); }
 
     .adm-body { padding:16px 22px 22px; }
     .adm-hint { font-size:.85rem; color:var(--color-text-secondary); text-align:center; margin:0 0 16px; }
@@ -213,7 +213,7 @@ function injectStyles() {
       background:var(--color-background-secondary); transition:background .3s, border-color .3s;
     }
     .adm-progress-item.uploading { border-color:var(--color-primary); background:var(--color-primary-light); }
-    .adm-progress-item.done      { border-color:#22c55e; background:#f0fdf4; color: var(--color-text-primary); }
+    .adm-progress-item.done      { border-color:var(--color-success); background:var(--color-success-light); color: var(--color-text-primary); }
     .adm-progress-item.error     { border-color:var(--color-error); background:var(--color-error-light); }
     .adm-progress-icon { font-size:1rem; flex-shrink:0; min-width:20px; text-align:center; }
     .adm-progress-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
@@ -692,7 +692,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
 
       <div class="adm-field">
         <label for="adm-author">اسم المشرف صاحب الإمتحان <span class="adm-badge adm-badge-opt">اختياري</span></label>
-        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${saved.author || ""}" />
+        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${saved.author || localStorage.getItem("username") || ""}" />
       </div>
 
       <div class="adm-preview">
@@ -730,7 +730,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
 // (quiz.meta.id) returned by the API — the same id the manifest/router use
 // elsewhere (see api/quiz-manifest.js), NOT the Supabase row id.
 function quizLinkHref(quizId) {
-  return `/#quiz/${encodeURIComponent(quizId)}`;
+  return window.location.origin + "/q/" + encodeURIComponent(quizId);
 }
 
 async function doUpload({ educationType, college, subject, year, term, subfolder, author }) {
@@ -814,7 +814,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   if (hintEl) {
     if (errorCount === 0) {
       hintEl.textContent = `✅ تم رفع ${successCount} اختبار بنجاح!`;
-      hintEl.style.color = "#22c55e";
+      hintEl.style.color = "var(--color-success)";
       showNotification(`تم الرفع بنجاح ✅ (${successCount} اختبار)`, "success");
     } else {
       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;

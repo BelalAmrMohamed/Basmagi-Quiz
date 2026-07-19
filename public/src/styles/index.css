@@ -2765,6 +2765,12 @@ Container
   margin-bottom: 20px;
 }
 
+@media (max-width: 480px) {
+  .user-quiz-search-actions{
+    gap: 5px;
+  }
+}
+
 /* ============================================================================
    QUESTION TYPE BADGES (exam cards)
    ============================================================================ */
@@ -3643,6 +3649,13 @@ kbd {
   box-shadow:
     0 6px 16px -2px color-mix(in srgb, var(--color-primary) 55%, transparent),
     var(--shadow-md);
+}
+
+@media (max-width: 480px) {
+ .btn.selection-toggle-btn,
+ .admin-log-in-btn {
+  gap: 4px;
+ }
 }
 
 /* ── Per-card selection checkbox ──
