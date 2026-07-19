@@ -536,8 +536,10 @@ body {
 
 .footer-bottom {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   padding: 20px 28px;
   max-width: 1100px;
   margin: 0 auto;
@@ -1065,4 +1067,44 @@ body {
   .course-item:hover {
     border-width: 3px;
   }
+}
+
+/* ─────────────────────────────────────────
+    FOOTER
+───────────────────────────────────────── */
+.ft-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.footer-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid #374151;
+  color: var(--ft-text);
+  padding: 8px 20px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-size: 0.84rem;
+  font-weight: 500;
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.copyright {
+  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-size: 0.78rem;
+  color: var(--ft-muted);
+  line-height: 1.6;
+}
+
+.footer-back-btn:hover {
+  background: #1f2937;
+  border-color: #4b5563;
+  color: #ffffff;
 }
