@@ -635,11 +635,11 @@ async function renderStep2({ educationType, college, year, term }) {
 function getStep2Values() {
   const subRaw   = document.getElementById("adm-subject")?.value;
   const subject  = subRaw === "__new__"
-    ? document.getElementById("adm-new-subject")?.value?.trim()
+    ? document.getElementById("adm-new-subject")?.value?.trim().replace(/\//g, "-")
     : subRaw?.trim();
   const folRaw   = document.getElementById("adm-subfolder")?.value;
   const subfolder = folRaw === "__new__"
-    ? document.getElementById("adm-new-subfolder")?.value?.trim()
+    ? document.getElementById("adm-new-subfolder")?.value?.trim().replace(/\//g, "-")
     : folRaw === "" ? "" : folRaw?.trim();
   return { subject, subfolder };
 }
@@ -726,7 +726,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
 }
 
 // ─── Step 4: Upload with progress checklist + confirmation links ──────────────
-// Quiz links point at /#quiz/{quizId} using the routable quiz content id
+// Quiz links point at /q/{quizId} using the routable quiz content id
 // (quiz.meta.id) returned by the API — the same id the manifest/router use
 // elsewhere (see api/quiz-manifest.js), NOT the Supabase row id.
 function quizLinkHref(quizId) {
@@ -841,14 +841,29 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   if (btnsEl) btnsEl.style.display = "flex";
 }
 
+window.__admCopyLink = (url) => {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url).then(() => showNotification("تم النسخ بنجاح", "success"));
+  } else {
+    const t = document.createElement("input");
+    t.value = url;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand("copy");
+    t.remove();
+    showNotification("تم النسخ بنجاح", "success");
+  }
+};
+
 function renderConfirmationLinks(links) {
   const propagationNote = `<p class="adm-hint" style="margin:10px 0 6px;">⏱️ يستغرق ظهور الاختبار على المنصة حوالي 60 ثانية بعد الرفع.</p>`;
 
   if (links.length === 1) {
     return `${propagationNote}
-      <a class="adm-path-chip" href="${quizLinkHref(links[0].quizId)}" style="text-decoration:none;display:block;">
-        فتح الاختبار: ${links[0].title} ↗
-      </a>`;
+      <button class="adm-path-chip adm-copy-btn" onclick="window.__admCopyLink('${quizLinkHref(links[0].quizId)}')" style="border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:.85rem;">
+        <span>نسخ رابط الاختبار: ${links[0].title}</span>
+        <span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>
+      </button>`;
   }
 
   return `${propagationNote}
@@ -856,8 +871,9 @@ function renderConfirmationLinks(links) {
       عرض الروابط (${links.length}) ▼
     </button>
     <ul class="adm-batch-list" id="adm-links-list" style="display:none;">
-      ${links.map(l => `<li class="adm-batch-item">
-        <a href="${quizLinkHref(l.quizId)}" style="text-decoration:none;color:inherit;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${l.title} ↗</a>
+      ${links.map(l => `<li class="adm-batch-item adm-copy-btn" onclick="window.__admCopyLink('${quizLinkHref(l.quizId)}')" style="cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;" onmouseover="this.style.background='var(--color-primary-light)'" onmouseout="this.style.background='var(--color-background-secondary)'">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">${l.title}</span>
+        <span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>
       </li>`).join("")}
     </ul>`;
 }
@@ -903,6 +919,7 @@ function normalizeQuizSchema(quiz) {
 
 // ─── Modal lifecycle ──────────────────────────────────────────────────────────
 async function _openWizard(quizzes) {
+  if (_overlay) return; // Prevent multiple modal instances
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
     setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
