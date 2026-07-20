@@ -40,6 +40,16 @@ export default async function handler(req, res) {
     .ilike("handle", normalizedHandle)
     .maybeSingle();
 
+  // TEMP DIAGNOSTIC — remove once the redirect issue is confirmed fixed.
+  console.log("[render-profile] lookup", {
+    rawHandle: handle,
+    cleanHandle,
+    normalizedHandle,
+    found: !!adminData,
+    adminData,
+    error: error ? { message: error.message, code: error.code, details: error.details } : null,
+  });
+
   if (error || !adminData) {
     // Admin not found
     return res.redirect(302, "/profile.html");
