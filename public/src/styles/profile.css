@@ -986,7 +986,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   }
 
   .avatar-wrapper,
-  .avatar-wrapper img {
+  .avatar-wrapper > #avatarImage {
     width: 64px;
     height: 64px;
     min-width: 64px;
