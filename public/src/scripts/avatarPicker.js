@@ -6,7 +6,7 @@
 
 import { avatarEngine } from "../shared/avatarEngine.js";
 import { prompt_user, showNotification } from "../components/notifications.js";
-import { getAdminRoleInfo } from "./adminAuth.js";
+import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 
 let activeStream = null;
 
@@ -90,8 +90,36 @@ function applyAvatar(dataUrl) {
     window.dispatchEvent(new CustomEvent("avatarUpdated"));
     showNotification("تم تحديث الصورة الشخصية", "", "success");
     closeAvatarPicker();
+    syncAvatarToServer(dataUrl);
   } else {
     showNotification("تعذّر حفظ الصورة، جرّب صورة أصغر", "", "error");
+  }
+}
+
+// Persists the avatar to admin_users.avatar_url for admin/dev accounts so
+// it shows up in visitor view (public profile). Regular/anonymous users
+// have no DB row — getAdminRoleInfo() returning null is the guard for that.
+// Best-effort/fire-and-forget: the local avatar (avatarEngine, already
+// saved above) is what the owner's own UI always shows, so a failed sync
+// here shouldn't interrupt or roll back what the user just did.
+async function syncAvatarToServer(dataUrl) {
+  const roleInfo = getAdminRoleInfo();
+  if (!roleInfo) return;
+
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    await fetch("/api/admin-stats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({ avatarUrl: dataUrl }),
+    });
+  } catch (err) {
+    console.error("Failed to sync avatar to server", err);
   }
 }
 
@@ -267,5 +295,8 @@ export function initAvatarPicker() {
       window.dispatchEvent(new CustomEvent("avatarUpdated"));
       showNotification("تمت إزالة الصورة الشخصية", "", "success");
       closeAvatarPicker();
+      // Clear the server-side copy too, so a removed avatar doesn't keep
+      // showing up in visitor view after it's gone from the owner's own UI.
+      syncAvatarToServer(null);
     });
 }

@@ -1,19 +1,19 @@
-// src/scripts/features/profile/profile.js - Enhanced with All Features
+// src/scripts/profile.js - Enhanced with All Features
 
-import { gameEngine, BADGES } from "../../shared/gameEngine.js";
-import { avatarEngine } from "../../shared/avatarEngine.js";
-import { getManifest } from "../../scripts/quizManifest.js";
-import { InfiniteList } from "../../features/profile/infiniteScroll.js";
-import { initAvatarPicker } from "../../scripts/avatarPicker.js";
+import { gameEngine, BADGES } from "../shared/gameEngine.js";
+import { avatarEngine } from "../shared/avatarEngine.js";
+import { getManifest } from "./quizManifest.js";
+import { InfiniteList } from "../shared/infiniteScroll.js";
+import { initAvatarPicker } from "./avatarPicker.js";
 import {
   renderActivityHeatmap,
   renderCategoryMastery,
   renderNextBadges,
   renderFlaggedQuestions,
-} from "../../scripts/profileWidgets.js";
+} from "./profileWidgets.js";
 
-import { confirmationNotification, showNotification } from "../../components/notifications.js";
-import { getAdminRoleInfo } from "../../scripts/adminAuth.js";
+import { confirmationNotification, showNotification, prompt_user } from "../components/notifications.js";
+import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 
 let examList = [];
 let examById = new Map();
@@ -110,7 +110,7 @@ export function refreshUI(options = {}) {
                   setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
                 });
               } else {
-                prompt("انسخ الرابط التالي:", url);
+                prompt_user("انسخ الرابط التالي:", url);
               }
             };
           }
@@ -128,7 +128,10 @@ export function refreshUI(options = {}) {
   if (roleInfo) {
     applyRoleBadges(roleInfo.role, roleInfo.isOwner);
     if (!skipNetworkFetches) {
-      fetchAndRenderAdminStats(undefined, myToken); // Fetch stats for owner
+      // isVisitorContext=false: this is the owner's own dashboard, so the
+      // response is a sync confirmation only — it never overwrites the
+      // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
+      fetchAndRenderAdminStats(undefined, myToken, false);
     }
   }
 }
@@ -166,7 +169,16 @@ function applyRoleBadges(role, isOwner) {
   }
 }
 
-async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken) {
+// isVisitorContext controls whether totalPoints/totalQuizzes/totalBadges/
+// currentLevel get written to the DOM from this response.
+//   - Own dashboard: NO. Those four are localStorage-only, always — the
+//     local copy (gameEngine) is the source of truth for what the owner
+//     sees. The DB row is synced FROM local (see syncProgressToServer),
+//     never the other way, so this response should never write over them.
+//   - Visitor view: YES. An anonymous visitor can't read someone else's
+//     localStorage, so this DB-mirrored response is the only source of
+//     that data available at all.
+async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, isVisitorContext = false) {
   document.getElementById("adminStatsGrid").style.display = "grid";
   try {
     const token = sessionStorage.getItem("__bq_adm");
@@ -190,24 +202,70 @@ async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken) {
        document.getElementById("adminReportsCount").textContent = data.reportsCount || 0;
        document.getElementById("adminResolvedReportsCount").textContent = data.resolvedReports || 0;
 
-       // Populate public stats grid
-       if (document.getElementById("totalPoints") && typeof data.totalPoints !== 'undefined') {
-         document.getElementById("totalPoints").textContent = data.totalPoints;
-       }
-       if (document.getElementById("totalQuizzes") && typeof data.totalQuizzes !== 'undefined') {
-         document.getElementById("totalQuizzes").textContent = data.totalQuizzes;
-       }
-       if (document.getElementById("totalBadges") && typeof data.totalBadges !== 'undefined') {
-         document.getElementById("totalBadges").textContent = data.totalBadges;
-       }
-       if (document.getElementById("currentLevel") && typeof data.currentLevel !== 'undefined') {
-         document.getElementById("currentLevel").textContent = data.currentLevel;
+       if (isVisitorContext) {
+         // Public stats grid — only meaningful here, see comment above.
+         if (document.getElementById("totalPoints") && typeof data.totalPoints !== 'undefined') {
+           document.getElementById("totalPoints").textContent = data.totalPoints;
+         }
+         if (document.getElementById("totalQuizzes") && typeof data.totalQuizzes !== 'undefined') {
+           document.getElementById("totalQuizzes").textContent = data.totalQuizzes;
+         }
+         if (document.getElementById("totalBadges") && typeof data.totalBadges !== 'undefined') {
+           document.getElementById("totalBadges").textContent = data.totalBadges;
+         }
+         if (document.getElementById("currentLevel") && typeof data.currentLevel !== 'undefined') {
+           document.getElementById("currentLevel").textContent = data.currentLevel;
+         }
        }
 
-       return { role: data.role, isOwner: !!data.isOwner };
+       return { role: data.role, isOwner: !!data.isOwner, avatarUrl: data.avatarUrl || null };
     }
   } catch(e) {}
   return null;
+}
+
+// Pushes local progress (points/quizzes/badges/level) up to admin_users so
+// the DB row — which visitor view and the leaderboard read from — reflects
+// real activity instead of sitting at its seeded/zero values forever.
+// Fire-and-forget: local is always the source of truth for the owner's own
+// UI, so a failed sync here is not user-visible and not worth surfacing.
+// Guarded to admin/dev accounts only (getAdminRoleInfo() / getToken()) —
+// regular/anonymous users have no admin_users row to sync to.
+let progressSyncInFlight = false;
+async function syncProgressToServer() {
+  if (progressSyncInFlight) return;
+
+  const roleInfo = getAdminRoleInfo();
+  if (!roleInfo) return;
+  const token = getToken();
+  if (!token) return;
+
+  const user = gameEngine.getUserData();
+  const levelInfo = gameEngine.calculateLevel(user.totalPoints || 0);
+
+  progressSyncInFlight = true;
+  try {
+    await fetch("/api/admin-stats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        totalPoints: user.totalPoints || 0,
+        totalQuizzes: user.history ? user.history.length : 0,
+        totalBadges: user.badges ? user.badges.length : 0,
+        currentLevel: levelInfo.level || 1,
+      }),
+      // keepalive lets this survive a tab-hide/navigate-away without being
+      // cancelled mid-flight, since one of the two call sites is exactly that.
+      keepalive: true,
+    });
+  } catch (err) {
+    console.error("Failed to sync progress to server", err);
+  } finally {
+    progressSyncInFlight = false;
+  }
 }
 
 async function setupVisitorView(handle) {
@@ -232,15 +290,41 @@ async function setupVisitorView(handle) {
     headerTitle.setAttribute("data-text", handle);
   }
 
+  // Avatar: render immediately from the server-injected meta tag (no extra
+  // round-trip) if present, so visitor view isn't stuck with the blank
+  // src="" it starts with. fetchAndRenderAdminStats also returns avatarUrl
+  // below as a fallback in case the meta tag is ever missing/stale.
+  const avatarMeta = document.querySelector('meta[name="admin:avatar"]');
+  renderVisitorAvatar(avatarMeta ? avatarMeta.content : null, handle);
+
   // Fetch the visited user's stats, and — since the endpoint is the only
   // source of truth on this page for who the visited user actually is —
   // read role/isOwner from its response instead of assuming "admin" for
   // every visitor (that previously mislabeled regular users as admins).
-  const visitedRole = await fetchAndRenderAdminStats(handle);
+  const visitedRole = await fetchAndRenderAdminStats(handle, refreshToken, true);
 
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
     applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
   }
+  if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
+    renderVisitorAvatar(visitedRole.avatarUrl, handle);
+  }
+}
+
+function renderVisitorAvatar(avatarUrl, handle) {
+  const img = document.getElementById("avatarImage");
+  if (!img) return;
+
+  if (avatarUrl) {
+    img.src = avatarUrl;
+  } else {
+    // Same generated-initial fallback avatarEngine.generateDefaultAvatarSVG
+    // produces for the owner's own view, kept local here since visitor view
+    // has no gameEngine user object to derive a name from — just the handle.
+    const svg = avatarEngine.generateDefaultAvatarSVG(handle);
+    img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+  img.alt = `الصورة الشخصية لـ ${handle}`;
 }
 
 // Delete history entry
@@ -313,9 +397,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (isVisitorView) {
-    setupVisitorView(adminHandleMeta.content);
-    // Render only the generic stuff that still works without local user
-    renderLeaderboard({}, "User", ++refreshToken);
+    const visitedHandle = adminHandleMeta.content;
+    setupVisitorView(visitedHandle);
+    // Real leaderboard, with the visited profile's row highlighted instead
+    // of the viewer's own (the viewer has no meaningful position here, and
+    // may not even be an admin) — see renderLeaderboard's visitedHandle param.
+    renderLeaderboard({}, "User", ++refreshToken, visitedHandle);
   } else {
     initAvatarPicker();
     refreshUI();
@@ -323,6 +410,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.addEventListener("avatarUpdated", () => {
       const currentName = localStorage.getItem("username") || "مستخدم";
       renderAvatar(gameEngine.getUserData(), currentName);
+    });
+
+    // Push local progress to the DB on load, and again whenever the tab is
+    // hidden/backgrounded (covers navigating away, switching tabs, closing
+    // the tab on most browsers) — see syncProgressToServer for why this
+    // never feeds back into what's rendered on this page.
+    syncProgressToServer();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        syncProgressToServer();
+      }
     });
   }
 });
@@ -560,13 +658,21 @@ function renderBadges(user) {
       .join("") || "اكسب الشارات بإكمال الاختبارات!";
 }
 
-async function renderLeaderboard(user, currentName, myToken = refreshToken) {
+// visitedHandle: when set (visitor view), the leaderboard always renders
+// from the real DB data and highlights the *visited* profile's row rather
+// than the viewer's own — the viewer has no meaningful position to show
+// here at all (they may not even be an admin), so their identity is
+// irrelevant to this render.
+async function renderLeaderboard(user, currentName, myToken = refreshToken, visitedHandle = null) {
   const leaderboardEl = document.getElementById("leaderboard");
   if (!leaderboardEl) return;
 
   const roleInfo = getAdminRoleInfo();
-  const isAdmin = !!roleInfo;
+  const isAdmin = !!roleInfo || !!visitedHandle;
   const displayName = currentName || localStorage.getItem("username") || "مستخدم";
+  // The handle to highlight: the visited profile in visitor view, otherwise
+  // the viewer's own handle from their JWT.
+  const highlightHandle = visitedHandle || (roleInfo && roleInfo.handle);
 
   if (isAdmin) {
     try {
@@ -582,11 +688,11 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken) {
         leaderboardEl.innerHTML = admins
           .map(
             (entry, i) => `
-          <div class="lb-row ${entry.handle === roleInfo.handle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === roleInfo.handle ? displayName + " (أنت)" : (entry.display_name || entry.handle)}، ${entry.total_quizzes.toLocaleString()} اختبار">
+          <div class="lb-row ${entry.handle === highlightHandle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === highlightHandle ? (visitedHandle ? (entry.display_name || entry.handle) : displayName + " (أنت)") : (entry.display_name || entry.handle)}، ${entry.total_quizzes.toLocaleString()} اختبار">
             <span style="flex:1; display:flex; align-items:center; gap:6px;">
               <span style="font-weight:bold; color:var(--color-primary); width:18px;" aria-hidden="true">${i + 1}.</span> 
               <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.display_name || entry.handle}">
-                ${entry.handle === roleInfo.handle ? displayName + ' (أنت)' : (entry.display_name || entry.handle)}
+                ${entry.handle === highlightHandle ? (visitedHandle ? (entry.display_name || entry.handle) : displayName + ' (أنت)') : (entry.display_name || entry.handle)}
               </span>
             </span>
             <strong>${entry.total_quizzes.toLocaleString()} إختبار</strong>

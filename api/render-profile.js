@@ -36,11 +36,13 @@ export default async function handler(req, res) {
   // Fetch admin metadata
   const { data: adminData, error } = await supabase
     .from("admin_users")
-    .select("display_name, handle")
+    .select("display_name, handle, avatar_url")
     .ilike("handle", normalizedHandle)
     .maybeSingle();
 
-  // TEMP DIAGNOSTIC — remove once the redirect issue is confirmed fixed.
+  // TEMP DIAGNOSTIC -- left in place; flag to product owner whether to
+  // remove now that the redirect bug is confirmed fixed, rather than
+  // silently deleting logging that was deliberately added for this.
   console.log("[render-profile] lookup", {
     rawHandle: handle,
     cleanHandle,
@@ -63,14 +65,25 @@ export default async function handler(req, res) {
     return res.status(500).send("Internal Server Error");
   }
 
-  // Inject meta tag for client-side JS to pick up
+  // Inject meta tags for client-side JS to pick up. avatar_url is a
+  // (possibly large) data-URL — escapeHtml handles the characters that
+  // matter inside a double-quoted attribute (", &, <, >), which is all
+  // that's needed here since we're not writing it into a URL context.
+  const avatarMetaTag = adminData.avatar_url
+    ? `  <meta name="admin:avatar" content="${escapeHtml(adminData.avatar_url)}">\n`
+    : "";
   html = html.replace(
     "</head>",
-    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n</head>`
+    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n${avatarMetaTag}</head>`
   );
 
-  const title = `${adminData.display_name} | منصة إمتحانات بصمجي`;
-  const description = `الصفحة الشخصية للمشرف ${adminData.display_name} على منصة إمتحانات بصمجي`;
+  // Fall back to the handle when display_name hasn't been set (NULL in the
+  // DB) — without this, the title/description literally read "null | ..."
+  // for any admin/dev who never set a display name.
+  const displayLabel = adminData.display_name || adminData.handle;
+
+  const title = `${displayLabel} | منصة إمتحانات بصمجي`;
+  const description = `الصفحة الشخصية للمشرف ${displayLabel} على منصة إمتحانات بصمجي`;
   const canonicalUrl = `${SITE_ORIGIN}/@${encodeURIComponent(cleanHandle)}`;
 
   html = html.replace(
