@@ -1,4 +1,4 @@
--- Supabase-DB-context.sql | Last updated on version `v6.1.19` (auth refactor)
+-- Supabase-DB-context.sql | Last updated on version `v6.1.20` (auth refactor)
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 

@@ -463,7 +463,7 @@ async function renderLeaderboard(user) {
 
   if (isAdmin) {
     try {
-      const res = await fetch("/api/admin-leaderboard");
+      const res = await fetch("/api/admin-stats?leaderboard=true");
       if (res.ok) {
         const admins = await res.json();
         const displayName = localStorage.getItem("username") || "User";

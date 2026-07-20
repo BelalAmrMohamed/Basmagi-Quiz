@@ -11,6 +11,22 @@ export default async function handler(req, res) {
   }
 
   const handle = req.query.handle;
+  const isLeaderboard = req.query.leaderboard === "true";
+
+  if (isLeaderboard) {
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("display_name, handle, total_quizzes, current_level")
+      .order("total_quizzes", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data);
+  }
+
   if (!handle) {
     return res.status(400).json({ error: "Missing handle parameter" });
   }
