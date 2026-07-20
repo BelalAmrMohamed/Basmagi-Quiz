@@ -1,10 +1,10 @@
-// src/scripts/avatarPicker.js - Avatar Picker Modal Controller
+// src/shared/avatarPicker.js - Avatar Picker Modal Controller
 // Handles the "choose your avatar" overlay: default preset avatars
 // (generated, not stored, from initials), local file upload, and
 // device camera capture. Mirrors the interaction pattern already used
 // by #contactDevOverlay in profile.html.
 
-import { avatarEngine } from "../shared/avatarEngine.js";
+import { avatarEngine } from "./avatarEngine.js";
 import { prompt_user, showNotification } from "../components/notifications.js";
 import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 

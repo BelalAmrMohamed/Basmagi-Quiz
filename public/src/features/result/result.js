@@ -1,21 +1,21 @@
-// src/scripts/result.js
+// src/features/result/result.js
 
 // Temporary | For performance debugging
 console.log("result.js loaded successfully")
 
-import { getManifest } from "./quizManifest.js";
+import { getManifest } from "../../shared/quizManifest.js";
 
 // Download functions
-import { exportToQuiz } from "../features/export/export-to-quiz.js";
-import { exportToHtml } from "../features/export/export-to-html.js";
-import { exportToPdf } from "../features/export/export-to-pdf.js";
-import { exportToWord } from "../features/export/export-to-word.js";
-import { exportToPptx } from "../features/export/export-to-pptx.js";
-import { buildQuizText } from "../features/export/export-to-text.js";
-import { exportToMarkdown } from "../features/export/export-to-markdown.js";
+import { exportToQuiz } from "../export/export-to-quiz.js";
+import { exportToHtml } from "../export/export-to-html.js";
+import { exportToPdf } from "../export/export-to-pdf.js";
+import { exportToWord } from "../export/export-to-word.js";
+import { exportToPptx } from "../export/export-to-pptx.js";
+import { buildQuizText } from "../export/export-to-text.js";
+import { exportToMarkdown } from "../export/export-to-markdown.js";
 
 // Notifications
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 // Question helpers
 import {
@@ -23,12 +23,12 @@ import {
   isEssayQuestion,
   calculateQuizMetrics,
   isAnswerCorrect,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
 // scanDirections:           post-render direction scan for non-markdown elements
-import { renderMarkdown, scanDirections } from "../shared/markdown.js";
+import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 
 // Helpers
 const userName = localStorage.getItem("username") || "User";

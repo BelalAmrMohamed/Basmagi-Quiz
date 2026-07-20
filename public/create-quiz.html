@@ -145,7 +145,7 @@
     <link rel="stylesheet" href="src/components/notifications.css">
 
     <link rel="modulepreload" href="src/components/side-menu.js">
-    <link rel="modulepreload" href="src/scripts/avatarPicker.js">
+    <link rel="modulepreload" href="src/shared/avatarPicker.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
 
     <!-- KaTeX — LaTeX math rendering
@@ -1287,7 +1287,7 @@
     <script type="module" src="src/features/create/create-quiz.js"></script>
     <script type="module" src="src/components/side-menu.js"></script>
     <script type="module">
-        import { initPWA } from "./src/scripts/pwa-manager.js";
+        import { initPWA } from "./src/shared/pwa-manager.js";
         document.addEventListener("DOMContentLoaded", () => initPWA());
     </script>
 </body>

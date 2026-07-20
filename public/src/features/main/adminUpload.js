@@ -1,5 +1,5 @@
 // =============================================================================
-// public/src/scripts/adminUpload.js
+// public/src/features/main/adminUpload.js
 // Admin quiz upload workflow - 4-step modal.
 //
 // Steps:
@@ -23,12 +23,12 @@
 //   Batch quizzes - opened via openAdminUploadModal(quizzes[]) from bulk action bar
 // =============================================================================
 
-import { getToken, isAdminAuthenticated, signOut } from "./adminAuth.js";
-import { showNotification } from "../components/notifications.js";
-import { userProfile } from "./userProfile.js";
-import { generateQuizId } from "./quizId.js";
-import { getManifest } from "./quizManifest.js";
-import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
+import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
+import { showNotification } from "../../components/notifications.js";
+import { userProfile } from "../../shared/userProfile.js";
+import { generateQuizId } from "../../shared/quizId.js";
+import { getManifest } from "../../shared/quizManifest.js";
+import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {

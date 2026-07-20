@@ -1,4 +1,4 @@
-// public/src/scripts/quizId.js
+// public/src/shared/quizId.js
 // =============================================================================
 // Browser-compatible quiz ID generator.
 // Uses the Web Crypto API (SubtleCrypto) to produce the SAME IDs as the

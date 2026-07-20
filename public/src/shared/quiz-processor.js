@@ -1,6 +1,6 @@
 // src/shared/quiz-processor.js
 // Shared quiz file/text processing utilities used by both create-quiz and index pages.
-import { generateQuizId } from "../scripts/quizId.js";
+import { generateQuizId } from "../shared/quizId.js";
 
 /**
  * Dynamically load a script from CDN.

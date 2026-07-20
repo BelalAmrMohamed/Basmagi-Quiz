@@ -153,7 +153,7 @@
 
     <script type="module" src="src/shared/theme-controller.js"></script>
     <link rel="modulepreload" href="src/components/side-menu.js">
-    <link rel="modulepreload" href="src/scripts/avatarPicker.js">
+    <link rel="modulepreload" href="src/shared/avatarPicker.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
 </head>
 
@@ -851,9 +851,9 @@
         </div>
     </div>
 
-    <script type="module" src="src/scripts/profile.js"></script>
+    <script type="module" src="src/features/profile/profile.js"></script>
     <script type="module">
-        import { initHeatmapOverflowSync } from "./src/scripts/features/profile/heatmapOverflow.js";
+        import { initHeatmapOverflowSync } from "./src/features/profile/heatmapOverflow.js";
         document.addEventListener("DOMContentLoaded", () => initHeatmapOverflowSync());
     </script>
     <script type="module" src="src/components/side-menu.js"></script>
@@ -861,7 +861,7 @@
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
 
     <script type="module">
-        import { initPWA } from "./src/scripts/pwa-manager.js";
+        import { initPWA } from "./src/shared/pwa-manager.js";
         document.addEventListener("DOMContentLoaded", () => initPWA());
     </script>
 </body>

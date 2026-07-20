@@ -1,4 +1,4 @@
-// src/scripts/userProfile.js - User Profile & Subscription Management
+// src/shared/userProfile.js - User Profile & Subscription Management
 // Centralized user profile management for the Quiz Master PWA
 
 /**

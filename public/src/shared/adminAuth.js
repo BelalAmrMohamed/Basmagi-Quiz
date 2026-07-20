@@ -1,5 +1,5 @@
 // =============================================================================
-// public/src/scripts/adminAuth.js
+// public/src/shared/adminAuth.js
 //
 // WHY sessionStorage (not pure memory):
 //   The original design stored the JWT only in a JS module variable.

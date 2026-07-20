@@ -4,7 +4,7 @@
 // so avatar payloads never bloat the read/write path of the main profile
 // object, and a corrupt/oversized avatar can never break quiz progress.
 
-import { getAdminRoleInfo } from "../scripts/adminAuth.js";
+import { getAdminRoleInfo } from "../shared/adminAuth.js";
 
 const AVATAR_KEY = "quiz_user_avatar";
 const AVATAR_SIZE = 256; // px, output square dimension

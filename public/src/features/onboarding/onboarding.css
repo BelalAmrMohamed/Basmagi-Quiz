@@ -1,5 +1,5 @@
 /* =============================================================================
-   onboarding.css — Mobile-first, fully responsive
+   public/src/features/onboarding/onboarding.css — Mobile-first, fully responsive
    Strategy:
      • CSS custom properties for all spacing/typography → single source of truth
      • clamp() for fluid type that scales between breakpoints without jumps

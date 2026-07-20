@@ -1,11 +1,11 @@
-// settings.js - Settings page: name, education type, faculty, year, term, quiz style, default mode
+// public/src/features/settings/settings.js - Settings page: name, education type, faculty, year, term, quiz style, default mode
 
 // Temporary | For performance debugging
 console.log("settings.js loaded successfully")
 
 
-import { getManifest } from "./quizManifest.js";
-import { userProfile } from "./userProfile.js";
+import { getManifest } from "../../shared/quizManifest.js";
+import { userProfile } from "../../shared/userProfile.js";
 import {
   getAvailableFaculties,
   getAvailableYears,
@@ -13,8 +13,8 @@ import {
   filterTrackCourses,
   filterFeaturedCourses,
   isUniversityTrack,
-} from "../shared/filterUtils.js";
-import { validateUsername } from "../shared/user-name-validation.js";
+} from "../../shared/filterUtils.js";
+import { validateUsername } from "../../shared/user-name-validation.js";
 
 const AUTOSAVE_DELAY = 800;
 

@@ -1,4 +1,4 @@
-// public/src/scripts/quizManifest.js
+// public/src/shared/quizManifest.js
 // =============================================================================
 // Loads and merges the local static manifest with the live DB manifest.
 //
@@ -30,7 +30,7 @@
 // Call invalidateManifestCache() after an admin upload.
 // =============================================================================
 
-import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
+import { extractFolderSegmentsFromQuizPath } from "./quizPath.js";
 
 const LOCAL_MANIFEST_URL = new URL(
   "../../data/quiz-manifest.json",

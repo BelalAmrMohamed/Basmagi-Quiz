@@ -3,13 +3,13 @@
 // Temporary | For performance debugging
 console.log("quiz.js loaded successfully")
 
-import { getManifest } from "../../scripts/quizManifest.js";
+import { getManifest } from "../../shared/quizManifest.js";
 import { gameEngine } from "../../shared/gameEngine.js";
 import {
   showNotification,
   confirmationNotification,
 } from "../../components/notifications.js";
-import { userProfile } from "../../scripts/userProfile.js";
+import { userProfile } from "../../shared/userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
 import {
   gradeEssay,

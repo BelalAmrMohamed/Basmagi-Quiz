@@ -214,8 +214,8 @@ import "../../shared/console-core.js";
 // ============================================================================
 // --- Imports ---
 // ============================================================================
-import { getManifest } from "../../scripts/quizManifest.js";
-import { userProfile } from "../../scripts/userProfile.js";
+import { getManifest } from "../../shared/quizManifest.js";
+import { userProfile } from "../../shared/userProfile.js";
 import { SearchManager } from "./search-manager.js";
 import {
   extractTextFromFile,
@@ -305,13 +305,13 @@ import { exportToWord } from "../../features/export/export-to-word.js";
 import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
-import { createUploadButton } from "../../scripts/adminUpload.js";
+import { createUploadButton } from "../../features/main/adminUpload.js";
 import {
   isAdminAuthenticated,
   hasAdminSessionHint,
   signInWithSupabase,
   fullSignOut,
-} from "../../scripts/adminAuth.js";
+} from "../../shared/adminAuth.js";
 import { openSignInDialog } from "../../features/main/sign-in.js";
 
 // Helper utilities
@@ -324,7 +324,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 // imported by side-menu.js (which loads on every page), placing the call
 // here means we don't need a separate <script type="module"> bootstrap in
 // each HTML file.
-import { initPWA } from "../../scripts/pwa-manager.js";
+import { initPWA } from "../../shared/pwa-manager.js";
 
 // AI Prompt for converting files to JSON quiz format
 const General_Purpose_AI_Prompt = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
@@ -2371,7 +2371,7 @@ function renderBulkActionBar() {
          if (selectedUserQuizzes.size === 0) return;
          const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
          const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
-         import("../../scripts/adminUpload.js").then(mod => {
+         import("../../features/main/adminUpload.js").then(mod => {
             mod.openAdminUploadModal(selected);
          });
       };

@@ -3,7 +3,7 @@
 // Shared quiz path parsing for manifest generation and API routes.
 // =============================================================================
 
-import { generateQuizId } from "../scripts/quizId.js";
+import { generateQuizId } from "../shared/quizId.js";
 
 export const ROOT_MAP = {
   University: {

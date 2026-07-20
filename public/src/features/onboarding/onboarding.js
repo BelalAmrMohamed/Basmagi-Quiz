@@ -1,10 +1,10 @@
-// src/scripts/onboarding.js
+// src/features/onboarding/onboarding.js
 
 // Temporary | For performance debugging
 console.log("onboarding.js loaded successfully")
 
-import { userProfile } from "./userProfile.js";
-import { getManifest } from "./quizManifest.js";
+import { userProfile } from "../../shared/userProfile.js";
+import { getManifest } from "../../shared/quizManifest.js";
 import {
   getAvailableFaculties,
   getAvailableYears,
@@ -12,11 +12,11 @@ import {
   filterTrackCourses,
   filterFeaturedCourses,
   isUniversityTrack,
-} from "../shared/filterUtils.js";
+} from "../../shared/filterUtils.js";
 
 import {
   showNotification,
-} from "../components/notifications.js";
+} from "../../components/notifications.js";
 
 let categoryTree = null;
 let currentStepIndex = 0;

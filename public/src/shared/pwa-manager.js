@@ -1,5 +1,5 @@
 /**
- * pwa-manager.js
+ * public/src/shared/pwa-manager.js
  * Central PWA bootstrap for every page.
  *
  * Responsibilities (Step 1 — offline banner + SW registration):
@@ -17,16 +17,16 @@
  * Import this module on every page and call initPWA() on DOMContentLoaded:
  *
  *   <script type="module">
- *     import { initPWA } from "./src/scripts/pwa-manager.js";
+ *     import { initPWA } from "./src/shared/pwa-manager.js";
  *     document.addEventListener("DOMContentLoaded", () => initPWA());
  *   </script>
  */
 
 import { initOfflineBanner } from "../components/offline-banner.js";
 import { showNotification }  from "../components/notifications.js";
-import { getSubscribedCourses } from "../shared/filterUtils.js";
-import { getManifest } from "./quizManifest.js";
-import { userProfile } from "./userProfile.js";
+import { getSubscribedCourses } from "./filterUtils.js";
+import { getManifest } from "../shared/quizManifest.js";
+import { userProfile } from "../shared/userProfile.js";
 
 // ── Module state ───────────────────────────────────────────────────────────
 let swRegistration = null;

@@ -18,7 +18,7 @@
 //     silently re-authenticating on the next sign-in attempt.
 // =============================================================================
 
-import { signInWithSupabase } from "../../scripts/adminAuth.js";
+import { signInWithSupabase } from "../../shared/adminAuth.js";
 
 // ── Module state ──────────────────────────────────────────────────────────────
 

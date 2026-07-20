@@ -9,7 +9,7 @@ import {
     isAdminAuthenticated,
     fullSignOut,
     signInWithSupabase,
-} from '../../scripts/adminAuth.js';
+} from '../../shared/adminAuth.js';
 
 const API_URL = '/api/admin-control';
 
