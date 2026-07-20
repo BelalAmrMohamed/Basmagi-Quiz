@@ -1,9 +1,9 @@
-// src/scripts/export-to-word.js
+// src/features/export/export-to-word.js
 // Downloads the quiz as a Word file (.docx)
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 /* ============= IMPORTANT PENDING UPDATES =============
 1. Update it to support markdown: tables, code blocks, inline code, etc...
@@ -19,7 +19,7 @@ import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 const userName = localStorage.getItem("username") || "User";
 let docx;

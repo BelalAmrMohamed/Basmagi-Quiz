@@ -1,12 +1,12 @@
-// src/scripts/export-to-quiz.js
+// src/features/export/export-to-quiz.js
 // Downloads the quiz as a standalone file (.html)
 // Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 // Question helpers
-import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../shared/rate-answers.js";
+import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../../shared/rate-answers.js";
 
 import {
   renderMarkdown,
@@ -27,9 +27,9 @@ import {
   _LABEL_PREFIX_REGEX,
   _FIRST_STRONG_CHAR_REGEX,
   _ARABIC_REGEX,
-} from "../shared/markdown.js";
+} from "../../shared/markdown.js";
 
-import { MARKDOWN_CSS } from "../shared/markdown-css.js";
+import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
 // ── Quiz Info Dialog helpers (ported from result.js) ──────────────────────
 // Resolves a category label from a stored quiz path when config.category

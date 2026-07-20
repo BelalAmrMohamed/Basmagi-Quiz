@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v6.1.28";
+const CACHE_VERSION = "basmagi-v6.1.29";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -51,28 +51,28 @@ const STATIC_ASSETS = [
   // CSS
   "/src/styles/themes.css",
 
-  "/src/styles/index.css",
-  "/src/styles/create-quiz.css",
-  "/src/styles/profile.css",
+  "/src/features/main/index.css",
+  "/src/features/create/create-quiz.css",
+  "/src/features/profile/profile.css",
   "/src/styles/onboarding.css",
-  "/src/styles/quiz.css",
+  "/src/features/quiz/quiz.css",
   "/src/styles/result.css",
   "/src/styles/settings.css",
 
   "/src/styles/animations.css",
   "/src/styles/markdown.css",
-  "/src/styles/search.css",
+  "/src/features/main/search.css",
 
   // JS (entry points)
-  "/src/scripts/index.js",
-  "/src/scripts/create-quiz.js",
+  "/src/scripts/features/main/index.js",
+  "/src/features/create/create-quiz.js",
   "/src/scripts/profile.js",
   "/src/scripts/onboarding.js",
-  "/src/scripts/quiz.js",
+  "/src/features/quiz/quiz.js",
   "/src/scripts/result.js",
   "/src/scripts/settings.js",
 
-  "/src/scripts/search-manager.js",
+  "/src/scripts/features/main/search-manager.js",
   "/src/scripts/userProfile.js",
   "/src/scripts/quizManifest.js",
   "/src/scripts/quizId.js",

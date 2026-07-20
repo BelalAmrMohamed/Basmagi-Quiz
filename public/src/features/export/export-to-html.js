@@ -1,23 +1,23 @@
-// src/scripts/export-to-html.js
+// src/features/export/export-to-html.js
 // Downloads the quiz as an html page, showing the results of the quiz only (.html)
 // Deals with the export from both main page and result page
 // No libraries used
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 // Question helpers
 import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 import {
   renderMarkdown,
   _renderMarkdownCore,
-} from "../shared/markdown.js";
+} from "../../shared/markdown.js";
 
-import { MARKDOWN_CSS } from "../shared/markdown-css.js";
+import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
 export async function exportToHtml(config, questions, userAnswers = []) {
   // Convert local images to base64

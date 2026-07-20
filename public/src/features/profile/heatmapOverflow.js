@@ -1,4 +1,4 @@
-// src/scripts/heatmapOverflow.js
+// src/scripts/features/profile/heatmapOverflow.js
 // Toggles `.is-overflowing` on #activityHeatmap's .heatmap-grid so the
 // fade-mask in profile.css only kicks in when the grid is actually wider
 // than its container (dense history). Sparse history renders fewer columns

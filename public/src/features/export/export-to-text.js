@@ -1,4 +1,4 @@
-// src/export/export-to-text.js
+// src/features/export/export-to-text.js
 // Builds a plain-text representation of a quiz (with optional user answers).
 // Exposes buildQuizText() for callers that need the string,
 // and exportToText() that copies to clipboard + downloads as .txt.
@@ -7,14 +7,14 @@
 // ========= Issues =========
 // Weird overall score
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 // Question helpers
 import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 /**
  * Build a plain-text string for the quiz.

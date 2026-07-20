@@ -457,12 +457,12 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
         window.location.pathname.startsWith("/index") ||
         window.location.pathname === "/"
       ) {
-        const { updateWelcomeMessage } = await import("../scripts/index.js");
+        const { updateWelcomeMessage } = await import("../features/main/index.js");
         updateWelcomeMessage();
       }
       // For the leaderboard name in profile page
       else if (window.location.pathname.startsWith("/profile")) {
-        const { refreshUI } = await import("../scripts/profile.js");
+        const { refreshUI } = await import("../features/profile/profile.js");
         refreshUI();
       } else if (window.location.pathname.startsWith("/settings")) {
         const settingsNameInput = document.getElementById("settingsName");

@@ -1,21 +1,21 @@
-// src/scripts/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
+// src/scripts/features/quiz/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
 
 // Temporary | For performance debugging
 console.log("quiz.js loaded successfully")
 
-import { getManifest } from "./quizManifest.js";
-import { gameEngine } from "../shared/gameEngine.js";
+import { getManifest } from "../../scripts/quizManifest.js";
+import { gameEngine } from "../../shared/gameEngine.js";
 import {
   showNotification,
   confirmationNotification,
-} from "../components/notifications.js";
-import { userProfile } from "./userProfile.js";
+} from "../../components/notifications.js";
+import { userProfile } from "../../scripts/userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
 import {
   gradeEssay,
   isEssayQuestion,
   isAnswerCorrect,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 showNotification(
   "الإمتحان بدأ",
   "أسأل الله لك التوفيق والسداد",
@@ -24,8 +24,8 @@ showNotification(
 import {
   renderMarkdown,
   scanDirections,
-} from "../shared/markdown.js";
-import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
+} from "../../shared/markdown.js";
+import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -1880,7 +1880,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
           isLocked
             ? `<div class="formal-answer">            
           <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
-          <strong style="text-align: center;">Formal answer</strong>
+          <strong style="text-align: center;">الإجابة النموذجية</strong>
           <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div></div>`
             : ""
         }
@@ -2206,7 +2206,7 @@ function buildQuestionBodyHTML(q, idx) {
             ? `
           <div class="formal-answer">
             <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
-            <strong style="text-align: center;">Formal answer</strong>
+            <strong style="text-align: center;">الإجابة النموذجية</strong>
             <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
           </div>
         `

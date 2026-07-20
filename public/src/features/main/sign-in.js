@@ -1,5 +1,5 @@
 // =============================================================================
-// public/src/scripts/sign-in-dialog.js
+// public/src/features/main/sign-in.js
 //
 // Self-contained admin sign-in dialog for index.html.
 //
@@ -18,7 +18,7 @@
 //     silently re-authenticating on the next sign-in attempt.
 // =============================================================================
 
-import { signInWithSupabase } from "./adminAuth.js";
+import { signInWithSupabase } from "../../scripts/adminAuth.js";
 
 // ── Module state ──────────────────────────────────────────────────────────────
 

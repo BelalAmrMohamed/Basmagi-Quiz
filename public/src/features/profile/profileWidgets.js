@@ -1,9 +1,9 @@
-// src/scripts/profileWidgets.js - New Engagement Widgets for the Profile Page
+// src/features/profile/profileWidgets.js - New Engagement Widgets for the Profile Page
 // Activity heatmap, category mastery chart, "next badge" progress teasers,
 // and the flagged-questions review panel. Split out from profile.js to keep
 // each renderer focused and independently testable.
 
-import { gameEngine, BADGES } from "../shared/gameEngine.js";
+import { gameEngine, BADGES } from "../../shared/gameEngine.js";
 
 // ==================== Activity Heatmap ====================
 // Built entirely from user.history[].date - no new data model needed.

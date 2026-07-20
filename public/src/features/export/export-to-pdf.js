@@ -1,16 +1,16 @@
-// src/scripts/exportToPdf.js
+// src/features/export/export-to-pdf.js
 // Downloads the quiz as a PDF file (.pdf)
 // Deals with the export from both main page and results/summary page
 // `jsPDF` library used, included in here `loadPdfLib`
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 // Question helpers
 import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 const currentName = localStorage.getItem("username") || "User";
 

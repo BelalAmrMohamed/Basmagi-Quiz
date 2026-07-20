@@ -1,5 +1,5 @@
 // =============================================================================
-// control.js — logic for control.html
+// src/features/control/control.js — logic for control.html
 //
 // Manages admin users and displays platform stats for the owner.
 // Access-code logic was removed in v6.1 — only email/OAuth auth is supported.
@@ -9,7 +9,7 @@ import {
     isAdminAuthenticated,
     fullSignOut,
     signInWithSupabase,
-} from './adminAuth.js';
+} from '../../scripts/adminAuth.js';
 
 const API_URL = '/api/admin-control';
 

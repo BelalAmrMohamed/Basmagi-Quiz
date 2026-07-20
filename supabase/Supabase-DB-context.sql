@@ -1,4 +1,4 @@
--- Supabase-DB-context.sql | Last updated on version `v6.1.28`
+-- Supabase-DB-context.sql | Last updated on version `v6.1.29`
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 

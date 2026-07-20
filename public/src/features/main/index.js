@@ -1,12 +1,12 @@
 // ============================================================================
-// src/scripts/index.js - Enhanced with Security, Performance, and Accessibility
+// src/scripts/features/main/index.js - Enhanced with Security, Performance, and Accessibility
 // All original functionality preserved + improvements added
 // ============================================================================
 
 // ============================================================================
 // --- Console UI ---
 // ============================================================================
-import "../shared/console-core.js";
+import "../../shared/console-core.js";
 
 (function initIndexConsole(global) {
   'use strict';
@@ -214,15 +214,15 @@ import "../shared/console-core.js";
 // ============================================================================
 // --- Imports ---
 // ============================================================================
-import { getManifest } from "./quizManifest.js";
-import { userProfile } from "./userProfile.js";
+import { getManifest } from "../../scripts/quizManifest.js";
+import { userProfile } from "../../scripts/userProfile.js";
 import { SearchManager } from "./search-manager.js";
 import {
   extractTextFromFile,
   parseImportContent,
   buildJsonQuizExport,
-} from "../shared/quiz-processor.js";
-import { extractFolderSegmentsFromQuizPath } from "../shared/quizPath.js";
+} from "../../shared/quiz-processor.js";
+import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 
 let categoryTree = null;
 let searchManager = null;
@@ -298,25 +298,25 @@ async function syncAdminSessionWithSupabase() {
   }
 }
 
-import { exportToQuiz } from "../export/export-to-quiz.js";
-import { exportToHtml } from "../export/export-to-html.js";
-import { exportToPdf } from "../export/export-to-pdf.js";
-import { exportToWord } from "../export/export-to-word.js";
-import { exportToPptx } from "../export/export-to-pptx.js";
-import { exportToMarkdown } from "../export/export-to-markdown.js";
-import { buildQuizText } from "../export/export-to-text.js";
-import { createUploadButton } from "./adminUpload.js";
+import { exportToQuiz } from "../../features/export/export-to-quiz.js";
+import { exportToHtml } from "../../features/export/export-to-html.js";
+import { exportToPdf } from "../../features/export/export-to-pdf.js";
+import { exportToWord } from "../../features/export/export-to-word.js";
+import { exportToPptx } from "../../features/export/export-to-pptx.js";
+import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
+import { buildQuizText } from "../../features/export/export-to-text.js";
+import { createUploadButton } from "../../scripts/adminUpload.js";
 import {
   isAdminAuthenticated,
   hasAdminSessionHint,
   signInWithSupabase,
   fullSignOut,
-} from "./adminAuth.js";
-import { openSignInDialog } from "./sign-in-dialog.js";
+} from "../../scripts/adminAuth.js";
+import { openSignInDialog } from "../../features/main/sign-in.js";
 
 // Helper utilities
-import { getSubscribedCourses } from "../shared/filterUtils.js";
-import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
+import { getSubscribedCourses } from "../../shared/filterUtils.js";
+import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 
 // PWA — SW registration + offline banner.
 // initPWA() must run on every page (not just index), so it is called before
@@ -324,7 +324,7 @@ import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
 // imported by side-menu.js (which loads on every page), placing the call
 // here means we don't need a separate <script type="module"> bootstrap in
 // each HTML file.
-import { initPWA } from "./pwa-manager.js";
+import { initPWA } from "../../scripts/pwa-manager.js";
 
 // AI Prompt for converting files to JSON quiz format
 const General_Purpose_AI_Prompt = `You are an educational content specialist with extensive expertise in converting diverse quiz formats into structured JSON arrays compatible with advanced e-learning platforms. Your task is to accurately transform quizzes provided in PDF, Word, PPTX, or plain text formats into a JSON structure strictly adhering to the platform’s quiz schema, which supports full markdown, tables, code blocks, LaTeX math notation, and both multiple-choice and essay question types.
@@ -660,7 +660,7 @@ function getSubjectIcon(name, isSubfolder = false) {
 import {
   showNotification,
   confirmationNotification,
-} from "../components/notifications.js";
+} from "../../components/notifications.js";
 
 // ============================================================================
 // CONSTANTS
@@ -2371,7 +2371,7 @@ function renderBulkActionBar() {
          if (selectedUserQuizzes.size === 0) return;
          const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
          const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
-         import("./adminUpload.js").then(mod => {
+         import("../../scripts/adminUpload.js").then(mod => {
             mod.openAdminUploadModal(selected);
          });
       };

@@ -1,8 +1,8 @@
 // ============================================================================
-// search-manager.js - Context-Aware Advanced Search System
+// public/src/features/main/search-manager.js - Context-Aware Advanced Search System
 // ============================================================================
 
-import { userProfile } from "./userProfile.js";
+import { userProfile } from "../../scripts/userProfile.js";
 
 export class SearchManager {
   constructor(containerSelector, onSearchCallback, getNavigationStack) {

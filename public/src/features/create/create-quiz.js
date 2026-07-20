@@ -1,4 +1,4 @@
-// src/scripts/create-quiz.js
+// src/features/create/create-quiz.js
 
 // Temporary | For performance debugging
 console.log("create-quiz.js loaded successfully")
@@ -6,21 +6,21 @@ console.log("create-quiz.js loaded successfully")
 import {
   showNotification,
   confirmationNotification,
-} from "../components/notifications.js";
+} from "../../components/notifications.js";
 
-import { exportToQuiz } from "../export/export-to-quiz.js";
-import { exportToHtml } from "../export/export-to-html.js";
-import { exportToPdf } from "../export/export-to-pdf.js";
-import { exportToWord } from "../export/export-to-word.js";
-import { exportToPptx } from "../export/export-to-pptx.js";
-import { exportToMarkdown } from "../export/export-to-markdown.js";
-import { buildQuizText } from "../export/export-to-text.js";
+import { exportToQuiz } from "../../features/export/export-to-quiz.js";
+import { exportToHtml } from "../../features/export/export-to-html.js";
+import { exportToPdf } from "../../features/export/export-to-pdf.js";
+import { exportToWord } from "../../features/export/export-to-word.js";
+import { exportToPptx } from "../../features/export/export-to-pptx.js";
+import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
+import { buildQuizText } from "../../features/export/export-to-text.js";
 import {
   processQuizFile,
   parseImportContent,
   buildJsonQuizExport,
-} from "../shared/quiz-processor.js";
-import { renderMarkdown } from "../shared/markdown.js";
+} from "../../shared/quiz-processor.js";
+import { renderMarkdown } from "../../shared/markdown.js";
 
 // ============================================================================
 // STATE MANAGEMENT

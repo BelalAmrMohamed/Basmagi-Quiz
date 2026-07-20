@@ -1,4 +1,4 @@
-// public/src/export/export-to-pptx.js
+// public/src/features/export/export-to-pptx.js
 // Downloads the quiz as a PowerPoint file (.pptx)
 // Deals with the export from both main page and results page
 // `PptxGenJS` library used, included in this file.
@@ -11,16 +11,16 @@
 5. The language name for code blocks is missplaced out of the code block itself
    ============== End ============== */
 
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../../components/notifications.js";
 
 import {
   gradeEssay,
   isEssayQuestion,
   calculateQuizMetrics,
-} from "../shared/rate-answers.js";
+} from "../../shared/rate-answers.js";
 
 // Markdown + KaTeX renderer (same engine used by the live quiz UI and HTML export)
-import { renderMarkdown } from "../shared/markdown.js";
+import { renderMarkdown } from "../../shared/markdown.js";
 
 // ===========================
 // LAZY LOADERS

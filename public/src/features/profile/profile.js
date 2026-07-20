@@ -1,19 +1,19 @@
-// src/scripts/profile.js - Enhanced with All Features
+// src/scripts/features/profile/profile.js - Enhanced with All Features
 
-import { gameEngine, BADGES } from "../shared/gameEngine.js";
-import { avatarEngine } from "../shared/avatarEngine.js";
-import { getManifest } from "./quizManifest.js";
-import { InfiniteList } from "../shared/infiniteScroll.js";
-import { initAvatarPicker } from "./avatarPicker.js";
+import { gameEngine, BADGES } from "../../shared/gameEngine.js";
+import { avatarEngine } from "../../shared/avatarEngine.js";
+import { getManifest } from "../../scripts/quizManifest.js";
+import { InfiniteList } from "../../features/profile/infiniteScroll.js";
+import { initAvatarPicker } from "../../scripts/avatarPicker.js";
 import {
   renderActivityHeatmap,
   renderCategoryMastery,
   renderNextBadges,
   renderFlaggedQuestions,
-} from "./profileWidgets.js";
+} from "../../scripts/profileWidgets.js";
 
-import { confirmationNotification, showNotification } from "../components/notifications.js";
-import { getAdminRoleInfo } from "./adminAuth.js";
+import { confirmationNotification, showNotification } from "../../components/notifications.js";
+import { getAdminRoleInfo } from "../../scripts/adminAuth.js";
 
 let examList = [];
 let examById = new Map();

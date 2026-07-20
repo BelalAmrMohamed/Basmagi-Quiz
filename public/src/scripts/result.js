@@ -6,13 +6,13 @@ console.log("result.js loaded successfully")
 import { getManifest } from "./quizManifest.js";
 
 // Download functions
-import { exportToQuiz } from "../export/export-to-quiz.js";
-import { exportToHtml } from "../export/export-to-html.js";
-import { exportToPdf } from "../export/export-to-pdf.js";
-import { exportToWord } from "../export/export-to-word.js";
-import { exportToPptx } from "../export/export-to-pptx.js";
-import { buildQuizText } from "../export/export-to-text.js";
-import { exportToMarkdown } from "../export/export-to-markdown.js";
+import { exportToQuiz } from "../features/export/export-to-quiz.js";
+import { exportToHtml } from "../features/export/export-to-html.js";
+import { exportToPdf } from "../features/export/export-to-pdf.js";
+import { exportToWord } from "../features/export/export-to-word.js";
+import { exportToPptx } from "../features/export/export-to-pptx.js";
+import { buildQuizText } from "../features/export/export-to-text.js";
+import { exportToMarkdown } from "../features/export/export-to-markdown.js";
 
 // Notifications
 import { showNotification } from "../components/notifications.js";
