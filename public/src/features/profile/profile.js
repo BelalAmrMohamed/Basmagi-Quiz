@@ -1,10 +1,10 @@
 // src/scripts/profile.js - Enhanced with All Features
 
-import { gameEngine, BADGES } from "../shared/gameEngine.js";
-import { avatarEngine } from "../shared/avatarEngine.js";
-import { getManifest } from "./quizManifest.js";
-import { InfiniteList } from "../shared/infiniteScroll.js";
-import { initAvatarPicker } from "./avatarPicker.js";
+import { gameEngine, BADGES } from "../../shared/gameEngine.js";
+import { avatarEngine } from "../../shared/avatarEngine.js";
+import { getManifest } from "../../shared/quizManifest.js";
+import { InfiniteList } from "./infiniteScroll.js";
+import { initAvatarPicker } from "../../shared/avatarPicker.js";
 import {
   renderActivityHeatmap,
   renderCategoryMastery,
@@ -12,8 +12,8 @@ import {
   renderFlaggedQuestions,
 } from "./profileWidgets.js";
 
-import { confirmationNotification, showNotification, prompt_user } from "../components/notifications.js";
-import { getAdminRoleInfo, getToken } from "./adminAuth.js";
+import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications.js";
+import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 
 let examList = [];
 let examById = new Map();
@@ -160,10 +160,10 @@ function applyRoleBadges(role, isOwner) {
   if (avatarBadgeOverlay) {
     avatarBadgeOverlay.style.display = "block";
     if (isOwner) {
-      avatarBadgeOverlay.src = "assets/images/white-icon.png";
+      avatarBadgeOverlay.src = "../../../assets/images/white-icon.png";
       avatarBadgeOverlay.alt = "شارة المطور";
     } else if (role === "admin") {
-      avatarBadgeOverlay.src = "favicon.png";
+      avatarBadgeOverlay.src = "../../../favicon.png";
       avatarBadgeOverlay.alt = "شارة المشرف";
     }
   }
