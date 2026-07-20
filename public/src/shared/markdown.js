@@ -1,5 +1,5 @@
 /**
- * src/shared/markdown.js
+ * public/src/shared/markdown.js
  *
  * Shared Markdown + KaTeX rendering engine (ES Module).
  * Used by both quiz.html and result.html — do NOT add any

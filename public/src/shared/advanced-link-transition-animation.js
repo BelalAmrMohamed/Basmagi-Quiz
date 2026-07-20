@@ -1,3 +1,4 @@
+// public/src/shared/advanced-link-transition-animation.js
 const TOTAL_DURATION = 0.75;
 const CHAR_DURATION = 0.48;
 const EASING = "cubic-bezier(0.76, 0, 0.24, 1)";

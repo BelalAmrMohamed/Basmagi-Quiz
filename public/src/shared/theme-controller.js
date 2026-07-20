@@ -1,4 +1,4 @@
-// theme-controller.js - Enhanced Theme Management System
+// public/src/shared/theme-controller.js - Enhanced Theme Management System
 
 const THEME_KEY = "quiz_theme_pref";
 const ANIMATIONS_KEY = "quiz_animations_pref";

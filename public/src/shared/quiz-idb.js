@@ -1,3 +1,4 @@
+// public/src/shared/quiz-idb.js
 const QUIZ_DB_NAME = "BasmagiQuizDB";
 const QUIZ_DB_VERSION = 2;
 const QUIZZES_STORE = "quizzes";

@@ -1,3 +1,4 @@
+// public/src/shared/user-name-validation.js
 const MAX_USERNAME_LENGTH = 50;
 
 /**
