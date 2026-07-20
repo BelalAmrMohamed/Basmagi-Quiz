@@ -16,17 +16,40 @@ import { confirmationNotification } from "../components/notifications.js";
 import { getAdminRoleInfo } from "./adminAuth.js";
 
 let examList = [];
+let examById = new Map();
+let badgeById = new Map(BADGES.map((b) => [b.id, b]));
 let historyList = null;
 let bookmarksList = null;
 
-export function refreshUI() {
+// Bumped on every refreshUI() call; async renderers that resolve after a
+// newer refresh has started check this to avoid clobbering fresher DOM
+// state with a stale response (fixes the race between overlapping
+// renderLeaderboard/fetchAndRenderAdminStats calls).
+let refreshToken = 0;
+
+function setExamList(list) {
+  examList = list || [];
+  examById = new Map(examList.map((e) => [e.id, e]));
+}
+
+export function refreshUI(options = {}) {
+  const { skipNetworkFetches = false } = options;
+  const myToken = ++refreshToken;
   const user = gameEngine.getUserData();
+
+  // Read once and thread through, instead of every render function
+  // independently calling localStorage.getItem("username").
+  const hasCustomName = !!localStorage.getItem("username");
+  const currentName = localStorage.getItem("username") || "مستخدم";
+
   renderStats(user);
-  renderAvatar(user);
+  renderAvatar(user, currentName);
   renderHistory(user);
   renderBookmarks(user);
   renderBadges(user);
-  renderLeaderboard(user);
+  if (!skipNetworkFetches) {
+    renderLeaderboard(user, currentName, myToken);
+  }
   renderActivityHeatmap(user);
   renderCategoryMastery(user, examList);
   renderNextBadges(user);
@@ -34,8 +57,6 @@ export function refreshUI() {
 
   // Update username display
   const nameDisplay = document.getElementById("userNameDisplay");
-  const hasCustomName = !!localStorage.getItem("username");
-  const currentName = localStorage.getItem("username") || "مستخدم";
   if (nameDisplay) {
     nameDisplay.textContent = currentName;
     // Update page title
@@ -51,36 +72,45 @@ export function refreshUI() {
     headerTitle.setAttribute("data-text", greeting);
   }
 
-  // Handle Admin/Developer Badges for Owner View
-  const roleInfo = getAdminRoleInfo();
-  if (roleInfo) {
-    applyRoleBadges(roleInfo.role, roleInfo.isOwner);
-    fetchAndRenderAdminStats(); // Fetch stats for owner
-    
-    // Admin Info Display
-    const adminInfoBox = document.getElementById("adminInfoBox");
-    if (adminInfoBox && roleInfo.handle) {
-      adminInfoBox.style.display = "block";
-      const emailDisplay = document.getElementById("adminEmailDisplay");
-      const handleDisplay = document.getElementById("adminHandleDisplay");
-      if (emailDisplay) emailDisplay.textContent = roleInfo.email || "";
-      if (handleDisplay) handleDisplay.textContent = "@" + roleInfo.handle;
+  // Setup User Info Modal
+  const showUserInfoBtn = document.getElementById("showUserInfoBtn");
+  if (showUserInfoBtn) {
+    showUserInfoBtn.onclick = () => {
+      document.getElementById("userInfoOverlay").style.display = "flex";
+      document.getElementById("infoModalName").textContent = currentName;
       
-      const copyBtn = document.getElementById("copyProfileLinkBtn");
-      if (copyBtn) {
+      const roleInfo = getAdminRoleInfo();
+      if (roleInfo && roleInfo.handle) {
+        document.getElementById("infoModalAdminSection").style.display = "block";
+        document.getElementById("infoModalEmail").textContent = roleInfo.email || "";
+        document.getElementById("infoModalHandle").textContent = "@" + roleInfo.handle;
+        
+        const copyBtn = document.getElementById("modalCopyLinkBtn");
         copyBtn.onclick = () => {
           const url = window.location.origin + "/@" + roleInfo.handle;
           if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(url).then(() => {
-              const orig = copyBtn.textContent;
-              copyBtn.textContent = "تم النسخ!";
-              setTimeout(() => { copyBtn.textContent = orig; }, 2000);
+              const orig = copyBtn.innerHTML;
+              copyBtn.innerHTML = "تم النسخ! ✔️";
+              copyBtn.setAttribute("aria-live", "polite");
+              setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
             });
           } else {
             prompt("انسخ الرابط التالي:", url);
           }
         };
+      } else {
+        document.getElementById("infoModalAdminSection").style.display = "none";
       }
+    };
+  }
+
+  // Handle Admin/Developer Badges for Owner View
+  const roleInfo = getAdminRoleInfo();
+  if (roleInfo) {
+    applyRoleBadges(roleInfo.role, roleInfo.isOwner);
+    if (!skipNetworkFetches) {
+      fetchAndRenderAdminStats(undefined, myToken); // Fetch stats for owner
     }
   }
 }
@@ -92,11 +122,15 @@ function applyRoleBadges(role, isOwner) {
   if (roleBadge) {
     roleBadge.style.display = "inline-flex";
     if (isOwner) {
-      roleBadge.textContent = "مطور";
+      roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
       roleBadge.className = "role-badge developer-badge";
+      roleBadge.title = "مطور";
+      roleBadge.setAttribute("aria-label", "مطور");
     } else if (role === "admin") {
-      roleBadge.textContent = "مشرف";
+      roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
       roleBadge.className = "role-badge admin-badge";
+      roleBadge.title = "مشرف";
+      roleBadge.setAttribute("aria-label", "مشرف");
     }
   }
 
@@ -104,13 +138,15 @@ function applyRoleBadges(role, isOwner) {
     avatarBadgeOverlay.style.display = "block";
     if (isOwner) {
       avatarBadgeOverlay.src = "assets/images/white-icon.png";
+      avatarBadgeOverlay.alt = "شارة المطور";
     } else if (role === "admin") {
       avatarBadgeOverlay.src = "favicon.png";
+      avatarBadgeOverlay.alt = "شارة المشرف";
     }
   }
 }
 
-async function fetchAndRenderAdminStats(handle = null) {
+async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken) {
   document.getElementById("adminStatsGrid").style.display = "grid";
   try {
     const token = sessionStorage.getItem("__bq_adm");
@@ -122,6 +158,11 @@ async function fetchAndRenderAdminStats(handle = null) {
     
     const res = await fetch(url, { headers });
     const data = await res.json();
+
+    // A newer refreshUI() call started while this fetch was in flight —
+    // discard this response so it can't overwrite fresher DOM state.
+    if (myToken !== refreshToken) return;
+
     if (res.ok) {
        document.getElementById("adminUploadedQuizzes").textContent = data.uploadedQuizzes || 0;
        document.getElementById("adminReportsCount").textContent = data.reportsCount || 0;
@@ -140,8 +181,11 @@ async function fetchAndRenderAdminStats(handle = null) {
        if (document.getElementById("currentLevel") && typeof data.currentLevel !== 'undefined') {
          document.getElementById("currentLevel").textContent = data.currentLevel;
        }
+
+       return { role: data.role, isOwner: !!data.isOwner };
     }
   } catch(e) {}
+  return null;
 }
 
 async function setupVisitorView(handle) {
@@ -166,12 +210,15 @@ async function setupVisitorView(handle) {
     headerTitle.setAttribute("data-text", handle);
   }
 
-  // Determine if it's admin or owner visually. We'll just assume admin for visitor view unless we fetch role.
-  // We'll call the same fetch to populate numbers
-  await fetchAndRenderAdminStats(handle);
-  
-  // We apply the basic admin badge for now (in a real app, API should return if user is owner/admin)
-  applyRoleBadges("admin", false);
+  // Fetch the visited user's stats, and — since the endpoint is the only
+  // source of truth on this page for who the visited user actually is —
+  // read role/isOwner from its response instead of assuming "admin" for
+  // every visitor (that previously mislabeled regular users as admins).
+  const visitedRole = await fetchAndRenderAdminStats(handle);
+
+  if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
+    applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
+  }
 }
 
 // Delete history entry
@@ -183,8 +230,11 @@ window.deleteHistory = async function (index) {
   user.history.splice(index, 1);
   gameEngine.saveUserData(user);
 
-  // Update UI immediately without reload
-  refreshUI();
+  // Update UI immediately without reload. Local stats/badges/streaks are
+  // recalculated (deleting an entry can change them), but the leaderboard
+  // rank and admin stats come from the server and don't change from a
+  // purely local delete, so we skip re-fetching them.
+  refreshUI({ skipNetworkFetches: true });
 };
 
 // Remove bookmark
@@ -197,9 +247,26 @@ window.removeBookmark = async function (key) {
     gameEngine.saveUserData(user);
   }
 
-  // Update UI immediately without reload
-  refreshUI();
+  // Update UI immediately without reload; see note above re: skipping
+  // the network-bound leaderboard/admin-stats fetches here.
+  refreshUI({ skipNetworkFetches: true });
 };
+
+// Single delegated listener for dynamically-rendered list-item buttons
+// (delete-history / remove-bookmark). Set up once here rather than via
+// inline onclick="..." attributes rebuilt into every row's HTML string —
+// avoids re-registering per render and avoids interpolating values
+// (like bookmark keys) directly into onclick attribute strings.
+document.addEventListener("click", (event) => {
+  const target = event.target.closest("[data-action]");
+  if (!target) return;
+
+  if (target.dataset.action === "delete-history") {
+    window.deleteHistory(Number(target.dataset.index));
+  } else if (target.dataset.action === "remove-bookmark") {
+    window.removeBookmark(target.dataset.key);
+  }
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Guard: Only run profile initialisation if we're on the profile page
@@ -210,7 +277,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const manifest = await getManifest();
-    examList = manifest.examList || [];
+    setExamList(manifest.examList || []);
     window.__examListCache = examList;
   } catch (err) {
     console.error("Failed to load quiz manifest:", err);
@@ -219,23 +286,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (isVisitorView) {
     setupVisitorView(adminHandleMeta.content);
     // Render only the generic stuff that still works without local user
-    renderLeaderboard({});
+    renderLeaderboard({}, "User", ++refreshToken);
   } else {
     initAvatarPicker();
     refreshUI();
 
     window.addEventListener("avatarUpdated", () => {
-      renderAvatar(gameEngine.getUserData());
+      const currentName = localStorage.getItem("username") || "مستخدم";
+      renderAvatar(gameEngine.getUserData(), currentName);
     });
   }
 });
 
-function renderAvatar(user) {
+function renderAvatar(user, currentName) {
   const img = document.getElementById("avatarImage");
   if (!img) return;
 
   const stored = avatarEngine.getAvatar();
-  const name = localStorage.getItem("username") || "مستخدم";
+  const name = currentName || localStorage.getItem("username") || "مستخدم";
 
   if (stored) {
     img.src = stored;
@@ -279,10 +347,10 @@ function renderStats(user) {
     "width",
     `${levelInfo.progressPercent || 0}%`,
   );
-  updateEl("currentXP", `${levelInfo.pointsInCurrentLevel || 0} XP`);
+  updateEl("currentXP", `${levelInfo.pointsInCurrentLevel || 0} نقطة خبرة`);
   updateEl(
     "nextLevelXP",
-    `${levelInfo.pointsNeededForNext || 0} XP to next level`,
+    `${levelInfo.pointsNeededForNext || 0} نقطة خبرة للمستوى التالي`,
   );
 
   // Statistics Sidebar
@@ -315,15 +383,16 @@ function renderStats(user) {
     perfectScoresEl.textContent = perfectCount;
   }
 
-  // Both ways result in the same direction
   if (user.streaks) {
+    const currentDaily = user.streaks.currentDaily || 0;
+    const longestStreak = user.streaks.longestStreak || 0;
     updateEl(
       "currentStreak",
-      ` ${user.streaks?.longestStreak === 1 ? "يوم:" : "أيام:"}  ${user.streaks?.currentDaily || 0} `,
+      ` ${currentDaily === 1 ? "يوم:" : "أيام:"}  ${currentDaily} `,
     );
     updateEl(
       "bestStreak",
-      ` ${user.streaks?.longestStreak === 1 ? "يوم:" : "أيام:"}  ${user.streaks?.longestStreak || 0} `,
+      ` ${longestStreak === 1 ? "يوم:" : "أيام:"}  ${longestStreak} `,
     );
   }
 
@@ -335,13 +404,21 @@ function renderWeeklyRecap(user) {
   const el = document.getElementById("weeklyRecap");
   if (!el) return;
 
+  el.setAttribute("aria-live", "polite");
+
+  // Compare against local-midnight boundaries rather than the exact
+  // current timestamp: a date-only string like "2026-07-15" parses as
+  // UTC midnight, which for timezones behind UTC can fall just outside
+  // an exact `now`/`weekAgo` window even though it's still "this week"
+  // for the user. Using midnight-anchored boundaries avoids that edge
+  // case dropping entries near the week cutoff.
   const now = new Date();
-  const weekAgo = new Date(now);
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const weekAgoStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
 
   const recent = (user.history || []).filter((h) => {
     const d = new Date(h.date);
-    return !isNaN(d) && d >= weekAgo && d <= now;
+    return !Number.isNaN(d.getTime()) && d >= weekAgoStart && d <= todayEnd;
   });
 
   if (recent.length === 0) {
@@ -358,8 +435,8 @@ function renderWeeklyRecap(user) {
 }
 
 function historyItemHtml(attempt, index) {
-  const exam = examList.find((e) => e.id === attempt.examId);
-  const title = exam ? exam.title : "Deleted Quiz";
+  const exam = examById.get(attempt.examId);
+  const title = exam ? exam.title : "اختبار محذوف";
   const date = new Date(attempt.date).toLocaleDateString();
   const percentage =
     attempt.percentage || Math.round((attempt.score / attempt.total) * 100);
@@ -368,14 +445,14 @@ function historyItemHtml(attempt, index) {
       <div class="history-item">
         <div class="history-info">
           <h4>${title}</h4>
-          <small>${date} • ${attempt.mode || "Exam"}</small>
+          <small>${date} • ${attempt.mode || "اختبار"}</small>
         </div>
         <div class="history-actions">
           <div class="history-score ${
             percentage >= 60 ? "pass" : "fail"
           }">${percentage}%</div>
           ${exam ? `<a href="/q/${attempt.examId}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الإمتحان</a>` : ""}
-          <button class="delete-btn" onclick="deleteHistory(${index})"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          <button class="delete-btn" data-action="delete-history" data-index="${index}" aria-label="حذف هذا الاختبار من السجل"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
 }
@@ -390,23 +467,23 @@ function renderHistory(user) {
     containerEl: container,
     items: user.history || [],
     renderItem: historyItemHtml,
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>No History Yet</h3></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>لا يوجد سجل اختبارات بعد</h3></div>`,
   });
   historyList.mount();
 }
 
 function bookmarkItemHtml(key) {
   const [examId, qIdx] = key.split("_");
-  const exam = examList.find((e) => e.id === examId);
+  const exam = examById.get(examId);
   return `
           <div class="history-item">
             <div class="history-info">
               <h4>${exam ? exam.title : examId}</h4>
-              <small>Question #${parseInt(qIdx) + 1}</small>
+              <small>السؤال رقم ${parseInt(qIdx) + 1}</small>
             </div>
             <div class="history-actions">
               <a href="/q/${examId}?startAt=${qIdx}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى السؤال</a>
-              <button class="unstar-btn" onclick="removeBookmark('${key}')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-off-icon lucide-star-off"><path d="m10.344 4.688 1.181-2.393a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.237 3.152"/><path d="m17.945 17.945.43 2.505a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a8 8 0 0 0 .4-.099"/><path d="m2 2 20 20"/></svg></button>
+              <button class="unstar-btn" data-action="remove-bookmark" data-key="${key}" aria-label="إزالة هذا السؤال من المفضلة"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-off-icon lucide-star-off" aria-hidden="true"><path d="m10.344 4.688 1.181-2.393a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.237 3.152"/><path d="m17.945 17.945.43 2.505a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a8 8 0 0 0 .4-.099"/><path d="m2 2 20 20"/></svg></button>
             </div>
           </div>`;
 }
@@ -446,34 +523,39 @@ function renderBadges(user) {
   container.innerHTML =
     (user.badges || [])
       .map((id) => {
-        const b = BADGES.find((x) => x.id === id);
+        const b = badgeById.get(id);
         return b
-          ? `<div class="dash-badge" title="${b.desc}"><div class="badge-icon">${b.icon}</div><div>${b.title}</div></div>`
+          ? `<div class="dash-badge" title="${b.desc}" aria-label="${b.title}: ${b.desc}"><div class="badge-icon" aria-hidden="true">${b.icon}</div><div>${b.title}</div></div>`
           : "";
       })
-      .join("") || "Earn badges by completing quizzes!";
+      .join("") || "اكسب الشارات بإكمال الاختبارات!";
 }
 
-async function renderLeaderboard(user) {
+async function renderLeaderboard(user, currentName, myToken = refreshToken) {
   const leaderboardEl = document.getElementById("leaderboard");
   if (!leaderboardEl) return;
 
   const roleInfo = getAdminRoleInfo();
   const isAdmin = !!roleInfo;
+  const displayName = currentName || localStorage.getItem("username") || "مستخدم";
 
   if (isAdmin) {
     try {
       const res = await fetch("/api/admin-stats?leaderboard=true");
+
+      // A newer refreshUI() call started while this fetch was in flight —
+      // discard this response so it can't overwrite fresher DOM state.
+      if (myToken !== refreshToken) return;
+
       if (res.ok) {
         const admins = await res.json();
-        const displayName = localStorage.getItem("username") || "User";
-        
+
         leaderboardEl.innerHTML = admins
           .map(
             (entry, i) => `
-          <div class="lb-row ${entry.handle === roleInfo.handle ? "highlight" : ""}">
+          <div class="lb-row ${entry.handle === roleInfo.handle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === roleInfo.handle ? displayName + " (أنت)" : (entry.display_name || entry.handle)}، ${entry.total_quizzes.toLocaleString()} اختبار">
             <span style="flex:1; display:flex; align-items:center; gap:6px;">
-              <span style="font-weight:bold; color:var(--color-primary); width:18px;">${i + 1}.</span> 
+              <span style="font-weight:bold; color:var(--color-primary); width:18px;" aria-hidden="true">${i + 1}.</span> 
               <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.display_name || entry.handle}">
                 ${entry.handle === roleInfo.handle ? displayName + ' (أنت)' : (entry.display_name || entry.handle)}
               </span>
@@ -497,9 +579,8 @@ async function renderLeaderboard(user) {
     { name: "زيزي على الهادي", points: 100 },
   ];
 
-  const displayName = localStorage.getItem("username") || "User";
   const currentUser = {
-    name: `${displayName} (You)`,
+    name: `${displayName} (أنت)`,
     points: user.totalPoints || 0,
     isUser: true,
   };
@@ -510,9 +591,9 @@ async function renderLeaderboard(user) {
   leaderboardEl.innerHTML = rankedList
     .map(
       (entry) => `
-    <div class="lb-row ${entry.isUser ? "highlight" : ""}">
-      <span>${entry.rank}. ${entry.name}</span>
-      <strong>${entry.points.toLocaleString()} pts</strong>
+    <div class="lb-row ${entry.isUser ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
+      <span aria-hidden="true">${entry.rank}. ${entry.name}</span>
+      <strong>${entry.points.toLocaleString()} نقطة</strong>
     </div>
   `,
     )

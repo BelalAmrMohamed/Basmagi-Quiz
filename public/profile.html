@@ -492,17 +492,11 @@
                 <div class="identity-text">
                     <h1 id="userNameHeader" class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم">
                         لوحة تحكم المستخدم</h1>
-                    <span id="roleBadge" class="role-badge" style="display:none;"></span>
-                    <div id="adminInfoBox" style="display:none; margin-top: 8px; font-size: 0.85rem;">
-                        <div style="color: var(--color-text-secondary); margin-bottom: 4px;">
-                            📧 <span id="adminEmailDisplay"></span>
-                        </div>
-                        <div style="color: var(--color-text-secondary); margin-bottom: 8px; direction: ltr; text-align: right;">
-                            🔗 <span id="adminHandleDisplay"></span>
-                        </div>
-                        <button id="copyProfileLinkBtn" class="adm-btn adm-btn-ghost" style="padding: 4px 12px; font-size: 0.8rem;">نسخ رابط الملف الشخصي</button>
-                    </div>
-                    <span class="weekly-recap" id="weeklyRecap">جارِ التحميل...</span>
+                    <button id="showUserInfoBtn" class="user-info-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        معلوماتي
+                    </button>
+                    <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
                 </div>
 
                 <div class="identity-level" aria-label="مستوى المستخدم">
@@ -519,6 +513,7 @@
                             <span id="nextLevelXP">100 XP إلى المستوى التالي</span>
                         </div>
                     </div>
+                    <span id="roleBadge" class="role-badge" style="display:none;"></span>
                 </div>
             </div>
 
@@ -639,8 +634,7 @@
 
                 <div class="sidebar-card">
                     <h3>🎯 المتصدرين</h3>
-                    <div id="leaderboard" class="leaderboard-list">
-                    </div>
+                    <div id="leaderboard" class="leaderboard-list" role="list"></div>
                 </div>
 
                 <div class="sidebar-card">
@@ -677,6 +671,40 @@
         </footer>
     </div>
 
+    <!-- User Info Overlay -->
+    <div id="userInfoOverlay" class="contact-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="userInfoTitle">
+        <div class="contact-overlay-card" style="max-width: 400px;">
+            <div class="contact-overlay-header" style="justify-content: space-between;">
+                <h2 id="userInfoTitle" style="display: flex; align-items: center; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> معلوماتي</h2>
+                <button type="button" class="close-overlay-btn" onclick="document.getElementById('userInfoOverlay').style.display='none'" aria-label="إغلاق" style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text); padding: 0 8px;">&times;</button>
+            </div>
+            <div class="contact-overlay-body" style="text-align: right; direction: rtl; font-size: 0.95rem;">
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                    <strong style="color: var(--color-text-secondary);">الإسم:</strong>
+                    <span id="infoModalName" style="font-weight: 700;"></span>
+                </div>
+                
+                <div id="infoModalAdminSection" style="display:none;">
+                    <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                        <strong style="color: var(--color-text-secondary);">البريد الإلكتروني:</strong>
+                        <span id="infoModalEmail" style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
+                    </div>
+                    <div style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: var(--color-text-secondary);">رابط الحساب:</strong>
+                            <span id="infoModalHandle" style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
+                        </div>
+                        <button id="modalCopyLinkBtn" class="adm-btn adm-btn-ghost" style="padding: 8px; font-size: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            نسخ الرابط
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Contact Developer Overlay -->
     <div id="contactDevOverlay" class="contact-overlay" style="display:none;" role="dialog" aria-modal="true"
         aria-labelledby="contactDevTitle">
@@ -696,6 +724,7 @@
                 <p class="contact-overlay-desc">اختر وسيلة التواصل المفضلة لديك</p>
                 <div class="contact-options">
                     <button class="contact-option-btn contact-whatsapp" title="Message +20 111 848 2193"
+                        aria-label="تواصل عبر واتساب: 2193 848 111 20+"
                         onclick="contactViaWhatsApp()">
                         <span class="contact-option-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
@@ -710,6 +739,7 @@
                         </span>
                     </button>
                     <button class="contact-option-btn contact-telegram" title="Message @BelalAmrMohamed"
+                        aria-label="تواصل عبر تيليجرام: @BelalAmrMohamed"
                         onclick="contactViaTelegram()">
                         <span class="contact-option-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
@@ -724,6 +754,7 @@
                         </span>
                     </button>
                     <button class="contact-option-btn contact-email" title="Email belalamrofficial@gmail.com"
+                        aria-label="تواصل عبر البريد الإلكتروني: belalamrofficial@gmail.com"
                         onclick="contactViaEmail()">
                         <span class="contact-option-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
