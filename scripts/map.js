@@ -1,23 +1,24 @@
 // scripts/map.js
-// The generated file will be in: docs/context-map.txt
 // > node scripts/map.js
 
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
 // Settings
 
 // The path of the output map
-ouputMapPath = "docs/context-map.txt"
+const outputMapPath = "docs/context-map.txt";
 
 // Files/Folders to ignore
 const IGNORE_NAMES = [
   ".git",
   ".vscode",
   "quizzes",
+  "quiz-media",
   "images",
   "LICENSE",
   "README.md",
+  "node_modules",
   "_config.yml",
   "Context Map.txt",
   "google0c1df2c3df22a824.html",
@@ -32,9 +33,9 @@ const EXCEPTION_NAMES = ["README.md", "robots.txt"];
 // End of Settings
 
 function generateTree() {
-  const scriptDir = __dirname;
+  const scriptDir = import.meta.dirname;
   const parentDir = path.dirname(scriptDir);
-  const outputFile = path.join(parentDir, ouputMapPath);
+  const outputFile = path.join(parentDir, outputMapPath);
 
   const outputStream = fs.createWriteStream(outputFile, { encoding: "utf-8" });
   outputStream.write(`${path.basename(parentDir)}/\n`);

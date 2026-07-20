@@ -31,10 +31,11 @@ export default async function handler(req, res) {
 
   if (handle) {
     // Find admin id and stats
+    const normalizedHandle = handle.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
     const { data, error } = await supabase
       .from("admin_users")
       .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email")
-      .eq("handle", handle)
+      .ilike("handle", normalizedHandle)
       .maybeSingle();
     adminUser = data;
   } else {
@@ -45,10 +46,18 @@ export default async function handler(req, res) {
       try {
         const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8"));
         if (payload.email) {
+          // admin_users.email is stored as entered (e.g. at signup time), while
+          // the JWT's email claim may come from a different casing (OAuth
+          // providers, Supabase auth, manual entry, etc). A plain `.eq()` is
+          // case-sensitive, so an admin/dev could authenticate successfully
+          // yet never resolve a row here -> silent 404 -> no handle shown.
+          // Use ilike with an escaped, trimmed, lowercased value for a safe
+          // case-insensitive exact match instead.
+          const normalizedEmail = payload.email.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
           const { data, error } = await supabase
             .from("admin_users")
             .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email")
-            .eq("email", payload.email)
+            .ilike("email", normalizedEmail)
             .maybeSingle();
           adminUser = data;
         }
