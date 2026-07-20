@@ -23,6 +23,23 @@ export function escHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+// Inverse of escHtml() — decodes the small set of entities escHtml produces
+// back to their raw characters. Used to make downstream re-escaping
+// idempotent: applyInline() is documented to receive already-escHtml'd
+// input from its internal callers, but it is also an exported function that
+// other pages may call directly on raw text. Decoding first and then
+// escaping exactly once means both call paths produce correctly-escaped,
+// non-double-encoded output — e.g. a URL's "?a=1&b=2" always renders as
+// "&amp;", never "&amp;amp;", regardless of which path it arrived by.
+export function unescapeHtmlEntities(s) {
+  return (s || "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, "&");
+}
+
 // ─── 3. Inline Markdown formatter ─────────────────────────────────────────────
 // Receives an already-escHtml-encoded string; applies spans/tags for
 // bold, italic, code, links, images, and inline math ($…$).
@@ -32,13 +49,7 @@ export function applyInline(s) {
   s = s.replace(/\$([^\$\n]+)\$/g, (_, m) => {
     const idx = iMathStash.length;
     // Decode HTML entities so KaTeX receives the original LaTeX source.
-    const decoded = m
-      .trim()
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&amp;/g, "&")
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
+    const decoded = unescapeHtmlEntities(m.trim());
     if (typeof window.katex !== "undefined") {
       try {
         iMathStash.push(
@@ -66,22 +77,52 @@ export function applyInline(s) {
   s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
   // ── Bold ────────────────────────────────────────────────────────────────
   s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
-  s = s.replace(/__([^_\n]+)__/g, "<strong>$1</strong>");
+  // BUG FIX: underscore emphasis must only fire at a word boundary, matching
+  // GFM semantics. Without the (^|[^\w]) / (?!\w) guards, ordinary prose
+  // mentioning snake_case_identifiers gets mangled into nested <em> tags
+  // (e.g. "variable_name_here" → "variable<em>name</em>here"). The guard is
+  // captured back via "$1" since a lookbehind alternative isn't safe across
+  // older JS engines for the "start of string" case.
+  s = s.replace(/(^|[^\w])__([^_\n]+)__(?!\w)/g, "$1<strong>$2</strong>");
   // ── Italic ──────────────────────────────────────────────────────────────
   s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
-  s = s.replace(/_([^_\n]+)_/g, "<em>$1</em>");
+  s = s.replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>");
   // ── Strikethrough ───────────────────────────────────────────────────────
   s = s.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
-  // ── Links ───────────────────────────────────────────────────────────────
-  s = s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1</a>',
-  );
+  // BUG FIX: Images must be matched BEFORE Links. Markdown image syntax is
+  // `![alt](url)` — just a Link preceded by `!`. If the Links regex ran
+  // first, it would match the `[alt](url)` portion on its own and render
+  // an <a> tag, leaving a stray, unconsumed "!" sitting in front of it
+  // instead of producing an <img>.
+  //
+  // SECURITY: the captured URL must be HTML-escaped before being placed
+  // inside the href="…"/src="…" attribute. Without this, a URL containing a
+  // double-quote (e.g. `https://x/" onmouseover="alert(1)`) breaks out of
+  // the attribute and injects arbitrary HTML/JS. escHtml() also neutralises
+  // '<' and '>' inside the URL, which could otherwise close the tag early.
+  //
+  // NOTE: applyInline() is normally called with input that has ALREADY
+  // been through escHtml() once (see the internal call sites throughout
+  // this module), but it is also exported and may be called directly by
+  // other pages on raw, unescaped text. To produce correct output on both
+  // paths without double-encoding (e.g. turning "?a=1&b=2" into "&amp;amp;"
+  // instead of "&amp;"), we first undo any escaping that already happened,
+  // then escape exactly once.
+  const safeUrl = (url) => escHtml(unescapeHtmlEntities(url));
+
   // ── Images ──────────────────────────────────────────────────────────────
   s = s.replace(
     /!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,
-    '<img src="$2" alt="$1" class="md-img" loading="lazy">',
+    (_, alt, url) =>
+      `<img src="${safeUrl(url)}" alt="${safeUrl(alt)}" class="md-img" loading="lazy">`,
   );
+  // ── Links ───────────────────────────────────────────────────────────────
+  s = s.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+    (_, text, url) =>
+      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="md-link">${text}</a>`,
+  );
+
 
   // Restore inline math placeholders
   s = s.replace(/\x01IM(\d+)\x01/g, (_, i) => iMathStash[parseInt(i)]);
@@ -101,6 +142,15 @@ const ICON_CHECK = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="1
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   <path d="M20 6 9 17l-5-5"/>
 </svg>`;
+
+// ─── 4b. Copy-button label (i18n) ──────────────────────────────────────────────
+// The "Copy" text shown on fenced code-block copy buttons. Was previously
+// hardcoded to Arabic ("نسخ") regardless of page language. Pages can set
+// `window.MD_COPY_LABEL` before calling renderMarkdown() to localise it;
+// otherwise it falls back to the original Arabic default to preserve
+// existing visual behaviour for callers that relied on it.
+const COPY_LABEL =
+  (typeof window !== "undefined" && window.MD_COPY_LABEL) || "نسخ";
 
 // ─── 5. Copy-button handler (global registration) ─────────────────────────────
 // Buttons use inline onclick="window.copyCodeBlock(this)" so this must be
@@ -150,35 +200,117 @@ window.copyCodeBlock = (btn) => {
 
 export const _HL_KEYWORDS = {
   js: new Set([
-    "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", "let", "new", "of", "return", "static", "super", "switch", "throw", "try", "typeof", "var", "void", "while", "with", "yield", "async", "await", "from", "as", "null", "undefined", "true", "false", "this",   ]),   
-    ts: new Set([
-    "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete", "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in", "instanceof", "let", "new", "of", "return", "static", "super", "switch", "throw", "try", "typeof", "var", "void", "while", "with", "yield", "async", "await", "from", "as", "null", "undefined", "true", "false", "this", "type", "interface", "enum", "implements", "declare", "namespace", "abstract", "readonly", "keyof", "infer", "never", "any", "unknown", "object",
+    "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
+    "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in",
+    "instanceof", "let", "new", "of", "return", "static", "super", "switch", "throw", "try",
+    "typeof", "var", "void", "while", "with", "yield", "async", "await", "from", "as", "null",
+    "undefined", "true", "false", "this",
+  ]),
+  ts: new Set([
+    "break", "case", "catch", "class", "const", "continue", "debugger", "default", "delete",
+    "do", "else", "export", "extends", "finally", "for", "function", "if", "import", "in",
+    "instanceof", "let", "new", "of", "return", "static", "super", "switch", "throw", "try",
+    "typeof", "var", "void", "while", "with", "yield", "async", "await", "from", "as", "null",
+    "undefined", "true", "false", "this", "type", "interface", "enum", "implements", "declare",
+    "namespace", "abstract", "readonly", "keyof", "infer", "never", "any", "unknown", "object",
   ]),
   python: new Set([
-    "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", "self", "cls",
+    "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
+    "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global",
+    "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass", "raise", "return",
+    "try", "while", "with", "yield", "self", "cls",
   ]),
   java: new Set([
-    "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "null", "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false",   ]),   
-    csharp: new Set([
-    "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked", "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else", "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for", "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock", "long", "namespace", "new", "null", "object", "operator", "out", "override", "params", "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual", "void", "volatile", "while", "add", "alias", "and", "ascending", "async", "await", "by", "descending", "dynamic", "equals", "file", "from", "get", "global", "group", "init", "into", "join", "let", "managed", "nameof", "nint", "not", "notnull", "nuint", "on", "or", "orderby", "partial", "record", "remove", "required", "scoped", "select", "set", "unmanaged", "value", "var", "when", "where", "with", "yield",   ]),   c: new Set([
-    "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else", "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register", "restrict", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while", "NULL", "true", "false",   ]),   
-    go: new Set([
-    "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range", "return", "select", "struct", "switch", "type", "var", "nil", "true", "false", "iota",   ]),   
-    rust: new Set([
-    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "union", "unsafe", "use", "where", "while",   ]),   
-    ruby: new Set([
-    "BEGIN", "END", "alias", "and", "begin", "break", "case", "class", "def", "defined", "do", "else", "elsif", "end", "ensure", "false", "for", "if", "in", "module", "next", "nil", "not", "or", "redo", "rescue", "retry", "return", "self", "super", "then", "true", "undef", "unless", "until", "when", "while", "yield",   ]),   
-    kotlin: new Set([
-    "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in", "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true", "try", "typealias", "typeof", "val", "var", "when", "while", "by", "catch", "constructor", "delegate", "dynamic", "field", "file", "finally", "get", "import", "init", "param", "property", "receiver", "set", "setparam", "where", "actual", "abstract", "annotation", "companion", "crossinline", "data", "enum", "expect", "external", "final", "infix", "inline", "inner", "internal", "lateinit", "noinline", "open", "operator", "out", "override", "private", "protected", "public", "reified", "sealed", "suspend", "tailrec", "vararg",   ]),   
-    swift: new Set([
-    "associatedtype", "class", "deinit", "enum", "extension", "fileprivate", "func", "import", "init", "inout", "internal", "let", "open", "operator", "private", "precedencegroup", "protocol", "public", "rethrows", "static", "struct", "subscript", "typealias", "var", "break", "case", "catch", "continue", "default", "defer", "do", "else", "fallthrough", "for", "guard", "if", "in", "repeat", "return", "throw", "switch", "where", "while", "Any", "as", "catch", "false", "is", "nil", "rethrows", "self", "Self", "super", "throw", "throws", "true", "try",   ]),   
-    php: new Set([
-    "abstract", "and", "array", "as", "break", "callable", "case", "catch", "class", "clone", "const", "continue", "declare", "default", "die", "do", "echo", "else", "elseif", "empty", "enddeclare", "endfor", "endforeach", "endif", "endswitch", "endwhile", "eval", "exit", "extends", "final", "finally", "fn", "for", "foreach", "function", "global", "goto", "if", "implements", "include", "include_once", "instanceof", "insteadof", "interface", "isset", "list", "match", "namespace", "new", "or", "print", "private", "protected", "public", "readonly", "require", "require_once", "return", "static", "switch", "throw", "trait", "try", "unset", "use", "var", "while", "xor", "yield", "null", "true", "false",   ]),   
-    sql: new Set([
-    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE", "CREATE", "TABLE", "ALTER", "ADD", "DROP", "INDEX", "VIEW", "DATABASE", "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK", "DEFAULT", "CONSTRAINT", "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON", "GROUP", "BY", "HAVING", "ORDER", "ASC", "DESC", "LIMIT", "OFFSET", "UNION", "ALL", "DISTINCT", "AS", "IN", "IS", "NULL", "LIKE", "BETWEEN", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "OVER", "PARTITION", "FUNCTION", "PROCEDURE", "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION", "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CAST", "CONVERT", "CONCAT",
+    "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
+    "const", "continue", "default", "do", "double", "else", "enum", "extends", "final",
+    "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int",
+    "interface", "long", "native", "new", "null", "package", "private", "protected", "public",
+    "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
+    "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false",
+  ]),
+  csharp: new Set([
+    "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
+    "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else",
+    "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for",
+    "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock",
+    "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
+    "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed", "short",
+    "sizeof", "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true",
+    "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort", "using", "virtual",
+    "void", "volatile", "while", "add", "alias", "and", "ascending", "async", "await", "by",
+    "descending", "dynamic", "equals", "file", "from", "get", "global", "group", "init",
+    "into", "join", "let", "managed", "nameof", "nint", "not", "notnull", "nuint", "on", "or",
+    "orderby", "partial", "record", "remove", "required", "scoped", "select", "set",
+    "unmanaged", "value", "var", "when", "where", "with", "yield",
+  ]),
+  c: new Set([
+    "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else",
+    "enum", "extern", "float", "for", "goto", "if", "inline", "int", "long", "register",
+    "restrict", "return", "short", "signed", "sizeof", "static", "struct", "switch", "typedef",
+    "union", "unsigned", "void", "volatile", "while", "NULL", "true", "false",
+  ]),
+  go: new Set([
+    "break", "case", "chan", "const", "continue", "default", "defer", "else", "fallthrough",
+    "for", "func", "go", "goto", "if", "import", "interface", "map", "package", "range",
+    "return", "select", "struct", "switch", "type", "var", "nil", "true", "false", "iota",
+  ]),
+  rust: new Set([
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum",
+    "extern", "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move",
+    "mut", "pub", "ref", "return", "self", "Self", "static", "struct", "super", "trait",
+    "true", "type", "union", "unsafe", "use", "where", "while",
+  ]),
+  ruby: new Set([
+    "BEGIN", "END", "alias", "and", "begin", "break", "case", "class", "def", "defined", "do",
+    "else", "elsif", "end", "ensure", "false", "for", "if", "in", "module", "next", "nil",
+    "not", "or", "redo", "rescue", "retry", "return", "self", "super", "then", "true", "undef",
+    "unless", "until", "when", "while", "yield",
+  ]),
+  kotlin: new Set([
+    "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
+    "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true",
+    "try", "typealias", "typeof", "val", "var", "when", "while", "by", "catch", "constructor",
+    "delegate", "dynamic", "field", "file", "finally", "get", "import", "init", "param",
+    "property", "receiver", "set", "setparam", "where", "actual", "abstract", "annotation",
+    "companion", "crossinline", "data", "enum", "expect", "external", "final", "infix",
+    "inline", "inner", "internal", "lateinit", "noinline", "open", "operator", "out",
+    "override", "private", "protected", "public", "reified", "sealed", "suspend", "tailrec",
+    "vararg",
+  ]),
+  swift: new Set([
+    "associatedtype", "class", "deinit", "enum", "extension", "fileprivate", "func", "import",
+    "init", "inout", "internal", "let", "open", "operator", "private", "precedencegroup",
+    "protocol", "public", "rethrows", "static", "struct", "subscript", "typealias", "var",
+    "break", "case", "catch", "continue", "default", "defer", "do", "else", "fallthrough",
+    "for", "guard", "if", "in", "repeat", "return", "throw", "switch", "where", "while", "Any",
+    "as", "catch", "false", "is", "nil", "rethrows", "self", "Self", "super", "throw",
+    "throws", "true", "try",
+  ]),
+  php: new Set([
+    "abstract", "and", "array", "as", "break", "callable", "case", "catch", "class", "clone",
+    "const", "continue", "declare", "default", "die", "do", "echo", "else", "elseif", "empty",
+    "enddeclare", "endfor", "endforeach", "endif", "endswitch", "endwhile", "eval", "exit",
+    "extends", "final", "finally", "fn", "for", "foreach", "function", "global", "goto", "if",
+    "implements", "include", "include_once", "instanceof", "insteadof", "interface", "isset",
+    "list", "match", "namespace", "new", "or", "print", "private", "protected", "public",
+    "readonly", "require", "require_once", "return", "static", "switch", "throw", "trait",
+    "try", "unset", "use", "var", "while", "xor", "yield", "null", "true", "false",
+  ]),
+  sql: new Set([
+    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", "INTO", "VALUES", "UPDATE", "SET",
+    "DELETE", "CREATE", "TABLE", "ALTER", "ADD", "DROP", "INDEX", "VIEW", "DATABASE",
+    "PRIMARY", "KEY", "FOREIGN", "REFERENCES", "UNIQUE", "CHECK", "DEFAULT", "CONSTRAINT",
+    "JOIN", "INNER", "LEFT", "RIGHT", "FULL", "OUTER", "ON", "GROUP", "BY", "HAVING", "ORDER",
+    "ASC", "DESC", "LIMIT", "OFFSET", "UNION", "ALL", "DISTINCT", "AS", "IN", "IS", "NULL",
+    "LIKE", "BETWEEN", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "WITH", "OVER",
+    "PARTITION", "FUNCTION", "PROCEDURE", "BEGIN", "COMMIT", "ROLLBACK", "TRANSACTION",
+    "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CAST", "CONVERT", "CONCAT",
   ]),
   bash: new Set([
-    "if", "then", "else", "elif", "fi", "for", "in", "do", "done", "while", "until", "case", "esac", "function", "return", "exit", "break", "continue", "export", "local", "readonly", "declare", "typeset", "unset", "source", "alias", "echo", "printf", "read", "test", "true", "false", "shift", "exec", "eval", "trap", "wait", "kill", "set", "unset",
+    "if", "then", "else", "elif", "fi", "for", "in", "do", "done", "while", "until", "case",
+    "esac", "function", "return", "exit", "break", "continue", "export", "local", "readonly",
+    "declare", "typeset", "unset", "source", "alias", "echo", "printf", "read", "test", "true",
+    "false", "shift", "exec", "eval", "trap", "wait", "kill", "set", "unset",
   ]),
   yaml: new Set([
     "true", "false", "null", "yes", "no", "on", "off",
@@ -187,34 +319,66 @@ export const _HL_KEYWORDS = {
     "true", "false", "nan", "inf",
   ]),
   graphql: new Set([
-    "query", "mutation", "subscription", "fragment", "on", "type", "interface", "union", "enum", "input", "scalar", "schema", "directive", "extend", "implements", "true", "false", "null", "repeatable",
+    "query", "mutation", "subscription", "fragment", "on", "type", "interface", "union",
+    "enum", "input", "scalar", "schema", "directive", "extend", "implements", "true", "false",
+    "null", "repeatable",
   ]),
   scala: new Set([
-    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final", "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null", "object", "override", "package", "private", "protected", "return", "sealed", "super", "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield", "given", "then", "export", "enum", "end",
+    "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final",
+    "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null",
+    "object", "override", "package", "private", "protected", "return", "sealed", "super",
+    "this", "throw", "trait", "try", "true", "type", "val", "var", "while", "with", "yield",
+    "given", "then", "export", "enum", "end",
   ]),
   dart: new Set([
-    "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const", "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export", "extends", "extension", "external", "factory", "false", "final", "finally", "for", "Function", "get", "hide", "if", "implements", "import", "in", "interface", "is", "late", "library", "mixin", "new", "null", "on", "operator", "part", "required", "rethrow", "return", "sealed", "set", "show", "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef", "var", "void", "when", "while", "with", "yield",
+    "abstract", "as", "assert", "async", "await", "break", "case", "catch", "class", "const",
+    "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export",
+    "extends", "extension", "external", "factory", "false", "final", "finally", "for",
+    "Function", "get", "hide", "if", "implements", "import", "in", "interface", "is", "late",
+    "library", "mixin", "new", "null", "on", "operator", "part", "required", "rethrow",
+    "return", "sealed", "set", "show", "static", "super", "switch", "sync", "this", "throw",
+    "true", "try", "typedef", "var", "void", "when", "while", "with", "yield",
   ]),
   elixir: new Set([
-    "after", "and", "catch", "cond", "def", "defcallback", "defdelegate", "defexception", "defimpl", "defmacro", "defmacrop", "defmodule", "defoverridable", "defp", "defprotocol", "defrecord", "defstruct", "do", "else", "end", "false", "fn", "for", "if", "import", "in", "nil", "not", "or", "raise", "receive", "require", "rescue", "super", "throw", "true", "try", "unless", "use", "when", "with",
+    "after", "and", "catch", "cond", "def", "defcallback", "defdelegate", "defexception",
+    "defimpl", "defmacro", "defmacrop", "defmodule", "defoverridable", "defp", "defprotocol",
+    "defrecord", "defstruct", "do", "else", "end", "false", "fn", "for", "if", "import", "in",
+    "nil", "not", "or", "raise", "receive", "require", "rescue", "super", "throw", "true",
+    "try", "unless", "use", "when", "with",
   ]),
   lua: new Set([
-    "and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto", "if", "in", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while",
+    "and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto", "if",
+    "in", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until", "while",
   ]),
   perl: new Set([
-    "if", "unless", "while", "until", "for", "foreach", "do", "given", "when", "default", "else", "elsif", "sub", "my", "our", "local", "use", "no", "package", "require", "return", "last", "next", "redo", "goto", "print", "say", "die", "warn", "chomp", "chop", "push", "pop", "shift", "unshift", "splice", "reverse", "sort", "map", "grep", "join", "split", "ref", "defined", "undef", "wantarray", "caller", "eval", "BEGIN", "END", "DESTROY",
+    "if", "unless", "while", "until", "for", "foreach", "do", "given", "when", "default",
+    "else", "elsif", "sub", "my", "our", "local", "use", "no", "package", "require", "return",
+    "last", "next", "redo", "goto", "print", "say", "die", "warn", "chomp", "chop", "push",
+    "pop", "shift", "unshift", "splice", "reverse", "sort", "map", "grep", "join", "split",
+    "ref", "defined", "undef", "wantarray", "caller", "eval", "BEGIN", "END", "DESTROY",
   ]),
   r: new Set([
-    "if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE", "NULL", "Inf", "NaN", "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_", "return", "invisible", "stop", "warning", "message", "library", "require", "source", "cat", "print", "paste", "sprintf",
+    "if", "else", "repeat", "while", "function", "for", "in", "next", "break", "TRUE", "FALSE",
+    "NULL", "Inf", "NaN", "NA", "NA_integer_", "NA_real_", "NA_complex_", "NA_character_",
+    "return", "invisible", "stop", "warning", "message", "library", "require", "source", "cat",
+    "print", "paste", "sprintf",
   ]),
   matlab: new Set([
-    "break", "case", "catch", "classdef", "continue", "else", "elseif", "end", "for", "function", "global", "if", "otherwise", "parfor", "persistent", "return", "spmd", "switch", "try", "while", "true", "false", "Inf", "NaN", "pi", "eps", "nargin", "nargout", "varargin", "varargout",
+    "break", "case", "catch", "classdef", "continue", "else", "elseif", "end", "for",
+    "function", "global", "if", "otherwise", "parfor", "persistent", "return", "spmd",
+    "switch", "try", "while", "true", "false", "Inf", "NaN", "pi", "eps", "nargin", "nargout",
+    "varargin", "varargout",
   ]),
   powershell: new Set([
-    "Begin", "Break", "Catch", "Class", "Continue", "Data", "Define", "Do", "DynamicParam", "Else", "ElseIf", "End", "Enum", "Exit", "Filter", "Finally", "For", "ForEach", "From", "Function", "Hidden", "If", "In", "InlineScript", "Param", "Process", "Return", "Sequence", "Static", "Switch", "Throw", "Trap", "Try", "Until", "Using", "Var", "While", "Workflow", "$true", "$false", "$null",
+    "Begin", "Break", "Catch", "Class", "Continue", "Data", "Define", "Do", "DynamicParam",
+    "Else", "ElseIf", "End", "Enum", "Exit", "Filter", "Finally", "For", "ForEach", "From",
+    "Function", "Hidden", "If", "In", "InlineScript", "Param", "Process", "Return", "Sequence",
+    "Static", "Switch", "Throw", "Trap", "Try", "Until", "Using", "Var", "While", "Workflow",
+    "$true", "$false", "$null",
   ]),
   dockerfile: new Set([
-    "FROM", "RUN", "CMD", "LABEL", "EXPOSE", "ENV", "ADD", "COPY", "ENTRYPOINT", "VOLUME", "USER", "WORKDIR", "ARG", "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL", "MAINTAINER",
+    "FROM", "RUN", "CMD", "LABEL", "EXPOSE", "ENV", "ADD", "COPY", "ENTRYPOINT", "VOLUME",
+    "USER", "WORKDIR", "ARG", "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL", "MAINTAINER",
   ]),
 };
 
@@ -260,6 +424,30 @@ _HL_KEYWORDS.markdown   = null;
 // JS/TS built-ins worth highlighting
 export const _HL_BUILTINS_JS = new Set([
   "console",   "Math",   "Object",   "Array",   "String",   "Number",   "Boolean",   "Promise",   "JSON",   "Date",   "RegExp",   "Error",   "Map",   "Set",   "WeakMap",   "WeakSet",   "Symbol",   "Proxy",   "Reflect",   "Intl",   "URL",   "fetch",   "setTimeout",   "setInterval",   "clearTimeout",   "clearInterval",   "parseInt",   "parseFloat",   "isNaN",   "isFinite",   "encodeURIComponent",   "decodeURIComponent",   "document",   "window",   "navigator",
+]);
+
+// CSS value-position keywords (color/layout keywords like "auto", "flex",
+// "solid", …), used by the CSS highlighter below to decide whether an
+// identifier appearing after a ':' should render as .sh-keyword.
+// PERF: hoisted to module scope — previously re-allocated as a `new Set()`
+// on every single matched identifier inside the CSS tokenizer's hot loop.
+export const _CSS_VALUE_KEYWORDS = new Set([
+  "auto","none","inherit","initial","unset","revert","normal","bold",
+  "italic","block","inline","flex","grid","inline-block","inline-flex",
+  "inline-grid","contents","flow-root","table","absolute","relative",
+  "fixed","sticky","static","center","left","right","top","bottom",
+  "middle","baseline","stretch","start","end","space-between",
+  "space-around","space-evenly","wrap","nowrap","row","column",
+  "row-reverse","column-reverse","visible","hidden","scroll",
+  "clip","overflow","pointer","default","text","crosshair","grab",
+  "grabbing","transparent","currentColor","solid","dashed","dotted",
+  "double","groove","ridge","inset","outset","underline","overline",
+  "line-through","uppercase","lowercase","capitalize","ease","linear",
+  "ease-in","ease-out","ease-in-out","forwards","backwards","both",
+  "infinite","alternate","reverse","paused","running","serif",
+  "sans-serif","monospace","cursive","fantasy","system-ui",
+  "max-content","min-content","fit-content","contain","cover",
+  "no-repeat","repeat","repeat-x","repeat-y","round","space",
 ]);
 
 /**
@@ -328,8 +516,6 @@ export function highlightCode(code, lang) {
   // Strategy: escape the whole line first, then apply span-replacements on the
   // already-escaped text so subsequent passes never double-escape the spans.
   if (isMd) {
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     // Handle fenced code blocks spanning multiple lines first (stash them).
     const mdStash = [];
@@ -342,7 +528,7 @@ export function highlightCode(code, lang) {
       /```([a-zA-Z0-9_+#.-]*)\n?([\s\S]*?)```/g,
       (_, fl, body) =>
         mdPush(
-          `<span class="sh-comment">\`\`\`${esc(fl)}\n${esc(body)}\`\`\`</span>`,
+          `<span class="sh-comment">\`\`\`${escHtml(fl)}\n${escHtml(body)}\`\`\`</span>`,
         ),
     );
 
@@ -352,7 +538,7 @@ export function highlightCode(code, lang) {
         return raw.replace(/\x02MD(\d+)\x02/g, (_, i) => mdStash[+i]);
 
       // Escape first — all further replacements work on safe HTML
-      let line = esc(raw);
+      let line = escHtml(raw);
 
       // ATX headings  # … ######
       if (/^#{1,6}\s/.test(line))
@@ -427,17 +613,15 @@ export function highlightCode(code, lang) {
 
   // ── YAML highlighter ───────────────────────────────────────────────────────
   if (isYaml) {
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return code
       .split("\n")
       .map((line) => {
         // Comments
         if (/^\s*#/.test(line))
-          return `<span class="sh-comment">${esc(line)}</span>`;
+          return `<span class="sh-comment">${escHtml(line)}</span>`;
         // Document markers --- / ...
         if (/^(---|\.\.\.)\s*$/.test(line))
-          return `<span class="sh-operator">${esc(line)}</span>`;
+          return `<span class="sh-operator">${escHtml(line)}</span>`;
         let out = "";
         // Key: value  (highlight the key)
         out = line.replace(
@@ -447,71 +631,67 @@ export function highlightCode(code, lang) {
             const highlightVal = (v) => {
               v = v.trimStart();
               if (/^(true|false|yes|no|on|off|null|~)$/i.test(v))
-                return `<span class="sh-keyword">${esc(v)}</span>`;
+                return `<span class="sh-keyword">${escHtml(v)}</span>`;
               if (/^-?\d/.test(v))
-                return `<span class="sh-number">${esc(v)}</span>`;
+                return `<span class="sh-number">${escHtml(v)}</span>`;
               if (/^["']/.test(v))
-                return `<span class="sh-string">${esc(v)}</span>`;
+                return `<span class="sh-string">${escHtml(v)}</span>`;
               if (/^[&*]/.test(v))
-                return `<span class="sh-builtin">${esc(v)}</span>`;
-              return esc(v);
+                return `<span class="sh-builtin">${escHtml(v)}</span>`;
+              return escHtml(v);
             };
             return (
-              esc(sp) +
-              `<span class="sh-attr">${esc(key)}</span>` +
-              esc(colon) +
-              (rest.trim() ? " " + highlightVal(rest) : esc(rest))
+              escHtml(sp) +
+              `<span class="sh-attr">${escHtml(key)}</span>` +
+              escHtml(colon) +
+              (rest.trim() ? " " + highlightVal(rest) : escHtml(rest))
             );
           },
         );
-        return out || esc(line);
+        return out || escHtml(line);
       })
       .join("\n");
   }
 
   // ── TOML highlighter ───────────────────────────────────────────────────────
   if (isToml) {
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return code
       .split("\n")
       .map((line) => {
-        if (/^\s*#/.test(line)) return `<span class="sh-comment">${esc(line)}</span>`;
-        if (/^\[/.test(line.trim())) return `<span class="sh-keyword">${esc(line)}</span>`;
+        if (/^\s*#/.test(line)) return `<span class="sh-comment">${escHtml(line)}</span>`;
+        if (/^\[/.test(line.trim())) return `<span class="sh-keyword">${escHtml(line)}</span>`;
         return line.replace(
           /^(\s*)([A-Za-z_][A-Za-z0-9_.\-]*)(\s*=\s*)(.*)/,
           (_, sp, key, eq, val) => {
             let valHtml;
             if (/^(true|false)$/i.test(val.trim()))
-              valHtml = `<span class="sh-keyword">${esc(val)}</span>`;
+              valHtml = `<span class="sh-keyword">${escHtml(val)}</span>`;
             else if (/^-?\d/.test(val.trim()))
-              valHtml = `<span class="sh-number">${esc(val)}</span>`;
+              valHtml = `<span class="sh-number">${escHtml(val)}</span>`;
             else if (/^["']|^\["'\[]/.test(val.trim()))
-              valHtml = `<span class="sh-string">${esc(val)}</span>`;
+              valHtml = `<span class="sh-string">${escHtml(val)}</span>`;
             else
-              valHtml = esc(val);
-            return esc(sp) + `<span class="sh-attr">${esc(key)}</span>` + esc(eq) + valHtml;
+              valHtml = escHtml(val);
+            return escHtml(sp) + `<span class="sh-attr">${escHtml(key)}</span>` + escHtml(eq) + valHtml;
           },
-        ) || esc(line);
+        ) || escHtml(line);
       })
       .join("\n");
   }
 
   // ── Dockerfile highlighter ─────────────────────────────────────────────────
   if (isDockerfile) {
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const DOCKER_KW = _HL_KEYWORDS.dockerfile;
     return code
       .split("\n")
       .map((line) => {
-        if (/^\s*#/.test(line)) return `<span class="sh-comment">${esc(line)}</span>`;
+        if (/^\s*#/.test(line)) return `<span class="sh-comment">${escHtml(line)}</span>`;
         return line.replace(
           /^(\s*)([A-Z]+)(\s|$)/,
           (_, sp, cmd, trail) =>
             DOCKER_KW.has(cmd)
-              ? `${esc(sp)}<span class="sh-keyword">${esc(cmd)}</span>${esc(trail)}`
-              : esc(sp) + esc(cmd) + esc(trail),
+              ? `${escHtml(sp)}<span class="sh-keyword">${escHtml(cmd)}</span>${escHtml(trail)}`
+              : escHtml(sp) + escHtml(cmd) + escHtml(trail),
         );
       })
       .join("\n");
@@ -528,8 +708,6 @@ export function highlightCode(code, lang) {
     let out = "";
     const css = code;
     let i = 0;
-    const esc = (s) =>
-      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     // Track context: are we inside a rule block { … }?
     // 0 = top-level (selector territory), 1 = inside rule block (property territory)
@@ -543,7 +721,7 @@ export function highlightCode(code, lang) {
       if (css[i] === "/" && css[i + 1] === "*") {
         const end = css.indexOf("*/", i + 2);
         const chunk = end === -1 ? css.slice(i) : css.slice(i, end + 2);
-        out += `<span class="sh-comment">${esc(chunk)}</span>`;
+        out += `<span class="sh-comment">${escHtml(chunk)}</span>`;
         i += chunk.length;
         continue;
       }
@@ -556,7 +734,7 @@ export function highlightCode(code, lang) {
           j++;
         }
         const chunk = css.slice(i, j + 1);
-        out += `<span class="sh-string">${esc(chunk)}</span>`;
+        out += `<span class="sh-string">${escHtml(chunk)}</span>`;
         i = j + 1;
         continue;
       }
@@ -595,14 +773,14 @@ export function highlightCode(code, lang) {
       // ── @at-rules ────────────────────────────────────────────────────────
       const atMatch = css.slice(i).match(/^@[a-zA-Z\-]+/);
       if (atMatch) {
-        out += `<span class="sh-keyword">${esc(atMatch[0])}</span>`;
+        out += `<span class="sh-keyword">${escHtml(atMatch[0])}</span>`;
         i += atMatch[0].length;
         continue;
       }
       // ── CSS custom properties  --foo ─────────────────────────────────────
       const varMatch = css.slice(i).match(/^--[a-zA-Z][a-zA-Z0-9\-_]*/);
       if (varMatch) {
-        out += `<span class="sh-variable">${esc(varMatch[0])}</span>`;
+        out += `<span class="sh-variable">${escHtml(varMatch[0])}</span>`;
         i += varMatch[0].length;
         continue;
       }
@@ -613,7 +791,7 @@ export function highlightCode(code, lang) {
           /^-?\d+\.?\d*(%|px|em|rem|vw|vh|vmin|vmax|svh|svw|dvh|dvw|cqw|cqh|pt|pc|cm|mm|in|deg|rad|turn|grad|s|ms|fr|ch|ex|lh|cap|ic|vb|vi)?/,
         );
       if (numMatch && numMatch[0].length > 0 && /\d/.test(numMatch[0][0])) {
-        out += `<span class="sh-number">${esc(numMatch[0])}</span>`;
+        out += `<span class="sh-number">${escHtml(numMatch[0])}</span>`;
         i += numMatch[0].length;
         continue;
       }
@@ -623,34 +801,21 @@ export function highlightCode(code, lang) {
         const word = identMatch[0];
         if (depth === 0) {
           // Top level: this is a tag-selector
-          out += `<span class="sh-tag">${esc(word)}</span>`;
+          out += `<span class="sh-tag">${escHtml(word)}</span>`;
         } else if (!afterColon) {
           // Inside rule, before ':': this is a property name
-          out += `<span class="sh-attr">${esc(word)}</span>`;
+          out += `<span class="sh-attr">${escHtml(word)}</span>`;
         } else {
           // After ':': this is a value keyword (color name, keyword, etc.)
-          const CSS_VALUE_KW = new Set([
-            "auto","none","inherit","initial","unset","revert","normal","bold",
-            "italic","block","inline","flex","grid","inline-block","inline-flex",
-            "inline-grid","contents","flow-root","table","absolute","relative",
-            "fixed","sticky","static","center","left","right","top","bottom",
-            "middle","baseline","stretch","start","end","space-between",
-            "space-around","space-evenly","wrap","nowrap","row","column",
-            "row-reverse","column-reverse","visible","hidden","scroll",
-            "clip","overflow","pointer","default","text","crosshair","grab",
-            "grabbing","transparent","currentColor","solid","dashed","dotted",
-            "double","groove","ridge","inset","outset","underline","overline",
-            "line-through","uppercase","lowercase","capitalize","ease","linear",
-            "ease-in","ease-out","ease-in-out","forwards","backwards","both",
-            "infinite","alternate","reverse","paused","running","serif",
-            "sans-serif","monospace","cursive","fantasy","system-ui",
-            "max-content","min-content","fit-content","contain","cover",
-            "no-repeat","repeat","repeat-x","repeat-y","round","space",
-          ]);
-          if (CSS_VALUE_KW.has(word))
-            out += `<span class="sh-keyword">${esc(word)}</span>`;
+          // PERF FIX: this Set used to be allocated fresh on every single
+          // identifier token encountered inside a CSS value (i.e. potentially
+          // hundreds of times per code block). It's now a module-level
+          // constant (_CSS_VALUE_KEYWORDS, defined once near the other
+          // keyword tables) built exactly once.
+          if (_CSS_VALUE_KEYWORDS.has(word))
+            out += `<span class="sh-keyword">${escHtml(word)}</span>`;
           else
-            out += esc(word);
+            out += escHtml(word);
         }
         i += word.length;
         continue;
@@ -659,7 +824,7 @@ export function highlightCode(code, lang) {
       if (css[i] === "." && depth === 0) {
         const clsMatch = css.slice(i + 1).match(/^-?[a-zA-Z_][a-zA-Z0-9_\-]*/);
         if (clsMatch) {
-          out += `<span class="sh-function">.${esc(clsMatch[0])}</span>`;
+          out += `<span class="sh-function">.${escHtml(clsMatch[0])}</span>`;
           i += 1 + clsMatch[0].length;
           continue;
         }
@@ -667,7 +832,7 @@ export function highlightCode(code, lang) {
       if (css[i] === "#" && depth === 0) {
         const idMatch = css.slice(i + 1).match(/^[a-zA-Z_][a-zA-Z0-9_\-]*/);
         if (idMatch) {
-          out += `<span class="sh-variable">#${esc(idMatch[0])}</span>`;
+          out += `<span class="sh-variable">#${escHtml(idMatch[0])}</span>`;
           i += 1 + idMatch[0].length;
           continue;
         }
@@ -678,13 +843,13 @@ export function highlightCode(code, lang) {
         const psMatch = css.slice(i + extra).match(/^[a-zA-Z\-]+/);
         if (psMatch) {
           const prefix = css.slice(i, i + extra);
-          out += `<span class="sh-operator">${esc(prefix)}${esc(psMatch[0])}</span>`;
+          out += `<span class="sh-operator">${escHtml(prefix)}${escHtml(psMatch[0])}</span>`;
           i += extra + psMatch[0].length;
           continue;
         }
       }
       if ((css[i] === "*" || css[i] === ">" || css[i] === "~" || css[i] === "+") && depth === 0) {
-        out += `<span class="sh-operator">${esc(css[i])}</span>`;
+        out += `<span class="sh-operator">${escHtml(css[i])}</span>`;
         i++;
         continue;
       }
@@ -692,13 +857,13 @@ export function highlightCode(code, lang) {
       if (css[i] === "#" && depth > 0) {
         const hexMatch = css.slice(i + 1).match(/^[0-9a-fA-F]{3,8}\b/);
         if (hexMatch) {
-          out += `<span class="sh-number">#${esc(hexMatch[0])}</span>`;
+          out += `<span class="sh-number">#${escHtml(hexMatch[0])}</span>`;
           i += 1 + hexMatch[0].length;
           continue;
         }
       }
       // ── Class/id selectors inside at-rule parens (depth 0 edge cases) ───
-      out += esc(css[i]);
+      out += escHtml(css[i]);
       i++;
     }
     return out;
@@ -954,39 +1119,18 @@ export function _renderMarkdownCore(str) {
     return `\x00ST${idx}\x00`;
   };
 
-  // ── Step 0: Auto-wrap bare LaTeX lines ─────────────────────────────────────
-  // Some quiz data embeds LaTeX commands without $ delimiters.
-  // Detect lines that contain known commands but no $ or ` and wrap them.
-  const BARE_LATEX_CMD_RE =
-    /\\(?:frac|sqrt|sum|int|prod|lim|pm|mp|cdot|times|div|leq|geq|neq|approx|equiv|infty|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|nu|pi|sigma|phi|psi|omega|vec|hat|bar|tilde|dot|binom|mathbb|mathbf|mathrm|mathit)\b/;
-  if (BARE_LATEX_CMD_RE.test(str)) {
-    str = str.replace(/^(?![^\n]*[$`])([^\n]+)$/gm, (line) =>
-      BARE_LATEX_CMD_RE.test(line) ? `$${line.trim()}$` : line,
-    );
-  }
-
-  // ── Step 1: Block math $$…$$ ───────────────────────────────────────────────
-  str = str.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
-    let rendered;
-    if (typeof window.katex !== "undefined") {
-      try {
-        rendered = window.katex.renderToString(m.trim(), {
-          displayMode: true,
-          throwOnError: false,
-        });
-      } catch {
-        rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
-      }
-    } else {
-      rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
-    }
-    return stashPush(`<div class="math-block">${rendered}</div>`);
-  });
-
-  // ── Step 2a: Fenced passage blocks  ```passage … ``` ──────────────────────
+  // ── Step 0a: Fenced passage blocks  ```passage … ``` ──────────────────────
   // A passage fence renders its body as full markdown (not a code block).
   // The wrapper gets class="reading-passage"; RTL/LTR direction is applied
   // per-element by the engine after rendering, not on the wrapper itself.
+  //
+  // NOTE: this — and the fenced code-block step right after it — must run
+  // BEFORE the bare-LaTeX auto-wrap and block-math passes below. Those
+  // passes scan raw text line-by-line for LaTeX-like patterns; if they ran
+  // first they would reach inside fenced code blocks (e.g. a Python line
+  // containing `\alpha` or `\theta`) and inject stray `$` characters into
+  // the code itself, corrupting it. Stashing fenced content out first means
+  // the LaTeX/math passes only ever see prose.
   str = str.replace(
     /```passage\n?([\s\S]*?)```/gi,
     (_, body) => {
@@ -995,7 +1139,7 @@ export function _renderMarkdownCore(str) {
     },
   );
 
-  // ── Step 2b: Fenced code blocks ```lang\n…\n``` ────────────────────────
+  // ── Step 0b: Fenced code blocks ```lang\n…\n``` ────────────────────────
   // Wraps each block in .code-block-wrapper so the Copy button has a parent.
   // "passage" is already consumed above so it never reaches this branch.
   str = str.replace(
@@ -1018,14 +1162,45 @@ export function _renderMarkdownCore(str) {
                  onclick="window.copyCodeBlock(this)"
                  aria-label="Copy code">` +
           ICON_COPY +
-          `<span class="copy-label">نسخ</span>` +
+          `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
           `</button>` +
           `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
           `</div>`,
       );
     },
   );
-  // ── Step 2b: GFM Tables ────────────────────────────────────────────────────
+
+  // ── Step 1: Auto-wrap bare LaTeX lines ─────────────────────────────────────
+  // Some quiz data embeds LaTeX commands without $ delimiters.
+  // Detect lines that contain known commands but no $ or ` and wrap them.
+  // Runs after fenced-block extraction (Step 0) so code content is immune.
+  const BARE_LATEX_CMD_RE =
+    /\\(?:frac|sqrt|sum|int|prod|lim|pm|mp|cdot|times|div|leq|geq|neq|approx|equiv|infty|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|nu|pi|sigma|phi|psi|omega|vec|hat|bar|tilde|dot|binom|mathbb|mathbf|mathrm|mathit)\b/;
+  if (BARE_LATEX_CMD_RE.test(str)) {
+    str = str.replace(/^(?![^\n]*[$`])([^\n]+)$/gm, (line) =>
+      BARE_LATEX_CMD_RE.test(line) ? `$${line.trim()}$` : line,
+    );
+  }
+
+  // ── Step 2: Block math $$…$$ ───────────────────────────────────────────────
+  str = str.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => {
+    let rendered;
+    if (typeof window.katex !== "undefined") {
+      try {
+        rendered = window.katex.renderToString(m.trim(), {
+          displayMode: true,
+          throwOnError: false,
+        });
+      } catch {
+        rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
+      }
+    } else {
+      rendered = `<span class="math-raw">$$${escHtml(m)}$$</span>`;
+    }
+    return stashPush(`<div class="math-block">${rendered}</div>`);
+  });
+
+  // ── Step 3: GFM Tables ────────────────────────────────────────────────────
   // Must run BEFORE the line-by-line loop — str.split("\n") would destroy
   // the multi-line table structure.
   //
@@ -1120,13 +1295,17 @@ export function _renderMarkdownCore(str) {
       };
     }
     // FIX 2: Ordered list item — leading spaces captured for indent level
-    const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
+    // BUG FIX: also capture the literal number itself (olMatch[2]) so a
+    // list that intentionally starts at e.g. "5." can render with
+    // <ol start="5"> instead of always silently renumbering from 1.
+    const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
     if (olMatch) {
       return {
         type: "list",
         listType: "ol",
         indent: olMatch[1].length,
-        content: olMatch[2],
+        start: parseInt(olMatch[2], 10),
+        content: olMatch[3],
       };
     }
     // Blank line
@@ -1240,7 +1419,14 @@ export function _renderMarkdownCore(str) {
 
       const firstIndent = items[startIdx].indent;
       const tag = items[startIdx].listType;
-      let html = `<${tag} class="md-list">`;
+      // BUG FIX: preserve an explicit non-1 start number (e.g. "5. foo …")
+      // via the standard HTML start="" attribute instead of always
+      // rendering as a plain <ol> that browsers renumber from 1.
+      const startAttr =
+        tag === "ol" && items[startIdx].start && items[startIdx].start !== 1
+          ? ` start="${items[startIdx].start}"`
+          : "";
+      let html = `<${tag} class="md-list"${startAttr}>`;
       let i = startIdx;
 
       while (i < items.length) {
@@ -1508,6 +1694,15 @@ export function scanDirections(container = document) {
 export function renderMarkdown(str) {
   if (!str) return "";
   try {
+    // SAFETY: the engine uses \x00/\x01/\x02/\x03 control-character
+    // sentinels internally (stash placeholders for math, code blocks,
+    // tables, etc.). If the raw input already contains one of these bytes
+    // — unlikely from normal typing, but possible from pasted binary-ish
+    // or corrupted content — it could desync the later placeholder-restore
+    // step and leak a stash index into the rendered output. Strip them
+    // up front; they have no legitimate meaning in Markdown source.
+    str = str.replace(/[\x00-\x03]/g, "");
+
     const html = _renderMarkdownCore(str);
 
     // Apply direction classes to the rendered output.  We parse the HTML

@@ -237,10 +237,15 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   word-break: break-all;
 }
 
+/* BUG FIX: this override previously set white text on a black background,
+   which is inverted for a *light* theme (and duplicated the dark palette
+   above almost exactly). Use the same --color-* design tokens the rest of
+   this file relies on so inline code stays legible and on-theme in light
+   mode instead of forcing hardcoded black/white. */
 [data-theme="light"] .inline-code {
-  background: black;
-  border-color: gray;
-  color: white;
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.04));
+  border-color: var(--color-border, #d0d0d5);
+  color: var(--color-primary, #b3261e);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
