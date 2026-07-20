@@ -12,7 +12,7 @@ import {
   renderFlaggedQuestions,
 } from "./profileWidgets.js";
 
-import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications.js";
+import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 
 let examList = [];

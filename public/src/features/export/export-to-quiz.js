@@ -3,7 +3,7 @@
 // Deals with the export from the main page, create-quiz page, and results page
 // No libraries used.
 
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
 import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../../shared/rate-answers.js";

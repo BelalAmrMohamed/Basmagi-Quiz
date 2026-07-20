@@ -660,7 +660,7 @@ function getSubjectIcon(name, isSubfolder = false) {
 import {
   showNotification,
   confirmationNotification,
-} from "../../components/notifications.js";
+} from "../../components/notifications/notifications.js";
 
 // ============================================================================
 // CONSTANTS

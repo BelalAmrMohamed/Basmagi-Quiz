@@ -1,5 +1,5 @@
 // public/src/shared/gameEngine.js - Enhanced with Levels, Streaks, and More Badges
-import { showNotification } from "../components/notifications.js";
+import { showNotification } from "../components/notifications/notifications.js";
 
 const STORAGE_KEY = "quiz_user_profile";
 

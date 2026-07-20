@@ -1,7 +1,7 @@
 // Service Worker for Basmagi Quiz Platform
 // Provides offline support, caching, and performance improvements
 
-const CACHE_VERSION = "basmagi-v6.1.32";
+const CACHE_VERSION = "basmagi-v6.1.33";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -91,12 +91,12 @@ const STATIC_ASSETS = [
   "/src/shared/user-name-validation.js",
 
   // Components
-  "/src/components/side-menu.css",
-  "/src/components/side-menu.js",
-  "/src/components/notifications.css",
-  "/src/components/notifications.js",
-  "/src/components/offline-banner.css",
-  "/src/components/offline-banner.js",
+  "/src/components/side-menu/side-menu.css",
+  "/src/components/side-menu/side-menu.js",
+  "/src/components/notifications/notifications.css",
+  "/src/components/notifications/notifications.js",
+  "/src/components/offline-banner/offline-banner.css",
+  "/src/components/offline-banner/offline-banner.js",
 
   // KaTeX (Markdown/LaTeX rendering, must work offline)
   "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",

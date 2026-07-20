@@ -1,5 +1,5 @@
 /* ============================================================================
-  public/src/components/side-menu.css
+  public/src/components/side-menu/side-menu.css
    SIDEBAR — Persistent Collapsible Icon-Rail
    Desktop: 64px collapsed → 240px expanded (left-fixed, full-height)
    Mobile (≤768px): hidden off-screen, slides in from left with backdrop

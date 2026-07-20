@@ -5,7 +5,7 @@
 // by #contactDevOverlay in profile.html.
 
 import { avatarEngine } from "./avatarEngine.js";
-import { prompt_user, showNotification } from "../components/notifications.js";
+import { prompt_user, showNotification } from "../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 
 let activeStream = null;

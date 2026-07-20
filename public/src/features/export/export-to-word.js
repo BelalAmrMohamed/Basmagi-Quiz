@@ -3,7 +3,7 @@
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.
 
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 /* ============= IMPORTANT PENDING UPDATES =============
 1. Update it to support markdown: tables, code blocks, inline code, etc...

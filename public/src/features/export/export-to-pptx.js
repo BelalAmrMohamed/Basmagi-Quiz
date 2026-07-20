@@ -11,7 +11,7 @@
 5. The language name for code blocks is missplaced out of the code block itself
    ============== End ============== */
 
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 import {
   gradeEssay,

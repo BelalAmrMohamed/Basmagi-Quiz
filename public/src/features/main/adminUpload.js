@@ -24,7 +24,7 @@
 // =============================================================================
 
 import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.js";
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest } from "../../shared/quizManifest.js";

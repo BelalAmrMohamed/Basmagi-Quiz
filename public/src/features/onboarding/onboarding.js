@@ -16,7 +16,7 @@ import {
 
 import {
   showNotification,
-} from "../../components/notifications.js";
+} from "../../components/notifications/notifications.js";
 
 let categoryTree = null;
 let currentStepIndex = 0;

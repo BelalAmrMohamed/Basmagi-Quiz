@@ -15,7 +15,7 @@ import { buildQuizText } from "../export/export-to-text.js";
 import { exportToMarkdown } from "../export/export-to-markdown.js";
 
 // Notifications
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
 import {

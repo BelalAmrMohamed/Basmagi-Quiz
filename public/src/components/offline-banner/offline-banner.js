@@ -1,9 +1,9 @@
 /**
- * public/src/components/offline-banner.js
+ * public/src/components/offline-banner/offline-banner.js
  * Manages the persistent offline / online status banner.
  *
  * Usage:
- *   import { initOfflineBanner } from "../components/offline-banner.js";
+ *   import { initOfflineBanner } from "../components/offline-banner/offline-banner.js";
  *   initOfflineBanner();   ← called once from pwa-manager.js → initPWA()
  *
  * The banner element (#offlineBanner) is injected into <body> if it does not

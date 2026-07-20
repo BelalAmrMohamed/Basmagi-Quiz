@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/components/side-menu.js — Persistent collapsible icon-rail sidebar
+// public/src/components/side-menu/side-menu.js — Persistent collapsible icon-rail sidebar
 // Desktop: 64px collapsed ↔ 240px expanded, state in localStorage
 // Mobile (≤768px): bottom sheet with backdrop
 // ============================================================================
@@ -377,7 +377,7 @@
 // User Avatar
 // ============================================================================
 
-import { avatarEngine, syncNavAvatars } from "../shared/avatarEngine.js";
+import { avatarEngine, syncNavAvatars } from "../../shared/avatarEngine.js";
 
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -433,9 +433,9 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================================
 // CHANGE USERNAME
 // ============================================================================
-import { getFromStorage, setInStorage } from "../shared/storage-helpers.js";
-import { prompt_user, showNotification } from "./notifications.js";
-import { validateUsername } from "../shared/user-name-validation.js";
+import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
+import { prompt_user, showNotification } from "../notifications/notifications.js";
+import { validateUsername } from "../../shared/user-name-validation.js";
 
 window.changeUsername = async function (message = "أدخل الإسم الجديد") {
   try {
@@ -457,12 +457,12 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
         window.location.pathname.startsWith("/index") ||
         window.location.pathname === "/"
       ) {
-        const { updateWelcomeMessage } = await import("../features/main/index.js");
+        const { updateWelcomeMessage } = await import("../../features/main/index.js");
         updateWelcomeMessage();
       }
       // For the leaderboard name in profile page
       else if (window.location.pathname.startsWith("/profile")) {
-        const { refreshUI } = await import("../features/profile/profile.js");
+        const { refreshUI } = await import("../../features/profile/profile.js");
         refreshUI();
       } else if (window.location.pathname.startsWith("/settings")) {
         const settingsNameInput = document.getElementById("settingsName");

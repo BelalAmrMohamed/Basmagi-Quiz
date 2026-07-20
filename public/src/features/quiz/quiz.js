@@ -8,7 +8,7 @@ import { gameEngine } from "../../shared/gameEngine.js";
 import {
   showNotification,
   confirmationNotification,
-} from "../../components/notifications.js";
+} from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
 import {

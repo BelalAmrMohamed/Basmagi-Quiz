@@ -2,7 +2,7 @@
 // Downloads the quiz as markdown (.md)
 // Deals with the export from both main page and results page
 // No libraries used
-import { showNotification } from "../../components/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
 import {

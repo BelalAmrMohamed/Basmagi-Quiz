@@ -22,8 +22,8 @@
  *   </script>
  */
 
-import { initOfflineBanner } from "../components/offline-banner.js";
-import { showNotification }  from "../components/notifications.js";
+import { initOfflineBanner } from "../components/offline-banner/offline-banner.js";
+import { showNotification }  from "../components/notifications/notifications.js";
 import { getSubscribedCourses } from "./filterUtils.js";
 import { getManifest } from "../shared/quizManifest.js";
 import { userProfile } from "../shared/userProfile.js";
