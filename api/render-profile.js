@@ -26,11 +26,18 @@ export default async function handler(req, res) {
 
   const cleanHandle = handle.trim();
 
+  // NOTE: use case-insensitive matching here, same as admin-stats.js and
+  // auth.js. A plain `.eq()` previously caused this route to silently
+  // 302-redirect to /profile.html for handles that didn't match on exact
+  // case/whitespace, which looked like "the profile doesn't exist" to
+  // visitors even though the account and handle were both valid.
+  const normalizedHandle = cleanHandle.toLowerCase().replace(/[%_\\]/g, "\\$&");
+
   // Fetch admin metadata
   const { data: adminData, error } = await supabase
     .from("admin_users")
     .select("display_name, handle")
-    .eq("handle", cleanHandle)
+    .ilike("handle", normalizedHandle)
     .maybeSingle();
 
   if (error || !adminData) {
