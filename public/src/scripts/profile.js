@@ -12,7 +12,7 @@ import {
   renderFlaggedQuestions,
 } from "./profileWidgets.js";
 
-import { confirmationNotification } from "../components/notifications.js";
+import { confirmationNotification, showNotification } from "../components/notifications.js";
 import { getAdminRoleInfo } from "./adminAuth.js";
 
 let examList = [];
@@ -80,25 +80,41 @@ export function refreshUI(options = {}) {
       document.getElementById("infoModalName").textContent = currentName;
       
       const roleInfo = getAdminRoleInfo();
-      if (roleInfo && roleInfo.handle) {
+      if (roleInfo && (roleInfo.handle || roleInfo.email || roleInfo.isOwner || roleInfo.role)) {
         document.getElementById("infoModalAdminSection").style.display = "block";
-        document.getElementById("infoModalEmail").textContent = roleInfo.email || "";
-        document.getElementById("infoModalHandle").textContent = "@" + roleInfo.handle;
         
-        const copyBtn = document.getElementById("modalCopyLinkBtn");
-        copyBtn.onclick = () => {
-          const url = window.location.origin + "/@" + roleInfo.handle;
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(url).then(() => {
-              const orig = copyBtn.innerHTML;
-              copyBtn.innerHTML = "تم النسخ! ✔️";
-              copyBtn.setAttribute("aria-live", "polite");
-              setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
-            });
-          } else {
-            prompt("انسخ الرابط التالي:", url);
+        const emailBlock = document.getElementById("infoModalEmail").parentElement;
+        if (roleInfo.email) {
+          emailBlock.style.display = "flex";
+          document.getElementById("infoModalEmail").textContent = roleInfo.email;
+        } else {
+          emailBlock.style.display = "none";
+        }
+        
+        const handleBlock = document.getElementById("infoModalHandle").parentElement.parentElement;
+        if (roleInfo.handle) {
+          handleBlock.style.display = "flex";
+          document.getElementById("infoModalHandle").textContent = "@" + roleInfo.handle;
+          
+          const copyBtn = document.getElementById("modalCopyLinkBtn");
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              const url = window.location.origin + "/@" + roleInfo.handle;
+              if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(() => {
+                  const orig = copyBtn.innerHTML;
+                  copyBtn.innerHTML = "تم النسخ! ✔️";
+                  copyBtn.setAttribute("aria-live", "polite");
+                  setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
+                });
+              } else {
+                prompt("انسخ الرابط التالي:", url);
+              }
+            };
           }
-        };
+        } else {
+          handleBlock.style.display = "none";
+        }
       } else {
         document.getElementById("infoModalAdminSection").style.display = "none";
       }
@@ -121,6 +137,8 @@ function applyRoleBadges(role, isOwner) {
   
   if (roleBadge) {
     roleBadge.style.display = "inline-flex";
+    roleBadge.onclick = () => showNotification(`هذا الحساب يمتلك صلاحيات ${isOwner ? 'مطور' : 'مشرف'}`, "", "info");
+
     if (isOwner) {
       roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
       roleBadge.className = "role-badge developer-badge";
@@ -269,6 +287,13 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Add overlay backdrop click handler for all contact overlays
+  document.querySelectorAll(".contact-overlay").forEach(overlay => {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) overlay.style.display = "none";
+    });
+  });
+
   // Guard: Only run profile initialisation if we're on the profile page
   if (!document.getElementById("totalPoints")) return;
 

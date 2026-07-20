@@ -45,6 +45,43 @@ function renderPresetGrid() {
       applyAvatar(dataUrl);
     });
   });
+
+  // Async fetch and append Gravatar for admins/owners
+  const roleInfo = getAdminRoleInfo();
+  if (roleInfo && roleInfo.email) {
+    appendGravatarPreset(grid, roleInfo.email);
+  }
+}
+
+async function appendGravatarPreset(grid, email) {
+  try {
+    const trimmedEmail = email.trim().toLowerCase();
+    const encoder = new TextEncoder();
+    const data = encoder.encode(trimmedEmail);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const gravatarUrl = `https://gravatar.com/avatar/${hashHex}?s=256&d=404`;
+    
+    const res = await fetch(gravatarUrl);
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const file = new File([blob], "gravatar.jpg", { type: blob.type });
+    const dataUrl = await avatarEngine.processImageFile(file);
+    
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "avatar-preset-btn gravatar-preset";
+    btn.setAttribute("data-avatar", dataUrl);
+    btn.setAttribute("aria-label", "الصورة من البريد");
+    btn.style.cssText = "background:transparent; padding:0; overflow:hidden;";
+    btn.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    btn.addEventListener("click", () => applyAvatar(dataUrl));
+    
+    grid.appendChild(btn);
+  } catch(err) {
+    console.error("Failed to append gravatar", err);
+  }
 }
 
 function applyAvatar(dataUrl) {
@@ -171,7 +208,6 @@ export function initAvatarPicker() {
   const cameraStartBtn = document.getElementById("avatarCameraStartBtn");
   const cameraCaptureBtn = document.getElementById("avatarCameraCaptureBtn");
   const removeBtn = document.getElementById("avatarRemoveBtn");
-  const gravatarBtn = document.getElementById("avatarGravatarBtn");
 
   if (!overlay) return; // Guard: only wire up on pages that have the picker
 
@@ -232,38 +268,4 @@ export function initAvatarPicker() {
       showNotification("تمت إزالة الصورة الشخصية", "", "success");
       closeAvatarPicker();
     });
-
-  gravatarBtn && gravatarBtn.addEventListener("click", handleGravatar);
-}
-
-async function handleGravatar() {
-  try {
-    const email = await prompt_user("أدخل البريد الإلكتروني الخاص بك في Gravatar:", "");
-    if (!email || !email.trim()) return;
-
-    const trimmedEmail = email.trim().toLowerCase();
-    const encoder = new TextEncoder();
-    const data = encoder.encode(trimmedEmail);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    // Fetch Gravatar using SHA-256 hash. d=404 ensures we get an error if not found.
-    const url = `https://gravatar.com/avatar/${hashHex}?s=256&d=404`;
-    const res = await fetch(url);
-    
-    if (!res.ok) {
-      showNotification("لم يتم العثور على صورة Gravatar لهذا البريد", "", "error");
-      return;
-    }
-    
-    const blob = await res.blob();
-    const file = new File([blob], "gravatar.jpg", { type: blob.type });
-    const dataUrl = await avatarEngine.processImageFile(file);
-    applyAvatar(dataUrl);
-
-  } catch (err) {
-    console.error("Gravatar error:", err);
-    showNotification("حدث خطأ أثناء جلب الصورة من Gravatar", "", "error");
-  }
 }

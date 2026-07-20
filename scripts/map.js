@@ -5,7 +5,10 @@
 const fs = require("fs");
 const path = require("path");
 
-// Start of Settings
+// Settings
+
+// The path of the output map
+ouputMapPath = "docs/context-map.txt"
 
 // Files/Folders to ignore
 const IGNORE_NAMES = [
@@ -31,7 +34,7 @@ const EXCEPTION_NAMES = ["README.md", "robots.txt"];
 function generateTree() {
   const scriptDir = __dirname;
   const parentDir = path.dirname(scriptDir);
-  const outputFile = path.join(parentDir, "docs/context-map.txt");
+  const outputFile = path.join(parentDir, ouputMapPath);
 
   const outputStream = fs.createWriteStream(outputFile, { encoding: "utf-8" });
   outputStream.write(`${path.basename(parentDir)}/\n`);
