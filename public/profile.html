@@ -40,8 +40,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Quiz Dashboard">
 
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- PWA configuration -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#f9fafb" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#030712" media="(prefers-color-scheme: dark)">
+
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('__bq_adm');
+          if (t) {
+            var p = JSON.parse(atob(t.split('.')[1]));
+            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+          }
+        } catch(e) {}
+      })();
+    </script>
 
     <!-- PWA Manifest & Icons -->
     <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icon-180.png">
@@ -419,8 +434,6 @@
     <script>
         (function () {
             var dataUrl = window.__navAvatarDataUrl;
-            if (!dataUrl) return;
-
             var targets = [
                 { imgId: "navSidebarAvatar", iconClass: "menu-item-default-icon" },
                 { imgId: "navBottomAvatar", iconClass: "bottom-nav-default-icon" },
@@ -429,8 +442,23 @@
             targets.forEach(function (t) {
                 var img = document.getElementById(t.imgId);
                 if (!img) return;
-                var icon = img.parentElement ? img.parentElement.querySelector("." + t.iconClass) : null;
 
+                // INSTANT BADGE INJECTION
+                try {
+                  if (sessionStorage.getItem('__bq_adm')) {
+                    var parent = img.parentElement;
+                    if (parent && !parent.querySelector('.nav-badge-overlay')) {
+                      parent.style.position = 'relative';
+                      var b = document.createElement('span');
+                      b.className = 'nav-badge-overlay';
+                      b.style.cssText = 'position:absolute; width:16px; height:16px; top:6px; left:6px; border-radius:50%; z-index:10; box-shadow:var(--shadow-sm); border:2px solid var(--color-surface); background-color:var(--color-surface);';
+                      parent.appendChild(b);
+                    }
+                  }
+                } catch(e) {}
+
+                if (!dataUrl) return;
+                var icon = img.parentElement ? img.parentElement.querySelector("." + t.iconClass) : null;
                 img.src = dataUrl;
                 img.style.display = "";
                 if (icon) icon.style.display = "none";
@@ -465,6 +493,15 @@
                     <h1 id="userNameHeader" class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم">
                         لوحة تحكم المستخدم</h1>
                     <span id="roleBadge" class="role-badge" style="display:none;"></span>
+                    <div id="adminInfoBox" style="display:none; margin-top: 8px; font-size: 0.85rem;">
+                        <div style="color: var(--color-text-secondary); margin-bottom: 4px;">
+                            📧 <span id="adminEmailDisplay"></span>
+                        </div>
+                        <div style="color: var(--color-text-secondary); margin-bottom: 8px; direction: ltr; text-align: right;">
+                            🔗 <span id="adminHandleDisplay"></span>
+                        </div>
+                        <button id="copyProfileLinkBtn" class="adm-btn adm-btn-ghost" style="padding: 4px 12px; font-size: 0.8rem;">نسخ رابط الملف الشخصي</button>
+                    </div>
                     <span class="weekly-recap" id="weeklyRecap">جارِ التحميل...</span>
                 </div>
 
@@ -481,31 +518,6 @@
                             <span id="currentXP">0 XP</span>
                             <span id="nextLevelXP">100 XP إلى المستوى التالي</span>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Admin specific Stats Grid (hidden by default) -->
-            <div id="adminStatsGrid" class="stats-grid" style="display:none; margin-bottom: 14px;">
-                <div class="stat-card">
-                    <div class="icon">📤</div>
-                    <div class="info">
-                        <span class="label">إجمالي الاختبارات المرفوعة</span>
-                        <span class="value" id="adminUploadedQuizzes">0</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">🚩</div>
-                    <div class="info">
-                        <span class="label">إجمالي البلاغات في اختباراتي</span>
-                        <span class="value" id="adminReportsCount">0</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">✅</div>
-                    <div class="info">
-                        <span class="label">البلاغات التي تم حلها</span>
-                        <span class="value" id="adminResolvedReportsCount">0</span>
                     </div>
                 </div>
             </div>
@@ -539,6 +551,31 @@
                         <span class="label">المستوى الحالي</span>
                         <span class="value" id="currentLevel">1</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin specific Stats Grid (hidden by default) -->
+        <div id="adminStatsGrid" class="stats-grid" style="display:none; margin-bottom: 24px;">
+            <div class="stat-card">
+                <div class="icon">📤</div>
+                <div class="info">
+                    <span class="label">إجمالي الاختبارات المرفوعة</span>
+                    <span class="value" id="adminUploadedQuizzes">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">🚩</div>
+                <div class="info">
+                    <span class="label">إجمالي البلاغات</span>
+                    <span class="value" id="adminReportsCount">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="icon">✅</div>
+                <div class="info">
+                    <span class="label">البلاغات التي تم حلها</span>
+                    <span class="value" id="adminResolvedReportsCount">0</span>
                 </div>
             </div>
         </div>
@@ -733,6 +770,16 @@
             <div class="avatar-picker-section">
                 <span class="avatar-picker-section-label">أو</span>
                 <div class="avatar-picker-actions">
+                    <button type="button" class="avatar-action-btn" id="avatarGravatarBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <rect width="20" height="16" x="2" y="4" rx="2" />
+                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                        </svg>
+                        استيراد الصورة من البريد (Gravatar)
+                    </button>
+                    
                     <div class="avatar-dropzone" id="avatarDropzone">
                         <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -767,16 +814,6 @@
                         التقاط الآن
                     </button>
                     <video id="avatarCameraFeed" class="avatar-camera-preview" autoplay playsinline muted></video>
-
-                    <button type="button" class="avatar-action-btn" id="avatarGravatarBtn" style="display:none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <rect width="20" height="16" x="2" y="4" rx="2" />
-                            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                        </svg>
-                        استيراد الصورة من البريد (Gravatar)
-                    </button>
 
                     <button type="button" class="avatar-action-btn danger" id="avatarRemoveBtn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"

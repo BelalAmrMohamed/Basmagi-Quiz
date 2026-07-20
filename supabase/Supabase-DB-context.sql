@@ -1,9 +1,6 @@
--- Supabase-DB-context.sql | Last updated on version `v6.1.14` (auth refactor)
+-- Supabase-DB-context.sql | Last updated on version `v6.1.19` (auth refactor)
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
---
--- NOTE: `app_settings` table was DROPPED in v6.1.13 migration.
---       Access-code authentication has been fully deprecated.
 
 CREATE TABLE public.quizzes (
   college text,
@@ -39,9 +36,27 @@ CREATE TABLE public.quiz_access (
 CREATE TABLE public.admin_users (
   handle text UNIQUE,
   display_name text,
+  total_points integer DEFAULT 0,
   email text NOT NULL UNIQUE,
   added_by text NOT NULL,
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  total_quizzes integer DEFAULT 0,
+  total_badges integer DEFAULT 0,
+  current_level integer DEFAULT 1,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
+);
+
+CREATE TABLE public.reports (
+  quiz_id uuid,
+  question_index integer,
+  reason text NOT NULL,
+  resolved_by_admin_id uuid,
+  resolved_at timestamp with time zone,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  status text DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'resolved'::text, 'dismissed'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT reports_pkey PRIMARY KEY (id),
+  CONSTRAINT reports_quiz_id_fkey FOREIGN KEY (quiz_id) REFERENCES public.quizzes(id),
+  CONSTRAINT reports_resolved_by_admin_id_fkey FOREIGN KEY (resolved_by_admin_id) REFERENCES public.admin_users(id)
 );

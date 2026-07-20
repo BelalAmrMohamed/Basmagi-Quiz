@@ -56,6 +56,32 @@ export function refreshUI() {
   if (roleInfo) {
     applyRoleBadges(roleInfo.role, roleInfo.isOwner);
     fetchAndRenderAdminStats(); // Fetch stats for owner
+    
+    // Admin Info Display
+    const adminInfoBox = document.getElementById("adminInfoBox");
+    if (adminInfoBox && roleInfo.handle) {
+      adminInfoBox.style.display = "block";
+      const emailDisplay = document.getElementById("adminEmailDisplay");
+      const handleDisplay = document.getElementById("adminHandleDisplay");
+      if (emailDisplay) emailDisplay.textContent = roleInfo.email || "";
+      if (handleDisplay) handleDisplay.textContent = "@" + roleInfo.handle;
+      
+      const copyBtn = document.getElementById("copyProfileLinkBtn");
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          const url = window.location.origin + "/@" + roleInfo.handle;
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+              const orig = copyBtn.textContent;
+              copyBtn.textContent = "تم النسخ!";
+              setTimeout(() => { copyBtn.textContent = orig; }, 2000);
+            });
+          } else {
+            prompt("انسخ الرابط التالي:", url);
+          }
+        };
+      }
+    }
   }
 }
 
@@ -428,9 +454,39 @@ function renderBadges(user) {
       .join("") || "Earn badges by completing quizzes!";
 }
 
-function renderLeaderboard(user) {
+async function renderLeaderboard(user) {
   const leaderboardEl = document.getElementById("leaderboard");
   if (!leaderboardEl) return;
+
+  const roleInfo = getAdminRoleInfo();
+  const isAdmin = !!roleInfo;
+
+  if (isAdmin) {
+    try {
+      const res = await fetch("/api/admin-leaderboard");
+      if (res.ok) {
+        const admins = await res.json();
+        const displayName = localStorage.getItem("username") || "User";
+        
+        leaderboardEl.innerHTML = admins
+          .map(
+            (entry, i) => `
+          <div class="lb-row ${entry.handle === roleInfo.handle ? "highlight" : ""}">
+            <span style="flex:1; display:flex; align-items:center; gap:6px;">
+              <span style="font-weight:bold; color:var(--color-primary); width:18px;">${i + 1}.</span> 
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.display_name || entry.handle}">
+                ${entry.handle === roleInfo.handle ? displayName + ' (أنت)' : (entry.display_name || entry.handle)}
+              </span>
+            </span>
+            <strong>${entry.total_quizzes.toLocaleString()} إختبار</strong>
+          </div>
+        `
+          )
+          .join("");
+        return;
+      }
+    } catch (err) {}
+  }
 
   const mockUsers = [
     { name: "عم فوزي الحريف", points: 3000 },

@@ -133,10 +133,10 @@ body {
 
 .badge-overlay-icon {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 32px;
-  height: 32px;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 2px solid var(--color-surface);
   background: var(--color-surface);

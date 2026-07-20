@@ -150,7 +150,9 @@ export function getAdminRoleInfo() {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return {
       role: payload.role,
-      isOwner: !!payload.isOwner
+      isOwner: !!payload.isOwner,
+      email: payload.email,
+      handle: payload.handle
     };
   } catch (err) {
     return null;

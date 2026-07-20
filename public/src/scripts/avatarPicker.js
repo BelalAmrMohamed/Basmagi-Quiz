@@ -147,14 +147,6 @@ export function openAvatarPicker() {
   if (!overlay) return;
   renderPresetGrid();
 
-  const gravatarBtn = document.getElementById("avatarGravatarBtn");
-  if (gravatarBtn) {
-    const roleInfo = getAdminRoleInfo();
-    if (roleInfo) {
-      gravatarBtn.style.display = "inline-flex";
-    }
-  }
-
   overlay.style.display = "flex";
   requestAnimationFrame(() => overlay.classList.add("open"));
 }

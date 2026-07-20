@@ -58,16 +58,16 @@ export default async function handler(req, res) {
   let isAuthorized = ownerEmails.includes(userEmail);
 
   // If not owner, check if the user is an admin in the database.
-  if (!isAuthorized) {
-    const { data: adminData } = await supabase
-      .from("admin_users")
-      .select("email")
-      .eq("email", userEmail)
-      .single();
+  let adminHandle = null;
+  const { data: adminData } = await supabase
+    .from("admin_users")
+    .select("email, handle")
+    .eq("email", userEmail)
+    .maybeSingle();
 
-    if (adminData) {
-      isAuthorized = true;
-    }
+  if (adminData) {
+    if (!isAuthorized) isAuthorized = true;
+    adminHandle = adminData.handle;
   }
 
   if (!isAuthorized) {
@@ -81,6 +81,7 @@ export default async function handler(req, res) {
     {
       role: "admin",
       email: userEmail,
+      handle: adminHandle,
       isOwner: ownerEmails.includes(userEmail),
     },
     process.env.JWT_SECRET,
