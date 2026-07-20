@@ -1,4 +1,4 @@
-// src/shared/avatarPicker.js - Avatar Picker Modal Controller
+// public/src/shared/avatarPicker.js - Avatar Picker Modal Controller
 // Handles the "choose your avatar" overlay: default preset avatars
 // (generated, not stored, from initials), local file upload, and
 // device camera capture. Mirrors the interaction pattern already used

@@ -1,5 +1,5 @@
 // ============================================================================
-// src/scripts/features/main/index.js - Enhanced with Security, Performance, and Accessibility
+// public/src/scripts/features/main/index.js - Enhanced with Security, Performance, and Accessibility
 // All original functionality preserved + improvements added
 // ============================================================================
 

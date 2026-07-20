@@ -1,4 +1,4 @@
-// src/shared/filterUtils.js - Course Filtering & Metadata Extraction
+// public/src/shared/filterUtils.js - Course Filtering & Metadata Extraction
 
 const SCHOOL_TYPES = new Set(["Primary", "Middle", "High"]);
 

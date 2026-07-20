@@ -1,4 +1,4 @@
-// src/features/export/export-to-word.js
+// public/src/features/export/export-to-word.js
 // Downloads the quiz as a Word file (.docx)
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.

@@ -1,4 +1,4 @@
-// src/features/export/export-to-text.js
+// public/src/features/export/export-to-text.js
 // Builds a plain-text representation of a quiz (with optional user answers).
 // Exposes buildQuizText() for callers that need the string,
 // and exportToText() that copies to clipboard + downloads as .txt.

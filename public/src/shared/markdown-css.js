@@ -1,4 +1,4 @@
-// src/shared/markdown-css.js
+// public/src/shared/markdown-css.js
 //
 // Shared CSS for markdown / KaTeX rendering, mirrored from create-quiz.
 // Imported by export-to-html.js and export-to-quiz.js and interpolated

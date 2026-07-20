@@ -1,4 +1,4 @@
-// src/shared/quiz-processor.js
+// public/src/shared/quiz-processor.js
 // Shared quiz file/text processing utilities used by both create-quiz and index pages.
 import { generateQuizId } from "../shared/quizId.js";
 

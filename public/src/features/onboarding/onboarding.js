@@ -1,4 +1,4 @@
-// src/features/onboarding/onboarding.js
+// public/src/features/onboarding/onboarding.js
 
 // Temporary | For performance debugging
 console.log("onboarding.js loaded successfully")

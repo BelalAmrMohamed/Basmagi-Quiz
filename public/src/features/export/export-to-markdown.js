@@ -1,4 +1,4 @@
-// src/features/export/export-to-markdown.js
+// public/src/features/export/export-to-markdown.js
 // Downloads the quiz as markdown (.md)
 // Deals with the export from both main page and results page
 // No libraries used

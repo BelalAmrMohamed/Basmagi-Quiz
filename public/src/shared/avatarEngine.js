@@ -1,4 +1,4 @@
-// src/shared/avatarEngine.js - Client-side Avatar Storage & Processing
+// public/src/shared/avatarEngine.js - Client-side Avatar Storage & Processing
 // All avatar data lives in localStorage since non-admin users have no
 // Supabase account. Kept in its own key (separate from quiz_user_profile)
 // so avatar payloads never bloat the read/write path of the main profile

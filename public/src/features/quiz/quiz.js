@@ -1,4 +1,4 @@
-// src/scripts/features/quiz/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
+// public/src/scripts/features/quiz/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
 
 // Temporary | For performance debugging
 console.log("quiz.js loaded successfully")

@@ -1,4 +1,4 @@
-// src/features/profile/profileWidgets.js - New Engagement Widgets for the Profile Page
+// public/src/features/profile/profileWidgets.js - New Engagement Widgets for the Profile Page
 // Activity heatmap, category mastery chart, "next badge" progress teasers,
 // and the flagged-questions review panel. Split out from profile.js to keep
 // each renderer focused and independently testable.

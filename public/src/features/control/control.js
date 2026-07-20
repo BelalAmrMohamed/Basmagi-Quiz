@@ -1,5 +1,5 @@
 // =============================================================================
-// src/features/control/control.js — logic for control.html
+// public/src/features/control/control.js — logic for control.html
 //
 // Manages admin users and displays platform stats for the owner.
 // Access-code logic was removed in v6.1 — only email/OAuth auth is supported.

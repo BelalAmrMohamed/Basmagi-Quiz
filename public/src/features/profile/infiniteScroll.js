@@ -1,4 +1,4 @@
-// src/features/profile/infiniteScroll.js - Reusable Infinite Scroll Helper
+// public/src/features/profile/infiniteScroll.js - Reusable Infinite Scroll Helper
 // Renders items in batches as the user scrolls, instead of dumping a
 // potentially huge History/Bookmarks list into the DOM at once (the
 // original overflow problem) or re-rendering the whole list on every load.

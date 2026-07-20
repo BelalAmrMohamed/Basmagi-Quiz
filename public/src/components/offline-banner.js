@@ -1,5 +1,5 @@
 /**
- * offline-banner.js
+ * public/src/components/offline-banner.js
  * Manages the persistent offline / online status banner.
  *
  * Usage:

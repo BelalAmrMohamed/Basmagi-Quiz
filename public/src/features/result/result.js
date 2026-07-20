@@ -1,4 +1,4 @@
-// src/features/result/result.js
+// public/src/features/result/result.js
 
 // Temporary | For performance debugging
 console.log("result.js loaded successfully")

@@ -1,5 +1,5 @@
 /**
- * src/scripts/features/quiz/keyboard-nav.js
+ * public/src/scripts/features/quiz/keyboard-nav.js
  *
  * Keyboard Navigation System — Basmagi Quiz PWA, Feature 1-A
  *

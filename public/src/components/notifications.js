@@ -1,4 +1,4 @@
-// src/components/notifications.js
+// public/src/components/notifications.js
 // Import in a JS file:
 // import { showNotification, confirmationNotification } from "../components/notifications.js";
 // Include the CSS file in an HTML page:

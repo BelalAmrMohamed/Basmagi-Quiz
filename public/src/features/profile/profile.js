@@ -1,4 +1,4 @@
-// src/scripts/profile.js - Enhanced with All Features
+// public/src/features/profile/profile.js - Enhanced with All Features
 
 import { gameEngine, BADGES } from "../../shared/gameEngine.js";
 import { avatarEngine } from "../../shared/avatarEngine.js";
@@ -292,7 +292,7 @@ async function setupVisitorView(handle) {
 
   // Avatar: render immediately from the server-injected meta tag (no extra
   // round-trip) if present, so visitor view isn't stuck with the blank
-  // src="" it starts with. fetchAndRenderAdminStats also returns avatarUrl
+  // public/src="" it starts with. fetchAndRenderAdminStats also returns avatarUrl
   // below as a fallback in case the meta tag is ever missing/stale.
   const avatarMeta = document.querySelector('meta[name="admin:avatar"]');
   renderVisitorAvatar(avatarMeta ? avatarMeta.content : null, handle);

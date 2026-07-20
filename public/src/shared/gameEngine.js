@@ -1,4 +1,4 @@
-// src/shared/gameEngine.js - Enhanced with Levels, Streaks, and More Badges
+// public/src/shared/gameEngine.js - Enhanced with Levels, Streaks, and More Badges
 import { showNotification } from "../components/notifications.js";
 
 const STORAGE_KEY = "quiz_user_profile";

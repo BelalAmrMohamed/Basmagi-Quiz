@@ -1,4 +1,4 @@
-// src/features/export/export-to-pdf.js
+// public/src/features/export/export-to-pdf.js
 // Downloads the quiz as a PDF file (.pdf)
 // Deals with the export from both main page and results/summary page
 // `jsPDF` library used, included in here `loadPdfLib`

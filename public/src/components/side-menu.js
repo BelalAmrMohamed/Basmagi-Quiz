@@ -1,5 +1,5 @@
 // ============================================================================
-// side-menu.js — Persistent collapsible icon-rail sidebar
+// public/src/components/side-menu.js — Persistent collapsible icon-rail sidebar
 // Desktop: 64px collapsed ↔ 240px expanded, state in localStorage
 // Mobile (≤768px): bottom sheet with backdrop
 // ============================================================================
