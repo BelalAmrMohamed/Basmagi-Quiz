@@ -108,10 +108,13 @@ const TERM_LABELS = {
   3: "الترم الثالث",
 };
 
+function yearLabel(y) { return YEAR_LABELS[y] || (y ? `سنة ${y}` : ""); }
+function termLabel(t) { return TERM_LABELS[t] || (t ? `ترم ${t}` : ""); }
+
 // ─── Persist last-used selections ─────────────────────────────────────────────
 const LS_KEY = "admin_upload_last";
 function getSaved()      { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; } }
-function persistSaved(v) { try { localStorage.setItem(LS_KEY, JSON.stringify(v)); } catch {} }
+function persistSaved(v) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...getSaved(), ...v })); } catch {} }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 function injectStyles() {
@@ -165,6 +168,7 @@ function injectStyles() {
 
     .adm-body { padding:16px 22px 22px; }
     .adm-hint { font-size:.85rem; color:var(--color-text-secondary); text-align:center; margin:0 0 16px; }
+    .adm-hint-warn { font-size:.78rem; color:var(--color-error); text-align:center; margin:-8px 0 14px; }
 
     .adm-field { margin-bottom:13px; }
     .adm-field label { display:flex; align-items:center; gap:6px; font-size:.8rem; font-weight:700; color:var(--color-text-secondary); margin-bottom:5px; }
@@ -215,6 +219,7 @@ function injectStyles() {
     .adm-progress-item.uploading { border-color:var(--color-primary); background:var(--color-primary-light); }
     .adm-progress-item.done      { border-color:var(--color-success); background:var(--color-success-light); color: var(--color-text-primary); }
     .adm-progress-item.error     { border-color:var(--color-error); background:var(--color-error-light); }
+    .adm-progress-item.skipped   { border-color:var(--color-border); background:var(--color-background-secondary); opacity:.6; }
     .adm-progress-icon { font-size:1rem; flex-shrink:0; min-width:20px; text-align:center; }
     .adm-progress-name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
     .adm-progress-msg  { font-size:.75rem; color:var(--color-text-tertiary); }
@@ -309,11 +314,20 @@ let _quiz    = null;  // compat ref - always _quizzes[0]
 let _quizzes = [];    // quizzes being uploaded in this session
 let _overlay = null;
 
+// ─── Small DOM helpers ─────────────────────────────────────────────────────────
+function mkOption(value, text, selected = false) {
+  return Object.assign(document.createElement("option"), { value, textContent: text, selected });
+}
+
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 function authHeaders() {
   const token = getToken();
   if (!token) { signOut(); throw new Error("انتهت الجلسة. يرجى تسجيل الدخول مجددًا."); }
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+}
+
+function isSessionError(err) {
+  return !!(err?.message && (err.message.includes("جلسة") || err.message.includes("مصرح")));
 }
 
 async function postUpload(payload) {
@@ -413,21 +427,31 @@ function renderStep1(saved = {}) {
   const getType    = () => eduEl.value;
   const getCollege = () => colEl.value?.trim() || "";
 
+  // Keeps year/term select disabled state in sync with visibility + college
+  // requirement, regardless of how many times the track is switched back
+  // and forth. Called on every relevant change so state never goes stale.
+  function syncYearTermDisabledState(type, college) {
+    const hasYTNow = TRACKS_WITH_YEARTERM.has(type);
+    const needsCollegeFirst = TRACKS_WITH_COLLEGE.has(type) && !college;
+    const shouldDisable = !hasYTNow || needsCollegeFirst;
+    yearEl.disabled = shouldDisable;
+    termEl.disabled = shouldDisable;
+  }
+
   function applyTrackVisibility(type) {
     document.getElementById("adm-college-wrap").style.display  = TRACKS_WITH_COLLEGE.has(type) ? "" : "none";
     document.getElementById("adm-yearterm-wrap").style.display = TRACKS_WITH_YEARTERM.has(type) ? "" : "none";
   }
 
   function triggerYearTermPopulate(type, college, sv) {
+    syncYearTermDisabledState(type, college);
     if (!TRACKS_WITH_YEARTERM.has(type)) return;
     if (type !== "University" || college) {
-      yearEl.disabled = false; termEl.disabled = false;
       populateYearOptions(type, college, yearEl, sv.year || "");
       populateTermOptions(type, college, sv.year || "", termEl, sv.term || "");
     } else {
       yearEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
       termEl.innerHTML = `<option value="">— اختر الكلية أولاً —</option>`;
-      yearEl.disabled = true; termEl.disabled = true;
     }
   }
 
@@ -446,8 +470,14 @@ function renderStep1(saved = {}) {
   });
 
   yearEl.addEventListener("change", () => {
-    populateTermOptions(getType(), getCollege(), yearEl.value, termEl);
-    termEl.value = "";
+    const previousTerm = termEl.value;
+    populateTermOptions(getType(), getCollege(), yearEl.value, termEl, previousTerm);
+    // If the previously-selected term is no longer valid for this year,
+    // populateTermOptions won't have marked it selected — tell the admin
+    // instead of silently discarding their choice.
+    if (previousTerm && termEl.value !== previousTerm) {
+      showNotification("الترم المحدد سابقًا غير متاح لهذه السنة، الرجاء اختيار ترم جديد", "warning");
+    }
   });
 
   document.getElementById("adm-s1-next").addEventListener("click", step1Validate);
@@ -485,13 +515,11 @@ function populateSubjects(type, college, year, term, subEl, folEl, saved) {
     .map(([name]) => name)
     .sort((a, b) => a.localeCompare(b));
 
-  subjects.forEach(s => subEl.appendChild(Object.assign(document.createElement("option"), {
-    value: s, textContent: s, selected: saved.subject === s,
-  })));
-  subEl.appendChild(Object.assign(document.createElement("option"), {
-    value: "__new__", textContent: "➕ إنشاء مادة جديدة",
-    selected: saved.subject === "__new__" || subjects.length === 0,
-  }));
+  subjects.forEach(s => subEl.appendChild(mkOption(s, s, saved.subject === s)));
+  subEl.appendChild(mkOption(
+    "__new__", "➕ إنشاء مادة جديدة",
+    saved.subject === "__new__" || subjects.length === 0,
+  ));
 
   if (saved.subject && saved.subject !== "__new__" && subjects.includes(saved.subject)) {
     populateSubfolders(type, college, saved.subject, folEl, saved);
@@ -507,9 +535,7 @@ function populateYearOptions(type, college, yearEl, selectedYear = "") {
   if (yearsSet.size === 0) [1,2,3,4,5,6].forEach(n => yearsSet.add(String(n)));
   const years = [...yearsSet].sort();
   yearEl.innerHTML = `<option value="">— اختر السنة —</option>`;
-  years.forEach(y => yearEl.appendChild(Object.assign(document.createElement("option"), {
-    value: y, textContent: YEAR_LABELS[y] || `سنة ${y}`, selected: y === selectedYear,
-  })));
+  years.forEach(y => yearEl.appendChild(mkOption(y, yearLabel(y), y === selectedYear)));
 }
 
 function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
@@ -520,29 +546,20 @@ function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
   if (termsSet.size === 0) [1, 2].forEach(n => termsSet.add(String(n)));
   const terms = [...termsSet].sort();
   termEl.innerHTML = `<option value="">— اختر الترم —</option>`;
-  terms.forEach(t => termEl.appendChild(Object.assign(document.createElement("option"), {
-    value: t, textContent: TERM_LABELS[t] || `ترم ${t}`, selected: t === selectedTerm,
-  })));
+  terms.forEach(t => termEl.appendChild(mkOption(t, termLabel(t), t === selectedTerm)));
 }
 
 function populateSubfolders(type, college, subject, folEl, saved) {
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
   if (!subject || subject === "__new__") {
-    folEl.appendChild(Object.assign(document.createElement("option"), {
-      value: "__new__", textContent: "➕ إنشاء مجلد فرعي جديد",
-    }));
+    folEl.appendChild(mkOption("__new__", "➕ إنشاء مجلد فرعي جديد"));
     return;
   }
   const info = getSubjectMap(type, college)[subject];
   const subs = info?.subfolders || [];
-  subs.forEach(sf => folEl.appendChild(Object.assign(document.createElement("option"), {
-    value: sf, textContent: sf, selected: saved.subfolder === sf,
-  })));
-  folEl.appendChild(Object.assign(document.createElement("option"), {
-    value: "__new__", textContent: "➕ إنشاء مجلد فرعي جديد",
-    selected: saved.subfolder === "__new__",
-  }));
+  subs.forEach(sf => folEl.appendChild(mkOption(sf, sf, saved.subfolder === sf)));
+  folEl.appendChild(mkOption("__new__", "➕ إنشاء مجلد فرعي جديد", saved.subfolder === "__new__"));
   if (saved.subfolder === "__new__")
     document.getElementById("adm-new-subfolder-wrap").style.display = "block";
 }
@@ -570,7 +587,6 @@ async function step1Validate() {
 // ─── Step 2: Course & Placement ────────────────────────────────────────────────
 async function renderStep2({ educationType, college, year, term }) {
   const saved   = getSaved();
-  const hasColl = TRACKS_WITH_COLLEGE.has(educationType);
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع إلى قاعدة البيانات")}
@@ -609,21 +625,32 @@ async function renderStep2({ educationType, college, year, term }) {
 
   window.__admClose = closeModal;
 
-  const subEl = document.getElementById("adm-subject");
-  const folEl = document.getElementById("adm-subfolder");
+  const subEl        = document.getElementById("adm-subject");
+  const folEl        = document.getElementById("adm-subfolder");
+  const newSubEl      = document.getElementById("adm-new-subject");
+  const newSubfolEl   = document.getElementById("adm-new-subfolder");
 
   populateSubjects(educationType, college, year, term, subEl, folEl, saved);
 
   subEl.addEventListener("change", () => {
     const isNew = subEl.value === "__new__";
     document.getElementById("adm-new-subject-wrap").style.display = isNew ? "block" : "none";
-    populateSubfolders(educationType, college, subEl.value, folEl, {});
+    // Preserve the previously-saved subfolder choice when re-selecting the
+    // same subject the user already had picked; only reset for a genuinely
+    // different subject.
+    const carrySaved = subEl.value === saved.subject ? saved : {};
+    populateSubfolders(educationType, college, subEl.value, folEl, carrySaved);
   });
 
   folEl.addEventListener("change", () => {
     document.getElementById("adm-new-subfolder-wrap").style.display =
       folEl.value === "__new__" ? "block" : "none";
   });
+
+  // Persist free-text typing live so Back/Next navigation never loses it,
+  // even if the user never clicks "Next" from this exact state.
+  newSubEl?.addEventListener("input", () => persistSaved({ newSubject: newSubEl.value }));
+  newSubfolEl?.addEventListener("input", () => persistSaved({ newSubfolder: newSubfolEl.value }));
 
   document.getElementById("adm-s2-back").addEventListener("click", () => {
     renderStep1({ educationType, college, year, term });
@@ -632,22 +659,44 @@ async function renderStep2({ educationType, college, year, term }) {
 }
 
 // ─── Read Step 2 values ───────────────────────────────────────────────────────
+// Strips characters that are unsafe in a storage path segment: forward and
+// backward slashes, and leading/trailing whitespace. Returns "" if nothing
+// meaningful remains.
+function sanitizePathSegment(raw) {
+  if (!raw) return "";
+  return raw.trim().replace(/[\\/]+/g, "-").replace(/^-+|-+$/g, "").trim();
+}
+
 function getStep2Values() {
   const subRaw   = document.getElementById("adm-subject")?.value;
-  const subject  = subRaw === "__new__"
-    ? document.getElementById("adm-new-subject")?.value?.trim().replace(/\//g, "-")
-    : subRaw?.trim();
+  const subjectInput = subRaw === "__new__"
+    ? document.getElementById("adm-new-subject")?.value || ""
+    : subRaw || "";
+  const subject = subRaw === "__new__" ? sanitizePathSegment(subjectInput) : subjectInput.trim();
+
   const folRaw   = document.getElementById("adm-subfolder")?.value;
-  const subfolder = folRaw === "__new__"
-    ? document.getElementById("adm-new-subfolder")?.value?.trim().replace(/\//g, "-")
-    : folRaw === "" ? "" : folRaw?.trim();
-  return { subject, subfolder };
+  let subfolder = "";
+  let subfolderWasSanitized = false;
+  if (folRaw === "__new__") {
+    const raw = document.getElementById("adm-new-subfolder")?.value || "";
+    subfolder = sanitizePathSegment(raw);
+    subfolderWasSanitized = raw.trim() !== "" && raw.trim() !== subfolder;
+  } else {
+    subfolder = (folRaw || "").trim();
+  }
+
+  const subjectWasSanitized = subRaw === "__new__" && subjectInput.trim() !== "" && subjectInput.trim() !== subject;
+
+  return { subject, subfolder, subjectWasSanitized, subfolderWasSanitized };
 }
 
 function step2Validate(step1Vals) {
-  const { subject, subfolder } = getStep2Values();
+  const { subject, subfolder, subjectWasSanitized, subfolderWasSanitized } = getStep2Values();
   if (!subject) { showNotification("الرجاء اختيار أو إدخال المادة", "error"); return; }
-  persistSaved({ subject, subfolder });
+  if (subjectWasSanitized || subfolderWasSanitized) {
+    showNotification("تم إزالة رموز غير مسموح بها من الاسم المدخل", "warning");
+  }
+  persistSaved({ subject, subfolder, newSubject: "", newSubfolder: "" });
   renderStep3({ ...step1Vals, subject, subfolder });
 }
 
@@ -656,12 +705,12 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
   const saved    = getSaved();
   const isBatch  = _quizzes.length > 1;
   const trackLbl = TRACK_LABELS[educationType] || educationType;
-  const yearLbl  = YEAR_LABELS[year] || year;
-  const termLbl  = TERM_LABELS[term] || term;
+  const yLbl     = yearLabel(year);
+  const tLbl     = termLabel(term);
 
   const pathParts = [];
   if (TRACKS_WITH_COLLEGE.has(educationType) && college) pathParts.push(college);
-  if (TRACKS_WITH_YEARTERM.has(educationType) && year)   pathParts.push(YEAR_LABELS[year] || `سنة ${year}`, TERM_LABELS[term] || `ترم ${term}`);
+  if (TRACKS_WITH_YEARTERM.has(educationType) && year)   pathParts.push(yLbl, tLbl);
   pathParts.push(subject);
   if (subfolder) pathParts.push(subfolder);
   const locationLabel = pathParts.join(" / ");
@@ -699,8 +748,8 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
         <div class="adm-preview-row"><span class="adm-preview-lbl">نوع المسار</span><span class="adm-preview-val">${trackLbl}</span></div>
         ${college ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الكلية</span><span class="adm-preview-val">${college}</span></div>` : ""}
         <div class="adm-preview-row"><span class="adm-preview-lbl">المادة</span><span class="adm-preview-val">${subject}</span></div>
-        ${year ? `<div class="adm-preview-row"><span class="adm-preview-lbl">السنة</span><span class="adm-preview-val">${yearLbl}</span></div>` : ""}
-        ${term ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الترم</span><span class="adm-preview-val">${termLbl}</span></div>` : ""}
+        ${year ? `<div class="adm-preview-row"><span class="adm-preview-lbl">السنة</span><span class="adm-preview-val">${yLbl}</span></div>` : ""}
+        ${term ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الترم</span><span class="adm-preview-val">${tLbl}</span></div>` : ""}
         ${subfolder ? `<div class="adm-preview-row"><span class="adm-preview-lbl">المجلد الفرعي</span><span class="adm-preview-val">${subfolder}</span></div>` : ""}
         ${listHTML}
       </div>
@@ -777,13 +826,18 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
       iconEl.textContent = "❌";
       if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
       msgEl.textContent = msg || "فشل";
+    } else if (state === "skipped") {
+      iconEl.textContent = "⏭️";
+      if (!msgEl) { msgEl = document.createElement("span"); msgEl.className = "adm-progress-msg"; li.appendChild(msgEl); }
+      msgEl.textContent = msg || "لم يتم المحاولة";
     }
   }
 
   let successCount = 0, errorCount = 0;
   const successLinks = []; // { title, quizId }
 
-  for (const item of items) {
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
     setItemState(item, "uploading");
     try {
       const result = await postUpload({
@@ -802,9 +856,20 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     } catch (err) {
       setItemState(item, "error", err.message || "فشل");
       errorCount++;
-      if (err.message?.includes("جلسة") || err.message?.includes("مصرح")) {
+      if (isSessionError(err)) {
+        // Mark every remaining, not-yet-attempted item as skipped so the UI
+        // never looks "stuck" at the spinner — the admin can see clearly
+        // that the rest of the batch was aborted, not silently lost.
+        for (let j = i + 1; j < items.length; j++) {
+          setItemState(items[j], "skipped", "تم الإلغاء بسبب انتهاء الجلسة");
+        }
+        const hintEl = document.getElementById("adm-s4-hint");
+        if (hintEl) {
+          hintEl.textContent = `⚠️ تم إلغاء الرفع: انتهت الجلسة. تم رفع ${successCount} فقط من أصل ${items.length}.`;
+          hintEl.style.color = "var(--color-error)";
+        }
         showNotification(err.message, "error");
-        setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2000);
+        setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
         return;
       }
     }
@@ -825,57 +890,80 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
 
   const linksEl = document.getElementById("adm-s4-links");
   if (linksEl && successLinks.length > 0) {
-    linksEl.innerHTML = renderConfirmationLinks(successLinks);
-    const toggleBtn = document.getElementById("adm-links-toggle");
-    if (toggleBtn) {
-      toggleBtn.addEventListener("click", () => {
-        const list = document.getElementById("adm-links-list");
-        const collapsed = list.style.display === "none";
-        list.style.display = collapsed ? "block" : "none";
-        toggleBtn.textContent = collapsed ? "إخفاء الروابط ▲" : `عرض الروابط (${successLinks.length}) ▼`;
-      });
-    }
+    renderConfirmationLinks(linksEl, successLinks);
   }
 
   const btnsEl = document.getElementById("adm-s4-btns");
   if (btnsEl) btnsEl.style.display = "flex";
 }
 
-window.__admCopyLink = (url) => {
+// Copies a link to the clipboard. Prefers the modern clipboard API; when it's
+// unavailable or fails (non-secure context, permissions, older browsers),
+// shows the URL to the admin instead of relying on the deprecated
+// document.execCommand("copy") fallback.
+function copyLinkToClipboard(url) {
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(url).then(() => showNotification("تم النسخ بنجاح", "success"));
+    navigator.clipboard.writeText(url)
+      .then(() => showNotification("تم النسخ بنجاح", "success"))
+      .catch(() => showNotification(`تعذّر النسخ تلقائيًا، انسخ الرابط يدويًا: ${url}`, "warning"));
   } else {
-    const t = document.createElement("input");
-    t.value = url;
-    document.body.appendChild(t);
-    t.select();
-    document.execCommand("copy");
-    t.remove();
-    showNotification("تم النسخ بنجاح", "success");
+    showNotification(`تعذّر النسخ تلقائيًا، انسخ الرابط يدويًا: ${url}`, "warning");
   }
-};
+}
 
-function renderConfirmationLinks(links) {
-  const propagationNote = `<p class="adm-hint" style="margin:10px 0 6px;">⏱️ يستغرق ظهور الاختبار على المنصة حوالي 60 ثانية بعد الرفع.</p>`;
+// Builds the confirmation-links UI without ever inlining title/url text into
+// onclick="" attribute strings — event listeners are wired up via
+// addEventListener with values read from dataset, so link titles containing
+// quotes or other special characters can't break out of an attribute.
+function renderConfirmationLinks(container, links) {
+  container.innerHTML = "";
+
+  const note = document.createElement("p");
+  note.className = "adm-hint";
+  note.style.margin = "10px 0 6px";
+  note.textContent = "⏱️ يستغرق ظهور الاختبار على المنصة حوالي 60 ثانية بعد الرفع.";
+  container.appendChild(note);
 
   if (links.length === 1) {
-    return `${propagationNote}
-      <button class="adm-path-chip adm-copy-btn" onclick="window.__admCopyLink('${quizLinkHref(links[0].quizId)}')" style="border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:.85rem;">
-        <span>نسخ رابط الاختبار: ${links[0].title}</span>
-        <span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>
-      </button>`;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "adm-path-chip adm-copy-btn";
+    btn.style.cssText = "border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:.85rem;";
+    btn.dataset.url = quizLinkHref(links[0].quizId);
+    btn.innerHTML = `<span>نسخ رابط الاختبار: ${links[0].title}</span><span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>`;
+    btn.addEventListener("click", () => copyLinkToClipboard(btn.dataset.url));
+    container.appendChild(btn);
+    return;
   }
 
-  return `${propagationNote}
-    <button type="button" id="adm-links-toggle" class="adm-btn adm-btn-ghost" style="width:100%;margin-bottom:8px;">
-      عرض الروابط (${links.length}) ▼
-    </button>
-    <ul class="adm-batch-list" id="adm-links-list" style="display:none;">
-      ${links.map(l => `<li class="adm-batch-item adm-copy-btn" onclick="window.__admCopyLink('${quizLinkHref(l.quizId)}')" style="cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;" onmouseover="this.style.background='var(--color-primary-light)'" onmouseout="this.style.background='var(--color-background-secondary)'">
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">${l.title}</span>
-        <span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>
-      </li>`).join("")}
-    </ul>`;
+  const toggleBtn = document.createElement("button");
+  toggleBtn.type = "button";
+  toggleBtn.className = "adm-btn adm-btn-ghost";
+  toggleBtn.style.cssText = "width:100%;margin-bottom:8px;";
+  toggleBtn.textContent = `عرض الروابط (${links.length}) ▼`;
+  container.appendChild(toggleBtn);
+
+  const list = document.createElement("ul");
+  list.className = "adm-batch-list";
+  list.style.display = "none";
+  links.forEach(l => {
+    const li = document.createElement("li");
+    li.className = "adm-batch-item adm-copy-btn";
+    li.style.cssText = "cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;";
+    li.dataset.url = quizLinkHref(l.quizId);
+    li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>`;
+    li.addEventListener("click", () => copyLinkToClipboard(li.dataset.url));
+    li.addEventListener("mouseover", () => { li.style.background = "var(--color-primary-light)"; });
+    li.addEventListener("mouseout",  () => { li.style.background = "var(--color-background-secondary)"; });
+    list.appendChild(li);
+  });
+  container.appendChild(list);
+
+  toggleBtn.addEventListener("click", () => {
+    const collapsed = list.style.display === "none";
+    list.style.display = collapsed ? "block" : "none";
+    toggleBtn.textContent = collapsed ? "إخفاء الروابط ▲" : `عرض الروابط (${links.length}) ▼`;
+  });
 }
 
 // ─── Schema normalizer ────────────────────────────────────────────────────────
@@ -926,38 +1014,52 @@ async function _openWizard(quizzes) {
     return;
   }
   injectStyles();
-  _quizzes = quizzes.map(normalizeQuizSchema);
-  _quiz    = _quizzes[0] || null;
-  _overlay = makeOverlay();
-  document.body.appendChild(_overlay);
-  document.body.style.overflow = "hidden";
-
-  _overlay.innerHTML = `<div class="adm-card">
-    ${hdr("رفع إلى قاعدة البيانات")}
-    <div class="adm-loading"><span class="adm-spinner"></span> جارٍ تحميل بيانات المنصة…</div>
-  </div>`;
-  window.__admClose = closeModal;
 
   try {
-    const { subjects } = await getManifest();
-    MANIFEST_TREE = buildManifestTree(subjects);
-  } catch (err) {
-    console.error("[adminUpload] Failed to load manifest:", err);
-    MANIFEST_TREE = {};
-    showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
-  }
+    _quizzes = quizzes.map(normalizeQuizSchema);
+    _quiz    = _quizzes[0] || null;
+    _overlay = makeOverlay();
+    document.body.appendChild(_overlay);
+    document.body.style.overflow = "hidden";
 
-  const saved = getSaved();
-  if (!saved.college) {
+    _overlay.innerHTML = `<div class="adm-card">
+      ${hdr("رفع إلى قاعدة البيانات")}
+      <div class="adm-loading"><span class="adm-spinner"></span> جارٍ تحميل بيانات المنصة…</div>
+    </div>`;
+    window.__admClose = closeModal;
+
     try {
-      const p = userProfile.getProfile();
-      if (p?.faculty && MANIFEST_TREE["University"]?.[p.faculty]) {
-        saved.college = p.faculty;
-        if (!saved.educationType) saved.educationType = "University";
-      }
-    } catch (_) {}
+      const { subjects } = await getManifest();
+      MANIFEST_TREE = buildManifestTree(subjects);
+    } catch (err) {
+      console.error("[adminUpload] Failed to load manifest:", err);
+      MANIFEST_TREE = {};
+      showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
+    }
+
+    const saved = getSaved();
+    if (!saved.college) {
+      try {
+        const p = userProfile.getProfile();
+        if (p?.faculty && MANIFEST_TREE["University"]?.[p.faculty]) {
+          saved.college = p.faculty;
+          if (!saved.educationType) saved.educationType = "University";
+        }
+      } catch (_) {}
+    }
+    renderStep1(saved);
+  } catch (err) {
+    // Whatever failed — manifest parsing, a render step throwing on bad
+    // data, etc. — never leave the module wedged with a non-null _overlay
+    // and no visible modal, since that would silently block every future
+    // attempt to open the wizard (the `if (_overlay) return;` guard above).
+    console.error("[adminUpload] Failed to open upload wizard:", err);
+    showNotification("حدث خطأ أثناء فتح نافذة الرفع، حاول مرة أخرى", "error");
+    if (_overlay) { _overlay.remove(); }
+    _overlay = null;
+    _quiz = null; _quizzes = [];
+    document.body.style.overflow = "";
   }
-  renderStep1(saved);
 }
 
 async function openModal(quiz)               { await _openWizard([quiz]); }

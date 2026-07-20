@@ -5,7 +5,8 @@
 // by #contactDevOverlay in profile.html.
 
 import { avatarEngine } from "../shared/avatarEngine.js";
-import { showNotification } from "../components/notifications.js";
+import { prompt_user, showNotification } from "../components/notifications.js";
+import { getAdminRoleInfo } from "./adminAuth.js";
 
 let activeStream = null;
 
@@ -145,6 +146,15 @@ export function openAvatarPicker() {
   const overlay = document.getElementById("avatarPickerOverlay");
   if (!overlay) return;
   renderPresetGrid();
+
+  const gravatarBtn = document.getElementById("avatarGravatarBtn");
+  if (gravatarBtn) {
+    const roleInfo = getAdminRoleInfo();
+    if (roleInfo) {
+      gravatarBtn.style.display = "inline-flex";
+    }
+  }
+
   overlay.style.display = "flex";
   requestAnimationFrame(() => overlay.classList.add("open"));
 }
@@ -169,6 +179,7 @@ export function initAvatarPicker() {
   const cameraStartBtn = document.getElementById("avatarCameraStartBtn");
   const cameraCaptureBtn = document.getElementById("avatarCameraCaptureBtn");
   const removeBtn = document.getElementById("avatarRemoveBtn");
+  const gravatarBtn = document.getElementById("avatarGravatarBtn");
 
   if (!overlay) return; // Guard: only wire up on pages that have the picker
 
@@ -229,4 +240,38 @@ export function initAvatarPicker() {
       showNotification("تمت إزالة الصورة الشخصية", "", "success");
       closeAvatarPicker();
     });
+
+  gravatarBtn && gravatarBtn.addEventListener("click", handleGravatar);
+}
+
+async function handleGravatar() {
+  try {
+    const email = await prompt_user("أدخل البريد الإلكتروني الخاص بك في Gravatar:", "");
+    if (!email || !email.trim()) return;
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const encoder = new TextEncoder();
+    const data = encoder.encode(trimmedEmail);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Fetch Gravatar using SHA-256 hash. d=404 ensures we get an error if not found.
+    const url = `https://gravatar.com/avatar/${hashHex}?s=256&d=404`;
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      showNotification("لم يتم العثور على صورة Gravatar لهذا البريد", "", "error");
+      return;
+    }
+    
+    const blob = await res.blob();
+    const file = new File([blob], "gravatar.jpg", { type: blob.type });
+    const dataUrl = await avatarEngine.processImageFile(file);
+    applyAvatar(dataUrl);
+
+  } catch (err) {
+    console.error("Gravatar error:", err);
+    showNotification("حدث خطأ أثناء جلب الصورة من Gravatar", "", "error");
+  }
 }

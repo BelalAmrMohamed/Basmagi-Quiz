@@ -139,6 +139,24 @@ export function isAdminAuthenticated() {
   return !!getToken();
 }
 
+/**
+ * Decodes the JWT payload to extract role and owner status.
+ * @returns {{ role: string, isOwner: boolean } | null}
+ */
+export function getAdminRoleInfo() {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return {
+      role: payload.role,
+      isOwner: !!payload.isOwner
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
 /** Clears token from memory and sessionStorage. */
 export function signOut() {
   _token = null;

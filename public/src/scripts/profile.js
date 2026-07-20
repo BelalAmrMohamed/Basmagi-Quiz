@@ -13,6 +13,7 @@ import {
 } from "./profileWidgets.js";
 
 import { confirmationNotification } from "../components/notifications.js";
+import { getAdminRoleInfo } from "./adminAuth.js";
 
 let examList = [];
 let historyList = null;
@@ -49,6 +50,102 @@ export function refreshUI() {
     headerTitle.textContent = greeting;
     headerTitle.setAttribute("data-text", greeting);
   }
+
+  // Handle Admin/Developer Badges for Owner View
+  const roleInfo = getAdminRoleInfo();
+  if (roleInfo) {
+    applyRoleBadges(roleInfo.role, roleInfo.isOwner);
+    fetchAndRenderAdminStats(); // Fetch stats for owner
+  }
+}
+
+function applyRoleBadges(role, isOwner) {
+  const roleBadge = document.getElementById("roleBadge");
+  const avatarBadgeOverlay = document.getElementById("avatarBadgeOverlay");
+  
+  if (roleBadge) {
+    roleBadge.style.display = "inline-flex";
+    if (isOwner) {
+      roleBadge.textContent = "مطور";
+      roleBadge.className = "role-badge developer-badge";
+    } else if (role === "admin") {
+      roleBadge.textContent = "مشرف";
+      roleBadge.className = "role-badge admin-badge";
+    }
+  }
+
+  if (avatarBadgeOverlay) {
+    avatarBadgeOverlay.style.display = "block";
+    if (isOwner) {
+      avatarBadgeOverlay.src = "assets/images/white-icon.png";
+    } else if (role === "admin") {
+      avatarBadgeOverlay.src = "favicon.png";
+    }
+  }
+}
+
+async function fetchAndRenderAdminStats(handle = null) {
+  document.getElementById("adminStatsGrid").style.display = "grid";
+  try {
+    const token = sessionStorage.getItem("__bq_adm");
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    
+    let url = "/api/admin-stats";
+    if (handle) url += `?handle=${encodeURIComponent(handle)}`;
+    
+    const res = await fetch(url, { headers });
+    const data = await res.json();
+    if (res.ok) {
+       document.getElementById("adminUploadedQuizzes").textContent = data.uploadedQuizzes || 0;
+       document.getElementById("adminReportsCount").textContent = data.reportsCount || 0;
+       document.getElementById("adminResolvedReportsCount").textContent = data.resolvedReports || 0;
+
+       // Populate public stats grid
+       if (document.getElementById("totalPoints") && typeof data.totalPoints !== 'undefined') {
+         document.getElementById("totalPoints").textContent = data.totalPoints;
+       }
+       if (document.getElementById("totalQuizzes") && typeof data.totalQuizzes !== 'undefined') {
+         document.getElementById("totalQuizzes").textContent = data.totalQuizzes;
+       }
+       if (document.getElementById("totalBadges") && typeof data.totalBadges !== 'undefined') {
+         document.getElementById("totalBadges").textContent = data.totalBadges;
+       }
+       if (document.getElementById("currentLevel") && typeof data.currentLevel !== 'undefined') {
+         document.getElementById("currentLevel").textContent = data.currentLevel;
+       }
+    }
+  } catch(e) {}
+}
+
+async function setupVisitorView(handle) {
+  // Setup UI for visitor view
+  document.querySelectorAll(".content-section").forEach(el => el.style.display = "none");
+  const masteryCard = document.querySelector(".category-mastery-card");
+  if(masteryCard) masteryCard.style.display = "none";
+  
+  const badgeContainer = document.getElementById("badgeContainer");
+  if(badgeContainer) badgeContainer.parentElement.style.display = "none";
+  const nextBadges = document.getElementById("nextBadges");
+  if(nextBadges) nextBadges.parentElement.style.display = "none";
+  const statsContainer = document.getElementById("statsContainer");
+  if(statsContainer) statsContainer.parentElement.style.display = "none";
+  
+  document.getElementById("avatarEditBtn").style.display = "none";
+  document.getElementById("weeklyRecap").style.display = "none";
+
+  const headerTitle = document.getElementById("userNameHeader");
+  if (headerTitle) {
+    headerTitle.textContent = handle;
+    headerTitle.setAttribute("data-text", handle);
+  }
+
+  // Determine if it's admin or owner visually. We'll just assume admin for visitor view unless we fetch role.
+  // We'll call the same fetch to populate numbers
+  await fetchAndRenderAdminStats(handle);
+  
+  // We apply the basic admin badge for now (in a real app, API should return if user is owner/admin)
+  applyRoleBadges("admin", false);
 }
 
 // Delete history entry
@@ -82,6 +179,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Guard: Only run profile initialisation if we're on the profile page
   if (!document.getElementById("totalPoints")) return;
 
+  const adminHandleMeta = document.querySelector('meta[name="admin:handle"]');
+  const isVisitorView = !!adminHandleMeta;
+
   try {
     const manifest = await getManifest();
     examList = manifest.examList || [];
@@ -90,12 +190,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Failed to load quiz manifest:", err);
   }
 
-  initAvatarPicker();
-  refreshUI();
+  if (isVisitorView) {
+    setupVisitorView(adminHandleMeta.content);
+    // Render only the generic stuff that still works without local user
+    renderLeaderboard({});
+  } else {
+    initAvatarPicker();
+    refreshUI();
 
-  window.addEventListener("avatarUpdated", () => {
-    renderAvatar(gameEngine.getUserData());
-  });
+    window.addEventListener("avatarUpdated", () => {
+      renderAvatar(gameEngine.getUserData());
+    });
+  }
 });
 
 function renderAvatar(user) {

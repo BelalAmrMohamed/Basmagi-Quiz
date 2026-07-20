@@ -13,6 +13,7 @@
       "has": [{ "type": "header", "key": "host", "value": "localhost(.*)" }],
       "destination": "/api/local-asset?file=data/quizzes/:file*"
     },
+    { "source": "/@:handle", "destination": "/api/render-profile?handle=:handle" },
     { "source": "/q/:id", "destination": "/api/render-quiz?id=:id" }
   ]
 }

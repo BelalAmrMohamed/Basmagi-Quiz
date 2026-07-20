@@ -4,6 +4,8 @@
 // so avatar payloads never bloat the read/write path of the main profile
 // object, and a corrupt/oversized avatar can never break quiz progress.
 
+import { getAdminRoleInfo } from "../scripts/adminAuth.js";
+
 const AVATAR_KEY = "quiz_user_avatar";
 const AVATAR_SIZE = 256; // px, output square dimension
 const JPEG_QUALITY = 0.82;
@@ -180,11 +182,42 @@ export function syncNavAvatars() {
 
   if (!dataUrl) return;
 
+  // Render Role Badges for Nav Avatars
+  let roleInfo = null;
+  try {
+    roleInfo = getAdminRoleInfo();
+  } catch (err) {}
+
   targets.forEach(({ imgId, iconClass }) => {
     const img = document.getElementById(imgId);
     if (!img) return; // Guard: element not present on this page
 
-    const icon = img.parentElement ? img.parentElement.querySelector(`.${iconClass}`) : null;
+    const parent = img.parentElement;
+    const icon = parent ? parent.querySelector(`.${iconClass}`) : null;
+
+    if (roleInfo && parent) {
+      parent.style.position = "relative";
+      let overlay = parent.querySelector(".nav-badge-overlay");
+      if (!overlay) {
+        overlay = document.createElement("img");
+        overlay.className = "nav-badge-overlay";
+        overlay.style.position = "absolute";
+        overlay.style.width = "16px";
+        overlay.style.height = "16px";
+        overlay.style.top = "6px";
+        overlay.style.left = "6px"; // It's left or right depending on rtl. Let's use left since avatar might be on the right.
+        // Actually, inline-end or inline-start is better, but since it's just visually on the avatar, absolute positioning works.
+        // For nav items, the avatar is in the middle usually or right.
+        overlay.style.borderRadius = "50%";
+        overlay.style.zIndex = "10";
+        overlay.style.boxShadow = "var(--shadow-sm)";
+        overlay.style.border = "2px solid var(--color-surface, #fff)";
+        overlay.style.backgroundColor = "var(--color-surface, #fff)";
+        parent.appendChild(overlay);
+      }
+      overlay.src = roleInfo.isOwner ? "assets/images/white-icon.png" : "favicon.png";
+      overlay.style.display = "block";
+    }
 
     // Verify the image actually decodes before swapping it in, so a
     // corrupt data URL can never blank out the nav icon.
