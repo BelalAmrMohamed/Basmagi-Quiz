@@ -1,6 +1,6 @@
 {
   "name": "examination-platform",
-  "version": "6.1.22",
+  "version": "6.1.23",
   "description": "Vanilla JS examination platform with quiz creation and export features",
   "type": "module",
   "scripts": {
