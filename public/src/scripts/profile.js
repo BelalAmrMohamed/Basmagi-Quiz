@@ -20,6 +20,7 @@ let examById = new Map();
 let badgeById = new Map(BADGES.map((b) => [b.id, b]));
 let historyList = null;
 let bookmarksList = null;
+let fetchedAdminHandle = null;
 
 // Bumped on every refreshUI() call; async renderers that resolve after a
 // newer refresh has started check this to avoid clobbering fresher DOM
@@ -92,14 +93,15 @@ export function refreshUI(options = {}) {
         }
         
         const handleBlock = document.getElementById("infoModalHandle").parentElement.parentElement;
-        if (roleInfo.handle) {
+        const currentHandle = roleInfo.handle || fetchedAdminHandle;
+        if (currentHandle) {
           handleBlock.style.display = "flex";
-          document.getElementById("infoModalHandle").textContent = "@" + roleInfo.handle;
+          document.getElementById("infoModalHandle").textContent = "@" + currentHandle;
           
           const copyBtn = document.getElementById("modalCopyLinkBtn");
           if (copyBtn) {
             copyBtn.onclick = () => {
-              const url = window.location.origin + "/@" + roleInfo.handle;
+              const url = window.location.origin + "/@" + currentHandle;
               if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(url).then(() => {
                   const orig = copyBtn.innerHTML;
@@ -182,6 +184,8 @@ async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken) {
     if (myToken !== refreshToken) return;
 
     if (res.ok) {
+       if (data.handle) fetchedAdminHandle = data.handle;
+       
        document.getElementById("adminUploadedQuizzes").textContent = data.uploadedQuizzes || 0;
        document.getElementById("adminReportsCount").textContent = data.reportsCount || 0;
        document.getElementById("adminResolvedReportsCount").textContent = data.resolvedReports || 0;

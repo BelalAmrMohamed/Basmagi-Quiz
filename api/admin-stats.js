@@ -27,19 +27,39 @@ export default async function handler(req, res) {
     return res.status(200).json(data);
   }
 
-  if (!handle) {
-    return res.status(400).json({ error: "Missing handle parameter" });
+  let adminUser = null;
+
+  if (handle) {
+    // Find admin id and stats
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email")
+      .eq("handle", handle)
+      .maybeSingle();
+    adminUser = data;
+  } else {
+    // If no handle provided, try to resolve via JWT Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8"));
+        if (payload.email) {
+          const { data, error } = await supabase
+            .from("admin_users")
+            .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email")
+            .eq("email", payload.email)
+            .maybeSingle();
+          adminUser = data;
+        }
+      } catch (err) {
+        console.error("Error decoding token for admin stats", err);
+      }
+    }
   }
 
-  // Find admin id and stats
-  const { data: adminUser, error: adminErr } = await supabase
-    .from("admin_users")
-    .select("id, display_name, total_points, total_quizzes, total_badges, current_level")
-    .eq("handle", handle)
-    .maybeSingle();
-
-  if (adminErr || !adminUser) {
-    return res.status(404).json({ error: "Admin not found" });
+  if (!adminUser) {
+    return res.status(404).json({ error: "Admin not found or missing handle parameter" });
   }
 
   // Count quizzes uploaded
@@ -72,6 +92,8 @@ export default async function handler(req, res) {
     .eq("resolved_by_admin_id", adminUser.id);
 
   return res.status(200).json({
+    handle: adminUser.handle,
+    email: adminUser.email,
     uploadedQuizzes: quizzesCount || 0,
     reportsCount: reportsCount,
     resolvedReports: resolvedCount || 0,
