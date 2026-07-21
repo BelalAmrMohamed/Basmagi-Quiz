@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/user-quizzes-view.js
 // USER QUIZZES VIEW — the "إمتحاناتك" (My Quizzes) screen: card grid,
 // admin sign-in/out bar, bulk selection + bulk action bar, and drag-and-drop
 // file import.

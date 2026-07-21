@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/console-ui.js
 // DEV CONSOLE UI — the branded, discoverable console-command experience for
 // the home page (basmagy.help(), basmagy.perf(), etc). Purely a side-effecting
 // module: importing it wires up window.__basmagyCore's registry and runs the

@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/quiz-schema.js
 // QUIZ SCHEMA HELPERS — reading fields across old/new user-quiz storage
 // schemas, normalizing legacy question shapes, and building new entries.
 // ============================================================================

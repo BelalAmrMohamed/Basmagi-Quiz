@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/ai-prompts.js
 // AI PROMPTS — used by the "تحويل نص ← امتحان" / import-file flow to guide
 // an external AI model in converting source material into the platform's
 // quiz JSON schema. Kept verbatim from the original inline constants.

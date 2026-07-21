@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/slug-utils.js
 // SLUG UTILITIES
 // Literal hyphens in names are double-encoded as "--" so they survive a
 // round-trip:  "Unit 1-A"  →  "Unit-1--A"  →  "Unit 1-A"

@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/subscribe-button.js
 // SUBSCRIBE BUTTON — course subscribe action shown on search-result cards
 // ============================================================================
 

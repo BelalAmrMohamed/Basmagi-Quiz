@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/modal-utils.js
 // MODAL UTILITIES — shared dismiss/cleanup wiring for overlay-style modals
 // ============================================================================
 //

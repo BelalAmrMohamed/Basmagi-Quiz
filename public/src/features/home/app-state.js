@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/app-state.js
 // APP STATE — shared mutable state for the home page module graph
 // ============================================================================
 // The original single-file index.js relied on top-level `let` bindings

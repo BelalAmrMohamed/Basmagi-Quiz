@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/floating-position.js
 // FLOATING ELEMENT POSITIONING — shared viewport-clamping helpers for
 // anchored dropdowns/menus (fixed-position, escapes clipping ancestors).
 // ============================================================================

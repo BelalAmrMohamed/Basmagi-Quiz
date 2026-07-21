@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/dom-refs.js
 // DOM REFS — the handful of top-level elements almost every home-page module
 // needs (the main content area, page title, and breadcrumb bar).
 // ============================================================================

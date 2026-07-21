@@ -1,14 +1,15 @@
 // ============================================================================
+// public/src/features/home/export-helpers.js
 // EXPORT / DOWNLOAD HELPERS — clipboard copy, format-dispatch, blob download,
 // and the shared "loading state" wrapper used by every download button.
 // ============================================================================
 
-import { exportToQuiz } from "../../export/export-to-quiz.js";
-import { exportToHtml } from "../../export/export-to-html.js";
-import { exportToPdf } from "../../export/export-to-pdf.js";
-import { exportToWord } from "../../export/export-to-word.js";
-import { exportToPptx } from "../../export/export-to-pptx.js";
-import { exportToMarkdown } from "../../export/export-to-markdown.js";
+import { exportToQuiz } from "../../features/export/export-to-quiz.js";
+import { exportToHtml } from "../../features/export/export-to-html.js";
+import { exportToPdf } from "../../features/export/export-to-pdf.js";
+import { exportToWord } from "../../features/export/export-to-word.js";
+import { exportToPptx } from "../../features/export/export-to-pptx.js";
+import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { COPY_TEXT_ICON_SVG, DOWNLOAD_TXT_ICON_SVG } from "./icons.js";
 
 // NOTE: showNotification() is a global provided by src/components/notifications.js,

@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/course-count.js
 // COURSE ITEM COUNT — recursive exam-count for category cards
 // ============================================================================
 // PERF FIX: the original getCourseItemCount() walked the entire subtree under

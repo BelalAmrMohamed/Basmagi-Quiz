@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/quiz-info-modal.js
 // QUIZ INFO MODAL — the "معلومات الإمتحان" read-only info table shown from
 // both manifest exams (showQuizInfoModal) and user-made quizzes
 // (showUserQuizInfoModal). Both build the same row list from a shared

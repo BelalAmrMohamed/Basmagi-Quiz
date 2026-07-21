@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/escape-html.js
 // escapeHtml — sanitizes untrusted strings before innerHTML interpolation
 // ============================================================================
 

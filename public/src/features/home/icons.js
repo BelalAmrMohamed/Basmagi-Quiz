@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/icons.js
 // ICONS — shared inline SVG constants
 // ============================================================================
 // Centralized here so every module that needs a lock/copy/share/etc. glyph

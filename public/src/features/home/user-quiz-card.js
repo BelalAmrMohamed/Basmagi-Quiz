@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/user-quiz-card.js
 // USER QUIZ CARD — renders a single locally-stored (user-created) quiz card,
 // its ⋮ actions menu, play/delete handlers.
 // ============================================================================

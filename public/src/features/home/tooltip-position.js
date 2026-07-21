@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/tooltip-position.js
 // COURSE INFO TOOLTIP — positioning + dismiss-on-scroll for the small
 // info popover shown from a course card's (i) button.
 // ============================================================================

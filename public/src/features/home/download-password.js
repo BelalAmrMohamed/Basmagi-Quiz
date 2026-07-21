@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/download-password.js
 // DOWNLOAD PASSWORD GATE
 // ============================================================================
 // quiz.html is responsible for gating *playing* the quiz — we never touch

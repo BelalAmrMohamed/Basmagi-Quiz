@@ -1,10 +1,11 @@
 // ============================================================================
+// public/src/features/home/profile-migration.js
 // LEGACY PROFILE MIGRATION — one-shot upgrade for profiles saved before the
 // education_type field existed (inferred from the old college/faculty field).
 // Called once from navigation.js's initApp().
 // ============================================================================
 
-import { userProfile } from "../userProfile.js";
+import { userProfile } from "../../shared/userProfile.js";
 
 export function migrateLegacyUserProfile() {
   try {

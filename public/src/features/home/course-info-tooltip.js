@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/course-info-tooltip.js
 // COURSE INFO TOOLTIP — the (i) button + popover shown on category/course
 // cards, listing education type / faculty / year / term.
 // ============================================================================
@@ -15,7 +16,7 @@
 // interpolated value through escapeHtml() before it reaches innerHTML.
 
 import { escapeHtml } from "./escape-html.js";
-import { userProfile } from "../userProfile.js";
+import { userProfile } from "../../shared/userProfile.js";
 import {
   positionCourseInfoTooltip,
   attachCourseInfoTooltipDismissOnScroll,

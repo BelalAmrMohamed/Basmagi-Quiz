@@ -1,4 +1,5 @@
 // ============================================================================
+// public/src/features/home/subject-icons.js
 // SUBJECT ICON UTILITY — keyword-based emoji assignment
 // ============================================================================
 
