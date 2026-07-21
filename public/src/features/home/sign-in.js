@@ -1,5 +1,5 @@
 // =============================================================================
-// public/src/features/main/sign-in.js
+// public/src/features/home/sign-in.js
 //
 // Self-contained admin sign-in dialog for index.html.
 //

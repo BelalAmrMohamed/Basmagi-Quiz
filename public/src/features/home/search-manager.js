@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/main/search-manager.js - Context-Aware Advanced Search System
+// public/src/features/home/search-manager.js - Context-Aware Advanced Search System
 // ============================================================================
 
 import { userProfile } from "../../shared/userProfile.js";

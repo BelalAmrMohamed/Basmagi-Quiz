@@ -1,5 +1,5 @@
 // =============================================================================
-// public/src/features/main/adminUpload.js
+// public/src/features/home/adminUpload.js
 // Admin quiz upload workflow - 4-step modal.
 //
 // Steps:

@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/scripts/features/main/index.js - Enhanced with Security, Performance, and Accessibility
+// public/src/scripts/features/home/index.js - Enhanced with Security, Performance, and Accessibility
 // All original functionality preserved + improvements added
 // ============================================================================
 
@@ -305,14 +305,14 @@ import { exportToWord } from "../../features/export/export-to-word.js";
 import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
-import { createUploadButton } from "../../features/main/adminUpload.js";
+import { createUploadButton } from "../../features/home/adminUpload.js";
 import {
   isAdminAuthenticated,
   hasAdminSessionHint,
   signInWithSupabase,
   fullSignOut,
 } from "../../shared/adminAuth.js";
-import { openSignInDialog } from "../../features/main/sign-in.js";
+import { openSignInDialog } from "../../features/home/sign-in.js";
 
 // Helper utilities
 import { getSubscribedCourses } from "../../shared/filterUtils.js";
@@ -2371,7 +2371,7 @@ function renderBulkActionBar() {
          if (selectedUserQuizzes.size === 0) return;
          const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
          const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
-         import("../../features/main/adminUpload.js").then(mod => {
+         import("../../features/home/adminUpload.js").then(mod => {
             mod.openAdminUploadModal(selected);
          });
       };

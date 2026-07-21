@@ -51,7 +51,7 @@ const STATIC_ASSETS = [
   // CSS
   "/src/styles/themes.css",
 
-  "/src/features/main/index.css",
+  "/src/features/home/index.css",
   "/src/features/create/create-quiz.css",
   "/src/features/profile/profile.css",
   "/src/features/onboarding/onboarding.css",
@@ -61,10 +61,10 @@ const STATIC_ASSETS = [
 
   "/src/styles/animations.css",
   "/src/styles/markdown.css",
-  "/src/features/main/search.css",
+  "/src/features/home/search.css",
 
   // JS (entry points)
-  "/src/scripts/features/main/index.js",
+  "/src/scripts/features/home/index.js",
   "/src/features/create/create-quiz.js",
   "/src/scripts/profile.js",
   "/src/features/onboarding/onboarding.js",
@@ -72,7 +72,7 @@ const STATIC_ASSETS = [
   "/src/features/result/result.js",
   "/src/features/settings/settings.js",
 
-  "/src/scripts/features/main/search-manager.js",
+  "/src/scripts/features/home/search-manager.js",
   "/src/shared/userProfile.js",
   "/src/shared/quizManifest.js",
   "/src/shared/quizId.js",

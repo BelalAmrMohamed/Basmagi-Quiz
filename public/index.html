@@ -236,22 +236,22 @@
 
     <!-- Preload critical resources -->
     <link rel="preload" href="src/styles/themes.css" as="style">
-    <link rel="preload" href="src/features/main/index.css" as="style">
+    <link rel="preload" href="src/features/home/index.css" as="style">
 
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/main/index.css">
+    <link rel="stylesheet" href="src/features/home/index.css">
     <link rel="stylesheet" href="src/styles/advanced-link-transition-animation.css">
     <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
-    <link rel="stylesheet" href="src/features/main/search.css">
+    <link rel="stylesheet" href="src/features/home/search.css">
     <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">
-    <link rel="stylesheet" href="src/features/main/sign-in.css">
+    <link rel="stylesheet" href="src/features/home/sign-in.css">
 
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
-    <link rel="modulepreload" href="src/features/main/index.js">
+    <link rel="modulepreload" href="src/features/home/index.js">
     <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
     <link rel="modulepreload" href="src/shared/avatarPicker.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
@@ -1006,10 +1006,10 @@
     <script type="module" src="src/shared/theme-controller.js"></script>
     <script type="module" src="src/shared/canvas-animation.js"></script>
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
-    <script type="module" src="src/features/main/index.js"></script>
+    <script type="module" src="src/features/home/index.js"></script>
     <!-- Sign-in dialog bootstrap: wires event listeners after DOM is ready -->
     <script type="module">
-      import { initSignInDialog } from "./src/features/main/sign-in.js";
+      import { initSignInDialog } from "./src/features/home/sign-in.js";
       document.addEventListener("DOMContentLoaded", () => initSignInDialog());
     </script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
