@@ -198,21 +198,32 @@ export function syncNavAvatars() {
     if (roleInfo && parent) {
       parent.style.position = "relative";
       let overlay = parent.querySelector(".nav-badge-overlay");
+
       if (!overlay) {
         overlay = document.createElement("img");
         overlay.className = "nav-badge-overlay";
-        overlay.style.position = "absolute";
-        overlay.style.width = "16px";
-        overlay.style.height = "16px";
-        overlay.style.top = "6px";
-        overlay.style.left = "6px"; // It's left or right depending on rtl. Let's use left since avatar might be on the right.
-        // Actually, inline-end or inline-start is better, but since it's just visually on the avatar, absolute positioning works.
-        // For nav items, the avatar is in the middle usually or right.
-        overlay.style.borderRadius = "50%";
-        overlay.style.zIndex = "10";
-        overlay.style.boxShadow = "var(--shadow-sm)";
-        overlay.style.border = "2px solid var(--color-surface, #fff)";
-        overlay.style.backgroundColor = "var(--color-surface, #fff)";
+
+        Object.assign(overlay.style, {
+          position: "absolute",
+          width: "16px",
+          height: "16px",
+          top: "3px",
+          right: "3px",
+          borderRadius: "50%",
+          zIndex: "10",
+          transform: "rotate(25deg) scale(1)",
+          transition: "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          filter: "drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.25))"
+        });
+
+        /* Optional hover animation */
+        overlay.addEventListener("mouseenter", () => {
+          overlay.style.transform = "rotate(35deg) scale(1.15)";
+        });
+        overlay.addEventListener("mouseleave", () => {
+          overlay.style.transform = "rotate(25deg) scale(1)";
+        });
+
         parent.appendChild(overlay);
       }
       overlay.src = roleInfo.isOwner ? "assets/images/white-icon.png" : "favicon.png";
