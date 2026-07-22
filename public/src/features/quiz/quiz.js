@@ -1879,7 +1879,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         ${
           isLocked
             ? `<div class="formal-answer">            
-          <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
+          <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
           <strong style="text-align: center;">الإجابة النموذجية</strong>
           <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div></div>`
             : ""
@@ -2205,7 +2205,7 @@ function buildQuestionBodyHTML(q, idx) {
           isLocked
             ? `
           <div class="formal-answer">
-            <strong style="text-align: center;">Score: ${essayScore}/5: ${stars}</strong>
+            <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
             <strong style="text-align: center;">الإجابة النموذجية</strong>
             <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
           </div>
