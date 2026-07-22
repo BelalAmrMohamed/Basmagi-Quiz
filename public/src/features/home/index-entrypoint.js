@@ -45,16 +45,6 @@ document.addEventListener("click", (e) => {
   if (!e.target.closest(".course-info-container")) {
     document.querySelectorAll(".course-info-tooltip.show").forEach((tooltip) => {
       tooltip.classList.remove("show");
-      // Clear inline fixed-positioning styles set by positionCourseInfoTooltip()
-      // so a later desktop hover-open (which relies on the static CSS
-      // position: absolute rule) isn't affected by leftover inline styles
-      // from a previous tap-open.
-      tooltip.style.position = "";
-      tooltip.style.top = "";
-      tooltip.style.left = "";
-      tooltip.style.right = "";
-      tooltip.style.transform = "";
-      tooltip.style.margin = "";
     });
   }
 });

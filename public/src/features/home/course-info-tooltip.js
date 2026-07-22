@@ -18,10 +18,7 @@
 import { escapeHtml } from "./escape-html.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { confirmationNotification } from "../../components/notifications/notifications.js";
-import {
-  positionCourseInfoTooltip,
-  attachCourseInfoTooltipDismissOnScroll,
-} from "./tooltip-position.js";
+import { positionCourseInfoTooltip } from "./tooltip-position.js";
 
 const EDU_TYPE_AR = {
   University: "جامعي",
@@ -123,16 +120,7 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     positionCourseInfoTooltip(tooltip, infoBtn);
   });
 
-  infoContainer.addEventListener("mouseleave", () => {
-    if (!tooltip.classList.contains("show")) {
-      tooltip.style.position = "";
-      tooltip.style.top = "";
-      tooltip.style.left = "";
-      tooltip.style.right = "";
-      tooltip.style.transform = "";
-      tooltip.style.margin = "";
-    }
-  });
+
 
   infoBtn.onclick = (e) => {
     e.preventDefault();
@@ -142,26 +130,12 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
       document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
         if (t !== tooltip) {
           t.classList.remove("show");
-          t.style.position = "";
-          t.style.top = "";
-          t.style.left = "";
-          t.style.right = "";
-          t.style.transform = "";
-          t.style.margin = "";
         }
       });
     }
     tooltip.classList.toggle("show", willShow);
     if (willShow) {
       positionCourseInfoTooltip(tooltip, infoBtn);
-      attachCourseInfoTooltipDismissOnScroll(tooltip);
-    } else {
-      tooltip.style.position = "";
-      tooltip.style.top = "";
-      tooltip.style.left = "";
-      tooltip.style.right = "";
-      tooltip.style.transform = "";
-      tooltip.style.margin = "";
     }
   };
   tooltip.onclick = (e) => e.stopPropagation();

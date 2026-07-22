@@ -23,17 +23,7 @@
  * above it if there isn't enough room below, and clamps to the viewport.
  */
 export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
-  // Reset any inline overrides from a previous placement so measurements
-  // below reflect the tooltip's natural size.
-  tooltip.style.transform = "";
-  tooltip.style.top = "";
-  tooltip.style.left = "";
-  tooltip.style.right = "";
-  tooltip.style.margin = "0";
-  tooltip.style.position = "fixed";
-
   const rect = triggerBtn.getBoundingClientRect();
-  const vw = window.innerWidth;
   const vh = window.innerHeight;
 
   // Account for fixed bottom navigation bar on mobile screen layouts
@@ -48,65 +38,21 @@ export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
 
   const availableVh = vh - bottomInset;
 
-  let tooltipW = tooltip.offsetWidth;
   let tooltipH = tooltip.offsetHeight;
-  if (!tooltipH || !tooltipW) {
+  if (!tooltipH) {
     const prevVis = tooltip.style.visibility;
     const prevOpacity = tooltip.style.opacity;
     tooltip.style.visibility = "hidden";
     tooltip.style.opacity = "0";
-    tooltipW = tooltip.offsetWidth || 180;
     tooltipH = tooltip.offsetHeight || 150;
     tooltip.style.visibility = prevVis;
     tooltip.style.opacity = prevOpacity;
   }
 
-  let top = rect.bottom + gap;
-  let left = rect.right - tooltipW; // right-edge aligned with the trigger
-
   // Flip above the trigger if there isn't enough room below in the available viewport.
-  if (top + tooltipH > availableVh - gap) {
-    const above = rect.top - tooltipH - gap;
-    if (above >= gap) {
-      top = above;
-    } else {
-      top = Math.max(gap, availableVh - tooltipH - gap);
-    }
+  if (rect.bottom + gap + tooltipH > availableVh) {
+    tooltip.classList.add("flip-above");
+  } else {
+    tooltip.classList.remove("flip-above");
   }
-
-  // Clamp within the viewport / available height on both axes.
-  if (left < gap) left = gap;
-  if (left + tooltipW > vw - gap) left = vw - tooltipW - gap;
-  if (top < gap) top = gap;
-  if (top + tooltipH > availableVh - gap) {
-    top = Math.max(gap, availableVh - tooltipH - gap);
-  }
-
-  tooltip.style.top = `${top}px`;
-  tooltip.style.left = `${left}px`;
-}
-
-/**
- * Wires up close-on-scroll/resize for an open, fixed-position course-info
- * tooltip. Fixed-position elements don't move with page scroll the way the
- * old absolute-positioned ones did (which scrolled with their card), so
- * without this the tooltip would visually detach from its trigger button
- * as soon as the page scrolls. Closing it (matching the existing "outside
- * click" behavior) is simpler and safer than re-positioning on every
- * scroll/resize tick.
- */
-export function attachCourseInfoTooltipDismissOnScroll(tooltip) {
-  function close() {
-    tooltip.classList.remove("show");
-    tooltip.style.position = "";
-    tooltip.style.top = "";
-    tooltip.style.left = "";
-    tooltip.style.right = "";
-    tooltip.style.transform = "";
-    tooltip.style.margin = "";
-    window.removeEventListener("scroll", close, true);
-    window.removeEventListener("resize", close);
-  }
-  window.addEventListener("scroll", close, true);
-  window.addEventListener("resize", close);
 }
