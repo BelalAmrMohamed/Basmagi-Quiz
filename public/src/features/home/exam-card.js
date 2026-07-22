@@ -6,6 +6,7 @@
 // per-card `exam`/`config` state, so it isn't a standalone module function).
 // ============================================================================
 
+import { startQuiz } from "./quiz-navigation.js";
 import { escapeHtml } from "./escape-html.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount } from "./course-count.js";
