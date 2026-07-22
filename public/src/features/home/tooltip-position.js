@@ -29,28 +29,58 @@ export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
   tooltip.style.top = "";
   tooltip.style.left = "";
   tooltip.style.right = "";
+  tooltip.style.margin = "0";
   tooltip.style.position = "fixed";
 
   const rect = triggerBtn.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const tooltipW = tooltip.offsetWidth;
-  const tooltipH = tooltip.offsetHeight;
+
+  // Account for fixed bottom navigation bar on mobile screen layouts
+  const bottomNav = document.querySelector(".bottom-nav");
+  let bottomInset = 0;
+  if (bottomNav && window.getComputedStyle(bottomNav).display !== "none") {
+    const navRect = bottomNav.getBoundingClientRect();
+    if (navRect.top < vh && navRect.height > 0) {
+      bottomInset = vh - navRect.top;
+    }
+  }
+
+  const availableVh = vh - bottomInset;
+
+  let tooltipW = tooltip.offsetWidth;
+  let tooltipH = tooltip.offsetHeight;
+  if (!tooltipH || !tooltipW) {
+    const prevVis = tooltip.style.visibility;
+    const prevOpacity = tooltip.style.opacity;
+    tooltip.style.visibility = "hidden";
+    tooltip.style.opacity = "0";
+    tooltipW = tooltip.offsetWidth || 180;
+    tooltipH = tooltip.offsetHeight || 150;
+    tooltip.style.visibility = prevVis;
+    tooltip.style.opacity = prevOpacity;
+  }
 
   let top = rect.bottom + gap;
   let left = rect.right - tooltipW; // right-edge aligned with the trigger
 
-  // Flip above the trigger if there isn't enough room below.
-  if (top + tooltipH > vh - gap) {
+  // Flip above the trigger if there isn't enough room below in the available viewport.
+  if (top + tooltipH > availableVh - gap) {
     const above = rect.top - tooltipH - gap;
-    top = above >= gap ? above : Math.max(gap, vh - tooltipH - gap);
+    if (above >= gap) {
+      top = above;
+    } else {
+      top = Math.max(gap, availableVh - tooltipH - gap);
+    }
   }
 
-  // Clamp within the viewport on both axes.
+  // Clamp within the viewport / available height on both axes.
   if (left < gap) left = gap;
   if (left + tooltipW > vw - gap) left = vw - tooltipW - gap;
   if (top < gap) top = gap;
-  if (top + tooltipH > vh - gap) top = vh - tooltipH - gap;
+  if (top + tooltipH > availableVh - gap) {
+    top = Math.max(gap, availableVh - tooltipH - gap);
+  }
 
   tooltip.style.top = `${top}px`;
   tooltip.style.left = `${left}px`;
@@ -68,6 +98,12 @@ export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
 export function attachCourseInfoTooltipDismissOnScroll(tooltip) {
   function close() {
     tooltip.classList.remove("show");
+    tooltip.style.position = "";
+    tooltip.style.top = "";
+    tooltip.style.left = "";
+    tooltip.style.right = "";
+    tooltip.style.transform = "";
+    tooltip.style.margin = "";
     window.removeEventListener("scroll", close, true);
     window.removeEventListener("resize", close);
   }

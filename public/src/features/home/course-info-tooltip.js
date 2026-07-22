@@ -117,24 +117,51 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     };
   }
 
+  // Support mouse hover: dynamically position on mouseenter so hover on desktop
+  // also correctly flips above bottom cards and avoids bottom-nav/body overlap.
+  infoContainer.addEventListener("mouseenter", () => {
+    positionCourseInfoTooltip(tooltip, infoBtn);
+  });
+
+  infoContainer.addEventListener("mouseleave", () => {
+    if (!tooltip.classList.contains("show")) {
+      tooltip.style.position = "";
+      tooltip.style.top = "";
+      tooltip.style.left = "";
+      tooltip.style.right = "";
+      tooltip.style.transform = "";
+      tooltip.style.margin = "";
+    }
+  });
+
   infoBtn.onclick = (e) => {
-    if (
-      window.matchMedia &&
-      window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    )
-      return;
     e.preventDefault();
     e.stopPropagation();
     const willShow = !tooltip.classList.contains("show");
     if (willShow) {
       document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
-        if (t !== tooltip) t.classList.remove("show");
+        if (t !== tooltip) {
+          t.classList.remove("show");
+          t.style.position = "";
+          t.style.top = "";
+          t.style.left = "";
+          t.style.right = "";
+          t.style.transform = "";
+          t.style.margin = "";
+        }
       });
     }
     tooltip.classList.toggle("show", willShow);
     if (willShow) {
       positionCourseInfoTooltip(tooltip, infoBtn);
       attachCourseInfoTooltipDismissOnScroll(tooltip);
+    } else {
+      tooltip.style.position = "";
+      tooltip.style.top = "";
+      tooltip.style.left = "";
+      tooltip.style.right = "";
+      tooltip.style.transform = "";
+      tooltip.style.margin = "";
     }
   };
   tooltip.onclick = (e) => e.stopPropagation();

@@ -52,7 +52,9 @@ document.addEventListener("click", (e) => {
       tooltip.style.position = "";
       tooltip.style.top = "";
       tooltip.style.left = "";
+      tooltip.style.right = "";
       tooltip.style.transform = "";
+      tooltip.style.margin = "";
     });
   }
 });
