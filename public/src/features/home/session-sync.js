@@ -15,7 +15,7 @@ import {
   isAdminAuthenticated,
   signInWithSupabase,
   fullSignOut,
-} from "../adminAuth.js";
+} from "../../shared/adminAuth.js";
 import { setIndexSupabaseClient } from "./app-state.js";
 
 export async function syncAdminSessionWithSupabase() {

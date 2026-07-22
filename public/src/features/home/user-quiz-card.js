@@ -16,7 +16,7 @@ import { formatArabicQuestionCount } from "./course-count.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, hasAdminSessionHint } from "../../shared/adminAuth.js";
-import { createUploadButton } from "../adminUpload.js";
+import { createUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { createExamInfoSubmenu, openExamDropdownMenu } from "./exam-dropdown-menu.js";

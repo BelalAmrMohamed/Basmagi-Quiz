@@ -251,7 +251,7 @@
 
     <!-- Controller Scripts - with module preload -->
     <link rel="modulepreload" href="src/shared/theme-controller.js">
-    <link rel="modulepreload" href="src/features/home/index.js">
+    <link rel="modulepreload" href="src/features/home/index-entrypoint.js">
     <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
     <link rel="modulepreload" href="src/shared/avatarPicker.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
@@ -999,14 +999,14 @@
     </script>
 
     <!-- Scripts -->
-    <!-- Supabase JS SDK — required so index.js can verify/sync the admin
+    <!-- Supabase JS SDK — required so index-entrypoint.js can verify/sync the admin
          session against Supabase on load.
-         Must load before index.js. -->
+         Must load before index-entrypoint.js. -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/shared/theme-controller.js"></script>
     <script type="module" src="src/shared/canvas-animation.js"></script>
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
-    <script type="module" src="src/features/home/index.js"></script>
+    <script type="module" src="src/features/home/index-entrypoint.js"></script>
     <!-- Sign-in dialog bootstrap: wires event listeners after DOM is ready -->
     <script type="module">
       import { initSignInDialog } from "./src/features/home/sign-in.js";

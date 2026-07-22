@@ -3,7 +3,7 @@
 // SUBSCRIBE BUTTON — course subscribe action shown on search-result cards
 // ============================================================================
 
-import { userProfile } from "../userProfile.js";
+import { userProfile } from "../../shared/userProfile.js";
 
 // NOTE: showNotification() is a global provided by src/components/notifications.js,
 // loaded as a plain (non-module) <script> in index.html — not imported here,
