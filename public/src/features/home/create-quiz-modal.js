@@ -25,10 +25,7 @@ import {
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
-
-// NOTE: showNotification() is a global provided by src/components/notifications.js,
-// loaded as a plain (non-module) <script> in index.html — not imported here,
-// matching the original single-file index.js's behavior.
+import { showNotification } from "../../components/notifications/notifications.js";
 
 export function createInlineCreateQuizCard() {
   const card = document.createElement("div");

@@ -34,10 +34,7 @@ import {
   ADMIN_SIGN_IN_ICON_SVG,
   CHECK_SQUARE_ICON_SVG,
 } from "./icons.js";
-
-// NOTE: showNotification()/confirmationNotification() are globals provided
-// by src/components/notifications.js, loaded as a plain (non-module)
-// <script> in index.html — not imported here, matching the original.
+import { showNotification, confirmationNotification } from "../../components/notifications/notifications.js";
 
 
 /**

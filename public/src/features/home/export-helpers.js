@@ -11,10 +11,7 @@ import { exportToWord } from "../../features/export/export-to-word.js";
 import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { COPY_TEXT_ICON_SVG, DOWNLOAD_TXT_ICON_SVG } from "./icons.js";
-
-// NOTE: showNotification() is a global provided by src/components/notifications.js,
-// loaded as a plain (non-module) <script> in index.html — not imported here,
-// matching the original single-file index.js's behavior.
+import { showNotification } from "../../components/notifications/notifications.js";
 
 /**
  * Copies text to the clipboard.

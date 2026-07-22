@@ -29,10 +29,7 @@ import {
   TRASH_ICON_SVG,
   MORE_DOTS_ICON_SVG,
 } from "./icons.js";
-
-// NOTE: showNotification()/confirmationNotification() are globals provided
-// by src/components/notifications.js, loaded as a plain (non-module)
-// <script> in index.html — not imported here, matching the original.
+import { showNotification, confirmationNotification } from "../../components/notifications/notifications.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -4,10 +4,7 @@
 // ============================================================================
 
 import { userProfile } from "../../shared/userProfile.js";
-
-// NOTE: showNotification() is a global provided by src/components/notifications.js,
-// loaded as a plain (non-module) <script> in index.html — not imported here,
-// matching the original single-file index.js's behavior.
+import { showNotification } from "../../components/notifications/notifications.js";
 
 export function addSubscribeButton(card, course) {
   try {

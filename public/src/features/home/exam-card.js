@@ -32,10 +32,16 @@ import {
   DOWNLOAD_SOURCE_ICON_SVG,
   MORE_DOTS_ICON_SVG,
 } from "./icons.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
-// NOTE: showNotification() is a global provided by src/components/notifications.js,
-// loaded as a plain (non-module) <script> in index.html — not imported here,
-// matching the original single-file index.js's behavior.
+const opts = [
+  ["./favicon.png", "Quiz (.html)", "quiz"],
+  ["./assets/images/HTML_Icon.png", "HTML (.html)", "html"],
+  ["./assets/images/mardownIcon.png", "Markdown (.md)", "md"],
+  ["./assets/images/PDF_Icon.png", "PDF (.pdf)", "pdf"],
+  ["./assets/images/pptx_icon.png", "PowerPoint (.pptx)", "pptx"],
+  ["./assets/images/word_icon.png", "Word (.docx)", "docx"],
+];
 
 function buildExamShareUrl(examId) {
   return window.location.origin + "/q/" + encodeURIComponent(examId);

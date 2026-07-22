@@ -17,16 +17,11 @@
 
 import { escapeHtml } from "./escape-html.js";
 import { userProfile } from "../../shared/userProfile.js";
+import { confirmationNotification } from "../../components/notifications/notifications.js";
 import {
   positionCourseInfoTooltip,
   attachCourseInfoTooltipDismissOnScroll,
 } from "./tooltip-position.js";
-
-// NOTE: confirmationNotification() is a global provided by
-// src/components/notifications.js, loaded as a plain (non-module) <script>
-// in index.html — same as in the original single-file index.js, which
-// called it without ever importing it. Preserved as-is rather than
-// invented as a module import that didn't exist in the source.
 
 const EDU_TYPE_AR = {
   University: "جامعي",
