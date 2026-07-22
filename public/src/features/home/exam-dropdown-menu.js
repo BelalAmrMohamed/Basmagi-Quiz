@@ -18,6 +18,8 @@
 // ============================================================================
 
 import { positionExamDropdownMenu } from "./floating-position.js";
+import { escapeHtml } from "./escape-html.js";
+import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
 
 /** Removes any currently-open dropdown menu(s). Defensive — normally only
  * one can be open at a time since opening a new one closes the last. */

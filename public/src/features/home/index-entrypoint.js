@@ -30,6 +30,7 @@ import { showShortcutsOverlay } from "./shortcuts-overlay.js";
 import { getCategoryTree, setRestoring } from "./app-state.js";
 import { escapeHtml } from "./escape-html.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // ── Window globals ────────────────────────────────────────────────────────────
 // These exist because other non-module scripts (e.g. side-menu.js, per the
