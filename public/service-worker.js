@@ -57,7 +57,7 @@ const STATIC_ASSETS = [
   "/src/features/onboarding/onboarding.css",
   "/src/features/quiz/quiz.css",
   "/src/features/result/result.css",
-  "/src/features/settings//settings.css",
+  "/src/features/settings/settings.css",
 
   "/src/styles/animations.css",
   "/src/styles/markdown.css",
