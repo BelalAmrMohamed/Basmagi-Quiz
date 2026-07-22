@@ -21,12 +21,18 @@ const ONLINE_FLASH_DURATION = 2000;
 
 // ── Module-level reference so event handlers share the same element ────────
 let banner = null;
+let bannerContent = null; // wraps icon+text so the dismiss button can sit apart from it
+let dismissBtn = null;
 let onlineFlashTimer = null; // tracks the auto-hide timeout
 let connectivityCheckInterval = null;
 let probeUrl = "";
 const PROBE_TIMEOUT_MS = 4000;
 let wasOfflineDuringSession = false;
 let bannerResizeObserver = null; // keeps reserved page space in sync with banner height
+let dismissedForThisState = false; // true after the user cancels; reset whenever setOffline/setOnline run again
+
+// Accessible label for the dismiss button (Arabic, do not translate)
+const DISMISS_LABEL = "إغلاق";
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
@@ -42,7 +48,47 @@ function getOrCreateBanner() {
     el.setAttribute("aria-atomic", "true");
     document.body.appendChild(el);
   }
+
+  let content = el.querySelector(".banner-content");
+  if (!content) {
+    content = document.createElement("span");
+    content.className = "banner-content";
+    el.appendChild(content);
+  }
+
+  let spacer = el.querySelector(".banner-spacer");
+  if (!spacer) {
+    spacer = document.createElement("span");
+    spacer.className = "banner-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+    el.insertBefore(spacer, content);
+  }
+
+  let dismiss = el.querySelector(".banner-dismiss");
+  if (!dismiss) {
+    dismiss = document.createElement("button");
+    dismiss.type = "button";
+    dismiss.className = "banner-dismiss";
+    dismiss.setAttribute("aria-label", DISMISS_LABEL);
+    dismiss.innerHTML =
+      '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+    dismiss.addEventListener("click", handleDismissClick);
+    el.insertBefore(dismiss, spacer);
+  }
+
+  bannerContent = content;
+  dismissBtn = dismiss;
   return el;
+}
+
+/** Handles a click on the cancel/dismiss button. */
+function handleDismissClick() {
+  dismissedForThisState = true;
+  if (onlineFlashTimer !== null) {
+    clearTimeout(onlineFlashTimer);
+    onlineFlashTimer = null;
+  }
+  hideBanner();
 }
 
 /**
@@ -68,6 +114,7 @@ function reserveBannerSpace() {
 
 /** Shows the banner and reserves matching space at the bottom of the page. */
 function showBanner() {
+  if (dismissedForThisState) return; // user cancelled this state; stay hidden
   banner.classList.add("is-visible");
   document.body.classList.add("has-offline-banner");
   reserveBannerSpace();
@@ -101,7 +148,8 @@ function setOffline() {
     onlineFlashTimer = null;
   }
 
-  banner.innerHTML = `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
+  dismissedForThisState = false; // a fresh offline state overrides any earlier cancel
+  bannerContent.innerHTML = `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
 
   // Glass tint is driven by CSS classes now (see offline-banner.css), not an
   // inline background, so the amber gradient/rim-light can be composited
@@ -122,7 +170,8 @@ function setOnline() {
     onlineFlashTimer = null;
   }
 
-  banner.innerHTML = `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
+  dismissedForThisState = false; // a fresh "back online" flash overrides any earlier cancel
+  bannerContent.innerHTML = `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
 
   // Glass tint is driven by CSS classes now (see offline-banner.css), not an
   // inline background, so the green gradient/rim-light can be composited

@@ -114,6 +114,75 @@ body.has-offline-banner {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
 }
 
+/* ── Content wrapper: icon + message ───────────────────────────────────────
+   Centered as a group within the banner; the dismiss button below is
+   pulled to the opposite edge via margin-inline-start: auto, so the
+   message stays visually centered regardless of button width. ─────────── */
+#offlineBanner .banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Balances the dismiss button's width on the opposite side so the centered
+   message doesn't visually skew once the button is added. */
+#offlineBanner .banner-spacer {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+/* Hide the spacer on very narrow screens where every pixel of width for the
+   message matters more than perfect centering. */
+@media (max-width: 360px) {
+  #offlineBanner .banner-spacer {
+    display: none;
+  }
+}
+
+/* ── Dismiss / cancel button ────────────────────────────────────────────────
+   Pinned to the far end of the banner (far right in LTR; flips to the far
+   left automatically under dir="rtl" since it's margin-inline-start, not a
+   hardcoded left/right value). Sized as a comfortable 44px tap target while
+   the visible glyph stays small. ============================================ */
+#offlineBanner .banner-dismiss {
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-primary, #f8fafc);
+  cursor: pointer;
+}
+
+#offlineBanner .banner-dismiss svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+#offlineBanner .banner-dismiss:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+#offlineBanner .banner-dismiss:active {
+  transform: scale(0.92);
+}
+
+#offlineBanner .banner-dismiss:focus-visible {
+  outline: 2px solid var(--color-text-primary, #f8fafc);
+  outline-offset: 2px;
+}
+
 /* ── Reduced-motion: skip the slide animation, just fade ──────────────────── */
 @media (prefers-reduced-motion: reduce) {
   #offlineBanner {
