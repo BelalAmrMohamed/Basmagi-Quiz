@@ -427,7 +427,27 @@ export class CanvasAnimationController {
       this.rafId = null;
     }
     if (this.container) {
+      // Paint the correct theme background on <body> BEFORE hiding the canvas
+      // to prevent a flash of wrong color during the switchover.
+      const theme =
+        document.documentElement.getAttribute("data-theme") || "light";
+      const bgMap = {
+        light: "#fafbfc",
+        "dark-slate": "#0f172a",
+        dark: "#121212",
+      };
+      // Temporarily suppress the CSS transition so the color applies instantly
+      document.body.style.transition = "none";
+      document.body.style.backgroundColor = bgMap[theme] || bgMap.light;
+      // Force a reflow so the browser paints the solid background NOW
+      void document.body.offsetHeight;
+      // Now it's safe to hide the canvas — no visible gap
       this.container.style.display = "none";
+      // Restore the CSS transition for future theme switches
+      requestAnimationFrame(() => {
+        document.body.style.transition = "";
+        document.body.style.backgroundColor = "";
+      });
     }
   }
 

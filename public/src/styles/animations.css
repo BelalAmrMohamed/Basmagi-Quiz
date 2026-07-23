@@ -60,24 +60,43 @@
 }
 
 /* ============================================================================
-CANVAS BACKGROUND INTEGRATION
-Canvas animations are now handled by canvas-animation.js module
-Body background will be controlled by canvas or fallback to theme color
+LIGHTFALL BACKGROUND INTEGRATION
+WebGL shader animation rendered by canvas-animation.js (Lightfall controller).
+The .lightfall-container div is created dynamically by JS as #canvas-bg.
 ============================================================================ */
 
-/* FIXED: Ensure body background is visible when animations are enabled */
 body {
   /* Fallback background when canvas is disabled or loading */
   background-color: var(--color-background);
   transition: background-color 0.3s ease;
 }
 
-/* FIXED: Properly hide canvas when animations are disabled */
+/* Container created by canvas-animation.js */
+.lightfall-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  /* Smooth fade-in when animation starts */
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+.lightfall-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hide canvas when animations are disabled */
 [data-animations="disabled"] #canvas-bg {
   display: none !important;
 }
 
-/* FIXED: Ensure canvas is visible when animations are enabled */
+/* Show canvas when animations are enabled */
 [data-animations="enabled"] #canvas-bg {
   display: block !important;
 }

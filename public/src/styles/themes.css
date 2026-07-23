@@ -81,7 +81,6 @@ html[data-theme="light"] {
   --color-background-light: #f5f5f2;
   --color-background-secondary: #f3f4f6;
   --color-surface: #ffffff;
-  /* --color-surface: rgba(255, 255, 255, 0.7); */
 
   /* Borders */
   --color-border: #e5e7eb;
@@ -184,7 +183,6 @@ html[data-theme="dark-slate"] {
   --color-background-light: #1e293b;
   --color-background-secondary: #253247;
   --color-surface: #1e293b;
-  /* --color-surface: rgba(30, 41, 59, 0.7); */
 
   /* Borders */
   --color-border: #334155;
@@ -286,7 +284,6 @@ html[data-theme="dark"] {
   --color-background-light: #171717;
   --color-background-secondary: #262626;
   --color-surface: #1e1e1e;
-  /* --color-surface: rgba(30, 30, 30, 0.7); */
 
   /* Borders */
   --color-border: #333333;
@@ -374,17 +371,21 @@ html[data-theme="dark"] {
   --scrollbar-track: transparent;
 }
 
-/* Make Surfaces slightly transparent when the background animation is active */
-[data-animations="enabled"] html[data-theme="light"]{
+/* Make surfaces slightly transparent when the background animation is active
+   so the Lightfall shader subtly shows through cards/panels.
+   Both data-animations and data-theme live on the <html> element,
+   so the compound selector must target the same element. */
+html[data-animations="enabled"][data-theme="light"],
+html[data-animations="enabled"]:not([data-theme]) {
   --color-surface: rgba(255, 255, 255, 0.7);
 }
 
-[data-animations="enabled"] html[data-theme="dark"]{
-  --color-surface: rgba(30, 30, 30, 0.7);
+html[data-animations="enabled"][data-theme="dark-slate"] {
+  --color-surface: rgba(30, 41, 59, 0.7);
 }
 
-[data-animations="enabled"] html[data-theme="dark-slate"]{
-  --color-surface: rgba(30, 41, 59, 0.7);
+html[data-animations="enabled"][data-theme="dark"] {
+  --color-surface: rgba(30, 30, 30, 0.7);
 }
 
 /* Scrollbar */
