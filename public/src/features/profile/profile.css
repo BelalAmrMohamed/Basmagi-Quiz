@@ -1,5 +1,6 @@
-/* public/src/features/profile/profile.css - Redesigned Dashboard Page Styles
-   ============================================================================
+/* ============================================================================
+   public/src/features/profile/profile.css
+   CSS variables at themes.css 
    Architecture:
      .identity-band   → hero unit: avatar, name, level ring, 4 stat chips
      .profile-layout  → 2-col grid: .profile-main (wide) + .profile-rail (sticky)

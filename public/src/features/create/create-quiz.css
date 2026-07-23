@@ -1,5 +1,5 @@
-/* public/src/features/create/create-quiz.css - Enhanced Theme-Aware Quiz Creator Styles */
-/* Uses CSS variables from themes.css */
+/* public/src/features/create/create-quiz.css */
+/* CSS variables at themes.css */
 
 /* ============================================================================
    LUCIDE ICON NORMALIZATION
@@ -46,11 +46,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  /*
-   * DO NOT use padding shorthand here — it would override padding-right set by
-   * side-menu.css (80px for collapsed sidebar) regardless of stylesheet load order.
-   * Set only the three sides that index.css owns; side-menu.css owns padding-right.
-   */
   padding-top: 40px;
   padding-bottom: 40px;
   padding-left: 24px; /* physical left — the non-sidebar side */
@@ -2931,8 +2926,7 @@ body {
 /* Header */
 [data-theme="dark"] .header,
 [data-theme="dark-slate"] .header {
-  background: var(--color-surface);
-  border-color: var(--color-border);
+  background: rgba(30, 41, 59, 0.3);
 }
 
 /* Empty state hint */

@@ -42,21 +42,12 @@ const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/create-quiz.html",
-  "/profile.html",
-  "/onboarding.html",
-  "/quiz.html",
-  "/result.html",
   "/settings.html",
 
   // CSS
   "/src/styles/themes.css",
-
   "/src/features/home/index.css",
   "/src/features/create/create-quiz.css",
-  "/src/features/profile/profile.css",
-  "/src/features/onboarding/onboarding.css",
-  "/src/features/quiz/quiz.css",
-  "/src/features/result/result.css",
   "/src/features/settings/settings.css",
 
   "/src/styles/animations.css",
@@ -66,10 +57,6 @@ const STATIC_ASSETS = [
   // JS (entry points)
   "/src/features/home/index-entrypoint.js",
   "/src/features/create/create-quiz.js",
-  "/src/scripts/profile.js",
-  "/src/features/onboarding/onboarding.js",
-  "/src/features/quiz/quiz.js",
-  "/src/features/result/result.js",
   "/src/features/settings/settings.js",
 
   "/src/features/home/search-manager.js",
@@ -77,7 +64,6 @@ const STATIC_ASSETS = [
   "/src/shared/quizManifest.js",
   "/src/shared/quizId.js",
   "/src/shared/pwa-manager.js",
-  "/src/scripts/keyboard-nav.js",
 
   "/src/shared/theme-controller.js",
   "/src/shared/canvas-animation.js",
@@ -98,36 +84,13 @@ const STATIC_ASSETS = [
   "/src/components/offline-banner/offline-banner.css",
   "/src/components/offline-banner/offline-banner.js",
 
-  // KaTeX (Markdown/LaTeX rendering, must work offline)
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_AMS-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Caligraphic-Bold.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Caligraphic-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Fraktur-Bold.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Fraktur-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Bold.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-BoldItalic.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Italic.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-BoldItalic.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Math-Italic.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Bold.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Italic.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_SansSerif-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Script-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size1-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size2-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size3-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Size4-Regular.woff2",
-  "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Typewriter-Regular.woff2",
-
   // PWA shell files
   "/favicon.png",
   "/favicon.ico",
   "/favicon.svg",
   "/manifest.json",
 ];
+
 const STATIC_ASSETS_SET = new Set(STATIC_ASSETS);
 
 // Maximum number of items in dynamic cache
@@ -138,15 +101,27 @@ const CACHE_SIZE_LIMIT = {
   [STATIC_QUIZ_CACHE]: 300,
 };
 
-// Helper: Limit cache size
+// Helper: Limit cache size. Trims oldest-first (cache.keys() returns
+// insertion order) down to maxItems using a single keys() read and a loop,
+// rather than recursing and re-reading keys() after every single deletion.
 async function limitCacheSize(cacheName, maxItems) {
+  if (!Number.isFinite(maxItems)) return; // no configured limit for this cache
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
+  const excess = keys.length - maxItems;
+  if (excess <= 0) return;
+  await Promise.all(keys.slice(0, excess).map((key) => cache.delete(key)));
+}
 
-  if (keys.length > maxItems) {
-    await cache.delete(keys[0]);
-    limitCacheSize(cacheName, maxItems);
-  }
+// Call sites intentionally don't await limitCacheSize (trimming shouldn't
+// delay the response being returned to the page), but a bare fire-and-forget
+// call whose promise rejects becomes an unhandled promise rejection. This
+// wrapper keeps that behavior while making sure a failed trim is logged
+// instead of silently escaping as an unhandled rejection.
+function trimCacheAsync(cacheName, maxItems) {
+  limitCacheSize(cacheName, maxItems).catch((error) => {
+    console.warn(`[SW] Failed to trim cache "${cacheName}":`, error);
+  });
 }
 
 // Helper: Check if request is for image
@@ -194,11 +169,10 @@ function isExternalRequest(request) {
 function isQuizAPIRequest(request) {
   try {
     const url = new URL(request.url);
-    const match =
+    return (
       url.origin === self.location.origin &&
-      QUIZ_API_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix));
-    if (match) console.log("[SW] Quiz API intercepted:", request.url);
-    return match;
+      QUIZ_API_PATH_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))
+    );
   } catch {
     return false;
   }
@@ -236,6 +210,25 @@ function supabaseFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
+}
+
+// PostgREST embeds filter values directly in the query string (e.g.
+// `id=eq.<value>`), so any value coming from IDB/postMessage data — quiz
+// ids, category keys — must be encoded before interpolation. Without this,
+// a crafted id/category containing `&`, `,`, `)`, or `.` could alter the
+// filter's meaning or target a different row/table scope than intended.
+// encodeURIComponent covers the URL-structural characters; PostgREST's own
+// comma/paren list-syntax characters inside an `in.(...)` list are handled
+// separately by quoting each value (see buildPostgrestInList below).
+function encodePostgrestValue(value) {
+  return encodeURIComponent(String(value));
+}
+
+function buildPostgrestInList(values) {
+  return values
+    .map((value) => `"${String(value).replace(/"/g, '\\"')}"`)
+    .map(encodePostgrestValue)
+    .join(",");
 }
 
 // Install Event - Cache static assets
@@ -306,18 +299,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  if (request.url.includes("supabase")) {
-    console.log(
-      "[SW] Supabase request seen:",
-      request.url,
-      "| matched quiz:",
-      isQuizAPIRequest(request),
-    );
-  }
-
   // Handle different types of requests with appropriate strategies
   if (isQuizAPIRequest(request)) {
-    event.respondWith(staleWhileRevalidateStrategy(request, QUIZ_CACHE));
+    event.respondWith(staleWhileRevalidateStrategy(event, request, QUIZ_CACHE));
   } else if (isStaticQuizRequest(request)) {
     event.respondWith(
       networkFirstWithFallbackStrategy(request, STATIC_QUIZ_CACHE),
@@ -387,7 +371,7 @@ async function networkFirstStrategy(request, cacheName) {
       }
 
       // Limit cache size
-      limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+      trimCacheAsync(cacheName, CACHE_SIZE_LIMIT[cacheName]);
     }
 
     return networkResponse;
@@ -401,16 +385,6 @@ async function networkFirstStrategy(request, cacheName) {
 
     if (cachedResponse) {
       return cachedResponse;
-    }
-
-    // Return offline page for HTML requests
-    if (isHtmlDocumentRequest) {
-      return (
-        caches.match("/offline.html") ||
-        new Response(getOfflineHTML(), {
-          headers: { "Content-Type": "text/html; charset=utf-8" },
-        })
-      );
     }
 
     // Return error for other requests
@@ -434,13 +408,16 @@ async function cacheFirstStrategy(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
 
-    // Cache the response
+    // Cache the response. Awaited (not fire-and-forget) so the write is
+    // guaranteed to finish before this function's promise resolves — since
+    // this is what event.respondWith() is awaiting, letting the SW live
+    // long enough for the put() to land instead of racing termination.
     if (networkResponse.ok) {
       const cache = await caches.open(cacheName);
-      cache.put(request, networkResponse.clone());
+      await cache.put(request, networkResponse.clone());
 
       // Limit cache size
-      limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+      trimCacheAsync(cacheName, CACHE_SIZE_LIMIT[cacheName]);
     }
 
     return networkResponse;
@@ -462,8 +439,15 @@ async function cacheFirstStrategy(request, cacheName) {
   }
 }
 
-// Stale-while-revalidate strategy for quiz API calls
-async function staleWhileRevalidateStrategy(request, cacheName) {
+// Stale-while-revalidate strategy for quiz API calls.
+// BUG FIX: when a cachedResponse exists, this function returns immediately
+// and the caller's event.respondWith() is satisfied — but the background
+// `networkFetch` revalidation was still running as a detached promise with
+// nothing keeping the service worker alive for it. The SW is free to be
+// terminated the instant the response is sent, silently dropping the cache
+// update before cache.put() ever runs. Passing `event` through lets us call
+// event.waitUntil() on the revalidation so it's guaranteed to complete.
+async function staleWhileRevalidateStrategy(event, request, cacheName) {
   const cache = await caches.open(cacheName);
   const cachedResponse = await cache.match(request);
 
@@ -471,7 +455,7 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
     .then(async (networkResponse) => {
       if (networkResponse && networkResponse.ok) {
         await cache.put(request, networkResponse.clone());
-        limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+        trimCacheAsync(cacheName, CACHE_SIZE_LIMIT[cacheName]);
       }
       return networkResponse;
     })
@@ -483,7 +467,14 @@ async function staleWhileRevalidateStrategy(request, cacheName) {
       });
     });
 
-  return cachedResponse || networkFetch;
+  if (cachedResponse) {
+    // Keep the SW alive for the background revalidation even though we're
+    // about to respond from cache immediately.
+    event.waitUntil(networkFetch);
+    return cachedResponse;
+  }
+
+  return networkFetch;
 }
 
 async function networkFirstWithFallbackStrategy(request, cacheName) {
@@ -493,7 +484,7 @@ async function networkFirstWithFallbackStrategy(request, cacheName) {
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
       await cache.put(request, networkResponse.clone());
-      limitCacheSize(cacheName, CACHE_SIZE_LIMIT[cacheName]);
+      trimCacheAsync(cacheName, CACHE_SIZE_LIMIT[cacheName]);
 
       const data = await networkResponse.clone().json();
       const pathname = new URL(request.url).pathname;
@@ -509,18 +500,58 @@ async function networkFirstWithFallbackStrategy(request, cacheName) {
   }
 }
 
-function openQuizIDBForStatic() {
-  const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 2;
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
+// ── Shared IndexedDB schema ─────────────────────────────────────────────────
+// BUG FIX: this file previously defined FIVE separate copies of the
+// "open BasmagiQuizDB" logic (openQuizIDBForStatic, and local
+// openQuizIDBLocal functions inside cacheQuizEntries, cacheSubscribedQuizzes,
+// updateSubscriptionCache, updateCachedQuizzes). Each copy declared its own
+// onupgradeneeded handler that only created the store(s) *that particular
+// function* needed:
+//   - openQuizIDBForStatic            → only "staticQuizzes"
+//   - cacheQuizEntries's opener        → no onupgradeneeded at all
+//   - cacheSubscribedQuizzes's opener  → only "meta"
+//   - updateSubscriptionCache's opener → no onupgradeneeded at all
+//   - updateCachedQuizzes's opener     → no onupgradeneeded at all
+// IndexedDB only fires onupgradeneeded once per version bump (whichever
+// open() call happens to run first after install/update), so which stores
+// actually got created depended on call order — e.g. if
+// cacheSubscribedQuizzes's partial handler won the race, "quizzes" and its
+// "by-category" index were never created, and any later
+// db.transaction("quizzes", ...) elsewhere would throw NotFoundError.
+// Consolidating into one definition removes that race entirely.
+const QUIZ_DB_NAME = "BasmagiQuizDB";
+const QUIZ_DB_VERSION = 2;
+const QUIZZES_STORE = "quizzes";
+const STATIC_QUIZZES_STORE = "staticQuizzes";
+const META_STORE = "meta";
+const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
 
+function openQuizIDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
 
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
+      const tx = event.target.transaction;
+
+      let quizzesStore;
+      if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
+        quizzesStore = db.createObjectStore(QUIZZES_STORE, { keyPath: "id" });
+      } else {
+        quizzesStore = tx.objectStore(QUIZZES_STORE);
+      }
+      if (!quizzesStore.indexNames.contains("by-category")) {
+        quizzesStore.createIndex("by-category", "categoryKey", {
+          unique: false,
+        });
+      }
+
       if (!db.objectStoreNames.contains(STATIC_QUIZZES_STORE)) {
         db.createObjectStore(STATIC_QUIZZES_STORE, { keyPath: "path" });
+      }
+
+      if (!db.objectStoreNames.contains(META_STORE)) {
+        db.createObjectStore(META_STORE, { keyPath: "key" });
       }
     };
 
@@ -531,10 +562,9 @@ function openQuizIDBForStatic() {
 }
 
 async function storeStaticQuizInIDB(pathname, data) {
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
   let db;
   try {
-    db = await openQuizIDBForStatic();
+    db = await openQuizIDB();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STATIC_QUIZZES_STORE, "readwrite");
       tx.objectStore(STATIC_QUIZZES_STORE).put({
@@ -554,10 +584,9 @@ async function storeStaticQuizInIDB(pathname, data) {
 }
 
 async function getStaticQuizFromIDB(pathname) {
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
   let db;
   try {
-    db = await openQuizIDBForStatic();
+    db = await openQuizIDB();
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(STATIC_QUIZZES_STORE, "readonly");
       const request = tx.objectStore(STATIC_QUIZZES_STORE).get(pathname);
@@ -618,25 +647,13 @@ function cacheResponseByPath(cache, pathValue, response) {
 }
 
 async function cacheQuizEntries(quizList, client) {
-  const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 2;
-  const QUIZZES_STORE = "quizzes";
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
   const safeQuizList = Array.isArray(quizList) ? quizList : [];
   const staticQuizCache = await caches.open(STATIC_QUIZ_CACHE);
-
-  const openQuizIDBLocal = () =>
-    new Promise((resolve, reject) => {
-      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () =>
-        reject(request.error || new Error("IDB open failed"));
-    });
 
   let db;
   let cached = 0;
   try {
-    db = await openQuizIDBLocal();
+    db = await openQuizIDB();
 
     for (const entry of safeQuizList) {
       try {
@@ -644,7 +661,7 @@ async function cacheQuizEntries(quizList, client) {
           const quizId = entry.id || extractDbQuizIdFromApiPath(entry.path);
           if (quizId) {
             const response = await supabaseFetch(
-              `quizzes?id=eq.${quizId}&select=id,category,data`,
+              `quizzes?id=eq.${encodePostgrestValue(quizId)}&select=id,category,data`,
             );
             if (response && response.ok) {
               const rows = await response.json();
@@ -708,8 +725,8 @@ async function cacheQuizEntries(quizList, client) {
       }
     }
 
-    limitCacheSize(QUIZ_CACHE, CACHE_SIZE_LIMIT[QUIZ_CACHE]);
-    limitCacheSize(STATIC_QUIZ_CACHE, CACHE_SIZE_LIMIT[STATIC_QUIZ_CACHE]);
+    trimCacheAsync(QUIZ_CACHE, CACHE_SIZE_LIMIT[QUIZ_CACHE]);
+    trimCacheAsync(STATIC_QUIZ_CACHE, CACHE_SIZE_LIMIT[STATIC_QUIZ_CACHE]);
 
     if (client) {
       client.postMessage({
@@ -720,76 +737,6 @@ async function cacheQuizEntries(quizList, client) {
   } finally {
     if (db) db.close();
   }
-}
-
-// Offline HTML fallback
-function getOfflineHTML() {
-  return `
-    <!DOCTYPE html>
-    <html lang="ar" dir="rtl">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>غير متصل - منصة إمتحانات بصمجي</title>
-      <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
-        body {
-          font-family: "Tajawal", -apple-system, sans-serif;
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          text-align: center;
-          padding: 2rem;
-        }
-        .container {
-          max-width: 500px;
-        }
-        .icon {
-          font-size: 5rem;
-          margin-bottom: 1.5rem;
-        }
-        h1 {
-          font-size: 2rem;
-          margin-bottom: 1rem;
-        }
-        p {
-          font-size: 1.125rem;
-          margin-bottom: 2rem;
-          opacity: 0.9;
-        }
-        button {
-          background: white;
-          color: #667eea;
-          border: none;
-          padding: 1rem 2rem;
-          font-size: 1rem;
-          font-weight: 600;
-          border-radius: 0.5rem;
-          cursor: pointer;
-          transition: transform 0.2s;
-        }
-        button:hover {
-          transform: translateY(-2px);
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="icon">📡</div>
-        <h1>أنت غير متصل بالإنترنت</h1>
-        <p>يبدو أن اتصالك بالإنترنت مفقود. يرجى التحقق من الاتصال والمحاولة مرة أخرى.</p>
-        <button onclick="location.reload()">إعادة المحاولة</button>
-      </div>
-    </body>
-    </html>
-  `;
 }
 
 // Background Sync for offline actions
@@ -826,8 +773,21 @@ async function syncQuizResults() {
 self.addEventListener("push", (event) => {
   console.log("[SW] Push notification received");
 
+  // BUG FIX: event.data.text() can throw for a malformed/binary push
+  // payload. That throw happened synchronously in the listener body,
+  // before event.waitUntil() was ever reached — so showNotification()
+  // never fired and the browser can flag the SW for showing no
+  // notification for a push event. Wrapped so a bad payload still falls
+  // back to a generic body instead of aborting the handler.
+  let body = "لديك إشعار جديد";
+  try {
+    if (event.data) body = event.data.text();
+  } catch (error) {
+    console.warn("[SW] Failed to read push payload, using default:", error);
+  }
+
   const options = {
-    body: event.data ? event.data.text() : "لديك إشعار جديد",
+    body,
     icon: "/assets/images/icon-192.png",
     badge: "/assets/images/badge-72.png",
     vibrate: [200, 100, 200],
@@ -902,7 +862,14 @@ self.addEventListener("message", (event) => {
     _supabaseUrl = data.supabaseUrl || _supabaseUrl;
     _supabaseKey = data.supabaseKey || _supabaseKey;
     event.waitUntil(
-      self.registration.sync.register("update-subscribed-quizzes"),
+      self.registration.sync
+        .register("update-subscribed-quizzes")
+        .catch((error) => {
+          // Background Sync isn't supported in every browser and
+          // registration can also be denied by the user/permission policy;
+          // don't let that surface as an unhandled rejection.
+          console.warn("[SW] Failed to register background sync:", error);
+        }),
     );
   }
 
@@ -921,29 +888,6 @@ self.addEventListener("periodicsync", (event) => {
 });
 
 async function cacheSubscribedQuizzes(categoryKeys, quizList, client) {
-  const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 2;
-  const META_STORE = "meta";
-  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
-
-  function openQuizIDBLocal() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-
-        if (!db.objectStoreNames.contains(META_STORE)) {
-          db.createObjectStore(META_STORE, { keyPath: "key" });
-        }
-      };
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () =>
-        reject(request.error || new Error("IDB open failed"));
-    });
-  }
-
   function storeSubscribedCategoriesLocal(db, keys) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(META_STORE, "readwrite");
@@ -966,7 +910,7 @@ async function cacheSubscribedQuizzes(categoryKeys, quizList, client) {
 
   let db;
   try {
-    db = await openQuizIDBLocal();
+    db = await openQuizIDB();
     await storeSubscribedCategoriesLocal(db, safeCategoryKeys);
     if (safeQuizList.length > 0) {
       await cacheQuizEntries(safeQuizList, client);
@@ -974,9 +918,7 @@ async function cacheSubscribedQuizzes(categoryKeys, quizList, client) {
     }
 
     // Backward compatibility path: older clients only send categories.
-    const categoryFilter = safeCategoryKeys
-      .map((key) => `"${String(key).replace(/"/g, '\\"')}"`)
-      .join(",");
+    const categoryFilter = buildPostgrestInList(safeCategoryKeys);
     const response = await supabaseFetch(
       `quizzes?select=id,category&category=in.(${categoryFilter})`,
     );
@@ -1001,26 +943,12 @@ async function cacheSubscribedQuizzes(categoryKeys, quizList, client) {
 }
 
 async function updateSubscriptionCache(data) {
-  const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 2;
-  const QUIZZES_STORE = "quizzes";
-  const META_STORE = "meta";
-  const STATIC_QUIZZES_STORE = "staticQuizzes";
-  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
   const allCategories = Array.isArray(data?.allCategories)
     ? data.allCategories
     : [];
   const added = Array.isArray(data?.added) ? data.added : [];
   const removed = Array.isArray(data?.removed) ? data.removed : [];
   const allQuizList = Array.isArray(data?.quizList) ? data.quizList : [];
-
-  const openQuizIDBLocal = () =>
-    new Promise((resolve, reject) => {
-      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () =>
-        reject(request.error || new Error("IDB open failed"));
-    });
 
   const storeSubscribedCategoriesLocal = (db, keys) =>
     new Promise((resolve, reject) => {
@@ -1096,7 +1024,7 @@ async function updateSubscriptionCache(data) {
 
   let db;
   try {
-    db = await openQuizIDBLocal();
+    db = await openQuizIDB();
 
     for (const category of removed) {
       await deleteQuizzesByCategoryLocal(db, category);
@@ -1130,47 +1058,6 @@ async function updateSubscriptionCache(data) {
 }
 
 async function updateCachedQuizzes() {
-  const QUIZ_DB_NAME = "BasmagiQuizDB";
-  const QUIZ_DB_VERSION = 2;
-  const QUIZZES_STORE = "quizzes";
-  const META_STORE = "meta";
-  const SUBSCRIBED_CATEGORIES_KEY = "subscribedCategories";
-
-  function openQuizIDBLocal() {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(QUIZ_DB_NAME, QUIZ_DB_VERSION);
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-
-        if (!db.objectStoreNames.contains(QUIZZES_STORE)) {
-          const quizzesStore = db.createObjectStore(QUIZZES_STORE, {
-            keyPath: "id",
-          });
-          quizzesStore.createIndex("by-category", "categoryKey", {
-            unique: false,
-          });
-        } else {
-          const quizzesStore =
-            event.target.transaction.objectStore(QUIZZES_STORE);
-          if (!quizzesStore.indexNames.contains("by-category")) {
-            quizzesStore.createIndex("by-category", "categoryKey", {
-              unique: false,
-            });
-          }
-        }
-
-        if (!db.objectStoreNames.contains(META_STORE)) {
-          db.createObjectStore(META_STORE, { keyPath: "key" });
-        }
-      };
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () =>
-        reject(request.error || new Error("IDB open failed"));
-    });
-  }
-
   function getSubscribedCategoriesLocal(db) {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(META_STORE, "readonly");
@@ -1207,7 +1094,7 @@ async function updateCachedQuizzes() {
   let updated = 0;
 
   try {
-    db = await openQuizIDBLocal();
+    db = await openQuizIDB();
     const subscribedCategories = await getSubscribedCategoriesLocal(db);
     const categoryKeys = Array.isArray(subscribedCategories)
       ? subscribedCategories
@@ -1218,7 +1105,7 @@ async function updateCachedQuizzes() {
       for (const entry of entries) {
         try {
           const response = await supabaseFetch(
-            `quizzes?id=eq.${entry.id}&select=id,category,data`,
+            `quizzes?id=eq.${encodePostgrestValue(entry.id)}&select=id,category,data`,
           );
           if (!response || !response.ok) continue;
 

@@ -1,22 +1,16 @@
-/* themes.css - For All Pages */
+/* themes.css - Global Variables */
 
 /* ==================== SHARED / THEME-INDEPENDENT ====================
    Values that never change across themes. Defined once on :root so no
    theme block needs to redeclare them.
    ===================================================================== */
 :root {
-  /* Glassmorphism blur is the same everywhere; only alpha/tint vary per theme */
   --glass-blur: blur(12px);
 
-  /* Warning color never shifts between themes, so the warm gradient is fixed */
   --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
 
-  /* Brand scrollbar thumb — identical in all 3 themes except a couple hover tweaks */
   --scrollbar-thumb: #C0E040;
 
-  /* Motion system, spacing, radii, typography, z-index, sidebar widths:
-     these were already only declared once (on :root/light) and inherited
-     fine, since nothing overrides them in the other theme blocks. Left as-is. */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --duration-fast: 120ms;
@@ -76,15 +70,16 @@
 html[data-theme="light"] {
   color-scheme: light;
 
-  /* Backgrounds
-     NOTE: --color-surface (#ffffff) and --color-background-secondary (#f3f4f6)
-     are genuinely different here — kept both. */
+  --quiz-card-bg: rgba(255, 255, 255, 0.3);
+  --quiz-card-border: #000;
+  --quiz-input-bg: #fefefe;
+
   --color-background: #fafbfc;
-  --color-background-light: #F5F5F2;
+  --color-background-light: #f5f5f2;
   --color-background-secondary: #f3f4f6;
   --color-surface: #ffffff;
 
-  /* Borders — these two are genuinely different in light mode, kept both */
+  /* Borders */
   --color-border: #e5e7eb;
   --color-border-light: #cfd5e1;
 
@@ -113,10 +108,7 @@ html[data-theme="light"] {
   --color-error-hover: #dc2626;
   --color-error-light: #fee2e2;
 
-  /* Gradients
-     --gradient-warm now inherited from :root (identical value removed here).
-     --gradient-success/--gradient-secondary composed from the color vars
-     above instead of re-typing hex values, so they can't drift out of sync. */
+  /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
     #6366f1 0%,
@@ -151,7 +143,7 @@ html[data-theme="light"] {
     0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
 
-  /* Glassmorphism — --glass-blur inherited from :root */
+  /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-border: rgba(255, 255, 255, 0.12);
   --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -162,7 +154,7 @@ html[data-theme="light"] {
   --color-hover-overlay: rgba(99, 102, 241, 0.06);
   --color-selected-bg: rgba(99, 102, 241, 0.12);
 
-  /* Animation Colors (canvas particle system) */
+  /* Animation Colors */
   --anim-particle-1: rgba(99, 102, 241, 0.3);
   --anim-particle-2: rgba(139, 92, 246, 0.3);
   --anim-particle-3: rgba(236, 72, 153, 0.3);
@@ -174,6 +166,10 @@ html[data-theme="light"] {
 
 /* ==================== DARK SLATE THEME ==================== */
 html[data-theme="dark-slate"] {
+  --quiz-card-bg: rgba(30, 41, 59, 0.3);
+  --quiz-card-border: #1e293b;
+  --quiz-input-bg: #203040;
+
   color-scheme: dark;
 
   /* Backgrounds */
@@ -211,7 +207,7 @@ html[data-theme="dark-slate"] {
   --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
-  /* Gradients — --gradient-warm now inherited from :root */
+  /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
     #6366f1 0%,
@@ -235,7 +231,7 @@ html[data-theme="dark-slate"] {
     #293548 100%
   );
 
-  /* Shadows — higher opacity for dark backgrounds */
+  /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
   --shadow-md:
     0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
@@ -245,7 +241,7 @@ html[data-theme="dark-slate"] {
     0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.4);
 
-  /* Glassmorphism — --glass-blur inherited from :root */
+  /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -268,16 +264,19 @@ html[data-theme="dark-slate"] {
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
 html[data-theme="dark"] {
+  --quiz-card-bg: rgba(0, 0, 0, 0.3);
+  --quiz-card-border: #fff;
+  --quiz-input-bg: #020f21;
+
   color-scheme: dark;
 
-  /* Backgrounds — --color-surface a step lighter than
-     --color-background-secondary, same elevation pattern as the other themes */
+  /* Backgrounds */
   --color-background: #121212;
   --color-background-light: #171717;
   --color-background-secondary: #262626;
   --color-surface: #1e1e1e;
 
-  /* Borders — border-light lighter than border for subtler dividers */
+  /* Borders */
   --color-border: #333333;
   --color-border-light: #444444;
 
@@ -308,7 +307,7 @@ html[data-theme="dark"] {
 
   --color-code: #e2e8f0;
 
-  /* Gradients — --gradient-warm now inherited from :root */
+  /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
     #3b82f6 0%,
@@ -342,7 +341,7 @@ html[data-theme="dark"] {
     0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
   --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
 
-  /* Glassmorphism — --glass-blur inherited from :root */
+  /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.07);
   --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);

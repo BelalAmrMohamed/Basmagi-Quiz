@@ -1,24 +1,8 @@
-/**
- * src/styles/markdown.css
- *
- * Shared Markdown + KaTeX visual styles.
- * Import on every page that uses markdown-handler.js:
- * quiz.html   → after quiz.css
- * result.html → after result.css
- *
- * Tokens used (all defined in themes.css):
- * --color-primary          --color-border        --color-border-light
- * --color-text-primary     --color-text-secondary
- * --color-background       --color-background-secondary
- * --color-primary-light    --shadow-sm  --shadow-md
- * --color-success          --color-error
- *
- * Glassmorphism recipe (shared across tables and copy buttons):
- * background: rgba(…, 0.06–0.12)
- * backdrop-filter: blur(12px)
- * border: 1px solid rgba(…, 0.14)
- * box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), var(--shadow-sm)
- */
+/* ══════════════════════════════════════════════════════════════════════════════
+   src/styles/markdown.css
+   Shared Markdown + KaTeX visual styles.
+   CSS variables at themes.css
+   ══════════════════════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════════════════════
    DIRECTION + OVERFLOW UTILITIES

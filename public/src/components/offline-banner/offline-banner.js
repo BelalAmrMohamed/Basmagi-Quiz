@@ -49,21 +49,6 @@ function getOrCreateBanner() {
     document.body.appendChild(el);
   }
 
-  let content = el.querySelector(".banner-content");
-  if (!content) {
-    content = document.createElement("span");
-    content.className = "banner-content";
-    el.appendChild(content);
-  }
-
-  let spacer = el.querySelector(".banner-spacer");
-  if (!spacer) {
-    spacer = document.createElement("span");
-    spacer.className = "banner-spacer";
-    spacer.setAttribute("aria-hidden", "true");
-    el.insertBefore(spacer, content);
-  }
-
   let dismiss = el.querySelector(".banner-dismiss");
   if (!dismiss) {
     dismiss = document.createElement("button");
@@ -73,7 +58,24 @@ function getOrCreateBanner() {
     dismiss.innerHTML =
       '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
     dismiss.addEventListener("click", handleDismissClick);
-    el.insertBefore(dismiss, spacer);
+    el.appendChild(dismiss);
+  }
+
+  let spacer = el.querySelector(".banner-spacer");
+  if (!spacer) {
+    spacer = document.createElement("span");
+    spacer.className = "banner-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+    el.appendChild(spacer);
+  }
+
+
+
+  let content = el.querySelector(".banner-content");
+  if (!content) {
+    content = document.createElement("span");
+    content.className = "banner-content";
+    el.appendChild(content);
   }
 
   bannerContent = content;

@@ -1,19 +1,6 @@
 /* ============================================================================
    public/src/components/offline-banner/offline-banner.css
-   Glassmorphic styles for the fixed offline/online status banner.
-
-   Variables consumed (all defined in themes.css, verified):
-     --color-warning              (#f59e0b in light; same in dark themes)
-     --color-success               (#10b981 in all themes)
-     --color-text-primary          (high-contrast text for all themes)
-     --color-background-secondary  (used for the banner's ambient rim tint)
-     --z-notification              (10000 — sits above toasts, below modals-top)
-     --transition-base             (0.3s ease)
-     --font-size-sm                (0.875rem)
-
-   State is now driven by classes (.state-offline / .state-online) added in
-   offline-banner.js, rather than an inline `style.background`, so the glass
-   gradients below can respond to state changes.
+   CSS variables at themes.css
    ============================================================================ */
 
 /* ── Space reservation ──────────────────────────────────────────────────────
@@ -42,7 +29,7 @@ body.has-offline-banner {
   justify-content: center;
   gap: 0.6rem;
   padding: 0.85rem 1.25rem;
-  max-height: 30px;
+  max-height: 30px; /* Intentionally make it neatly short, enought without clipping the text nor the icon */
   
   /* ── Glass fill (neutral default): angled light hitting a physical pane ── */
   background: linear-gradient(
