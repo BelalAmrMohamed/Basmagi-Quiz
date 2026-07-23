@@ -1,7 +1,8 @@
 /* ============================================================================
-THEME INTEGRATION & VARIABLES
-Leverage variables from themes.css for consistency across themes
-============================================================================ */
+  public\src\styles\animations.css
+  THEME INTEGRATION & VARIABLES
+  CSS Variables at themes.css
+  ============================================================================= */
 :root,
 [data-theme="light"],
 [data-theme="dark-slate"],

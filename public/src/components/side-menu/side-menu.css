@@ -31,7 +31,7 @@ body.sidebar-expanded {
   left: auto;
   height: 100%;
   width: var(--sidebar-collapsed-width);
-  background: var(--color-background);
+  background: var(--sidebar-color);
   border-left: 1px solid var(--color-border); /* border on the inner/left edge */
   z-index: var(--z-overlay, 500);
   display: flex;
@@ -831,7 +831,7 @@ body.sidebar-expanded {
     bottom: 0;
     height: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: var(--color-surface);
+    background: var(--bottom-nav-color);
     border-top: 1px solid var(--color-border);
     display: flex;
     align-items: stretch;

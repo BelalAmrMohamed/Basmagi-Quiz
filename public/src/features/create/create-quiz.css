@@ -2926,7 +2926,8 @@ body {
 /* Header */
 [data-theme="dark"] .header,
 [data-theme="dark-slate"] .header {
-  background: rgba(30, 41, 59, 0.3);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 /* Empty state hint */

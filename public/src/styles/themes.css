@@ -74,10 +74,14 @@ html[data-theme="light"] {
   --quiz-card-border: #000;
   --quiz-input-bg: #fefefe;
 
+  --bottom-nav-color: #ffffff;
+  --sidebar-color: rgba(255, 255, 255, 0.7);
+
   --color-background: #fafbfc;
   --color-background-light: #f5f5f2;
   --color-background-secondary: #f3f4f6;
-  --color-surface: #ffffff;
+  /* --color-surface: #ffffff; */
+  --color-surface: rgba(255, 255, 255, 0.7);
 
   /* Borders */
   --color-border: #e5e7eb;
@@ -166,17 +170,21 @@ html[data-theme="light"] {
 
 /* ==================== DARK SLATE THEME ==================== */
 html[data-theme="dark-slate"] {
+  color-scheme: dark;
+
   --quiz-card-bg: rgba(30, 41, 59, 0.3);
   --quiz-card-border: #1e293b;
   --quiz-input-bg: #203040;
 
-  color-scheme: dark;
+  --bottom-nav-color: #1e293b;
+  --sidebar-color: rgba(30, 41, 59, 0.7);
 
   /* Backgrounds */
   --color-background: #0f172a;
   --color-background-light: #1e293b;
   --color-background-secondary: #253247;
-  --color-surface: #1e293b;
+  /* --color-surface: #1e293b; */
+  --color-surface: rgba(30, 41, 59, 0.7);
 
   /* Borders */
   --color-border: #334155;
@@ -264,17 +272,21 @@ html[data-theme="dark-slate"] {
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
 html[data-theme="dark"] {
+  color-scheme: dark;
+
   --quiz-card-bg: rgba(0, 0, 0, 0.3);
   --quiz-card-border: #fff;
   --quiz-input-bg: #020f21;
 
-  color-scheme: dark;
+  --bottom-nav-color: #1e1e1e;
+  --sidebar-color: rgba(30, 30, 30, 0.7);
 
   /* Backgrounds */
   --color-background: #121212;
   --color-background-light: #171717;
   --color-background-secondary: #262626;
-  --color-surface: #1e1e1e;
+  /* --color-surface: #1e1e1e; */
+  --color-surface: rgba(30, 30, 30, 0.7);
 
   /* Borders */
   --color-border: #333333;
