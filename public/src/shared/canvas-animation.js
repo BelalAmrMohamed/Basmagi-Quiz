@@ -15,7 +15,10 @@ const DPR_CAP = 1.5;
 const THEME_PRESETS = {
   light: {
     colors: ["#818cf8", "#a78bfa", "#f472b6"],
-    backgroundColor: "#0a0a2e",
+
+    // There is an issue with the background. In the light theme. When the animations are active, the background is white, meaning this setting isn't being applied, which makes the colors of the animations almost invisible.
+    // I actually want the background to be white to match the light theme anyways. But this issue must be fixed anyways.
+    backgroundColor: "#0a0a2e", 
     speed: 0.3,
     streakCount: 5,
     streakWidth: 1.2,
@@ -41,7 +44,7 @@ const THEME_PRESETS = {
     glow: 1.0,
     density: 0.6,
     twinkle: 1,
-    zoom: 3,
+    zoom: 2,
     backgroundGlow: 0.6,
     opacity: 1,
     alphaMode: 0.0,
@@ -59,7 +62,7 @@ const THEME_PRESETS = {
     glow: 1.0,
     density: 0.6,
     twinkle: 1,
-    zoom: 3,
+    zoom: 1.8,
     backgroundGlow: 0.5,
     opacity: 1,
     alphaMode: 0.0,

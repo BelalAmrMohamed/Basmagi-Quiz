@@ -71,22 +71,15 @@ import { getCourseItemCount } from "./course-count.js";
  
     runBootSequence([
       { fn: () => printLogo(), delay: 120 },
-      { fn: () => log.sub('  منصة إمتحانات بصمجي | الصفحة الرئيسية'), delay: 140 },
-      { fn: () => log.rule('─', 64), delay: 80 },
-      { fn: () => log.status('› booting home page ...'), delay: 160 },
-      { fn: () => log.status('› checking session ...'), delay: 140 },
+      { fn: () => log.title('الصفحة الرئيسية'), delay: 140 },
       { fn: () => log.kv('  session:', safe(() => (global.__APP_STATE__.user ? 'authenticated' : 'guest (no sign-in required for students)'), 'guest (no sign-in required for students)')), delay: 140 },
-      { fn: () => log.status('› loading course catalog ...'), delay: 160 },
-      { fn: () => log.rule('─', 64), delay: 60 },
       { fn: () => {
           log.raw('  ⚡ SYSTEM DIAGNOSTIC', styles.warn);
           log.kv('  page load:', `${stats.loadMs}ms`);
           log.kv('  resources fetched:', String(stats.resources));
           log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
         }, delay: 140 },
-      { fn: () => log.rule('═', 64), delay: 60 },
-      { fn: () => log.title('✔ home page initialized successfully') , delay: 100},
-      { fn: () => log.sub('  اكتب الأمر التالي لعرض كل الأوامر المتاحة:'), delay: 80 },
+      // { fn: () => log.rule('═', 64), delay: 60 },
       { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
     ]);
   }
