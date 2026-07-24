@@ -1,8 +1,8 @@
 // ============================================================================
 // public/src/features/home/console-ui.js
 // DEV CONSOLE UI — the branded, discoverable console-command experience for
-// the home page (basmagy.help(), basmagy.perf(), etc). Purely a side-effecting
-// module: importing it wires up window.__basmagyCore's registry and runs the
+// the home page (basmagi.help(), basmagi.perf(), etc). Purely a side-effecting
+// module: importing it wires up window.__basmagiCore's registry and runs the
 // boot animation. No exports — nothing else in the app depends on its internals.
 // ============================================================================
 
@@ -16,9 +16,9 @@ import { getCourseItemCount } from "./course-count.js";
 
 (function initIndexConsole(global) {
   'use strict';
-  const core = global.__basmagyCore;
+  const core = global.__basmagiCore;
   if (!core) {
-    console.log('%c[basmagy] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
+    console.log('%c[basmagi] core runtime missing — console UI skipped.', 'color:#ff5c5c;font-family:monospace;');
     return;
   }
  
@@ -80,12 +80,12 @@ import { getCourseItemCount } from "./course-count.js";
           log.dim('  (psst — this is the perf issue we\'re hunting. ask a dev.)');
         }, delay: 140 },
       // { fn: () => log.rule('═', 64), delay: 60 },
-      { fn: () => console.log('%cbasmagy.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
+      { fn: () => console.log('%cbasmagi.help()%c → show all available commands', styles.cmd, styles.kv), delay: 0 },
     ]);
   }
  
 // --------------------------------------------------------------------------
-// COMMANDS — visible, documented, discoverable via basmagy.help()
+// COMMANDS — visible, documented, discoverable via basmagi.help()
 // --------------------------------------------------------------------------
  
   registerCommand('perf', () => {
@@ -184,7 +184,7 @@ import { getCourseItemCount } from "./course-count.js";
     log.rule('═', 60);
     log.title('🔍 Search');
     if (!query) {
-      log.warn('  usage: basmagy.search("query")');
+      log.warn('  usage: basmagi.search("query")');
       log.rule('═', 60);
       return;
     }
@@ -202,7 +202,7 @@ import { getCourseItemCount } from "./course-count.js";
     log.kv('  results:', String(Array.isArray(results) ? results.length : 0));
     log.dim('  (opened the search bar with this query — same as typing it in)');
     log.rule('═', 60);
-  }, 'basmagy.search("query") — run a search as if typed into the search bar');
+  }, 'basmagi.search("query") — run a search as if typed into the search bar');
  
   // --------------------------------------------------------------------------
   // GO

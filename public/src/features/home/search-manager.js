@@ -1246,7 +1246,7 @@ export class SearchManager {
   }
 
   /**
-   * Manually trigger search — also used by basmagy.search(query) in the
+   * Manually trigger search — also used by basmagi.search(query) in the
    * console. Opens the bar if it's closed so the results are actually visible,
    * and keeps the merged close/clear button's mode in sync.
    */

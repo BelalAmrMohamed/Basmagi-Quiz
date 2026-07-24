@@ -7,7 +7,7 @@
  *  This is the SHARED core loaded on every page. It provides:
  *    - theming / ascii-safe styled logging helpers
  *    - a boot sequence animator (used by every page's banner)
- *    - a global command registry -> window.basmagy
+ *    - a global command registry -> window.basmagi
  *    - a couple of hidden, undocumented surprises
  *
  *  Each page (index.js, profile.js, creat-quiz.js, settings.js)
@@ -16,12 +16,12 @@
  * ============================================================================
  */
 
-(function initBasmagyConsoleCore(global) {
+(function initBasmagiConsoleCore(global) {
   'use strict';
 
   // Avoid double-init if the core script is accidentally injected twice
-  if (global.__BASMAGY_CONSOLE_CORE__) return;
-  global.__BASMAGY_CONSOLE_CORE__ = true;
+  if (global.__BASMAGI_CONSOLE_CORE__) return;
+  global.__BASMAGI_CONSOLE_CORE__ = true;
 
   // --------------------------------------------------------------------------
   // 1. THEME
@@ -146,9 +146,9 @@ const LOGO = "منصة إمتحانات بصمجي";
   }
 
   // --------------------------------------------------------------------------
-  // 4. GLOBAL COMMAND REGISTRY  ->  window.basmagy
-  //    Pages register commands via basmagy.__registerCommands(pageId, {..}).
-  //    window.basmagy.help() prints a nicely formatted, categorized command
+  // 4. GLOBAL COMMAND REGISTRY  ->  window.basmagi
+  //    Pages register commands via basmagi.__registerCommands(pageId, {..}).
+  //    window.basmagi.help() prints a nicely formatted, categorized command
   //    list built from whatever the current page registered + shared core
   //    commands (about, theme, easter eggs listing, etc).
   // --------------------------------------------------------------------------
@@ -160,7 +160,7 @@ const LOGO = "منصة إمتحانات بصمجي";
 
   function registerCommand(name, fn, desc, hidden) {
     registry.commands[name] = { fn, desc: desc || '', hidden: !!hidden };
-    global.basmagy[name] = fn;
+    global.basmagi[name] = fn;
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
@@ -174,7 +174,7 @@ const LOGO = "منصة إمتحانات بصمجي";
 
     const visible = Object.entries(registry.commands).filter(([, c]) => !c.hidden);
     visible.forEach(([name, c]) => {
-      console.log(`%cbasmagy.${name}()%c  →  ${c.desc}`, styles.cmd, styles.kv);
+      console.log(`%cbasmagi.${name}()%c  →  ${c.desc}`, styles.cmd, styles.kv);
     });
 
     log.rule('─', 64);
@@ -188,7 +188,7 @@ const LOGO = "منصة إمتحانات بصمجي";
     printLogo();
     log.sub('  منصة إمتحانات بصمجي');
     log.kv('  build:', BUILD_TAG);
-    log.kv('  engine:', 'basmagy-console-core.js (shared console runtime)');
+    log.kv('  engine:', 'console-core.js (shared console runtime)');
     log.kv('  page:', registry.pageLabel || 'unknown');
     log.dim('  يا فاتح الكونسول وسايب المنهج يضيع.. الكود ده مكتوب بحب وإحساس بديع');
     log.rule('═', 64);
@@ -204,7 +204,7 @@ const LOGO = "منصة إمتحانات بصمجي";
       { role: 'Status', note: 'no bugs were harmed in the making of this easter egg' },
     ]);
   }
-  Object.defineProperty(global, '__basmagy_dev', {
+  Object.defineProperty(global, '__basmagi_dev', {
     value: __devSignature,
     enumerable: false, // hidden from for-in / autocomplete-ish enumeration
     configurable: false,
@@ -213,11 +213,11 @@ const LOGO = "منصة إمتحانات بصمجي";
   // --------------------------------------------------------------------------
   // 6. PUBLIC API
   // --------------------------------------------------------------------------
-  global.basmagy = global.basmagy || {};
-  global.basmagy.help = printHelp;
-  global.basmagy.about = printAbout;
+  global.basmagi = global.basmagi || {};
+  global.basmagi.help = printHelp;
+  global.basmagi.about = printAbout;
 
-  global.__basmagyCore = {
+  global.__basmagiCore = {
     THEME,
     styles,
     mono,
