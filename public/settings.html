@@ -12,6 +12,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0088cc">
 
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('__bq_adm');
+          if (t) {
+            var p = JSON.parse(atob(t.split('.')[1]));
+            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+          }
+        } catch(e) {}
+      })();
+    </script>
+
     <meta name="description" content="صفحة الإعدادات ، اضبط الإعدادات الخاصة بك لتحسين تجربتك الشخصيّة" />
     <meta name="keywords" content="بصمجي، الإعدادات منصة إمتحانات، اختبارات إلكترونية" />
     <meta name="author" content="بلال عمرو محمد" />
@@ -474,15 +487,7 @@
         </header>
 
         <form id="settingsForm">
-            <!-- Personal -->
-            <section class="settings-card" aria-labelledby="personal-heading">
-                <h2 id="personal-heading"><span>👤</span> البيانات الشخصية</h2>
-                <div class="settings-row">
-                    <label for="settingsName">الاسم</label>
-                    <input type="text" id="settingsName" name="username" placeholder="أدخل اسمك" maxlength="50"
-                        autocomplete="name">
-                </div>
-            </section>
+
 
             <!-- Academic -->
             <section class="settings-card" aria-labelledby="academic-heading">

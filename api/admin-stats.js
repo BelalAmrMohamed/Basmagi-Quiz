@@ -47,7 +47,7 @@ async function handleSync(req, res) {
     return res.status(401).json({ error: "غير مصرح" });
   }
 
-  const { totalPoints, totalQuizzes, totalBadges, currentLevel, avatarUrl } = req.body || {};
+  const { totalPoints, totalQuizzes, totalBadges, currentLevel, avatarUrl, displayName } = req.body || {};
 
   const hasProgressFields =
     totalPoints !== undefined || totalQuizzes !== undefined ||
@@ -80,6 +80,13 @@ async function handleSync(req, res) {
       return res.status(400).json({ error: "Invalid avatar payload" });
     }
     updates.avatar_url = avatarUrl;
+  }
+
+  if (displayName !== undefined) {
+    if (displayName !== null && typeof displayName !== "string") {
+      return res.status(400).json({ error: "Invalid display_name payload" });
+    }
+    updates.display_name = displayName;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -227,6 +234,7 @@ export default async function handler(req, res) {
     totalBadges: adminUser.total_badges || 0,
     currentLevel: adminUser.current_level || 1,
     avatarUrl: adminUser.avatar_url || null,
+    displayName: adminUser.display_name || null,
     role,
     isOwner
   });

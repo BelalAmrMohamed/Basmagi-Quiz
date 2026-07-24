@@ -100,6 +100,32 @@ body {
   white-space: nowrap;
 }
 
+.editable-username {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 0 4px;
+  margin-inline-start: -4px;
+  transition: background-color 0.2s ease;
+}
+
+.editable-username:hover {
+  background-color: var(--color-background-secondary);
+}
+
+.editable-username::after {
+  content: '✎';
+  font-size: 0.5em;
+  vertical-align: middle;
+  margin-inline-start: 6px;
+  opacity: 0;
+  color: var(--color-text-secondary);
+  transition: opacity 0.2s ease;
+}
+
+.editable-username:hover::after {
+  opacity: 1;
+}
+
 .weekly-recap {
   align-self: flex-start;
   font-size: 0.82rem;

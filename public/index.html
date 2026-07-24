@@ -22,6 +22,19 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="theme-color" content="#0088cc" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
+
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('__bq_adm');
+          if (t) {
+            var p = JSON.parse(atob(t.split('.')[1]));
+            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="description"
         content="منصة تعليمية مجانية تضم مكتبة شاملة من الإمتحانات الخاصة بكلية الحاسبات والمعلومات. طوّر معرفتك من خلال اختبارات تفاعلية في جميع المواد.">
     <meta name="author" content="Belal Amr Mohamed">

@@ -71,6 +71,23 @@ export function refreshUI(options = {}) {
     const greeting = hasCustomName ? currentName : "لوحة تحكم المستخدم";
     headerTitle.textContent = greeting;
     headerTitle.setAttribute("data-text", greeting);
+    
+    headerTitle.classList.add("editable-username");
+    headerTitle.title = "انقر لتغيير اسمك";
+    headerTitle.onclick = async () => {
+      const newName = await prompt_user("أدخل اسمك الجديد:", currentName);
+      if (newName !== null) {
+        const trimmed = newName.trim();
+        if (trimmed) {
+          localStorage.setItem("username", trimmed);
+        } else {
+          localStorage.removeItem("username");
+        }
+        refreshUI({ skipNetworkFetches: true });
+        // Let side-menu/avatar Engine know
+        window.dispatchEvent(new Event("storage"));
+      }
+    };
   }
 
   // Setup User Info Modal
@@ -218,7 +235,7 @@ async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, i
          }
        }
 
-       return { role: data.role, isOwner: !!data.isOwner, avatarUrl: data.avatarUrl || null };
+       return { role: data.role, isOwner: !!data.isOwner, avatarUrl: data.avatarUrl || null, displayName: data.displayName || null };
     }
   } catch(e) {}
   return null;
@@ -256,6 +273,8 @@ async function syncProgressToServer() {
         totalQuizzes: user.history ? user.history.length : 0,
         totalBadges: user.badges ? user.badges.length : 0,
         currentLevel: levelInfo.level || 1,
+        displayName: localStorage.getItem('username') || undefined,
+        avatarUrl: localStorage.getItem('quiz_user_avatar') || undefined
       }),
       // keepalive lets this survive a tab-hide/navigate-away without being
       // cancelled mid-flight, since one of the two call sites is exactly that.
@@ -281,6 +300,9 @@ async function setupVisitorView(handle) {
   const statsContainer = document.getElementById("statsContainer");
   if(statsContainer) statsContainer.parentElement.style.display = "none";
   
+  const heatmapCard = document.querySelector(".heatmap-widget-card");
+  if (heatmapCard) heatmapCard.style.display = "none";
+  
   document.getElementById("avatarEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
 
@@ -288,6 +310,9 @@ async function setupVisitorView(handle) {
   if (headerTitle) {
     headerTitle.textContent = handle;
     headerTitle.setAttribute("data-text", handle);
+    headerTitle.classList.remove("editable-username");
+    headerTitle.removeAttribute("title");
+    headerTitle.onclick = null;
   }
 
   // Avatar: render immediately from the server-injected meta tag (no extra
@@ -303,11 +328,53 @@ async function setupVisitorView(handle) {
   // every visitor (that previously mislabeled regular users as admins).
   const visitedRole = await fetchAndRenderAdminStats(handle, refreshToken, true);
 
+  if (visitedRole && visitedRole.displayName) {
+    const headerTitle = document.getElementById("userNameHeader");
+    if (headerTitle) {
+      headerTitle.textContent = visitedRole.displayName;
+      headerTitle.setAttribute("data-text", visitedRole.displayName);
+    }
+  }
+
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
     applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
   }
   if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
     renderVisitorAvatar(visitedRole.avatarUrl, handle);
+  }
+  
+  // Update User Info Modal for Visitor View
+  const showUserInfoBtn = document.getElementById("showUserInfoBtn");
+  if (showUserInfoBtn) {
+    showUserInfoBtn.onclick = () => {
+      document.getElementById("userInfoOverlay").style.display = "flex";
+      document.getElementById("infoModalName").textContent = (visitedRole && visitedRole.displayName) ? visitedRole.displayName : handle;
+      
+      document.getElementById("infoModalAdminSection").style.display = "block";
+      const emailBlock = document.getElementById("infoModalEmail").parentElement;
+      emailBlock.style.display = "none";
+      
+      const handleBlock = document.getElementById("infoModalHandle").parentElement.parentElement;
+      handleBlock.style.display = "flex";
+      document.getElementById("infoModalHandle").textContent = "@" + handle;
+      
+      const copyBtn = document.getElementById("modalCopyLinkBtn");
+      if (copyBtn) {
+        copyBtn.onclick = () => {
+          const url = window.location.origin + "/@" + handle;
+          if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(url).then(() => {
+              const orig = copyBtn.innerHTML;
+              copyBtn.innerHTML = "تم النسخ! ✔️";
+              copyBtn.setAttribute("aria-live", "polite");
+              setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
+            });
+          } else {
+            prompt_user("انسخ الرابط التالي:", url);
+          }
+        };
+      }
+    };
   }
 }
 

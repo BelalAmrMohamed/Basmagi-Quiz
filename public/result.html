@@ -35,6 +35,19 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0088cc">
+
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('__bq_adm');
+          if (t) {
+            var p = JSON.parse(atob(t.split('.')[1]));
+            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

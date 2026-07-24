@@ -23,6 +23,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <script>
+      (function() {
+        try {
+          var t = sessionStorage.getItem('__bq_adm');
+          if (t) {
+            var p = JSON.parse(atob(t.split('.')[1]));
+            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="description" content="أنشئ اختباراتك التفاعلية بسهولة مع دعم الصور والشرح">
     <meta name="apple-mobile-web-app-title" content="إمتحانات بصمجي">
     <meta name="application-name" content="إمتحانات بصمجي">

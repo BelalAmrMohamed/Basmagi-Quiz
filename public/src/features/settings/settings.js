@@ -1,4 +1,4 @@
-// public/src/features/settings/settings.js - Settings page: name, education type, faculty, year, term, quiz style, default mode
+// public/src/features/settings/settings.js - Settings page: education type, faculty, year, term, quiz style, default mode
 
 // Temporary | For performance debugging
 console.log("settings.js loaded successfully")
@@ -14,7 +14,6 @@ import {
   filterFeaturedCourses,
   isUniversityTrack,
 } from "../../shared/filterUtils.js";
-import { validateUsername } from "../../shared/user-name-validation.js";
 
 const AUTOSAVE_DELAY = 800;
 
@@ -307,18 +306,6 @@ async function saveSettingsAuto() {
   isSaving = true;
 
   try {
-    const username = document.getElementById("settingsName")?.value?.trim();
-
-    if (username) {
-      const validation = validateUsername(username);
-      if (!validation.valid) {
-        showFeedback(validation.message, true);
-        isSaving = false;
-        return;
-      }
-      userProfile.setUsername(username);
-    }
-
     const education_type = getEducationType();
     const faculty = document.getElementById("settingsFaculty")?.value;
     const year = document.getElementById("settingsYear")?.value;
@@ -365,20 +352,6 @@ async function saveSettingsAuto() {
 }
 
 function setupAutoSave() {
-  const nameInput = document.getElementById("settingsName");
-  if (nameInput) {
-    nameInput.addEventListener("input", scheduleAutoSave);
-    nameInput.addEventListener("blur", () => {
-      const username = nameInput.value?.trim();
-      if (username) {
-        const validation = validateUsername(username);
-        if (!validation.valid) {
-          showFeedback(validation.message, true);
-        }
-      }
-    });
-  }
-
   [
     "settingsEducationType",
     "settingsFaculty",
@@ -497,9 +470,6 @@ async function init() {
 
   const profile = userProfile.getProfile();
   const education_type = profile.education_type || "University";
-
-  const nameInput = document.getElementById("settingsName");
-  if (nameInput) nameInput.value = profile.username || "";
 
   populateAcademic(
     education_type,

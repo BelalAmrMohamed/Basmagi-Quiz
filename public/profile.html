@@ -495,8 +495,11 @@
                 </div>
 
                 <div class="identity-text">
-                    <h1 id="userNameHeader" class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم">
-                        لوحة تحكم المستخدم</h1>
+                    <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+                        <h1 id="userNameHeader" class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم">
+                            لوحة تحكم المستخدم</h1>
+                        <span id="roleBadge" class="role-badge" style="display: none;"></span>
+                    </div>
                     <button id="showUserInfoBtn" class="user-info-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                         المعلومات
@@ -534,7 +537,7 @@
                 <div class="stat-card">
                     <div class="icon">📚</div>
                     <div class="info">
-                        <span class="label">إجمالي الإختبارات</span>
+                        <span class="label">الاختبارات المُجتازة</span>
                         <span class="value" id="totalQuizzes">0</span>
                     </div>
                 </div>
