@@ -442,26 +442,31 @@
             targets.forEach(function (t) {
                 var img = document.getElementById(t.imgId);
                 if (!img) return;
+                var parent = img.parentElement;
 
-                // INSTANT BADGE INJECTION
+                // Avatar assignment (same as all other pages)
+                if (dataUrl) {
+                    var icon = parent ? parent.querySelector("." + t.iconClass) : null;
+                    img.src = dataUrl;
+                    img.style.display = "";
+                    if (icon) icon.style.display = "none";
+                }
+
+                // INSTANT BADGE INJECTION — synchronous so the badge appears
+                // on the very first paint frame, before avatarEngine.js modules load.
                 try {
-                  if (sessionStorage.getItem('__bq_adm')) {
-                    var parent = img.parentElement;
-                    if (parent && !parent.querySelector('.nav-badge-overlay')) {
-                      parent.style.position = 'relative';
-                      var b = document.createElement('span');
-                      b.className = 'nav-badge-overlay';
-                      b.style.cssText = 'position:absolute; width:16px; height:16px; top:6px; inset-inline-end:6px; border-radius:50%; z-index:10; box-shadow:var(--shadow-sm); border:2px solid var(--color-surface); background-color:var(--color-surface);';
-                      parent.appendChild(b);
-                    }
+                  if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
+                    parent.style.position = 'relative';
+                    var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
+                    var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                    var b = document.createElement('img');
+                    b.className = 'nav-badge-overlay';
+                    b.src = badgeIcon;
+                    b.alt = '';
+                    b.style.cssText = 'position:absolute;width:16px;height:16px;top:3px;right:3px;border-radius:50%;z-index:10;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));display:block;';
+                    parent.appendChild(b);
                   }
                 } catch(e) {}
-
-                if (!dataUrl) return;
-                var icon = img.parentElement ? img.parentElement.querySelector("." + t.iconClass) : null;
-                img.src = dataUrl;
-                img.style.display = "";
-                if (icon) icon.style.display = "none";
             });
         })();
     </script>
