@@ -180,20 +180,12 @@ export default async function handler(req, res) {
   }
 
   if (adminId) {
-    const { data: existingAdmin } = await supabase
-      .from("admin_users")
-      .select("uploaded_quizzes")
-      .eq("id", adminId)
-      .maybeSingle();
-
-    const currentUploads = existingAdmin && typeof existingAdmin.uploaded_quizzes === "number"
-      ? existingAdmin.uploaded_quizzes
-      : 0;
-
-    await supabase
-      .from("admin_users")
-      .update({ uploaded_quizzes: currentUploads + 1 })
-      .eq("id", adminId);
+    // Use an atomic DB-side increment via an RPC for safety under concurrency.
+    try {
+      await supabase.rpc("increment_uploaded_quizzes", { p_admin_id: adminId });
+    } catch (rpcErr) {
+      console.error("Failed to call increment_uploaded_quizzes RPC:", rpcErr.message || rpcErr);
+    }
   }
 
   return res.status(201).json({

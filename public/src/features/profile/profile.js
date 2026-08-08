@@ -375,7 +375,8 @@ async function setupVisitorView(handle) {
   if (showUserInfoBtn) {
     showUserInfoBtn.onclick = () => {
       document.getElementById("userInfoOverlay").style.display = "flex";
-      document.getElementById("infoModalName").textContent = (visitedRole && visitedRole.displayName) ? visitedRole.displayName : handle;
+      // Prefer the server-injected meta/displayName (publicName) when available
+      document.getElementById("infoModalName").textContent = publicName || ((visitedRole && visitedRole.displayName) ? visitedRole.displayName : handle);
       
       document.getElementById("infoModalAdminSection").style.display = "block";
       const emailBlock = document.getElementById("infoModalEmail").parentElement;
@@ -536,7 +537,9 @@ function renderAvatar(user, currentName) {
 }
 
 function renderStats(user) {
-  const levelInfo = gameEngine.calculateLevel(user.totalPoints);
+  // Compute totalPoints from history to keep UI consistent with weekly recap
+  const computedTotalPoints = (user.history || []).reduce((s, h) => s + (h.pointsEarned || 0), 0);
+  const levelInfo = gameEngine.calculateLevel(computedTotalPoints);
 
   // Safely update element helper
   const updateEl = (id, htmlOrText, isHtml = false) => {
@@ -551,7 +554,7 @@ function renderStats(user) {
   };
 
   // Core Stats
-  updateEl("totalPoints", user.totalPoints?.toLocaleString() || 0);
+  updateEl("totalPoints", computedTotalPoints.toLocaleString() || 0);
   updateEl("totalQuizzes", user.history ? user.history.length : 0);
   updateEl("totalBadges", user.badges ? user.badges.length : 0);
   updateEl("currentLevel", levelInfo.level | 0);
@@ -828,3 +831,6 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
     )
     .join("");
 }
+
+// Expose for other modules (quiz result flow) to trigger immediate sync
+window.syncProgressToServer = syncProgressToServer;

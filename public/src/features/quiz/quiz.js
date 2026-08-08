@@ -2529,6 +2529,13 @@ async function finish(skipconfirmationNotification) {
   // Clear quiz session data
   localStorage.removeItem("quiz_start_time");
 
+  // Trigger an immediate sync of owner progress to the DB so shareable
+  // profiles reflect the latest results for visitors. Don't await —
+  // use a fire-and-forget keepalive-capable request.
+  try {
+    if (window.syncProgressToServer) window.syncProgressToServer();
+  } catch (e) {}
+
   window.location.href = "result.html";
 }
 
