@@ -168,7 +168,6 @@ body {
   height: 32px;
   border-radius: 50%;
   color: #fff;
-  margin-inline-start: auto; /* Push to the left in RTL */
   box-shadow: var(--shadow-sm);
   border: 2px solid var(--color-surface);
   cursor: help;

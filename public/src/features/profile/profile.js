@@ -235,7 +235,13 @@ async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, i
          }
        }
 
-       return { role: data.role, isOwner: !!data.isOwner, avatarUrl: data.avatarUrl || null, displayName: data.displayName || null };
+       return { 
+         role: data.role, 
+         isOwner: !!data.isOwner, 
+         avatarUrl: data.avatarUrl || null, 
+         displayName: data.displayName || null,
+         activityHeatmap: data.activityHeatmap || {},
+       };
     }
   } catch(e) {}
   return null;
@@ -301,15 +307,17 @@ async function setupVisitorView(handle) {
   if(statsContainer) statsContainer.parentElement.style.display = "none";
   
   const heatmapCard = document.querySelector(".heatmap-widget-card");
-  if (heatmapCard) heatmapCard.style.display = "none";
+  if (heatmapCard) heatmapCard.style.display = "";
   
   document.getElementById("avatarEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
 
+  const displayNameMeta = document.querySelector('meta[name="admin:display-name"]');
+  const publicName = displayNameMeta && displayNameMeta.content ? displayNameMeta.content : handle;
   const headerTitle = document.getElementById("userNameHeader");
   if (headerTitle) {
-    headerTitle.textContent = handle;
-    headerTitle.setAttribute("data-text", handle);
+    headerTitle.textContent = publicName;
+    headerTitle.setAttribute("data-text", publicName);
     headerTitle.classList.remove("editable-username");
     headerTitle.removeAttribute("title");
     headerTitle.onclick = null;
@@ -341,6 +349,25 @@ async function setupVisitorView(handle) {
   }
   if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
     renderVisitorAvatar(visitedRole.avatarUrl, handle);
+  }
+
+  // If the server returned an activityHeatmap for this visited profile,
+  // render the heatmap by converting the date->count map into a
+  // user.history-like array the existing renderer understands.
+  if (visitedRole && visitedRole.activityHeatmap && Object.keys(visitedRole.activityHeatmap).length > 0) {
+    const map = visitedRole.activityHeatmap;
+    const historyArr = [];
+    Object.keys(map).forEach((date) => {
+      const count = Number(map[date]) || 0;
+      for (let i = 0; i < count; i++) {
+        historyArr.push({ date });
+      }
+    });
+    try {
+      renderActivityHeatmap({ history: historyArr });
+    } catch (e) {
+      console.error("Failed to render visitor heatmap", e);
+    }
   }
   
   // Update User Info Modal for Visitor View
@@ -755,14 +782,14 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
         leaderboardEl.innerHTML = admins
           .map(
             (entry, i) => `
-          <div class="lb-row ${entry.handle === highlightHandle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === highlightHandle ? (visitedHandle ? (entry.display_name || entry.handle) : displayName + " (أنت)") : (entry.display_name || entry.handle)}، ${entry.total_quizzes.toLocaleString()} اختبار">
+          <div class="lb-row ${entry.handle === highlightHandle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === highlightHandle ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)") : (entry.displayName || entry.handle)}، ${entry.totalQuizzes.toLocaleString()} اختبار">
             <span style="flex:1; display:flex; align-items:center; gap:6px;">
               <span style="font-weight:bold; color:var(--color-primary); width:18px;" aria-hidden="true">${i + 1}.</span> 
-              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.display_name || entry.handle}">
-                ${entry.handle === highlightHandle ? (visitedHandle ? (entry.display_name || entry.handle) : displayName + ' (أنت)') : (entry.display_name || entry.handle)}
+              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.displayName || entry.handle}">
+                ${entry.handle === highlightHandle ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + ' (أنت)') : (entry.displayName || entry.handle)}
               </span>
             </span>
-            <strong>${entry.total_quizzes.toLocaleString()} إختبار</strong>
+            <strong>${entry.totalQuizzes.toLocaleString()} إختبار</strong>
           </div>
         `
           )

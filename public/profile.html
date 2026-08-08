@@ -8,7 +8,8 @@
     <link rel="icon" href="favicon.png" type="image/png">
     <link rel="shortcut icon" href="favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <meta name="description" content="الحساب: تتبع مستواك في التعلم عن طريق نظام متكامل، واحفظ الأسئلة التي تريدها، واحصل على تاريخ إمتحاناتك">
+    <meta name="description"
+        content="الحساب: تتبع مستواك في التعلم عن طريق نظام متكامل، واحفظ الأسئلة التي تريدها، واحصل على تاريخ إمتحاناتك">
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:type" content="website">
@@ -17,7 +18,8 @@
     <meta property="og:description"
         content="الحساب: تتبع مستواك في التعلم عن طريق نظام متكامل، واحفظ الأسئلة التي تريدها، واحصل على تاريخ إمتحاناتك">
     <meta property="og:logo" content="https://basmagi-quiz.vercel.app/favicon.png" />
-    <meta property="og:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/profile-thumbnail.png?v=3">
+    <meta property="og:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/profile-thumbnail.png?v=3">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="الحساب | منصة إمتحانات بصمجي">
@@ -30,7 +32,8 @@
     <meta name="twitter:creator" content="@BelalAmrDev">
     <meta name="twitter:title" content="تقدر تتخطّى المستوى الـ 10؟">
     <meta name="twitter:description" content="إختبر قدراتك في الإمتحانات النهائية">
-    <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/profile-thumbnail.png?v=3">
+    <meta name="twitter:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/profile-thumbnail.png?v=3">
     <meta name="twitter:image:alt" content="الحساب | منصة إمتحانات بصمجي">
 
     <!-- PWA Meta Tags -->
@@ -46,16 +49,16 @@
     <meta name="theme-color" content="#030712" media="(prefers-color-scheme: dark)">
 
     <script>
-      (function() {
-        try {
-          var t = sessionStorage.getItem('__bq_adm');
-          if (t) {
-            var p = JSON.parse(atob(t.split('.')[1]));
-            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
-            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
-          }
-        } catch(e) {}
-      })();
+        (function () {
+            try {
+                var t = sessionStorage.getItem('__bq_adm');
+                if (t) {
+                    var p = JSON.parse(atob(t.split('.')[1]));
+                    var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                    document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+                }
+            } catch (e) { }
+        })();
     </script>
 
     <!-- PWA Manifest & Icons -->
@@ -402,8 +405,8 @@
             <span class="bottom-nav-label">الإعدادات</span>
         </a>
 
-        <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more"
-            aria-haspopup="true" aria-expanded="false" aria-controls="sidebar">
+        <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more" aria-haspopup="true"
+            aria-expanded="false" aria-controls="sidebar">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -415,7 +418,7 @@
             </span>
             <span class="bottom-nav-label">المزيد</span>
         </button>
-    </nav>    
+    </nav>
     <!-- End of Bottom Navigation Bar -->
 
     <!-- CRITICAL: Paints the nav avatar synchronously, right where the nav
@@ -455,18 +458,18 @@
                 // INSTANT BADGE INJECTION — synchronous so the badge appears
                 // on the very first paint frame, before avatarEngine.js modules load.
                 try {
-                  if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
-                    parent.style.position = 'relative';
-                    var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
-                    var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
-                    var b = document.createElement('img');
-                    b.className = 'nav-badge-overlay';
-                    b.src = badgeIcon;
-                    b.alt = '';
-                    b.style.cssText = 'position:absolute;width:16px;height:16px;top:3px;right:3px;border-radius:50%;z-index:10;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));display:block;';
-                    parent.appendChild(b);
-                  }
-                } catch(e) {}
+                    if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
+                        parent.style.position = 'relative';
+                        var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
+                        var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                        var b = document.createElement('img');
+                        b.className = 'nav-badge-overlay';
+                        b.src = badgeIcon;
+                        b.alt = '';
+                        b.style.cssText = 'position:absolute;width:16px;height:16px;top:3px;right:3px;border-radius:50%;z-index:10;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));display:block;';
+                        parent.appendChild(b);
+                    }
+                } catch (e) { }
             });
         })();
     </script>
@@ -501,7 +504,12 @@
                         <span id="roleBadge" class="role-badge" style="display: none;"></span>
                     </div>
                     <button id="showUserInfoBtn" class="user-info-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4" />
+                            <path d="M12 8h.01" />
+                        </svg>
                         المعلومات
                     </button>
                     <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
@@ -521,7 +529,7 @@
                             <span id="nextLevelXP">100 XP إلى المستوى التالي</span>
                         </div>
                     </div>
-                    <span id="roleBadge" class="role-badge" style="display:none;"></span>
+                    <span class="role-badge" style="display:none;"></span>
                 </div>
             </div>
 
@@ -684,27 +692,45 @@
         aria-labelledby="userInfoTitle">
         <div class="contact-overlay-card" style="max-width: 400px;">
             <div class="contact-overlay-header" style="justify-content: space-between;">
-                <h2 id="userInfoTitle" style="display: flex; align-items: center; gap: 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg> المعلومات</h2>
-                <button type="button" class="close-overlay-btn" onclick="document.getElementById('userInfoOverlay').style.display='none'" aria-label="إغلاق" style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text); padding: 0 8px;">&times;</button>
+                <h2 id="userInfoTitle" style="display: flex; align-items: center; gap: 8px;"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4" />
+                        <path d="M12 8h.01" />
+                    </svg> المعلومات</h2>
+                <button type="button" class="close-overlay-btn"
+                    onclick="document.getElementById('userInfoOverlay').style.display='none'" aria-label="إغلاق"
+                    style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text); padding: 0 8px;">&times;</button>
             </div>
             <div class="contact-overlay-body" style="text-align: right; direction: rtl; font-size: 0.95rem;">
-                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                <div
+                    style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
                     <strong style="color: var(--color-text-secondary);">الإسم:</strong>
                     <span id="infoModalName" style="font-weight: 700;"></span>
                 </div>
-                
+
                 <div id="infoModalAdminSection" style="display:none;">
-                    <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                    <div
+                        style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
                         <strong style="color: var(--color-text-secondary);">البريد الإلكتروني:</strong>
                         <span id="infoModalEmail" style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
                     </div>
-                    <div style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
+                    <div
+                        style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <strong style="color: var(--color-text-secondary);">رابط الحساب:</strong>
-                            <span id="infoModalHandle" style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
+                            <span id="infoModalHandle"
+                                style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
                         </div>
-                        <button id="modalCopyLinkBtn" class="adm-btn adm-btn-ghost" style="padding: 8px; font-size: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                        <button id="modalCopyLinkBtn" class="adm-btn adm-btn-ghost"
+                            style="padding: 8px; font-size: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                            </svg>
                             نسخ الرابط
                         </button>
                     </div>
@@ -732,8 +758,7 @@
                 <p class="contact-overlay-desc">اختر وسيلة التواصل المفضلة لديك</p>
                 <div class="contact-options">
                     <button class="contact-option-btn contact-whatsapp" title="Message +20 111 848 2193"
-                        aria-label="تواصل عبر واتساب: 2193 848 111 20+"
-                        onclick="contactViaWhatsApp()">
+                        aria-label="تواصل عبر واتساب: 2193 848 111 20+" onclick="contactViaWhatsApp()">
                         <span class="contact-option-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
                                 fill="currentColor" aria-hidden="true">
@@ -747,8 +772,7 @@
                         </span>
                     </button>
                     <button class="contact-option-btn contact-telegram" title="Message @BelalAmrMohamed"
-                        aria-label="تواصل عبر تيليجرام: @BelalAmrMohamed"
-                        onclick="contactViaTelegram()">
+                        aria-label="تواصل عبر تيليجرام: @BelalAmrMohamed" onclick="contactViaTelegram()">
                         <span class="contact-option-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
                                 fill="currentColor" aria-hidden="true">
@@ -811,9 +835,9 @@
                 <div class="avatar-picker-actions">
                     <div class="avatar-dropzone" id="avatarDropzone">
                         <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                                 <path d="M17 8l-5-5-5 5" />
                                 <path d="M12 3v12" />

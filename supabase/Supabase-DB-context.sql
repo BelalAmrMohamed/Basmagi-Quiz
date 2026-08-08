@@ -41,9 +41,11 @@ CREATE TABLE public.admin_users (
   added_by text NOT NULL,
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  total_quizzes integer DEFAULT 0,
+  passed_quizzes integer DEFAULT 0,
   total_badges integer DEFAULT 0,
   current_level integer DEFAULT 1,
+  uploaded_quizzes integer DEFAULT 0,
+  activity_heatmap jsonb DEFAULT '{}'::jsonb,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
 );
 

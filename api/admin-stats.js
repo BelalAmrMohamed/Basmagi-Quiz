@@ -47,13 +47,14 @@ async function handleSync(req, res) {
     return res.status(401).json({ error: "غير مصرح" });
   }
 
-  const { totalPoints, totalQuizzes, totalBadges, currentLevel, avatarUrl, displayName } = req.body || {};
+  const { totalPoints, totalQuizzes, totalBadges, currentLevel, avatarUrl, displayName, activityHeatmap } = req.body || {};
 
   const hasProgressFields =
     totalPoints !== undefined || totalQuizzes !== undefined ||
     totalBadges !== undefined || currentLevel !== undefined;
 
   const isFiniteNonNegative = (n) => typeof n === "number" && Number.isFinite(n) && n >= 0;
+  const isPlainObject = (value) => value && typeof value === "object" && !Array.isArray(value);
 
   const updates = {};
 
@@ -67,9 +68,27 @@ async function handleSync(req, res) {
       return res.status(400).json({ error: "Invalid progress payload" });
     }
     updates.total_points = Math.round(totalPoints);
-    updates.total_quizzes = Math.round(totalQuizzes);
+    updates.passed_quizzes = Math.round(totalQuizzes);
     updates.total_badges = Math.round(totalBadges);
     updates.current_level = Math.round(currentLevel);
+  }
+
+  if (activityHeatmap !== undefined) {
+    if (!isPlainObject(activityHeatmap)) {
+      return res.status(400).json({ error: "Invalid activityHeatmap payload" });
+    }
+    for (const [key, value] of Object.entries(activityHeatmap)) {
+      if (
+        typeof key !== "string" ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(key) ||
+        typeof value !== "number" ||
+        !Number.isFinite(value) ||
+        value < 0
+      ) {
+        return res.status(400).json({ error: "Invalid activityHeatmap payload" });
+      }
+    }
+    updates.activity_heatmap = activityHeatmap;
   }
 
   if (avatarUrl !== undefined) {
@@ -128,8 +147,8 @@ export default async function handler(req, res) {
   if (isLeaderboard) {
     const { data, error } = await supabase
       .from("admin_users")
-      .select("display_name, handle, total_quizzes, current_level")
-      .order("total_quizzes", { ascending: false })
+      .select("display_name, handle, uploaded_quizzes, current_level")
+      .order("uploaded_quizzes", { ascending: false })
       .limit(10);
 
     if (error) {
@@ -146,7 +165,7 @@ export default async function handler(req, res) {
     const normalizedHandle = handle.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
     const { data, error } = await supabase
       .from("admin_users")
-      .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email, avatar_url")
+      .select("id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, uploaded_quizzes, activity_heatmap")
       .ilike("handle", normalizedHandle)
       .maybeSingle();
     adminUser = data;
@@ -168,7 +187,7 @@ export default async function handler(req, res) {
           const normalizedEmail = payload.email.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
           const { data, error } = await supabase
             .from("admin_users")
-            .select("id, display_name, total_points, total_quizzes, total_badges, current_level, handle, email, avatar_url")
+            .select("id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, uploaded_quizzes, activity_heatmap")
             .ilike("email", normalizedEmail)
             .maybeSingle();
           adminUser = data;
@@ -226,15 +245,16 @@ export default async function handler(req, res) {
     // the RLS SELECT policy on admin_users only restricts rows, not columns,
     // so returning email here would make it enumerable via handle. See
     // handoff notes: "Known follow-up" under the RLS fix.
-    uploadedQuizzes: quizzesCount || 0,
+    uploadedQuizzes: typeof adminUser.uploaded_quizzes !== 'undefined' ? adminUser.uploaded_quizzes : quizzesCount || 0,
     reportsCount: reportsCount,
     resolvedReports: resolvedCount || 0,
     totalPoints: adminUser.total_points || 0,
-    totalQuizzes: adminUser.total_quizzes || 0,
+    totalQuizzes: adminUser.passed_quizzes || 0,
     totalBadges: adminUser.total_badges || 0,
     currentLevel: adminUser.current_level || 1,
     avatarUrl: adminUser.avatar_url || null,
     displayName: adminUser.display_name || null,
+    activityHeatmap: adminUser.activity_heatmap || {},
     role,
     isOwner
   });

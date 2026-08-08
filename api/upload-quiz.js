@@ -179,6 +179,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "فشل رفع الاختبار. حاول مجددًا." });
   }
 
+  if (adminId) {
+    const { data: existingAdmin } = await supabase
+      .from("admin_users")
+      .select("uploaded_quizzes")
+      .eq("id", adminId)
+      .maybeSingle();
+
+    const currentUploads = existingAdmin && typeof existingAdmin.uploaded_quizzes === "number"
+      ? existingAdmin.uploaded_quizzes
+      : 0;
+
+    await supabase
+      .from("admin_users")
+      .update({ uploaded_quizzes: currentUploads + 1 })
+      .eq("id", adminId);
+  }
+
   return res.status(201).json({
     success: true,
     id: data.id,

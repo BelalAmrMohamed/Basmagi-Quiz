@@ -69,12 +69,15 @@ export default async function handler(req, res) {
   // (possibly large) data-URL — escapeHtml handles the characters that
   // matter inside a double-quoted attribute (", &, <, >), which is all
   // that's needed here since we're not writing it into a URL context.
+  const displayNameMetaTag = adminData.display_name
+    ? `  <meta name="admin:display-name" content="${escapeHtml(adminData.display_name)}">\n`
+    : "";
   const avatarMetaTag = adminData.avatar_url
     ? `  <meta name="admin:avatar" content="${escapeHtml(adminData.avatar_url)}">\n`
     : "";
   html = html.replace(
     "</head>",
-    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n${avatarMetaTag}</head>`
+    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n${displayNameMetaTag}${avatarMetaTag}</head>`
   );
 
   // Fall back to the handle when display_name hasn't been set (NULL in the
