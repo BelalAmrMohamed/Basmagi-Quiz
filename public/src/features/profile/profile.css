@@ -117,13 +117,13 @@ body {
   font-size: 0.5em;
   vertical-align: middle;
   margin-inline-start: 6px;
-  opacity: 0;
+  display: none;
   color: var(--color-text-secondary);
   transition: opacity 0.2s ease;
 }
 
 .editable-username:hover::after {
-  opacity: 1;
+  display: inline;
 }
 
 .weekly-recap {
@@ -423,7 +423,6 @@ body {
 
 .history-item {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
@@ -436,6 +435,10 @@ body {
     border-color 0.15s ease;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border-light);
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "info   score"
+    "info   actions";
 }
 
 .history-item:hover {
@@ -448,6 +451,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  grid-area: info;
 }
 
 .history-info h4 {
@@ -469,8 +473,11 @@ body {
 .history-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   flex-shrink: 0;
+  grid-area: actions;
+  justify-self: end;
 }
 
 /* Score pill: compact fixed-width badge instead of a bulky rectangle */
@@ -1080,26 +1087,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     font-size: 1.1rem;
   }
 
-  /* Score pill and actions can wrap to a second line on very narrow
-     screens rather than shrinking icon buttons below a tappable size. */
-  .history-item {
-    grid-template-columns: 1fr auto;
-    grid-template-areas:
-      "info   score"
-      "info   actions";
-  }
-
-  .history-info {
-    grid-area: info;
-  }
-
   .history-score {
     grid-area: score;
-    justify-self: end;
-  }
-
-  .history-actions {
-    grid-area: actions;
     justify-self: end;
   }
 }

@@ -30,15 +30,13 @@
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-    </url>
-    <url>
+  <url>
     <loc>https://basmagi-quiz.vercel.app/privacy-policy.html</loc>
     <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-    </url>
-    <url>
+  <url>
     <loc>https://basmagi-quiz.vercel.app/terms-of-service.html</loc>
     <lastmod>2026-06-29</lastmod>
     <changefreq>weekly</changefreq>

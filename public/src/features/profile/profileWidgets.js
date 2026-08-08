@@ -238,7 +238,7 @@ export function renderFlaggedQuestions(user, examList) {
         <div class="history-actions">
           <a href="/q/${examId}?startAt=${qIdx}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">مراجعة السؤال</a>
           <button class="unstar-btn" onclick="unflagQuestion('${examId}', ${qIdx})" aria-label="إزالة العلامة">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2 20 20"/><path d="M13 3a2 2 0 0 1 2 2v.5" /><path d="M20.42 20.42A3 3 0 0 1 18 22H6a3 3 0 0 1-3-3V6a3 3 0 0 1 1.58-2.64" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>
           </button>
         </div>
       </div>`;

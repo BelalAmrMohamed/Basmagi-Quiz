@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   // for any admin/dev who never set a display name.
   const displayLabel = adminData.display_name || adminData.handle;
 
-  const title = `${displayLabel} | منصة إمتحانات بصمجي`;
+  const title = displayLabel;
   const description = `الصفحة الشخصية للمشرف ${displayLabel} على منصة إمتحانات بصمجي`;
   const canonicalUrl = `${SITE_ORIGIN}/@${encodeURIComponent(cleanHandle)}`;
 
