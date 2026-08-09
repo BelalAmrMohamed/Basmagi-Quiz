@@ -14,6 +14,78 @@
 import { avatarEngine } from "../../shared/avatarEngine.js";
 import { gameEngine } from "../../shared/gameEngine.js";
 
+// ==================== Shared hover-card tooltip ====================
+// One tooltip element lives in <body> and is repositioned/repopulated on
+// hover — see the big comment on .lb-hover-card in profile.css for why
+// this can't just be a per-row `position: absolute` child anymore.
+
+let tooltipEl = null;
+
+function getTooltipEl() {
+  if (tooltipEl) return tooltipEl;
+  tooltipEl = document.createElement("div");
+  tooltipEl.className = "lb-hover-card";
+  tooltipEl.setAttribute("role", "tooltip");
+  document.body.appendChild(tooltipEl);
+  return tooltipEl;
+}
+
+function positionTooltip(anchorEl) {
+  const tip = getTooltipEl();
+  const anchorRect = anchorEl.getBoundingClientRect();
+  // Measure after content is set but before showing, so offsetWidth/Height
+  // reflect the current card's real size (lore cards are wider than stat
+  // cards, so a stale size from the previous row would misplace this one).
+  tip.style.visibility = "hidden";
+  tip.classList.add("is-visible");
+  const tipRect = tip.getBoundingClientRect();
+  tip.classList.remove("is-visible");
+  tip.style.visibility = "";
+
+  const gap = 10;
+  const viewportPad = 8;
+
+  let top = anchorRect.top - tipRect.height - gap;
+  let placement = "top";
+  if (top < viewportPad) {
+    // Not enough room above (near the top of the viewport, e.g. inside
+    // a scrolled .profile-rail) — flip to below the avatar instead.
+    top = anchorRect.bottom + gap;
+    placement = "bottom";
+  }
+
+  let left = anchorRect.left + anchorRect.width / 2 - tipRect.width / 2;
+  left = Math.max(viewportPad, Math.min(left, window.innerWidth - tipRect.width - viewportPad));
+
+  tip.style.top = `${Math.round(top)}px`;
+  tip.style.left = `${Math.round(left)}px`;
+  tip.setAttribute("data-placement", placement);
+}
+
+// Wires hover/focus on a single avatar element to show the shared
+// tooltip with the given inner HTML. Call once per row after inserting
+// it into the DOM (leaderboard rows are rebuilt via innerHTML, so this
+// runs after the fact rather than via inline event attributes).
+export function attachHoverCard(anchorEl, innerHtml, extraClass = "") {
+  if (!anchorEl) return;
+
+  const show = () => {
+    const tip = getTooltipEl();
+    tip.className = `lb-hover-card ${extraClass}`.trim();
+    tip.innerHTML = innerHtml;
+    positionTooltip(anchorEl);
+    tip.classList.add("is-visible");
+  };
+  const hide = () => {
+    if (tooltipEl) tooltipEl.classList.remove("is-visible");
+  };
+
+  anchorEl.addEventListener("mouseenter", show);
+  anchorEl.addEventListener("mouseleave", hide);
+  anchorEl.addEventListener("focus", show);
+  anchorEl.addEventListener("blur", hide);
+}
+
 // ==================== Bot identities ====================
 
 const BOT_PALETTE = [
@@ -88,7 +160,9 @@ export function loreForBot(name) {
 
 // ==================== Admin identities ====================
 
-// Builds the small hover card shown for a real admin leaderboard row.
+// Builds the inner HTML for a real admin's hover card (the outer
+// .lb-hover-card element itself is the single shared tooltip — see
+// attachHoverCard above — so this only returns its contents).
 // entry: { handle, displayName, totalQuizzes, currentLevel, avatarUrl? }
 export function adminHoverCardHtml(entry) {
   const name = entry.displayName || entry.handle;
@@ -97,14 +171,12 @@ export function adminHoverCardHtml(entry) {
   const points = typeof entry.totalPoints === "number" ? entry.totalPoints.toLocaleString() : null;
 
   return `
-    <div class="lb-hover-card" role="tooltip">
-      <div class="lb-hover-name">${name}</div>
-      <div class="lb-hover-stats">
-        <span class="lb-hover-stat"><strong>${level}</strong> المستوى</span>
-        <span class="lb-hover-stat"><strong>${quizzes}</strong> اختبار مرفوع</span>
-        ${points !== null ? `<span class="lb-hover-stat"><strong>${points}</strong> نقطة</span>` : ""}
-      </div>
-    </div>`;
+    <span class="lb-hover-name">${name}</span>
+    <span class="lb-hover-stats">
+      <span class="lb-hover-stat"><strong>${level}</strong> المستوى</span>
+      <span class="lb-hover-stat"><strong>${quizzes}</strong> اختبار مرفوع</span>
+      ${points !== null ? `<span class="lb-hover-stat"><strong>${points}</strong> نقطة</span>` : ""}
+    </span>`;
 }
 
 export function adminAvatarUrl(entry) {

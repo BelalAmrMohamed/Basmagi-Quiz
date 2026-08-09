@@ -446,6 +446,7 @@ body {
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: 4px;
+  inset-inline-end: 4px;
   transform: translateY(-50%);
   background: var(--color-surface);
   padding-inline: 10px;
@@ -454,6 +455,11 @@ body {
   letter-spacing: 0.03em;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
+  width: fit-content;
+  max-width: calc(100% - 8px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #adminStatsGrid::after {
@@ -471,14 +477,21 @@ body {
 
 @media (max-width: 768px) {
   #adminStatsGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 10px;
+  }
+
+  /* 3 admin cards over 2 columns leaves a lone card on its own row —
+     let it span both columns instead of sitting stranded on one side. */
+  #adminStatsGrid .stat-card:last-child {
+    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 480px) {
   #adminStatsGrid {
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
   #adminStatsGrid .stat-card {
     padding: 10px;
@@ -869,14 +882,15 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   transform: scale(1.1);
 }
 
-/* Hover card: hidden by default, shown as a small floating panel above
-   the avatar. Pointer-events none while hidden so it never blocks the
-   row's own click/hover target. */
+/* Hover card: a single shared tooltip element, appended directly to
+   <body> and driven by JS (see leaderboardIdentity.js's attachHoverCard),
+   rather than one `position: absolute` card per row. .profile-rail
+   scrolls (overflow-y: auto), and an absolutely-positioned descendant
+   can never escape a scrolling ancestor's clipping box no matter its
+   z-index — so a per-row card was always going to get cut off there.
+   `position: fixed` on a body-level element sidesteps that entirely. */
 .lb-hover-card {
-  position: absolute;
-  inset-inline-start: 50%;
-  inset-block-end: calc(100% + 10px);
-  transform: translateX(50%) translateY(4px);
+  position: fixed;
   min-width: 180px;
   max-width: 220px;
   background: var(--color-surface);
@@ -884,33 +898,37 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
   padding: 12px 14px;
-  z-index: 20;
+  z-index: 1000;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease, transform 0.15s ease;
   text-align: start;
+  transform: translateY(4px);
 }
 
-[dir="rtl"] .lb-hover-card,
-.lb-hover-card {
-  inset-inline-start: 50%;
-}
-
-.lb-avatar-hover:hover .lb-hover-card,
-.lb-avatar-hover:focus-within .lb-hover-card {
+.lb-hover-card.is-visible {
   opacity: 1;
-  transform: translateX(50%) translateY(0);
-  pointer-events: auto;
+  transform: translateY(0);
 }
 
 .lb-hover-card::after {
   content: "";
   position: absolute;
-  inset-block-start: 100%;
   inset-inline-start: 50%;
   transform: translateX(50%);
   border: 6px solid transparent;
+}
+
+/* Arrow direction flips depending on whether JS placed the card above
+   or below the avatar (near the top of the viewport, below is used). */
+.lb-hover-card[data-placement="top"]::after {
+  inset-block-start: 100%;
   border-top-color: var(--color-surface);
+}
+
+.lb-hover-card[data-placement="bottom"]::after {
+  inset-block-end: 100%;
+  border-bottom-color: var(--color-surface);
 }
 
 .lb-hover-name {
@@ -1011,28 +1029,11 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   min-width: 0;
 }
 
-.heatmap-axis {
-  display: flex;
-  flex-direction: row-reverse;
-  gap: 4px;
-  padding-inline-start: 26px;
-  margin-bottom: 6px;
-  font-size: 0.66rem;
-  font-weight: 600;
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.02em;
-}
-
-.heatmap-axis-cell {
-  flex-shrink: 0;
-  white-space: nowrap;
-  overflow: visible;
-}
-
 .heatmap-body {
   display: flex;
   flex-direction: row-reverse;
   gap: 8px;
+  min-width: 0;
 }
 
 .heatmap-daylabels {
@@ -1051,6 +1052,13 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   height: var(--heatmap-cell);
   display: flex;
   align-items: center;
+}
+
+/* Matches the month-label row's height at the top of each .heatmap-col,
+   so the day-letter rows beneath it still line up with the grid's cell
+   rows despite the grid having one extra header cell per column. */
+.heatmap-daylabels-spacer {
+  height: 14px !important;
 }
 
 .heatmap-grid {
@@ -1097,6 +1105,16 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   flex-direction: column;
   gap: 4px;
   scroll-snap-align: start;
+}
+
+.heatmap-col-label {
+  height: 14px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  overflow: visible;
+  line-height: 1;
 }
 
 .heatmap-cell {

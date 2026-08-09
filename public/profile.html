@@ -520,22 +520,7 @@
                     <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
                 </div>
 
-                <div class="identity-level" aria-label="مستوى المستخدم">
-                    <div class="level-badge" id="levelBadge">
-                        <span class="level-number">1</span>
-                    </div>
-                    <div class="identity-level-info">
-                        <h3 id="levelTitle">مبتدئ</h3>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill" id="levelProgressBar"></div>
-                        </div>
-                        <div class="progress-stats">
-                            <span id="currentXP">0 XP</span>
-                            <span id="nextLevelXP">100 XP إلى المستوى التالي</span>
-                        </div>
-                    </div>
-                    <span class="role-badge" style="display:none;"></span>
-                </div>
+                <div class="identity-level" id="identityLevel" aria-label="مستوى المستخدم"></div>
             </div>
 
             <!-- Enhanced Stats Grid -->
@@ -901,6 +886,7 @@
         import { initPWA } from "./src/shared/pwa-manager.js";
         document.addEventListener("DOMContentLoaded", () => initPWA());
     </script>
+    <script defer src="/_vercel/insights/script.js"></script>
 </body>
 
 </html>

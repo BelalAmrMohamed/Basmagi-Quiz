@@ -67,32 +67,33 @@ export function renderActivityHeatmap(user, weeks = 20) {
 
   // Stagger each cell's enter animation slightly by column so the grid
   // draws itself left-to-right instead of popping in all at once.
-  const cellsHtml = columns
-    .map(
-      (col, colIdx) => `
-      <div class="heatmap-col">
-        ${col
-          .map((d, rowIdx) => {
-            const level = levelFor(d.count);
-            const label = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
-            const delay = (colIdx * 7 + rowIdx) * 4;
-            return `<span class="heatmap-cell" data-level="${level}" title="${label}" aria-label="${label}" style="animation-delay:${delay}ms"></span>`;
-          })
-          .join("")}
-      </div>`,
-    )
-    .join("");
-
-  // Month axis: one label per column where that column is the first to
-  // cross into a new month, so labels don't repeat every week.
+  // Each column also carries its own month-axis label as its first
+  // child, so the label and its cells scroll/space together as one
+  // flex item — a separate axis row with independent gap/scroll easily
+  // drifts out of alignment with the grid beneath it as columns build up.
   let lastMonth = null;
-  const axisHtml = columns
-    .map((col) => {
+  const cellsHtml = columns
+    .map((col, colIdx) => {
       const firstOfMonth = col.find((d) => d.date.getDate() <= 7);
       const monthIdx = firstOfMonth ? firstOfMonth.date.getMonth() : null;
       const showLabel = monthIdx !== null && monthIdx !== lastMonth;
       if (showLabel) lastMonth = monthIdx;
-      return `<span class="heatmap-axis-cell" style="width:var(--heatmap-cell)">${showLabel ? MONTH_LABELS_AR[monthIdx].slice(0, 3) : ""}</span>`;
+      const axisLabel = showLabel ? MONTH_LABELS_AR[monthIdx].slice(0, 3) : "";
+
+      const cellSpans = col
+        .map((d, rowIdx) => {
+          const level = levelFor(d.count);
+          const label = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
+          const delay = (colIdx * 7 + rowIdx) * 4;
+          return `<span class="heatmap-cell" data-level="${level}" title="${label}" aria-label="${label}" style="animation-delay:${delay}ms"></span>`;
+        })
+        .join("");
+
+      return `
+      <div class="heatmap-col">
+        <span class="heatmap-col-label">${axisLabel}</span>
+        ${cellSpans}
+      </div>`;
     })
     .join("");
 
@@ -103,10 +104,12 @@ export function renderActivityHeatmap(user, weeks = 20) {
   const activeDays = days.filter((d) => d.count > 0).length;
 
   container.innerHTML = `
-    <div class="heatmap-axis">${axisHtml}</div>
     <div class="heatmap-body">
+      <div class="heatmap-daylabels">
+        <span class="heatmap-daylabels-spacer"></span>
+        ${dayLabelsHtml}
+      </div>
       <div class="heatmap-grid">${cellsHtml}</div>
-      <div class="heatmap-daylabels">${dayLabelsHtml}</div>
     </div>
     <div class="heatmap-footer">
       <span><strong>${activeDays}</strong> يوم نشاط خلال آخر ${weeks} أسبوع</span>
