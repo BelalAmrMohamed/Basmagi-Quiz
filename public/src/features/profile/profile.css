@@ -1046,27 +1046,30 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 #activityHeatmap {
-  --heatmap-cell: clamp(11px, 1.9vw, 18px);
+  /* Compact year grid: ~53 weeks need to scroll, but cells stay dense
+     enough that most of a desktop card shows ~8–10 months at once. */
+  --heatmap-cell: clamp(9px, 1.35vw, 12px);
+  --heatmap-gap: 2px;
   min-width: 0;
 }
 
 .heatmap-body {
   display: flex;
   flex-direction: row-reverse;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .heatmap-daylabels {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--heatmap-gap);
   padding-top: 2px;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   flex-shrink: 0;
-  width: 3.6rem;
+  width: 3.25rem;
   line-height: 1.1;
 }
 
@@ -1082,25 +1085,24 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
    so the day-letter rows beneath it still line up with the grid's cell
    rows despite the grid having one extra header cell per column. */
 .heatmap-daylabels-spacer {
-  height: 18px !important;
+  height: 16px !important;
 }
 
 .heatmap-grid {
   --edge-fade: 18px;
   display: flex;
   flex-direction: row-reverse;
-  gap: 4px;
+  gap: var(--heatmap-gap);
   overflow-x: auto;
   overflow-y: hidden;
   padding-block-end: 6px;
   padding-block-start: 2px;
   scroll-snap-type: x proximity;
   flex: 1;
-  /* Sparse data: fewer columns than the card can hold → center them
-     instead of leaving a lopsided empty gap on one side. When there are
-     more columns than fit, this rule is harmless (flex just left-aligns
-     within the scroll track as usual). */
-  justify-content: safe center;
+  /* Year grid is always wider than the card — pin to the start edge
+     (visual right in RTL) so Jan isn't lost in a centered mid-year view.
+     JS then scrolls today's column into view after render. */
+  justify-content: flex-start;
   -webkit-mask-image: linear-gradient(
     to var(--fade-direction, left),
     transparent 0,
@@ -1125,27 +1127,45 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .heatmap-col {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--heatmap-gap);
   scroll-snap-align: start;
+  /* Lock width to the cell — full Arabic month names must NOT stretch
+     a single week column (that was creating huge empty gaps between months). */
+  width: var(--heatmap-cell);
+  flex: 0 0 var(--heatmap-cell);
 }
 
 .heatmap-col-label {
-  height: 18px;
-  font-size: 0.68rem;
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  height: 16px;
+  font-size: 0.62rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   white-space: nowrap;
   overflow: visible;
   line-height: 1;
-  min-width: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Reserve label row space inside the column without letting the text
+   contribute to the column's flex width. */
+.heatmap-col::before {
+  content: "";
+  display: block;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .heatmap-cell {
   width: var(--heatmap-cell);
   height: var(--heatmap-cell);
-  border-radius: 5px;
+  border-radius: 3px;
   background: var(--color-background-secondary);
   display: inline-block;
   flex-shrink: 0;

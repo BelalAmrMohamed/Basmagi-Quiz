@@ -112,6 +112,7 @@ export function renderActivityHeatmap(user) {
   // child, so the label and its cells scroll/space together as one
   // flex item — a separate axis row with independent gap/scroll easily
   // drifts out of alignment with the grid beneath it as columns build up.
+  const todayKey = dateKey(today);
   let lastMonth = null;
   const cellsHtml = columns
     .map((col, colIdx) => {
@@ -127,9 +128,11 @@ export function renderActivityHeatmap(user) {
         }
       }
 
+      const isCurrentWeek = col.some((d) => d.key === todayKey);
+
       const cellSpans = col
         .map((d, rowIdx) => {
-          const delay = (colIdx * 7 + rowIdx) * 4;
+          const delay = Math.min((colIdx * 7 + rowIdx) * 3, 900);
           if (d.future) {
             return `<span class="heatmap-cell heatmap-cell-empty" data-level="0" style="animation-delay:${delay}ms"></span>`;
           }
@@ -140,7 +143,7 @@ export function renderActivityHeatmap(user) {
         .join("");
 
       return `
-      <div class="heatmap-col">
+      <div class="heatmap-col${isCurrentWeek ? " is-current-week" : ""}">
         <span class="heatmap-col-label">${axisLabel}</span>
         ${cellSpans}
       </div>`;
@@ -183,6 +186,20 @@ export function renderActivityHeatmap(user) {
     const date = new Date(y, m - 1, day);
     attachHoverCard(cell, heatmapHoverHtml(date, count), "heatmap-hover-card");
   });
+
+  // Bring the current week into view so Jan–Apr aren't "missing" just
+  // because the year strip starts scrolled to the visual middle.
+  const grid = container.querySelector(".heatmap-grid");
+  const currentWeek = container.querySelector(".heatmap-col.is-current-week");
+  if (grid && currentWeek) {
+    requestAnimationFrame(() => {
+      const gridRect = grid.getBoundingClientRect();
+      const colRect = currentWeek.getBoundingClientRect();
+      const delta =
+        colRect.left + colRect.width / 2 - (gridRect.left + gridRect.width / 2);
+      grid.scrollLeft += delta;
+    });
+  }
 }
 
 // ==================== Category Mastery ====================
