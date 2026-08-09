@@ -205,7 +205,7 @@ export default async function handler(req, res) {
   const ownerEmails = getOwnerEmails();
   const isOwner = !!(adminUser.email && ownerEmails.includes(adminUser.email.trim().toLowerCase()));
   // Every row in admin_users is, by schema/naming, an admin — see
-  // Supabase-DB-context.sql. Owners are additionally admins.
+  // Database-Schema.sql. Owners are additionally admins.
   const role = "admin";
 
 
