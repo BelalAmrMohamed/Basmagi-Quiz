@@ -20,6 +20,10 @@ import { gameEngine } from "../../shared/gameEngine.js";
 // this can't just be a per-row `position: absolute` child anymore.
 
 let tooltipEl = null;
+let hideTimer = null;
+let tipListenersBound = false;
+
+const HIDE_DELAY_MS = 180;
 
 function getTooltipEl() {
   if (tooltipEl) return tooltipEl;
@@ -28,6 +32,22 @@ function getTooltipEl() {
   tooltipEl.setAttribute("role", "tooltip");
   document.body.appendChild(tooltipEl);
   return tooltipEl;
+}
+
+function clearHideTimer() {
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+}
+
+function scheduleHide() {
+  clearHideTimer();
+  hideTimer = setTimeout(() => {
+    if (!tooltipEl) return;
+    tooltipEl.classList.remove("is-visible", "is-interactive");
+    hideTimer = null;
+  }, HIDE_DELAY_MS);
 }
 
 function positionTooltip(anchorEl) {
@@ -62,22 +82,45 @@ function positionTooltip(anchorEl) {
   tip.setAttribute("data-placement", placement);
 }
 
+function ensureTipHoverListeners() {
+  if (tipListenersBound) return;
+  tipListenersBound = true;
+  const tip = getTooltipEl();
+  // Keep the card open while the pointer moves from the avatar onto a
+  // clickable link inside the tip (admin profile CTA).
+  tip.addEventListener("mouseenter", clearHideTimer);
+  tip.addEventListener("mouseleave", scheduleHide);
+}
+
 // Wires hover/focus on a single avatar element to show the shared
 // tooltip with the given inner HTML. Call once per row after inserting
 // it into the DOM (leaderboard rows are rebuilt via innerHTML, so this
 // runs after the fact rather than via inline event attributes).
-export function attachHoverCard(anchorEl, innerHtml, extraClass = "") {
+//
+// When interactive is true (admin cards with a profile link), the tip
+// accepts pointer events and hides on a short delay so the user can
+// reach the link.
+export function attachHoverCard(anchorEl, innerHtml, extraClass = "", { interactive = false } = {}) {
   if (!anchorEl) return;
 
+  ensureTipHoverListeners();
+
   const show = () => {
+    clearHideTimer();
     const tip = getTooltipEl();
     tip.className = `lb-hover-card ${extraClass}`.trim();
+    if (interactive) tip.classList.add("is-interactive");
     tip.innerHTML = innerHtml;
     positionTooltip(anchorEl);
     tip.classList.add("is-visible");
   };
   const hide = () => {
-    if (tooltipEl) tooltipEl.classList.remove("is-visible");
+    if (interactive) {
+      scheduleHide();
+    } else if (tooltipEl) {
+      clearHideTimer();
+      tooltipEl.classList.remove("is-visible", "is-interactive");
+    }
   };
 
   anchorEl.addEventListener("mouseenter", show);
@@ -163,12 +206,14 @@ export function loreForBot(name) {
 // Builds the inner HTML for a real admin's hover card (the outer
 // .lb-hover-card element itself is the single shared tooltip — see
 // attachHoverCard above — so this only returns its contents).
-// entry: { handle, displayName, totalQuizzes, currentLevel, avatarUrl? }
+// entry: { handle, displayName, totalQuizzes, currentLevel, avatarUrl?, totalPoints? }
 export function adminHoverCardHtml(entry) {
   const name = entry.displayName || entry.handle;
   const level = entry.currentLevel || 1;
   const quizzes = (entry.totalQuizzes || 0).toLocaleString();
   const points = typeof entry.totalPoints === "number" ? entry.totalPoints.toLocaleString() : null;
+  const handle = (entry.handle || "").replace(/^@/, "");
+  const profileHref = handle ? `/@${encodeURIComponent(handle)}` : null;
 
   return `
     <span class="lb-hover-name">${name}</span>
@@ -176,7 +221,8 @@ export function adminHoverCardHtml(entry) {
       <span class="lb-hover-stat"><strong>${level}</strong> المستوى</span>
       <span class="lb-hover-stat"><strong>${quizzes}</strong> اختبار مرفوع</span>
       ${points !== null ? `<span class="lb-hover-stat"><strong>${points}</strong> نقطة</span>` : ""}
-    </span>`;
+    </span>
+    ${profileHref ? `<a class="lb-hover-profile-link" href="${profileHref}">عرض الملف الشخصي</a>` : ""}`;
 }
 
 export function adminAvatarUrl(entry) {

@@ -8,8 +8,23 @@ import { gameEngine, BADGES } from "../../shared/gameEngine.js";
 // ==================== Activity Heatmap ====================
 // Built entirely from user.history[].date - no new data model needed.
 
-function dateKey(d) {
-  return d.toISOString().slice(0, 10);
+import { attachHoverCard } from "./leaderboardIdentity.js";
+
+// Local calendar YYYY-MM-DD — not UTC via toISOString — so Egypt (UTC+3)
+// midnight cells and history timestamps land on the same day key.
+export function dateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const d2 = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d2}`;
+}
+
+function heatmapHoverHtml(date, count) {
+  const dateLabel = date.toLocaleDateString("ar-EG");
+  const countLabel = `${count} ${count === 1 ? "اختبار" : "اختبارات"}`;
+  return `
+    <span class="heatmap-hover-date">${dateLabel}</span>
+    <span class="heatmap-hover-count">${countLabel}</span>`;
 }
 
 const WEEKDAY_LABELS_SAT_FIRST = ["س", "ح", "ن", "ث", "ر", "خ", "ج"]; // Sat..Fri initials
@@ -43,9 +58,20 @@ export function renderActivityHeatmap(user, weeks = 20) {
 
   const days = [];
   const cursor = new Date(start);
-  while (cursor <= today) {
+  
+  // Pad the grid up to Friday (end of week)
+  const endDate = new Date(today);
+  while (endDate.getDay() !== 5) {
+    endDate.setDate(endDate.getDate() + 1);
+  }
+
+  while (cursor <= endDate) {
     const key = dateKey(cursor);
-    days.push({ key, count: counts[key] || 0, date: new Date(cursor) });
+    if (cursor > today) {
+      days.push({ key, count: 0, date: new Date(cursor), future: true });
+    } else {
+      days.push({ key, count: counts[key] || 0, date: new Date(cursor) });
+    }
     cursor.setDate(cursor.getDate() + 1);
   }
 
@@ -82,10 +108,14 @@ export function renderActivityHeatmap(user, weeks = 20) {
 
       const cellSpans = col
         .map((d, rowIdx) => {
+          if (d.future) {
+            const delay = (colIdx * 7 + rowIdx) * 4;
+            return `<span class="heatmap-cell" data-level="0" style="animation-delay:${delay}ms"></span>`;
+          }
           const level = levelFor(d.count);
-          const label = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
+          const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
           const delay = (colIdx * 7 + rowIdx) * 4;
-          return `<span class="heatmap-cell" data-level="${level}" title="${label}" aria-label="${label}" style="animation-delay:${delay}ms"></span>`;
+          return `<span class="heatmap-cell js-has-hover" data-level="${level}" data-date="${d.key}" data-count="${d.count}" aria-label="${ariaLabel}" style="animation-delay:${delay}ms"></span>`;
         })
         .join("");
 
@@ -123,6 +153,16 @@ export function renderActivityHeatmap(user, weeks = 20) {
         <span>أكثر</span>
       </div>
     </div>`;
+
+  container.querySelectorAll(".heatmap-cell.js-has-hover").forEach((cell) => {
+    const key = cell.getAttribute("data-date");
+    const count = Number(cell.getAttribute("data-count")) || 0;
+    if (!key) return;
+    // Reconstruct a local Date from the YYYY-MM-DD key for the tooltip label.
+    const [y, m, day] = key.split("-").map(Number);
+    const date = new Date(y, m - 1, day);
+    attachHoverCard(cell, heatmapHoverHtml(date, count), "heatmap-hover-card");
+  });
 }
 
 // ==================== Category Mastery ====================

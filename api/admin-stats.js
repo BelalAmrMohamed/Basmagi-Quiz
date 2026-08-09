@@ -147,7 +147,7 @@ export default async function handler(req, res) {
   if (isLeaderboard) {
     const { data, error } = await supabase
       .from("admin_users")
-      .select("display_name, handle, uploaded_quizzes, current_level")
+      .select("display_name, handle, uploaded_quizzes, current_level, avatar_url, total_points")
       .order("uploaded_quizzes", { ascending: false })
       .limit(10);
 
@@ -165,6 +165,8 @@ export default async function handler(req, res) {
       displayName: row.display_name || null,
       totalQuizzes: row.uploaded_quizzes || 0,
       currentLevel: row.current_level || 1,
+      avatarUrl: row.avatar_url || null,
+      totalPoints: row.total_points || 0,
     }));
 
     return res.status(200).json(leaderboard);

@@ -10,6 +10,7 @@ import {
   renderCategoryMastery,
   renderNextBadges,
   renderFlaggedQuestions,
+  dateKey,
 } from "./profileWidgets.js";
 
 import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications/notifications.js";
@@ -20,6 +21,7 @@ import {
   loreForBot,
   adminHoverCardHtml,
   adminAvatarUrl,
+  attachHoverCard,
 } from "./leaderboardIdentity.js";
 
 let examList = [];
@@ -286,7 +288,7 @@ async function syncProgressToServer() {
   (user.history || []).forEach((h) => {
     const d = new Date(h.date);
     if (isNaN(d)) return;
-    const key = d.toISOString().slice(0, 10);
+    const key = dateKey(d);
     activityHeatmap[key] = (activityHeatmap[key] || 0) + 1;
   });
 
@@ -803,7 +805,6 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
             <span class="lb-rank" aria-hidden="true">${i + 1}</span>
             <span class="lb-avatar-hover">
               <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
-              ${adminHoverCardHtml(entry)}
             </span>
             <span class="lb-name" title="${entry.displayName || entry.handle}">${label}</span>
             <strong class="lb-metric">${entry.totalQuizzes.toLocaleString()} إختبار</strong>
@@ -811,6 +812,13 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
         `;
           })
           .join("");
+
+        leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
+          const avatarHover = row.querySelector(".lb-avatar-hover");
+          if (avatarHover) {
+            attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", { interactive: true });
+          }
+        });
         return;
       }
     } catch (err) {}
@@ -850,22 +858,29 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
       }
 
       const avatar = generateBotAvatarDataUrl(entry.name);
-      const lore = loreForBot(entry.name);
       return `
     <div class="lb-row lb-row-avatar" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
       <span class="lb-rank" aria-hidden="true">${entry.rank}</span>
       <span class="lb-avatar-hover">
         <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
-        <span class="lb-hover-card lb-hover-card-lore" role="tooltip">
-          <span class="lb-hover-name">${entry.name}</span>
-          <span class="lb-hover-lore">${lore}</span>
-        </span>
       </span>
       <span class="lb-name">${entry.name}</span>
       <strong class="lb-metric">${entry.points.toLocaleString()} نقطة</strong>
     </div>`;
     })
     .join("");
+
+  leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
+    const entry = rankedList[i];
+    if (entry.isUser) return;
+    const avatarHover = row.querySelector(".lb-avatar-hover");
+    if (avatarHover) {
+      attachHoverCard(avatarHover, `
+        <span class="lb-hover-name">${entry.name}</span>
+        <span class="lb-hover-lore">${loreForBot(entry.name)}</span>
+      `, "lb-hover-card-lore");
+    }
+  });
 }
 
 // Expose for other modules (quiz result flow) to trigger immediate sync
