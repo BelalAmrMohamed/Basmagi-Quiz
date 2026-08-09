@@ -12,7 +12,13 @@ function dateKey(d) {
   return d.toISOString().slice(0, 10);
 }
 
-export function renderActivityHeatmap(user, weeks = 12) {
+const WEEKDAY_LABELS_SAT_FIRST = ["س", "ح", "ن", "ث", "ر", "خ", "ج"]; // Sat..Fri initials
+const MONTH_LABELS_AR = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+];
+
+export function renderActivityHeatmap(user, weeks = 20) {
   const container = document.getElementById("activityHeatmap");
   if (!container) return;
 
@@ -59,27 +65,51 @@ export function renderActivityHeatmap(user, weeks = 12) {
     columns.push(days.slice(i, i + 7));
   }
 
+  // Stagger each cell's enter animation slightly by column so the grid
+  // draws itself left-to-right instead of popping in all at once.
   const cellsHtml = columns
     .map(
-      (col) => `
+      (col, colIdx) => `
       <div class="heatmap-col">
         ${col
-          .map((d) => {
+          .map((d, rowIdx) => {
             const level = levelFor(d.count);
             const label = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
-            return `<span class="heatmap-cell" data-level="${level}" title="${label}" aria-label="${label}"></span>`;
+            const delay = (colIdx * 7 + rowIdx) * 4;
+            return `<span class="heatmap-cell" data-level="${level}" title="${label}" aria-label="${label}" style="animation-delay:${delay}ms"></span>`;
           })
           .join("")}
       </div>`,
     )
     .join("");
 
+  // Month axis: one label per column where that column is the first to
+  // cross into a new month, so labels don't repeat every week.
+  let lastMonth = null;
+  const axisHtml = columns
+    .map((col) => {
+      const firstOfMonth = col.find((d) => d.date.getDate() <= 7);
+      const monthIdx = firstOfMonth ? firstOfMonth.date.getMonth() : null;
+      const showLabel = monthIdx !== null && monthIdx !== lastMonth;
+      if (showLabel) lastMonth = monthIdx;
+      return `<span class="heatmap-axis-cell" style="width:var(--heatmap-cell)">${showLabel ? MONTH_LABELS_AR[monthIdx].slice(0, 3) : ""}</span>`;
+    })
+    .join("");
+
+  const dayLabelsHtml = WEEKDAY_LABELS_SAT_FIRST
+    .map((label, i) => `<span>${i % 2 === 0 ? label : ""}</span>`)
+    .join("");
+
   const activeDays = days.filter((d) => d.count > 0).length;
 
   container.innerHTML = `
-    <div class="heatmap-grid">${cellsHtml}</div>
+    <div class="heatmap-axis">${axisHtml}</div>
+    <div class="heatmap-body">
+      <div class="heatmap-grid">${cellsHtml}</div>
+      <div class="heatmap-daylabels">${dayLabelsHtml}</div>
+    </div>
     <div class="heatmap-footer">
-      <span>${activeDays} يوم نشاط خلال آخر ${weeks} أسبوع</span>
+      <span><strong>${activeDays}</strong> يوم نشاط خلال آخر ${weeks} أسبوع</span>
       <div class="heatmap-legend">
         <span>أقل</span>
         <span class="heatmap-cell" data-level="0"></span>

@@ -13,15 +13,19 @@ const JPEG_QUALITY = 0.82;
 // A small, deterministic palette pulled from the site's own accent family
 // (see themes.css --color-primary / --gradient-accent stops) so generated
 // avatars always feel native to the product rather than random colors.
+// Each entry is a [from, to] gradient pair (was flat colors) — flat
+// circles read as a placeholder; a soft diagonal gradient plus the ring
+// motif below make the generated fallback feel like a designed avatar
+// rather than "no avatar set".
 const DEFAULT_AVATAR_PALETTE = [
-  "#6366f1",
-  "#8b5cf6",
-  "#ec4899",
-  "#f59e0b",
-  "#10b981",
-  "#3b82f6",
-  "#ef4444",
-  "#14b8a6",
+  ["#818cf8", "#4f46e5"],
+  ["#a78bfa", "#7c3aed"],
+  ["#f472b6", "#db2777"],
+  ["#fbbf24", "#d97706"],
+  ["#34d399", "#059669"],
+  ["#60a5fa", "#2563eb"],
+  ["#f87171", "#dc2626"],
+  ["#2dd4bf", "#0d9488"],
 ];
 
 export const avatarEngine = {
@@ -110,15 +114,22 @@ export const avatarEngine = {
     return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
   },
 
-  // 5. Deterministic color pick for a given name, so the same name always
-  //    gets the same default-avatar color across sessions/devices.
-  colorForName(name) {
+  // 5. Deterministic gradient pick for a given name, so the same name
+  //    always gets the same default-avatar colors across sessions/devices.
+  //    Returns [from, to]; use colorForName() below where only a single
+  //    flat color is needed (e.g. preset swatch backgrounds).
+  gradientForName(name) {
     const str = (name || "?").trim();
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
     }
     return DEFAULT_AVATAR_PALETTE[hash % DEFAULT_AVATAR_PALETTE.length];
+  },
+
+  // Back-compat single-color accessor (returns the gradient's start color).
+  colorForName(name) {
+    return this.gradientForName(name)[0];
   },
 
   // 6. First "letter" of a name, Arabic-aware. Arabic has no case, and
@@ -138,15 +149,37 @@ export const avatarEngine = {
 
   // 7. Build a default avatar as an inline SVG data URL (not stored,
   //    computed on demand so it always reflects the current username).
+  //    Diagonal gradient fill + a thin inner ring for a bit of depth,
+  //    rather than a flat solid circle with a letter stamped on it.
   generateDefaultAvatarSVG(name) {
     const initial = this.initialForName(name);
-    const color = this.colorForName(name);
+    const [from, to] = this.gradientForName(name);
     const escaped = initial.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const gradId = `avGrad${Math.abs(this._hash(name))}`;
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <rect width="100" height="100" rx="50" fill="${color}"/>
-      <text x="50" y="50" font-family="IBM Plex Sans Arabic, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${escaped}</text>
+      <defs>
+        <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${from}"/>
+          <stop offset="100%" stop-color="${to}"/>
+        </linearGradient>
+      </defs>
+      <rect width="100" height="100" rx="50" fill="url(#${gradId})"/>
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
+      <text x="50" y="52" font-family="IBM Plex Sans Arabic, sans-serif" font-size="40" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${escaped}</text>
     </svg>`;
+  },
+
+  // Internal: small string hash, used to key gradient defs uniquely per
+  // name so multiple generated avatars can coexist in the same DOM
+  // (defs are id-scoped per document) without id collisions.
+  _hash(name) {
+    const str = (name || "?").trim();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) | 0;
+    }
+    return hash;
   },
 
   // 8. Same as generateDefaultAvatarSVG, but pre-encoded as a data URL

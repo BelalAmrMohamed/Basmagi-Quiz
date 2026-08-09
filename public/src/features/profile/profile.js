@@ -14,6 +14,13 @@ import {
 
 import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
+import { renderLevelGauge } from "./levelGauge.js";
+import {
+  generateBotAvatarDataUrl,
+  loreForBot,
+  adminHoverCardHtml,
+  adminAvatarUrl,
+} from "./leaderboardIdentity.js";
 
 let examList = [];
 let examById = new Map();
@@ -567,34 +574,16 @@ function renderStats(user) {
     if (isHtml) el.innerHTML = htmlOrText;
     else el.textContent = htmlOrText;
   };
-  const updateStyle = (id, prop, val) => {
-    const el = document.getElementById(id);
-    if (el) el.style[prop] = val;
-  };
-
   // Core Stats
   updateEl("totalPoints", computedTotalPoints.toLocaleString() || 0);
   updateEl("totalQuizzes", user.history ? user.history.length : 0);
   updateEl("totalBadges", user.badges ? user.badges.length : 0);
   updateEl("currentLevel", levelInfo.level | 0);
 
-  // Level Details
-  updateEl("levelTitle", levelInfo.title);
-  updateEl(
-    "levelBadge",
-    `<span class="level-number">${levelInfo.level | 0}</span>`,
-    true,
-  );
-  updateStyle(
-    "levelProgressBar",
-    "width",
-    `${levelInfo.progressPercent || 0}%`,
-  );
-  updateEl("currentXP", `${levelInfo.pointsInCurrentLevel || 0} نقطة خبرة`);
-  updateEl(
-    "nextLevelXP",
-    `${levelInfo.pointsNeededForNext || 0} نقطة خبرة للمستوى التالي`,
-  );
+  // Level gauge — radial SVG gauge, replaces the old flat bar. Resets
+  // visually each level because calculateLevel() already resets
+  // pointsInCurrentLevel/progressPercent at each level-up boundary.
+  renderLevelGauge(levelInfo);
 
   // Statistics Sidebar
   const accuracyRateEl = document.getElementById("accuracyRate");
@@ -802,19 +791,25 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
         const admins = await res.json();
 
         leaderboardEl.innerHTML = admins
-          .map(
-            (entry, i) => `
-          <div class="lb-row ${entry.handle === highlightHandle ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${entry.handle === highlightHandle ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)") : (entry.displayName || entry.handle)}، ${entry.totalQuizzes.toLocaleString()} اختبار">
-            <span style="flex:1; display:flex; align-items:center; gap:6px;">
-              <span style="font-weight:bold; color:var(--color-primary); width:18px;" aria-hidden="true">${i + 1}.</span> 
-              <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${entry.displayName || entry.handle}">
-                ${entry.handle === highlightHandle ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + ' (أنت)') : (entry.displayName || entry.handle)}
-              </span>
+          .map((entry, i) => {
+            const isHighlighted = entry.handle === highlightHandle;
+            const label = isHighlighted
+              ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)")
+              : (entry.displayName || entry.handle);
+            const avatar = adminAvatarUrl(entry);
+
+            return `
+          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} اختبار">
+            <span class="lb-rank" aria-hidden="true">${i + 1}</span>
+            <span class="lb-avatar-hover">
+              <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
+              ${adminHoverCardHtml(entry)}
             </span>
-            <strong>${entry.totalQuizzes.toLocaleString()} إختبار</strong>
+            <span class="lb-name" title="${entry.displayName || entry.handle}">${label}</span>
+            <strong class="lb-metric">${entry.totalQuizzes.toLocaleString()} إختبار</strong>
           </div>
-        `
-          )
+        `;
+          })
           .join("");
         return;
       }
@@ -840,14 +835,36 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
   const rankedList = all.map((u, i) => ({ ...u, rank: i + 1 }));
 
   leaderboardEl.innerHTML = rankedList
-    .map(
-      (entry) => `
-    <div class="lb-row ${entry.isUser ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
-      <span aria-hidden="true">${entry.rank}. ${entry.name}</span>
-      <strong>${entry.points.toLocaleString()} نقطة</strong>
-    </div>
-  `,
-    )
+    .map((entry) => {
+      if (entry.isUser) {
+        // The viewer's own row: real avatar, no bot lore card.
+        return `
+    <div class="lb-row lb-row-avatar highlight" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
+      <span class="lb-rank" aria-hidden="true">${entry.rank}</span>
+      <span class="lb-avatar-hover">
+        <img class="lb-avatar" src="${document.getElementById("avatarImage")?.src || ""}" alt="" loading="lazy" width="32" height="32">
+      </span>
+      <span class="lb-name">${entry.name}</span>
+      <strong class="lb-metric">${entry.points.toLocaleString()} نقطة</strong>
+    </div>`;
+      }
+
+      const avatar = generateBotAvatarDataUrl(entry.name);
+      const lore = loreForBot(entry.name);
+      return `
+    <div class="lb-row lb-row-avatar" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
+      <span class="lb-rank" aria-hidden="true">${entry.rank}</span>
+      <span class="lb-avatar-hover">
+        <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
+        <span class="lb-hover-card lb-hover-card-lore" role="tooltip">
+          <span class="lb-hover-name">${entry.name}</span>
+          <span class="lb-hover-lore">${lore}</span>
+        </span>
+      </span>
+      <span class="lb-name">${entry.name}</span>
+      <strong class="lb-metric">${entry.points.toLocaleString()} نقطة</strong>
+    </div>`;
+    })
     .join("");
 }
 

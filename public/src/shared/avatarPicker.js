@@ -14,28 +14,33 @@ function getUsername() {
   return localStorage.getItem("username") || "مستخدم";
 }
 
+// Preset palette as [from, to] gradient pairs, matching avatarEngine's
+// DEFAULT_AVATAR_PALETTE styling so presets and the generated fallback
+// avatar look like one consistent family instead of two different systems.
+const PRESET_GRADIENTS = [
+  ["#818cf8", "#4f46e5"],
+  ["#a78bfa", "#7c3aed"],
+  ["#f472b6", "#db2777"],
+  ["#fbbf24", "#d97706"],
+  ["#34d399", "#059669"],
+  ["#60a5fa", "#2563eb"],
+  ["#f87171", "#dc2626"],
+  ["#2dd4bf", "#0d9488"],
+];
+
 function renderPresetGrid() {
   const grid = document.getElementById("avatarPresetGrid");
   if (!grid) return;
 
   const name = getUsername();
   const initial = avatarEngine.initialForName(name);
-  const paletteSwatches = [
-    "#6366f1",
-    "#8b5cf6",
-    "#ec4899",
-    "#f59e0b",
-    "#10b981",
-    "#3b82f6",
-    "#ef4444",
-    "#14b8a6",
-  ];
 
-  grid.innerHTML = paletteSwatches
-    .map((color) => {
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="50" fill="${color}"/><text x="50" y="50" font-family="IBM Plex Sans Arabic, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${initial}</text></svg>`;
+  grid.innerHTML = PRESET_GRADIENTS
+    .map(([from, to], i) => {
+      const gradId = `presetGrad${i}`;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="${from}"/><stop offset="100%" stop-color="${to}"/></linearGradient></defs><rect width="100" height="100" rx="50" fill="url(#${gradId})"/><circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/><text x="50" y="52" font-family="IBM Plex Sans Arabic, sans-serif" font-size="40" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${initial}</text></svg>`;
       const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-      return `<button type="button" class="avatar-preset-btn" data-avatar="${dataUrl}" style="background:${color};" aria-label="اختيار هذا اللون">${initial}</button>`;
+      return `<button type="button" class="avatar-preset-btn" data-avatar="${dataUrl}" style="background:linear-gradient(135deg, ${from}, ${to});" aria-label="اختيار هذا التدرج">${initial}</button>`;
     })
     .join("");
 
