@@ -39,7 +39,7 @@
     <script>
       (function() {
         try {
-          var t = sessionStorage.getItem('__bq_adm');
+          var t = localStorage.getItem('__bq_adm');
           if (t) {
             var p = JSON.parse(atob(t.split('.')[1]));
             var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
@@ -490,9 +490,9 @@
 
                 // INSTANT BADGE INJECTION
                 try {
-                  if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
+                  if (localStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
                     parent.style.position = 'relative';
-                    var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
+                    var p = JSON.parse(atob(localStorage.getItem('__bq_adm').split('.')[1]));
                     var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
                     var b = document.createElement('img');
                     b.className = 'nav-badge-overlay';

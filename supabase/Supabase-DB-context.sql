@@ -1,4 +1,4 @@
--- Supabase-DB-context.sql | Last updated on version `v6.2.3`
+-- Supabase-DB-context.sql | Last updated on version `v6.2.4`
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
@@ -41,9 +41,10 @@ CREATE TABLE public.admin_users (
   added_by text NOT NULL,
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
-  passed_quizzes integer DEFAULT 0,
   total_badges integer DEFAULT 0,
   current_level integer DEFAULT 1,
+  passed_quizzes integer DEFAULT 0,
+  avatar_url text,
   uploaded_quizzes integer DEFAULT 0,
   activity_heatmap jsonb DEFAULT '{}'::jsonb,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)

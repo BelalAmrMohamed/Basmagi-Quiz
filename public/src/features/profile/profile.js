@@ -198,7 +198,7 @@ function applyRoleBadges(role, isOwner) {
 async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, isVisitorContext = false) {
   document.getElementById("adminStatsGrid").style.display = "grid";
   try {
-    const token = sessionStorage.getItem("__bq_adm");
+    const token = localStorage.getItem("__bq_adm");
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
     
@@ -354,20 +354,20 @@ async function setupVisitorView(handle) {
   // If the server returned an activityHeatmap for this visited profile,
   // render the heatmap by converting the date->count map into a
   // user.history-like array the existing renderer understands.
-  if (visitedRole && visitedRole.activityHeatmap && Object.keys(visitedRole.activityHeatmap).length > 0) {
+  const historyArr = [];
+  if (visitedRole && visitedRole.activityHeatmap) {
     const map = visitedRole.activityHeatmap;
-    const historyArr = [];
     Object.keys(map).forEach((date) => {
       const count = Number(map[date]) || 0;
       for (let i = 0; i < count; i++) {
         historyArr.push({ date });
       }
     });
-    try {
-      renderActivityHeatmap({ history: historyArr });
-    } catch (e) {
-      console.error("Failed to render visitor heatmap", e);
-    }
+  }
+  try {
+    renderActivityHeatmap({ history: historyArr });
+  } catch (e) {
+    console.error("Failed to render visitor heatmap", e);
   }
   
   // Update User Info Modal for Visitor View
@@ -493,11 +493,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (isVisitorView) {
     const visitedHandle = adminHandleMeta.content;
+    const currentToken = ++refreshToken;
     setupVisitorView(visitedHandle);
     // Real leaderboard, with the visited profile's row highlighted instead
     // of the viewer's own (the viewer has no meaningful position here, and
     // may not even be an admin) — see renderLeaderboard's visitedHandle param.
-    renderLeaderboard({}, "User", ++refreshToken, visitedHandle);
+    renderLeaderboard({}, "User", currentToken, visitedHandle);
   } else {
     initAvatarPicker();
     refreshUI();

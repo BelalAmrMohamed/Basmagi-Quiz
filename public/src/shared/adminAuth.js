@@ -17,13 +17,13 @@ let _token = null;
 
 (function restoreFromSession() {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     if (!raw || raw === "null" || raw === "undefined") return;
     // Sanity-check: a JWT is exactly 3 base64url segments separated by dots
     if (/^[\w\-]+\.[\w\-]+\.[\w\-]+$/.test(raw)) {
       _token = raw;
     } else {
-      sessionStorage.removeItem(SESSION_KEY); // corrupt — discard
+      localStorage.removeItem(SESSION_KEY); // corrupt — discard
     }
   } catch (_) {
     // sessionStorage blocked in some browsers/modes — degrade gracefully
@@ -107,7 +107,7 @@ export async function signInWithSupabase(supabaseToken) {
 
   _token = token;
   try {
-    sessionStorage.setItem(SESSION_KEY, token);
+    localStorage.setItem(SESSION_KEY, token);
   } catch (_) {}
   return true;
 }
@@ -121,7 +121,7 @@ export async function signInWithSupabase(supabaseToken) {
 export function getToken() {
   if (_token) return _token;
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     if (raw && raw !== "null") {
       _token = raw;
       return raw;
@@ -163,7 +163,7 @@ export function getAdminRoleInfo() {
 export function signOut() {
   _token = null;
   try {
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
   } catch (_) {}
 }
 
