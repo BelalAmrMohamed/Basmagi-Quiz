@@ -27,13 +27,21 @@ function heatmapHoverHtml(date, count) {
     <span class="heatmap-hover-count">${countLabel}</span>`;
 }
 
-const WEEKDAY_LABELS_SAT_FIRST = ["س", "ح", "ن", "ث", "ر", "خ", "ج"]; // Sat..Fri initials
+const WEEKDAY_LABELS_SAT_FIRST = [
+  "السبت",
+  "الأحد",
+  "الاثنين",
+  "الثلاثاء",
+  "الأربعاء",
+  "الخميس",
+  "الجمعة",
+];
 const MONTH_LABELS_AR = [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
 ];
 
-export function renderActivityHeatmap(user, weeks = 20) {
+export function renderActivityHeatmap(user) {
   const container = document.getElementById("activityHeatmap");
   if (!container) return;
 
@@ -47,32 +55,39 @@ export function renderActivityHeatmap(user, weeks = 20) {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  // Align the grid to start on a Saturday (start of week in most Arabic
-  // locales) so full weeks stack cleanly into columns.
-  const totalDays = weeks * 7;
-  const start = new Date(today);
-  start.setDate(start.getDate() - (totalDays - 1));
+  const year = today.getFullYear();
+  const yearStart = new Date(year, 0, 1);
+  yearStart.setHours(0, 0, 0, 0);
+  const yearEnd = new Date(year, 11, 31);
+  yearEnd.setHours(0, 0, 0, 0);
+
+  // Align to Sat–Fri weeks so every column has exactly 7 cells.
+  const start = new Date(yearStart);
   while (start.getDay() !== 6) {
     start.setDate(start.getDate() - 1);
   }
-
-  const days = [];
-  const cursor = new Date(start);
-  
-  // Pad the grid up to Friday (end of week)
-  const endDate = new Date(today);
+  start.setHours(0, 0, 0, 0);
+  const endDate = new Date(yearEnd);
   while (endDate.getDay() !== 5) {
     endDate.setDate(endDate.getDate() + 1);
   }
+  endDate.setHours(0, 0, 0, 0);
 
+  const days = [];
+  const cursor = new Date(start);
   while (cursor <= endDate) {
     const key = dateKey(cursor);
-    if (cursor > today) {
+    const inYear = cursor >= yearStart && cursor <= yearEnd;
+    const isFuture = cursor > today;
+    if (!inYear || isFuture) {
       days.push({ key, count: 0, date: new Date(cursor), future: true });
     } else {
       days.push({ key, count: counts[key] || 0, date: new Date(cursor) });
     }
     cursor.setDate(cursor.getDate() + 1);
+    // Re-normalize midnight after each step so DST transitions cannot
+    // drop a calendar day and leave a short final column.
+    cursor.setHours(0, 0, 0, 0);
   }
 
   const maxCount = Math.max(1, ...days.map((d) => d.count));
@@ -100,21 +115,26 @@ export function renderActivityHeatmap(user, weeks = 20) {
   let lastMonth = null;
   const cellsHtml = columns
     .map((col, colIdx) => {
-      const firstOfMonth = col.find((d) => d.date.getDate() <= 7);
-      const monthIdx = firstOfMonth ? firstOfMonth.date.getMonth() : null;
-      const showLabel = monthIdx !== null && monthIdx !== lastMonth;
-      if (showLabel) lastMonth = monthIdx;
-      const axisLabel = showLabel ? MONTH_LABELS_AR[monthIdx].slice(0, 3) : "";
+      // One full month name on the first column that contains any day of that month.
+      let axisLabel = "";
+      for (const d of col) {
+        if (d.date.getFullYear() !== year) continue;
+        const monthIdx = d.date.getMonth();
+        if (monthIdx !== lastMonth) {
+          lastMonth = monthIdx;
+          axisLabel = MONTH_LABELS_AR[monthIdx];
+          break;
+        }
+      }
 
       const cellSpans = col
         .map((d, rowIdx) => {
+          const delay = (colIdx * 7 + rowIdx) * 4;
           if (d.future) {
-            const delay = (colIdx * 7 + rowIdx) * 4;
-            return `<span class="heatmap-cell" data-level="0" style="animation-delay:${delay}ms"></span>`;
+            return `<span class="heatmap-cell heatmap-cell-empty" data-level="0" style="animation-delay:${delay}ms"></span>`;
           }
           const level = levelFor(d.count);
           const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
-          const delay = (colIdx * 7 + rowIdx) * 4;
           return `<span class="heatmap-cell js-has-hover" data-level="${level}" data-date="${d.key}" data-count="${d.count}" aria-label="${ariaLabel}" style="animation-delay:${delay}ms"></span>`;
         })
         .join("");
@@ -128,7 +148,7 @@ export function renderActivityHeatmap(user, weeks = 20) {
     .join("");
 
   const dayLabelsHtml = WEEKDAY_LABELS_SAT_FIRST
-    .map((label, i) => `<span>${i % 2 === 0 ? label : ""}</span>`)
+    .map((label) => `<span>${label}</span>`)
     .join("");
 
   const activeDays = days.filter((d) => d.count > 0).length;
@@ -142,7 +162,7 @@ export function renderActivityHeatmap(user, weeks = 20) {
       <div class="heatmap-grid">${cellsHtml}</div>
     </div>
     <div class="heatmap-footer">
-      <span><strong>${activeDays}</strong> يوم نشاط خلال آخر ${weeks} أسبوع</span>
+      <span><strong>${activeDays}</strong> يوم نشاط خلال سنة ${year}</span>
       <div class="heatmap-legend">
         <span>أقل</span>
         <span class="heatmap-cell" data-level="0"></span>

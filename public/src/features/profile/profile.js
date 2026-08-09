@@ -765,65 +765,31 @@ function renderBadges(user) {
       .join("") || "اكسب الشارات بإكمال الاختبارات!";
 }
 
-// visitedHandle: when set (visitor view), the leaderboard always renders
-// from the real DB data and highlights the *visited* profile's row rather
-// than the viewer's own — the viewer has no meaningful position to show
-// here at all (they may not even be an admin), so their identity is
-// irrelevant to this render.
+// visitedHandle: when set (visitor /@handle view), only the admin
+// leaderboard is shown — the local bots board is owner-profile only.
 async function renderLeaderboard(user, currentName, myToken = refreshToken, visitedHandle = null) {
-  const leaderboardEl = document.getElementById("leaderboard");
-  if (!leaderboardEl) return;
+  const localCard = document.getElementById("localLeaderboardCard");
+  const adminCard = document.getElementById("adminLeaderboardCard");
+  const localEl = document.getElementById("localLeaderboard");
+  const adminEl = document.getElementById("adminLeaderboard");
+  if (!adminEl) return;
 
   const roleInfo = getAdminRoleInfo();
-  const isAdmin = !!roleInfo || !!visitedHandle;
   const displayName = currentName || localStorage.getItem("username") || "مستخدم";
-  // The handle to highlight: the visited profile in visitor view, otherwise
-  // the viewer's own handle from their JWT.
   const highlightHandle = visitedHandle || (roleInfo && roleInfo.handle);
+  const isVisitor = !!visitedHandle;
 
-  if (isAdmin) {
-    try {
-      const res = await fetch("/api/admin-stats?leaderboard=true");
+  if (localCard) localCard.hidden = isVisitor;
+  if (adminCard) adminCard.hidden = false;
 
-      // A newer refreshUI() call started while this fetch was in flight —
-      // discard this response so it can't overwrite fresher DOM state.
-      if (myToken !== refreshToken) return;
-
-      if (res.ok) {
-        const admins = await res.json();
-
-        leaderboardEl.innerHTML = admins
-          .map((entry, i) => {
-            const isHighlighted = entry.handle === highlightHandle;
-            const label = isHighlighted
-              ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)")
-              : (entry.displayName || entry.handle);
-            const avatar = adminAvatarUrl(entry);
-
-            return `
-          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} اختبار">
-            <span class="lb-rank" aria-hidden="true">${i + 1}</span>
-            <span class="lb-avatar-hover">
-              <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
-            </span>
-            <span class="lb-name" title="${entry.displayName || entry.handle}">${label}</span>
-            <strong class="lb-metric">${entry.totalQuizzes.toLocaleString()} إختبار</strong>
-          </div>
-        `;
-          })
-          .join("");
-
-        leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
-          const avatarHover = row.querySelector(".lb-avatar-hover");
-          if (avatarHover) {
-            attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", { interactive: true });
-          }
-        });
-        return;
-      }
-    } catch (err) {}
+  if (!isVisitor && localEl) {
+    renderLocalLeaderboard(localEl, user, displayName);
   }
 
+  await renderAdminLeaderboard(adminEl, highlightHandle, displayName, visitedHandle, myToken);
+}
+
+function renderLocalLeaderboard(leaderboardEl, user, displayName) {
   const mockUsers = [
     { name: "عم فوزي الحريف", points: 3000 },
     { name: "سيد سِكّة", points: 2000 },
@@ -845,7 +811,6 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
   leaderboardEl.innerHTML = rankedList
     .map((entry) => {
       if (entry.isUser) {
-        // The viewer's own row: real avatar, no bot lore card.
         return `
     <div class="lb-row lb-row-avatar highlight" role="listitem" aria-label="الترتيب ${entry.rank}: ${entry.name}، ${entry.points.toLocaleString()} نقطة">
       <span class="lb-rank" aria-hidden="true">${entry.rank}</span>
@@ -881,6 +846,53 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
       `, "lb-hover-card-lore");
     }
   });
+}
+
+async function renderAdminLeaderboard(leaderboardEl, highlightHandle, displayName, visitedHandle, myToken) {
+  try {
+    const res = await fetch("/api/admin-stats?leaderboard=true");
+
+    // A newer refreshUI() call started while this fetch was in flight —
+    // discard this response so it can't overwrite fresher DOM state.
+    if (myToken !== refreshToken) return;
+
+    if (!res.ok) {
+      leaderboardEl.innerHTML = `<div class="empty-state"><p>تعذر تحميل لوحة المسؤولين</p></div>`;
+      return;
+    }
+
+    const admins = await res.json();
+
+    leaderboardEl.innerHTML = admins
+      .map((entry, i) => {
+        const isHighlighted = entry.handle === highlightHandle;
+        const label = isHighlighted
+          ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)")
+          : (entry.displayName || entry.handle);
+        const avatar = adminAvatarUrl(entry);
+
+        return `
+          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} اختبار">
+            <span class="lb-rank" aria-hidden="true">${i + 1}</span>
+            <span class="lb-avatar-hover">
+              <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
+            </span>
+            <span class="lb-name" title="${entry.displayName || entry.handle}">${label}</span>
+            <strong class="lb-metric">${entry.totalQuizzes.toLocaleString()} إختبار</strong>
+          </div>
+        `;
+      })
+      .join("");
+
+    leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
+      const avatarHover = row.querySelector(".lb-avatar-hover");
+      if (avatarHover) {
+        attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", { interactive: true });
+      }
+    });
+  } catch (err) {
+    leaderboardEl.innerHTML = `<div class="empty-state"><p>تعذر تحميل لوحة المسؤولين</p></div>`;
+  }
 }
 
 // Expose for other modules (quiz result flow) to trigger immediate sync

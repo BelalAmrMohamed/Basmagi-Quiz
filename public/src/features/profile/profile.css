@@ -1062,24 +1062,27 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   flex-direction: column;
   gap: 4px;
   padding-top: 2px;
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   flex-shrink: 0;
-  width: 20px;
+  width: 3.6rem;
+  line-height: 1.1;
 }
 
 .heatmap-daylabels span {
   height: var(--heatmap-cell);
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  white-space: nowrap;
 }
 
 /* Matches the month-label row's height at the top of each .heatmap-col,
    so the day-letter rows beneath it still line up with the grid's cell
    rows despite the grid having one extra header cell per column. */
 .heatmap-daylabels-spacer {
-  height: 14px !important;
+  height: 18px !important;
 }
 
 .heatmap-grid {
@@ -1129,13 +1132,14 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .heatmap-col-label {
-  height: 14px;
-  font-size: 0.66rem;
+  height: 18px;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   white-space: nowrap;
   overflow: visible;
   line-height: 1;
+  min-width: 0;
 }
 
 .heatmap-cell {
