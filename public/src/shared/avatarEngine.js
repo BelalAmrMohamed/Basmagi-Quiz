@@ -149,24 +149,70 @@ export const avatarEngine = {
 
   // 7. Build a default avatar as an inline SVG data URL (not stored,
   //    computed on demand so it always reflects the current username).
-  //    Diagonal gradient fill + a thin inner ring for a bit of depth,
-  //    rather than a flat solid circle with a letter stamped on it.
+  //    Creates a modern, generative abstract geometric pattern for high
+  //    visual variety instead of a simple single-letter gradient.
   generateDefaultAvatarSVG(name) {
-    const initial = this.initialForName(name);
-    const [from, to] = this.gradientForName(name);
-    const escaped = initial.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const gradId = `avGrad${Math.abs(this._hash(name))}`;
+    const str = (name || "?").trim();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+
+    const getBits = (start, len) => (hash >> start) & ((1 << len) - 1);
+    
+    // Pick 3 gradient pairs from the palette
+    const c1 = DEFAULT_AVATAR_PALETTE[getBits(0, 3) % DEFAULT_AVATAR_PALETTE.length];
+    const c2 = DEFAULT_AVATAR_PALETTE[(getBits(3, 3) + 1) % DEFAULT_AVATAR_PALETTE.length];
+    const c3 = DEFAULT_AVATAR_PALETTE[(getBits(6, 3) + 2) % DEFAULT_AVATAR_PALETTE.length];
+
+    const gradId1 = `bgGrad${hash}`;
+    const gradId2 = `fg1Grad${hash}`;
+    const gradId3 = `fg2Grad${hash}`;
+
+    const shape1 = getBits(9, 2);
+    const shape2 = getBits(11, 2);
+    const shape3 = getBits(13, 2);
 
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <defs>
-        <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${from}"/>
-          <stop offset="100%" stop-color="${to}"/>
+        <linearGradient id="${gradId1}" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="${c1[0]}"/>
+          <stop offset="100%" stop-color="${c1[1]}"/>
+        </linearGradient>
+        <linearGradient id="${gradId2}" x1="100%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${c2[0]}"/>
+          <stop offset="100%" stop-color="${c2[1]}"/>
+        </linearGradient>
+        <linearGradient id="${gradId3}" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="${c3[0]}"/>
+          <stop offset="100%" stop-color="${c3[1]}"/>
         </linearGradient>
       </defs>
-      <rect width="100" height="100" rx="50" fill="url(#${gradId})"/>
-      <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="1.5"/>
-      <text x="50" y="52" font-family="IBM Plex Sans Arabic, sans-serif" font-size="40" font-weight="700" fill="#ffffff" text-anchor="middle" dominant-baseline="central">${escaped}</text>
+      
+      <rect width="100" height="100" fill="url(#${gradId1})"/>
+      
+      <g transform="translate(50, 50) rotate(${getBits(15, 3) * 45})">
+        ${shape1 === 0 ? `<circle cx="-15" cy="-15" r="45" fill="url(#${gradId2})" opacity="0.9"/>` :
+          shape1 === 1 ? `<rect x="-35" y="-35" width="70" height="70" rx="16" fill="url(#${gradId2})" opacity="0.9"/>` :
+          shape1 === 2 ? `<polygon points="0,-50 45,35 -45,35" fill="url(#${gradId2})" opacity="0.9"/>` :
+          `<path d="M-40,0 A40,40 0 1,1 40,0" fill="url(#${gradId2})" opacity="0.9"/>`}
+      </g>
+
+      <g transform="translate(50, 50) rotate(${getBits(18, 3) * 45})">
+        ${shape2 === 0 ? `<circle cx="20" cy="20" r="35" fill="url(#${gradId3})" opacity="0.8"/>` :
+          shape2 === 1 ? `<rect x="-15" y="-15" width="50" height="50" rx="12" fill="url(#${gradId3})" opacity="0.8"/>` :
+          shape2 === 2 ? `<polygon points="-30,-15 30,-15 0,45" fill="url(#${gradId3})" opacity="0.8"/>` :
+          `<path d="M-35,15 A35,35 0 1,0 35,15" fill="url(#${gradId3})" opacity="0.8"/>`}
+      </g>
+      
+      <g transform="translate(50, 50) rotate(${getBits(21, 3) * 45})">
+        ${shape3 === 0 ? `<circle cx="-25" cy="25" r="12" fill="#ffffff" opacity="0.5"/>` :
+          shape3 === 1 ? `<rect x="-35" y="15" width="25" height="25" rx="6" fill="#ffffff" opacity="0.5"/>` :
+          shape3 === 2 ? `<polygon points="25,-25 40,-5 10,-5" fill="#ffffff" opacity="0.5"/>` :
+          `<circle cx="25" cy="-25" r="10" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6"/>`}
+      </g>
+      
+      <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1.5"/>
     </svg>`;
   },
 
