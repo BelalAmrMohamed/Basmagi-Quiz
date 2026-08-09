@@ -1099,10 +1099,9 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   padding-block-start: 2px;
   scroll-snap-type: x proximity;
   flex: 1;
-  /* Year grid is always wider than the card — pin to the start edge
-     (visual right in RTL) so Jan isn't lost in a centered mid-year view.
-     JS then scrolls today's column into view after render. */
-  justify-content: flex-start;
+  /* Center the year strip when it fits; when it overflows, safe center
+     still leaves both ends reachable via scroll. */
+  justify-content: safe center;
   -webkit-mask-image: linear-gradient(
     to var(--fade-direction, left),
     transparent 0,
@@ -1222,6 +1221,39 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 .heatmap-cell[data-level="4"] {
   background: var(--color-primary);
   box-shadow: 0 0 8px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* Out-of-year week padding (before Jan 1 / after Dec 31) — muted so
+   they read as disabled vs empty in-year days (data-level="0"). */
+.heatmap-cell-disabled {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border-light) 55%, transparent);
+  cursor: default;
+  animation-name: heatmapCellInDisabled;
+}
+
+.heatmap-cell-disabled:hover {
+  transform: scale(1);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border-light) 55%, transparent);
+}
+
+@keyframes heatmapCellInDisabled {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heatmap-cell-disabled {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+  }
 }
 
 .heatmap-footer {

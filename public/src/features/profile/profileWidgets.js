@@ -78,8 +78,11 @@ export function renderActivityHeatmap(user) {
   while (cursor <= endDate) {
     const key = dateKey(cursor);
     const inYear = cursor >= yearStart && cursor <= yearEnd;
-    const isFuture = cursor > today;
-    if (!inYear || isFuture) {
+    if (!inYear) {
+      // Week-alignment padding outside Jan 1–Dec 31 — visually disabled.
+      days.push({ key, count: 0, date: new Date(cursor), disabled: true });
+    } else if (cursor > today) {
+      // Remaining days of this year — empty, but still part of the year.
       days.push({ key, count: 0, date: new Date(cursor), future: true });
     } else {
       days.push({ key, count: counts[key] || 0, date: new Date(cursor) });
@@ -133,8 +136,8 @@ export function renderActivityHeatmap(user) {
       const cellSpans = col
         .map((d, rowIdx) => {
           const delay = Math.min((colIdx * 7 + rowIdx) * 3, 900);
-          if (d.future) {
-            return `<span class="heatmap-cell heatmap-cell-empty" data-level="0" style="animation-delay:${delay}ms"></span>`;
+          if (d.disabled) {
+            return `<span class="heatmap-cell heatmap-cell-disabled" aria-hidden="true" style="animation-delay:${delay}ms"></span>`;
           }
           const level = levelFor(d.count);
           const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
@@ -187,12 +190,13 @@ export function renderActivityHeatmap(user) {
     attachHoverCard(cell, heatmapHoverHtml(date, count), "heatmap-hover-card");
   });
 
-  // Bring the current week into view so Jan–Apr aren't "missing" just
-  // because the year strip starts scrolled to the visual middle.
+  // When the year overflows the card, bring the current week into view.
+  // When it fits, CSS centers the strip — don't fight that with scroll.
   const grid = container.querySelector(".heatmap-grid");
   const currentWeek = container.querySelector(".heatmap-col.is-current-week");
   if (grid && currentWeek) {
     requestAnimationFrame(() => {
+      if (grid.scrollWidth <= grid.clientWidth + 1) return;
       const gridRect = grid.getBoundingClientRect();
       const colRect = currentWeek.getBoundingClientRect();
       const delta =
