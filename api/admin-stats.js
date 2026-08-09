@@ -1,5 +1,5 @@
 // =============================================================================
-// api/admin-control.js
+// api/admin-stats.js
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
@@ -155,7 +155,19 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: error.message });
     }
 
-    return res.status(200).json(data);
+    // Shape to match what the client (renderLeaderboard) reads: totalQuizzes
+    // and displayName. Returning the raw uploaded_quizzes/display_name column
+    // names here previously left entry.totalQuizzes undefined client-side,
+    // which threw inside renderLeaderboard's try/catch and silently fell
+    // back to a hardcoded mock leaderboard.
+    const leaderboard = (data || []).map((row) => ({
+      handle: row.handle,
+      displayName: row.display_name || null,
+      totalQuizzes: row.uploaded_quizzes || 0,
+      currentLevel: row.current_level || 1,
+    }));
+
+    return res.status(200).json(leaderboard);
   }
 
   let adminUser = null;

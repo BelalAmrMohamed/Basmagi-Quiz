@@ -264,7 +264,24 @@ async function syncProgressToServer() {
   if (!token) return;
 
   const user = gameEngine.getUserData();
-  const levelInfo = gameEngine.calculateLevel(user.totalPoints || 0);
+  // Use the same computed-from-history total that renderStats() uses for
+  // the owner's own #totalPoints display (user.totalPoints itself is not
+  // reliably kept in sync — see renderStats' computedTotalPoints comment).
+  // Syncing the raw field here previously reintroduced the wrong-score bug
+  // on visitor view even after #totalPoints itself was fixed locally.
+  const computedTotalPoints = (user.history || []).reduce((s, h) => s + (h.pointsEarned || 0), 0);
+  const levelInfo = gameEngine.calculateLevel(computedTotalPoints);
+
+  // Build the same date->count map renderActivityHeatmap derives from
+  // user.history, so the DB mirror (and therefore visitor view) has real
+  // activity data instead of staying at its seeded/empty default forever.
+  const activityHeatmap = {};
+  (user.history || []).forEach((h) => {
+    const d = new Date(h.date);
+    if (isNaN(d)) return;
+    const key = d.toISOString().slice(0, 10);
+    activityHeatmap[key] = (activityHeatmap[key] || 0) + 1;
+  });
 
   progressSyncInFlight = true;
   try {
@@ -275,12 +292,13 @@ async function syncProgressToServer() {
         "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
-        totalPoints: user.totalPoints || 0,
+        totalPoints: computedTotalPoints,
         totalQuizzes: user.history ? user.history.length : 0,
         totalBadges: user.badges ? user.badges.length : 0,
         currentLevel: levelInfo.level || 1,
         displayName: localStorage.getItem('username') || undefined,
-        avatarUrl: localStorage.getItem('quiz_user_avatar') || undefined
+        avatarUrl: localStorage.getItem('quiz_user_avatar') || undefined,
+        activityHeatmap,
       }),
       // keepalive lets this survive a tab-hide/navigate-away without being
       // cancelled mid-flight, since one of the two call sites is exactly that.

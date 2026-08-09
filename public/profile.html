@@ -466,7 +466,12 @@
                         b.className = 'nav-badge-overlay';
                         b.src = badgeIcon;
                         b.alt = '';
-                        b.style.cssText = 'position:absolute;width:16px;height:16px;top:3px;right:3px;border-radius:50%;z-index:10;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));display:block;';
+                        // Sizing/position/radius/shadow come from the .nav-badge-overlay
+                        // rule in profile.css (with a mobile override for the bottom
+                        // nav) — only what's needed before CSS has necessarily loaded
+                        // stays inline here, so this can't drift out of sync with the
+                        // avatarEngine.js version of the same badge again.
+                        b.style.cssText = 'position:absolute;z-index:10;display:block;';
                         parent.appendChild(b);
                     }
                 } catch (e) { }
