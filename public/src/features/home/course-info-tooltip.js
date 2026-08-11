@@ -137,14 +137,53 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     }
   };
 
+  // BUG FIX (desktop-only clipping/misalignment): on desktop, `.card:hover`
+  // (index.css) animates `transform: translateY(-6px) scale(1.015)` over
+  // 0.35s. `mouseenter` fires the instant the cursor enters the card —
+  // i.e. right as that lift animation *starts* — so the very first
+  // positionCourseInfoTooltip() call reads the button's
+  // getBoundingClientRect() while the card is still mid-lift, not at its
+  // final resting (hovered) position. The tooltip then locks onto those
+  // now-stale fixed coordinates, so by the time the card finishes
+  // rising/scaling ~350ms later, the button has moved out from under
+  // the tooltip's pinned position — visually the tooltip can end up
+  // shifted enough to get clipped by the next row or land off-target.
+  // Mobile never hit this because mobile CSS explicitly sets
+  // `transform: none` on card hover (no lift to race against).
+  // Fix: reposition again once the card's own transform transition
+  // finishes settling, so the final placement always matches the card's
+  // fully-lifted position. `transitionend` is the precise signal; a
+  // fallback timeout covers browsers/cases where it doesn't fire (e.g.
+  // the transition gets interrupted or matches({ hover: hover }) is
+  // true but no visible transform actually runs).
+  let settleTimer = null;
+  const onCardTransitionEnd = (e) => {
+    if (e.target !== card) return; // ignore bubbled transitions from descendants
+    if (e.propertyName !== "transform") return;
+    if (!tooltip.classList.contains("show")) return;
+    positionCourseInfoTooltip(tooltip, infoBtn);
+  };
+  card.addEventListener("transitionend", onCardTransitionEnd);
+
   const showOnHover = () => {
     clearHoverCloseTimer();
     positionCourseInfoTooltip(tooltip, infoBtn);
     tooltip.classList.add("show");
+    // Safety net alongside the transitionend listener above, in case the
+    // card's lift transition doesn't fire an event we catch (interrupted
+    // transition, unusual browser timing, etc.) — re-measure shortly
+    // after the card's 0.35s lift transition should have completed.
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      if (tooltip.classList.contains("show")) {
+        positionCourseInfoTooltip(tooltip, infoBtn);
+      }
+    }, 360);
   };
 
   const scheduleHoverClose = () => {
     clearHoverCloseTimer();
+    clearTimeout(settleTimer);
     hoverCloseTimer = setTimeout(() => {
       tooltip.classList.remove("show");
       hoverCloseTimer = null;
