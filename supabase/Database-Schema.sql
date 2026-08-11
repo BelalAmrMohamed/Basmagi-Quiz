@@ -47,6 +47,7 @@ CREATE TABLE public.admin_users (
   avatar_url text,
   uploaded_quizzes integer DEFAULT 0,
   activity_heatmap jsonb DEFAULT '{}'::jsonb,
+  thumbnail_url text,
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
 );
 
