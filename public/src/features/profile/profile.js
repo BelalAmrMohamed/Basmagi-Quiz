@@ -10,6 +10,8 @@ import {
   renderCategoryMastery,
   renderNextBadges,
   renderFlaggedQuestions,
+  renderUploadedQuizzes,
+  activityLabelFor,
   dateKey,
 } from "./profileWidgets.js";
 
@@ -58,6 +60,7 @@ export function refreshUI(options = {}) {
 
   renderStats(user);
   renderAvatar(user, currentName);
+  renderThumbnail(user);
   renderHistory(user);
   renderBookmarks(user);
   renderBadges(user);
@@ -68,6 +71,11 @@ export function refreshUI(options = {}) {
   renderCategoryMastery(user, examList);
   renderNextBadges(user);
   renderFlaggedQuestions(user, examList);
+
+  // Uploaded Quizzes History + role-flavored activity heading are both
+  // admin/dev-only and both depend on getAdminRoleInfo() resolving below —
+  // see the "Handle Admin/Developer Badges" block further down, which is
+  // where both actually run for the owner's own dashboard.
 
   // Update username display
   const nameDisplay = document.getElementById("userNameDisplay");
@@ -168,13 +176,33 @@ export function refreshUI(options = {}) {
   const roleInfo = getAdminRoleInfo();
   if (roleInfo) {
     applyRoleBadges(roleInfo.role, roleInfo.isOwner);
+    setActivityLabel(roleInfo);
+    // Uploaded Quizzes History — admin/dev only, own dashboard. Runs
+    // regardless of skipNetworkFetches: unlike the leaderboard/admin-stats
+    // sync below, a local-only refresh (e.g. after deleting a history
+    // entry) shouldn't touch this network call, but it also never ran yet
+    // on the very first load in that branch — so gate it the same way
+    // fetchAndRenderAdminStats is gated, on skipNetworkFetches.
+    if (!skipNetworkFetches) {
+      renderUploadedQuizzes();
+    }
     if (!skipNetworkFetches) {
       // isVisitorContext=false: this is the owner's own dashboard, so the
       // response is a sync confirmation only — it never overwrites the
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
       fetchAndRenderAdminStats(undefined, myToken, false);
     }
+  } else {
+    setActivityLabel(null);
   }
+}
+
+// Sets the 📈 activity-card heading text based on role: "نشاط المشرف" for
+// admins, "نشاط المطور" for owners/devs, plain "نشاطك" for everyone else
+// (regular users, or before role info has resolved).
+function setActivityLabel(roleInfo) {
+  const titleEl = document.getElementById("activityHeatmapTitle");
+  if (titleEl) titleEl.textContent = activityLabelFor(roleInfo);
 }
 
 function applyRoleBadges(role, isOwner) {
@@ -597,6 +625,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderAvatar(gameEngine.getUserData(), currentName);
     });
 
+    window.addEventListener("thumbnailUpdated", () => {
+      renderThumbnail(gameEngine.getUserData());
+    });
+
     // Push local progress to the DB on load, and again whenever the tab is
     // hidden/backgrounded (covers navigating away, switching tabs, closing
     // the tab on most browsers) — see syncProgressToServer for why this
@@ -624,6 +656,24 @@ function renderAvatar(user, currentName) {
     img.src = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
   }
   img.alt = `الصورة الشخصية لـ ${name}`;
+}
+
+// Thumbnail (profile banner) — unlike the avatar, there's no generated
+// fallback: no thumbnail set just means .identity-thumbnail stays empty
+// (see .has-thumbnail in profile.css, which only applies the scrim/
+// background once a picture actually exists).
+function renderThumbnail(user) {
+  const el = document.getElementById("identityThumbnail");
+  if (!el) return;
+
+  const stored = avatarEngine.getThumbnail();
+  if (stored) {
+    el.style.backgroundImage = `url("${stored}")`;
+    el.classList.add("has-thumbnail");
+  } else {
+    el.style.backgroundImage = "";
+    el.classList.remove("has-thumbnail");
+  }
 }
 
 function renderStats(user) {
@@ -783,6 +833,7 @@ function renderHistory(user) {
     items: user.history || [],
     renderItem: historyItemHtml,
     emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>لا يوجد سجل اختبارات بعد</h3></div>`,
+    mode: "button",
   });
   historyList.mount();
 }
@@ -827,6 +878,7 @@ function renderBookmarks(user) {
     items: keys,
     renderItem: bookmarkItemHtml,
     emptyHtml: `<p>لم تقم بتفضيل أية أسئلة</p>`,
+    mode: "button",
   });
   bookmarksList.mount();
 }

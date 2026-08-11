@@ -7,8 +7,22 @@
 import { getAdminRoleInfo } from "../shared/adminAuth.js";
 
 const AVATAR_KEY = "quiz_user_avatar";
+// Thumbnail is a separate key/column from the avatar (see admin_users.
+// thumbnail_url) — a user may set one, both, or neither. Stored and
+// processed identically to the avatar (same size/compression/size cap),
+// just under its own key so the two never clobber each other.
+const THUMBNAIL_KEY = "quiz_user_thumbnail";
 const AVATAR_SIZE = 256; // px, output square dimension
 const JPEG_QUALITY = 0.82;
+
+// Featured Pictures / Featured Thumbnails — static, pre-made images shipped
+// with the site (not generated, not uploaded) that a user can pick as their
+// avatar or thumbnail. Flat numbered files, no manifest on disk, so the
+// counts are just kept here as the single place to update if more are added.
+const FEATURED_PICTURES_COUNT = 11;
+const FEATURED_THUMBNAILS_COUNT = 10;
+const FEATURED_PICTURES_BASE = "/assets/profile-featured/pictures";
+const FEATURED_THUMBNAILS_BASE = "/assets/profile-featured/thumbnails";
 
 // A small, deterministic palette pulled from the site's own accent family
 // (see themes.css --color-primary / --gradient-accent stops) so generated
@@ -59,6 +73,57 @@ export const avatarEngine = {
     }
   },
 
+  // 3b. Thumbnail equivalents of getAvatar/saveAvatar/removeAvatar above —
+  //     same storage contract, independent key.
+  getThumbnail() {
+    try {
+      return localStorage.getItem(THUMBNAIL_KEY) || null;
+    } catch (err) {
+      console.error("Failed to read thumbnail from storage:", err);
+      return null;
+    }
+  },
+
+  saveThumbnail(dataUrl) {
+    try {
+      localStorage.setItem(THUMBNAIL_KEY, dataUrl);
+      return true;
+    } catch (err) {
+      console.error("Failed to save thumbnail to storage:", err);
+      return false;
+    }
+  },
+
+  removeThumbnail() {
+    try {
+      localStorage.removeItem(THUMBNAIL_KEY);
+    } catch (err) {
+      console.error("Failed to remove thumbnail from storage:", err);
+    }
+  },
+
+  // 3c. Featured Pictures / Featured Thumbnails — static asset lists for
+  //     the picker grids. Returned as plain relative paths (not data URLs);
+  //     callers use them directly as <img src> and pass them straight
+  //     through to saveAvatar/saveThumbnail + the server sync, same as any
+  //     other avatar/thumbnail value.
+  getFeaturedPictures() {
+    return Array.from({ length: FEATURED_PICTURES_COUNT }, (_, i) => {
+      const n = i + 1;
+      return { id: `picture-${n}`, url: `${FEATURED_PICTURES_BASE}/${n}.jpg` };
+    });
+  },
+
+  getFeaturedThumbnails() {
+    return Array.from({ length: FEATURED_THUMBNAILS_COUNT }, (_, i) => {
+      const n = i + 1;
+      return {
+        id: `thumbnail-${n}`,
+        url: `${FEATURED_THUMBNAILS_BASE}/${n}.jpg`,
+      };
+    });
+  },
+
   // 4. Process a File (upload or camera capture) into a compressed,
   //    square, base64-encoded JPEG sized for localStorage.
   //    Returns a Promise<string> resolving to the data URL.
@@ -100,7 +165,10 @@ export const avatarEngine = {
 
   // Crop to center square, downscale to AVATAR_SIZE, encode as JPEG
   _resizeAndCompress(img) {
-    const side = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+    const side = Math.min(
+      img.naturalWidth || img.width,
+      img.naturalHeight || img.height,
+    );
     const sx = ((img.naturalWidth || img.width) - side) / 2;
     const sy = ((img.naturalHeight || img.height) - side) / 2;
 
@@ -159,11 +227,18 @@ export const avatarEngine = {
     }
 
     const getBits = (start, len) => (hash >> start) & ((1 << len) - 1);
-    
+
     // Pick 3 gradient pairs from the palette
-    const c1 = DEFAULT_AVATAR_PALETTE[getBits(0, 3) % DEFAULT_AVATAR_PALETTE.length];
-    const c2 = DEFAULT_AVATAR_PALETTE[(getBits(3, 3) + 1) % DEFAULT_AVATAR_PALETTE.length];
-    const c3 = DEFAULT_AVATAR_PALETTE[(getBits(6, 3) + 2) % DEFAULT_AVATAR_PALETTE.length];
+    const c1 =
+      DEFAULT_AVATAR_PALETTE[getBits(0, 3) % DEFAULT_AVATAR_PALETTE.length];
+    const c2 =
+      DEFAULT_AVATAR_PALETTE[
+        (getBits(3, 3) + 1) % DEFAULT_AVATAR_PALETTE.length
+      ];
+    const c3 =
+      DEFAULT_AVATAR_PALETTE[
+        (getBits(6, 3) + 2) % DEFAULT_AVATAR_PALETTE.length
+      ];
 
     const gradId1 = `bgGrad${hash}`;
     const gradId2 = `fg1Grad${hash}`;
@@ -192,24 +267,39 @@ export const avatarEngine = {
       <rect width="100" height="100" fill="url(#${gradId1})"/>
       
       <g transform="translate(50, 50) rotate(${getBits(15, 3) * 45})">
-        ${shape1 === 0 ? `<circle cx="-15" cy="-15" r="45" fill="url(#${gradId2})" opacity="0.9"/>` :
-          shape1 === 1 ? `<rect x="-35" y="-35" width="70" height="70" rx="16" fill="url(#${gradId2})" opacity="0.9"/>` :
-          shape1 === 2 ? `<polygon points="0,-50 45,35 -45,35" fill="url(#${gradId2})" opacity="0.9"/>` :
-          `<path d="M-40,0 A40,40 0 1,1 40,0" fill="url(#${gradId2})" opacity="0.9"/>`}
+        ${
+          shape1 === 0
+            ? `<circle cx="-15" cy="-15" r="45" fill="url(#${gradId2})" opacity="0.9"/>`
+            : shape1 === 1
+              ? `<rect x="-35" y="-35" width="70" height="70" rx="16" fill="url(#${gradId2})" opacity="0.9"/>`
+              : shape1 === 2
+                ? `<polygon points="0,-50 45,35 -45,35" fill="url(#${gradId2})" opacity="0.9"/>`
+                : `<path d="M-40,0 A40,40 0 1,1 40,0" fill="url(#${gradId2})" opacity="0.9"/>`
+        }
       </g>
 
       <g transform="translate(50, 50) rotate(${getBits(18, 3) * 45})">
-        ${shape2 === 0 ? `<circle cx="20" cy="20" r="35" fill="url(#${gradId3})" opacity="0.8"/>` :
-          shape2 === 1 ? `<rect x="-15" y="-15" width="50" height="50" rx="12" fill="url(#${gradId3})" opacity="0.8"/>` :
-          shape2 === 2 ? `<polygon points="-30,-15 30,-15 0,45" fill="url(#${gradId3})" opacity="0.8"/>` :
-          `<path d="M-35,15 A35,35 0 1,0 35,15" fill="url(#${gradId3})" opacity="0.8"/>`}
+        ${
+          shape2 === 0
+            ? `<circle cx="20" cy="20" r="35" fill="url(#${gradId3})" opacity="0.8"/>`
+            : shape2 === 1
+              ? `<rect x="-15" y="-15" width="50" height="50" rx="12" fill="url(#${gradId3})" opacity="0.8"/>`
+              : shape2 === 2
+                ? `<polygon points="-30,-15 30,-15 0,45" fill="url(#${gradId3})" opacity="0.8"/>`
+                : `<path d="M-35,15 A35,35 0 1,0 35,15" fill="url(#${gradId3})" opacity="0.8"/>`
+        }
       </g>
       
       <g transform="translate(50, 50) rotate(${getBits(21, 3) * 45})">
-        ${shape3 === 0 ? `<circle cx="-25" cy="25" r="12" fill="#ffffff" opacity="0.5"/>` :
-          shape3 === 1 ? `<rect x="-35" y="15" width="25" height="25" rx="6" fill="#ffffff" opacity="0.5"/>` :
-          shape3 === 2 ? `<polygon points="25,-25 40,-5 10,-5" fill="#ffffff" opacity="0.5"/>` :
-          `<circle cx="25" cy="-25" r="10" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6"/>`}
+        ${
+          shape3 === 0
+            ? `<circle cx="-25" cy="25" r="12" fill="#ffffff" opacity="0.5"/>`
+            : shape3 === 1
+              ? `<rect x="-35" y="15" width="25" height="25" rx="6" fill="#ffffff" opacity="0.5"/>`
+              : shape3 === 2
+                ? `<polygon points="25,-25 40,-5 10,-5" fill="#ffffff" opacity="0.5"/>`
+                : `<circle cx="25" cy="-25" r="10" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6"/>`
+        }
       </g>
       
       <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1.5"/>
@@ -253,9 +343,14 @@ export function syncNavAvatars() {
   let dataUrl = null;
   try {
     const name = localStorage.getItem("username") || "مستخدم";
-    dataUrl = avatarEngine.getAvatar() || avatarEngine.generateDefaultAvatarDataUrl(name);
+    dataUrl =
+      avatarEngine.getAvatar() ||
+      avatarEngine.generateDefaultAvatarDataUrl(name);
   } catch (err) {
-    console.error("syncNavAvatars: failed to resolve avatar, keeping default icon", err);
+    console.error(
+      "syncNavAvatars: failed to resolve avatar, keeping default icon",
+      err,
+    );
     return;
   }
 
@@ -285,7 +380,9 @@ export function syncNavAvatars() {
         overlay.alt = "";
         parent.appendChild(overlay);
       }
-      overlay.src = roleInfo.isOwner ? "assets/images/white-icon.png" : "favicon.png";
+      overlay.src = roleInfo.isOwner
+        ? "assets/images/white-icon.png"
+        : "favicon.png";
       overlay.style.display = "block";
     }
 

@@ -4,11 +4,25 @@
 // each renderer focused and independently testable.
 
 import { gameEngine, BADGES } from "../../shared/gameEngine.js";
+import { InfiniteList } from "./infiniteScroll.js";
 
 // ==================== Activity Heatmap ====================
 // Built entirely from user.history[].date - no new data model needed.
 
 import { attachHoverCard } from "./leaderboardIdentity.js";
+
+// Section label for the activity heatmap card — static "نشاطك" ("your
+// activity") on a regular user's own dashboard, but role-flavored for
+// admin/dev accounts (including on their own dashboard, not just visitor
+// view) since "نشاطك" reads oddly once the surrounding page is clearly
+// an admin/dev profile. roleInfo is whatever getAdminRoleInfo() (or the
+// visitor-view fetchAndRenderAdminStats() equivalent) returned — null/
+// undefined for a regular user.
+export function activityLabelFor(roleInfo) {
+  if (roleInfo && roleInfo.isOwner) return "📈 نشاط المطور";
+  if (roleInfo && roleInfo.role === "admin") return "📈 نشاط المشرف";
+  return "📈 نشاطك";
+}
 
 // Local calendar YYYY-MM-DD — not UTC via toISOString — so Egypt (UTC+3)
 // midnight cells and history timestamps land on the same day key.
@@ -38,8 +52,18 @@ const WEEKDAY_LABELS_SAT_FIRST = [
 ];
 const WEEKDAY_LABELS_SHORT = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
 const MONTH_LABELS_AR = [
-  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
-  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
+  "يناير",
+  "فبراير",
+  "مارس",
+  "أبريل",
+  "مايو",
+  "يونيو",
+  "يوليو",
+  "أغسطس",
+  "سبتمبر",
+  "أكتوبر",
+  "نوفمبر",
+  "ديسمبر",
 ];
 
 export function renderActivityHeatmap(user) {
@@ -155,11 +179,14 @@ export function renderActivityHeatmap(user) {
     .join("");
 
   const useShortDayLabels =
-    typeof window !== "undefined" && window.matchMedia("(max-width: 480px)").matches;
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 480px)").matches;
   const dayLabels = useShortDayLabels
     ? WEEKDAY_LABELS_SHORT
     : WEEKDAY_LABELS_SAT_FIRST;
-  const dayLabelsHtml = dayLabels.map((label) => `<span>${label}</span>`).join("");
+  const dayLabelsHtml = dayLabels
+    .map((label) => `<span>${label}</span>`)
+    .join("");
 
   const activeDays = days.filter((d) => d.count > 0).length;
 
@@ -242,7 +269,8 @@ export async function renderCategoryMastery(user, examList) {
 
   container.innerHTML = rows
     .map((row) => {
-      const barColor = row.best >= 80 ? "success" : row.best >= 50 ? "warning" : "error";
+      const barColor =
+        row.best >= 80 ? "success" : row.best >= 50 ? "warning" : "error";
       return `
       <div class="mastery-row">
         <div class="mastery-row-header">
@@ -297,7 +325,10 @@ export function renderNextBadges(user) {
     .filter((c) => c.progress !== null)
     .map((c) => ({
       ...c,
-      percent: Math.min(100, Math.round((c.progress.current / c.progress.goal) * 100)),
+      percent: Math.min(
+        100,
+        Math.round((c.progress.current / c.progress.goal) * 100),
+      ),
     }))
     .sort((a, b) => b.percent - a.percent)
     .slice(0, 3);
@@ -331,26 +362,19 @@ export function renderNextBadges(user) {
 // used during quiz-taking, but there was previously no surface for them on
 // the profile page - they became invisible once set.
 
-export function renderFlaggedQuestions(user, examList) {
-  const container = document.getElementById("flaggedList");
-  if (!container) return;
+// Module-level instance, mirroring historyList/bookmarksList in profile.js —
+// re-mounting on every render (rather than re-creating a fresh InfiniteList)
+// isn't necessary here since destroy()/mount() below already handle full
+// teardown, but keeping one instance around lets a future caller extend
+// this the same way profile.js does for the other two lists.
+let flaggedListInstance = null;
 
-  const flags = user.flags || {};
-  const keys = Object.keys(flags);
-
-  if (keys.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🚩</div><p>لا توجد أسئلة معلّمة للمراجعة</p></div>`;
-    return;
-  }
-
-  container.innerHTML = keys
-    .sort((a, b) => (flags[b].timestamp || 0) - (flags[a].timestamp || 0))
-    .map((key) => {
-      const lastUnderscore = key.lastIndexOf("_");
-      const examId = key.slice(0, lastUnderscore);
-      const qIdx = key.slice(lastUnderscore + 1);
-      const exam = (examList || []).find((e) => e.id === examId);
-      return `
+function flaggedItemHtml(key, examList) {
+  const lastUnderscore = key.lastIndexOf("_");
+  const examId = key.slice(0, lastUnderscore);
+  const qIdx = key.slice(lastUnderscore + 1);
+  const exam = (examList || []).find((e) => e.id === examId);
+  return `
       <div class="history-item">
         <div class="history-info">
           <h4>${exam ? exam.title : examId}</h4>
@@ -363,8 +387,27 @@ export function renderFlaggedQuestions(user, examList) {
           </button>
         </div>
       </div>`;
-    })
-    .join("");
+}
+
+export function renderFlaggedQuestions(user, examList) {
+  const container = document.getElementById("flaggedList");
+  if (!container) return;
+
+  const flags = user.flags || {};
+  const keys = Object.keys(flags).sort(
+    (a, b) => (flags[b].timestamp || 0) - (flags[a].timestamp || 0),
+  );
+
+  if (flaggedListInstance) flaggedListInstance.destroy();
+
+  flaggedListInstance = new InfiniteList({
+    containerEl: container,
+    items: keys,
+    renderItem: (key) => flaggedItemHtml(key, examList),
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">🚩</div><p>لا توجد أسئلة معلّمة للمراجعة</p></div>`,
+    mode: "button",
+  });
+  flaggedListInstance.mount();
 }
 
 window.unflagQuestion = function (examId, qIdx) {
@@ -372,3 +415,69 @@ window.unflagQuestion = function (examId, qIdx) {
   const user = gameEngine.getUserData();
   renderFlaggedQuestions(user, window.__examListCache || []);
 };
+
+// ==================== Uploaded Quizzes History ====================
+// Admin/dev only — last quizzes uploaded by the profile's owner, shown
+// above 📜 التاريخ on both the owner's own dashboard and public /@handle
+// profiles. Data comes from GET /api/admin-stats?uploads=true(&handle=X),
+// which reuses this route's existing handle/JWT resolution (see
+// api/admin-stats.js) rather than a new endpoint.
+
+let uploadedQuizzesListInstance = null;
+
+function uploadedQuizItemHtml(quiz) {
+  const date = quiz.createdAt
+    ? new Date(quiz.createdAt).toLocaleDateString("ar-EG")
+    : "";
+  const subtitleParts = [quiz.category, quiz.subject].filter(Boolean);
+  return `
+      <div class="history-item">
+        <div class="history-info">
+          <h4>${quiz.title || "اختبار بدون عنوان"}</h4>
+          <small>${subtitleParts.join(" • ")}${subtitleParts.length && date ? " • " : ""}${date}</small>
+        </div>
+        <div class="history-actions">
+          ${quiz.path ? `<a href="/q/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الإمتحان</a>` : ""}
+        </div>
+      </div>`;
+}
+
+// handle: null on the owner's own dashboard (resolved server-side via the
+// Bearer token instead); the visited admin's handle on a public profile.
+export async function renderUploadedQuizzes(handle = null) {
+  const section = document.getElementById("uploadedQuizzesSection");
+  const container = document.getElementById("uploadedQuizzesList");
+  if (!section || !container) return;
+
+  section.style.display = "";
+
+  try {
+    const token = localStorage.getItem("__bq_adm");
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    let url = "/api/admin-stats?uploads=true";
+    if (handle) url += `&handle=${encodeURIComponent(handle)}`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      section.style.display = "none";
+      return;
+    }
+    const data = await res.json();
+    const uploads = data.uploads || [];
+
+    if (uploadedQuizzesListInstance) uploadedQuizzesListInstance.destroy();
+    uploadedQuizzesListInstance = new InfiniteList({
+      containerEl: container,
+      items: uploads,
+      renderItem: uploadedQuizItemHtml,
+      emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📤</div><p>لم يتم رفع أي اختبارات بعد</p></div>`,
+      mode: "button",
+    });
+    uploadedQuizzesListInstance.mount();
+  } catch (err) {
+    console.error("Failed to render uploaded quizzes", err);
+    section.style.display = "none";
+  }
+}

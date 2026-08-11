@@ -502,6 +502,24 @@
              the user should feel proud of lives here, above the fold.
              ============================================================ -->
         <div class="identity-band">
+            <!-- Thumbnail banner — sits behind everything else in the band,
+                 same stacking approach as .identity-band::before. Empty/no
+                 src by default (no thumbnail set); renderThumbnail() in
+                 profile.js sets the background image and toggles
+                 .has-thumbnail so the CSS gradient overlay only applies
+                 when there's actually an image under it. -->
+            <div class="identity-thumbnail" id="identityThumbnail" aria-hidden="true">
+                <button type="button" class="thumbnail-edit-btn" id="thumbnailEditBtn" title="تغيير الصورة المصغرة"
+                    aria-label="تغيير الصورة المصغرة">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path
+                            d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                    </svg>
+                </button>
+            </div>
+
             <div class="identity-main">
                 <div class="avatar-wrapper">
                     <img id="avatarImage" src="" alt="الصورة الشخصية" width="88" height="88">
@@ -612,7 +630,7 @@
                 <div class="widget-row">
                     <!-- Activity Heatmap -->
                     <div class="sidebar-card heatmap-widget-card">
-                        <h3>📈 نشاطك</h3>
+                        <h3 id="activityHeatmapTitle">📈 نشاطك</h3>
                         <div id="activityHeatmap"></div>
                     </div>
 
@@ -622,6 +640,16 @@
                         <div id="categoryMastery"></div>
                     </div>
                 </div>
+
+                <!-- Uploaded Quizzes History — admin/dev only, own dashboard
+                     and public /@handle profiles alike. Hidden by default
+                     (same pattern as #adminStatsGrid) and only shown once
+                     role is known to belong to an admin/dev account. -->
+                <section class="content-section" id="uploadedQuizzesSection" style="display:none;">
+                    <h2>📤 الاختبارات المرفوعة</h2>
+                    <div id="uploadedQuizzesList" class="history-list">
+                    </div>
+                </section>
 
                 <section class="content-section">
                     <h2>📜 التاريخ</h2>
@@ -820,7 +848,12 @@
         </div>
     </div>
 
-    <!-- Avatar Picker Overlay -->
+    <!-- Avatar / Thumbnail Picker Overlay
+         Shared between two modes ("avatar" | "thumbnail"), switched via the
+         tab strip below. Which mode opened the picker sets the initial tab
+         (avatarEditBtn -> avatar, thumbnailEditBtn -> thumbnail); the tabs
+         let the user switch mode without closing and reopening. Upload /
+         camera / remove act on whichever mode is currently active. -->
     <div id="avatarPickerOverlay" class="avatar-picker-overlay" style="display:none;" role="dialog" aria-modal="true"
         aria-labelledby="avatarPickerTitle">
         <div class="avatar-picker-card">
@@ -836,9 +869,21 @@
                 </button>
             </div>
 
+            <div class="avatar-picker-tabs" id="avatarPickerTabs" role="tablist" aria-label="نوع الصورة">
+                <button type="button" class="avatar-picker-tab is-active" id="avatarPickerTabAvatar" data-mode="avatar"
+                    role="tab" aria-selected="true">الصورة الشخصية</button>
+                <button type="button" class="avatar-picker-tab" id="avatarPickerTabThumbnail" data-mode="thumbnail"
+                    role="tab" aria-selected="false">الصورة المصغرة</button>
+            </div>
+
             <div class="avatar-picker-section">
                 <span class="avatar-picker-section-label">اختر لوناً افتراضياً</span>
                 <div class="avatar-preset-grid" id="avatarPresetGrid"></div>
+            </div>
+
+            <div class="avatar-picker-section">
+                <span class="avatar-picker-section-label">أو من الصور المميزة</span>
+                <div class="avatar-preset-grid" id="avatarFeaturedGrid"></div>
             </div>
 
             <div class="avatar-picker-section">

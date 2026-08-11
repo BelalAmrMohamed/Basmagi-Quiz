@@ -1,8 +1,11 @@
-// public/src/shared/avatarPicker.js - Avatar Picker Modal Controller
-// Handles the "choose your avatar" overlay: default preset avatars
-// (generated, not stored, from initials), local file upload, and
-// device camera capture. Mirrors the interaction pattern already used
-// by #contactDevOverlay in profile.html.
+// public/src/shared/avatarPicker.js - Avatar / Thumbnail Picker Modal Controller
+// Handles the "choose your picture" overlay in two modes — "avatar" (the
+// profile picture) and "thumbnail" (the profile banner) — switched via the
+// tab strip in the overlay. Each mode has its own default preset avatars
+// (generated, not stored, from initials), Featured picks (static shipped
+// images), local file upload, and device camera capture; upload/camera/
+// remove act on whichever mode is currently active. Mirrors the interaction
+// pattern already used by #contactDevOverlay in profile.html.
 
 import { avatarEngine } from "./avatarEngine.js";
 import {
@@ -12,6 +15,47 @@ import {
 import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 
 let activeStream = null;
+let currentMode = "avatar"; // "avatar" | "thumbnail" — which picture the picker is currently editing
+
+// Per-mode behavior table. Every function below reads from this instead of
+// hardcoding avatar-specific calls, so "thumbnail" support is a second row
+// here rather than a parallel copy of the whole file.
+const MODES = {
+  avatar: {
+    title: "تغيير الصورة الشخصية",
+    presetGridId: "avatarPresetGrid",
+    presetLabel: "اختر لوناً افتراضياً",
+    featuredGridId: "avatarFeaturedGrid",
+    getFeatured: () => avatarEngine.getFeaturedPictures(),
+    get: () => avatarEngine.getAvatar(),
+    save: (dataUrl) => avatarEngine.saveAvatar(dataUrl),
+    remove: () => avatarEngine.removeAvatar(),
+    syncField: "avatarUrl",
+    updatedEvent: "avatarUpdated",
+    savedMessage: "تم تحديث الصورة الشخصية",
+    removedMessage: "تمت إزالة الصورة الشخصية",
+    removeBtnLabel: "إزالة الصورة الحالية",
+  },
+  thumbnail: {
+    title: "تغيير الصورة المصغرة",
+    presetGridId: "avatarPresetGrid",
+    presetLabel: "اختر لوناً افتراضياً",
+    featuredGridId: "avatarFeaturedGrid",
+    getFeatured: () => avatarEngine.getFeaturedThumbnails(),
+    get: () => avatarEngine.getThumbnail(),
+    save: (dataUrl) => avatarEngine.saveThumbnail(dataUrl),
+    remove: () => avatarEngine.removeThumbnail(),
+    syncField: "thumbnailUrl",
+    updatedEvent: "thumbnailUpdated",
+    savedMessage: "تم تحديث الصورة المصغرة",
+    removedMessage: "تمت إزالة الصورة المصغرة",
+    removeBtnLabel: "إزالة الصورة المصغرة الحالية",
+  },
+};
+
+function activeConfig() {
+  return MODES[currentMode] || MODES.avatar;
+}
 
 function getUsername() {
   return localStorage.getItem("username") || "مستخدم";
@@ -30,7 +74,8 @@ const PRESET_SEEDS = [
 ];
 
 function renderPresetGrid() {
-  const grid = document.getElementById("avatarPresetGrid");
+  const cfg = activeConfig();
+  const grid = document.getElementById(cfg.presetGridId);
   if (!grid) return;
 
   const name = getUsername();
@@ -40,7 +85,7 @@ function renderPresetGrid() {
   const seeds = [name, ...PRESET_SEEDS].slice(0, 8);
 
   grid.innerHTML = seeds
-    .map((seed, i) => {
+    .map((seed) => {
       const svg = avatarEngine.generateDefaultAvatarSVG(seed);
       const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
       return `<button type="button" class="avatar-preset-btn" data-avatar="${dataUrl}" aria-label="اختيار هذا الشكل" style="padding:0; overflow:hidden; background:transparent;">
@@ -52,15 +97,48 @@ function renderPresetGrid() {
   grid.querySelectorAll(".avatar-preset-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const dataUrl = btn.getAttribute("data-avatar");
-      applyAvatar(dataUrl);
+      applyPicture(dataUrl);
     });
   });
 
-  // Async fetch and append Gravatar for admins/owners
-  const roleInfo = getAdminRoleInfo();
-  if (roleInfo && roleInfo.email) {
-    appendGravatarPreset(grid, roleInfo.email);
+  // Async fetch and append Gravatar for admins/owners — avatar mode only;
+  // a Gravatar is a face photo, which doesn't make sense as a banner thumbnail.
+  if (currentMode === "avatar") {
+    const roleInfo = getAdminRoleInfo();
+    if (roleInfo && roleInfo.email) {
+      appendGravatarPreset(grid, roleInfo.email);
+    }
   }
+}
+
+// Featured Pictures / Featured Thumbnails grid — static, pre-made images
+// shipped with the site (see avatarEngine.getFeaturedPictures/Thumbnails).
+// Rendered directly from their URL (no data-URL conversion, no processing —
+// they're already the right shape) so picking one is an instant, local
+// operation, same as picking a generated preset.
+function renderFeaturedGrid() {
+  const cfg = activeConfig();
+  const grid = document.getElementById(cfg.featuredGridId);
+  if (!grid) return;
+
+  const items = cfg.getFeatured();
+
+  grid.innerHTML = items
+    .map(
+      (
+        item,
+      ) => `<button type="button" class="avatar-preset-btn" data-avatar="${item.url}" aria-label="اختيار هذه الصورة المميزة" style="padding:0; overflow:hidden; background:transparent;">
+        <img src="${item.url}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
+      </button>`,
+    )
+    .join("");
+
+  grid.querySelectorAll(".avatar-preset-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const url = btn.getAttribute("data-avatar");
+      applyPicture(url);
+    });
+  });
 }
 
 async function appendGravatarPreset(grid, email) {
@@ -88,7 +166,7 @@ async function appendGravatarPreset(grid, email) {
     btn.setAttribute("aria-label", "الصورة من البريد");
     btn.style.cssText = "background:transparent; padding:0; overflow:hidden;";
     btn.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
-    btn.addEventListener("click", () => applyAvatar(dataUrl));
+    btn.addEventListener("click", () => applyPicture(dataUrl));
 
     grid.appendChild(btn);
   } catch (err) {
@@ -96,25 +174,28 @@ async function appendGravatarPreset(grid, email) {
   }
 }
 
-function applyAvatar(dataUrl) {
-  const ok = avatarEngine.saveAvatar(dataUrl);
+function applyPicture(dataUrl) {
+  const cfg = activeConfig();
+  const ok = cfg.save(dataUrl);
   if (ok) {
-    window.dispatchEvent(new CustomEvent("avatarUpdated"));
-    showNotification("تم تحديث الصورة الشخصية", "", "success");
+    window.dispatchEvent(new CustomEvent(cfg.updatedEvent));
+    showNotification(cfg.savedMessage, "", "success");
     closeAvatarPicker();
-    syncAvatarToServer(dataUrl);
+    syncPictureToServer(dataUrl);
   } else {
     showNotification("تعذّر حفظ الصورة، جرّب صورة أصغر", "", "error");
   }
 }
 
-// Persists the avatar to admin_users.avatar_url for admin/dev accounts so
-// it shows up in visitor view (public profile). Regular/anonymous users
-// have no DB row — getAdminRoleInfo() returning null is the guard for that.
-// Best-effort/fire-and-forget: the local avatar (avatarEngine, already
-// saved above) is what the owner's own UI always shows, so a failed sync
-// here shouldn't interrupt or roll back what the user just did.
-async function syncAvatarToServer(dataUrl) {
+// Persists the avatar/thumbnail to the matching admin_users column for
+// admin/dev accounts so it shows up in visitor view (public profile).
+// Regular/anonymous users have no DB row — getAdminRoleInfo() returning
+// null is the guard for that. Best-effort/fire-and-forget: the local copy
+// (avatarEngine, already saved above) is what the owner's own UI always
+// shows, so a failed sync here shouldn't interrupt or roll back what the
+// user just did.
+async function syncPictureToServer(dataUrl) {
+  const cfg = activeConfig();
   const roleInfo = getAdminRoleInfo();
   if (!roleInfo) return;
 
@@ -128,10 +209,10 @@ async function syncAvatarToServer(dataUrl) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ avatarUrl: dataUrl }),
+      body: JSON.stringify({ [cfg.syncField]: dataUrl }),
     });
   } catch (err) {
-    console.error("Failed to sync avatar to server", err);
+    console.error("Failed to sync picture to server", err);
   }
 }
 
@@ -139,7 +220,7 @@ async function processAndApplyFile(file) {
   if (!file) return;
   try {
     const dataUrl = await avatarEngine.processImageFile(file);
-    applyAvatar(dataUrl);
+    applyPicture(dataUrl);
   } catch (err) {
     showNotification(err.message || "تعذّر معالجة الصورة", "", "error");
   }
@@ -210,7 +291,7 @@ async function captureFromCamera() {
           type: "image/jpeg",
         });
         const dataUrl = await avatarEngine.processImageFile(file);
-        applyAvatar(dataUrl);
+        applyPicture(dataUrl);
         stopCamera();
       } catch (err) {
         showNotification(err.message || "تعذّر التقاط الصورة", "", "error");
@@ -221,10 +302,43 @@ async function captureFromCamera() {
   );
 }
 
-export function openAvatarPicker() {
+// Applies currentMode's copy (title, remove-button label, active tab) to
+// the shared overlay chrome. Called on open and on every tab switch.
+function applyModeToOverlay() {
+  const cfg = activeConfig();
+
+  const titleEl = document.getElementById("avatarPickerTitle");
+  if (titleEl) titleEl.textContent = cfg.title;
+
+  const presetLabelEl = document.querySelector(
+    `#${cfg.presetGridId}`,
+  )?.previousElementSibling;
+  if (presetLabelEl) presetLabelEl.textContent = cfg.presetLabel;
+
+  const removeBtn = document.getElementById("avatarRemoveBtn");
+  if (removeBtn) removeBtn.textContent = cfg.removeBtnLabel;
+  // Restore the icon that textContent just wiped — rebuild it once here
+  // rather than re-querying the SVG markup from the DOM.
+  if (removeBtn) {
+    removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>${cfg.removeBtnLabel}`;
+  }
+
+  document.querySelectorAll(".avatar-picker-tab").forEach((tab) => {
+    const isActive = tab.dataset.mode === currentMode;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  renderPresetGrid();
+  renderFeaturedGrid();
+}
+
+export function openAvatarPicker(mode = "avatar") {
   const overlay = document.getElementById("avatarPickerOverlay");
   if (!overlay) return;
-  renderPresetGrid();
+
+  currentMode = MODES[mode] ? mode : "avatar";
+  applyModeToOverlay();
 
   overlay.style.display = "flex";
   requestAnimationFrame(() => overlay.classList.add("open"));
@@ -242,6 +356,7 @@ export function closeAvatarPicker() {
 
 export function initAvatarPicker() {
   const editBtn = document.getElementById("avatarEditBtn");
+  const thumbnailEditBtn = document.getElementById("thumbnailEditBtn");
   const overlay = document.getElementById("avatarPickerOverlay");
   const closeBtn = document.getElementById("avatarPickerCloseBtn");
   const fileInput = document.getElementById("avatarFileInput");
@@ -250,10 +365,16 @@ export function initAvatarPicker() {
   const cameraStartBtn = document.getElementById("avatarCameraStartBtn");
   const cameraCaptureBtn = document.getElementById("avatarCameraCaptureBtn");
   const removeBtn = document.getElementById("avatarRemoveBtn");
+  const tabs = document.querySelectorAll(".avatar-picker-tab");
 
   if (!overlay) return; // Guard: only wire up on pages that have the picker
 
-  editBtn && editBtn.addEventListener("click", openAvatarPicker);
+  editBtn &&
+    editBtn.addEventListener("click", () => openAvatarPicker("avatar"));
+  thumbnailEditBtn &&
+    thumbnailEditBtn.addEventListener("click", () =>
+      openAvatarPicker("thumbnail"),
+    );
   closeBtn && closeBtn.addEventListener("click", closeAvatarPicker);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeAvatarPicker();
@@ -261,6 +382,15 @@ export function initAvatarPicker() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && overlay.classList.contains("open"))
       closeAvatarPicker();
+  });
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      if (tab.dataset.mode === currentMode) return;
+      stopCamera(); // switching modes mid-capture would apply to the wrong target
+      currentMode = MODES[tab.dataset.mode] ? tab.dataset.mode : "avatar";
+      applyModeToOverlay();
+    });
   });
 
   uploadBtn &&
@@ -309,12 +439,13 @@ export function initAvatarPicker() {
 
   removeBtn &&
     removeBtn.addEventListener("click", () => {
-      avatarEngine.removeAvatar();
-      window.dispatchEvent(new CustomEvent("avatarUpdated"));
-      showNotification("تمت إزالة الصورة الشخصية", "", "success");
+      const cfg = activeConfig();
+      cfg.remove();
+      window.dispatchEvent(new CustomEvent(cfg.updatedEvent));
+      showNotification(cfg.removedMessage, "", "success");
       closeAvatarPicker();
-      // Clear the server-side copy too, so a removed avatar doesn't keep
+      // Clear the server-side copy too, so a removed picture doesn't keep
       // showing up in visitor view after it's gone from the owner's own UI.
-      syncAvatarToServer(null);
+      syncPictureToServer(null);
     });
 }

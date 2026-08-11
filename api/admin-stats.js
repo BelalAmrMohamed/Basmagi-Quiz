@@ -47,14 +47,27 @@ async function handleSync(req, res) {
     return res.status(401).json({ error: "غير مصرح" });
   }
 
-  const { totalPoints, totalQuizzes, totalBadges, currentLevel, avatarUrl, displayName, activityHeatmap } = req.body || {};
+  const {
+    totalPoints,
+    totalQuizzes,
+    totalBadges,
+    currentLevel,
+    avatarUrl,
+    thumbnailUrl,
+    displayName,
+    activityHeatmap,
+  } = req.body || {};
 
   const hasProgressFields =
-    totalPoints !== undefined || totalQuizzes !== undefined ||
-    totalBadges !== undefined || currentLevel !== undefined;
+    totalPoints !== undefined ||
+    totalQuizzes !== undefined ||
+    totalBadges !== undefined ||
+    currentLevel !== undefined;
 
-  const isFiniteNonNegative = (n) => typeof n === "number" && Number.isFinite(n) && n >= 0;
-  const isPlainObject = (value) => value && typeof value === "object" && !Array.isArray(value);
+  const isFiniteNonNegative = (n) =>
+    typeof n === "number" && Number.isFinite(n) && n >= 0;
+  const isPlainObject = (value) =>
+    value && typeof value === "object" && !Array.isArray(value);
 
   const updates = {};
 
@@ -85,7 +98,9 @@ async function handleSync(req, res) {
         !Number.isFinite(value) ||
         value < 0
       ) {
-        return res.status(400).json({ error: "Invalid activityHeatmap payload" });
+        return res
+          .status(400)
+          .json({ error: "Invalid activityHeatmap payload" });
       }
     }
     updates.activity_heatmap = activityHeatmap;
@@ -95,10 +110,28 @@ async function handleSync(req, res) {
     // avatarEngine.saveAvatar() already validates/compresses before this
     // is ever called — here we just guard against obviously-wrong types
     // and an unbounded payload size reaching the DB.
-    if (avatarUrl !== null && (typeof avatarUrl !== "string" || avatarUrl.length > 500000)) {
+    if (
+      avatarUrl !== null &&
+      (typeof avatarUrl !== "string" || avatarUrl.length > 500000)
+    ) {
       return res.status(400).json({ error: "Invalid avatar payload" });
     }
     updates.avatar_url = avatarUrl;
+  }
+
+  if (thumbnailUrl !== undefined) {
+    // Same shape/size contract as avatarUrl above: either a processed data
+    // URL (avatarEngine.processImageFile, already validated/compressed) or
+    // a relative path into public/assets/profile-featured/thumbnails/ (the
+    // Featured Thumbnails picker) — both are plain strings well under this
+    // cap, so the same guard covers both sources.
+    if (
+      thumbnailUrl !== null &&
+      (typeof thumbnailUrl !== "string" || thumbnailUrl.length > 500000)
+    ) {
+      return res.status(400).json({ error: "Invalid thumbnail payload" });
+    }
+    updates.thumbnail_url = thumbnailUrl;
   }
 
   if (displayName !== undefined) {
@@ -112,7 +145,10 @@ async function handleSync(req, res) {
     return res.status(400).json({ error: "Nothing to sync" });
   }
 
-  const normalizedEmail = payload.email.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
+  const normalizedEmail = payload.email
+    .trim()
+    .toLowerCase()
+    .replace(/[%_\\]/g, "\\$&");
   const { data: updated, error } = await supabaseService
     .from("admin_users")
     .update(updates)
@@ -147,7 +183,9 @@ export default async function handler(req, res) {
   if (isLeaderboard) {
     const { data, error } = await supabase
       .from("admin_users")
-      .select("display_name, handle, uploaded_quizzes, current_level, avatar_url, total_points")
+      .select(
+        "display_name, handle, uploaded_quizzes, current_level, avatar_url, thumbnail_url, total_points",
+      )
       .order("uploaded_quizzes", { ascending: false })
       .limit(10);
 
@@ -166,20 +204,33 @@ export default async function handler(req, res) {
       totalQuizzes: row.uploaded_quizzes || 0,
       currentLevel: row.current_level || 1,
       avatarUrl: row.avatar_url || null,
+      thumbnailUrl: row.thumbnail_url || null,
       totalPoints: row.total_points || 0,
     }));
 
     return res.status(200).json(leaderboard);
   }
 
+  // ── Uploaded Quizzes History ────────────────────────────────────────────
+  // ?uploads=true&handle=X (or Bearer token for the owner's own dashboard).
+  // Reuses this route's existing handle/JWT resolution below rather than a
+  // dedicated endpoint, mindful of the Vercel function-count limit — same
+  // reasoning as avatarUrl/thumbnailUrl sharing the POST path above.
+  const isUploads = req.query.uploads === "true";
+
   let adminUser = null;
 
   if (handle) {
     // Find admin id and stats
-    const normalizedHandle = handle.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
+    const normalizedHandle = handle
+      .trim()
+      .toLowerCase()
+      .replace(/[%_\\]/g, "\\$&");
     const { data, error } = await supabase
       .from("admin_users")
-      .select("id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, uploaded_quizzes, activity_heatmap")
+      .select(
+        "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+      )
       .ilike("handle", normalizedHandle)
       .maybeSingle();
     adminUser = data;
@@ -189,7 +240,9 @@ export default async function handler(req, res) {
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
       try {
-        const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8"));
+        const payload = JSON.parse(
+          Buffer.from(token.split(".")[1], "base64").toString("utf8"),
+        );
         if (payload.email) {
           // admin_users.email is stored as entered (e.g. at signup time), while
           // the JWT's email claim may come from a different casing (OAuth
@@ -198,10 +251,15 @@ export default async function handler(req, res) {
           // yet never resolve a row here -> silent 404 -> no handle shown.
           // Use ilike with an escaped, trimmed, lowercased value for a safe
           // case-insensitive exact match instead.
-          const normalizedEmail = payload.email.trim().toLowerCase().replace(/[%_\\]/g, "\\$&");
+          const normalizedEmail = payload.email
+            .trim()
+            .toLowerCase()
+            .replace(/[%_\\]/g, "\\$&");
           const { data, error } = await supabase
             .from("admin_users")
-            .select("id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, uploaded_quizzes, activity_heatmap")
+            .select(
+              "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+            )
             .ilike("email", normalizedEmail)
             .maybeSingle();
           adminUser = data;
@@ -213,15 +271,47 @@ export default async function handler(req, res) {
   }
 
   if (!adminUser) {
-    return res.status(404).json({ error: "Admin not found or missing handle parameter" });
+    return res
+      .status(404)
+      .json({ error: "Admin not found or missing handle parameter" });
   }
 
   const ownerEmails = getOwnerEmails();
-  const isOwner = !!(adminUser.email && ownerEmails.includes(adminUser.email.trim().toLowerCase()));
+  const isOwner = !!(
+    adminUser.email &&
+    ownerEmails.includes(adminUser.email.trim().toLowerCase())
+  );
   // Every row in admin_users is, by schema/naming, an admin — see
   // Database-Schema.sql. Owners are additionally admins.
   const role = "admin";
 
+  if (isUploads) {
+    // Public (anon-key) read, same as the rest of this GET path — visitor
+    // profiles need this too, so no auth gate here beyond resolving which
+    // admin's quizzes to list (already done above via handle or JWT).
+    const { data: recentQuizzes, error: recentErr } = await supabase
+      .from("quizzes")
+      .select("id, title, category, subject, path, created_at")
+      .eq("uploaded_by", adminUser.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (recentErr) {
+      return res.status(500).json({ error: recentErr.message });
+    }
+
+    return res.status(200).json({
+      handle: adminUser.handle,
+      uploads: (recentQuizzes || []).map((q) => ({
+        id: q.id,
+        title: q.title,
+        category: q.category,
+        subject: q.subject,
+        path: q.path,
+        createdAt: q.created_at,
+      })),
+    });
+  }
 
   // Count quizzes uploaded
   const { count: quizzesCount, error: quizzesErr } = await supabase
@@ -235,9 +325,9 @@ export default async function handler(req, res) {
     .from("quizzes")
     .select("id")
     .eq("uploaded_by", adminUser.id);
-  
+
   const quizIds = (adminQuizzes || []).map((q) => q.id);
-  
+
   let reportsCount = 0;
   if (quizIds.length > 0) {
     const { count } = await supabase
@@ -259,7 +349,10 @@ export default async function handler(req, res) {
     // the RLS SELECT policy on admin_users only restricts rows, not columns,
     // so returning email here would make it enumerable via handle. See
     // handoff notes: "Known follow-up" under the RLS fix.
-    uploadedQuizzes: typeof adminUser.uploaded_quizzes !== 'undefined' ? adminUser.uploaded_quizzes : quizzesCount || 0,
+    uploadedQuizzes:
+      typeof adminUser.uploaded_quizzes !== "undefined"
+        ? adminUser.uploaded_quizzes
+        : quizzesCount || 0,
     reportsCount: reportsCount,
     resolvedReports: resolvedCount || 0,
     totalPoints: adminUser.total_points || 0,
@@ -267,10 +360,10 @@ export default async function handler(req, res) {
     totalBadges: adminUser.total_badges || 0,
     currentLevel: adminUser.current_level || 1,
     avatarUrl: adminUser.avatar_url || null,
+    thumbnailUrl: adminUser.thumbnail_url || null,
     displayName: adminUser.display_name || null,
     activityHeatmap: adminUser.activity_heatmap || {},
     role,
-    isOwner
+    isOwner,
   });
-
 }
