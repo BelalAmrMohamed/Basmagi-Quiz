@@ -16,19 +16,27 @@ const THEME_PRESETS = {
   light: {
     colors: ["#818cf8", "#a78bfa", "#f472b6"],
 
-    // There is an issue with the background. In the light theme. When the animations are active, the background is white, meaning this setting isn't being applied, which makes the colors of the animations almost invisible.
-    // I actually want the background to be white to match the light theme anyways. But this issue must be fixed anyways.
-    backgroundColor: "#0a0a2e", 
+    // FIXED: this was "#0a0a2e" (a dark navy), which fed into O.rgb via the
+    // uBgGlow vignette term and darkened `colr` everywhere — including on
+    // the streaks themselves. Combined with the low opacity below, that left
+    // the streaks too dim to read against the page's white background.
+    // backgroundColor here now matches the light theme's actual page
+    // background (white) instead of fighting it, and backgroundGlow is
+    // dropped to ~0 since a white glow vignette adds nothing visible on a
+    // white page anyway. glow/opacity are raised so the streaks themselves
+    // (which are the only thing actually meant to be visible) stay bright
+    // and saturated instead of washing out.
+    backgroundColor: "#ffffff",
     speed: 0.3,
     streakCount: 5,
     streakWidth: 1.2,
     streakLength: 1,
-    glow: 1.2,
+    glow: 1.6,
     density: 0.6,
     twinkle: 0.6,
     zoom: 3,
-    backgroundGlow: 0.15,
-    opacity: 0.25,
+    backgroundGlow: 0.02,
+    opacity: 0.85,
     alphaMode: 1.0,
     mouseStrength: 0.4,
     mouseRadius: 0.8,
@@ -88,9 +96,8 @@ const hexToRGB = (hex) => {
  * Pads to MAX_COLORS entries and computes the average for the mouse-glow tint.
  */
 const prepColors = (input) => {
-  const base = (input && input.length
-    ? input
-    : ["#A6C8FF", "#5227FF", "#FF9FFC"]
+  const base = (
+    input && input.length ? input : ["#A6C8FF", "#5227FF", "#FF9FFC"]
   ).slice(0, MAX_COLORS);
 
   const count = base.length;
@@ -267,7 +274,7 @@ function compileShader(gl, type, source) {
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     console.error(
       "Lightfall: shader compile error:",
-      gl.getShaderInfoLog(shader)
+      gl.getShaderInfoLog(shader),
     );
     gl.deleteShader(shader);
     return null;
@@ -322,7 +329,7 @@ export class CanvasAnimationController {
 
     this.rafId = null;
     this.isEnabled = true;
-    this.currentTheme = "light";
+    this.currentTheme = "dark";
     this.dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
 
     // Mouse tracking with exponential dampening
@@ -360,7 +367,7 @@ export class CanvasAnimationController {
 
     // Respect prefers-reduced-motion
     this._reducedMotionQuery = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
+      "(prefers-reduced-motion: reduce)",
     );
     if (this._reducedMotionQuery.matches) {
       this.isEnabled = false;
@@ -378,7 +385,7 @@ export class CanvasAnimationController {
     // Initialize WebGL pipeline
     if (!this._initWebGL()) {
       console.warn(
-        "Lightfall: WebGL unavailable — falling back to static CSS background."
+        "Lightfall: WebGL unavailable — falling back to static CSS background.",
       );
       this.container.style.display = "none";
       return;
@@ -394,7 +401,7 @@ export class CanvasAnimationController {
           this.rafId = null;
         }
       },
-      false
+      false,
     );
 
     // Detect theme and apply preset
@@ -433,7 +440,7 @@ export class CanvasAnimationController {
       // Paint the correct theme background on <body> BEFORE hiding the canvas
       // to prevent a flash of wrong color during the switchover.
       const theme =
-        document.documentElement.getAttribute("data-theme") || "light";
+        document.documentElement.getAttribute("data-theme") || "dark";
       const bgMap = {
         light: "#fafbfc",
         "dark-slate": "#0f172a",
@@ -441,7 +448,7 @@ export class CanvasAnimationController {
       };
       // Temporarily suppress the CSS transition so the color applies instantly
       document.body.style.transition = "none";
-      document.body.style.backgroundColor = bgMap[theme] || bgMap.light;
+      document.body.style.backgroundColor = bgMap[theme] || bgMap.dark;
       // Force a reflow so the browser paints the solid background NOW
       void document.body.offsetHeight;
       // Now it's safe to hide the canvas — no visible gap
@@ -499,10 +506,9 @@ export class CanvasAnimationController {
   }
 
   updateTheme() {
-    const theme =
-      document.documentElement.getAttribute("data-theme") || "light";
+    const theme = document.documentElement.getAttribute("data-theme") || "dark";
     this.currentTheme = theme;
-    const preset = THEME_PRESETS[theme] || THEME_PRESETS.light;
+    const preset = THEME_PRESETS[theme] || THEME_PRESETS.dark;
     this._applyPreset(preset);
   }
 
@@ -554,7 +560,7 @@ export class CanvasAnimationController {
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW
+      gl.STATIC_DRAW,
     );
 
     this.uvBuffer = gl.createBuffer();
@@ -562,7 +568,7 @@ export class CanvasAnimationController {
     gl.bufferData(
       gl.ARRAY_BUFFER,
       new Float32Array([0, 0, 2, 0, 0, 2]),
-      gl.STATIC_DRAW
+      gl.STATIC_DRAW,
     );
 
     // Attribute locations
@@ -632,7 +638,7 @@ export class CanvasAnimationController {
     gl.uniform1f(this.uniformLocs.uSpeed, preset.speed);
     gl.uniform1i(
       this.uniformLocs.uStreakCount,
-      Math.max(1, Math.min(16, Math.round(preset.streakCount)))
+      Math.max(1, Math.min(16, Math.round(preset.streakCount))),
     );
     gl.uniform1f(this.uniformLocs.uStreakWidth, preset.streakWidth);
     gl.uniform1f(this.uniformLocs.uStreakLength, preset.streakLength);

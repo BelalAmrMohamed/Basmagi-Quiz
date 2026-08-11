@@ -337,7 +337,7 @@ body.sidebar-expanded {
   gap: 0;
 }
 
-.menu-section-title{
+.menu-section-title {
   text-align: center;
 }
 
@@ -499,7 +499,7 @@ body.sidebar-expanded {
 .theme-selector-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   margin-block: 4px 6px; /* logical top/bottom — replaces margin: 4px 4px 6px */
   margin-inline: 4px; /* logical left/right  */
   /*
@@ -511,25 +511,30 @@ body.sidebar-expanded {
   overflow: visible;
 }
 
+/*
+ * Theme picker buttons — each renders a tiny non-interactive preview of the
+ * HOME PAGE (header/search bar + a couple of card-list rows) painted in that
+ * theme's own fixed palette, so the button doubles as an accurate swatch —
+ * not just an icon. Colors below are intentionally hardcoded per theme
+ * (not var(--color-*)) since a swatch must always show ITS theme's colors,
+ * regardless of which theme is currently active.
+ */
 .theme-selector-btn {
   border: 2px solid var(--color-border);
-  border-radius: 10px;
-  padding: 10px 4px;
+  border-radius: 12px;
+  padding: 0 0 6px;
   cursor: pointer;
   background: none;
+  overflow: hidden;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-[data-theme="dark-slate"] .theme-selector-btn,
-[data-theme="dark"] .theme-selector-btn {
-  color: #ffffff;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
 }
 
 .theme-selector-btn:hover {
@@ -544,38 +549,182 @@ body.sidebar-expanded {
   box-shadow: var(--shadow-md);
 }
 
-.theme-btn-icon {
-  font-size: 1.2rem;
-  transition: transform 0.2s ease;
+/* ── Mini home-page preview ──────────────────────────────────────────────── */
+.theme-btn-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 44px;
+  padding: 5px;
+  box-sizing: border-box;
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
 }
 
-.theme-selector-btn[aria-pressed="true"] .theme-btn-icon {
-  transform: scale(1.12);
+/* Header row: search-bar pill + a small accent dot (mirrors the home
+   page's search area) */
+.theme-btn-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.theme-btn-preview-header::before {
+  content: "";
+  flex: 1;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.theme-btn-preview-header::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Card-list silhouette: two stacked rows, each an icon-circle + text lines —
+   mirrors .category-card's mobile list-row (.icon + .card-text) */
+.theme-btn-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.theme-btn-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 11px;
+  border-radius: 3px;
+  padding-inline: 3px;
+}
+
+.theme-btn-preview-row::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-btn-preview-row::after {
+  content: "";
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* ── Per-theme fixed palettes ─────────────────────────────────────────────
+   Each swatch always renders in its OWN theme's colors, independent of the
+   currently-applied site theme (data-theme on <html>). */
+.theme-selector-btn[data-theme="light"] .theme-btn-preview {
+  background: #fafbfc;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-header::before {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-header::after {
+  background: #6366f1;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row::before {
+  background: #6366f1;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row::after {
+  background: #e5e7eb;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview {
+  background: #0f172a;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::before {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::after {
+  background: #818cf8;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::before {
+  background: #818cf8;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::after {
+  background: #334155;
+}
+
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview {
+  background: #121212;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::before {
+  background: #1e1e1e;
+  border: 1px solid #333333;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::after {
+  background: #60a5fa;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row {
+  background: #1e1e1e;
+  border: 1px solid #333333;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::before {
+  background: #60a5fa;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::after {
+  background: #333333;
+}
+
+/* Selected-state check badge (mirrors the reference design's ✓ pill) */
+.theme-btn-check {
+  position: absolute;
+  bottom: 20px;
+  inset-inline-end: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.theme-btn-check svg {
+  width: 9px;
+  height: 9px;
+  stroke: currentColor;
+  stroke-width: 3;
+  fill: none;
+}
+
+.theme-selector-btn[aria-pressed="true"] .theme-btn-check {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .theme-btn-label {
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--color-text);
-}
-
-[data-theme="dark-slate"] .theme-btn-label,
-[data-theme="dark"] .theme-btn-label {
-  color: var(--color-text-primary); 
-  font-weight: 600;
-  font-size: 14px;
-}
-
-[data-theme="light"] .theme-selector-btn .theme-btn-label {
-  color: var(--color-text-primary) !important;
-  font-weight: 600;
-}
-
-[data-theme="dark-slate"] .theme-selector-btn .theme-btn-label,
-[data-theme="dark"] .theme-selector-btn .theme-btn-label {
-  color: var(--color-text-primary) !important;
-  font-weight: 700;
-  font-size: 14px;
+  color: var(--color-text-primary);
+  text-align: center;
+  padding-top: 5px;
 }
 
 .theme-selector-btn:focus-visible {
@@ -683,7 +832,9 @@ body.sidebar-expanded {
   /* Slide up from BOTTOM — full-width bottom sheet */
   .sidebar {
     top: auto;
-    bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(
+      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+    );
     left: 0;
     right: 0;
     width: 100% !important;
@@ -696,13 +847,17 @@ body.sidebar-expanded {
     box-shadow: none;
     overflow-y: hidden; /* nav handles scrolling so header can stay sticky */
     overflow-x: hidden;
-    max-height: calc(85dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(
+      85dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px)
+    );
   }
 
   .sidebar.expanded {
     transform: translateY(0); /* slide up into view */
     box-shadow: var(--shadow-xl);
-    bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(
+      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+    );
   }
 
   /* Drag handle pill at the top of the sheet */
@@ -760,7 +915,9 @@ body.sidebar-expanded {
   body,
   body.sidebar-expanded {
     padding-right: 16px !important;
-    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
+    padding-bottom: calc(
+      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px
+    ) !important;
   }
 
   /* Full labels always visible on mobile */
@@ -888,7 +1045,8 @@ body.sidebar-expanded {
     justify-content: center;
     width: 26px;
     height: 26px;
-    transition: transform 0.18s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transition: transform 0.18s
+      var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
   .bottom-nav-icon svg {
@@ -947,7 +1105,7 @@ body.sidebar-expanded {
   [data-theme="dark-slate"] .bottom-nav-item.active::before {
     background: var(--color-accent);
   }
-  
+
   /* "الحساب" (Profile) — emphasized as the primary action, Play-Store-esque */
   .bottom-nav-icon-profile {
     width: 34px;
@@ -966,7 +1124,9 @@ body.sidebar-expanded {
   }
 
   .bottom-nav-item-profile.active {
-    color: var(--color-text-tertiary); /* label stays neutral; icon carries the emphasis */
+    color: var(
+      --color-text-tertiary
+    ); /* label stays neutral; icon carries the emphasis */
   }
 
   .bottom-nav-item-profile.active::before {
@@ -1021,7 +1181,6 @@ body.sidebar-expanded {
   margin-left: 0;
 }
 
-
 /* ==================== Global Nav Avatar ==================== */
 /*
  * These mirror the SVG icon they replace: same box, circular crop.
@@ -1067,9 +1226,23 @@ body.sidebar-expanded {
   border-radius: 50%;
   border: 1.5px solid var(--badge-gold-hi);
   background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0%, transparent 42%),
-    radial-gradient(circle at 70% 78%, rgba(122, 84, 20, 0.45) 0%, transparent 50%),
-    linear-gradient(145deg, var(--badge-gold-hi) 0%, var(--badge-gold) 38%, var(--badge-gold-mid) 72%, var(--badge-gold-lo) 100%);
+    radial-gradient(
+      circle at 32% 28%,
+      rgba(255, 255, 255, 0.85) 0%,
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 70% 78%,
+      rgba(122, 84, 20, 0.45) 0%,
+      transparent 50%
+    ),
+    linear-gradient(
+      145deg,
+      var(--badge-gold-hi) 0%,
+      var(--badge-gold) 38%,
+      var(--badge-gold-mid) 72%,
+      var(--badge-gold-lo) 100%
+    );
   box-shadow:
     0 0 0 1px rgba(122, 84, 20, 0.45),
     0 2px 5px rgba(0, 0, 0, 0.3),
@@ -1103,7 +1276,8 @@ body.sidebar-expanded {
 .bottom-nav-item-profile:hover .nav-badge-overlay,
 .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
 .nav-badge-overlay:hover {
-  animation: nav-badge-authority-stamp 0.85s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+  animation: nav-badge-authority-stamp 0.85s
+    var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
   border-color: #fff6d6;
   box-shadow:
     0 0 0 2px rgba(251, 191, 36, 0.55),
@@ -1112,7 +1286,8 @@ body.sidebar-expanded {
     0 4px 10px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
     inset 0 -1px 1px rgba(122, 84, 20, 0.3);
-  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85)) brightness(1.12) saturate(1.15);
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85)) brightness(1.12)
+    saturate(1.15);
 }
 
 @keyframes nav-badge-authority-stamp {

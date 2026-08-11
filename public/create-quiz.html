@@ -25,16 +25,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <script>
-      (function() {
-        try {
-          var t = localStorage.getItem('__bq_adm');
-          if (t) {
-            var p = JSON.parse(atob(t.split('.')[1]));
-            var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
-            document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
-          }
-        } catch(e) {}
-      })();
+        (function () {
+            try {
+                var t = localStorage.getItem('__bq_adm');
+                if (t) {
+                    var p = JSON.parse(atob(t.split('.')[1]));
+                    var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                    document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
+                }
+            } catch (e) { }
+        })();
     </script>
     <meta name="description" content="أنشئ اختباراتك التفاعلية بسهولة مع دعم الصور والشرح">
     <meta name="apple-mobile-web-app-title" content="إمتحانات بصمجي">
@@ -53,7 +53,8 @@
     <meta property="og:url" content="https://basmagi-quiz.vercel.app/create-quiz.html">
     <meta property="og:title" content="منصة إمتحانات بصمجي: أنشئ امتحانات وارسلها إلى اصدقائك">
     <meta property="og:description" content="منصة مجانية تحتوي على إمتحانات لجميع مواد كلية الحاسبات والمعلومات">
-    <meta property="og:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
+    <meta property="og:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="منصة إمتحانات بصمجي">
@@ -66,7 +67,8 @@
     <meta name="twitter:creator" content="@BelalAmrDev">
     <meta name="twitter:title" content="تقدر تختم أكثر من 10 إمتحانات؟">
     <meta name="twitter:description" content="إختبر قدراتك في الإمتحانات النهائية">
-    <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
+    <meta name="twitter:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
     <meta name="twitter:image:alt" content="منصة إمتحانات بصمجي">
 
     <!-- CRITICAL: Anti-flash script -->
@@ -290,7 +292,7 @@
                 </svg>
                 <span class="menu-label">إنشاء إمتحانات</span>
             </a>
-            
+
             <a href="profile.html" title="الحساب" class="menu-item" data-tooltip="الحساب">
                 <svg class="menu-item-default-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -343,35 +345,50 @@
                 </div>
                 <div class="theme-selector-grid sidebar-expanded-only" role="group" aria-label="اختيار الخلفية">
                     <button class="theme-selector-btn" title="الخلفية السوداء" data-theme="dark" aria-pressed="false">
-                        <span class="theme-btn-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10" />
+                        <span class="theme-btn-preview" aria-hidden="true">
+                            <span class="theme-btn-preview-header"></span>
+                            <span class="theme-btn-preview-list">
+                                <span class="theme-btn-preview-row"></span>
+                                <span class="theme-btn-preview-row"></span>
+                            </span>
+                        </span>
+                        <span class="theme-btn-check" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
                             </svg>
                         </span>
                         <span class="theme-btn-label">السوداء</span>
                     </button>
                     <button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate"
                         aria-pressed="false">
-                        <span class="theme-btn-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path
-                                    d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+                        <span class="theme-btn-preview" aria-hidden="true">
+                            <span class="theme-btn-preview-header"></span>
+                            <span class="theme-btn-preview-list">
+                                <span class="theme-btn-preview-row"></span>
+                                <span class="theme-btn-preview-row"></span>
+                            </span>
+                        </span>
+                        <span class="theme-btn-check" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
                             </svg>
                         </span>
                         <span class="theme-btn-label">الزرقاء</span>
                     </button>
                     <button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light" aria-pressed="false">
-                        <span class="theme-btn-icon" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="4" />
-                                <path
-                                    d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+                        <span class="theme-btn-preview" aria-hidden="true">
+                            <span class="theme-btn-preview-header"></span>
+                            <span class="theme-btn-preview-list">
+                                <span class="theme-btn-preview-row"></span>
+                                <span class="theme-btn-preview-row"></span>
+                            </span>
+                        </span>
+                        <span class="theme-btn-check" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
                             </svg>
                         </span>
                         <span class="theme-btn-label">البيضاء</span>
@@ -425,7 +442,7 @@
         </nav>
     </aside>
     <!-- End of the Side Menu -->
-     
+
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="التنقل الرئيسي">
         <a href="/" class="bottom-nav-item" data-bottom-nav="home">
@@ -481,8 +498,8 @@
             <span class="bottom-nav-label">الإعدادات</span>
         </a>
 
-        <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more"
-            aria-haspopup="true" aria-expanded="false" aria-controls="sidebar">
+        <button type="button" class="bottom-nav-item" id="bottomNavMoreBtn" data-bottom-nav="more" aria-haspopup="true"
+            aria-expanded="false" aria-controls="sidebar">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -494,7 +511,7 @@
             </span>
             <span class="bottom-nav-label">المزيد</span>
         </button>
-    </nav>    
+    </nav>
     <!-- End of Bottom Navigation Bar -->
 
     <!-- CRITICAL: Paints the nav avatar synchronously, right where the nav
@@ -532,18 +549,18 @@
 
                 // INSTANT BADGE INJECTION
                 try {
-                  if (localStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
-                    parent.style.position = 'relative';
-                    var p = JSON.parse(atob(localStorage.getItem('__bq_adm').split('.')[1]));
-                    var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
-                    var b = document.createElement('img');
-                    b.className = 'nav-badge-overlay';
-                    b.src = badgeIcon;
-                    b.alt = '';
-                    b.style.cssText = 'position:absolute;z-index:10;display:block;';
-                    parent.appendChild(b);
-                  }
-                } catch(e) {}
+                    if (localStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
+                        parent.style.position = 'relative';
+                        var p = JSON.parse(atob(localStorage.getItem('__bq_adm').split('.')[1]));
+                        var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                        var b = document.createElement('img');
+                        b.className = 'nav-badge-overlay';
+                        b.src = badgeIcon;
+                        b.alt = '';
+                        b.style.cssText = 'position:absolute;z-index:10;display:block;';
+                        parent.appendChild(b);
+                    }
+                } catch (e) { }
             });
         })();
     </script>

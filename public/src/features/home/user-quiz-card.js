@@ -7,10 +7,10 @@
 // SECURITY FIX (stored XSS): createUserQuizCard() previously interpolated
 // the user-supplied quiz title into innerHTML with no escaping — a title
 // like `<img src=x onerror=...>` typed into the create-quiz modal would
-// execute on every render of that card. Fixed below via escapeHtml().
+// execute on every render of that card. Fixed below by building the title
+// with textContent instead of innerHTML, so it's never parsed as markup.
 // ============================================================================
 
-import { escapeHtml } from "./escape-html.js";
 import { qz } from "./quiz-schema.js";
 import { formatArabicQuestionCount } from "./course-count.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
@@ -81,10 +81,23 @@ export function createUserQuizCard(quiz, index) {
   const h = document.createElement("h3");
   // SECURITY FIX (stored XSS): quiz.title is free-text the user typed into
   // the create-quiz modal's title input and is persisted to localStorage
-  // verbatim. The original interpolated it into innerHTML unescaped, so a
-  // title like `<img src=x onerror=...>` would execute every time this card
-  // rendered. escapeHtml() closes that off while keeping the same markup.
-  h.innerHTML = `<span class="user-quiz--phone-only-emoji">👤</span> ${escapeHtml(qz(quiz, "title") || quizId)}`;
+  // verbatim. textContent (rather than innerHTML) means it's never parsed
+  // as markup, so a title like `<img src=x onerror=...>` can't execute —
+  // closes the same stored-XSS gap the original innerHTML interpolation
+  // had, just without needing an escaping step at all.
+  h.textContent = qz(quiz, "title") || quizId;
+
+  // ── Phone-only leading emoji — sibling of .card-text, not nested inside
+  // h3. BUG FIX: the emoji used to live inside <h3>, so on the mobile list
+  // row its vertical centering was governed by the title text's line-height
+  // instead of the row's own flex alignment — sitting slightly too high
+  // compared to course/subfolder cards, which use a dedicated sibling
+  // `.icon` element (see createCategoryCard in category-view.js). Kept as
+  // `.user-quiz--phone-only-emoji` so the existing mobile CSS still applies.
+  const iconEl = document.createElement("span");
+  iconEl.className = "user-quiz--phone-only-emoji";
+  iconEl.textContent = "👤";
+  iconEl.setAttribute("aria-hidden", "true");
 
   const questionCountLine = document.createElement("p");
   questionCountLine.className = "exam-question-count";
@@ -191,7 +204,10 @@ export function createUserQuizCard(quiz, index) {
   metaWrap.appendChild(questionCountLine);
   textWrap.appendChild(metaWrap);
 
-  // DOM order: [textWrap] [btnWrap] — same as createExamCard
+  // DOM order: [icon] [textWrap] [btnWrap] — icon as a sibling of textWrap
+  // (not nested in h3) matches createCategoryCard's pattern, same as
+  // createExamCard. On desktop: .user-quiz--phone-only-emoji is display:none.
+  card.appendChild(iconEl);
   card.appendChild(textWrap);
   card.appendChild(btnWrap);
 

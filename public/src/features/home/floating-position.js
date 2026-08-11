@@ -12,20 +12,38 @@ export function positionExamDropdownMenu(menu, triggerBtn) {
   const menuW = menu.offsetWidth;
   const menuH = menu.offsetHeight;
 
+  // BUG FIX: on phones this clamped only to the raw viewport height, not
+  // accounting for the fixed .bottom-nav bar sitting on top of the page's
+  // bottom edge — so a menu tall enough to reach the bottom of the screen
+  // (e.g. with several actions, including "حذف الإمتحان") could get placed
+  // (or clamped) partly underneath the nav instead of above it. Reserve the
+  // nav's height the same way positionCourseInfoTooltip already does for
+  // the course-info tooltip.
+  const bottomNav = document.querySelector(".bottom-nav");
+  let bottomInset = 0;
+  if (bottomNav && window.getComputedStyle(bottomNav).display !== "none") {
+    const navRect = bottomNav.getBoundingClientRect();
+    if (navRect.top < vh && navRect.height > 0) {
+      bottomInset = vh - navRect.top;
+    }
+  }
+  const availableVh = vh - bottomInset;
+
   let top = rect.bottom + gap;
   let left = rect.right - menuW;
 
   // Flip above the button if there isn't enough room below.
-  if (top + menuH > vh - gap) {
+  if (top + menuH > availableVh - gap) {
     const above = rect.top - menuH - gap;
-    top = above >= gap ? above : Math.max(gap, vh - menuH - gap);
+    top = above >= gap ? above : Math.max(gap, availableVh - menuH - gap);
   }
 
-  // Clamp vertically within the viewport — covers menus that grow taller
-  // after being positioned (e.g. expanding the "معلومات الإمتحان" submenu
-  // inline on narrow viewports), which the flip-above check above can't
-  // account for since it only runs once at initial placement.
-  if (top + menuH > vh - gap) top = vh - menuH - gap;
+  // Clamp vertically within the available viewport (above the bottom nav) —
+  // covers menus that grow taller after being positioned (e.g. expanding
+  // the "معلومات الإمتحان" submenu inline on narrow viewports), which the
+  // flip-above check above can't account for since it only runs once at
+  // initial placement.
+  if (top + menuH > availableVh - gap) top = availableVh - menuH - gap;
   if (top < gap) top = gap;
 
   // Clamp horizontally within the viewport.
@@ -56,18 +74,18 @@ export function clampFloatingElementToViewport(el, gap = 6) {
   el.style.transform = "";
 
   const rect = el.getBoundingClientRect();
-  
+
   let shiftX = 0;
   let shiftY = 0;
 
   if (rect.left < gap) {
     shiftX = gap - rect.left;
   } else if (rect.right > window.innerWidth - gap) {
-    shiftX = (window.innerWidth - gap) - rect.right;
+    shiftX = window.innerWidth - gap - rect.right;
   }
 
   if (rect.bottom > window.innerHeight - gap) {
-    shiftY = (window.innerHeight - gap) - rect.bottom;
+    shiftY = window.innerHeight - gap - rect.bottom;
   }
 
   if (shiftX !== 0 || shiftY !== 0) {
@@ -76,4 +94,3 @@ export function clampFloatingElementToViewport(el, gap = 6) {
     el.style.transform = `${base} translate(${shiftX}px, ${shiftY}px)`;
   }
 }
-

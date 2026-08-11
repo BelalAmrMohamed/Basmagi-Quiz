@@ -7,7 +7,6 @@
 // ============================================================================
 
 import { startQuiz } from "./quiz-navigation.js";
-import { escapeHtml } from "./escape-html.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
@@ -21,8 +20,15 @@ import {
 import { buildQuizText } from "../../features/export/export-to-text.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
-import { extractCategoryFromPath, formatDateForInfo, showQuizInfoModal } from "./quiz-info-modal.js";
-import { createExamInfoSubmenu, openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import {
+  extractCategoryFromPath,
+  formatDateForInfo,
+  showQuizInfoModal,
+} from "./quiz-info-modal.js";
+import {
+  createExamInfoSubmenu,
+  openExamDropdownMenu,
+} from "./exam-dropdown-menu.js";
 import {
   LOCK_ICON_SVG,
   DOWNLOAD_ICON_SVG,
@@ -60,11 +66,22 @@ export function createExamCard(exam) {
   // ──────────────────────────────────────────────────────────────────────────
 
   const h = document.createElement("h3");
-  // SECURITY FIX: exam.title now runs through escapeHtml() before reaching
-  // innerHTML — normalizes with the same defense-in-depth fix applied to the
-  // (higher-risk, user-supplied) equivalent in user-quiz-card.js, even though
-  // manifest titles are build-time data rather than direct user input.
-  h.innerHTML = `<span class="phone-only-emoji">📖</span> ${escapeHtml(exam.title || exam.id)}`;
+  h.textContent = exam.title || exam.id;
+
+  // ── Phone-only leading emoji — sibling of .card-text, not nested inside
+  // h3. BUG FIX: the emoji used to live inside <h3>, so on the mobile list
+  // row its vertical centering was governed by the title text's line-height
+  // instead of the row's own flex alignment — sitting slightly too high
+  // compared to category/subfolder cards, which use a dedicated sibling
+  // `.icon` element (see createCategoryCard in category-view.js). Using the
+  // same sibling-element pattern here (kept as `.phone-only-emoji` so the
+  // existing mobile CSS — width/height/flex-centering — still applies
+  // unchanged) fixes the misalignment structurally instead of with a CSS
+  // hack.
+  const iconEl = document.createElement("span");
+  iconEl.className = "phone-only-emoji";
+  iconEl.textContent = "📖";
+  iconEl.setAttribute("aria-hidden", "true");
 
   if (isRecentlyAdded(exam.createdAt)) {
     const newBadge = document.createElement("span");
@@ -350,7 +367,10 @@ export function createExamCard(exam) {
   moreBtn.className = "exam-more-btn";
   moreBtn.type = "button";
   moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
-  moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${exam.title || exam.id}`);
+  moreBtn.setAttribute(
+    "aria-label",
+    `خيارات إضافية لـ ${exam.title || exam.id}`,
+  );
   moreBtn.onclick = (ev) => {
     ev.stopPropagation();
     showExamActionsOverlay(exam, showDownloadPopup, moreBtn);
@@ -384,9 +404,11 @@ export function createExamCard(exam) {
   metaWrap.appendChild(questionCountLine);
   textWrap.appendChild(metaWrap);
 
-  // DOM order: [db-badge] [textWrap] [btnWrap]
-  // On desktop: textWrap is display:contents (transparent).
-  // On mobile: flex row → textWrap fills space.
+  // DOM order: [db-badge] [icon] [textWrap] [btnWrap] — icon as a sibling of
+  // textWrap (not nested in h3) matches createCategoryCard's pattern so the
+  // mobile list-row's flex alignment centers it the same way.
+  // On desktop: .phone-only-emoji is display:none via CSS.
+  card.appendChild(iconEl);
   card.appendChild(textWrap);
   card.appendChild(btnWrap);
 
@@ -450,9 +472,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       closeMenu();
       const url = buildExamShareUrl(exam.id);
       if (navigator.share) {
-        navigator
-          .share({ title: exam.title || exam.id, url })
-          .catch(() => {});
+        navigator.share({ title: exam.title || exam.id, url }).catch(() => {});
       } else {
         navigator.clipboard
           .writeText(url)

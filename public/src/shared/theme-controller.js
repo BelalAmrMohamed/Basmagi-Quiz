@@ -12,7 +12,7 @@ export const themeManager = {
 
   init() {
     // Load saved preferences or use defaults
-    const savedTheme = localStorage.getItem(THEME_KEY) || "light";
+    const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
     const savedAnimations = localStorage.getItem(ANIMATIONS_KEY) !== "disabled";
 
     this.applyTheme(savedTheme);
@@ -29,7 +29,7 @@ export const themeManager = {
   applyTheme(theme) {
     // Validate theme
     if (!this.themes[theme]) {
-      theme = "light";
+      theme = "dark";
     }
 
     document.documentElement.setAttribute("data-theme", theme);
@@ -101,7 +101,7 @@ export const themeManager = {
       };
 
       document.body.style.backgroundColor =
-        themeBackgrounds[currentTheme] || themeBackgrounds.light;
+        themeBackgrounds[currentTheme] || themeBackgrounds.dark;
     } else {
       // Let canvas handle the background
       document.body.style.backgroundColor = "";
@@ -109,7 +109,7 @@ export const themeManager = {
   },
 
   getCurrentTheme() {
-    return document.documentElement.getAttribute("data-theme") || "light";
+    return document.documentElement.getAttribute("data-theme") || "dark";
   },
 
   getAnimationsEnabled() {

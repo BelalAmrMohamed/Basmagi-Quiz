@@ -30,8 +30,9 @@ const EDU_TYPE_AR = {
 
 /**
  * Builds the `.course-info-container` (info button + tooltip) for a course
- * card and appends it to `card`. Wires up the toggle-on-tap behavior
- * (desktop uses CSS `:hover` instead — see the `matchMedia` guard below) and,
+ * card and appends it to `card`. Wires up tap-to-toggle behavior plus,
+ * on fine-pointer/hover-capable devices, JS-driven show/hide-on-hover with
+ * a short close-delay grace period (see the `matchMedia` guard below) and,
  * optionally, an "إلغاء الإشتراك" (unsubscribe) button inside the tooltip.
  *
  * @param {HTMLElement} card - the course/category card to attach the info
@@ -110,11 +111,52 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     };
   }
 
-  // Support mouse hover: dynamically position on mouseenter so hover on desktop
-  // also correctly flips above bottom cards and avoids bottom-nav/body overlap.
-  infoContainer.addEventListener("mouseenter", () => {
+  // Support mouse hover (desktop only — see the `@media (hover: hover)`
+  // guard in CSS for the parallel touch/coarse-pointer exclusion).
+  //
+  // BUG FIX: hover show/hide used to be handled purely by the CSS
+  // `.course-info-container:hover .course-info-tooltip` rule. That broke
+  // once positionCourseInfoTooltip() switched the tooltip to
+  // `position: fixed` with `margin: 0`: the tooltip is no longer laid out
+  // adjacent to the button, so the sliver of space the cursor has to
+  // cross between them is a single pixel with no margin to forgive a
+  // slightly-off mouse path — meaning any imprecise movement from the
+  // button toward the tooltip fires `mouseleave` on the container an
+  // instant before the cursor lands on the tooltip, closing it before
+  // it can be used. Explicit JS show/hide with a short close-delay
+  // ("hover intent") timer fixes this the standard way: the tooltip
+  // only actually hides after a grace period, which is cancelled if the
+  // cursor re-enters either the button or the tooltip in that window —
+  // so moving from one to the other, even imprecisely, keeps it open.
+  let hoverCloseTimer = null;
+
+  const clearHoverCloseTimer = () => {
+    if (hoverCloseTimer) {
+      clearTimeout(hoverCloseTimer);
+      hoverCloseTimer = null;
+    }
+  };
+
+  const showOnHover = () => {
+    clearHoverCloseTimer();
     positionCourseInfoTooltip(tooltip, infoBtn);
-  });
+    tooltip.classList.add("show");
+  };
+
+  const scheduleHoverClose = () => {
+    clearHoverCloseTimer();
+    hoverCloseTimer = setTimeout(() => {
+      tooltip.classList.remove("show");
+      hoverCloseTimer = null;
+    }, 200); // grace period — long enough to cross the button→tooltip gap, short enough not to feel sticky
+  };
+
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    infoContainer.addEventListener("mouseenter", showOnHover);
+    infoContainer.addEventListener("mouseleave", scheduleHoverClose);
+    tooltip.addEventListener("mouseenter", clearHoverCloseTimer);
+    tooltip.addEventListener("mouseleave", scheduleHoverClose);
+  }
 
   infoBtn.onclick = (e) => {
     e.preventDefault();

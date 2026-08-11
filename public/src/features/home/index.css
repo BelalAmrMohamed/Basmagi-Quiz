@@ -186,6 +186,12 @@ body {
 }
 
 .course-info-tooltip {
+  /* Fallback for the brief instant before JS positioning runs (or if it
+     doesn't run at all) — positionCourseInfoTooltip() in tooltip-position.js
+     always sets `position: fixed` plus explicit top/left pixel coordinates
+     inline once it runs, which take precedence over these absolute-position
+     defaults. See that file for why fixed positioning is necessary (escaping
+     .grid-container's overflow:hidden clipping on mobile). */
   position: absolute;
   top: 100%;
   right: 0;
@@ -233,14 +239,17 @@ body {
   transform: translateY(0);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .course-info-container:hover .course-info-tooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-}
+/* NOTE: hover show/hide for desktop used to be handled by a pure-CSS
+   `.course-info-container:hover .course-info-tooltip { opacity: 1; ... }`
+   rule here. It's now driven explicitly from JS instead (see the
+   mouseenter/mouseleave handlers + hover-intent close timer in
+   course-info-tooltip.js) — moving the tooltip to `position: fixed`
+   left no forgiving margin for the cursor to cross from the button to
+   the tooltip, so a plain CSS `:hover` closed it before the tooltip
+   could be reached. A CSS-only `:hover` rule here would still race that
+   JS close timer (closing instantly on `mouseleave` regardless of the
+   grace period), so it's intentionally not reinstated — the JS toggles
+   the shared `.show` class instead, same as the click/tap path below. */
 
 .course-info-tooltip .tooltip-row {
   display: flex;
@@ -298,7 +307,8 @@ body {
 }
 
 @media (max-width: 640px) {
-  .course-kebab-btn, .course-info-container {
+  .course-kebab-btn,
+  .course-info-container {
     /* position: relative;  */
     /* was static — kept the tooltip inside the card's
       containing block, which clips it (.category-card has overflow:hidden),
@@ -339,7 +349,17 @@ body {
    ============================================================================ */
 .exam-dropdown-menu {
   position: fixed;
-  z-index: var(--z-header);
+  /* BUG FIX: was var(--z-header) (~1000), but .bottom-nav uses
+     calc(var(--z-overlay) + 1) (~4001) — on phones that let the bottom nav
+     paint over the lower rows of this dropdown (including the "حذف
+     الإمتحان" delete action), making them invisible and untappable.
+     var(--z-tooltip) (6000) clears the bottom nav with the same margin the
+     course-info-tooltip already uses. positionExamDropdownMenu() in
+     floating-position.js also now reserves the bottom-nav's height so the
+     menu never gets placed underneath it in the first place — this z-index
+     bump is the backstop for cases the reserved space alone doesn't cover
+     (e.g. a very tall menu after the "معلومات الإمتحان" submenu expands). */
+  z-index: var(--z-tooltip);
   width: 240px;
   max-width: calc(100vw - 16px);
   max-height: calc(100vh - 16px);
@@ -1130,7 +1150,6 @@ ANIMATIONS
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-
 /* ── Entrance keyframe ────────────────────────────────────────────────────── */
 @keyframes subjectsReveal {
   from {
@@ -1730,10 +1749,10 @@ Container
  * (needed for the action-menu / admin-upload absolutely-positioned children),
  * so we clip the strip on its own pseudo-element instead.
  */
-.exam-card.user-quiz-card::before {
-  overflow: hidden;
-  border-radius: 20px 20px 0 0;  /* match the card's top corners */
-}
+  .exam-card.user-quiz-card::before {
+    overflow: hidden;
+    border-radius: 20px 20px 0 0; /* match the card's top corners */
+  }
   .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
     position: static;
     width: auto;
@@ -2670,9 +2689,9 @@ Container
 }
 
 .admin-log-in-btn {
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 18px;
   background: var(--color-background-secondary);
@@ -2690,14 +2709,14 @@ Container
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-.admin-log-in-btn:hover svg{
-  fill: var(--color-primary)
+.admin-log-in-btn:hover svg {
+  fill: var(--color-primary);
 }
 
 .admin-log-out-btn {
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center; 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 18px;
   background: var(--color-error-light, #fed7d7);
@@ -2783,7 +2802,7 @@ Container
 }
 
 @media (max-width: 480px) {
-  .user-quiz-search-actions{
+  .user-quiz-search-actions {
     gap: 5px;
   }
 }
@@ -2865,9 +2884,18 @@ Container
 }
 
 @media (max-width: 640px) {
+  /* BUG FIX: was `display: inline`, a leftover from when these emojis lived
+     inline inside <h3> text. Now that they're sibling `.icon`-style elements
+     (see exam-card.js / user-quiz-card.js / create-quiz-modal.js), `inline`
+     collapsed them to their glyph's own line-height instead of centering
+     them in the row — this is what made them sit slightly too high versus
+     `.category-card .icon` (which already uses flex centering, see the
+     shared rule above). `flex` here matches that rule instead of fighting it.  */
   .phone-only-emoji,
   .user-quiz--phone-only-emoji {
-    display: inline;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .start-btn.desktop-download-btn {
@@ -2974,7 +3002,7 @@ Container
   .exam-card.user-quiz-card .user-quiz-types-row span {
     font-size: 0.6rem !important;
     padding: 1px 6px !important;
-    border-radius: 10px ;
+    border-radius: 10px;
     margin-left: 3px;
   }
 
@@ -3478,7 +3506,9 @@ kbd {
   color: var(--color-primary);
   pointer-events: none;
   animation: create-quiz-modal-arrow-bounce 1.2s ease-in-out infinite;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .create-quiz-modal__prompt-hint-arrow--hidden {
@@ -3498,98 +3528,108 @@ kbd {
 }
 
 #errorBoundary {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-20px);
-    z-index: 9999;
-    min-width: 300px;
-    max-width: 90vw;
-    width: 420px;
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    border-left: 5px solid #dc2626;
-    border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow:
-        0 10px 25px -5px rgba(220, 38, 38, 0.25),
-        0 8px 10px -6px rgba(220, 38, 38, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    font-family: 'IBM Plex Sans Arabic', Tajawal, sans-serif;
-    animation: errorBoundarySlideIn 0.35s ease-out forwards;
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  z-index: 9999;
+  min-width: 300px;
+  max-width: 90vw;
+  width: 420px;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-left: 5px solid #dc2626;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow:
+    0 10px 25px -5px rgba(220, 38, 38, 0.25),
+    0 8px 10px -6px rgba(220, 38, 38, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: "IBM Plex Sans Arabic", Tajawal, sans-serif;
+  animation: errorBoundarySlideIn 0.35s ease-out forwards;
 }
 
 #errorBoundary p {
-    margin: 0;
-    color: #991b1b;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.5;
+  margin: 0;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 #errorBoundary button {
-    flex-shrink: 0;
-    background: #dc2626;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background-color 0.15s ease, transform 0.1s ease;
+  flex-shrink: 0;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 #errorBoundary button:hover {
-    background: #b91c1c;
+  background: #b91c1c;
 }
 
 #errorBoundary button:active {
-    transform: scale(0.97);
+  transform: scale(0.97);
 }
 
 @keyframes errorBoundarySlideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* Dark theme support, matching your data-theme attribute pattern */
 [data-theme="dark"] #errorBoundary,
 [data-theme="dark-slate"] #errorBoundary {
-    background: #2a1216;
-    border-color: #7f1d1d;
-    box-shadow:
-        0 10px 25px -5px rgba(0, 0, 0, 0.5),
-        0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  background: #2a1216;
+  border-color: #7f1d1d;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.5),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="dark"] #errorBoundary p,
 [data-theme="dark-slate"] #errorBoundary p {
-    color: #fca5a5;
+  color: #fca5a5;
 }
 
 [data-animations="disabled"] #errorBoundary {
-    animation: none;
+  animation: none;
 }
 
-/* Fix z-index stacking context for cards with active tooltips */
+/* Elevate a card above its siblings on hover (pure visual affordance, e.g.
+   so a lifted/shadowed card isn't overlapped by the next row).
+   NOTE: this used to also fire on `:has(.course-info-tooltip.show)`, but
+   the tooltip itself is switched to `position: fixed` by
+   positionCourseInfoTooltip() (see tooltip-position.js), which positions
+   it relative to the viewport, not this card. Including the open tooltip
+   here promoted the CARD into its own stacking context via z-index, and
+   a `position: fixed` descendant is still subject to an ancestor's
+   stacking context — so that trapped the tooltip inside this low
+   z-above layer instead of letting --z-tooltip govern it against the
+   rest of the page, and it painted behind later cards. Dropped so an
+   open tooltip no longer touches the card's z-index at all. */
 .card:hover,
 .category-card:hover,
-.exam-card:hover,
-.card:has(.course-info-tooltip.show),
-.category-card:has(.course-info-tooltip.show),
-.exam-card:has(.course-info-tooltip.show) {
+.exam-card:hover {
   z-index: var(--z-above);
 }
 
@@ -3669,10 +3709,10 @@ kbd {
 }
 
 @media (max-width: 480px) {
- .btn.selection-toggle-btn,
- .admin-log-in-btn {
-  gap: 4px;
- }
+  .btn.selection-toggle-btn,
+  .admin-log-in-btn {
+    gap: 4px;
+  }
 }
 
 /* ── Per-card selection checkbox ──
@@ -3792,10 +3832,11 @@ kbd {
     transform var(--transition-fast, 0.15s ease);
 }
 
-.bulk-action-bar .btn:hover{
+.bulk-action-bar .btn:hover {
   background: var(--color-text-secondary);
   color: var(--color-surface);
-  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+  box-shadow: 0 4px 12px -2px
+    color-mix(in srgb, var(--color-text-primary) 45%, transparent);
   transform: translateY(-1px);
 }
 
@@ -3807,7 +3848,8 @@ kbd {
 .bulk-action-bar .bulk-delete-btn:hover {
   background: var(--color-error, #e53e3e);
   color: var(--color-surface);
-  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
+  box-shadow: 0 4px 12px -2px
+    color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
   transform: translateY(-1px);
 }
 
@@ -3821,7 +3863,8 @@ kbd {
 .bulk-action-bar .bulk-upload-btn:hover {
   background: var(--color-primary);
   color: #fff;
-  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  box-shadow: 0 4px 12px -2px
+    color-mix(in srgb, var(--color-primary) 45%, transparent);
   transform: translateY(-1px);
 }
 

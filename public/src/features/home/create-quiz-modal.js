@@ -50,7 +50,21 @@ export function createInlineCreateQuizCard() {
   textWrap.className = "card-text";
 
   const titleEl = document.createElement("h3");
-  titleEl.innerHTML = `<span class="user-quiz--phone-only-emoji">➕</span> إنشاء إمتحان جديد`;
+  titleEl.textContent = "إنشاء إمتحان جديد";
+
+  // ── Phone-only leading emoji — sibling of .card-text, not nested inside
+  // h3. BUG FIX: same misalignment as exam-card.js/user-quiz-card.js — an
+  // emoji living inside <h3> is centered by the title text's line-height
+  // instead of the mobile row's own flex alignment, so it sits slightly too
+  // high compared to course/subfolder cards' sibling `.icon` element (see
+  // createCategoryCard in category-view.js). This is intentionally separate
+  // from the desktop-only `.icon` div above (that one is hidden on mobile;
+  // this one is shown only on mobile — same "swap icon by breakpoint"
+  // pattern used elsewhere on this card).
+  const phoneIconEl = document.createElement("span");
+  phoneIconEl.className = "user-quiz--phone-only-emoji";
+  phoneIconEl.textContent = "➕";
+  phoneIconEl.setAttribute("aria-hidden", "true");
 
   const desc = document.createElement("p");
   desc.className = "create-quiz-card-subtitle";
@@ -61,6 +75,7 @@ export function createInlineCreateQuizCard() {
   textWrap.appendChild(desc);
 
   card.appendChild(icon);
+  card.appendChild(phoneIconEl);
   card.appendChild(textWrap);
 
   const open = () => openInlineCreateQuizModal();
@@ -101,7 +116,7 @@ function openInlineCreateQuizModal() {
     document.head.appendChild(style);
   }
 
-modalCard.innerHTML = `
+  modalCard.innerHTML = `
     <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
       <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
       إنشاء إمتحان جديد
@@ -166,7 +181,9 @@ modalCard.innerHTML = `
   const promptHintArrow = modalCard.querySelector("#createQuizPromptHintArrow");
 
   const dismissPromptHint = () => {
-    promptHintArrow.classList.add("create-quiz-modal__prompt-hint-arrow--hidden");
+    promptHintArrow.classList.add(
+      "create-quiz-modal__prompt-hint-arrow--hidden",
+    );
   };
 
   copyAiPromptBtn.addEventListener("click", dismissPromptHint, { once: true });
