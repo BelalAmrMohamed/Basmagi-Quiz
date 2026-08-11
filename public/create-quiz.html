@@ -540,7 +540,7 @@
                     b.className = 'nav-badge-overlay';
                     b.src = badgeIcon;
                     b.alt = '';
-                    b.style.cssText = 'position:absolute;width:16px;height:16px;top:3px;right:3px;border-radius:50%;z-index:10;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25));display:block;';
+                    b.style.cssText = 'position:absolute;z-index:10;display:block;';
                     parent.appendChild(b);
                   }
                 } catch(e) {}
@@ -1192,11 +1192,11 @@
                         <path d="M12 12v6" />
                         <path d="m15 15-3-3-3 3" />
                     </svg>
-                    <p>اسحب وأفلت ملفات JSON أو TXT أو PDF أو DOCX أو PPTX هنا</p>
+                    <p>اسحب وأفلت ملفات JSON هنا</p>
                     <label for="importFileInput" class="btn btn-secondary" style="cursor:pointer;margin-top:8px;">
                         أو اختر ملفات
                     </label>
-                    <input type="file" id="importFileInput" accept=".json,.txt,.pdf,.docx,.pptx" multiple
+                    <input type="file" id="importFileInput" accept=".json,application/json" multiple
                         style="display:none;" onchange="
                             var names = Array.from(this.files).map(function(f){return f.name;}).join(', ');
                             document.getElementById('importFileLabel').textContent = names || 'لم يتم اختيار أي ملف';
@@ -1207,7 +1207,7 @@
                 <!-- Paste Area -->
                 <p style="font-weight:600;margin:16px 0 6px;">أو الصق المحتوى:</p>
                 <p style="font-size:0.82rem;color:var(--color-text-secondary);margin-bottom:8px;">
-                    يدعم: JSON · نص مرقّم (1. سؤال / A. خيار / Correct: A / Explanation: ...)
+                    يدعم: JSON فقط ({ "questions": [...] })
                 </p>
                 <textarea id="importTextarea" rows="7" placeholder='{
   "questions": [

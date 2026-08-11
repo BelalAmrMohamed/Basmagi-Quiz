@@ -10,6 +10,9 @@
   const installButtons = () => document.querySelectorAll(".install-app");
   const setInstallButtonsVisible = (visible) => {
     installButtons().forEach((btn) => {
+      btn.classList.toggle("is-installable", visible);
+      // Keep inline display in sync for pages that still read style.display,
+      // but visibility is owned by `.is-installable` + CSS !important rules.
       btn.style.display = visible ? "flex" : "none";
     });
   };
@@ -25,6 +28,13 @@
   }
 
   window.addEventListener("beforeinstallprompt", (e) => {
+    // Already installed / running as app — never show the button.
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    ) {
+      return;
+    }
     e.preventDefault();
     _deferredInstallPrompt = e;
     setInstallButtonsVisible(true);
@@ -62,8 +72,7 @@
       console.log("User choice outcome:", outcome);
       if (outcome === "accepted") {
         _deferredInstallPrompt = null;
-        const btns = document.querySelectorAll(".install-app");
-        btns.forEach((btn) => (btn.style.display = "none"));
+        setInstallButtonsVisible(false);
         document.dispatchEvent(new CustomEvent("pwa-install-accepted"));
       }
     } catch (err) {

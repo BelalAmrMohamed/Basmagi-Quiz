@@ -307,11 +307,17 @@ body.sidebar-expanded {
 }
 
 /*
- * Fix: JS shows install-app via style.display = "block", which breaks flex
- * centering in the collapsed sidebar. Force display:flex !important so the
- * icon centers correctly regardless of the inline style value.
+ * Install button visibility is toggled by side-menu.js via the
+ * `.is-installable` class. Default stays hidden (including when already
+ * installed / standalone). When beforeinstallprompt fires, JS adds
+ * `.is-installable` and this rule shows it as flex so the collapsed sidebar
+ * icon still centers correctly.
  */
 .menu-item.install-app {
+  display: none !important;
+}
+
+.menu-item.install-app.is-installable {
   display: flex !important;
 }
 
@@ -1037,6 +1043,29 @@ body.sidebar-expanded {
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+}
+
+/* Role badge overlaid on profile avatars (sidebar + bottom nav).
+   Shared here so every page gets correct mobile sizing — not only profile.css. */
+.nav-badge-overlay {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  right: 3px;
+  border-radius: 50%;
+  z-index: 10;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.25));
+}
+
+@media (max-width: 768px) {
+  .bottom-nav-item-profile .nav-badge-overlay {
+    width: 11px;
+    height: 11px;
+    top: -1px;
+    right: -1px;
+  }
 }
 
 /* ============================================================================

@@ -280,12 +280,10 @@ export function syncNavAvatars() {
 
       if (!overlay) {
         overlay = document.createElement("img");
-        // Sizing/position/radius/shadow now live in profile.css (.nav-badge-overlay,
-        // with a .bottom-nav-item-profile override for mobile) so the badge can be
-        // sized correctly for each context instead of one fixed 16px/3px offset
-        // that only fit the larger desktop sidebar avatar and covered the much
-        // smaller bottom-nav icon on mobile. Only the animated transform stays
-        // inline since it's driven by JS hover listeners below.
+        // Sizing/position/radius/shadow live in side-menu.css (.nav-badge-overlay,
+        // with a .bottom-nav-item-profile override for mobile) so every page gets
+        // correct badge sizing. Only the animated transform stays inline since
+        // it's driven by JS hover listeners below.
         overlay.className = "nav-badge-overlay";
         overlay.style.transform = "rotate(25deg) scale(1)";
 

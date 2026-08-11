@@ -1097,6 +1097,9 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   overflow-y: hidden;
   padding-block-end: 6px;
   padding-block-start: 2px;
+  /* Extra inline padding so absolute month labels aren't clipped by the
+     scrollport edge on phones (labels don't contribute to scrollWidth). */
+  padding-inline: 4px;
   scroll-snap-type: x proximity;
   flex: 1;
   /* Center the year strip when it fits; when it overflows, safe center
@@ -1116,6 +1119,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     #000 calc(100% - var(--edge-fade)),
     transparent 100%
   );
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 /* Only fade edges once content actually overflows the track — otherwise
@@ -1123,6 +1128,14 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 .heatmap-grid:not(.is-overflowing) {
   -webkit-mask-image: none;
   mask-image: none;
+}
+
+/* CRITICAL: justify-content:center (and safe center) on an overflowing flex
+   row makes the start-side overflow unreachable via scroll — months/cells
+   on the far edge get permanently clipped. Pack to main-start when
+   overflowing so the full year strip can be scrolled. */
+.heatmap-grid.is-overflowing {
+  justify-content: flex-start;
 }
 
 .heatmap-col {
@@ -1812,6 +1825,34 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     top: -1px;
     right: -1px;
   }
-}. h e a t m a p - h o v e r - c a r d   {   m i n - w i d t h :   m a x - c o n t e n t ;   m a x - w i d t h :   m a x - c o n t e n t ;   p a d d i n g :   6 p x   1 0 p x ;   f o n t - s i z e :   0 . 8 5 r e m ;   t e x t - a l i g n :   c e n t e r ;   c o l o r :   v a r ( - - c o l o r - t e x t ) ;   f o n t - w e i g h t :   5 0 0 ;   } 
- 
- 
+}
+
+.heatmap-hover-card {
+  min-width: max-content;
+  max-width: max-content;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+@media (max-width: 480px) {
+  #activityHeatmap {
+    --heatmap-cell: 8px;
+    --heatmap-gap: 2px;
+  }
+
+  .heatmap-daylabels {
+    width: 2.1rem;
+    font-size: 0.5rem;
+  }
+
+  .heatmap-grid {
+    --edge-fade: 10px;
+  }
+
+  .heatmap-col-label {
+    font-size: 0.55rem;
+  }
+}

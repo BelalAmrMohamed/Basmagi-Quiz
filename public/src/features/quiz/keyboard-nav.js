@@ -104,19 +104,17 @@ function getActiveQuestionCard() {
 
 /**
  * Moves focus between `.option-row` elements within the currently active
- * question card, wrapping at the ends. Used for ArrowDown/ArrowUp so option
- * navigation stays local to the question instead of falling through to the
- * browser's native page-scroll behaviour.
+ * question card, wrapping at the ends, and returns the option index that
+ * should be selected. Used for ArrowDown/ArrowUp so option navigation
+ * chooses the option (not just hover/focus).
  *
  * @param {1 | -1} direction
- * @returns {boolean} true if focus was actually moved (so the caller knows
- *   whether to suppress the key's default scroll behaviour). Essay
- *   questions and other option-less cards return false, leaving normal
- *   page scroll intact for the user.
+ * @returns {number} option index, or -1 if nothing to move to (essay /
+ *   option-less cards — leave native page scroll intact).
  */
 function moveOptionFocus(direction) {
   const card = getActiveQuestionCard();
-  if (!card) return false;
+  if (!card) return -1;
 
   // Focus targets the native <input type="radio|checkbox"> inside each
   // row rather than the wrapping <div class="option-row"> itself: the
@@ -126,22 +124,27 @@ function moveOptionFocus(direction) {
   const inputs = Array.from(
     card.querySelectorAll(".option-row:not(.locked) input"),
   );
-  if (inputs.length === 0) return false;
+  if (inputs.length === 0) return -1;
 
   const currentIndex = inputs.indexOf(document.activeElement);
 
   let nextIndex;
   if (currentIndex === -1) {
-    // Nothing in this card is focused yet: ArrowDown starts at the first
-    // option, ArrowUp starts at the last, so a single press always lands
-    // somewhere sensible regardless of direction.
-    nextIndex = direction === 1 ? 0 : inputs.length - 1;
+    // After a select-driven re-render, focus is usually gone — walk from the
+    // currently checked option so consecutive Arrow presses keep advancing
+    // instead of snapping back to the first/last option every time.
+    const checkedIndex = inputs.findIndex((input) => input.checked);
+    if (checkedIndex >= 0) {
+      nextIndex = (checkedIndex + direction + inputs.length) % inputs.length;
+    } else {
+      nextIndex = direction === 1 ? 0 : inputs.length - 1;
+    }
   } else {
     nextIndex = (currentIndex + direction + inputs.length) % inputs.length;
   }
 
   inputs[nextIndex].focus();
-  return true;
+  return nextIndex;
 }
 
 /**
@@ -197,15 +200,21 @@ export function initKeyboardNav({
     // Bail early (no preventDefault) for keys not in the map.
     if (!action) return;
 
-    // ArrowUp/ArrowDown are special-cased: they should only suppress the
-    // browser's native scroll when there's actually an option to move
-    // focus to (an MCQ question with .option-row elements in the active
-    // card). On essay questions, or anywhere no options exist, the key
-    // falls through to normal page scrolling instead of being silently
-    // swallowed with no visible effect.
+    // ArrowUp/ArrowDown: select the neighbouring option for single-choice
+    // (radio) questions. Multi-select checkboxes only move focus so arrows
+    // don't toggle answers on/off while navigating.
     if (action === "option-next" || action === "option-prev") {
-      const moved = moveOptionFocus(action === "option-next" ? 1 : -1);
-      if (moved) e.preventDefault();
+      const index = moveOptionFocus(action === "option-next" ? 1 : -1);
+      if (index >= 0) {
+        e.preventDefault();
+        const card = getActiveQuestionCard();
+        const input = card?.querySelectorAll(
+          ".option-row:not(.locked) input",
+        )?.[index];
+        if (input && input.type !== "checkbox") {
+          onSelect?.(index);
+        }
+      }
       return;
     }
 
@@ -223,7 +232,6 @@ export function initKeyboardNav({
         onPrev?.();
         break;
 
-      // Replace the select cases in the switch
       case "select-0":
       case "select-1":
       case "select-2":
@@ -272,6 +280,7 @@ export function getShortcutModalHTML() {
   const rows = [
     ["→", "Next question"],
     ["←", "Previous question"],
+    ["↑ / ↓", "Select neighbouring option"],
     ["1 – 9", "Select option by index"],
     ["Enter", "Check / submit answer"],
     ["B", "Bookmark question"],

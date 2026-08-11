@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0088cc">
+  <title>غير متصل — منصة إمتحانات بصمجي</title>
+  <link rel="icon" href="/favicon.png" type="image/png">
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --surface: #ffffff;
+      --text: #1a2332;
+      --muted: #5a6a7a;
+      --accent: #0088cc;
+      --border: #d8e0e8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 136, 204, 0.18), transparent),
+        var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(420px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      box-shadow: 0 12px 40px rgba(26, 35, 50, 0.08);
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 18px;
+      border-radius: 16px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    p {
+      margin: 0 0 24px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 22px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+    button:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="logo" src="/favicon.png" alt="بصمجي" width="64" height="64">
+    <h1>أنت غير متصل بالإنترنت</h1>
+    <p>تحقق من اتصالك ثم أعد المحاولة. المنصة تحتاج إنترنت لفتح الصفحات والاختبارات.</p>
+    <button type="button" onclick="location.reload()">إعادة المحاولة</button>
+  </main>
+  <script>
+    window.addEventListener("online", () => {
+      const ref = document.referrer;
+      if (ref && ref.indexOf(location.origin) === 0) {
+        location.replace(ref);
+      } else {
+        location.replace("/");
+      }
+    });
+  </script>
+</body>
+</html>

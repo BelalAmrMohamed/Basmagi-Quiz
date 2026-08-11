@@ -19,7 +19,7 @@ import {
   buildCopyDownloadButton,
 } from "./export-helpers.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
-import { buildJsonQuizExport } from "../../shared/quiz-processor.js";
+import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { extractCategoryFromPath, formatDateForInfo, showQuizInfoModal } from "./quiz-info-modal.js";
 import { createExamInfoSubmenu, openExamDropdownMenu } from "./exam-dropdown-menu.js";

@@ -12,7 +12,7 @@
 // ============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { extractTextFromFile, parseImportContent } from "../../shared/quiz-processor.js";
+import { parseQuizJson } from "../../shared/quiz-json.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { openSignInDialog } from "./sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -366,7 +366,7 @@ function renderBulkActionBar() {
 }
 
 async function handleUserQuizzesDrop(files) {
-  const allowedExts = [".txt", ".docx", ".pdf", ".pptx", ".json"];
+  const allowedExts = [".json"];
   const validFiles = [];
   const invalidNames = [];
 
@@ -382,7 +382,7 @@ async function handleUserQuizzesDrop(files) {
   if (invalidNames.length) {
     showNotification(
       "ملفات غير مدعومة",
-      `بعض الملفات تم تجاهلها:\n${invalidNames.join(", ")}`,
+      `يُقبل JSON فقط. تم تجاهل:\n${invalidNames.join(", ")}`,
       "warning",
     );
   }
@@ -395,9 +395,9 @@ async function handleUserQuizzesDrop(files) {
   for (const file of validFiles) {
     let text;
     try {
-      text = await extractTextFromFile(file);
+      text = await file.text();
     } catch (err) {
-      console.error("Import extract error:", err);
+      console.error("Import read error:", err);
       showNotification(
         "خطأ في القراءة",
         `تعذّر قراءة ${file.name}: ${err.message}`,
@@ -406,31 +406,41 @@ async function handleUserQuizzesDrop(files) {
       continue;
     }
 
-    if (file.name.toLowerCase().endsWith(".json")) {
-       let parsedJson = null;
-       try {
-          parsedJson = JSON.parse(text);
-       } catch(e) {}
-       
-       if (Array.isArray(parsedJson) && parsedJson.length > 0 && (parsedJson[0].questions || parsedJson[0].id)) {
-           for (const q of parsedJson) {
-               if (q.questions) {
-                   existingQuizzes.push(q);
-                   importedCount++;
-               }
-           }
-           continue; 
-       }
+    let parsedJson = null;
+    try {
+      parsedJson = JSON.parse(text);
+    } catch (e) {
+      showNotification(
+        "خطأ في التنسيق",
+        `${file.name}: JSON غير صالح`,
+        "error",
+      );
+      continue;
+    }
+
+    // Bulk export: array of full quiz entries
+    if (
+      Array.isArray(parsedJson) &&
+      parsedJson.length > 0 &&
+      (parsedJson[0].questions || parsedJson[0].id || parsedJson[0].meta)
+    ) {
+      for (const q of parsedJson) {
+        if (q.questions) {
+          existingQuizzes.push(q);
+          importedCount++;
+        }
+      }
+      continue;
     }
 
     const defaultTitle = file.name
-      .replace(/\.(json|txt|pdf|docx|pptx)$/i, "")
+      .replace(/\.json$/i, "")
       .replace(/[-_]/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
     let parsed;
     try {
-      parsed = parseImportContent(text, defaultTitle);
+      parsed = parseQuizJson(text, defaultTitle);
     } catch (err) {
       console.error("Import parse error:", err);
       showNotification(

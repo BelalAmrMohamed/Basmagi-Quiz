@@ -16,10 +16,10 @@ import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
 import {
-  processQuizFile,
-  parseImportContent,
+  processQuizJsonFile,
+  parseQuizJson,
   buildJsonQuizExport,
-} from "../../shared/quiz-processor.js";
+} from "../../shared/quiz-json.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 
 // ============================================================================
@@ -2307,13 +2307,13 @@ window.processImport = async function () {
       for (const file of files) {
         // Derive default title from filename
         const defaultTitle = file.name
-          .replace(/\.(json|txt|pdf|docx|pptx)$/i, "")
+          .replace(/\.json$/i, "")
           .replace(/[-_]/g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase());
 
         let parsed;
         try {
-          parsed = await processQuizFile(file, defaultTitle);
+          parsed = await processQuizJsonFile(file, defaultTitle);
         } catch (err) {
           console.warn(`Could not process ${file.name}:`, err);
           showNotification(
@@ -2373,7 +2373,14 @@ window.processImport = async function () {
 
     // Process pasted content
     if (content) {
-      const parsed = parseImportContent(content);
+      let parsed;
+      try {
+        parsed = parseQuizJson(content);
+      } catch (err) {
+        showNotification("خطأ في التنسيق", err.message, "error");
+        hideLoading();
+        return;
+      }
       allImportedQuestions = allImportedQuestions.concat(parsed.questions);
       if (!quizData.title && parsed.meta) {
         quizData.title = parsed.meta.title || "";

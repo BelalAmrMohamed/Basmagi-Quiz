@@ -14,7 +14,7 @@
 // ============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { extractTextFromFile, parseImportContent } from "../../shared/quiz-processor.js";
+import { parseQuizJson } from "../../shared/quiz-json.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
 import { UPLOAD_ICON_SVG } from "./icons.js";
 import {
@@ -128,7 +128,7 @@ modalCard.innerHTML = `
       </div>
       <button type="button" id="inlineQuizCancel" class="create-quiz-modal__btn create-quiz-modal__btn--cancel">إلغاء</button>
     </div>
-    <input type="file" id="inlineQuizFileInput" class="create-quiz-modal__file-input" accept=".txt,.docx,.pdf,.pptx,.json" />
+    <input type="file" id="inlineQuizFileInput" class="create-quiz-modal__file-input" accept=".json,application/json" />
   `;
 
   // Set the JSON example via JS (avoids escaping a huge quoted blob inside an HTML attribute)
@@ -238,11 +238,11 @@ modalCard.innerHTML = `
     importBtn.disabled = true;
 
     try {
-      const text = await extractTextFromFile(file);
+      const text = await file.text();
       contentInput.value = text;
 
       const defaultTitle = file.name
-        .replace(/\.(json|txt|pdf|docx|pptx)$/i, "")
+        .replace(/\.json$/i, "")
         .replace(/[-_]/g, " ")
         .replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -250,13 +250,25 @@ modalCard.innerHTML = `
         titleInput.value = defaultTitle;
       }
 
+      // Prefill title from JSON meta when present
+      try {
+        const parsed = parseQuizJson(text, defaultTitle);
+        if (parsed.meta?.title && !titleInput.value) {
+          titleInput.value = parsed.meta.title;
+        } else if (parsed.meta?.title && titleInput.value === defaultTitle) {
+          titleInput.value = parsed.meta.title;
+        }
+      } catch (_) {
+        /* leave raw text in the textarea for the user to fix */
+      }
+
       showNotification(
         "نجاح",
-        "تم استخراج النص، يمكنك تعديله أو إنشاء الكويز الآن.",
+        "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الكويز الآن.",
         "success",
       );
     } catch (err) {
-      console.error("Import extract error:", err);
+      console.error("Import read error:", err);
       showNotification(
         "خطأ في القراءة",
         `تعذّر قراءة ${file.name}: ${err.message}`,
@@ -279,7 +291,7 @@ modalCard.innerHTML = `
 
     let parsed;
     try {
-      parsed = parseImportContent(content, title || "Quiz");
+      parsed = parseQuizJson(content, title || "Quiz");
     } catch (err) {
       showNotification("خطأ في التنسيق", err.message, "error", 10);
       return;
