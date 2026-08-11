@@ -394,9 +394,13 @@ async function syncProgressToServer() {
 
 async function setupVisitorView(handle) {
   // Setup UI for visitor view
-  document
-    .querySelectorAll(".content-section")
-    .forEach((el) => (el.style.display = "none"));
+  document.querySelectorAll(".content-section").forEach((el) => {
+    // renderUploadedQuizzes() below manages this section's own display
+    // (shows it once uploads resolve, hides it on fetch failure) — if
+    // the blanket hide here ran after that resolves, it would clobber it.
+    if (el.id === "uploadedQuizzesSection") return;
+    el.style.display = "none";
+  });
   const masteryCard = document.querySelector(".category-mastery-card");
   if (masteryCard) masteryCard.style.display = "none";
 
@@ -436,6 +440,23 @@ async function setupVisitorView(handle) {
   const avatarMeta = document.querySelector('meta[name="admin:avatar"]');
   renderVisitorAvatar(avatarMeta ? avatarMeta.content : null, handle);
 
+  // Thumbnail (profile banner): same render-immediately-from-meta-tag
+  // reasoning as the avatar above. render-profile.js always emits this tag
+  // (falling back server-side to the default Featured Thumbnail, 2.jpg,
+  // when the admin hasn't set one), so there's no "missing meta -> no
+  // thumbnail" state to handle here — just a defensive fallback to the
+  // same default in case this HTML was served/cached before the tag existed.
+  const thumbnailMeta = document.querySelector('meta[name="admin:thumbnail"]');
+  const identityThumbnailEl = document.getElementById("identityThumbnail");
+  if (identityThumbnailEl) {
+    const thumbnailValue =
+      thumbnailMeta && thumbnailMeta.content
+        ? thumbnailMeta.content
+        : "/assets/profile-featured/thumbnails/2.jpg";
+    identityThumbnailEl.style.backgroundImage = `url("${thumbnailValue}")`;
+    identityThumbnailEl.classList.add("has-thumbnail");
+  }
+
   // Fetch the visited user's stats, and — since the endpoint is the only
   // source of truth on this page for who the visited user actually is —
   // read role/isOwner from its response instead of assuming "admin" for
@@ -445,6 +466,19 @@ async function setupVisitorView(handle) {
     refreshToken,
     true,
   );
+
+  // Activity heatmap title: same role-flavored label as the owner's own
+  // dashboard (setActivityLabel/activityLabelFor), just fed the visited
+  // user's role/isOwner instead of the local getAdminRoleInfo() result.
+  setActivityLabel(visitedRole);
+
+  // Uploaded Quizzes History — public on /@handle for whichever admin/dev
+  // this profile belongs to. Not awaited: it manages its own section
+  // visibility/loading state independently and nothing below depends on
+  // it finishing. Runs unconditionally here (no skipNetworkFetches gate,
+  // unlike the owner-dashboard call in refreshUI()) since visitor view has
+  // no local-only refresh path.
+  renderUploadedQuizzes(handle);
 
   if (visitedRole && visitedRole.displayName) {
     const headerTitle = document.getElementById("userNameHeader");
@@ -459,6 +493,15 @@ async function setupVisitorView(handle) {
   }
   if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
     renderVisitorAvatar(visitedRole.avatarUrl, handle);
+  }
+  if (
+    !thumbnailMeta &&
+    visitedRole &&
+    visitedRole.thumbnailUrl &&
+    identityThumbnailEl
+  ) {
+    identityThumbnailEl.style.backgroundImage = `url("${visitedRole.thumbnailUrl}")`;
+    identityThumbnailEl.classList.add("has-thumbnail");
   }
 
   // If the server returned an activityHeatmap for this visited profile,

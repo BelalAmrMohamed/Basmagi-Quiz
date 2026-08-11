@@ -36,7 +36,7 @@ export default async function handler(req, res) {
   // Fetch admin metadata
   const { data: adminData, error } = await supabase
     .from("admin_users")
-    .select("display_name, handle, avatar_url")
+    .select("display_name, handle, avatar_url, thumbnail_url")
     .ilike("handle", normalizedHandle)
     .maybeSingle();
 
@@ -49,7 +49,9 @@ export default async function handler(req, res) {
     normalizedHandle,
     found: !!adminData,
     adminData,
-    error: error ? { message: error.message, code: error.code, details: error.details } : null,
+    error: error
+      ? { message: error.message, code: error.code, details: error.details }
+      : null,
   });
 
   if (error || !adminData) {
@@ -75,9 +77,23 @@ export default async function handler(req, res) {
   const avatarMetaTag = adminData.avatar_url
     ? `  <meta name="admin:avatar" content="${escapeHtml(adminData.avatar_url)}">\n`
     : "";
+  // No thumbnail set -> fall back to the default Featured Thumbnail (2.jpg),
+  // same asset path convention as the Featured Thumbnails picker
+  // (public/assets/profile-featured/thumbnails/, see avatarEngine.js's
+  // FEATURED_THUMBNAILS_BASE). Unlike avatarMetaTag/displayNameMetaTag this
+  // tag is unconditional — there's always a value to inject, either the
+  // real one or this default — so visitor view never renders an empty
+  // banner and OG/crawler consumers always get a picture. This only
+  // affects what visitors see; admin-stats.js's own GET response
+  // (`thumbnailUrl: adminUser.thumbnail_url || null`) is untouched, so the
+  // owner's own dashboard/picker UI still correctly shows "no thumbnail
+  // set" rather than silently adopting this default.
+  const thumbnailValue =
+    adminData.thumbnail_url || "/assets/profile-featured/thumbnails/2.jpg";
+  const thumbnailMetaTag = `  <meta name="admin:thumbnail" content="${escapeHtml(thumbnailValue)}">\n`;
   html = html.replace(
     "</head>",
-    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n${displayNameMetaTag}${avatarMetaTag}</head>`
+    `  <meta name="admin:handle" content="${escapeHtml(cleanHandle)}">\n${displayNameMetaTag}${avatarMetaTag}${thumbnailMetaTag}</head>`,
   );
 
   // Fall back to the handle when display_name hasn't been set (NULL in the
@@ -91,7 +107,7 @@ export default async function handler(req, res) {
 
   html = html.replace(
     /<title>[^<]*<\/title>/i,
-    `<title>${escapeHtml(title)}</title>`
+    `<title>${escapeHtml(title)}</title>`,
   );
 
   html = replaceLinkHref(html, "canonical", canonicalUrl);
@@ -105,7 +121,7 @@ export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader(
     "Cache-Control",
-    "public, s-maxage=3600, stale-while-revalidate=86400"
+    "public, s-maxage=3600, stale-while-revalidate=86400",
   );
   return res.status(200).send(html);
 }
@@ -122,13 +138,13 @@ function escapeHtml(str) {
 function replaceMetaContent(html, attr, value, newContent) {
   const tagRe = new RegExp(
     `<meta[^>]*\\b${attr}=["']${escapeRegex(value)}["'][^>]*>`,
-    "i"
+    "i",
   );
   return html.replace(tagRe, (tag) => {
     if (/content=["'][^"']*["']/i.test(tag)) {
       return tag.replace(
         /content=["'][^"']*["']/i,
-        `content="${escapeHtml(newContent)}"`
+        `content="${escapeHtml(newContent)}"`,
       );
     }
     return tag;
@@ -138,13 +154,13 @@ function replaceMetaContent(html, attr, value, newContent) {
 function replaceLinkHref(html, rel, newHref) {
   const tagRe = new RegExp(
     `<link[^>]*\\brel=["']${escapeRegex(rel)}["'][^>]*>`,
-    "i"
+    "i",
   );
   return html.replace(tagRe, (tag) => {
     if (/href=["'][^"']*["']/i.test(tag)) {
       return tag.replace(
         /href=["'][^"']*["']/i,
-        `href="${escapeHtml(newHref)}"`
+        `href="${escapeHtml(newHref)}"`,
       );
     }
     return tag;
