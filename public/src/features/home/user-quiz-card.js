@@ -22,6 +22,7 @@ import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
 import { createExamInfoSubmenu, openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
+import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
   DOWNLOAD_ICON_SVG,
