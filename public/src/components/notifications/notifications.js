@@ -139,7 +139,7 @@ function isURL_orPath(string) {
     Confirmation Modal
    ============================ */
 
-export function confirmationNotification(message) {
+export function _confirm(message) {
   return new Promise((resolve) => {
     // 1. Create Overlay
     const overlay = document.createElement("div");
@@ -242,12 +242,12 @@ export function confirmationNotification(message) {
 /* ============================
     Prompt Modal
     Drop-in async replacement for window.prompt()
-    Usage: const answer = await prompt_user("Your name?", "Guest");
+    Usage: const answer = await _prompt("Your name?", "Guest");
     Resolves with the entered string, or null if cancelled
     (matches native prompt() semantics exactly).
    ============================ */
 
-export function prompt_user(message, defaultValue = "") {
+export function _prompt(message, defaultValue = "") {
   return new Promise((resolve) => {
     // 1. Create Overlay
     const overlay = document.createElement("div");

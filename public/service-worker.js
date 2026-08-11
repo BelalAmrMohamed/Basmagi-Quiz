@@ -1,17 +1,20 @@
 // Service Worker for Basmagi Quiz Platform
-// Network-only. Does not cache app shells, assets, or quizzes for offline use.
-// The only cached file is offline.html so navigations can show an offline page.
 
-const CACHE_VERSION = "basmagi-v7.0.0-offline";
+const CACHE_VERSION = "basmagi-v7.0.1";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline.html";
+const OFFLINE_ASSETS = [OFFLINE_URL, "/favicon.png"];
 
 self.addEventListener("install", (event) => {
   console.log("[SW] Installing (offline-page only)...");
   event.waitUntil(
     (async () => {
       const cache = await caches.open(OFFLINE_CACHE);
-      await cache.add(new Request(OFFLINE_URL, { cache: "reload" }));
+      await Promise.all(
+        OFFLINE_ASSETS.map((url) =>
+          cache.add(new Request(url, { cache: "reload" })),
+        ),
+      );
       await self.skipWaiting();
     })().catch((error) => {
       console.error("[SW] Install failed:", error);
@@ -65,19 +68,20 @@ self.addEventListener("fetch", (event) => {
   // Never serve cached app content — network only.
   // Navigations fall back to the offline page when the network fails.
   if (isNavigationRequest(request)) {
-    event.respondWith(
-      fetch(request).catch(() => offlinePageResponse()),
-    );
+    event.respondWith(fetch(request).catch(() => offlinePageResponse()));
     return;
   }
 
+  // Assets: network first; allow the tiny offline asset set (favicon) from cache.
   event.respondWith(
-    fetch(request).catch(() =>
-      new Response("Offline", {
+    fetch(request).catch(async () => {
+      const cached = await caches.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      return new Response("Offline", {
         status: 503,
         statusText: "Service Unavailable",
-      }),
-    ),
+      });
+    }),
   );
 });
 
@@ -101,7 +105,10 @@ self.addEventListener("push", (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "منصة إمتحانات بصمجي", options),
+    self.registration.showNotification(
+      data.title || "منصة إمتحانات بصمجي",
+      options,
+    ),
   );
 });
 
@@ -113,15 +120,17 @@ self.addEventListener("notificationclick", (event) => {
     (event.notification.data && event.notification.data.url) || "/";
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          client.navigate(targetUrl);
-          return client.focus();
+    clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if ("focus" in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
         }
-      }
-      if (clients.openWindow) return clients.openWindow(targetUrl);
-    }),
+        if (clients.openWindow) return clients.openWindow(targetUrl);
+      }),
   );
 });
 
@@ -136,13 +145,15 @@ self.addEventListener("message", (event) => {
   // Legacy clients may still send CLEAR_CACHE — wipe everything except offline page.
   if (data.type === "CLEAR_CACHE") {
     event.waitUntil(
-      caches.keys().then((names) =>
-        Promise.all(
-          names
-            .filter((name) => name !== OFFLINE_CACHE)
-            .map((name) => caches.delete(name)),
+      caches
+        .keys()
+        .then((names) =>
+          Promise.all(
+            names
+              .filter((name) => name !== OFFLINE_CACHE)
+              .map((name) => caches.delete(name)),
+          ),
         ),
-      ),
     );
   }
 });

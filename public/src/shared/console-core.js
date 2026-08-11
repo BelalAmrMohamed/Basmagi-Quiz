@@ -17,7 +17,7 @@
  */
 
 (function initBasmagiConsoleCore(global) {
-  'use strict';
+  "use strict";
 
   // Avoid double-init if the core script is accidentally injected twice
   if (global.__BASMAGI_CONSOLE_CORE__) return;
@@ -27,22 +27,23 @@
   // 1. THEME
   // --------------------------------------------------------------------------
   const THEME = {
-    green: 'rgb(87, 255, 141)',
-    greenDim: 'rgba(87, 255, 141, 0.55)',
-    greenFaint: 'rgba(87, 255, 141, 0.18)',
-    neonGreen: 'rgb(87, 255, 141)',
-    amber: 'rgb(255, 184, 92)',
-    red: 'rgb(255, 92, 92)',
-    blue: 'rgb(92, 176, 255)',
-    magenta: 'rgb(214, 92, 255)',
-    ink: '#0a0a0a',
-    panel: '#111214',
-    grey: '#a3a3a3',
-    greyDim: '#6b6b6b',
-    white: '#f3f3f3',
+    green: "rgb(87, 255, 141)",
+    greenDim: "rgba(87, 255, 141, 0.55)",
+    greenFaint: "rgba(87, 255, 141, 0.18)",
+    neonGreen: "rgb(87, 255, 141)",
+    amber: "rgb(255, 184, 92)",
+    red: "rgb(255, 92, 92)",
+    blue: "rgb(92, 176, 255)",
+    magenta: "rgb(214, 92, 255)",
+    ink: "#0a0a0a",
+    panel: "#111214",
+    grey: "#a3a3a3",
+    greyDim: "#6b6b6b",
+    white: "#f3f3f3",
   };
 
-  const mono = 'font-family: "Fira Code", "Cascadia Code", Consolas, monospace;';
+  const mono =
+    'font-family: "Fira Code", "Cascadia Code", Consolas, monospace;';
 
   const styles = {
     banner: `color:${THEME.green}; font-size:26px; font-weight:bold; ${mono}
@@ -68,7 +69,7 @@
   };
 
   function rule(char, len) {
-    return (char || '─').repeat(len || 62);
+    return (char || "─").repeat(len || 62);
   }
 
   // --------------------------------------------------------------------------
@@ -84,11 +85,12 @@
     info: (txt) => console.log(`%c${txt}`, styles.info),
     dim: (txt) => console.log(`%c${txt}`, styles.dim),
     rule: (char, len) => console.log(`%c${rule(char, len)}`, styles.rule),
-    kv: (key, value) => console.log(`%c${key}%c ${value}`, styles.kvKey, styles.kv),
+    kv: (key, value) =>
+      console.log(`%c${key}%c ${value}`, styles.kvKey, styles.kv),
     raw: (txt, style) => console.log(`%c${txt}`, style),
   };
 
-const LOGO = "منصة إمتحانات بصمجي";
+  const LOGO = "منصة إمتحانات بصمجي";
 
   const LOGO_Style = `
     display: inline-block;
@@ -131,7 +133,7 @@ const LOGO = "منصة إمتحانات بصمجي";
     let i = 0;
     function next() {
       if (i >= steps.length) {
-        if (typeof onDone === 'function') onDone();
+        if (typeof onDone === "function") onDone();
         return;
       }
       const step = steps[i++];
@@ -159,39 +161,43 @@ const LOGO = "منصة إمتحانات بصمجي";
   };
 
   function registerCommand(name, fn, desc, hidden) {
-    registry.commands[name] = { fn, desc: desc || '', hidden: !!hidden };
+    registry.commands[name] = { fn, desc: desc || "", hidden: !!hidden };
     global.basmagi[name] = fn;
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
-  const BUILD_TAG = 'core@6.2.4';
+  const BUILD_TAG = "core@7.0.1";
 
   function printHelp() {
-    log.rule('═', 64);
-    log.title(' 📖  Console Command Reference');
-    log.sub(`  current page: ${registry.pageLabel || 'unknown'}`);
-    log.rule('═', 64);
+    log.rule("═", 64);
+    log.title(" 📖  Console Command Reference");
+    log.sub(`  current page: ${registry.pageLabel || "unknown"}`);
+    log.rule("═", 64);
 
-    const visible = Object.entries(registry.commands).filter(([, c]) => !c.hidden);
+    const visible = Object.entries(registry.commands).filter(
+      ([, c]) => !c.hidden,
+    );
     visible.forEach(([name, c]) => {
       console.log(`%cbasmagi.${name}()%c  →  ${c.desc}`, styles.cmd, styles.kv);
     });
 
-    log.rule('─', 64);
-    log.dim('  💡 tip: some commands only exist on certain pages.');
-    log.dim('  💡 tip: not everything is listed here... keep exploring 👀');
-    log.rule('═', 64);
+    log.rule("─", 64);
+    log.dim("  💡 tip: some commands only exist on certain pages.");
+    log.dim("  💡 tip: not everything is listed here... keep exploring 👀");
+    log.rule("═", 64);
   }
 
   function printAbout() {
-    log.rule('═', 64);
+    log.rule("═", 64);
     printLogo();
-    log.sub('  منصة إمتحانات بصمجي');
-    log.kv('  build:', BUILD_TAG);
-    log.kv('  engine:', 'console-core.js (shared console runtime)');
-    log.kv('  page:', registry.pageLabel || 'unknown');
-    log.dim('  يا فاتح الكونسول وسايب المنهج يضيع.. الكود ده مكتوب بحب وإحساس بديع');
-    log.rule('═', 64);
+    log.sub("  منصة إمتحانات بصمجي");
+    log.kv("  build:", BUILD_TAG);
+    log.kv("  engine:", "console-core.js (shared console runtime)");
+    log.kv("  page:", registry.pageLabel || "unknown");
+    log.dim(
+      "  يا فاتح الكونسول وسايب المنهج يضيع.. الكود ده مكتوب بحب وإحساس بديع",
+    );
+    log.rule("═", 64);
   }
 
   // --------------------------------------------------------------------------
@@ -200,11 +206,14 @@ const LOGO = "منصة إمتحانات بصمجي";
 
   function __devSignature() {
     console.table([
-      { role: 'Frontend', note: 'إذا وصلت هنا، يبقى أنت فضولي فعلاً 👀' },
-      { role: 'Status', note: 'no bugs were harmed in the making of this easter egg' },
+      { role: "Frontend", note: "إذا وصلت هنا، يبقى أنت فضولي فعلاً 👀" },
+      {
+        role: "Status",
+        note: "no bugs were harmed in the making of this easter egg",
+      },
     ]);
   }
-  Object.defineProperty(global, '__basmagi_dev', {
+  Object.defineProperty(global, "__basmagi_dev", {
     value: __devSignature,
     enumerable: false, // hidden from for-in / autocomplete-ish enumeration
     configurable: false,
@@ -228,5 +237,4 @@ const LOGO = "منصة إمتحانات بصمجي";
     registerCommand,
     registry,
   };
-
 })(window);

@@ -1407,8 +1407,22 @@ Container
 }
 
 .user-quizzes-drop-zone.user-quizzes-drag-over {
+  border: 2px dashed var(--color-primary) !important;
+  border-radius: 20px !important;
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 0 0 1px var(--color-primary-light);
+}
+
+.create-quiz-inline-modal {
+  position: relative;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.create-quiz-inline-modal.create-quiz-inline-modal--drag-over {
   border: 2px dashed var(--color-primary);
-  border-radius: 20px;
   background: rgba(59, 130, 246, 0.06);
   box-shadow: 0 0 0 1px var(--color-primary-light);
 }

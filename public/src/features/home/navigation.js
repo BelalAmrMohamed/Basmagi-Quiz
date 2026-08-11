@@ -14,7 +14,7 @@
 //   initApp                ~748-808
 //   finalizeAppRender      ~785-808
 // ============================================================================
-// NOTE: showNotification and confirmationNotification are NOT ES exports —
+// NOTE: showNotification and _confirm are NOT ES exports —
 // they are runtime globals loaded via a non-module <script> tag from
 // src/components/notifications.js. Referenced below as bare globals with
 // this comment so future readers don't try to add an import for them.

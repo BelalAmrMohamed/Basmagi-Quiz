@@ -11,7 +11,7 @@
 //   1. console-ui.js — runs the branded dev-console IIFE immediately
 //   2. Everything else — logic modules, no hard ordering requirement
 //
-// NOTE: showNotification and confirmationNotification are NOT ES exports —
+// NOTE: showNotification and _confirm are NOT ES exports —
 // they are runtime globals loaded via a non-module <script> tag from
 // src/components/notifications.js. Referenced as bare globals below.
 // ============================================================================
@@ -43,9 +43,11 @@ window.renderRootCategories = renderRootCategories;
 // Ported verbatim from original lines 5499-5513 (the last lines of index.js).
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".course-info-container")) {
-    document.querySelectorAll(".course-info-tooltip.show").forEach((tooltip) => {
-      tooltip.classList.remove("show");
-    });
+    document
+      .querySelectorAll(".course-info-tooltip.show")
+      .forEach((tooltip) => {
+        tooltip.classList.remove("show");
+      });
   }
 });
 

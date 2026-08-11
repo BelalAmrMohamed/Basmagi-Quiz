@@ -41,7 +41,9 @@ body {
   padding-left: 24px;
   padding-right: 24px;
   position: relative;
-  overflow-x: hidden;
+  /* clip (not hidden) so nested overflow-x:auto scrollers like the activity
+     heatmap can still receive horizontal pans on mobile WebKit. */
+  overflow-x: clip;
 }
 
 .container {
@@ -1054,10 +1056,41 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .heatmap-body {
+  position: relative;
   display: flex;
   flex-direction: row-reverse;
   gap: 6px;
   min-width: 0;
+}
+
+/* Edge fades live on the body wrapper — NOT on .heatmap-grid. Masking the
+   scrollport itself breaks touch horizontal scrolling on iOS/WebKit. */
+.heatmap-body.is-overflowing::before,
+.heatmap-body.is-overflowing::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 18px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.heatmap-body.is-overflowing::before {
+  inset-inline-start: 0;
+  background: linear-gradient(
+    to inline-end,
+    var(--color-surface) 0%,
+    transparent 100%
+  );
+}
+
+.heatmap-body.is-overflowing::after {
+  inset-inline-end: 0;
+  background: linear-gradient(
+    to inline-start,
+    var(--color-surface) 0%,
+    transparent 100%
+  );
 }
 
 .heatmap-daylabels {
@@ -1071,6 +1104,9 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   flex-shrink: 0;
   width: 3.25rem;
   line-height: 1.1;
+  position: relative;
+  z-index: 3;
+  background: var(--color-surface);
 }
 
 .heatmap-daylabels span {
@@ -1089,53 +1125,36 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .heatmap-grid {
-  --edge-fade: 18px;
   display: flex;
   flex-direction: row-reverse;
   gap: var(--heatmap-gap);
   overflow-x: auto;
   overflow-y: hidden;
-  padding-block-end: 6px;
+  padding-block-end: 8px;
   padding-block-start: 2px;
   /* Extra inline padding so absolute month labels aren't clipped by the
      scrollport edge on phones (labels don't contribute to scrollWidth). */
-  padding-inline: 4px;
+  padding-inline: 6px;
   scroll-snap-type: x proximity;
   flex: 1;
-  /* Center the year strip when it fits; when it overflows, safe center
-     still leaves both ends reachable via scroll. */
-  justify-content: safe center;
-  -webkit-mask-image: linear-gradient(
-    to var(--fade-direction, left),
-    transparent 0,
-    #000 var(--edge-fade),
-    #000 calc(100% - var(--edge-fade)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to var(--fade-direction, left),
-    transparent 0,
-    #000 var(--edge-fade),
-    #000 calc(100% - var(--edge-fade)),
-    transparent 100%
-  );
+  min-width: 0;
+  /* Never center an overflowing flex row — start-side content becomes
+     unreachable. Sparse years still look fine packed to the start. */
+  justify-content: flex-start;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+  touch-action: pan-x pinch-zoom;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
 }
 
-/* Only fade edges once content actually overflows the track — otherwise
-   a short/sparse row would fade its own centered content for no reason. */
-.heatmap-grid:not(.is-overflowing) {
-  -webkit-mask-image: none;
-  mask-image: none;
+.heatmap-grid::-webkit-scrollbar {
+  height: 6px;
 }
 
-/* CRITICAL: justify-content:center (and safe center) on an overflowing flex
-   row makes the start-side overflow unreachable via scroll — months/cells
-   on the far edge get permanently clipped. Pack to main-start when
-   overflowing so the full year strip can be scrolled. */
-.heatmap-grid.is-overflowing {
-  justify-content: flex-start;
+.heatmap-grid::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
 }
 
 .heatmap-col {
@@ -1839,20 +1858,25 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 
 @media (max-width: 480px) {
   #activityHeatmap {
-    --heatmap-cell: 8px;
+    --heatmap-cell: 9px;
     --heatmap-gap: 2px;
   }
 
   .heatmap-daylabels {
-    width: 2.1rem;
+    width: 1.75rem;
     font-size: 0.5rem;
   }
 
-  .heatmap-grid {
-    --edge-fade: 10px;
+  .heatmap-body.is-overflowing::before,
+  .heatmap-body.is-overflowing::after {
+    width: 12px;
   }
 
   .heatmap-col-label {
     font-size: 0.55rem;
+  }
+
+  .heatmap-grid {
+    padding-block-end: 10px;
   }
 }

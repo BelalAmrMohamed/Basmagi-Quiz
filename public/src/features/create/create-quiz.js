@@ -1,11 +1,11 @@
 // public/src/features/create/create-quiz.js
 
 // Temporary | For performance debugging
-console.log("create-quiz.js loaded successfully")
+console.log("create-quiz.js loaded successfully");
 
 import {
   showNotification,
-  confirmationNotification,
+  _confirm,
 } from "../../components/notifications/notifications.js";
 
 import { exportToQuiz } from "../../features/export/export-to-quiz.js";
@@ -82,9 +82,7 @@ function renderMathIn(container) {
  */
 function mdEditorHtml(id, value, placeholder, rows = 2) {
   const safeValue = (value || "").replace(/\\n/g, "\n");
-  const rendered = safeValue.trim()
-    ? renderMarkdown(safeValue)
-    : "";
+  const rendered = safeValue.trim() ? renderMarkdown(safeValue) : "";
   const escaped = safeValue
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -464,7 +462,7 @@ window.addQuestion = function () {
 };
 
 window.removeQuestion = async function (questionId) {
-  if (!(await confirmationNotification("هل أنت متأكد من حذف هذا السؤال؟"))) {
+  if (!(await _confirm("هل أنت متأكد من حذف هذا السؤال؟"))) {
     return;
   }
 
@@ -1235,9 +1233,7 @@ window.deleteSelectedQuestions = async function () {
   }
 
   if (
-    !(await confirmationNotification(
-      `هل أنت متأكد من حذف ${selectedQuestions.size} سؤال؟`,
-    ))
+    !(await _confirm(`هل أنت متأكد من حذف ${selectedQuestions.size} سؤال؟`))
   ) {
     return;
   }
@@ -2182,8 +2178,6 @@ window.updateShortcutsModal = function (show) {
 // PHASE 2: NEW UI HANDLERS
 // ============================================================================
 
-
-
 window.updateOptionCards = function (radioInput) {
   const name = radioInput.name;
   const cards = document.querySelectorAll(`input[name="${name}"]`);
@@ -2447,7 +2441,7 @@ window.processImport = async function () {
 
 window.resetPage = async function () {
   if (
-    !(await confirmationNotification(
+    !(await _confirm(
       "هل أنت متأكد من إعادة ضبط الصفحة؟ سيتم حذف جميع البيانات!",
     ))
   ) {

@@ -158,7 +158,8 @@
       const href = item.getAttribute("href");
       const itemPath = href === "/" ? "index.html" : href;
       const isActive =
-        itemPath === path || (href === "/" && (path === "" || path === "index.html"));
+        itemPath === path ||
+        (href === "/" && (path === "" || path === "index.html"));
       item.classList.toggle("active", isActive);
       if (isActive) item.setAttribute("aria-current", "page");
       else item.removeAttribute("aria-current");
@@ -388,7 +389,6 @@
 
 import { avatarEngine, syncNavAvatars } from "../../shared/avatarEngine.js";
 
-
 document.addEventListener("DOMContentLoaded", async () => {
   syncNavAvatars();
 
@@ -396,7 +396,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     syncNavAvatars();
   });
 });
-
 
 // ============================================================================
 // CONTACT OVERLAY
@@ -443,13 +442,13 @@ document.addEventListener("DOMContentLoaded", () => {
 // CHANGE USERNAME
 // ============================================================================
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { prompt_user, showNotification } from "../notifications/notifications.js";
+import { _prompt, showNotification } from "../notifications/notifications.js";
 import { validateUsername } from "../../shared/user-name-validation.js";
 
 window.changeUsername = async function (message = "أدخل الإسم الجديد") {
   try {
     const currentName = getFromStorage("username", "User");
-    const newName = await prompt_user(message, currentName);
+    const newName = await _prompt(message, currentName);
 
     if (newName === null) return;
 
@@ -466,7 +465,8 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
         window.location.pathname.startsWith("/index") ||
         window.location.pathname === "/"
       ) {
-        const { updateWelcomeMessage } = await import("../../features/home/welcome-message.js");
+        const { updateWelcomeMessage } =
+          await import("../../features/home/welcome-message.js");
         updateWelcomeMessage();
       }
       // For the leaderboard name in profile page

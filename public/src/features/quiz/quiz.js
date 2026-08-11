@@ -1,13 +1,13 @@
 // public/src/scripts/features/quiz/quiz.js - relative quizzes (e.g. "/data/quizzes/..."), Supabase DB quizzes, or user quizzes.
 
 // Temporary | For performance debugging
-console.log("quiz.js loaded successfully")
+console.log("quiz.js loaded successfully");
 
 import { getManifest } from "../../shared/quizManifest.js";
 import { gameEngine } from "../../shared/gameEngine.js";
 import {
   showNotification,
-  confirmationNotification,
+  _confirm,
 } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
@@ -21,10 +21,7 @@ showNotification(
   "أسأل الله لك التوفيق والسداد",
   "./assets/images/صلى_على_النبي_2.png",
 );
-import {
-  renderMarkdown,
-  scanDirections,
-} from "../../shared/markdown.js";
+import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 
 // === MEMORY CACHE for exam modules ===
@@ -1344,7 +1341,7 @@ async function init() {
       const saved = localStorage.getItem(`quiz_state_${examId}`);
       if (saved && quizMode === "practice") {
         const state = JSON.parse(saved);
-        if (await confirmationNotification("استئناف الإمتحان؟")) {
+        if (await _confirm("استئناف الإمتحان؟")) {
           currentIdx = state.currentIdx || 0;
           userAnswers = state.userAnswers || {};
           lockedQuestions = state.lockedQuestions || {};
@@ -1939,7 +1936,11 @@ function buildVerticalQuestionBodyHTML(q, idx) {
 //   [.media-center-wrap …]   ← persistent, rendered once, never replaced
 //   .reloadable-context       ← replaced on every answer interaction
 function buildVerticalQuestionCard(q, idx) {
-  const { largeClass, mediaHTML, html: bodyHTML } = buildVerticalQuestionBodyHTML(q, idx);
+  const {
+    largeClass,
+    mediaHTML,
+    html: bodyHTML,
+  } = buildVerticalQuestionBodyHTML(q, idx);
   return `
     <div class="question-card vertical-question-card${largeClass}" data-question-index="${idx}" id="q-${idx}">
       <div class="question-body">
@@ -2092,7 +2093,8 @@ function renderAllQuestionsVertical() {
   if (currentIdx > 0) {
     requestAnimationFrame(() => {
       const targetCard = document.getElementById(`q-${currentIdx}`);
-      if (targetCard) targetCard.scrollIntoView({ behavior: "instant", block: "start" });
+      if (targetCard)
+        targetCard.scrollIntoView({ behavior: "instant", block: "start" });
     });
   }
 }
@@ -2308,10 +2310,11 @@ function renderQuestion() {
       progressPercent,
     )}% (${answeredCount}/${questions.length})`;
 
-  const { largeClass, mediaHTML, html: bodyHTML } = buildQuestionBodyHTML(
-    q,
-    currentIdx,
-  );
+  const {
+    largeClass,
+    mediaHTML,
+    html: bodyHTML,
+  } = buildQuestionBodyHTML(q, currentIdx);
 
   els.questionContainer.classList.remove("loading");
 
@@ -2426,7 +2429,7 @@ const maybeAutoSubmit = () => {
     autoSubmitTimeout = setTimeout(async () => {
       try {
         if (
-          await confirmationNotification(
+          await _confirm(
             "لقد أجبت على جميع الأسئلة. هل تريد تسليم الإمتحان الآن؟",
           )
         ) {
@@ -2461,10 +2464,7 @@ async function finish(skipconfirmationNotification) {
     autoSubmitTimeout = null;
   }
 
-  if (
-    !skipconfirmationNotification &&
-    !(await confirmationNotification("هل تريد أن تسلم؟"))
-  )
+  if (!skipconfirmationNotification && !(await _confirm("هل تريد أن تسلم؟")))
     return;
 
   stopTimer();
@@ -2540,12 +2540,10 @@ async function finish(skipconfirmationNotification) {
 }
 
 async function restart(skipconfirmationNotification) {
-  // 1. confirmationNotification Intent
+  // 1. _confirm Intent
   if (
     !skipconfirmationNotification &&
-    !(await confirmationNotification(
-      "هل تريد إعادة الإمتحان؟ سيتم فقدان التقدم الحالي",
-    ))
+    !(await _confirm("هل تريد إعادة الإمتحان؟ سيتم فقدان التقدم الحالي"))
   )
     return;
 
@@ -2604,7 +2602,7 @@ async function restart(skipconfirmationNotification) {
 async function exit(skipconfirmationNotification) {
   if (
     !skipconfirmationNotification &&
-    !(await confirmationNotification("هل أنت متأكد من الخروج؟"))
+    !(await _confirm("هل أنت متأكد من الخروج؟"))
   )
     return;
 
@@ -2728,7 +2726,9 @@ function applyPendingMediaTimestamps() {
       const key = el.dataset.mediaRaw || el.src.split("?")[0];
       const time = key ? timeMap[key] : undefined;
       if (!time || time <= 0) return;
-      const restore = () => { el.currentTime = time; };
+      const restore = () => {
+        el.currentTime = time;
+      };
       if (el.readyState >= 1) restore();
       else el.addEventListener("loadedmetadata", restore, { once: true });
     });
@@ -2839,7 +2839,6 @@ function resetQuizState() {
 }
 
 init();
-
 
 // ============================================================================
 // Quiz page — Persistent collapsible icon-rail sidebar navigation

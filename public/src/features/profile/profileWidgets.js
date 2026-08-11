@@ -28,14 +28,15 @@ function heatmapHoverHtml(date, count) {
 }
 
 const WEEKDAY_LABELS_SAT_FIRST = [
-  "السبت",
-  "الأحد",
-  "الاثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
+  "سبت",
+  "أحد",
+  "اثن",
+  "ثلا",
+  "أرب",
+  "خمي",
+  "جمع",
 ];
+const WEEKDAY_LABELS_SHORT = ["س", "ح", "ن", "ث", "ر", "خ", "ج"];
 const MONTH_LABELS_AR = [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
@@ -153,9 +154,12 @@ export function renderActivityHeatmap(user) {
     })
     .join("");
 
-  const dayLabelsHtml = WEEKDAY_LABELS_SAT_FIRST
-    .map((label) => `<span>${label}</span>`)
-    .join("");
+  const useShortDayLabels =
+    typeof window !== "undefined" && window.matchMedia("(max-width: 480px)").matches;
+  const dayLabels = useShortDayLabels
+    ? WEEKDAY_LABELS_SHORT
+    : WEEKDAY_LABELS_SAT_FIRST;
+  const dayLabelsHtml = dayLabels.map((label) => `<span>${label}</span>`).join("");
 
   const activeDays = days.filter((d) => d.count > 0).length;
 
@@ -165,7 +169,7 @@ export function renderActivityHeatmap(user) {
         <span class="heatmap-daylabels-spacer"></span>
         ${dayLabelsHtml}
       </div>
-      <div class="heatmap-grid">${cellsHtml}</div>
+      <div class="heatmap-grid" tabindex="0" role="region" aria-label="نشاطك خلال السنة — اسحب أفقياً للتمرير">${cellsHtml}</div>
     </div>
     <div class="heatmap-footer">
       <span><strong>${activeDays}</strong> يوم نشاط خلال سنة ${year}</span>
@@ -191,12 +195,15 @@ export function renderActivityHeatmap(user) {
   });
 
   // When the year overflows the card, bring the current week into view.
-  // When it fits, CSS centers the strip — don't fight that with scroll.
   const grid = container.querySelector(".heatmap-grid");
+  const body = container.querySelector(".heatmap-body");
   const currentWeek = container.querySelector(".heatmap-col.is-current-week");
-  if (grid && currentWeek) {
+  if (grid) {
     requestAnimationFrame(() => {
-      if (grid.scrollWidth <= grid.clientWidth + 1) return;
+      const overflowing = grid.scrollWidth > grid.clientWidth + 1;
+      grid.classList.toggle("is-overflowing", overflowing);
+      if (body) body.classList.toggle("is-overflowing", overflowing);
+      if (!overflowing || !currentWeek) return;
       const gridRect = grid.getBoundingClientRect();
       const colRect = currentWeek.getBoundingClientRect();
       const delta =

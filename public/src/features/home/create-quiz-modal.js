@@ -25,6 +25,10 @@ import {
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import {
+  importJsonQuizFiles,
+  wireJsonFileDropZone,
+} from "./quiz-file-import.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 export function createInlineCreateQuizCard() {
@@ -228,6 +232,86 @@ modalCard.innerHTML = `
   cancelBtn.onclick = close;
 
   importBtn.onclick = () => fileInput.click();
+
+  // Drop JSON onto the modal card itself
+  wireJsonFileDropZone(
+    modalCard,
+    async (files) => {
+      // Multiple files / multi-quiz payloads → import straight into إمتحاناتك
+      if (files.length > 1) {
+        const count = await importJsonQuizFiles(files, { refresh: false });
+        if (count > 0) {
+          close();
+          renderRootCategories();
+          renderUserQuizzesView();
+        }
+        return;
+      }
+
+      const file = files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          showNotification(
+            "خطأ في التنسيق",
+            `${file.name}: JSON غير صالح`,
+            "error",
+          );
+          return;
+        }
+
+        // Multi-quiz file → import all and close
+        if (
+          Array.isArray(data) &&
+          data.some((item) => item && Array.isArray(item.questions))
+        ) {
+          const count = await importJsonQuizFiles([file], { refresh: false });
+          if (count > 0) {
+            close();
+            renderRootCategories();
+            renderUserQuizzesView();
+          }
+          return;
+        }
+
+        // Single quiz → fill the form for review/edit
+        contentInput.value = text;
+        const defaultTitle = file.name
+          .replace(/\.json$/i, "")
+          .replace(/[-_]/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+
+        try {
+          const parsed = parseQuizJson(text, defaultTitle);
+          if (parsed.meta?.title) {
+            titleInput.value = parsed.meta.title;
+          } else if (!titleInput.value) {
+            titleInput.value = defaultTitle;
+          }
+        } catch (_) {
+          if (!titleInput.value) titleInput.value = defaultTitle;
+        }
+
+        showNotification(
+          "نجاح",
+          "تم تحميل ملف JSON، يمكنك تعديله أو إنشاء الكويز الآن.",
+          "success",
+        );
+      } catch (err) {
+        showNotification(
+          "خطأ في القراءة",
+          `تعذّر قراءة ${file.name}: ${err.message}`,
+          "error",
+        );
+      }
+    },
+    { activeClass: "create-quiz-inline-modal--drag-over" },
+  );
 
   fileInput.onchange = async (e) => {
     const file = e.target.files[0];

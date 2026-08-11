@@ -5,7 +5,10 @@
 // by #contactDevOverlay in profile.html.
 
 import { avatarEngine } from "./avatarEngine.js";
-import { prompt_user, showNotification } from "../components/notifications/notifications.js";
+import {
+  _prompt,
+  showNotification,
+} from "../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "./adminAuth.js";
 
 let activeStream = null;
@@ -16,8 +19,14 @@ function getUsername() {
 
 // We use deterministic abstract patterns based on names to populate the grid.
 const PRESET_SEEDS = [
-  "Alpha", "Bravo", "Charlie", "Delta",
-  "Echo", "Foxtrot", "Golf", "Hotel"
+  "Alpha",
+  "Bravo",
+  "Charlie",
+  "Delta",
+  "Echo",
+  "Foxtrot",
+  "Golf",
+  "Hotel",
 ];
 
 function renderPresetGrid() {
@@ -25,7 +34,7 @@ function renderPresetGrid() {
   if (!grid) return;
 
   const name = getUsername();
-  
+
   // Create an array of 8 seeds to generate different patterns
   // The first one is the user's actual username, so their personal pattern is always available.
   const seeds = [name, ...PRESET_SEEDS].slice(0, 8);
@@ -59,17 +68,19 @@ async function appendGravatarPreset(grid, email) {
     const trimmedEmail = email.trim().toLowerCase();
     const encoder = new TextEncoder();
     const data = encoder.encode(trimmedEmail);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const hashHex = hashArray
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     const gravatarUrl = `https://gravatar.com/avatar/${hashHex}?s=256&d=404`;
-    
+
     const res = await fetch(gravatarUrl);
     if (!res.ok) return;
     const blob = await res.blob();
     const file = new File([blob], "gravatar.jpg", { type: blob.type });
     const dataUrl = await avatarEngine.processImageFile(file);
-    
+
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "avatar-preset-btn gravatar-preset";
@@ -78,9 +89,9 @@ async function appendGravatarPreset(grid, email) {
     btn.style.cssText = "background:transparent; padding:0; overflow:hidden;";
     btn.innerHTML = `<img src="${dataUrl}" style="width:100%; height:100%; object-fit:cover;">`;
     btn.addEventListener("click", () => applyAvatar(dataUrl));
-    
+
     grid.appendChild(btn);
-  } catch(err) {
+  } catch (err) {
     console.error("Failed to append gravatar", err);
   }
 }
@@ -115,7 +126,7 @@ async function syncAvatarToServer(dataUrl) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ avatarUrl: dataUrl }),
     });
@@ -195,7 +206,9 @@ async function captureFromCamera() {
   canvas.toBlob(
     async (blob) => {
       try {
-        const file = new File([blob], "camera-avatar.jpg", { type: "image/jpeg" });
+        const file = new File([blob], "camera-avatar.jpg", {
+          type: "image/jpeg",
+        });
         const dataUrl = await avatarEngine.processImageFile(file);
         applyAvatar(dataUrl);
         stopCamera();
@@ -246,18 +259,20 @@ export function initAvatarPicker() {
     if (e.target === overlay) closeAvatarPicker();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay.classList.contains("open")) closeAvatarPicker();
+    if (e.key === "Escape" && overlay.classList.contains("open"))
+      closeAvatarPicker();
   });
 
-  uploadBtn && uploadBtn.addEventListener("click", () => fileInput && fileInput.click());
+  uploadBtn &&
+    uploadBtn.addEventListener("click", () => fileInput && fileInput.click());
   fileInput && fileInput.addEventListener("change", handleFileInput);
 
   if (dropzone) {
     // dragenter/dragover must both preventDefault, or the browser's own
     // "open this file" navigation runs instead of firing "drop".
     let dragDepth = 0; // counts nested enter/leave so a drag over a child
-                        // element (the button, the hint text) doesn't
-                        // prematurely clear the active state on dragleave.
+    // element (the button, the hint text) doesn't
+    // prematurely clear the active state on dragleave.
 
     dropzone.addEventListener("dragenter", (e) => {
       e.preventDefault();
@@ -281,14 +296,16 @@ export function initAvatarPicker() {
       dragDepth = 0;
       dropzone.classList.remove("drag-over");
 
-      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      const file =
+        e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (!file) return;
       await processAndApplyFile(file);
     });
   }
 
   cameraStartBtn && cameraStartBtn.addEventListener("click", startCamera);
-  cameraCaptureBtn && cameraCaptureBtn.addEventListener("click", captureFromCamera);
+  cameraCaptureBtn &&
+    cameraCaptureBtn.addEventListener("click", captureFromCamera);
 
   removeBtn &&
     removeBtn.addEventListener("click", () => {

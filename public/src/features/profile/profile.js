@@ -13,7 +13,11 @@ import {
   dateKey,
 } from "./profileWidgets.js";
 
-import { confirmationNotification, showNotification, prompt_user } from "../../components/notifications/notifications.js";
+import {
+  _confirm,
+  showNotification,
+  _prompt,
+} from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 import { renderLevelGauge } from "./levelGauge.js";
 import {
@@ -80,11 +84,11 @@ export function refreshUI(options = {}) {
     const greeting = hasCustomName ? currentName : "لوحة تحكم المستخدم";
     headerTitle.textContent = greeting;
     headerTitle.setAttribute("data-text", greeting);
-    
+
     headerTitle.classList.add("editable-username");
     headerTitle.title = "انقر لتغيير اسمك";
     headerTitle.onclick = async () => {
-      const newName = await prompt_user("أدخل اسمك الجديد:", currentName);
+      const newName = await _prompt("أدخل اسمك الجديد:", currentName);
       if (newName !== null) {
         const trimmed = newName.trim();
         if (trimmed) {
@@ -105,25 +109,34 @@ export function refreshUI(options = {}) {
     showUserInfoBtn.onclick = () => {
       document.getElementById("userInfoOverlay").style.display = "flex";
       document.getElementById("infoModalName").textContent = currentName;
-      
+
       const roleInfo = getAdminRoleInfo();
-      if (roleInfo && (roleInfo.handle || roleInfo.email || roleInfo.isOwner || roleInfo.role)) {
-        document.getElementById("infoModalAdminSection").style.display = "block";
-        
-        const emailBlock = document.getElementById("infoModalEmail").parentElement;
+      if (
+        roleInfo &&
+        (roleInfo.handle || roleInfo.email || roleInfo.isOwner || roleInfo.role)
+      ) {
+        document.getElementById("infoModalAdminSection").style.display =
+          "block";
+
+        const emailBlock =
+          document.getElementById("infoModalEmail").parentElement;
         if (roleInfo.email) {
           emailBlock.style.display = "flex";
-          document.getElementById("infoModalEmail").textContent = roleInfo.email;
+          document.getElementById("infoModalEmail").textContent =
+            roleInfo.email;
         } else {
           emailBlock.style.display = "none";
         }
-        
-        const handleBlock = document.getElementById("infoModalHandle").parentElement.parentElement;
+
+        const handleBlock =
+          document.getElementById("infoModalHandle").parentElement
+            .parentElement;
         const currentHandle = roleInfo.handle || fetchedAdminHandle;
         if (currentHandle) {
           handleBlock.style.display = "flex";
-          document.getElementById("infoModalHandle").textContent = "@" + currentHandle;
-          
+          document.getElementById("infoModalHandle").textContent =
+            "@" + currentHandle;
+
           const copyBtn = document.getElementById("modalCopyLinkBtn");
           if (copyBtn) {
             copyBtn.onclick = () => {
@@ -133,10 +146,12 @@ export function refreshUI(options = {}) {
                   const orig = copyBtn.innerHTML;
                   copyBtn.innerHTML = "تم النسخ! ✔️";
                   copyBtn.setAttribute("aria-live", "polite");
-                  setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
+                  setTimeout(() => {
+                    copyBtn.innerHTML = orig;
+                  }, 2000);
                 });
               } else {
-                prompt_user("انسخ الرابط التالي:", url);
+                _prompt("انسخ الرابط التالي:", url);
               }
             };
           }
@@ -165,10 +180,15 @@ export function refreshUI(options = {}) {
 function applyRoleBadges(role, isOwner) {
   const roleBadge = document.getElementById("roleBadge");
   const avatarBadgeOverlay = document.getElementById("avatarBadgeOverlay");
-  
+
   if (roleBadge) {
     roleBadge.style.display = "inline-flex";
-    roleBadge.onclick = () => showNotification(`هذا الحساب يمتلك صلاحيات ${isOwner ? 'مطور' : 'مشرف'}`, "", "info");
+    roleBadge.onclick = () =>
+      showNotification(
+        `هذا الحساب يمتلك صلاحيات ${isOwner ? "مطور" : "مشرف"}`,
+        "",
+        "info",
+      );
 
     if (isOwner) {
       roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
@@ -204,16 +224,20 @@ function applyRoleBadges(role, isOwner) {
 //   - Visitor view: YES. An anonymous visitor can't read someone else's
 //     localStorage, so this DB-mirrored response is the only source of
 //     that data available at all.
-async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, isVisitorContext = false) {
+async function fetchAndRenderAdminStats(
+  handle = null,
+  myToken = refreshToken,
+  isVisitorContext = false,
+) {
   document.getElementById("adminStatsGrid").style.display = "grid";
   try {
     const token = localStorage.getItem("__bq_adm");
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
-    
+
     let url = "/api/admin-stats";
     if (handle) url += `?handle=${encodeURIComponent(handle)}`;
-    
+
     const res = await fetch(url, { headers });
     const data = await res.json();
 
@@ -222,37 +246,54 @@ async function fetchAndRenderAdminStats(handle = null, myToken = refreshToken, i
     if (myToken !== refreshToken) return;
 
     if (res.ok) {
-       if (data.handle) fetchedAdminHandle = data.handle;
-       
-       document.getElementById("adminUploadedQuizzes").textContent = data.uploadedQuizzes || 0;
-       document.getElementById("adminReportsCount").textContent = data.reportsCount || 0;
-       document.getElementById("adminResolvedReportsCount").textContent = data.resolvedReports || 0;
+      if (data.handle) fetchedAdminHandle = data.handle;
 
-       if (isVisitorContext) {
-         // Public stats grid — only meaningful here, see comment above.
-         if (document.getElementById("totalPoints") && typeof data.totalPoints !== 'undefined') {
-           document.getElementById("totalPoints").textContent = data.totalPoints;
-         }
-         if (document.getElementById("totalQuizzes") && typeof data.totalQuizzes !== 'undefined') {
-           document.getElementById("totalQuizzes").textContent = data.totalQuizzes;
-         }
-         if (document.getElementById("totalBadges") && typeof data.totalBadges !== 'undefined') {
-           document.getElementById("totalBadges").textContent = data.totalBadges;
-         }
-         if (document.getElementById("currentLevel") && typeof data.currentLevel !== 'undefined') {
-           document.getElementById("currentLevel").textContent = data.currentLevel;
-         }
-       }
+      document.getElementById("adminUploadedQuizzes").textContent =
+        data.uploadedQuizzes || 0;
+      document.getElementById("adminReportsCount").textContent =
+        data.reportsCount || 0;
+      document.getElementById("adminResolvedReportsCount").textContent =
+        data.resolvedReports || 0;
 
-       return { 
-         role: data.role, 
-         isOwner: !!data.isOwner, 
-         avatarUrl: data.avatarUrl || null, 
-         displayName: data.displayName || null,
-         activityHeatmap: data.activityHeatmap || {},
-       };
+      if (isVisitorContext) {
+        // Public stats grid — only meaningful here, see comment above.
+        if (
+          document.getElementById("totalPoints") &&
+          typeof data.totalPoints !== "undefined"
+        ) {
+          document.getElementById("totalPoints").textContent = data.totalPoints;
+        }
+        if (
+          document.getElementById("totalQuizzes") &&
+          typeof data.totalQuizzes !== "undefined"
+        ) {
+          document.getElementById("totalQuizzes").textContent =
+            data.totalQuizzes;
+        }
+        if (
+          document.getElementById("totalBadges") &&
+          typeof data.totalBadges !== "undefined"
+        ) {
+          document.getElementById("totalBadges").textContent = data.totalBadges;
+        }
+        if (
+          document.getElementById("currentLevel") &&
+          typeof data.currentLevel !== "undefined"
+        ) {
+          document.getElementById("currentLevel").textContent =
+            data.currentLevel;
+        }
+      }
+
+      return {
+        role: data.role,
+        isOwner: !!data.isOwner,
+        avatarUrl: data.avatarUrl || null,
+        displayName: data.displayName || null,
+        activityHeatmap: data.activityHeatmap || {},
+      };
     }
-  } catch(e) {}
+  } catch (e) {}
   return null;
 }
 
@@ -278,7 +319,10 @@ async function syncProgressToServer() {
   // reliably kept in sync — see renderStats' computedTotalPoints comment).
   // Syncing the raw field here previously reintroduced the wrong-score bug
   // on visitor view even after #totalPoints itself was fixed locally.
-  const computedTotalPoints = (user.history || []).reduce((s, h) => s + (h.pointsEarned || 0), 0);
+  const computedTotalPoints = (user.history || []).reduce(
+    (s, h) => s + (h.pointsEarned || 0),
+    0,
+  );
   const levelInfo = gameEngine.calculateLevel(computedTotalPoints);
 
   // Build the same date->count map renderActivityHeatmap derives from
@@ -298,15 +342,15 @@ async function syncProgressToServer() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         totalPoints: computedTotalPoints,
         totalQuizzes: user.history ? user.history.length : 0,
         totalBadges: user.badges ? user.badges.length : 0,
         currentLevel: levelInfo.level || 1,
-        displayName: localStorage.getItem('username') || undefined,
-        avatarUrl: localStorage.getItem('quiz_user_avatar') || undefined,
+        displayName: localStorage.getItem("username") || undefined,
+        avatarUrl: localStorage.getItem("quiz_user_avatar") || undefined,
         activityHeatmap,
       }),
       // keepalive lets this survive a tab-hide/navigate-away without being
@@ -322,25 +366,32 @@ async function syncProgressToServer() {
 
 async function setupVisitorView(handle) {
   // Setup UI for visitor view
-  document.querySelectorAll(".content-section").forEach(el => el.style.display = "none");
+  document
+    .querySelectorAll(".content-section")
+    .forEach((el) => (el.style.display = "none"));
   const masteryCard = document.querySelector(".category-mastery-card");
-  if(masteryCard) masteryCard.style.display = "none";
-  
+  if (masteryCard) masteryCard.style.display = "none";
+
   const badgeContainer = document.getElementById("badgeContainer");
-  if(badgeContainer) badgeContainer.parentElement.style.display = "none";
+  if (badgeContainer) badgeContainer.parentElement.style.display = "none";
   const nextBadges = document.getElementById("nextBadges");
-  if(nextBadges) nextBadges.parentElement.style.display = "none";
+  if (nextBadges) nextBadges.parentElement.style.display = "none";
   const statsContainer = document.getElementById("statsContainer");
-  if(statsContainer) statsContainer.parentElement.style.display = "none";
-  
+  if (statsContainer) statsContainer.parentElement.style.display = "none";
+
   const heatmapCard = document.querySelector(".heatmap-widget-card");
   if (heatmapCard) heatmapCard.style.display = "";
-  
+
   document.getElementById("avatarEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
 
-  const displayNameMeta = document.querySelector('meta[name="admin:display-name"]');
-  const publicName = displayNameMeta && displayNameMeta.content ? displayNameMeta.content : handle;
+  const displayNameMeta = document.querySelector(
+    'meta[name="admin:display-name"]',
+  );
+  const publicName =
+    displayNameMeta && displayNameMeta.content
+      ? displayNameMeta.content
+      : handle;
   const headerTitle = document.getElementById("userNameHeader");
   if (headerTitle) {
     headerTitle.textContent = publicName;
@@ -361,7 +412,11 @@ async function setupVisitorView(handle) {
   // source of truth on this page for who the visited user actually is —
   // read role/isOwner from its response instead of assuming "admin" for
   // every visitor (that previously mislabeled regular users as admins).
-  const visitedRole = await fetchAndRenderAdminStats(handle, refreshToken, true);
+  const visitedRole = await fetchAndRenderAdminStats(
+    handle,
+    refreshToken,
+    true,
+  );
 
   if (visitedRole && visitedRole.displayName) {
     const headerTitle = document.getElementById("userNameHeader");
@@ -396,23 +451,29 @@ async function setupVisitorView(handle) {
   } catch (e) {
     console.error("Failed to render visitor heatmap", e);
   }
-  
+
   // Update User Info Modal for Visitor View
   const showUserInfoBtn = document.getElementById("showUserInfoBtn");
   if (showUserInfoBtn) {
     showUserInfoBtn.onclick = () => {
       document.getElementById("userInfoOverlay").style.display = "flex";
       // Prefer the server-injected meta/displayName (publicName) when available
-      document.getElementById("infoModalName").textContent = publicName || ((visitedRole && visitedRole.displayName) ? visitedRole.displayName : handle);
-      
+      document.getElementById("infoModalName").textContent =
+        publicName ||
+        (visitedRole && visitedRole.displayName
+          ? visitedRole.displayName
+          : handle);
+
       document.getElementById("infoModalAdminSection").style.display = "block";
-      const emailBlock = document.getElementById("infoModalEmail").parentElement;
+      const emailBlock =
+        document.getElementById("infoModalEmail").parentElement;
       emailBlock.style.display = "none";
-      
-      const handleBlock = document.getElementById("infoModalHandle").parentElement.parentElement;
+
+      const handleBlock =
+        document.getElementById("infoModalHandle").parentElement.parentElement;
       handleBlock.style.display = "flex";
       document.getElementById("infoModalHandle").textContent = "@" + handle;
-      
+
       const copyBtn = document.getElementById("modalCopyLinkBtn");
       if (copyBtn) {
         copyBtn.onclick = () => {
@@ -422,10 +483,12 @@ async function setupVisitorView(handle) {
               const orig = copyBtn.innerHTML;
               copyBtn.innerHTML = "تم النسخ! ✔️";
               copyBtn.setAttribute("aria-live", "polite");
-              setTimeout(() => { copyBtn.innerHTML = orig; }, 2000);
+              setTimeout(() => {
+                copyBtn.innerHTML = orig;
+              }, 2000);
             });
           } else {
-            prompt_user("انسخ الرابط التالي:", url);
+            _prompt("انسخ الرابط التالي:", url);
           }
         };
       }
@@ -451,8 +514,7 @@ function renderVisitorAvatar(avatarUrl, handle) {
 
 // Delete history entry
 window.deleteHistory = async function (index) {
-  if (!(await confirmationNotification("هل أنت متأكد من حذف هذا الاختبار؟ ")))
-    return;
+  if (!(await _confirm("هل أنت متأكد من حذف هذا الاختبار؟ "))) return;
 
   const user = gameEngine.getUserData();
   user.history.splice(index, 1);
@@ -467,7 +529,7 @@ window.deleteHistory = async function (index) {
 
 // Remove bookmark
 window.removeBookmark = async function (key) {
-  if (!(await confirmationNotification("إزالة من المفضلة؟"))) return;
+  if (!(await _confirm("إزالة من المفضلة؟"))) return;
 
   const user = gameEngine.getUserData();
   if (user.bookmarks && user.bookmarks[key]) {
@@ -498,7 +560,7 @@ document.addEventListener("click", (event) => {
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Add overlay backdrop click handler for all contact overlays
-  document.querySelectorAll(".contact-overlay").forEach(overlay => {
+  document.querySelectorAll(".contact-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.style.display = "none";
     });
@@ -566,7 +628,10 @@ function renderAvatar(user, currentName) {
 
 function renderStats(user) {
   // Compute totalPoints from history to keep UI consistent with weekly recap
-  const computedTotalPoints = (user.history || []).reduce((s, h) => s + (h.pointsEarned || 0), 0);
+  const computedTotalPoints = (user.history || []).reduce(
+    (s, h) => s + (h.pointsEarned || 0),
+    0,
+  );
   const levelInfo = gameEngine.calculateLevel(computedTotalPoints);
 
   // Safely update element helper
@@ -647,8 +712,24 @@ function renderWeeklyRecap(user) {
   // for the user. Using midnight-anchored boundaries avoids that edge
   // case dropping entries near the week cutoff.
   const now = new Date();
-  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const weekAgoStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
+  const todayEnd = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
+  const weekAgoStart = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - 7,
+    0,
+    0,
+    0,
+    0,
+  );
 
   const recent = (user.history || []).filter((h) => {
     const d = new Date(h.date);
@@ -767,7 +848,12 @@ function renderBadges(user) {
 
 // visitedHandle: when set (visitor /@handle view), only the admin
 // leaderboard is shown — the local bots board is owner-profile only.
-async function renderLeaderboard(user, currentName, myToken = refreshToken, visitedHandle = null) {
+async function renderLeaderboard(
+  user,
+  currentName,
+  myToken = refreshToken,
+  visitedHandle = null,
+) {
   const localCard = document.getElementById("localLeaderboardCard");
   const adminCard = document.getElementById("adminLeaderboardCard");
   const localEl = document.getElementById("localLeaderboard");
@@ -775,7 +861,8 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
   if (!adminEl) return;
 
   const roleInfo = getAdminRoleInfo();
-  const displayName = currentName || localStorage.getItem("username") || "مستخدم";
+  const displayName =
+    currentName || localStorage.getItem("username") || "مستخدم";
   const highlightHandle = visitedHandle || (roleInfo && roleInfo.handle);
   const isVisitor = !!visitedHandle;
 
@@ -786,7 +873,13 @@ async function renderLeaderboard(user, currentName, myToken = refreshToken, visi
     renderLocalLeaderboard(localEl, user, displayName);
   }
 
-  await renderAdminLeaderboard(adminEl, highlightHandle, displayName, visitedHandle, myToken);
+  await renderAdminLeaderboard(
+    adminEl,
+    highlightHandle,
+    displayName,
+    visitedHandle,
+    myToken,
+  );
 }
 
 function renderLocalLeaderboard(leaderboardEl, user, displayName) {
@@ -840,15 +933,25 @@ function renderLocalLeaderboard(leaderboardEl, user, displayName) {
     if (entry.isUser) return;
     const avatarHover = row.querySelector(".lb-avatar-hover");
     if (avatarHover) {
-      attachHoverCard(avatarHover, `
+      attachHoverCard(
+        avatarHover,
+        `
         <span class="lb-hover-name">${entry.name}</span>
         <span class="lb-hover-lore">${loreForBot(entry.name)}</span>
-      `, "lb-hover-card-lore");
+      `,
+        "lb-hover-card-lore",
+      );
     }
   });
 }
 
-async function renderAdminLeaderboard(leaderboardEl, highlightHandle, displayName, visitedHandle, myToken) {
+async function renderAdminLeaderboard(
+  leaderboardEl,
+  highlightHandle,
+  displayName,
+  visitedHandle,
+  myToken,
+) {
   try {
     const res = await fetch("/api/admin-stats?leaderboard=true");
 
@@ -867,8 +970,10 @@ async function renderAdminLeaderboard(leaderboardEl, highlightHandle, displayNam
       .map((entry, i) => {
         const isHighlighted = entry.handle === highlightHandle;
         const label = isHighlighted
-          ? (visitedHandle ? (entry.displayName || entry.handle) : displayName + " (أنت)")
-          : (entry.displayName || entry.handle);
+          ? visitedHandle
+            ? entry.displayName || entry.handle
+            : displayName + " (أنت)"
+          : entry.displayName || entry.handle;
         const avatar = adminAvatarUrl(entry);
 
         return `
@@ -887,7 +992,9 @@ async function renderAdminLeaderboard(leaderboardEl, highlightHandle, displayNam
     leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
       const avatarHover = row.querySelector(".lb-avatar-hover");
       if (avatarHover) {
-        attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", { interactive: true });
+        attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", {
+          interactive: true,
+        });
       }
     });
   } catch (err) {

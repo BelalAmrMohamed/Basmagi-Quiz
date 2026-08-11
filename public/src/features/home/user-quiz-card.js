@@ -15,13 +15,22 @@ import { qz } from "./quiz-schema.js";
 import { formatArabicQuestionCount } from "./course-count.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { isAdminAuthenticated, hasAdminSessionHint } from "../../shared/adminAuth.js";
+import {
+  isAdminAuthenticated,
+  hasAdminSessionHint,
+} from "../../shared/adminAuth.js";
 import { createUploadButton } from "./adminUpload.js";
 import { showUserQuizDownloadPopup } from "./download-modal.js";
 import { showUserQuizInfoModal, formatDateForInfo } from "./quiz-info-modal.js";
-import { createExamInfoSubmenu, openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import {
+  createExamInfoSubmenu,
+  openExamDropdownMenu,
+} from "./exam-dropdown-menu.js";
 import { renderRootCategories } from "./root-view.js";
-import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
+import {
+  renderUserQuizzesView,
+  updateBulkActionBar,
+} from "./user-quizzes-view.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
@@ -30,7 +39,10 @@ import {
   TRASH_ICON_SVG,
   MORE_DOTS_ICON_SVG,
 } from "./icons.js";
-import { showNotification, confirmationNotification } from "../../components/notifications/notifications.js";
+import {
+  showNotification,
+  _confirm,
+} from "../../components/notifications/notifications.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -125,7 +137,10 @@ export function createUserQuizCard(quiz, index) {
   moreBtn.className = "exam-more-btn";
   moreBtn.type = "button";
   moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
-  moreBtn.setAttribute("aria-label", `خيارات إضافية لـ ${qz(quiz, "title") || qz(quiz, "id")}`);
+  moreBtn.setAttribute(
+    "aria-label",
+    `خيارات إضافية لـ ${qz(quiz, "title") || qz(quiz, "id")}`,
+  );
   moreBtn.onclick = (e) => {
     e.stopPropagation();
     showUserQuizActionsOverlay(quiz, moreBtn);
@@ -217,11 +232,7 @@ export function playUserQuiz(quiz) {
  */
 export async function deleteUserQuiz(quizId) {
   try {
-    if (
-      !(await confirmationNotification(
-        "هل أنت متأكد من مسح الإمتحان؟ لا يمكن إسترداده",
-      ))
-    ) {
+    if (!(await _confirm("هل أنت متأكد من مسح الإمتحان؟ لا يمكن إسترداده"))) {
       return;
     }
 
@@ -239,7 +250,6 @@ export async function deleteUserQuiz(quizId) {
     alert("Error deleting quiz. Please try again.");
   }
 }
-
 
 /**
  * Action Overlay for user-made quizzes — styled identically to

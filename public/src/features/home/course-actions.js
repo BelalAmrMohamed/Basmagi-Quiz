@@ -59,7 +59,9 @@ export function showCourseActionsOverlay(course) {
     e.stopPropagation();
     modal.remove();
     const subscribed = userProfile.getSubscribedCourseIds();
-    userProfile.setSubscribedCourses(subscribed.filter((id) => id !== course.id));
+    userProfile.setSubscribedCourses(
+      subscribed.filter((id) => id !== course.id),
+    );
 
     // Rerender DOM without page refresh
     renderRootCategories();
@@ -75,7 +77,7 @@ export function showCourseActionsOverlay(course) {
  * Show a full modal dialog with the course's metadata (education type,
  * faculty, year, term).  Dismissed via close button or backdrop click.
  *
- * NOTE: showNotification and confirmationNotification are NOT ES exports —
+ * NOTE: showNotification and _confirm are NOT ES exports —
  * they are runtime globals loaded via a non-module <script> tag from
  * src/components/notifications.js. They are not used in this function.
  *
@@ -105,16 +107,18 @@ export function showCourseInfoModal(course) {
     <tbody>
       <tr><th>نوع التعليم</th><td>${
         {
-          "University": "جامعي",
-          "High": "ثانوي",
-          "Middle": "إعدادي",
-          "Primary": "إبتدائي",
-          "Featured": "كورسات مميزة"
-        }[course.education_type] || course.education_type || '-'
+          University: "جامعي",
+          High: "ثانوي",
+          Middle: "إعدادي",
+          Primary: "إبتدائي",
+          Featured: "كورسات مميزة",
+        }[course.education_type] ||
+        course.education_type ||
+        "-"
       }</td></tr>
-      ${course.faculty && course.faculty !== "All" ? `<tr><th>الكلية</th><td>${course.faculty}</td></tr>` : ''}
-      <tr><th>العام</th><td>${course.year || '-'}</td></tr>
-      <tr><th>الترم</th><td>${course.term || '-'}</td></tr>
+      ${course.faculty && course.faculty !== "All" ? `<tr><th>الكلية</th><td>${course.faculty}</td></tr>` : ""}
+      <tr><th>العام</th><td>${course.year || "-"}</td></tr>
+      <tr><th>الترم</th><td>${course.term || "-"}</td></tr>
     </tbody>
   `;
   tableWrap.appendChild(table);

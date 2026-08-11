@@ -17,7 +17,7 @@
 
 import { escapeHtml } from "./escape-html.js";
 import { userProfile } from "../../shared/userProfile.js";
-import { confirmationNotification } from "../../components/notifications/notifications.js";
+import { _confirm } from "../../components/notifications/notifications.js";
 import { positionCourseInfoTooltip } from "./tooltip-position.js";
 
 const EDU_TYPE_AR = {
@@ -100,11 +100,7 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     const deleteBtn = tooltip.querySelector(".tooltip-delete-btn");
     deleteBtn.onclick = async (e) => {
       e.stopPropagation();
-      if (
-        await confirmationNotification(
-          "هل أنت متأكد من إلغاء الإشتراك في هذه المادة؟",
-        )
-      ) {
+      if (await _confirm("هل أنت متأكد من إلغاء الإشتراك في هذه المادة؟")) {
         const subscribed = userProfile.getSubscribedCourseIds();
         userProfile.setSubscribedCourses(
           subscribed.filter((id) => id !== course.id),
@@ -119,8 +115,6 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
   infoContainer.addEventListener("mouseenter", () => {
     positionCourseInfoTooltip(tooltip, infoBtn);
   });
-
-
 
   infoBtn.onclick = (e) => {
     e.preventDefault();

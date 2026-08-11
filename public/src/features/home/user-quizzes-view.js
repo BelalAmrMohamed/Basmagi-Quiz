@@ -12,7 +12,6 @@
 // ============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { parseQuizJson } from "../../shared/quiz-json.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { openSignInDialog } from "./sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -25,17 +24,22 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { qz } from "./quiz-schema.js";
-import { buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
 import { renderRootCategories } from "./root-view.js";
+import {
+  importJsonQuizFiles,
+  wireJsonFileDropZone,
+} from "./quiz-file-import.js";
 import {
   ADMIN_SIGN_OUT_ICON_SVG,
   ADMIN_SIGN_IN_ICON_SVG,
   CHECK_SQUARE_ICON_SVG,
 } from "./icons.js";
-import { showNotification, confirmationNotification } from "../../components/notifications/notifications.js";
-
+import {
+  showNotification,
+  _confirm,
+} from "../../components/notifications/notifications.js";
 
 /**
  * Render user-created quizzes VIEW (Folder Content)
@@ -44,7 +48,7 @@ export function renderUserQuizzesView() {
   try {
     const selectedUserQuizzes = getSelectedUserQuizzes();
     selectedUserQuizzes.clear();
-    
+
     // Update Navigation Stack — only push if we're not already sitting on
     // this same view. Without this guard, any re-render of this view while
     // already inside it (e.g. renderUserQuizzesView() called again after a
@@ -115,20 +119,24 @@ export function renderUserQuizzesView() {
       toggleSelectionBtn.className = "btn selection-toggle-btn";
       toggleSelectionBtn.innerHTML = `<span>تحديد الامتحانات</span> ${CHECK_SQUARE_ICON_SVG}`;
       toggleSelectionBtn.onclick = () => {
-         const qzContainer = container.querySelector(".user-quizzes-container");
-         if (qzContainer) {
-            qzContainer.classList.toggle("selection-mode-active");
-            const isActive = qzContainer.classList.contains("selection-mode-active");
-            toggleSelectionBtn.classList.toggle("active", isActive);
-            if (!isActive) {
-               selectedUserQuizzes.clear();
-               document.querySelectorAll(".user-quiz-select-checkbox").forEach(cb => cb.checked = false);
-            }
-            // Show the bar as soon as selection mode turns on (even with
-            // nothing selected yet, so "تحديد الكل" is reachable), and hide
-            // it the moment selection mode turns off.
-            updateBulkActionBar(isActive);
-         }
+        const qzContainer = container.querySelector(".user-quizzes-container");
+        if (qzContainer) {
+          qzContainer.classList.toggle("selection-mode-active");
+          const isActive = qzContainer.classList.contains(
+            "selection-mode-active",
+          );
+          toggleSelectionBtn.classList.toggle("active", isActive);
+          if (!isActive) {
+            selectedUserQuizzes.clear();
+            document
+              .querySelectorAll(".user-quiz-select-checkbox")
+              .forEach((cb) => (cb.checked = false));
+          }
+          // Show the bar as soon as selection mode turns on (even with
+          // nothing selected yet, so "تحديد الكل" is reachable), and hide
+          // it the moment selection mode turns off.
+          updateBulkActionBar(isActive);
+        }
       };
       actionsBar.appendChild(toggleSelectionBtn);
     }
@@ -138,8 +146,10 @@ export function renderUserQuizzesView() {
     // Inline create-quiz card (always visible in this view)
     const inlineCreateCard = createInlineCreateQuizCard();
 
-    // Ensure drag-and-drop import is enabled for this section
-    setupUserQuizzesDropZone();
+    // Drag-and-drop JSON import on the whole إمتحاناتك section
+    wireJsonFileDropZone(container, (files) => importJsonQuizFiles(files), {
+      isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
+    });
 
     // 2. Dedicated container for quiz cards — gets its own border/border-radius
     //    so the sign-in button and create card sit outside the bordered list.
@@ -178,7 +188,7 @@ export function renderUserQuizzesView() {
     quizzesContainer.prepend(inlineCreateCard);
 
     container.appendChild(quizzesContainer);
-    
+
     renderBulkActionBar();
   } catch (error) {
     console.error("Error rendering user quizzes view:", error);
@@ -193,40 +203,17 @@ export function renderUserQuizzesView() {
   }
 }
 
-function setupUserQuizzesDropZone() {
-  const dropContainer = document.getElementById("contentArea");
-  if (!dropContainer || dropContainer.dataset.userQuizzesDropReady === "1")
-    return;
-
-  dropContainer.dataset.userQuizzesDropReady = "1";
-
-  dropContainer.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropContainer.classList.add("user-quizzes-drag-over");
-  });
-
-  dropContainer.addEventListener("dragleave", (e) => {
-    if (e.target === dropContainer) {
-      dropContainer.classList.remove("user-quizzes-drag-over");
-    }
-  });
-
-  dropContainer.addEventListener("drop", async (e) => {
-    e.preventDefault();
-    dropContainer.classList.remove("user-quizzes-drag-over");
-    const files = Array.from(e.dataTransfer?.files || []);
-    if (!files.length) return;
-    await handleUserQuizzesDrop(files);
-  });
-}
-
 // ─── Bulk Action Helpers ────────────────────────────────────────────────────────
 
 function downloadQuizAsJson(quiz) {
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(quiz, null, 2));
-  const dlAnchorElem = document.createElement('a');
+  const dataStr =
+    "data:text/json;charset=utf-8," +
+    encodeURIComponent(JSON.stringify(quiz, null, 2));
+  const dlAnchorElem = document.createElement("a");
   dlAnchorElem.setAttribute("href", dataStr);
-  const safeTitle = (quiz.meta?.title || quiz.title || "quiz").replace(/[^a-zA-Z0-9\u0600-\u06FF\s-_]/g, "").trim();
+  const safeTitle = (quiz.meta?.title || quiz.title || "quiz")
+    .replace(/[^a-zA-Z0-9\u0600-\u06FF\s-_]/g, "")
+    .trim();
   dlAnchorElem.setAttribute("download", safeTitle + ".json");
   dlAnchorElem.click();
 }
@@ -264,15 +251,19 @@ export function updateBulkActionBar(forceActive) {
 
   // Disable the destructive/export actions until something is selected.
   const hasSelection = count > 0;
-  bar.querySelectorAll(".bulk-delete-btn, .bulk-extract-btn, .bulk-upload-btn").forEach((btn) => {
-    btn.disabled = !hasSelection;
-  });
+  bar
+    .querySelectorAll(".bulk-delete-btn, .bulk-extract-btn, .bulk-upload-btn")
+    .forEach((btn) => {
+      btn.disabled = !hasSelection;
+    });
 
   // Keep the "تحديد الكل" button in sync with whether everything visible
   // is currently selected.
   const selectAllBtn = bar.querySelector(".bulk-select-all-btn");
   if (selectAllBtn) {
-    const totalCheckboxes = document.querySelectorAll(".user-quiz-select-checkbox").length;
+    const totalCheckboxes = document.querySelectorAll(
+      ".user-quiz-select-checkbox",
+    ).length;
     const allSelected = totalCheckboxes > 0 && count >= totalCheckboxes;
     selectAllBtn.textContent = allSelected ? "إلغاء تحديد الكل" : "تحديد الكل";
     selectAllBtn.classList.toggle("all-selected", allSelected);
@@ -287,12 +278,12 @@ function renderBulkActionBar() {
     bar.id = "bulk-action-bar";
     bar.className = "bulk-action-bar";
     bar.style.display = "none";
-    
+
     let uploadBtnHtml = "";
     if (isAdminAuthenticated()) {
       uploadBtnHtml = `<button class="btn bulk-upload-btn">رفع المحدد ☁️</button>`;
     }
-    
+
     bar.innerHTML = `
       <div class="bulk-count">لم يتم تحديد أي شيء</div>
       <div class="bulk-actions">
@@ -305,177 +296,70 @@ function renderBulkActionBar() {
     document.body.appendChild(bar);
 
     bar.querySelector(".bulk-select-all-btn").onclick = () => {
-       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-       const allIds = userQuizzes.map(q => qz(q, "id") || q.id);
-       const allCurrentlySelected = allIds.length > 0 && allIds.every(id => selectedUserQuizzes.has(id));
+      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const allIds = userQuizzes.map((q) => qz(q, "id") || q.id);
+      const allCurrentlySelected =
+        allIds.length > 0 && allIds.every((id) => selectedUserQuizzes.has(id));
 
-       if (allCurrentlySelected) {
-          selectedUserQuizzes.clear();
-       } else {
-          allIds.forEach(id => selectedUserQuizzes.add(id));
-       }
+      if (allCurrentlySelected) {
+        selectedUserQuizzes.clear();
+      } else {
+        allIds.forEach((id) => selectedUserQuizzes.add(id));
+      }
 
-       document.querySelectorAll(".user-quiz-select-checkbox").forEach(cb => {
-          cb.checked = !allCurrentlySelected;
-       });
+      document.querySelectorAll(".user-quiz-select-checkbox").forEach((cb) => {
+        cb.checked = !allCurrentlySelected;
+      });
 
-       updateBulkActionBar();
+      updateBulkActionBar();
     };
-    
+
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
-       if (selectedUserQuizzes.size === 0) return;
-       if (await confirmationNotification("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
-          let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-          userQuizzes = userQuizzes.filter(q => {
-              const qId = qz(q, "id") || q.id;
-              return !selectedUserQuizzes.has(qId);
-          });
-          setInStorage("user_quizzes", JSON.stringify(userQuizzes));
-          selectedUserQuizzes.clear();
-          renderUserQuizzesView();
-       }
+      if (selectedUserQuizzes.size === 0) return;
+      if (await _confirm("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
+        let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        userQuizzes = userQuizzes.filter((q) => {
+          const qId = qz(q, "id") || q.id;
+          return !selectedUserQuizzes.has(qId);
+        });
+        setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+        selectedUserQuizzes.clear();
+        renderUserQuizzesView();
+      }
     };
-    
+
     bar.querySelector(".bulk-extract-btn").onclick = async () => {
-       if (selectedUserQuizzes.size === 0) return;
-       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-       const selected = userQuizzes.filter(q => {
-           const qId = qz(q, "id") || q.id;
-           return selectedUserQuizzes.has(qId);
-       });
-       if (selected.length === 0) return;
-       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(selected, null, 2));
-       const dlAnchorElem = document.createElement('a');
-       dlAnchorElem.setAttribute("href", dataStr);
-       dlAnchorElem.setAttribute("download", `my-personal-quizzes__${selected.length}.json`);
-       dlAnchorElem.click();
+      if (selectedUserQuizzes.size === 0) return;
+      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const selected = userQuizzes.filter((q) => {
+        const qId = qz(q, "id") || q.id;
+        return selectedUserQuizzes.has(qId);
+      });
+      if (selected.length === 0) return;
+      const dataStr =
+        "data:text/json;charset=utf-8," +
+        encodeURIComponent(JSON.stringify(selected, null, 2));
+      const dlAnchorElem = document.createElement("a");
+      dlAnchorElem.setAttribute("href", dataStr);
+      dlAnchorElem.setAttribute(
+        "download",
+        `my-personal-quizzes__${selected.length}.json`,
+      );
+      dlAnchorElem.click();
     };
-    
+
     if (isAdminAuthenticated()) {
       bar.querySelector(".bulk-upload-btn").onclick = () => {
-         if (selectedUserQuizzes.size === 0) return;
-         const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-         const selected = userQuizzes.filter(q => selectedUserQuizzes.has(q.id || q.meta?.id));
-         import("./adminUpload.js").then(mod => {
-            mod.openAdminUploadModal(selected);
-         });
+        if (selectedUserQuizzes.size === 0) return;
+        const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        const selected = userQuizzes.filter((q) =>
+          selectedUserQuizzes.has(q.id || q.meta?.id),
+        );
+        import("./adminUpload.js").then((mod) => {
+          mod.openAdminUploadModal(selected);
+        });
       };
     }
   }
   updateBulkActionBar(false);
-}
-
-async function handleUserQuizzesDrop(files) {
-  const allowedExts = [".json"];
-  const validFiles = [];
-  const invalidNames = [];
-
-  files.forEach((file) => {
-    const lower = file.name.toLowerCase();
-    if (allowedExts.some((ext) => lower.endsWith(ext))) {
-      validFiles.push(file);
-    } else {
-      invalidNames.push(file.name);
-    }
-  });
-
-  if (invalidNames.length) {
-    showNotification(
-      "ملفات غير مدعومة",
-      `يُقبل JSON فقط. تم تجاهل:\n${invalidNames.join(", ")}`,
-      "warning",
-    );
-  }
-
-  if (!validFiles.length) return;
-
-  const existingQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-  let importedCount = 0;
-
-  for (const file of validFiles) {
-    let text;
-    try {
-      text = await file.text();
-    } catch (err) {
-      console.error("Import read error:", err);
-      showNotification(
-        "خطأ في القراءة",
-        `تعذّر قراءة ${file.name}: ${err.message}`,
-        "error",
-      );
-      continue;
-    }
-
-    let parsedJson = null;
-    try {
-      parsedJson = JSON.parse(text);
-    } catch (e) {
-      showNotification(
-        "خطأ في التنسيق",
-        `${file.name}: JSON غير صالح`,
-        "error",
-      );
-      continue;
-    }
-
-    // Bulk export: array of full quiz entries
-    if (
-      Array.isArray(parsedJson) &&
-      parsedJson.length > 0 &&
-      (parsedJson[0].questions || parsedJson[0].id || parsedJson[0].meta)
-    ) {
-      for (const q of parsedJson) {
-        if (q.questions) {
-          existingQuizzes.push(q);
-          importedCount++;
-        }
-      }
-      continue;
-    }
-
-    const defaultTitle = file.name
-      .replace(/\.json$/i, "")
-      .replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
-    let parsed;
-    try {
-      parsed = parseQuizJson(text, defaultTitle);
-    } catch (err) {
-      console.error("Import parse error:", err);
-      showNotification(
-        "خطأ في التنسيق",
-        `${file.name}: ${err.message}`,
-        "error",
-      );
-      continue;
-    }
-
-    if (!parsed.questions || !parsed.questions.length) continue;
-
-    const quizId = crypto.randomUUID();
-
-    existingQuizzes.push(buildUserQuizEntry(quizId, parsed, defaultTitle));
-    importedCount++;
-  }
-
-  if (importedCount > 0) {
-    const quizCountText =
-      importedCount === 1
-        ? "إمتحان واحد"
-        : importedCount === 2
-          ? "إمتحانان"
-          : importedCount > 2 && importedCount < 11
-            ? `${importedCount} إمتحانات`
-            : `${importedCount} إمتحان`;
-
-    setInStorage("user_quizzes", JSON.stringify(existingQuizzes));
-    showNotification(
-      "تم الإنشاء",
-      `تم إنشاء ${quizCountText} في "إمتحاناتك"`,
-      "success",
-    );
-    renderRootCategories();
-    renderUserQuizzesView();
-  }
 }

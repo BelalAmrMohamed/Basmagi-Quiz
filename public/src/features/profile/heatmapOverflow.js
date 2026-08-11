@@ -1,20 +1,18 @@
-// public/src/scripts/features/profile/heatmapOverflow.js
-// Toggles `.is-overflowing` on #activityHeatmap's .heatmap-grid so the
-// fade-mask in profile.css only kicks in when the grid is actually wider
-// than its container (dense history). Sparse history renders fewer columns
-// than fit, so the grid is centered via `justify-content: safe center` in
-// CSS and this class stays off — no fade needed, nothing to scroll.
+// public/src/features/profile/heatmapOverflow.js
+// Toggles `.is-overflowing` on the heatmap body + grid so edge fades
+// (on .heatmap-body) only show when the year strip is wider than the card.
 //
 // Runs on a ResizeObserver (container width changes: sidebar collapse,
 // window resize, orientation change) and a MutationObserver (renderActivityHeatmap
-// rebuilds the grid's innerHTML every refreshUI() call). Fully additive —
-// does not touch profileWidgets.js or how the grid itself is built.
+// rebuilds the grid's innerHTML every refreshUI() call).
 
 function syncOverflowState(container) {
   const grid = container.querySelector(".heatmap-grid");
+  const body = container.querySelector(".heatmap-body");
   if (!grid) return;
   const isOverflowing = grid.scrollWidth > grid.clientWidth + 1;
   grid.classList.toggle("is-overflowing", isOverflowing);
+  if (body) body.classList.toggle("is-overflowing", isOverflowing);
 }
 
 export function initHeatmapOverflowSync() {
@@ -30,6 +28,10 @@ export function initHeatmapOverflowSync() {
 
   // The heatmap's innerHTML is fully replaced on every render, so watch
   // for that and re-check once the new grid is in the DOM.
-  const mutationObserver = new MutationObserver(run);
+  const mutationObserver = new MutationObserver(() => {
+    run();
+    // After layout settles (fonts/cells), re-measure and scroll if needed.
+    requestAnimationFrame(run);
+  });
   mutationObserver.observe(container, { childList: true, subtree: false });
 }
