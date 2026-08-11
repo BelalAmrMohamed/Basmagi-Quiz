@@ -280,21 +280,9 @@ export function syncNavAvatars() {
 
       if (!overlay) {
         overlay = document.createElement("img");
-        // Sizing/position/radius/shadow live in side-menu.css (.nav-badge-overlay,
-        // with a .bottom-nav-item-profile override for mobile) so every page gets
-        // correct badge sizing. Only the animated transform stays inline since
-        // it's driven by JS hover listeners below.
+        // Visuals (medallion, idle sheen, stamp hover) live in side-menu.css.
         overlay.className = "nav-badge-overlay";
-        overlay.style.transform = "rotate(25deg) scale(1)";
-
-        /* Optional hover animation */
-        overlay.addEventListener("mouseenter", () => {
-          overlay.style.transform = "rotate(35deg) scale(1.15)";
-        });
-        overlay.addEventListener("mouseleave", () => {
-          overlay.style.transform = "rotate(25deg) scale(1)";
-        });
-
+        overlay.alt = "";
         parent.appendChild(overlay);
       }
       overlay.src = roleInfo.isOwner ? "assets/images/white-icon.png" : "favicon.png";
