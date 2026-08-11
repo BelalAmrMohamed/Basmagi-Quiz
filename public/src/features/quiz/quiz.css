@@ -499,32 +499,42 @@ body.sidebar-expanded {
 .theme-selector-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   margin-block: 4px 6px;
   margin-inline: 4px;
+  /*
+   * padding-top gives vertical room for the translateY(-2px) lift on hover/active.
+   * Since .sidebar nav now uses overflow-x: clip (not hidden), the nav no longer
+   * creates a BFC that would trap this upward movement.
+   */
   padding-top: 4px;
   overflow: visible;
 }
 
+/*
+ * Theme picker buttons — each renders a tiny non-interactive preview of the
+ * HOME PAGE (header/search bar + a couple of card-list rows) painted in that
+ * theme's own fixed palette, so the button doubles as an accurate swatch —
+ * not just an icon. Colors below are intentionally hardcoded per theme
+ * (not var(--color-*)) since a swatch must always show ITS theme's colors,
+ * regardless of which theme is currently active.
+ */
 .theme-selector-btn {
   border: 2px solid var(--color-border);
-  border-radius: 10px;
-  padding: 10px 4px;
+  border-radius: 12px;
+  padding: 0 0 6px;
   cursor: pointer;
   background: none;
+  overflow: hidden;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-[data-theme="dark-slate"] .theme-selector-btn,
-[data-theme="dark"] .theme-selector-btn {
-  color: #ffffff;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
 }
 
 .theme-selector-btn:hover {
@@ -539,38 +549,182 @@ body.sidebar-expanded {
   box-shadow: var(--shadow-md);
 }
 
-.theme-btn-icon {
-  font-size: 1.2rem;
-  transition: transform 0.2s ease;
+/* ── Mini home-page preview ──────────────────────────────────────────────── */
+.theme-btn-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  height: 44px;
+  padding: 5px;
+  box-sizing: border-box;
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
 }
 
-.theme-selector-btn[aria-pressed="true"] .theme-btn-icon {
-  transform: scale(1.12);
+/* Header row: search-bar pill + a small accent dot (mirrors the home
+   page's search area) */
+.theme-btn-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.theme-btn-preview-header::before {
+  content: "";
+  flex: 1;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.theme-btn-preview-header::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Card-list silhouette: two stacked rows, each an icon-circle + text lines —
+   mirrors .category-card's mobile list-row (.icon + .card-text) */
+.theme-btn-preview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.theme-btn-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 11px;
+  border-radius: 3px;
+  padding-inline: 3px;
+}
+
+.theme-btn-preview-row::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.theme-btn-preview-row::after {
+  content: "";
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* ── Per-theme fixed palettes ─────────────────────────────────────────────
+   Each swatch always renders in its OWN theme's colors, independent of the
+   currently-applied site theme (data-theme on <html>). */
+.theme-selector-btn[data-theme="light"] .theme-btn-preview {
+  background: #fafbfc;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-header::before {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-header::after {
+  background: #6366f1;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row::before {
+  background: #6366f1;
+}
+.theme-selector-btn[data-theme="light"] .theme-btn-preview-row::after {
+  background: #e5e7eb;
+}
+
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview {
+  background: #0f172a;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::before {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::after {
+  background: #818cf8;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::before {
+  background: #818cf8;
+}
+.theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::after {
+  background: #334155;
+}
+
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview {
+  background: #121212;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::before {
+  background: #1e1e1e;
+  border: 1px solid #333333;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::after {
+  background: #60a5fa;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row {
+  background: #1e1e1e;
+  border: 1px solid #333333;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::before {
+  background: #60a5fa;
+}
+.theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::after {
+  background: #333333;
+}
+
+/* Selected-state check badge (mirrors the reference design's ✓ pill) */
+.theme-btn-check {
+  position: absolute;
+  bottom: 20px;
+  inset-inline-end: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.theme-btn-check svg {
+  width: 9px;
+  height: 9px;
+  stroke: currentColor;
+  stroke-width: 3;
+  fill: none;
+}
+
+.theme-selector-btn[aria-pressed="true"] .theme-btn-check {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .theme-btn-label {
   font-size: 0.68rem;
   font-weight: 600;
-  color: var(--color-text);
-}
-
-[data-theme="dark-slate"] .theme-btn-label,
-[data-theme="dark"] .theme-btn-label {
   color: var(--color-text-primary);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-[data-theme="light"] .theme-selector-btn .theme-btn-label {
-  color: var(--color-text-primary) !important;
-  font-weight: 600;
-}
-
-[data-theme="dark-slate"] .theme-selector-btn .theme-btn-label,
-[data-theme="dark"] .theme-selector-btn .theme-btn-label {
-  color: var(--color-text-primary) !important;
-  font-weight: 700;
-  font-size: 14px;
+  text-align: center;
+  padding-top: 5px;
 }
 
 .theme-selector-btn:focus-visible {
