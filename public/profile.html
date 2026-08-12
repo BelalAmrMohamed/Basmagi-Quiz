@@ -497,20 +497,26 @@
     <div class="container">
 
         <!-- ============================================================
-             IDENTITY BAND — avatar, name, level ring, and the 4 core
-             stat chips fused into a single hero unit. Everything gamified
-             the user should feel proud of lives here, above the fold.
+             IDENTITY BAND — Facebook/X-style profile header: a short
+             cover strip with the avatar overlapping its bottom edge,
+             followed by the name/role/level row and the 4 stat chips.
+             Everything gamified the user should feel proud of lives
+             here, above the fold — and now actually fits above the
+             fold, since the cover is a strip rather than a full-width
+             16:9 hero the rest of the page sat underneath.
              ============================================================ -->
         <div class="identity-band">
-            <!-- Thumbnail banner — sits behind everything else in the band,
-                 same stacking approach as .identity-band::before. Empty/no
-                 src by default (no thumbnail set); renderThumbnail() in
-                 profile.js sets the background image and toggles
-                 .has-thumbnail so the CSS gradient overlay only applies
-                 when there's actually an image under it. -->
-            <div class="identity-thumbnail" id="identityThumbnail" aria-hidden="true">
-                <button type="button" class="thumbnail-edit-btn" id="thumbnailEditBtn" title="تغيير الصورة المصغرة"
-                    aria-label="تغيير الصورة المصغرة">
+            <!-- Cover strip — sits behind the avatar overlap and casts
+                 no shadow on the content below it. Empty/no src by
+                 default (no cover set); renderThumbnail() in profile.js
+                 sets the background image and toggles .has-thumbnail so
+                 the CSS gradient scrim only applies when there's
+                 actually an image under it. Kept the id="identityThumbnail"
+                 profile.js already queries — only the class/layout role
+                 changed, from a full 16:9 hero to a short cover strip. -->
+            <div class="identity-cover" id="identityThumbnail" aria-hidden="true">
+                <button type="button" class="thumbnail-edit-btn" id="thumbnailEditBtn" title="تغيير صورة الغلاف"
+                    aria-label="تغيير صورة الغلاف">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
                         aria-hidden="true">
@@ -520,76 +526,83 @@
                 </button>
             </div>
 
-            <div class="identity-main">
-                <div class="avatar-wrapper">
-                    <img id="avatarImage" src="" alt="الصورة الشخصية" width="88" height="88">
-                    <!-- Admin/dev role is indicated by #roleBadge next to the
-                         name (see .identity-text below), which now opens an
-                         explanatory modal on click — the old badge overlaid
-                         directly on the avatar duplicated that same signal
-                         and cluttered the avatar itself, so it's been
-                         removed rather than restyled. -->
-                    <button type="button" class="avatar-edit-btn" id="avatarEditBtn" title="تغيير الصورة الشخصية"
-                        aria-label="تغيير الصورة الشخصية">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path
-                                d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
-                        </svg>
-                    </button>
+            <div class="identity-body">
+                <!-- Header row: avatar overlaps the cover above (negative
+                     margin on .identity-header), name/role/info sit beside
+                     it, level gauge wraps to its own row once space runs
+                     out. -->
+                <div class="identity-header">
+                    <div class="avatar-wrapper">
+                        <img id="avatarImage" src="" alt="الصورة الشخصية" width="128" height="128">
+                        <!-- Admin/dev role is indicated by #roleBadge next to
+                             the name below, which opens an explanatory modal
+                             on click — a badge overlaid directly on the
+                             avatar would duplicate that same signal, so it's
+                             kept off the avatar entirely. -->
+                        <button type="button" class="avatar-edit-btn" id="avatarEditBtn" title="تغيير الصورة الشخصية"
+                            aria-label="تغيير الصورة الشخصية">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="identity-text">
+                        <div style="display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;">
+                            <h1 id="userNameHeader" class="advanced-liquid-metal-animations"
+                                data-text="لوحة تحكم المستخدم"
+                                style="min-width: 0; width: fit-content; max-width: 100%;">
+                                لوحة تحكم المستخدم</h1>
+                            <span id="roleBadge" class="role-badge" style="display: none;"></span>
+                        </div>
+                        <button id="showUserInfoBtn" class="user-info-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                            </svg>
+                            المعلومات
+                        </button>
+                        <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
+                    </div>
+
+                    <div class="identity-level" id="identityLevel" aria-label="مستوى المستخدم"></div>
                 </div>
 
-                <div class="identity-text">
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%;">
-                        <h1 id="userNameHeader" class="advanced-liquid-metal-animations" data-text="لوحة تحكم المستخدم"
-                            style="min-width: 0; width: fit-content; max-width: 100%;">
-                            لوحة تحكم المستخدم</h1>
-                        <span id="roleBadge" class="role-badge" style="display: none;"></span>
+                <!-- Enhanced Stats Grid -->
+                <div class="stats-grid" id="userStatsGrid">
+                    <div class="stat-card">
+                        <div class="icon">💎</div>
+                        <div class="info">
+                            <span class="label">إجمالي النقاط</span>
+                            <span class="value" id="totalPoints">0</span>
+                        </div>
                     </div>
-                    <button id="showUserInfoBtn" class="user-info-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 16v-4" />
-                            <path d="M12 8h.01" />
-                        </svg>
-                        المعلومات
-                    </button>
-                    <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
-                </div>
-
-                <div class="identity-level" id="identityLevel" aria-label="مستوى المستخدم"></div>
-            </div>
-
-            <!-- Enhanced Stats Grid -->
-            <div class="stats-grid" id="userStatsGrid">
-                <div class="stat-card">
-                    <div class="icon">💎</div>
-                    <div class="info">
-                        <span class="label">إجمالي النقاط</span>
-                        <span class="value" id="totalPoints">0</span>
+                    <div class="stat-card">
+                        <div class="icon">📚</div>
+                        <div class="info">
+                            <span class="label">الاختبارات المُجتازة</span>
+                            <span class="value" id="totalQuizzes">0</span>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">📚</div>
-                    <div class="info">
-                        <span class="label">الاختبارات المُجتازة</span>
-                        <span class="value" id="totalQuizzes">0</span>
+                    <div class="stat-card">
+                        <div class="icon">🏆</div>
+                        <div class="info">
+                            <span class="label">الشارات المكتسبة</span>
+                            <span class="value" id="totalBadges">0</span>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">🏆</div>
-                    <div class="info">
-                        <span class="label">الشارات المكتسبة</span>
-                        <span class="value" id="totalBadges">0</span>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="icon">⭐</div>
-                    <div class="info">
-                        <span class="label">المستوى الحالي</span>
-                        <span class="value" id="currentLevel">1</span>
+                    <div class="stat-card">
+                        <div class="icon">⭐</div>
+                        <div class="info">
+                            <span class="label">المستوى الحالي</span>
+                            <span class="value" id="currentLevel">1</span>
+                        </div>
                     </div>
                 </div>
             </div>

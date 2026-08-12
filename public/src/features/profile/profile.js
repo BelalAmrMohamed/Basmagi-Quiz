@@ -775,8 +775,8 @@ function renderAvatar(user, currentName) {
   img.alt = `الصورة الشخصية لـ ${name}`;
 }
 
-// Thumbnail (profile banner) — unlike the avatar, there's no generated
-// fallback: no thumbnail set just means .identity-thumbnail stays empty
+// Thumbnail (cover strip) — unlike the avatar, there's no generated
+// fallback: no cover set just means .identity-cover stays empty
 // (see .has-thumbnail in profile.css, which only applies the scrim/
 // background once a picture actually exists).
 function renderThumbnail(user) {
