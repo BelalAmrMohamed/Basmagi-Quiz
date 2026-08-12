@@ -10,6 +10,7 @@ import { InfiniteList } from "./infiniteScroll.js";
 // Built entirely from user.history[].date - no new data model needed.
 
 import { attachHoverCard } from "./leaderboardIdentity.js";
+import { getToken } from "../../shared/adminAuth.js";
 
 // Section label for the activity heatmap card — static "نشاطك" ("your
 // activity") on a regular user's own dashboard, but role-flavored for
@@ -489,7 +490,7 @@ export async function renderUploadedQuizzes(handle = null) {
   section.style.display = "";
 
   try {
-    const token = localStorage.getItem("__bq_adm");
+    const token = getToken();
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 

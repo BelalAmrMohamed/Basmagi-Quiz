@@ -15,7 +15,10 @@ import {
   dateKey,
 } from "./profileWidgets.js";
 
-import { _confirm, _prompt } from "../../components/notifications/notifications.js";
+import {
+  _confirm,
+  _prompt,
+} from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 import { renderLevelGauge } from "./levelGauge.js";
 import {
@@ -283,7 +286,7 @@ async function fetchAndRenderAdminStats(
 ) {
   document.getElementById("adminStatsGrid").style.display = "grid";
   try {
-    const token = localStorage.getItem("__bq_adm");
+    const token = getToken();
     const headers = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -345,10 +348,14 @@ async function fetchAndRenderAdminStats(
         avatarUrl: data.avatarUrl || null,
         thumbnailUrl: data.thumbnailUrl || null,
         displayName: data.displayName || null,
-        totalPoints: typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
-        totalQuizzes: typeof data.totalQuizzes !== "undefined" ? data.totalQuizzes : 0,
-        totalBadges: typeof data.totalBadges !== "undefined" ? data.totalBadges : 0,
-        currentLevel: typeof data.currentLevel !== "undefined" ? data.currentLevel : 1,
+        totalPoints:
+          typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
+        totalQuizzes:
+          typeof data.totalQuizzes !== "undefined" ? data.totalQuizzes : 0,
+        totalBadges:
+          typeof data.totalBadges !== "undefined" ? data.totalBadges : 0,
+        currentLevel:
+          typeof data.currentLevel !== "undefined" ? data.currentLevel : 1,
         activityHeatmap: data.activityHeatmap || {},
       };
     }
@@ -485,7 +492,8 @@ async function setupVisitorView(handle) {
       thumbnailMeta && thumbnailMeta.content
         ? thumbnailMeta.content
         : "/assets/profile-featured/thumbnails/2.jpg";
-    identityThumbnailEl.style.backgroundImage = backgroundImageFor(thumbnailValue);
+    identityThumbnailEl.style.backgroundImage =
+      backgroundImageFor(thumbnailValue);
     identityThumbnailEl.classList.add("has-thumbnail");
   }
 
@@ -552,7 +560,10 @@ async function setupVisitorView(handle) {
   // server-mirrored totalPoints so the radial gauge appears on public
   // profiles as well.
   if (visitedRole) {
-    const pts = typeof visitedRole.totalPoints !== "undefined" ? visitedRole.totalPoints : 0;
+    const pts =
+      typeof visitedRole.totalPoints !== "undefined"
+        ? visitedRole.totalPoints
+        : 0;
     try {
       const levelInfo = gameEngine.calculateLevel(pts);
       renderLevelGauge(levelInfo);
