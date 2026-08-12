@@ -439,9 +439,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // duplicate that logic here, just copy its resolved state each time the
     // dropdown opens.
     const triggerAvatarImg = document.getElementById("navSidebarAvatar");
-    if (avatarImg && triggerAvatarImg) {
-      const triggerHasAvatar =
+    const itemAvatarImg = popover.querySelector("#sideMenuDropdownItemAvatar");
+    const itemAvatarIcon = popover.querySelector(
+      "#sideMenuDropdownItemAvatarIcon",
+    );
+    let triggerHasAvatar = false;
+    if (triggerAvatarImg) {
+      triggerHasAvatar =
         triggerAvatarImg.style.display !== "none" && triggerAvatarImg.src;
+    }
+    if (avatarImg && triggerAvatarImg) {
       if (triggerHasAvatar) {
         avatarImg.src = triggerAvatarImg.src;
         avatarImg.style.display = "";
@@ -449,6 +456,17 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         avatarImg.style.display = "none";
         if (avatarDefaultIcon) avatarDefaultIcon.style.display = "";
+      }
+    }
+    // Same mirror, applied to the small "الحساب" row icon.
+    if (itemAvatarImg && triggerAvatarImg) {
+      if (triggerHasAvatar) {
+        itemAvatarImg.src = triggerAvatarImg.src;
+        itemAvatarImg.style.display = "";
+        if (itemAvatarIcon) itemAvatarIcon.style.display = "none";
+      } else {
+        itemAvatarImg.style.display = "none";
+        if (itemAvatarIcon) itemAvatarIcon.style.display = "";
       }
     }
 

@@ -1,6 +1,6 @@
 // Service Worker for Basmagi Quiz Platform
 
-const CACHE_VERSION = "basmagi-v7.0.2";
+const CACHE_VERSION = "basmagi-v7.1.0";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline.html";
 const OFFLINE_ASSETS = [OFFLINE_URL, "/favicon.png"];
