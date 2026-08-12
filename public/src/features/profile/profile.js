@@ -410,6 +410,7 @@ async function syncProgressToServer() {
         currentLevel: levelInfo.level || 1,
         displayName: localStorage.getItem("username") || undefined,
         avatarUrl: localStorage.getItem("quiz_user_avatar") || undefined,
+        thumbnailUrl: localStorage.getItem("quiz_user_thumbnail") || undefined,
         activityHeatmap,
       }),
       // keepalive lets this survive a tab-hide/navigate-away without being
@@ -484,7 +485,7 @@ async function setupVisitorView(handle) {
       thumbnailMeta && thumbnailMeta.content
         ? thumbnailMeta.content
         : "/assets/profile-featured/thumbnails/2.jpg";
-    identityThumbnailEl.style.backgroundImage = `url("${thumbnailValue}")`;
+    identityThumbnailEl.style.backgroundImage = backgroundImageFor(thumbnailValue);
     identityThumbnailEl.classList.add("has-thumbnail");
   }
 
@@ -521,15 +522,21 @@ async function setupVisitorView(handle) {
 
   if (identityThumbnailEl) {
     if (visitedRole && visitedRole.thumbnailUrl) {
-      identityThumbnailEl.style.backgroundImage = `url("${visitedRole.thumbnailUrl}")`;
+      identityThumbnailEl.style.backgroundImage = backgroundImageFor(
+        visitedRole.thumbnailUrl,
+      );
       identityThumbnailEl.classList.add("has-thumbnail");
       identityThumbnailEl.classList.remove("is-default-thumbnail");
     } else if (!thumbnailMeta) {
       // No thumbnail set server-side either — show a distinct generated
       // gradient banner (different visual treatment than the circular
-      // avatar) so defaults are clearly distinct.
+      // avatar) so defaults are clearly distinct. thumbnailGradientForName
+      // (not gradientForName) — see renderThumbnail()'s comment for why:
+      // the visitor-view default avatar (renderVisitorAvatar, below) is
+      // also generated from this same handle, and gradientForName would
+      // hand back the same palette entry its background gradient uses.
       try {
-        const grad = avatarEngine.gradientForName(handle || "?");
+        const grad = avatarEngine.thumbnailGradientForName(handle || "?");
         identityThumbnailEl.style.backgroundImage = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
         identityThumbnailEl.classList.add("is-default-thumbnail");
         identityThumbnailEl.classList.remove("has-thumbnail");
@@ -574,7 +581,9 @@ async function setupVisitorView(handle) {
     visitedRole.thumbnailUrl &&
     identityThumbnailEl
   ) {
-    identityThumbnailEl.style.backgroundImage = `url("${visitedRole.thumbnailUrl}")`;
+    identityThumbnailEl.style.backgroundImage = backgroundImageFor(
+      visitedRole.thumbnailUrl,
+    );
     identityThumbnailEl.classList.add("has-thumbnail");
   }
 
@@ -775,6 +784,17 @@ function renderAvatar(user, currentName) {
   img.alt = `الصورة الشخصية لـ ${name}`;
 }
 
+// Wraps a stored avatar/thumbnail value as a CSS background-image, since
+// two different shapes of value can end up here: an actual picture (data
+// URL or /assets path — needs url(...)) or a raw CSS gradient string from
+// the thumbnail preset grid (already valid background-image syntax on its
+// own — wrapping it in url(...) would make it an invalid, broken image
+// reference). Detected by prefix rather than by mode, since both shapes
+// are plain strings by the time they reach here.
+function backgroundImageFor(value) {
+  return /^linear-gradient\(/.test(value) ? value : `url("${value}")`;
+}
+
 // Thumbnail (cover strip) — unlike the avatar, there's no generated
 // fallback: no cover set just means .identity-cover stays empty
 // (see .has-thumbnail in profile.css, which only applies the scrim/
@@ -785,15 +805,19 @@ function renderThumbnail(user) {
 
   const stored = avatarEngine.getThumbnail();
   if (stored) {
-    el.style.backgroundImage = `url("${stored}")`;
+    el.style.backgroundImage = backgroundImageFor(stored);
     el.classList.add("has-thumbnail");
   } else {
     // No user-set thumbnail: render a distinct gradient banner instead
     // of leaving the banner blank so avatar vs banner defaults are
-    // visually distinct.
+    // visually distinct. Uses thumbnailGradientForName (not
+    // gradientForName) specifically because gradientForName returns the
+    // same palette entry the default avatar's own background is drawn
+    // from — reusing it here made the banner and the avatar backdrop the
+    // same two colors for every user.
     try {
       const name = localStorage.getItem("username") || "?";
-      const grad = avatarEngine.gradientForName(name);
+      const grad = avatarEngine.thumbnailGradientForName(name);
       el.style.backgroundImage = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
       el.classList.remove("has-thumbnail");
       el.classList.add("is-default-thumbnail");

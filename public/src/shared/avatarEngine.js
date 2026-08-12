@@ -13,6 +13,14 @@ const AVATAR_KEY = "quiz_user_avatar";
 // just under its own key so the two never clobber each other.
 const THUMBNAIL_KEY = "quiz_user_thumbnail";
 const AVATAR_SIZE = 256; // px, output square dimension
+// Thumbnail/cover output — fixed 3:1 aspect matching the identity-cover
+// strip's typical rendered proportions (see .identity-cover in
+// profile.css: clamp(120px,18vw,200px) tall against a full-width card).
+// Stored as a flat bitmap rather than re-deriving crop math from the
+// live element's box, so the saved image looks right regardless of
+// viewport width.
+const THUMBNAIL_WIDTH = 960;
+const THUMBNAIL_HEIGHT = 320;
 const JPEG_QUALITY = 0.82;
 
 // Featured Pictures / Featured Thumbnails — static, pre-made images shipped
@@ -43,6 +51,10 @@ const DEFAULT_AVATAR_PALETTE = [
 ];
 
 export const avatarEngine = {
+  AVATAR_SIZE,
+  THUMBNAIL_WIDTH,
+  THUMBNAIL_HEIGHT,
+
   // 1. Get the stored avatar (base64 data URL) or null if none set
   getAvatar() {
     try {
@@ -147,6 +159,77 @@ export const avatarEngine = {
     return dataUrl;
   },
 
+  // 4b. Load a File as an <img>-like source for the crop UI (cropperEngine.js)
+  // without processing it — the crop step needs the raw bitmap to draw into
+  // its live preview canvas before any resize/compress happens. Returns the
+  // same bitmap _resizeAndCompress/cropAndCompress below expect.
+  async loadImageForCropping(file) {
+    if (!file || !file.type || !file.type.startsWith("image/")) {
+      throw new Error("الملف المختار ليس صورة صالحة");
+    }
+    return this._loadImage(file);
+  },
+
+  // 4c. Crop-aware counterpart of _resizeAndCompress: takes an explicit
+  // source rectangle (in the source image's own pixel coordinates, as
+  // produced by cropperEngine's pan/zoom transform) instead of always
+  // center-cropping to a square. Used by both the avatar picker (square
+  // output) and thumbnail picker (wide-banner output) once the user has
+  // positioned/zoomed the crop themselves — _resizeAndCompress above is
+  // kept as-is for callers that still want the old always-centered
+  // behavior (presets, Gravatar, camera capture default).
+  //
+  // sourceRect: { x, y, width, height } in source-image pixels.
+  // outputWidth/outputHeight: final encoded bitmap size.
+  cropAndCompress(img, sourceRect, outputWidth, outputHeight) {
+    const canvas = document.createElement("canvas");
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(
+      img,
+      sourceRect.x,
+      sourceRect.y,
+      sourceRect.width,
+      sourceRect.height,
+      0,
+      0,
+      outputWidth,
+      outputHeight,
+    );
+    return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+  },
+
+  // Convenience wrappers so callers don't need to know the exact output
+  // dimensions — keeps AVATAR_SIZE/THUMBNAIL_WIDTH/HEIGHT as this module's
+  // own internal constants rather than duplicating them in avatarPicker.js.
+  cropAndCompressAvatar(img, sourceRect) {
+    const dataUrl = this.cropAndCompress(img, sourceRect, AVATAR_SIZE, AVATAR_SIZE);
+    this._assertSizeWithinLimit(dataUrl);
+    return dataUrl;
+  },
+
+  cropAndCompressThumbnail(img, sourceRect) {
+    const dataUrl = this.cropAndCompress(
+      img,
+      sourceRect,
+      THUMBNAIL_WIDTH,
+      THUMBNAIL_HEIGHT,
+    );
+    this._assertSizeWithinLimit(dataUrl);
+    return dataUrl;
+  },
+
+  // Shared guard, factored out of processImageFile so the crop path
+  // enforces the same storage-safety cap instead of skipping it.
+  _assertSizeWithinLimit(dataUrl) {
+    const approxBytes = Math.round((dataUrl.length * 3) / 4);
+    if (approxBytes > 1.5 * 1024 * 1024) {
+      throw new Error("الصورة كبيرة جداً، جرّب صورة أخرى");
+    }
+  },
+
   _loadImage(file) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -193,6 +276,31 @@ export const avatarEngine = {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
     }
     return DEFAULT_AVATAR_PALETTE[hash % DEFAULT_AVATAR_PALETTE.length];
+  },
+
+  // 5b. Thumbnail/cover counterpart of gradientForName(). Deliberately a
+  // *different* palette entry for the same name/hash (offset + reversed
+  // stop order), not just a second call to gradientForName() — the
+  // default avatar's own base layer is itself rendered from
+  // DEFAULT_AVATAR_PALETTE[hash % length] (see generateDefaultAvatarSVG's
+  // c1/gradId1), so reusing gradientForName() here made the default cover
+  // banner exactly the same two colors as the gradient sitting directly
+  // behind the avatar for every name — they'd visually merge into one
+  // color field instead of reading as two separate elements. Offsetting
+  // by a fixed, non-trivial amount guarantees a different palette entry
+  // (the palette has 8 entries; offset 3 can never land back on the same
+  // index), and swapping which stop comes first gives the banner its own
+  // gradient direction/feel rather than being a lighter copy.
+  thumbnailGradientForName(name) {
+    const str = (name || "?").trim();
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    const idx =
+      (hash + 3) % DEFAULT_AVATAR_PALETTE.length; // offset from the avatar's own index
+    const [from, to] = DEFAULT_AVATAR_PALETTE[idx];
+    return [to, from]; // reversed stop order vs. the avatar's gradient
   },
 
   // Back-compat single-color accessor (returns the gradient's start color).

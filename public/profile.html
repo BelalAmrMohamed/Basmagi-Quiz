@@ -889,12 +889,13 @@
         </div>
     </div>
 
-    <!-- Avatar / Thumbnail Picker Overlay
-         Shared between two modes ("avatar" | "thumbnail"), switched via the
-         tab strip below. Which mode opened the picker sets the initial tab
-         (avatarEditBtn -> avatar, thumbnailEditBtn -> thumbnail); the tabs
-         let the user switch mode without closing and reopening. Upload /
-         camera / remove act on whichever mode is currently active. -->
+    <!-- Avatar Picker Overlay — profile picture (square crop).
+         Separate from the thumbnail picker below: each picture has its
+         own button (avatarEditBtn here), own overlay, own controls —
+         previously both shared one overlay switched by a tab strip, which
+         made "which picture is this action for" a mode flag threaded
+         through every handler. Two overlays means each is self-contained
+         and the DOM structure alone says which picture is being edited. -->
     <div id="avatarPickerOverlay" class="avatar-picker-overlay" style="display:none;" role="dialog" aria-modal="true"
         aria-labelledby="avatarPickerTitle">
         <div class="avatar-picker-card">
@@ -910,71 +911,220 @@
                 </button>
             </div>
 
-            <div class="avatar-picker-tabs" id="avatarPickerTabs" role="tablist" aria-label="نوع الصورة">
-                <button type="button" class="avatar-picker-tab is-active" id="avatarPickerTabAvatar" data-mode="avatar"
-                    role="tab" aria-selected="true">الصورة الشخصية</button>
-                <button type="button" class="avatar-picker-tab" id="avatarPickerTabThumbnail" data-mode="thumbnail"
-                    role="tab" aria-selected="false">الصورة المصغرة</button>
-            </div>
+            <!-- Main picker screen: presets / Featured / upload / camera /
+                 remove. Hidden (not removed) while the crop step below is
+                 active, so switching back on "إلغاء" doesn't need a
+                 re-render. -->
+            <div id="avatarPickerBody">
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">اختر لوناً افتراضياً</span>
+                    <div class="avatar-preset-grid" id="avatarPresetGrid"></div>
+                </div>
 
-            <div class="avatar-picker-section">
-                <span class="avatar-picker-section-label">اختر لوناً افتراضياً</span>
-                <div class="avatar-preset-grid" id="avatarPresetGrid"></div>
-            </div>
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">أو من الصور المميزة</span>
+                    <div class="avatar-preset-grid" id="avatarFeaturedGrid"></div>
+                </div>
 
-            <div class="avatar-picker-section">
-                <span class="avatar-picker-section-label">أو من الصور المميزة</span>
-                <div class="avatar-preset-grid" id="avatarFeaturedGrid"></div>
-            </div>
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">أو</span>
+                    <div class="avatar-picker-actions">
+                        <div class="avatar-dropzone" id="avatarDropzone">
+                            <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <path d="M17 8l-5-5-5 5" />
+                                    <path d="M12 3v12" />
+                                </svg>
+                                رفع صورة من جهازك
+                            </button>
+                            <span class="avatar-dropzone-hint">أو اسحب وأفلت الصورة هنا</span>
+                        </div>
+                        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
 
-            <div class="avatar-picker-section">
-                <span class="avatar-picker-section-label">أو</span>
-                <div class="avatar-picker-actions">
-                    <div class="avatar-dropzone" id="avatarDropzone">
-                        <button type="button" class="avatar-action-btn" id="avatarUploadBtn">
+                        <button type="button" class="avatar-action-btn" id="avatarCameraStartBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" aria-hidden="true">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <path d="M17 8l-5-5-5 5" />
-                                <path d="M12 3v12" />
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                                <circle cx="12" cy="13" r="3" />
                             </svg>
-                            رفع صورة من جهازك
+                            التقاط صورة بالكاميرا
                         </button>
-                        <span class="avatar-dropzone-hint">أو اسحب وأفلت الصورة هنا</span>
+                        <button type="button" class="avatar-action-btn" id="avatarCameraCaptureBtn"
+                            style="display:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            التقاط الآن
+                        </button>
+                        <video id="avatarCameraFeed" class="avatar-camera-preview" autoplay playsinline muted></video>
+
+                        <button type="button" class="avatar-action-btn danger" id="avatarRemoveBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            إزالة الصورة الحالية
+                        </button>
                     </div>
-                    <input type="file" id="avatarFileInput" accept="image/*" style="display:none;">
+                </div>
+            </div>
 
-                    <button type="button" class="avatar-action-btn" id="avatarCameraStartBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path
-                                d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-                            <circle cx="12" cy="13" r="3" />
-                        </svg>
-                        التقاط صورة بالكاميرا
-                    </button>
-                    <button type="button" class="avatar-action-btn" id="avatarCameraCaptureBtn" style="display:none;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <circle cx="12" cy="12" r="10" />
-                        </svg>
-                        التقاط الآن
-                    </button>
-                    <video id="avatarCameraFeed" class="avatar-camera-preview" autoplay playsinline muted></video>
+            <!-- Crop step: appears in place of the picker body above once a
+                 file is chosen (upload/drop/camera). Presets and Featured
+                 picks skip this — they're already the right shape. -->
+            <div id="avatarCropStep" class="avatar-crop-step" style="display:none;">
+                <div class="avatar-crop-stage avatar-crop-stage-square" id="avatarCropStage">
+                    <img id="avatarCropImage" class="cropper-image" alt="" draggable="false">
+                </div>
+                <p class="avatar-crop-hint">اسحب لتحريك الصورة، واستخدم شريط التكبير لضبط التقريب</p>
+                <div class="avatar-crop-zoom-row">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input type="range" id="avatarCropZoom" class="avatar-crop-zoom-slider" min="1" max="4" step="0.01"
+                        value="1" aria-label="تكبير الصورة">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                        <path d="M11 8v6" />
+                        <path d="M8 11h6" />
+                    </svg>
+                </div>
+                <div class="avatar-crop-actions">
+                    <button type="button" class="avatar-action-btn" id="avatarCropCancelBtn">إلغاء</button>
+                    <button type="button" class="avatar-action-btn primary" id="avatarCropConfirmBtn">تأكيد
+                        القص</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <button type="button" class="avatar-action-btn danger" id="avatarRemoveBtn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        إزالة الصورة الحالية
-                    </button>
+    <!-- Thumbnail Picker Overlay — cover banner (wide crop). Same
+         structure/behavior as the avatar picker above (see its comment),
+         just with a wide crop stage and thumbnail-shaped preset/Featured
+         grids instead of square/circular ones. -->
+    <div id="thumbnailPickerOverlay" class="avatar-picker-overlay" style="display:none;" role="dialog" aria-modal="true"
+        aria-labelledby="thumbnailPickerTitle">
+        <div class="avatar-picker-card">
+            <div class="avatar-picker-header">
+                <h3 id="thumbnailPickerTitle">تغيير الصورة المصغرة</h3>
+                <button type="button" class="avatar-picker-close-btn" id="thumbnailPickerCloseBtn" aria-label="إغلاق">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div id="thumbnailPickerBody">
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">اختر تدرجاً افتراضياً</span>
+                    <div class="avatar-preset-grid" id="thumbnailPresetGrid"></div>
+                </div>
+
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">أو من الصور المميزة</span>
+                    <div class="avatar-preset-grid" id="thumbnailFeaturedGrid"></div>
+                </div>
+
+                <div class="avatar-picker-section">
+                    <span class="avatar-picker-section-label">أو</span>
+                    <div class="avatar-picker-actions">
+                        <div class="avatar-dropzone" id="thumbnailDropzone">
+                            <button type="button" class="avatar-action-btn" id="thumbnailUploadBtn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <path d="M17 8l-5-5-5 5" />
+                                    <path d="M12 3v12" />
+                                </svg>
+                                رفع صورة من جهازك
+                            </button>
+                            <span class="avatar-dropzone-hint">أو اسحب وأفلت الصورة هنا</span>
+                        </div>
+                        <input type="file" id="thumbnailFileInput" accept="image/*" style="display:none;">
+
+                        <button type="button" class="avatar-action-btn" id="thumbnailCameraStartBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path
+                                    d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+                                <circle cx="12" cy="13" r="3" />
+                            </svg>
+                            التقاط صورة بالكاميرا
+                        </button>
+                        <button type="button" class="avatar-action-btn" id="thumbnailCameraCaptureBtn"
+                            style="display:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            التقاط الآن
+                        </button>
+                        <video id="thumbnailCameraFeed" class="avatar-camera-preview" autoplay playsinline
+                            muted></video>
+
+                        <button type="button" class="avatar-action-btn danger" id="thumbnailRemoveBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" aria-hidden="true">
+                                <path d="M3 6h18" />
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                            إزالة الصورة المصغرة الحالية
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="thumbnailCropStep" class="avatar-crop-step" style="display:none;">
+                <div class="avatar-crop-stage avatar-crop-stage-wide" id="thumbnailCropStage">
+                    <img id="thumbnailCropImage" class="cropper-image" alt="" draggable="false">
+                </div>
+                <p class="avatar-crop-hint">اسحب لتحريك الصورة، واستخدم شريط التكبير لضبط التقريب</p>
+                <div class="avatar-crop-zoom-row">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                    </svg>
+                    <input type="range" id="thumbnailCropZoom" class="avatar-crop-zoom-slider" min="1" max="4"
+                        step="0.01" value="1" aria-label="تكبير الصورة">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.3-4.3" />
+                        <path d="M11 8v6" />
+                        <path d="M8 11h6" />
+                    </svg>
+                </div>
+                <div class="avatar-crop-actions">
+                    <button type="button" class="avatar-action-btn" id="thumbnailCropCancelBtn">إلغاء</button>
+                    <button type="button" class="avatar-action-btn primary" id="thumbnailCropConfirmBtn">تأكيد
+                        القص</button>
                 </div>
             </div>
         </div>

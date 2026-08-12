@@ -120,10 +120,35 @@ body {
 
 /* Default cover gradient when the user/admin hasn't set one.
    Distinct treatment from the circular avatar so defaults are
-   visually different and clearly convey "no custom cover yet". */
+   visually different and clearly convey "no custom cover yet":
+     - Its own offset palette entry (see thumbnailGradientForName in
+       avatarEngine.js) so the hue never matches the avatar's own
+       background gradient.
+     - A faint diagonal stripe overlay (::before) so the banner has a
+       distinct texture at a glance, not just a different flat color —
+       this also keeps a plain gradient fill from being mistaken for a
+       loading/broken-image state.
+   background-image itself (the actual gradient colors/angle) is set
+   inline by renderThumbnail()/setupVisitorView() per-user; this rule
+   only supplies the shared texture and sizing. */
 .identity-cover.is-default-thumbnail {
   background-size: cover;
   background-position: center;
+  position: relative;
+}
+
+.identity-cover.is-default-thumbnail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 2px,
+    transparent 2px,
+    transparent 14px
+  );
+  pointer-events: none;
 }
 
 .thumbnail-edit-btn {
@@ -2073,6 +2098,19 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     var(--shadow-md);
 }
 
+/* Thumbnail preset grid uses the same button/grid mechanics as the avatar
+   grid above, but previews should read as small banner swatches (matching
+   the cover's own wide aspect) rather than circular avatar swatches. */
+.thumbnail-preset-btn {
+  aspect-ratio: 3 / 1;
+  border-radius: 10px;
+  grid-column: span 2; /* 2 swatches per row instead of 4, given the wide aspect */
+}
+
+.thumbnail-preset-btn:hover {
+  transform: scale(1.03);
+}
+
 .avatar-picker-actions {
   display: flex;
   flex-direction: column;
@@ -2100,6 +2138,18 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 
 .avatar-action-btn.danger {
   color: var(--color-error);
+}
+
+/* Primary variant — used for the crop step's confirm button, where it's
+   the clear "commit this action" choice next to a plain-styled cancel. */
+.avatar-action-btn.primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.avatar-action-btn.primary:hover {
+  background: color-mix(in srgb, var(--color-primary) 85%, black);
 }
 
 .avatar-dropzone {
@@ -2142,6 +2192,93 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   background: #000;
   aspect-ratio: 1;
   object-fit: cover;
+}
+
+/* Thumbnail overlay's camera preview needs the wide aspect, not the
+   avatar's square — same element/class, scoped by which overlay it's
+   nested in rather than a second class, since every other rule in
+   .avatar-camera-preview (radius, background, object-fit) is identical
+   between the two. */
+#thumbnailPickerOverlay .avatar-camera-preview {
+  aspect-ratio: 3 / 1;
+}
+
+/* ============================================================
+     CROP STEP — appears in place of the picker body once a file is
+     chosen (upload/drop/camera), before the picture is actually saved.
+     See cropperEngine.js for the interaction model this drives:
+     dragging pans, wheel/pinch/the slider below zoom, around whatever
+     point the user is interacting with.
+     ============================================================ */
+.avatar-crop-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.avatar-crop-stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--color-background-secondary);
+  cursor: grab;
+  touch-action: none; /* prevent the browser's own pan/zoom from fighting the cropper's pointer handling */
+  user-select: none;
+}
+
+.avatar-crop-stage:active {
+  cursor: grabbing;
+}
+
+.avatar-crop-stage-square {
+  aspect-ratio: 1;
+  /* Circular mask so what's previewed while cropping matches the
+     circular avatar it will actually render as. */
+  border-radius: 50%;
+}
+
+.avatar-crop-stage-wide {
+  aspect-ratio: 3 / 1;
+}
+
+/* Positioned by cropperEngine.js: absolutely centered at natural size,
+   then panned/scaled via an inline transform (translate + scale) set on
+   every drag/zoom update. Centering here (rather than in the transform
+   itself) keeps the transform's math to pure translate+scale, with no
+   baked-in centering offset to account for. */
+.cropper-image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  transform-origin: 0 0;
+  pointer-events: none; /* the stage element owns pointer/drag handling, not the img itself */
+}
+
+.avatar-crop-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
+
+.avatar-crop-zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--color-text-tertiary);
+}
+
+.avatar-crop-zoom-slider {
+  flex: 1;
+  accent-color: var(--color-primary);
+}
+
+.avatar-crop-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 /* ==================== Footer ==================== */
