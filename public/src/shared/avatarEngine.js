@@ -27,7 +27,7 @@ const JPEG_QUALITY = 0.82;
 // with the site (not generated, not uploaded) that a user can pick as their
 // avatar or thumbnail. Flat numbered files, no manifest on disk, so the
 // counts are just kept here as the single place to update if more are added.
-const FEATURED_PICTURES_COUNT = 12;
+const FEATURED_PICTURES_COUNT = 16;
 const FEATURED_THUMBNAILS_COUNT = 12;
 const FEATURED_PICTURES_BASE = "/assets/profile-featured/pictures";
 const FEATURED_THUMBNAILS_BASE = "/assets/profile-featured/thumbnails";
