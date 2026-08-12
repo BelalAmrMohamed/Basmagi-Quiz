@@ -20,6 +20,26 @@ export function getSharedSupabaseClient() {
   return sharedSupabaseClient;
 }
 
+export async function ensureSharedSupabaseClient() {
+  if (sharedSupabaseClient) return sharedSupabaseClient;
+  if (typeof window !== "undefined" && window.supabase) {
+    try {
+      const res = await fetch("/api/env");
+      if (!res.ok) throw new Error("Failed to fetch Supabase env");
+      const data = await res.json();
+      if (data.supabaseUrl && data.supabaseAnonKey) {
+        sharedSupabaseClient = window.supabase.createClient(
+          data.supabaseUrl,
+          data.supabaseAnonKey,
+        );
+      }
+    } catch (err) {
+      console.error("Unable to initialize shared Supabase client:", err);
+    }
+  }
+  return sharedSupabaseClient;
+}
+
 export function setSharedSupabaseClient(client) {
   sharedSupabaseClient = client;
 }

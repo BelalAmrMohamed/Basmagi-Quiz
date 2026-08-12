@@ -407,7 +407,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 // present in the page's markup (only profile.html has it for now).
 import { getAdminRoleInfo } from "../../shared/adminAuth.js";
 import { fullSignOut } from "../../shared/adminAuth.js";
-import { getSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import {
+  getSharedSupabaseClient,
+  ensureSharedSupabaseClient,
+} from "../../shared/supabaseClientRegistry.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const trigger = document.getElementById("sideMenuProfileTrigger");
@@ -418,6 +421,26 @@ document.addEventListener("DOMContentLoaded", () => {
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
   let isOpen = false;
+
+  function backgroundImageFor(value) {
+    return /^linear-gradient\(/.test(value) ? value : `url("${value}")`;
+  }
+
+  function renderDropdownCover(coverEl) {
+    const storedThumbnail = avatarEngine.getThumbnail();
+    if (storedThumbnail) {
+      coverEl.style.backgroundImage = backgroundImageFor(storedThumbnail);
+      coverEl.classList.add("has-thumbnail");
+      coverEl.classList.remove("is-default-thumbnail");
+      return;
+    }
+
+    const name = localStorage.getItem("username") || "?";
+    const grad = avatarEngine.thumbnailGradientForName(name);
+    coverEl.style.backgroundImage = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
+    coverEl.classList.remove("has-thumbnail");
+    coverEl.classList.add("is-default-thumbnail");
+  }
 
   function populateDropdown() {
     const roleInfo = getAdminRoleInfo();
@@ -473,19 +496,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // Mirror the cover strip the same way — #identityThumbnail is the
     // single source of truth profile.js's renderThumbnail() writes to
     // (background-image + has-thumbnail/is-default-thumbnail classes).
-    // It only exists on profile.html today, so this is a no-op elsewhere.
+    // If the profile page itself isn't available, fall back to reading the
+    // stored thumbnail value directly and rendering the same gradient/fallback
+    // semantics here.
     const coverEl = popover.querySelector("#sideMenuDropdownCover");
     const sourceCoverEl = document.getElementById("identityThumbnail");
-    if (coverEl && sourceCoverEl) {
-      coverEl.style.backgroundImage = sourceCoverEl.style.backgroundImage;
-      coverEl.classList.toggle(
-        "has-thumbnail",
-        sourceCoverEl.classList.contains("has-thumbnail"),
-      );
-      coverEl.classList.toggle(
-        "is-default-thumbnail",
-        sourceCoverEl.classList.contains("is-default-thumbnail"),
-      );
+    if (coverEl) {
+      if (sourceCoverEl) {
+        coverEl.style.backgroundImage = sourceCoverEl.style.backgroundImage;
+        coverEl.classList.toggle(
+          "has-thumbnail",
+          sourceCoverEl.classList.contains("has-thumbnail"),
+        );
+        coverEl.classList.toggle(
+          "is-default-thumbnail",
+          sourceCoverEl.classList.contains("is-default-thumbnail"),
+        );
+      } else {
+        renderDropdownCover(coverEl);
+      }
     }
 
     if (nameEl) {
@@ -595,7 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
     signOutBtn.addEventListener("click", async () => {
       signOutBtn.disabled = true;
       try {
-        await fullSignOut(getSharedSupabaseClient());
+        await fullSignOut(await ensureSharedSupabaseClient());
       } finally {
         window.location.reload();
       }
