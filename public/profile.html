@@ -232,14 +232,18 @@
                 <div id="sideMenuProfileDropdown" class="side-menu-profile-dropdown" role="menu"
                     aria-label="قائمة الحساب">
                     <div class="side-menu-profile-dropdown-header">
-                        <img class="side-menu-profile-dropdown-avatar" id="sideMenuDropdownAvatar" src="" alt=""
-                            style="display:none;">
-                        <svg class="side-menu-profile-dropdown-default-icon" xmlns="http://www.w3.org/2000/svg"
-                            width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <path d="m12 14 4-4" />
-                            <path d="M3.34 19a10 10 0 1 1 17.32 0" />
-                        </svg>
+                        <div class="side-menu-profile-dropdown-cover" id="sideMenuDropdownCover" aria-hidden="true">
+                        </div>
+                        <div class="side-menu-profile-dropdown-avatar-wrap">
+                            <img class="side-menu-profile-dropdown-avatar" id="sideMenuDropdownAvatar" src="" alt=""
+                                style="display:none;">
+                            <svg class="side-menu-profile-dropdown-default-icon" xmlns="http://www.w3.org/2000/svg"
+                                width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="m12 14 4-4" />
+                                <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+                            </svg>
+                        </div>
                         <div class="side-menu-profile-dropdown-labels">
                             <span id="sideMenuDropdownName" class="side-menu-profile-dropdown-name"></span>
                             <span id="sideMenuDropdownEmailRow" class="side-menu-profile-dropdown-email-row"

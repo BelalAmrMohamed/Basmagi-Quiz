@@ -306,9 +306,11 @@ body.sidebar-expanded {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
-  padding: 6px;
+  padding: 0 6px 6px; /* no top padding: the header's cover strip bleeds
+                          flush to the popover's top edge/corners */
   z-index: 1000;
   direction: rtl;
+  overflow: hidden; /* clips the cover strip's border-radius to the popover's own rounded top corners */
 }
 
 .side-menu-profile-dropdown.open {
@@ -332,27 +334,85 @@ body.sidebar-expanded {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 16px 12px 14px;
+  padding: 0 0 14px;
   text-align: center;
+  position: relative;
 }
 
-.side-menu-profile-dropdown-avatar {
-  width: 64px;
+/* Cover strip — mirrors #identityThumbnail's resolved state (background-image
+   + has-thumbnail/is-default-thumbnail classes), copied in by side-menu.js
+   each time the dropdown opens. Scaled down for the 240px popover; the
+   avatar overlaps its bottom edge the same way .avatar-wrapper does on the
+   full identity band. */
+.side-menu-profile-dropdown-cover {
+  width: 100%;
   height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.side-menu-profile-dropdown-default-icon {
+.side-menu-profile-dropdown-cover.has-thumbnail {
+  background-color: var(--color-background-secondary);
+}
+
+.side-menu-profile-dropdown-cover.has-thumbnail::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 55%,
+    color-mix(in srgb, var(--color-surface) 55%, transparent) 100%
+  );
+}
+
+.side-menu-profile-dropdown-cover.is-default-thumbnail::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 2px,
+    transparent 2px,
+    transparent 14px
+  );
+}
+
+.side-menu-profile-dropdown-avatar-wrap {
   width: 64px;
   height: 64px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: -36px; /* overlaps the cover strip's bottom edge */
+  border: 3px solid var(--color-surface, #fff);
+  background: var(--color-surface, #fff);
+  position: relative;
+  z-index: 1;
+}
+
+.side-menu-profile-dropdown-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.side-menu-profile-dropdown-default-icon {
+  width: 100%;
+  height: 100%;
   padding: 14px;
   border-radius: 50%;
   background: var(--color-background-secondary, #f5f5f5);
   color: var(--color-text-secondary);
-  flex-shrink: 0;
   box-sizing: border-box;
+  display: block;
 }
 
 .side-menu-profile-dropdown-labels {

@@ -452,6 +452,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // Mirror the cover strip the same way — #identityThumbnail is the
+    // single source of truth profile.js's renderThumbnail() writes to
+    // (background-image + has-thumbnail/is-default-thumbnail classes).
+    // It only exists on profile.html today, so this is a no-op elsewhere.
+    const coverEl = popover.querySelector("#sideMenuDropdownCover");
+    const sourceCoverEl = document.getElementById("identityThumbnail");
+    if (coverEl && sourceCoverEl) {
+      coverEl.style.backgroundImage = sourceCoverEl.style.backgroundImage;
+      coverEl.classList.toggle(
+        "has-thumbnail",
+        sourceCoverEl.classList.contains("has-thumbnail"),
+      );
+      coverEl.classList.toggle(
+        "is-default-thumbnail",
+        sourceCoverEl.classList.contains("is-default-thumbnail"),
+      );
+    }
+
     if (nameEl) {
       nameEl.textContent = localStorage.getItem("username") || "مستخدم";
     }
