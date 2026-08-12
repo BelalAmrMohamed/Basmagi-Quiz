@@ -276,6 +276,9 @@ function exitCropStep(mode) {
     s.cropper.destroy();
     s.cropper = null;
   }
+  if (s.sourceImg) {
+    avatarEngine.releaseCroppingImage(s.sourceImg);
+  }
   s.sourceImg = null;
 
   const pickerBody = document.getElementById(cfg.pickerBodyId);

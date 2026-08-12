@@ -163,11 +163,39 @@ export const avatarEngine = {
   // without processing it — the crop step needs the raw bitmap to draw into
   // its live preview canvas before any resize/compress happens. Returns the
   // same bitmap _resizeAndCompress/cropAndCompress below expect.
+  //
+  // Deliberately does NOT reuse _loadImage's "revoke on load" behavior:
+  // cropperEngine.js takes the resolved <img>'s .src and assigns it to a
+  // SEPARATE <img> element (this.imgEl.src = sourceImg.src) once the crop
+  // step opens, which needs the blob: URL to still be valid at that later
+  // point — revoking it immediately (as _loadImage does for its own
+  // same-element canvas-read use case) left that second element with a
+  // dead URL and nothing rendered. The object URL is kept alive for the
+  // whole crop flow and only released via releaseCroppingImage() below,
+  // once avatarPicker.js is done with it (crop confirmed or cancelled).
   async loadImageForCropping(file) {
     if (!file || !file.type || !file.type.startsWith("image/")) {
       throw new Error("الملف المختار ليس صورة صالحة");
     }
-    return this._loadImage(file);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("تعذّر قراءة الصورة"));
+      };
+      img.src = url;
+    });
+  },
+
+  // Releases the object URL created by loadImageForCropping. Call once the
+  // crop step is done with the image (confirmed or cancelled) — safe to
+  // call with the same img repeatedly or with a non-blob src.
+  releaseCroppingImage(img) {
+    if (img && img.src && img.src.startsWith("blob:")) {
+      URL.revokeObjectURL(img.src);
+    }
   },
 
   // 4c. Crop-aware counterpart of _resizeAndCompress: takes an explicit
@@ -205,7 +233,12 @@ export const avatarEngine = {
   // dimensions — keeps AVATAR_SIZE/THUMBNAIL_WIDTH/HEIGHT as this module's
   // own internal constants rather than duplicating them in avatarPicker.js.
   cropAndCompressAvatar(img, sourceRect) {
-    const dataUrl = this.cropAndCompress(img, sourceRect, AVATAR_SIZE, AVATAR_SIZE);
+    const dataUrl = this.cropAndCompress(
+      img,
+      sourceRect,
+      AVATAR_SIZE,
+      AVATAR_SIZE,
+    );
     this._assertSizeWithinLimit(dataUrl);
     return dataUrl;
   },
@@ -297,8 +330,7 @@ export const avatarEngine = {
     for (let i = 0; i < str.length; i++) {
       hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
     }
-    const idx =
-      (hash + 3) % DEFAULT_AVATAR_PALETTE.length; // offset from the avatar's own index
+    const idx = (hash + 3) % DEFAULT_AVATAR_PALETTE.length; // offset from the avatar's own index
     const [from, to] = DEFAULT_AVATAR_PALETTE[idx];
     return [to, from]; // reversed stop order vs. the avatar's gradient
   },
