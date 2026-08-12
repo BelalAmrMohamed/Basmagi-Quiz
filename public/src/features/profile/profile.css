@@ -129,7 +129,7 @@ body {
 .thumbnail-edit-btn {
   position: absolute;
   inset-block-start: 12px;
-  inset-inline-end: 12px;
+  inset-inline-start: 12px;
   z-index: 3;
   pointer-events: auto;
   display: none; /* shown via .identity-cover:hover / :focus-within, and unconditionally on touch via JS toggling .is-editable */
