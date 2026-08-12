@@ -18,6 +18,8 @@
 //   progress, so render functions know to use history.replaceState instead
 //   of history.pushState (see navigation.js).
 
+import { setSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+
 let categoryTree = null;
 let searchManager = null;
 let navigationStack = [];
@@ -59,6 +61,10 @@ export function getIndexSupabaseClient() {
 }
 export function setIndexSupabaseClient(client) {
   indexSupabaseClient = client;
+  // Also populate the cross-page registry so components on other pages
+  // (e.g. the side-menu profile dropdown) can reach this client without
+  // depending on the home page's module graph.
+  setSharedSupabaseClient(client);
 }
 
 // selectedUserQuizzes is a Set that's mutated in place (.add()/.delete()) by

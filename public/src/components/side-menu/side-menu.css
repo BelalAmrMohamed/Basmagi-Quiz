@@ -281,6 +281,184 @@ body.sidebar-expanded {
   display: none;
 }
 
+/* ── Profile Avatar Dropdown (desktop sidebar only) ──────────────────────── */
+.menu-item-dropdown-wrap {
+  position: relative;
+}
+
+/* The standalone "تغيير الإسم" menu-item stays for the mobile bottom-sheet
+   (which keeps the old plain-link/no-dropdown pattern) but is redundant on
+   desktop now that it's reachable from inside the profile dropdown. */
+@media (min-width: 769px) {
+  .mobile-only-menu-item {
+    display: none !important;
+  }
+}
+
+.side-menu-profile-dropdown {
+  display: none;
+  position: fixed; /* escapes the <nav> ancestor's overflow-x: clip, which
+                       would otherwise silently clip an absolutely-positioned
+                       popover that extends past the sidebar's left edge.
+                       JS sets top/right inline on open (see side-menu.js). */
+  width: 240px;
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
+  padding: 6px;
+  z-index: 1000;
+  direction: rtl;
+}
+
+.side-menu-profile-dropdown.open {
+  display: block;
+  animation: sideMenuDropdownIn 0.15s ease;
+}
+
+@keyframes sideMenuDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.side-menu-profile-dropdown-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px 14px;
+  text-align: center;
+}
+
+.side-menu-profile-dropdown-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.side-menu-profile-dropdown-default-icon {
+  width: 64px;
+  height: 64px;
+  padding: 14px;
+  border-radius: 50%;
+  background: var(--color-background-secondary, #f5f5f5);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.side-menu-profile-dropdown-labels {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  width: 100%;
+}
+
+.side-menu-profile-dropdown-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.side-menu-profile-dropdown-email-row {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.side-menu-profile-dropdown-email {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  direction: ltr;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.side-menu-profile-dropdown-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 6px 4px;
+}
+
+.side-menu-profile-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 8px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+  text-align: right;
+  direction: rtl;
+}
+
+.side-menu-profile-dropdown-item svg {
+  flex-shrink: 0;
+}
+
+.side-menu-profile-dropdown-item:hover:not(:disabled) {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.side-menu-profile-dropdown-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.side-menu-profile-dropdown-item:disabled,
+.side-menu-profile-dropdown-item-muted {
+  color: var(--color-text-tertiary, #999);
+  cursor: default;
+}
+
+.side-menu-profile-dropdown-item-soon {
+  margin-inline-start: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-text-tertiary, #999);
+  background: var(--color-background-secondary, #f5f5f5);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.side-menu-profile-dropdown-item-danger {
+  color: #ef4444;
+}
+
+.side-menu-profile-dropdown-item-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+@media (max-width: 768px) {
+  /* Dropdown is desktop-only — mobile bottom-nav profile tab stays a plain
+     link and never renders this trigger/popover. */
+  .side-menu-profile-dropdown {
+    display: none !important;
+  }
+}
+
 /* ── Menu Items ──────────────────────────────────────────────────────────── */
 .menu-item {
   display: flex;

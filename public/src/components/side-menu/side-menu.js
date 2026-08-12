@@ -398,6 +398,176 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // ============================================================================
+// PROFILE AVATAR DROPDOWN — desktop sidebar only
+// ============================================================================
+// Converts the desktop sidebar's profile `.menu-item` from a plain link into
+// a button that opens an avatar dropdown (Profile / Reports (disabled) /
+// تغيير الإسم / Sign out for admins). Mobile bottom-nav profile tab is
+// untouched — this whole block is a no-op if #sideMenuProfileTrigger isn't
+// present in the page's markup (only profile.html has it for now).
+import { getAdminRoleInfo } from "../../shared/adminAuth.js";
+import { fullSignOut } from "../../shared/adminAuth.js";
+import { getSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const trigger = document.getElementById("sideMenuProfileTrigger");
+  const popover = document.getElementById("sideMenuProfileDropdown");
+  if (!trigger || !popover) return;
+
+  const FOCUSABLE_SELECTOR =
+    'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  let isOpen = false;
+
+  function populateDropdown() {
+    const roleInfo = getAdminRoleInfo();
+    const isAdmin = !!roleInfo;
+
+    const nameEl = popover.querySelector("#sideMenuDropdownName");
+    const emailRow = popover.querySelector("#sideMenuDropdownEmailRow");
+    const emailEl = popover.querySelector("#sideMenuDropdownEmail");
+    const signOutRow = popover.querySelector("#sideMenuDropdownSignOut");
+    const signInRow = popover.querySelector("#sideMenuDropdownSignIn");
+    const avatarImg = popover.querySelector("#sideMenuDropdownAvatar");
+    const avatarDefaultIcon = popover.querySelector(
+      "#sideMenuProfileDropdown .side-menu-profile-dropdown-default-icon",
+    );
+
+    // Mirror whatever the trigger's own avatar is currently showing —
+    // navSidebarAvatar is kept in sync by avatarEngine.js's syncNavAvatars()
+    // (and the inline instant-injection script on first paint); rather than
+    // duplicate that logic here, just copy its resolved state each time the
+    // dropdown opens.
+    const triggerAvatarImg = document.getElementById("navSidebarAvatar");
+    if (avatarImg && triggerAvatarImg) {
+      const triggerHasAvatar =
+        triggerAvatarImg.style.display !== "none" && triggerAvatarImg.src;
+      if (triggerHasAvatar) {
+        avatarImg.src = triggerAvatarImg.src;
+        avatarImg.style.display = "";
+        if (avatarDefaultIcon) avatarDefaultIcon.style.display = "none";
+      } else {
+        avatarImg.style.display = "none";
+        if (avatarDefaultIcon) avatarDefaultIcon.style.display = "";
+      }
+    }
+
+    if (nameEl) {
+      nameEl.textContent = localStorage.getItem("username") || "مستخدم";
+    }
+
+    if (isAdmin && roleInfo.email) {
+      if (emailRow) emailRow.style.display = "flex";
+      if (emailEl) emailEl.textContent = roleInfo.email;
+    } else if (emailRow) {
+      emailRow.style.display = "none";
+    }
+
+    if (signOutRow) signOutRow.style.display = isAdmin ? "flex" : "none";
+    if (signInRow) signInRow.style.display = "none"; // no sign-in entry point yet
+  }
+
+  function positionDropdown() {
+    // position: fixed popover anchored to the trigger's viewport rect —
+    // required because .side-menu nav has overflow-x: clip, which would
+    // silently clip an absolutely-positioned popover extending past it.
+    const rect = trigger.getBoundingClientRect();
+    const GAP = 10;
+    popover.style.top = `${rect.top}px`;
+    // RTL sidebar sits on the right edge — open the popover toward the
+    // content area, i.e. to the left of the trigger.
+    popover.style.right = `${window.innerWidth - rect.left + GAP}px`;
+    popover.style.left = "auto";
+
+    // Clamp so it never runs off the bottom of the viewport.
+    const popoverHeight = popover.offsetHeight;
+    const maxTop = window.innerHeight - popoverHeight - 8;
+    if (popoverHeight && rect.top > maxTop) {
+      popover.style.top = `${Math.max(8, maxTop)}px`;
+    }
+  }
+
+  function openDropdown() {
+    populateDropdown();
+    popover.classList.add("open");
+    positionDropdown();
+    trigger.setAttribute("aria-expanded", "true");
+    isOpen = true;
+
+    const first = popover.querySelector(FOCUSABLE_SELECTOR);
+    if (first) first.focus();
+
+    document.addEventListener("click", onDocumentClick, true);
+    document.addEventListener("keydown", onKeydown, true);
+    window.addEventListener("resize", positionDropdown);
+    window.addEventListener("scroll", positionDropdown, true);
+  }
+
+  function closeDropdown({ returnFocus = false } = {}) {
+    popover.classList.remove("open");
+    trigger.setAttribute("aria-expanded", "false");
+    isOpen = false;
+
+    document.removeEventListener("click", onDocumentClick, true);
+    document.removeEventListener("keydown", onKeydown, true);
+    window.removeEventListener("resize", positionDropdown);
+    window.removeEventListener("scroll", positionDropdown, true);
+
+    if (returnFocus) trigger.focus();
+  }
+
+  function onDocumentClick(e) {
+    if (!popover.contains(e.target) && !trigger.contains(e.target)) {
+      closeDropdown();
+    }
+  }
+
+  function onKeydown(e) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeDropdown({ returnFocus: true });
+      return;
+    }
+
+    if (e.key === "Tab") {
+      const focusable = [...popover.querySelectorAll(FOCUSABLE_SELECTOR)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (
+        e.shiftKey
+          ? document.activeElement === first
+          : document.activeElement === last
+      ) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      }
+    }
+  }
+
+  trigger.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (isOpen) closeDropdown();
+    else openDropdown();
+  });
+
+  trigger.setAttribute("aria-haspopup", "true");
+  trigger.setAttribute("aria-expanded", "false");
+
+  const signOutBtn = popover.querySelector("#sideMenuDropdownSignOut");
+  if (signOutBtn) {
+    signOutBtn.addEventListener("click", async () => {
+      signOutBtn.disabled = true;
+      try {
+        await fullSignOut(getSharedSupabaseClient());
+      } finally {
+        window.location.reload();
+      }
+    });
+  }
+});
+
+// ============================================================================
 // CONTACT OVERLAY
 // ============================================================================
 
