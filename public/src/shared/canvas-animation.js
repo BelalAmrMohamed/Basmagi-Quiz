@@ -13,19 +13,26 @@ const DPR_CAP = 1.5;
 // `alphaMode 1` = luminance-based alpha (streaks visible, dark areas transparent).
 // `alphaMode 0` = constant alpha (standard opaque rendering).
 const THEME_PRESETS = {
+    dark: {
+    colors: ["#3b82f6", "#8b5cf6", "#ec4899"],
+    backgroundColor: "#121212",
+    speed: 0.5,
+    streakCount: 6,
+    streakWidth: 1,
+    streakLength: 1,
+    glow: 1.0,
+    density: 0.6,
+    twinkle: 1,
+    zoom: 1.8,
+    backgroundGlow: 0.5,
+    opacity: 1,
+    alphaMode: 0.0,
+    mouseStrength: 0.5,
+    mouseRadius: 0.8,
+    mouseDampening: 0.15,
+  },
   light: {
     colors: ["#818cf8", "#a78bfa", "#f472b6"],
-
-    // FIXED: this was "#0a0a2e" (a dark navy), which fed into O.rgb via the
-    // uBgGlow vignette term and darkened `colr` everywhere — including on
-    // the streaks themselves. Combined with the low opacity below, that left
-    // the streaks too dim to read against the page's white background.
-    // backgroundColor here now matches the light theme's actual page
-    // background (white) instead of fighting it, and backgroundGlow is
-    // dropped to ~0 since a white glow vignette adds nothing visible on a
-    // white page anyway. glow/opacity are raised so the streaks themselves
-    // (which are the only thing actually meant to be visible) stay bright
-    // and saturated instead of washing out.
     backgroundColor: "#ffffff",
     speed: 0.3,
     streakCount: 5,
@@ -54,24 +61,6 @@ const THEME_PRESETS = {
     twinkle: 1,
     zoom: 2,
     backgroundGlow: 0.6,
-    opacity: 1,
-    alphaMode: 0.0,
-    mouseStrength: 0.5,
-    mouseRadius: 0.8,
-    mouseDampening: 0.15,
-  },
-  dark: {
-    colors: ["#3b82f6", "#8b5cf6", "#ec4899"],
-    backgroundColor: "#121212",
-    speed: 0.5,
-    streakCount: 6,
-    streakWidth: 1,
-    streakLength: 1,
-    glow: 1.0,
-    density: 0.6,
-    twinkle: 1,
-    zoom: 1.8,
-    backgroundGlow: 0.5,
     opacity: 1,
     alphaMode: 0.0,
     mouseStrength: 0.5,

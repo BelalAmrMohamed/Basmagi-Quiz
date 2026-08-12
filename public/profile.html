@@ -523,7 +523,12 @@
             <div class="identity-main">
                 <div class="avatar-wrapper">
                     <img id="avatarImage" src="" alt="الصورة الشخصية" width="88" height="88">
-                    <img id="avatarBadgeOverlay" class="badge-overlay-icon" src="" alt="" style="display:none;">
+                    <!-- Admin/dev role is indicated by #roleBadge next to the
+                         name (see .identity-text below), which now opens an
+                         explanatory modal on click — the old badge overlaid
+                         directly on the avatar duplicated that same signal
+                         and cluttered the avatar itself, so it's been
+                         removed rather than restyled. -->
                     <button type="button" class="avatar-edit-btn" id="avatarEditBtn" title="تغيير الصورة الشخصية"
                         aria-label="تغيير الصورة الشخصية">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -726,47 +731,52 @@
         </footer>
     </div>
 
-    <!-- User Info Overlay -->
-    <div id="userInfoOverlay" class="contact-overlay" style="display:none;" role="dialog" aria-modal="true"
-        aria-labelledby="userInfoTitle">
-        <div class="contact-overlay-card" style="max-width: 400px;">
-            <div class="contact-overlay-header" style="justify-content: space-between;">
-                <h2 id="userInfoTitle" style="display: flex; align-items: center; gap: 8px;"><svg
-                        xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- User Info Overlay
+         Structure kept exactly as before for profile.js's DOM queries:
+           - #infoModalEmail's parent is the toggled "email row" block
+           - #infoModalHandle's parent.parentElement is the toggled
+             "handle section" block (one level deeper — it wraps both
+             the handle row AND the copy button beneath it)
+         Only the classes/visual layer changed; ids and nesting depth
+         are unchanged so profile.js needs no edits. -->
+    <div id="userInfoOverlay" class="contact-overlay user-info-overlay" style="display:none;" role="dialog"
+        aria-modal="true" aria-labelledby="userInfoTitle">
+        <div class="contact-overlay-card user-info-card">
+            <div class="contact-overlay-header user-info-header">
+                <h2 id="userInfoTitle" class="user-info-heading">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
                         <circle cx="12" cy="12" r="10" />
                         <path d="M12 16v-4" />
                         <path d="M12 8h.01" />
-                    </svg> المعلومات</h2>
-                <button type="button" class="close-overlay-btn"
-                    onclick="document.getElementById('userInfoOverlay').style.display='none'" aria-label="إغلاق"
-                    style="background:transparent;border:none;font-size:1.5rem;cursor:pointer;color:var(--color-text); padding: 0 8px;">&times;</button>
+                    </svg>
+                    المعلومات
+                </h2>
+                <button type="button" class="close-overlay-btn user-info-close-btn"
+                    onclick="document.getElementById('userInfoOverlay').style.display='none'"
+                    aria-label="إغلاق">&times;</button>
             </div>
-            <div class="contact-overlay-body" style="text-align: right; direction: rtl; font-size: 0.95rem;">
-                <div
-                    style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
-                    <strong style="color: var(--color-text-secondary);">الإسم:</strong>
-                    <span id="infoModalName" style="font-weight: 700;"></span>
+            <div class="contact-overlay-body user-info-body">
+                <div class="user-info-row">
+                    <span class="user-info-label">الإسم</span>
+                    <span id="infoModalName" class="user-info-value"></span>
                 </div>
 
-                <div id="infoModalAdminSection" style="display:none;">
-                    <div
-                        style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
-                        <strong style="color: var(--color-text-secondary);">البريد الإلكتروني:</strong>
-                        <span id="infoModalEmail" style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
+                <div id="infoModalAdminSection" class="user-info-admin-section" style="display:none;">
+                    <div class="user-info-row">
+                        <span class="user-info-label">البريد الإلكتروني</span>
+                        <span id="infoModalEmail" class="user-info-value user-info-value-ltr"></span>
                     </div>
-                    <div
-                        style="margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--color-background-secondary); border-radius: 8px; border: 1px solid var(--color-border-light);">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <strong style="color: var(--color-text-secondary);">رابط الحساب:</strong>
-                            <span id="infoModalHandle"
-                                style="direction: ltr; font-weight: 700; font-size: 0.9rem;"></span>
+                    <div class="user-info-handle-block">
+                        <div class="user-info-row">
+                            <span class="user-info-label">رابط الحساب</span>
+                            <span id="infoModalHandle" class="user-info-value user-info-value-ltr"></span>
                         </div>
-                        <button id="modalCopyLinkBtn" class="adm-btn adm-btn-ghost"
-                            style="padding: 8px; font-size: 0.85rem; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <button id="modalCopyLinkBtn" class="user-info-copy-btn" type="button">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
+                                stroke-linejoin="round" aria-hidden="true">
                                 <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
                                 <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
                             </svg>
@@ -775,6 +785,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Role Info Overlay — opened by #roleBadge (see applyRoleBadges() /
+         openRoleInfoModal() in profile.js). Same .contact-overlay shell as
+         #userInfoOverlay above, styled via the #roleInfoOverlay-scoped
+         rules in profile.css rather than inline styles. Short, plain-Arabic
+         copy distinguishing "مطور" (developer/owner) from "مشرف" (admin);
+         content is swapped per-role by JS on open. Works identically on the
+         owner's own dashboard and on public /@handle profiles. -->
+    <div id="roleInfoOverlay" class="contact-overlay role-info-overlay" style="display:none;" role="dialog"
+        aria-modal="true" aria-labelledby="roleInfoTitle">
+        <div class="contact-overlay-card role-info-card">
+            <button type="button" class="close-overlay-btn role-info-close-btn" onclick="closeRoleInfoModal()"
+                aria-label="إغلاق">&times;</button>
+            <div id="roleInfoIcon" class="role-info-icon" aria-hidden="true"></div>
+            <h2 id="roleInfoTitle" class="role-info-title"></h2>
+            <p id="roleInfoDesc" class="role-info-desc"></p>
         </div>
     </div>
 

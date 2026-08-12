@@ -59,9 +59,8 @@ body {
 .identity-band {
   border-radius: 24px;
   box-shadow: var(--shadow-xl);
-  padding: 32px clamp(20px, 4vw, 40px);
-  margin-bottom: 24px;
   border: 1px solid var(--color-border-light);
+  margin-bottom: 24px;
   position: relative;
   overflow: hidden;
   background-color: var(--color-surface);
@@ -78,19 +77,25 @@ body {
 }
 
 /* ============================================================
-     THUMBNAIL BANNER — sits behind .identity-main/.stats-grid,
-     fills .identity-band (which already has overflow:hidden +
-     border-radius, so this needs neither of its own). Empty by
-     default (no background-image, no .has-thumbnail) — the gradient
-     scrim and edit button only make sense once a picture is set.
+     THUMBNAIL BANNER — true 16:9 at every viewport width, so the
+     crop an admin picks in the picker is the crop everyone sees.
+     A fixed-ratio flow box (not the old position:absolute inset:0
+     layer sized to whatever .identity-band happened to be) with
+     center-cover cropping; .identity-main sits below it instead of
+     stacked on top, so band padding no longer has to double as
+     thumbnail padding. Empty by default (no background-image, no
+     .has-thumbnail) — the gradient scrim and edit button only make
+     sense once a picture is set.
      ============================================================ */
 .identity-thumbnail {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
   z-index: 0;
   background-position: center;
   background-size: cover;
-  pointer-events: none; /* let clicks reach content above; only the edit button opts back in */
+  background-repeat: no-repeat;
+  overflow: hidden;
 }
 
 .identity-thumbnail.has-thumbnail {
@@ -101,14 +106,35 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  /* Scrim so identity-band text/stat-cards (rendered on top, z-index:1)
-       stay legible over an arbitrary featured/uploaded image. Solid-color
-       fallback first for browsers without color-mix() support. */
+  /* Scrim so the banner stays readable under arbitrary featured/uploaded
+       images — heavier at the bottom edge where it meets .identity-main.
+       Solid-color fallback first for browsers without color-mix() support. */
   background: var(--color-surface);
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--color-surface) 55%, transparent) 0%,
-    var(--color-surface) 100%
+    color-mix(in srgb, var(--color-surface) 8%, transparent) 0%,
+    color-mix(in srgb, var(--color-surface) 20%, transparent) 60%,
+    color-mix(in srgb, var(--color-surface) 78%, transparent) 100%
+  );
+}
+
+/* Default thumbnail gradient when the user/admin hasn't set one.
+   Distinct treatment from the circular avatar so defaults are visually
+   different and clearly convey "no custom banner yet". */
+.identity-thumbnail.is-default-thumbnail {
+  background-size: cover;
+  background-position: center;
+}
+
+.identity-thumbnail.is-default-thumbnail::after {
+  /* Subtle textured overlay to make the default banner feel intentional */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--color-surface) 55%, transparent) 100%
   );
 }
 
@@ -121,8 +147,8 @@ body {
   display: none; /* shown via .identity-thumbnail:hover / :focus-within, and unconditionally on touch via JS toggling .is-editable */
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   border: 1px solid var(--color-border-light);
   background: var(--color-surface);
@@ -153,7 +179,17 @@ body {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 24px;
+  padding: 24px clamp(20px, 4vw, 40px) 0;
   margin-bottom: 24px;
+}
+
+/* No thumbnail set at all yet (neither .has-thumbnail nor
+     .is-default-thumbnail — e.g. before renderThumbnail() has run):
+     the 16:9 box would otherwise show as blank empty space above the
+     avatar. Collapse it to 0 height until a background is applied. */
+.identity-thumbnail:not(.has-thumbnail):not(.is-default-thumbnail) {
+  aspect-ratio: auto;
+  height: 0;
 }
 
 .identity-text {
@@ -244,7 +280,7 @@ body {
   color: #fff;
   box-shadow: var(--shadow-sm);
   border: 2px solid var(--color-surface);
-  cursor: help;
+  cursor: pointer; /* real button now (opens #roleInfoOverlay) — not just a hover-tooltip */
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -253,6 +289,11 @@ body {
 .role-badge:hover {
   transform: scale(1.15) rotate(5deg);
   box-shadow: var(--shadow-md);
+}
+
+.role-badge:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 .role-badge.admin-badge {
@@ -265,19 +306,77 @@ body {
   box-shadow: 0 4px 10px rgba(109, 40, 217, 0.4);
 }
 
-.badge-overlay-icon {
+/* ============================================================
+     ROLE INFO MODAL — opened by #roleBadge. Reuses the shared
+     .contact-overlay / .contact-overlay-card shell (defined outside
+     this file) for the backdrop + positioning, but overrides its own
+     layout here rather than the inline-style approach #userInfoOverlay
+     used, since this card's content (centered icon/title/desc, no
+     header row) doesn't fit that shell's default header/body/footer
+     structure. Scoped to #roleInfoOverlay so #userInfoOverlay and
+     #contactDevOverlay, which still use the shared shell as-is, are
+     unaffected.
+     ============================================================ */
+.role-info-card {
+  max-width: 340px;
+  padding: 28px 24px 24px;
+  text-align: center;
+  position: relative;
+}
+
+.role-info-close-btn {
   position: absolute;
-  inset-block-start: 0;
-  inset-inline-end: 0;
-  width: 24px;
-  height: 24px;
+  inset-block-start: 10px;
+  inset-inline-end: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 6px;
   border-radius: 50%;
-  border: 2px solid var(--color-surface);
-  background: var(--color-surface);
+  transition: background-color 0.15s ease;
+}
+
+.role-info-close-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text);
+}
+
+.role-info-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
   box-shadow: var(--shadow-md);
-  z-index: 10;
-  object-fit: contain;
-  padding: 3px;
+}
+
+/* Reuse the exact same gradients as .role-badge.admin-badge /
+     .developer-badge so the modal icon visually matches the badge
+     that opened it. */
+.role-info-icon.admin-badge {
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
+}
+
+.role-info-icon.developer-badge {
+  background: linear-gradient(135deg, #a855f7, #6d28d9);
+}
+
+.role-info-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.role-info-desc {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
 }
 
 /* Avatar */
@@ -455,13 +554,22 @@ body {
   color: var(--color-text-tertiary);
 }
 
-/* Stats Grid — 4 compact chips under the identity row */
+/* Stats Grid — 4 compact chips under the identity row. Scoped
+     (.identity-band .stats-grid) rather than bare .stats-grid, since
+     #adminStatsGrid reuses this class as a sibling of .identity-band
+     (flush with the page container) and must NOT get band-interior
+     padding. The padding lives here instead of back on .identity-band
+     because .identity-thumbnail needs to stay full-bleed above it. */
 .stats-grid {
   position: relative;
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+}
+
+.identity-band .stats-grid {
+  padding: 0 clamp(20px, 4vw, 40px) 32px;
 }
 
 .stat-card {
@@ -1446,10 +1554,48 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-     CATEGORY MASTERY
+     CATEGORY MASTERY — up to 8 rows (renderCategoryMastery() already
+     caps at 8), which on some layouts pushes the card visibly taller
+     than heatmap-widget-card beside it in .widget-row. Collapsed by
+     default to a max-height showing ~3 rows, with a fade + the shared
+     .show-more-row/.show-more-btn pattern (already used by History/
+     Bookmarks/Flagged) to reveal the rest. renderCategoryMastery()
+     only adds the collapse/toggle when there are enough rows to need
+     it — 3 or fewer rows render with no cap and no button at all.
      ============================================================ */
 .category-mastery-card {
   min-width: 0;
+}
+
+.mastery-list {
+  overflow: hidden;
+  position: relative;
+  max-height: 195px;
+  transition: max-height 0.3s ease;
+}
+
+.mastery-list.is-expanded {
+  max-height: 1200px; /* generous ceiling well above 8 rows' actual height */
+}
+
+/* Fade-to-transparent cue at the clipped edge — hidden once expanded. */
+.mastery-list.is-collapsible:not(.is-expanded)::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  height: 36px;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    var(--color-surface) 90%
+  );
+  pointer-events: none;
+}
+
+.category-mastery-card .show-more-row {
+  margin-block-start: 14px;
+  margin-block-end: 0;
 }
 
 .mastery-row {
@@ -1672,14 +1818,16 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .identity-band {
-    padding: 22px 18px;
-  }
-
   .identity-main {
     grid-template-columns: auto minmax(0, 1fr);
     gap: 14px;
+    padding: 18px 18px 0;
     margin-bottom: 18px;
+  }
+
+  .identity-band .stats-grid {
+    padding-inline: 18px;
+    padding-bottom: 22px;
   }
 
   .identity-text h1 {
@@ -2070,4 +2218,141 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   .heatmap-grid {
     padding-block-end: 10px;
   }
+}
+
+/* ============================================================
+     USER INFO OVERLAY — reuses the shared .contact-overlay /
+     .contact-overlay-card shell for the backdrop + base positioning,
+     everything below is scoped to #userInfoOverlay / .user-info-*
+     so #contactDevOverlay (same shared shell) is unaffected. Replaces
+     the old heavy per-element inline styles with real classes.
+     ============================================================ */
+.user-info-card {
+  max-width: 380px;
+}
+
+.user-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-info-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-info-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 6px;
+  border-radius: 50%;
+  transition: background-color 0.15s ease;
+}
+
+.user-info-close-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text);
+}
+
+.user-info-body {
+  text-align: right;
+  direction: rtl;
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-background-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light);
+}
+
+.user-info-label {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.user-info-value {
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-info-value-ltr {
+  direction: ltr;
+  font-size: 0.88rem;
+}
+
+.user-info-admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-info-handle-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--color-background-secondary);
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light);
+}
+
+/* The handle block already provides the row's background/border, so
+     its inner row shouldn't double up its own — flatten it back to a
+     plain flex line inside the shared card. */
+.user-info-handle-block .user-info-row {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Copy button — clear primary action for this card (it's the one
+     thing worth doing in this modal besides reading), full-width so
+     it reads as a deliberate call to action rather than a small
+     ghost-style icon button tucked in a corner. */
+.user-info-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.user-info-copy-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 85%, black);
+}
+
+.user-info-copy-btn:active {
+  transform: scale(0.98);
 }

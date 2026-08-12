@@ -15,11 +15,7 @@ import {
   dateKey,
 } from "./profileWidgets.js";
 
-import {
-  _confirm,
-  showNotification,
-  _prompt,
-} from "../../components/notifications/notifications.js";
+import { _confirm, _prompt } from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
 import { renderLevelGauge } from "./levelGauge.js";
 import {
@@ -207,41 +203,69 @@ function setActivityLabel(roleInfo) {
 
 function applyRoleBadges(role, isOwner) {
   const roleBadge = document.getElementById("roleBadge");
-  const avatarBadgeOverlay = document.getElementById("avatarBadgeOverlay");
+  if (!roleBadge) return;
 
-  if (roleBadge) {
-    roleBadge.style.display = "inline-flex";
-    roleBadge.onclick = () =>
-      showNotification(
-        `هذا الحساب يمتلك صلاحيات ${isOwner ? "مطور" : "مشرف"}`,
-        "",
-        "info",
-      );
-
-    if (isOwner) {
-      roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
-      roleBadge.className = "role-badge developer-badge";
-      roleBadge.title = "مطور";
-      roleBadge.setAttribute("aria-label", "مطور");
-    } else if (role === "admin") {
-      roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
-      roleBadge.className = "role-badge admin-badge";
-      roleBadge.title = "مشرف";
-      roleBadge.setAttribute("aria-label", "مشرف");
+  roleBadge.style.display = "inline-flex";
+  roleBadge.setAttribute("role", "button");
+  roleBadge.setAttribute("tabindex", "0");
+  roleBadge.onclick = () => openRoleInfoModal(isOwner);
+  roleBadge.onkeydown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      openRoleInfoModal(isOwner);
     }
-  }
+  };
 
-  if (avatarBadgeOverlay) {
-    avatarBadgeOverlay.style.display = "block";
-    if (isOwner) {
-      avatarBadgeOverlay.src = "../../../assets/images/white-icon.png";
-      avatarBadgeOverlay.alt = "شارة المطور";
-    } else if (role === "admin") {
-      avatarBadgeOverlay.src = "../../../favicon.png";
-      avatarBadgeOverlay.alt = "شارة المشرف";
-    }
+  if (isOwner) {
+    roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+    roleBadge.className = "role-badge developer-badge";
+    roleBadge.title = "مطور";
+    roleBadge.setAttribute("aria-label", "مطور — اضغط لمعرفة المزيد");
+  } else if (role === "admin") {
+    roleBadge.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+    roleBadge.className = "role-badge admin-badge";
+    roleBadge.title = "مشرف";
+    roleBadge.setAttribute("aria-label", "مشرف — اضغط لمعرفة المزيد");
   }
 }
+
+// Role info modal — replaces the old generic showNotification() toast on
+// #roleBadge click with a small dismissible overlay (same .contact-overlay
+// shell as #userInfoOverlay / #contactDevOverlay) that explains, in plain
+// Arabic, what "مطور" (developer/owner) vs "مشرف" (admin) actually means.
+// Works identically on the owner's own dashboard and on public /@handle
+// profiles, since it only needs the isOwner flag already resolved by
+// applyRoleBadges()'s caller in both contexts.
+function openRoleInfoModal(isOwner) {
+  const overlay = document.getElementById("roleInfoOverlay");
+  if (!overlay) return;
+
+  const titleEl = document.getElementById("roleInfoTitle");
+  const descEl = document.getElementById("roleInfoDesc");
+  const iconEl = document.getElementById("roleInfoIcon");
+
+  if (isOwner) {
+    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+    iconEl.className = "role-info-icon developer-badge";
+    titleEl.textContent = "مطور";
+    descEl.textContent =
+      "هذا الحساب هو حساب مطور المنصة، ولديه صلاحية كاملة على النظام، بما في ذلك إدارة المستخدمين والاختبارات والإعدادات.";
+  } else {
+    iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+    iconEl.className = "role-info-icon admin-badge";
+    titleEl.textContent = "مشرف";
+    descEl.textContent =
+      "هذا الحساب مشرف على المنصة، ولديه صلاحيات إدارية مثل مراجعة البلاغات ورفع الاختبارات، دون الوصول لكامل إعدادات النظام.";
+  }
+
+  overlay.style.display = "flex";
+}
+
+function closeRoleInfoModal() {
+  const overlay = document.getElementById("roleInfoOverlay");
+  if (overlay) overlay.style.display = "none";
+}
+window.closeRoleInfoModal = closeRoleInfoModal;
 
 // isVisitorContext controls whether totalPoints/totalQuizzes/totalBadges/
 // currentLevel get written to the DOM from this response.
@@ -313,11 +337,18 @@ async function fetchAndRenderAdminStats(
         }
       }
 
+      // Return a richer object so callers (visitor view) can act on
+      // avatar/thumbnail/totals directly after the fetch resolves.
       return {
         role: data.role,
         isOwner: !!data.isOwner,
         avatarUrl: data.avatarUrl || null,
+        thumbnailUrl: data.thumbnailUrl || null,
         displayName: data.displayName || null,
+        totalPoints: typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
+        totalQuizzes: typeof data.totalQuizzes !== "undefined" ? data.totalQuizzes : 0,
+        totalBadges: typeof data.totalBadges !== "undefined" ? data.totalBadges : 0,
+        currentLevel: typeof data.currentLevel !== "undefined" ? data.currentLevel : 1,
         activityHeatmap: data.activityHeatmap || {},
       };
     }
@@ -479,6 +510,49 @@ async function setupVisitorView(handle) {
   // unlike the owner-dashboard call in refreshUI()) since visitor view has
   // no local-only refresh path.
   renderUploadedQuizzes(handle);
+
+  // Override the meta-rendered avatar/thumbnail with the freshly-fetched
+  // admin row when available. The meta tags are only an optimization for
+  // first-paint; they can be stale if the owner recently updated their
+  // avatar/thumbnail, so prefer the live API response when it arrives.
+  if (visitedRole && visitedRole.avatarUrl) {
+    renderVisitorAvatar(visitedRole.avatarUrl, handle);
+  }
+
+  if (identityThumbnailEl) {
+    if (visitedRole && visitedRole.thumbnailUrl) {
+      identityThumbnailEl.style.backgroundImage = `url("${visitedRole.thumbnailUrl}")`;
+      identityThumbnailEl.classList.add("has-thumbnail");
+      identityThumbnailEl.classList.remove("is-default-thumbnail");
+    } else if (!thumbnailMeta) {
+      // No thumbnail set server-side either — show a distinct generated
+      // gradient banner (different visual treatment than the circular
+      // avatar) so defaults are clearly distinct.
+      try {
+        const grad = avatarEngine.gradientForName(handle || "?");
+        identityThumbnailEl.style.backgroundImage = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
+        identityThumbnailEl.classList.add("is-default-thumbnail");
+        identityThumbnailEl.classList.remove("has-thumbnail");
+      } catch (e) {
+        // fall back to the shipped featured thumbnail image
+        identityThumbnailEl.style.backgroundImage = `url('/assets/profile-featured/thumbnails/2.jpg')`;
+        identityThumbnailEl.classList.add("has-thumbnail");
+      }
+    }
+  }
+
+  // Initialize the level gauge for visitor context too, using the
+  // server-mirrored totalPoints so the radial gauge appears on public
+  // profiles as well.
+  if (visitedRole) {
+    const pts = typeof visitedRole.totalPoints !== "undefined" ? visitedRole.totalPoints : 0;
+    try {
+      const levelInfo = gameEngine.calculateLevel(pts);
+      renderLevelGauge(levelInfo);
+    } catch (e) {
+      console.error("Failed to init visitor level gauge", e);
+    }
+  }
 
   if (visitedRole && visitedRole.displayName) {
     const headerTitle = document.getElementById("userNameHeader");
@@ -714,8 +788,20 @@ function renderThumbnail(user) {
     el.style.backgroundImage = `url("${stored}")`;
     el.classList.add("has-thumbnail");
   } else {
-    el.style.backgroundImage = "";
-    el.classList.remove("has-thumbnail");
+    // No user-set thumbnail: render a distinct gradient banner instead
+    // of leaving the banner blank so avatar vs banner defaults are
+    // visually distinct.
+    try {
+      const name = localStorage.getItem("username") || "?";
+      const grad = avatarEngine.gradientForName(name);
+      el.style.backgroundImage = `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`;
+      el.classList.remove("has-thumbnail");
+      el.classList.add("is-default-thumbnail");
+    } catch (e) {
+      el.style.backgroundImage = "";
+      el.classList.remove("has-thumbnail");
+      el.classList.remove("is-default-thumbnail");
+    }
   }
 }
 

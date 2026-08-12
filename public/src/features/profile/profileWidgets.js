@@ -244,6 +244,12 @@ export function renderActivityHeatmap(user) {
 // Reads user.categoryProgress (already populated by gameEngine.processResult
 // but never displayed anywhere before this).
 
+// Rows beyond this many trigger the collapse + "عرض المزيد" toggle (see
+// .mastery-list / .is-collapsible in profile.css). Below this count the
+// list already fits within the collapsed max-height, so no cap/button is
+// needed at all.
+const MASTERY_COLLAPSE_THRESHOLD = 3;
+
 export async function renderCategoryMastery(user, examList) {
   const container = document.getElementById("categoryMastery");
   if (!container) return;
@@ -267,7 +273,7 @@ export async function renderCategoryMastery(user, examList) {
     .sort((a, b) => b.best - a.best)
     .slice(0, 8);
 
-  container.innerHTML = rows
+  const rowsHtml = rows
     .map((row) => {
       const barColor =
         row.best >= 80 ? "success" : row.best >= 50 ? "warning" : "error";
@@ -284,6 +290,37 @@ export async function renderCategoryMastery(user, examList) {
       </div>`;
     })
     .join("");
+
+  const needsCollapse = rows.length > MASTERY_COLLAPSE_THRESHOLD;
+
+  container.innerHTML = `
+    <div class="mastery-list${needsCollapse ? " is-collapsible" : ""}" id="categoryMasteryList">${rowsHtml}</div>
+    ${
+      needsCollapse
+        ? `
+    <div class="show-more-row" id="categoryMasteryShowMoreRow">
+      <button type="button" class="show-more-btn" id="categoryMasteryShowMoreBtn">
+        <span id="categoryMasteryShowMoreLabel">عرض المزيد</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </div>`
+        : ""
+    }`;
+
+  if (needsCollapse) {
+    const list = document.getElementById("categoryMasteryList");
+    const row = document.getElementById("categoryMasteryShowMoreRow");
+    const btn = document.getElementById("categoryMasteryShowMoreBtn");
+    const label = document.getElementById("categoryMasteryShowMoreLabel");
+    btn.onclick = () => {
+      const expanded = list.classList.toggle("is-expanded");
+      row.classList.toggle("is-expanded", expanded);
+      label.textContent = expanded ? "عرض أقل" : "عرض المزيد";
+      btn.setAttribute("aria-expanded", String(expanded));
+    };
+    btn.setAttribute("aria-expanded", "false");
+    btn.setAttribute("aria-controls", "categoryMasteryList");
+  }
 }
 
 // ==================== Next Badge Progress Teasers ====================
