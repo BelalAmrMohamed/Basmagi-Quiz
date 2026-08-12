@@ -79,6 +79,12 @@ export class CropperController {
   _computeBaseScale() {
     const stageW = this.stageEl.clientWidth;
     const stageH = this.stageEl.clientHeight;
+    // The stage can still be unmeasured (0x0) if this runs before the
+    // browser has laid out a just-shown (display:none -> flex) parent —
+    // callers should defer until then (see avatarPicker.js's use of
+    // requestAnimationFrame), but guard here too rather than committing
+    // a baseScale of 0 (image would render invisibly at scale(0)).
+    if (!stageW || !stageH) return;
     // "Cover" fit: scale so the image's smaller-relative-to-stage side
     // exactly fills the stage, same as CSS background-size:cover.
     this.baseScale = Math.max(
@@ -162,8 +168,7 @@ export class CropperController {
           x: (pts[0].x + pts[1].x) / 2,
           y: (pts[0].y + pts[1].y) / 2,
         };
-        const nextZoom =
-          this._pinchStartZoom * (dist / this._pinchStartDist);
+        const nextZoom = this._pinchStartZoom * (dist / this._pinchStartDist);
         this.setZoom(nextZoom, center);
       }
       return;
@@ -216,12 +221,17 @@ export class CropperController {
 
   _applyTransform() {
     const scale = this.baseScale * this.zoom;
-    // Image is centered in the stage by CSS (position:absolute; top/left:50%;
-    // margin negative half its natural size — see .cropper-image in
-    // profile.css), so the transform here only needs translate+scale on
-    // top of that centering, not an explicit centering offset itself.
-    this.imgEl.style.transform =
-      `translate(${this.offsetX}px, ${this.offsetY}px) scale(${scale})`;
+    // .cropper-image is positioned with top:50%; left:50%, which places
+    // the image's TOP-LEFT CORNER at the stage's center — it does not
+    // center the image itself (that needs an additional -50%,-50% shift,
+    // which isn't in the CSS). So we bake that centering offset into the
+    // transform here ourselves: shift left/up by half the image's own
+    // natural size before scaling, then apply the usual pan (offsetX/Y).
+    // transform-origin:0 0 on .cropper-image means translate is applied
+    // in unscaled pixels first, exactly matching this order.
+    const centerX = -this.naturalWidth / 2;
+    const centerY = -this.naturalHeight / 2;
+    this.imgEl.style.transform = `translate(${this.offsetX}px, ${this.offsetY}px) scale(${scale}) translate(${centerX}px, ${centerY}px)`;
   }
 
   // Computes the crop rectangle in the SOURCE image's own pixel

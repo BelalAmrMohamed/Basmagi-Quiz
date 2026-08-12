@@ -36,8 +36,6 @@ const MODES = {
   avatar: {
     overlayId: "avatarPickerOverlay",
     cardCloseBtnId: "avatarPickerCloseBtn",
-    presetGridId: "avatarPresetGrid",
-    presetLabel: "اختر لوناً افتراضياً",
     featuredGridId: "avatarFeaturedGrid",
     getFeatured: () => avatarEngine.getFeaturedPictures(),
     get: () => avatarEngine.getAvatar(),
@@ -64,13 +62,12 @@ const MODES = {
     cropStepId: "avatarCropStep",
     pickerBodyId: "avatarPickerBody",
     aspect: 1,
-    cropAndCompress: (img, rect) => avatarEngine.cropAndCompressAvatar(img, rect),
+    cropAndCompress: (img, rect) =>
+      avatarEngine.cropAndCompressAvatar(img, rect),
   },
   thumbnail: {
     overlayId: "thumbnailPickerOverlay",
     cardCloseBtnId: "thumbnailPickerCloseBtn",
-    presetGridId: "thumbnailPresetGrid",
-    presetLabel: "اختر تدرجاً افتراضياً",
     featuredGridId: "thumbnailFeaturedGrid",
     getFeatured: () => avatarEngine.getFeaturedThumbnails(),
     get: () => avatarEngine.getThumbnail(),
@@ -111,90 +108,27 @@ const state = {
   thumbnail: { stream: null, cropper: null, sourceImg: null },
 };
 
-function getUsername() {
-  return localStorage.getItem("username") || "مستخدم";
-}
-
-// We use deterministic abstract patterns based on names to populate the grid.
-const PRESET_SEEDS = [
-  "Alpha",
-  "Bravo",
-  "Charlie",
-  "Delta",
-  "Echo",
-  "Foxtrot",
-  "Golf",
-  "Hotel",
-];
-
-function renderPresetGrid(mode) {
-  const cfg = MODES[mode];
-  const grid = document.getElementById(cfg.presetGridId);
-  if (!grid) return;
-
-  const name = getUsername();
-
-  // Create an array of 8 seeds to generate different patterns
-  // The first one is the user's actual username, so their personal pattern is always available.
-  const seeds = [name, ...PRESET_SEEDS].slice(0, 8);
-
-  grid.innerHTML = seeds
-    .map((seed) => {
-      if (mode === "avatar") {
-        const svg = avatarEngine.generateDefaultAvatarSVG(seed);
-        const dataUrl = `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
-        return `<button type="button" class="avatar-preset-btn" data-avatar="${dataUrl}" aria-label="اختيار هذا الشكل" style="padding:0; overflow:hidden; background:transparent;">
-          <img src="${dataUrl}" alt="preset" style="width:100%; height:100%; object-fit:cover;">
-        </button>`;
-      }
-      // Thumbnail presets: flat gradient swatches (thumbnailGradientForName),
-      // not the avatar's geometric pattern — a banner-shaped preview of
-      // what the default cover actually looks like for that seed.
-      const [from, to] = avatarEngine.thumbnailGradientForName(seed);
-      const cssGradient = `linear-gradient(135deg, ${from}, ${to})`;
-      return `<button type="button" class="avatar-preset-btn thumbnail-preset-btn" data-avatar="${cssGradient}" data-preset-kind="gradient" aria-label="اختيار هذا التدرج" style="padding:0; overflow:hidden; background:${cssGradient};"></button>`;
-    })
-    .join("");
-
-  grid.querySelectorAll(".avatar-preset-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const value = btn.getAttribute("data-avatar");
-      // Gradient presets aren't image data — CSS is applied directly, no
-      // upload/crop/dataURL round-trip needed. avatarEngine.save() and the
-      // sync payload both just store the CSS gradient string as-is; the
-      // rendering side (renderThumbnail/setupVisitorView) already handles
-      // any string as a raw background-image value.
-      applyPicture(mode, value);
-    });
-  });
-
-  // Async fetch and append Gravatar for admins/owners — avatar mode only;
-  // a Gravatar is a face photo, which doesn't make sense as a banner thumbnail.
-  if (mode === "avatar") {
-    const roleInfo = getAdminRoleInfo();
-    if (roleInfo && roleInfo.email) {
-      appendGravatarPreset(grid, roleInfo.email);
-    }
-  }
-}
-
 // Featured Pictures / Featured Thumbnails grid — static, pre-made images
 // shipped with the site (see avatarEngine.getFeaturedPictures/Thumbnails).
 // Rendered directly from their URL (no data-URL conversion, no processing —
 // they're already the right shape) so picking one is an instant, local
-// operation, same as picking a generated preset.
+// operation.
 function renderFeaturedGrid(mode) {
   const cfg = MODES[mode];
   const grid = document.getElementById(cfg.featuredGridId);
   if (!grid) return;
 
   const items = cfg.getFeatured();
+  const btnClass =
+    mode === "thumbnail"
+      ? "avatar-preset-btn thumbnail-preset-btn"
+      : "avatar-preset-btn";
 
   grid.innerHTML = items
     .map(
       (
         item,
-      ) => `<button type="button" class="avatar-preset-btn" data-avatar="${item.url}" aria-label="اختيار هذه الصورة المميزة" style="padding:0; overflow:hidden; background:transparent;">
+      ) => `<button type="button" class="${btnClass}" data-avatar="${item.url}" aria-label="اختيار هذه الصورة المميزة" style="padding:0; overflow:hidden; background:transparent;">
         <img src="${item.url}" alt="" loading="lazy" style="width:100%; height:100%; object-fit:cover;">
       </button>`,
     )
@@ -206,6 +140,15 @@ function renderFeaturedGrid(mode) {
       applyPicture(mode, url);
     });
   });
+
+  // Async fetch and append Gravatar for admins/owners — avatar mode only;
+  // a Gravatar is a face photo, which doesn't make sense as a banner thumbnail.
+  if (mode === "avatar") {
+    const roleInfo = getAdminRoleInfo();
+    if (roleInfo && roleInfo.email) {
+      appendGravatarPreset(grid, roleInfo.email);
+    }
+  }
 }
 
 async function appendGravatarPreset(grid, email) {
@@ -311,7 +254,18 @@ function enterCropStep(mode, sourceImg) {
       if (zoomSlider) zoomSlider.value = String(zoom);
     },
   });
-  s.cropper.load(sourceImg);
+
+  // cropStep was just switched from display:none to display:flex above,
+  // so the stage (sized via width:100% + aspect-ratio in CSS) hasn't been
+  // laid out yet — stageEl.clientWidth/clientHeight would still read 0
+  // (or a stale value) if we called load() synchronously here, which
+  // makes CropperController._computeBaseScale() compute baseScale as 0
+  // and the picked image render at scale(0) — effectively invisible.
+  // requestAnimationFrame waits for the browser to commit the display
+  // change and run layout first, so the stage reports its real size.
+  requestAnimationFrame(() => {
+    s.cropper.load(sourceImg);
+  });
   if (zoomSlider) zoomSlider.value = "1";
 }
 
@@ -446,7 +400,6 @@ function openPicker(mode) {
   const overlay = document.getElementById(cfg.overlayId);
   if (!overlay) return;
 
-  renderPresetGrid(mode);
   renderFeaturedGrid(mode);
 
   overlay.style.display = "flex";

@@ -150,11 +150,17 @@ export function refreshUI(options = {}) {
               const url = window.location.origin + "/@" + currentHandle;
               if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(url).then(() => {
-                  const orig = copyBtn.innerHTML;
-                  copyBtn.innerHTML = "تم النسخ! ✔️";
+                  const label = copyBtn.querySelector(
+                    ".user-info-copy-btn-label",
+                  );
+                  const origLabel = label ? label.textContent : null;
+                  copyBtn.classList.add("is-copied");
                   copyBtn.setAttribute("aria-live", "polite");
+                  if (label) label.textContent = "تم النسخ";
                   setTimeout(() => {
-                    copyBtn.innerHTML = orig;
+                    copyBtn.classList.remove("is-copied");
+                    if (label && origLabel !== null)
+                      label.textContent = origLabel;
                   }, 2000);
                 });
               } else {
@@ -645,11 +651,14 @@ async function setupVisitorView(handle) {
           const url = window.location.origin + "/@" + handle;
           if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(url).then(() => {
-              const orig = copyBtn.innerHTML;
-              copyBtn.innerHTML = "تم النسخ! ✔️";
+              const label = copyBtn.querySelector(".user-info-copy-btn-label");
+              const origLabel = label ? label.textContent : null;
+              copyBtn.classList.add("is-copied");
               copyBtn.setAttribute("aria-live", "polite");
+              if (label) label.textContent = "تم النسخ";
               setTimeout(() => {
-                copyBtn.innerHTML = orig;
+                copyBtn.classList.remove("is-copied");
+                if (label && origLabel !== null) label.textContent = origLabel;
               }, 2000);
             });
           } else {
