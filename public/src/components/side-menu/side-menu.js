@@ -412,6 +412,77 @@ import {
   ensureSharedSupabaseClient,
 } from "../../shared/supabaseClientRegistry.js";
 
+// ============================================================================
+// ADMIN BADGE — post-load refresh
+// ============================================================================
+// Re-runs the same instant-badge-injection logic each page's inline <head>
+// and post-nav <script> blocks already run pre-paint (reads the admin JWT
+// from sessionStorage, injects/removes a .nav-badge-overlay <img> next to
+// each avatar target). Exported so adminBadgeSync.js's recovery path (a
+// Supabase-only session getting re-derived into a local JWT after the page
+// has already painted) can refresh the badge WITHOUT a full reload.
+function refreshNavBadges() {
+  const targets = [
+    { imgId: "navSidebarAvatar" },
+    { imgId: "navBottomAvatar" },
+  ];
+
+  let roleInfo = null;
+  try {
+    roleInfo = getAdminRoleInfo();
+  } catch (_) {}
+
+  targets.forEach(({ imgId }) => {
+    const img = document.getElementById(imgId);
+    if (!img) return;
+    const parent = img.parentElement;
+    if (!parent) return;
+
+    const existing = parent.querySelector(".nav-badge-overlay");
+
+    if (!roleInfo) {
+      // No longer an admin (or session cleared) — remove any stale badge.
+      if (existing) existing.remove();
+      return;
+    }
+
+    if (existing) return; // already correctly showing a badge
+
+    parent.style.position = "relative";
+    const badgeIcon = roleInfo.isOwner
+      ? "assets/images/white-icon.png"
+      : "favicon.png";
+    const b = document.createElement("img");
+    b.className = "nav-badge-overlay";
+    b.src = badgeIcon;
+    b.alt = "";
+    b.style.cssText = "position:absolute;z-index:10;display:block;";
+    parent.appendChild(b);
+  });
+}
+
+/**
+ * Refreshes every piece of admin-dependent UI this module owns, in place,
+ * without a page reload: the nav badge overlays, and — if the profile
+ * dropdown has already been mounted on this page — its email/sign-out row.
+ * Safe to call on pages without the dropdown (badge refresh still applies)
+ * and safe to call repeatedly (idempotent).
+ */
+export function refreshAdminUI() {
+  refreshNavBadges();
+  const popover = document.getElementById("sideMenuProfileDropdown");
+  if (popover && popover.classList.contains("open")) {
+    // Dropdown is currently open — re-populate it immediately so an admin
+    // recovery mid-session shows up without the user having to close/reopen.
+    populateDropdownIfAvailable();
+  }
+}
+
+// populateDropdown() is defined further down (only when the dropdown markup
+// exists on this page). This indirection lets refreshAdminUI() call it
+// safely even though it's declared later in the same DOMContentLoaded scope.
+let populateDropdownIfAvailable = () => {};
+
 document.addEventListener("DOMContentLoaded", () => {
   const trigger = document.getElementById("sideMenuProfileTrigger");
   const popover = document.getElementById("sideMenuProfileDropdown");
@@ -531,6 +602,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (signOutRow) signOutRow.style.display = isAdmin ? "flex" : "none";
     if (signInRow) signInRow.style.display = "none"; // no sign-in entry point yet
   }
+
+  // Wire up the module-level indirection so refreshAdminUI() (called from
+  // outside this closure, e.g. by adminBadgeSync.js) can re-populate the
+  // dropdown without needing access to these closure-scoped variables.
+  populateDropdownIfAvailable = populateDropdown;
 
   function positionDropdown() {
     // position: fixed popover anchored to the trigger's viewport rect —

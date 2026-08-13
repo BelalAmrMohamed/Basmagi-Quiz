@@ -27,7 +27,7 @@
     <script>
         (function () {
             try {
-                var t = localStorage.getItem('__bq_adm');
+                var t = sessionStorage.getItem('__bq_adm');
                 if (t) {
                     var p = JSON.parse(atob(t.split('.')[1]));
                     var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
@@ -645,9 +645,9 @@
 
                 // INSTANT BADGE INJECTION
                 try {
-                    if (localStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
+                    if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
                         parent.style.position = 'relative';
-                        var p = JSON.parse(atob(localStorage.getItem('__bq_adm').split('.')[1]));
+                        var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
                         var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
                         var b = document.createElement('img');
                         b.className = 'nav-badge-overlay';
@@ -1429,6 +1429,19 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/features/create/create-quiz.js"></script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
+    <!-- Admin session sync: reconciles local admin JWT with any live
+         Supabase session on load, refreshing the nav badge / profile
+         dropdown in place (no reload) — see fix.pdf Phase 0. -->
+    <script type="module">
+        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+        document.addEventListener("DOMContentLoaded", () => {
+            syncAdminSession({
+                onRecovered: refreshAdminUI,
+                onSignedOut: refreshAdminUI,
+            });
+        });
+    </script>
     <script type="module">
         import { initPWA } from "./src/shared/pwa-manager.js";
         document.addEventListener("DOMContentLoaded", () => initPWA());
