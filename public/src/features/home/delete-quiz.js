@@ -40,14 +40,20 @@ export function canDeleteQuiz(exam) {
   if (!isAdminAuthenticated()) return false;
 
   const roleInfo = getAdminRoleInfo();
-  if (!roleInfo) return false;
+  // Condition 1: Admin is owner
   if (roleInfo.isOwner) return true;
 
-  return (
-    !!exam.author_email &&
-    !!roleInfo.email &&
-    exam.author_email === roleInfo.email
-  );
+  // Condition 2: Admin is the original creator
+  if (exam.author_handle && roleInfo.handle && exam.author_handle === roleInfo.handle) {
+    return true;
+  }
+
+  // Condition 3: Admin has the scope for this education type
+  if (exam.education_type && roleInfo.allowed_scopes && roleInfo.allowed_scopes.includes(exam.education_type)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**

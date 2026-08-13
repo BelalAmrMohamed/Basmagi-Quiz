@@ -119,7 +119,7 @@ export default async function handler(req, res) {
   let adminHandle = null;
   const { data: adminData } = await supabase
     .from("admin_users")
-    .select("id, email, handle")
+    .select("id, email, handle, allowed_scopes")
     .eq("email", userEmail)
     .maybeSingle();
 
@@ -151,6 +151,7 @@ export default async function handler(req, res) {
       email: userEmail,
       handle: adminHandle,
       isOwner: ownerEmails.includes(userEmail),
+      allowed_scopes: adminData?.allowed_scopes || ["Primary", "Middle", "High", "University", "Featured"],
     },
     process.env.JWT_SECRET,
     { expiresIn: "4h", algorithm: "HS256" }

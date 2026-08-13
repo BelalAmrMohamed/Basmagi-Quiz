@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   if (method === "GET") {
     const { data: admins, error: adminsError } = await supabase
       .from("admin_users")
-      .select("id, email, created_at, added_by")
+      .select("id, email, created_at, added_by, allowed_scopes")
       .order("created_at", { ascending: false });
 
     if (adminsError) {
@@ -106,6 +106,26 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ success: true });
+    }
+
+    if (action === "update_scopes") {
+      const { email, scopes } = req.body;
+      if (!email || !Array.isArray(scopes)) {
+        return res.status(400).json({ error: "Email and valid scopes array are required" });
+      }
+
+      const { data, error } = await supabase
+        .from("admin_users")
+        .update({ allowed_scopes: scopes })
+        .eq("email", email.toLowerCase())
+        .select("allowed_scopes")
+        .single();
+
+      if (error) {
+        return res.status(500).json({ error: "Failed to update admin scopes" });
+      }
+
+      return res.status(200).json({ success: true, allowed_scopes: data.allowed_scopes });
     }
 
     return res.status(400).json({ error: "Invalid action" });

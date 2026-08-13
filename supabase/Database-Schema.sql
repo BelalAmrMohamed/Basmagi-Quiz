@@ -48,6 +48,7 @@ CREATE TABLE public.admin_users (
   uploaded_quizzes integer DEFAULT 0,
   activity_heatmap jsonb DEFAULT '{}'::jsonb,
   thumbnail_url text,
+  allowed_scopes text[] DEFAULT '{Primary,Middle,High,University,Featured}'::text[],
   CONSTRAINT admin_users_pkey PRIMARY KEY (id)
 );
 

@@ -62,6 +62,12 @@ export default async function handler(req, res) {
       ? rawEducationType
       : "University";
 
+  if (!adminPayload.isOwner && adminPayload.allowed_scopes) {
+    if (!adminPayload.allowed_scopes.includes(education_type)) {
+      return res.status(403).json({ error: "ليس لديك صلاحية لإضافة امتحانات في هذا المسار." });
+    }
+  }
+
   try {
     validatePath({ college, year, term, subject, subfolder });
   } catch (e) {

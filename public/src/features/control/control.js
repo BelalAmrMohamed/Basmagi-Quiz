@@ -144,8 +144,10 @@ async function loadData() {
                         <span class="meta-dot"></span>
                         <span class="admin-meta-item">${date}</span>
                     </div>
+                <div class="admin-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+                    <button class="btn-primary" style="padding: 4px 8px; font-size: 0.9em;" onclick='openScopeModal("${admin.email}", ${JSON.stringify(admin.allowed_scopes || ["Primary", "Middle", "High", "University", "Featured"])})'>&#128274;&nbsp;الصلاحيات</button>
+                    <button class="btn-remove" style="padding: 4px 8px; font-size: 0.9em;" onclick="removeAdmin('${admin.email}')">&#10005;&nbsp;إزالة</button>
                 </div>
-                <button class="btn-remove" onclick="removeAdmin('${admin.email}')">&#10005;&nbsp;إزالة</button>
             `;
                 list.appendChild(card);
             });
@@ -231,8 +233,52 @@ window.removeAdmin = function (email) {
 
 window.submitAddAdmin = submitAddAdmin;
 
+// ── Scopes Modal ─────────────────────────────────────────────────────────────
+let currentScopeEmail = null;
+
+function closeScopeModal() {
+    document.getElementById('scopeModal').classList.remove('show');
+    currentScopeEmail = null;
+}
+window.closeScopeModal = closeScopeModal;
+
+window.openScopeModal = function (email, currentScopes) {
+    currentScopeEmail = email;
+    const checkboxes = document.querySelectorAll('.scope-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = currentScopes.includes(cb.value);
+    });
+    document.getElementById('scopeModal').classList.add('show');
+};
+
+document.getElementById('saveScopesBtn').addEventListener('click', async () => {
+    if (!currentScopeEmail) return;
+    
+    const checkboxes = document.querySelectorAll('.scope-checkbox:checked');
+    const selectedScopes = Array.from(checkboxes).map(cb => cb.value);
+
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ action: 'update_scopes', email: currentScopeEmail, scopes: selectedScopes })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        
+        showMessage('تم تحديث الصلاحيات بنجاح');
+        closeScopeModal();
+        loadData();
+    } catch (err) {
+        showMessage(err.message, true);
+    }
+});
+
 document.getElementById('confirmModal').addEventListener('click', function (e) {
     if (e.target === this) closeModal();
+});
+document.getElementById('scopeModal').addEventListener('click', function (e) {
+    if (e.target === this) closeScopeModal();
 });
 
 // ── Logout ─────────────────────────────────────────────────────────────────────

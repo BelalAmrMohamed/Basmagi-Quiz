@@ -494,7 +494,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
         closeMenu();
         const creatorLabel = exam.author || exam.author_email || "غير معروف";
         const confirmed = await _confirm(
-          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟\nصاحب الإمتحان: ${creatorLabel}\nلا يمكن التراجع عن هذا الإجراء.`,
+          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟ \nصاحب الإمتحان: (${creatorLabel}). لا يمكن التراجع عن هذا الإجراء.`,
         );
         if (!confirmed) return;
         const ok = await deleteQuizFromDatabase(exam);

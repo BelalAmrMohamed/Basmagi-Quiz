@@ -165,6 +165,28 @@
         </div>
     </div>
 
+    <!-- SCOPE MODAL -->
+    <div class="modal-overlay" id="scopeModal">
+        <div class="modal">
+            <div class="modal-icon">&#128274;</div>
+            <div class="modal-title">صلاحيات المشرف</div>
+            <div class="modal-body" style="text-align: right;">
+                <p style="margin-bottom: 10px;">حدد الصلاحيات والمسارات المسموح بها لهذا المشرف:</p>
+                <div class="scopes-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <label><input type="checkbox" value="Primary" class="scope-checkbox"> المرحلة الابتدائية</label>
+                    <label><input type="checkbox" value="Middle" class="scope-checkbox"> المرحلة الإعدادية</label>
+                    <label><input type="checkbox" value="High" class="scope-checkbox"> المرحلة الثانوية</label>
+                    <label><input type="checkbox" value="University" class="scope-checkbox"> المرحلة الجامعية</label>
+                    <label><input type="checkbox" value="Featured" class="scope-checkbox"> مسارات مميزة (Featured Courses)</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeScopeModal()">إلغاء</button>
+                <button class="btn-primary" id="saveScopesBtn">حفظ التغييرات</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="src/scripts/control.js"></script>
 
     <script defer src="/_vercel/insights/script.js"></script>

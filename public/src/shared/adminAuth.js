@@ -153,6 +153,7 @@ export function getAdminRoleInfo() {
       isOwner: !!payload.isOwner,
       email: payload.email,
       handle: payload.handle,
+      allowed_scopes: payload.allowed_scopes || [],
     };
   } catch (err) {
     return null;
