@@ -9,6 +9,7 @@
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 import { escapeHtml } from "./escape-html.js";
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
+import { loadFullQuizData } from "./quiz-data-loader.js";
 
 /**
  * extractCategoryFromPath — derives the quiz category from a manifest path.
@@ -155,31 +156,25 @@ export async function showQuizInfoModal(exam) {
 
   try {
     if (exam.path) {
-      let data = null;
-      if (exam.path.endsWith(".json")) {
-        const res = await fetch(exam.path);
-        if (res.ok) data = await res.json();
-      } else {
-        const mod = await import(exam.path).catch(() => null);
-        if (mod) data = mod;
-      }
-      if (data) {
-        const meta = data.meta || {};
-        const stats = data.stats || {};
+      // Shared with exam-card.js's download flow and copy-to-my-quizzes.js
+      // (see quiz-data-loader.js) — handles the .json / .js / mislabeled-
+      // .js-that's-really-.json cases identically everywhere.
+      const { questions, meta, stats } = await loadFullQuizData(exam);
+      if (meta) {
         if (!config.description) config.description = meta.description || null;
         if (!config.source) config.source = meta.source || null;
         if (!config.author) config.author = meta.author || null;
         if (!config.createdAt) config.createdAt = meta.createdAt || null;
         config.mode = meta.mode || null;
         config.view = meta.view || null;
-        if (!config.questionTypes)
-          config.questionTypes = formatQuestionTypesForDownload(
-            stats.questionTypes,
-          );
-        if (questionCount === null) {
-          questionCount =
-            stats.questionCount ?? (data.questions || []).length ?? null;
-        }
+      }
+      if (stats && !config.questionTypes) {
+        config.questionTypes = formatQuestionTypesForDownload(
+          stats.questionTypes,
+        );
+      }
+      if (questionCount === null) {
+        questionCount = stats?.questionCount ?? (questions || []).length ?? null;
       }
     }
   } catch (e) {
@@ -257,4 +252,3 @@ export function showUserQuizInfoModal(quiz) {
 
   document.body.appendChild(modal);
 }
-

@@ -20,6 +20,9 @@ import {
 import { buildQuizText } from "../../features/export/export-to-text.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
+import { loadFullQuizData } from "./quiz-data-loader.js";
+import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
 import {
   extractCategoryFromPath,
   formatDateForInfo,
@@ -33,12 +36,17 @@ import {
   LOCK_ICON_SVG,
   DOWNLOAD_ICON_SVG,
   COPY_ICON_SVG,
+  DUPLICATE_ICON_SVG,
   SHARE_ICON_SVG,
   JSON_FILE_ICON_SVG,
   DOWNLOAD_SOURCE_ICON_SVG,
   MORE_DOTS_ICON_SVG,
+  TRASH_ICON_SVG,
 } from "./icons.js";
-import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  showNotification,
+  _confirm,
+} from "../../components/notifications/notifications.js";
 
 const opts = [
   ["./favicon.png", "Quiz (.html)", "quiz"],
@@ -108,7 +116,6 @@ export function createExamCard(exam) {
   };
 
   const onDownloadOption = async (format) => {
-    let mod;
     const config = {
       id: exam.id,
       title: exam.title || exam.id,
@@ -129,49 +136,17 @@ export function createExamCard(exam) {
       questionTypes: exam.questionTypes || null,
       questionCount: exam.questionCount || null,
     };
-    // Load exam data (HANDLES .js vs .json issue)
+
+    // Load exam data (HANDLES .js vs .json issue) — shared with the info
+    // modal and copy-to-my-quizzes via quiz-data-loader.js.
     let questions = [];
     let rawMeta = null;
     let rawStats = null;
     try {
-      const path = config.path;
-      if (path.endsWith(".json")) {
-        const res = await fetch(path);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        questions = data.questions;
-        rawMeta = data.meta || null;
-        rawStats = data.stats || null;
-      } else if (path.endsWith(".js")) {
-        // Try fetching as JSON first if it might be a mislabeled path
-        // But if it's really a JS file with export, we use import
-        // The issue reported is 404 on .js because the file is .json
-        // Let's try to check: if 404 on .js, try replacing with .json
-        try {
-          mod = await import(config.path);
-          questions = mod.questions;
-          rawMeta = mod.meta || null;
-          rawStats = mod.stats || null;
-        } catch (jsErr) {
-          console.warn(
-            "Failed to load as JS, trying JSON substitute...",
-            jsErr,
-          );
-          const jsonPath = config.path.replace(/\.js$/, ".json");
-          const res = await fetch(jsonPath);
-          if (!res.ok) throw new Error("Failed to load as JSON as well");
-          const data = await res.json();
-          questions = data.questions;
-          rawMeta = data.meta || null;
-          rawStats = data.stats || null;
-        }
-      } else {
-        // Fallback
-        mod = await import(config.path);
-        questions = mod.questions;
-        rawMeta = mod.meta || null;
-        rawStats = mod.stats || null;
-      }
+      const loaded = await loadFullQuizData(exam);
+      questions = loaded.questions;
+      rawMeta = loaded.meta;
+      rawStats = loaded.stats;
     } catch (e) {
       console.error("Load failed", e);
       alert("Failed to load exam data.");
@@ -482,6 +457,57 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       }
     };
     menu.appendChild(shareOpt);
+
+    // ── "نسخ لإمتحاناتي" — copies this quiz into the visitor's own
+    // localStorage "إمتحاناتك" list. Visible on every quiz (static or DB),
+    // for every visitor, logged in or not — no visibility gate here (see
+    // Phase 0 spec, Feature B). Uses DUPLICATE_ICON_SVG rather than
+    // COPY_ICON_SVG so it doesn't share an icon with "نسخ الرابط" above.
+    const copyToMineOpt = document.createElement("button");
+    copyToMineOpt.type = "button";
+    copyToMineOpt.className = "exam-action-btn";
+    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لإمتحاناتي</span>`;
+    copyToMineOpt.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      copyToMineOpt.disabled = true;
+      try {
+        await copyQuizToUserQuizzes(exam);
+      } finally {
+        copyToMineOpt.disabled = false;
+      }
+    };
+    menu.appendChild(copyToMineOpt);
+
+    // ── "حذف" — database quizzes only, and only for the quiz's own
+    // creator or a platform owner. canDeleteQuiz() covers both the
+    // dbSource==="db" check and the creator/owner check, so this stays
+    // hidden for static/relative-path quizzes and for anyone else's DB
+    // quizzes.
+    if (canDeleteQuiz(exam)) {
+      const deleteOpt = document.createElement("button");
+      deleteOpt.type = "button";
+      deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+      deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
+      deleteOpt.onclick = async (e) => {
+        e.stopPropagation();
+        closeMenu();
+        const creatorLabel = exam.author || exam.author_email || "غير معروف";
+        const confirmed = await _confirm(
+          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟\nصاحب الإمتحان: ${creatorLabel}\nلا يمكن التراجع عن هذا الإجراء.`,
+        );
+        if (!confirmed) return;
+        const ok = await deleteQuizFromDatabase(exam);
+        // deleteQuizFromDatabase() already invalidated the manifest cache
+        // and shown a notification; removing the card here is a same-view
+        // optimistic update so the deleted quiz doesn't linger until the
+        // next full re-render. showExamActionsOverlay() is a standalone
+        // function (not a closure inside createExamCard), so the card
+        // isn't directly in scope — reach it from triggerBtn instead.
+        if (ok) triggerBtn.closest(".exam-card")?.remove();
+      };
+      menu.appendChild(deleteOpt);
+    }
 
     // ── "معلومات الإمتحان" submenu ───────────────────────────────────────
     // Basic preview built synchronously from the manifest entry. Shows only
