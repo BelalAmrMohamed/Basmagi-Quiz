@@ -72,7 +72,7 @@ export const BADGES = [
     id: "perfect-score",
     icon: "🏆",
     title: "مُقفل العداد",
-    desc: "100% في اختبار، الكمال لله وحده بس إنت عملت اللي عليك وزيادة",
+    desc: "100% في اختبار، إنت عملت اللي عليك وزيادة",
   },
   {
     id: "sharpshooter",

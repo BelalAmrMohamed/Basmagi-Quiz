@@ -6,8 +6,6 @@
     "path": "quizzes/Featured Courses/Website Demo/All Features/منصة إمتحانات بصمجي.json",
     "description": "Basmagi Quiz Platform Demo",
     "source": "https://www.w3schools.com/CPP/default.asp",
-    "author": "بلال عمرو محمد",
-    "author_email": "belalamrofficial@gmail.com",
     "password": "1234",
     "view": "pagination",
     "mode": "practice"
