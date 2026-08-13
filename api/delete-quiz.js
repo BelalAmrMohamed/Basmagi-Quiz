@@ -47,11 +47,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // Verify quiz exists and get ownership/scope fields
+  // The client sends the 8-char quiz meta ID (e.g. "LUREG6TI"), which lives
+  // inside the JSONB `data` column at `data.meta.id` — NOT the Supabase row UUID.
   const { data: quiz, error: fetchErr } = await supabase
     .from("quizzes")
     .select("id, uploaded_by, education_type")
-    .eq("id", id)
+    .filter("data->meta->>id", "eq", id)
     .maybeSingle();
 
   if (fetchErr || !quiz) {
@@ -78,7 +79,7 @@ export default async function handler(req, res) {
   const { error: deleteErr } = await supabase
     .from("quizzes")
     .delete()
-    .eq("id", id);
+    .eq("id", quiz.id);
 
   if (deleteErr) {
     console.error("[delete-quiz] Supabase error:", deleteErr.message);
