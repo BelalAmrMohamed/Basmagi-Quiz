@@ -25,209 +25,218 @@ export const BADGES = [
   {
     id: "novice",
     icon: "🌱",
-    title: "First Step",
-    desc: "Complete your first quiz",
+    title: "بسم الله بدأنا",
+    desc: "خلصت أول اختبار! ودي دايماً بتكون أصعب خطوة",
   },
-  { id: "beginner", icon: "🎯", title: "Beginner", desc: "Complete 3 quizzes" },
+  {
+    id: "beginner",
+    icon: "🎯",
+    title: "مبتدئ شاطر",
+    desc: "3 اختبارات في جيبك، إنت ماشي صح يا بطل",
+  },
 
   // Completion Badges
   {
     id: "quick-learner",
     icon: "🌟",
-    title: "Quick Learner",
-    desc: "Complete 5 quizzes",
+    title: "سريع البديهة",
+    desc: "5 اختبارات وإنت لسه فاتح، ما شاء الله مخك شغال ألماظ",
   },
   {
     id: "dedicated",
     icon: "📖",
-    title: "Dedicated",
-    desc: "Complete 10 quizzes",
+    title: "مواظب",
+    desc: "10 اختبارات، يعني إنت بقيت من الدايمين هنا",
   },
-  { id: "scholar", icon: "📚", title: "Scholar", desc: "Complete 25 quizzes" },
+  {
+    id: "scholar",
+    icon: "📚",
+    title: "الطالب النجيب",
+    desc: "25 اختبار؟ يا نهار أبيض، إنت فاكرها كلية",
+  },
   {
     id: "academic",
     icon: "🎓",
-    title: "Academic",
-    desc: "Complete 50 quizzes",
+    title: "الأكاديمي",
+    desc: "50 اختبار، لو فيه دكتوراه هنا كنت خدتها",
   },
   {
     id: "professor",
     icon: "👨‍🏫",
-    title: "Professor",
-    desc: "Complete 100 quizzes",
+    title: "الدكتور بتاعنا",
+    desc: "100 اختبار! إنت مش بتذاكر، إنت بقيت المنهج",
   },
 
   // Performance Badges
   {
     id: "perfect-score",
     icon: "🏆",
-    title: "Perfectionist",
-    desc: "Score 100% on a quiz",
+    title: "مُقفل العداد",
+    desc: "100% في اختبار، الكمال لله وحده بس إنت عملت اللي عليك وزيادة",
   },
   {
     id: "sharpshooter",
     icon: "🎯",
-    title: "Sharpshooter",
-    desc: "Score 90%+ on 5 quizzes",
+    title: "قناص الدرجات",
+    desc: "90%+ في 5 اختبارات، تصويبك ما بيخيبش",
   },
   {
     id: "ace",
     icon: "⭐",
-    title: "Ace Student",
-    desc: "Score 95%+ on 10 quizzes",
+    title: "نجم الدفعة",
+    desc: "95%+ في 10 اختبارات، إنت اللي بيتاخد منه الدرس",
   },
   {
     id: "on-fire",
     icon: "🔥",
-    title: "On Fire",
-    desc: "Get 3 perfect scores in a row",
+    title: "شعلة نشاط",
+    desc: "3 فُل ماركس ورا بعض، حد يوقفه بقى",
   },
   {
     id: "unstoppable",
     icon: "💪",
-    title: "Unstoppable",
-    desc: "Get 5 perfect scores in a row",
+    title: "محدش يوقفه",
+    desc: "5 فُل ماركس على التوالي، إنت مكمل في طريقك زي القطر",
   },
 
   // Speed Badges
   {
     id: "speed-demon",
     icon: "⚡",
-    title: "Speed Demon",
-    desc: "Complete a quiz in under 2 minutes",
+    title: "البرق الخاطف",
+    desc: "خلصت الاختبار في أقل من دقيقتين، بسم الله ما شاء الله طيارة",
   },
   {
     id: "lightning-round",
     icon: "⚡",
-    title: "Lightning Round",
-    desc: "Answer 10 questions in under 1 minute",
+    title: "جولة البُراق",
+    desc: "10 أسئلة في أقل من دقيقة، إيدك أسرع من عينك",
   },
   {
     id: "flash",
     icon: "💨",
-    title: "Flash",
-    desc: "Complete 5 quizzes in under 2 minutes each",
+    title: "صاروخ",
+    desc: "5 اختبارات كل واحدة تحت دقيقتين، إيه السرعة دي كلها رايح فين",
   },
 
   // Streak Badges
   {
     id: "week-warrior",
     icon: "🔥",
-    title: "Week Warrior",
-    desc: "Take quizzes 7 days in a row",
+    title: "بطل الأسبوع",
+    desc: "7 أيام ورا بعض بتذاكر، الالتزام ده يتقلد وسام",
   },
   {
     id: "month-master",
     icon: "📅",
-    title: "Month Master",
-    desc: "Maintain a 30-day streak",
+    title: "نجم الشهر",
+    desc: "30 يوم متواصل، إنت مش طالب إنت جدول امتحانات ماشي",
   },
   {
     id: "consistent",
     icon: "💎",
-    title: "Consistent",
-    desc: "Maintain a 14-day streak",
+    title: "ثابت زي الجبل",
+    desc: "14 يوم بدون ما تسيب المذاكرة، ثباتك بيحرج الكسلانين",
   },
 
   // Points Badges
   {
     id: "point-collector",
     icon: "💰",
-    title: "Point Collector",
-    desc: "Earn 1,000 total points",
+    title: "جامع النقط",
+    desc: "1000 نقطة في الجيب، بتجمع زي النملة كده",
   },
   {
     id: "point-hoarder",
     icon: "💎",
-    title: "Point Hoarder",
-    desc: "Earn 5,000 total points",
+    title: "مكنز النقط",
+    desc: "5000 نقطة، إنت مش بتلعب إنت بتحوش للمستقبل",
   },
   {
     id: "point-master",
     icon: "👑",
-    title: "Point Master",
-    desc: "Earn 10,000 total points",
+    title: "ملك النقط",
+    desc: "10000 نقطة، يا باشا إنت متصدر اللوحة بجد",
   },
 
   // Bookmark Badges
   {
     id: "bookworm",
     icon: "🎨",
-    title: "Bookworm",
-    desc: "Bookmark 25 questions",
+    title: "دودة الكتب",
+    desc: "عملت بوكمارك لـ25 سؤال، إنت بتخزن زي التلاجة",
   },
   {
     id: "completionist",
     icon: "✅",
-    title: "Completionist",
-    desc: "Bookmark 50+ questions",
+    title: "متمم النواقص",
+    desc: "50+ سؤال متبوكمرك، مفيش سؤال بيفوتك",
   },
   {
     id: "organizer",
     icon: "📌",
-    title: "Organizer",
-    desc: "Bookmark 10 questions",
+    title: "المنظم",
+    desc: "10 أسئلة محفوظة، شغلك مترتب ومظبوط",
   },
 
   // Category Badges
   {
     id: "category-explorer",
     icon: "🗺️",
-    title: "Explorer",
-    desc: "Try quizzes from 5 different categories",
+    title: "ابن بطوطة",
+    desc: "جربت 5 تصنيفات مختلفة، بتلف في المنهج وتستكشف",
   },
   {
     id: "jack-of-all-trades",
     icon: "🎭",
-    title: "Jack of All Trades",
-    desc: "Complete quizzes in 10 categories",
+    title: "بتاع كله",
+    desc: "خلصت اختبارات في 10 تصنيفات، إنت موسوعة ماشية",
   },
 
   // Special Achievements
   {
     id: "comeback-kid",
     icon: "💪",
-    title: "Comeback Kid",
-    desc: "Return after 30 days away",
+    title: "العودة الأسطورية",
+    desc: "رجعت بعد 30 يوم غيبة، الغالي مبيتزعلش منه",
   },
   {
     id: "early-bird",
     icon: "🌅",
-    title: "Early Bird",
-    desc: "Complete a quiz before 8 AM",
+    title: "بركة البكور",
+    desc: "خلصت اختبار قبل الساعة 8 الصبح، اللهم بارك في النشاط",
   },
   {
     id: "night-owl",
     icon: "🦉",
-    title: "Night Owl",
-    desc: "Complete a quiz after 10 PM",
+    title: "سهران للصبح",
+    desc: "خلصت اختبار بعد الساعة 10 بليل، إنت وشغلك سهرانين مع بعض",
   },
   {
     id: "perfectionist-plus",
     icon: "🌟",
-    title: "Perfectionist+",
-    desc: "Get 10 perfect scores",
+    title: "امتياز بلس",
+    desc: "10 فُل ماركس، ده رقم قياسي ما شاء الله عليك",
   },
   {
     id: "practice-master",
     icon: "🎯",
-    title: "Practice Master",
-    desc: "Complete 20 practice mode quizzes",
+    title: "أسطورة التمرين",
+    desc: "20 اختبار تدريب، إنت بتتمرن زي اللي رايح الأولمبياد",
   },
 ];
-
 // Level System
 const LEVEL_CONFIG = {
   // Level = floor(sqrt(totalPoints / 100))
   pointsPerLevel: 100,
 
   getTitles: (level) => {
-    if (level < 5) return "Beginner";
-    if (level < 10) return "Intermediate";
-    if (level < 15) return "Advanced";
-    if (level < 20) return "Expert";
-    if (level < 30) return "Master";
-    return "Grandmaster";
+    if (level < 5) return "مبتدئ";
+    if (level < 10) return "متوسط";
+    if (level < 15) return "متقدم";
+    if (level < 20) return "خبير";
+    if (level < 30) return "أسطورة";
+    return "معلم";
   },
 
   getNextLevelPoints: (currentLevel) => {

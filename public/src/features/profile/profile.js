@@ -1064,9 +1064,16 @@ function renderBadges(user) {
     (user.badges || [])
       .map((id) => {
         const b = badgeById.get(id);
-        return b
-          ? `<div class="dash-badge" title="${b.desc}" aria-label="${b.title}: ${b.desc}"><div class="badge-icon" aria-hidden="true">${b.icon}</div><div>${b.title}</div></div>`
-          : "";
+        if (!b) return "";
+        // tabindex + title keep this reachable/readable for keyboard and
+        // screen-reader users; the visible description is revealed via
+        // CSS on :hover/:focus so it never has to wrap inside the tile
+        // itself (that's what was overflowing before).
+        return `<div class="dash-badge" tabindex="0" title="${b.desc}" aria-label="${b.title}: ${b.desc}">
+          <div class="badge-icon" aria-hidden="true">${b.icon}</div>
+          <div class="badge-title">${b.title}</div>
+          <div class="badge-desc-overlay" aria-hidden="true">${b.desc}</div>
+        </div>`;
       })
       .join("") || "اكسب الشارات بإكمال الاختبارات!";
 }
