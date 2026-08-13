@@ -185,35 +185,43 @@ body {
   position: static;
 }
 
+/* Styled as a visual clone of .exam-dropdown-menu (see
+   exam-dropdown-menu.js / floating-position.js) — same card chrome,
+   same entrance animation, same z-index tier — so the two "anchored
+   popover" patterns in the app look and feel identical. Positioned
+   entirely by JS: positionCourseInfoTooltip() (tooltip-position.js)
+   always sets `position: fixed` plus explicit top/left pixel
+   coordinates inline once it runs, same technique
+   positionExamDropdownMenu() uses for .exam-dropdown-menu. The
+   .course-info-tooltip class itself only needs to exist (this base
+   rule) for the brief instant before that JS call lands. */
 .course-info-tooltip {
-  /* Fallback for the brief instant before JS positioning runs (or if it
-     doesn't run at all) — positionCourseInfoTooltip() in tooltip-position.js
-     always sets `position: fixed` plus explicit top/left pixel coordinates
-     inline once it runs, which take precedence over these absolute-position
-     defaults. See that file for why fixed positioning is necessary (escaping
-     .grid-container's overflow:hidden clipping on mobile). */
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 8px;
+  position: fixed;
+  margin: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: var(--shadow-lg);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   width: max-content;
-  min-width: 150px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-5px);
-  transition: all 0.2s;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
   pointer-events: none;
   direction: rtl;
   text-align: right;
   font-size: 0.85rem;
   color: var(--color-text-primary);
   z-index: var(--z-tooltip);
-  max-width: calc(100vw - 24px);
   box-sizing: border-box;
 }
 
@@ -227,38 +235,19 @@ body {
   transform: translateY(0);
 }
 
-.course-info-tooltip.flip-above {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 8px;
-  transform: translateY(5px);
-}
-
-.course-info-tooltip.flip-above.show {
-  transform: translateY(0);
-}
-
-/* NOTE: hover show/hide for desktop used to be handled by a pure-CSS
-   `.course-info-container:hover .course-info-tooltip { opacity: 1; ... }`
-   rule here. It's now driven explicitly from JS instead (see the
-   mouseenter/mouseleave handlers + hover-intent close timer in
-   course-info-tooltip.js) — moving the tooltip to `position: fixed`
-   left no forgiving margin for the cursor to cross from the button to
-   the tooltip, so a plain CSS `:hover` closed it before the tooltip
-   could be reached. A CSS-only `:hover` rule here would still race that
-   JS close timer (closing instantly on `mouseleave` regardless of the
-   grace period), so it's intentionally not reinstated — the JS toggles
-   the shared `.show` class instead, same as the click/tap path below. */
+/* positionCourseInfoTooltip() only ever sets an explicit inline `top`
+   (never relies on `bottom`), so — unlike the old absolute-positioned
+   layout — no separate flip-above transform is needed here; JS already
+   picks the correct `top` value whether it placed the tooltip above or
+   below the trigger. */
 
 .course-info-tooltip .tooltip-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
   gap: 16px;
-}
-.course-info-tooltip .tooltip-row:last-child {
-  margin-bottom: 0;
+  padding: 4px 6px;
+  white-space: nowrap;
 }
 .course-info-tooltip .tooltip-row span:first-child {
   color: var(--color-text-secondary);
@@ -268,28 +257,33 @@ body {
 .tooltip-divider {
   border: none;
   border-top: 1px solid var(--color-border);
-  margin: 10px 0;
+  margin: 4px 4px;
 }
 
+/* Styled as a clone of .exam-action-btn--danger so the unsubscribe
+   action matches the delete action in .exam-dropdown-menu. */
 .tooltip-delete-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  background: transparent;
-  color: var(--color-error, #e53e3e);
-  border: none;
-  border-radius: 6px;
-  padding: 6px 0;
-  font-size: 0.85rem;
+  background: var(--color-error-light);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  color: var(--color-error);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .tooltip-delete-btn:hover {
-  background: var(--color-error-light, #fed7d7);
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
 }
 
 @media (max-width: 640px) {

@@ -14,6 +14,28 @@
 // inconsistent with the rest of the codebase, which does escape comparable
 // fields elsewhere (see showCourseInfoModal). This version runs every
 // interpolated value through escapeHtml() before it reaches innerHTML.
+//
+// INTERACTION FIX: this used to be a hybrid hover(desktop)/click(mobile)
+// widget, with hover driven by JS "hover-intent" timers layered on top of a
+// `position: fixed` tooltip. That combination was fragile (card-lift
+// transition races, hover-intent grace periods, CSS `:hover` fighting a JS
+// close timer) — and even when working, gave desktop and mobile genuinely
+// different interaction models for the same widget, with no dismiss on
+// outside-click/Escape/scroll/resize.
+//
+// Replaced with the same click-toggle + single-exit-point dismiss lifecycle
+// already used (and already correct) for `.exam-dropdown-menu` in
+// exam-dropdown-menu.js: openExamDropdownMenu()/closeMenu(). Every close
+// route (outside click, Escape, scroll, resize, the trigger button itself)
+// goes through one closeTooltip() function, so listeners can never leak and
+// desktop/mobile behave identically — click/tap opens it, and anything that
+// would plausibly mean "the user is done with this" closes it.
+//
+// positionCourseInfoTooltip() (tooltip-position.js) is unchanged — it
+// already does the correct `position: fixed` + viewport-clamped placement,
+// same technique as positionExamDropdownMenu(). The bug was entirely in
+// *when* it got called and how the tooltip was shown/hidden, not in the
+// positioning math itself.
 
 import { escapeHtml } from "./escape-html.js";
 import { userProfile } from "../../shared/userProfile.js";
@@ -30,10 +52,9 @@ const EDU_TYPE_AR = {
 
 /**
  * Builds the `.course-info-container` (info button + tooltip) for a course
- * card and appends it to `card`. Wires up tap-to-toggle behavior plus,
- * on fine-pointer/hover-capable devices, JS-driven show/hide-on-hover with
- * a short close-delay grace period (see the `matchMedia` guard below) and,
- * optionally, an "إلغاء الإشتراك" (unsubscribe) button inside the tooltip.
+ * card and appends it to `card`. Wires up click/tap-to-toggle behavior,
+ * optionally including an "إلغاء الإشتراك" (unsubscribe) button inside the
+ * tooltip.
  *
  * @param {HTMLElement} card - the course/category card to attach the info
  *   container to.
@@ -58,9 +79,12 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
   infoBtn.className = "course-info-btn";
   infoBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>`;
   infoBtn.type = "button";
+  infoBtn.setAttribute("aria-haspopup", "true");
+  infoBtn.setAttribute("aria-expanded", "false");
 
   const tooltip = document.createElement("div");
   tooltip.className = "course-info-tooltip tooltip-interactive";
+  tooltip.setAttribute("role", "dialog");
 
   const eduTypeAr =
     EDU_TYPE_AR[course.education_type] || course.education_type || "-";
@@ -95,7 +119,99 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
   }
 
   infoContainer.appendChild(infoBtn);
-  infoContainer.appendChild(tooltip);
+  // The tooltip is intentionally NOT appended inside `card`/`infoContainer`.
+  // `.category-card`/`.exam-card`/`.card` all get `transform` on `:hover`
+  // (the lift animation) and also have `overflow: hidden`. Per spec, an
+  // ancestor with `transform` becomes the containing block for any
+  // `position: fixed` descendant — so the instant the card is hovered, this
+  // tooltip's viewport-relative `top`/`left` would suddenly be reinterpreted
+  // relative to the card's box instead, and get clipped by the card's
+  // `overflow: hidden` in the process. That's why `.show` stayed on the
+  // element in DevTools while it visually vanished: nothing was hiding it,
+  // it was being clipped/repositioned out of view by its own ancestor.
+  // Appending it to <body> — the same approach already used for
+  // `.exam-dropdown-menu` — keeps it a sibling of the card instead of a
+  // descendant, so the card's hover transform can never touch it.
+  document.body.appendChild(tooltip);
+
+  // ── Single-exit-point dismiss lifecycle ───────────────────────────────────
+  // Mirrors openExamDropdownMenu()/closeMenu() in exam-dropdown-menu.js:
+  // exactly one close path, wired to outside click / Escape / scroll /
+  // resize, so listeners are always cleaned up regardless of which of those
+  // fires. Unlike the dropdown menu, this tooltip is a permanent child of
+  // the card (not appended/removed from <body> per open) — it's toggled via
+  // the `.show` class instead of being mounted/unmounted, so `isOpen` tracks
+  // state locally rather than DOM presence.
+  let isOpen = false;
+
+  function closeTooltip() {
+    if (!isOpen) return;
+    isOpen = false;
+    tooltip.classList.remove("show");
+    infoBtn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", onOutsideClick);
+    document.removeEventListener("keydown", onKeydown);
+    window.removeEventListener("resize", closeTooltip);
+    window.removeEventListener("scroll", onScroll, true);
+  }
+
+  function onOutsideClick(e) {
+    if (tooltip.contains(e.target) || infoBtn.contains(e.target)) return;
+    closeTooltip();
+  }
+
+  function onKeydown(e) {
+    if (e.key === "Escape") closeTooltip();
+  }
+
+  function onScroll(e) {
+    if (tooltip.contains(e.target)) return; // scrolling inside the tooltip itself
+    // Only treat this as "the page scrolled out from under the tooltip" when
+    // the event actually originates from the document/viewport scrolling.
+    // With `{ capture: true }` this listener also receives scroll events
+    // bubbling from unrelated elements — including spurious ones a browser
+    // can fire when a nested element's layout shifts (e.g. a card's
+    // hover-lift `transform` transition). Those aren't real page scrolls
+    // and shouldn't close a tooltip whose trigger hasn't actually moved.
+    const target = e.target;
+    const isRealPageScroll =
+      target === document ||
+      target === window ||
+      target === document.documentElement ||
+      target === document.body;
+    if (!isRealPageScroll) return;
+    closeTooltip();
+  }
+
+  function openTooltip() {
+    // Only one tooltip open at a time. Other open tooltips belong to other
+    // attachCourseInfoTooltip() closures (each card gets its own), so they
+    // can't be reached directly here — toggling their `.show` class off
+    // is enough to hide them visually and matches what the previous
+    // implementation did; their own outside-click listener stays attached
+    // until the user's next interaction (harmless — closeTooltip() checks
+    // `.show` state next time it fires, and a fresh click resets it) is
+    // avoided below by clearing aria-expanded too, which is the only other
+    // piece of state a hidden tooltip carries.
+    document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
+      if (t !== tooltip) t.classList.remove("show");
+    });
+    document
+      .querySelectorAll('.course-info-btn[aria-expanded="true"]')
+      .forEach((btn) => {
+        if (btn !== infoBtn) btn.setAttribute("aria-expanded", "false");
+      });
+
+    isOpen = true;
+    positionCourseInfoTooltip(tooltip, infoBtn);
+    tooltip.classList.add("show");
+    infoBtn.setAttribute("aria-expanded", "true");
+
+    document.addEventListener("click", onOutsideClick);
+    document.addEventListener("keydown", onKeydown);
+    window.addEventListener("resize", closeTooltip);
+    window.addEventListener("scroll", onScroll, true);
+  }
 
   if (withUnsubscribe) {
     const deleteBtn = tooltip.querySelector(".tooltip-delete-btn");
@@ -106,111 +222,19 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
         userProfile.setSubscribedCourses(
           subscribed.filter((id) => id !== course.id),
         );
+        closeTooltip();
         if (onUnsubscribe) onUnsubscribe();
       }
     };
   }
 
-  // Support mouse hover (desktop only — see the `@media (hover: hover)`
-  // guard in CSS for the parallel touch/coarse-pointer exclusion).
-  //
-  // BUG FIX: hover show/hide used to be handled purely by the CSS
-  // `.course-info-container:hover .course-info-tooltip` rule. That broke
-  // once positionCourseInfoTooltip() switched the tooltip to
-  // `position: fixed` with `margin: 0`: the tooltip is no longer laid out
-  // adjacent to the button, so the sliver of space the cursor has to
-  // cross between them is a single pixel with no margin to forgive a
-  // slightly-off mouse path — meaning any imprecise movement from the
-  // button toward the tooltip fires `mouseleave` on the container an
-  // instant before the cursor lands on the tooltip, closing it before
-  // it can be used. Explicit JS show/hide with a short close-delay
-  // ("hover intent") timer fixes this the standard way: the tooltip
-  // only actually hides after a grace period, which is cancelled if the
-  // cursor re-enters either the button or the tooltip in that window —
-  // so moving from one to the other, even imprecisely, keeps it open.
-  let hoverCloseTimer = null;
-
-  const clearHoverCloseTimer = () => {
-    if (hoverCloseTimer) {
-      clearTimeout(hoverCloseTimer);
-      hoverCloseTimer = null;
-    }
-  };
-
-  // BUG FIX (desktop-only clipping/misalignment): on desktop, `.card:hover`
-  // (index.css) animates `transform: translateY(-6px) scale(1.015)` over
-  // 0.35s. `mouseenter` fires the instant the cursor enters the card —
-  // i.e. right as that lift animation *starts* — so the very first
-  // positionCourseInfoTooltip() call reads the button's
-  // getBoundingClientRect() while the card is still mid-lift, not at its
-  // final resting (hovered) position. The tooltip then locks onto those
-  // now-stale fixed coordinates, so by the time the card finishes
-  // rising/scaling ~350ms later, the button has moved out from under
-  // the tooltip's pinned position — visually the tooltip can end up
-  // shifted enough to get clipped by the next row or land off-target.
-  // Mobile never hit this because mobile CSS explicitly sets
-  // `transform: none` on card hover (no lift to race against).
-  // Fix: reposition again once the card's own transform transition
-  // finishes settling, so the final placement always matches the card's
-  // fully-lifted position. `transitionend` is the precise signal; a
-  // fallback timeout covers browsers/cases where it doesn't fire (e.g.
-  // the transition gets interrupted or matches({ hover: hover }) is
-  // true but no visible transform actually runs).
-  let settleTimer = null;
-  const onCardTransitionEnd = (e) => {
-    if (e.target !== card) return; // ignore bubbled transitions from descendants
-    if (e.propertyName !== "transform") return;
-    if (!tooltip.classList.contains("show")) return;
-    positionCourseInfoTooltip(tooltip, infoBtn);
-  };
-  card.addEventListener("transitionend", onCardTransitionEnd);
-
-  const showOnHover = () => {
-    clearHoverCloseTimer();
-    positionCourseInfoTooltip(tooltip, infoBtn);
-    tooltip.classList.add("show");
-    // Safety net alongside the transitionend listener above, in case the
-    // card's lift transition doesn't fire an event we catch (interrupted
-    // transition, unusual browser timing, etc.) — re-measure shortly
-    // after the card's 0.35s lift transition should have completed.
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      if (tooltip.classList.contains("show")) {
-        positionCourseInfoTooltip(tooltip, infoBtn);
-      }
-    }, 360);
-  };
-
-  const scheduleHoverClose = () => {
-    clearHoverCloseTimer();
-    clearTimeout(settleTimer);
-    hoverCloseTimer = setTimeout(() => {
-      tooltip.classList.remove("show");
-      hoverCloseTimer = null;
-    }, 200); // grace period — long enough to cross the button→tooltip gap, short enough not to feel sticky
-  };
-
-  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-    infoContainer.addEventListener("mouseenter", showOnHover);
-    infoContainer.addEventListener("mouseleave", scheduleHoverClose);
-    tooltip.addEventListener("mouseenter", clearHoverCloseTimer);
-    tooltip.addEventListener("mouseleave", scheduleHoverClose);
-  }
-
   infoBtn.onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const willShow = !tooltip.classList.contains("show");
-    if (willShow) {
-      document.querySelectorAll(".course-info-tooltip.show").forEach((t) => {
-        if (t !== tooltip) {
-          t.classList.remove("show");
-        }
-      });
-    }
-    tooltip.classList.toggle("show", willShow);
-    if (willShow) {
-      positionCourseInfoTooltip(tooltip, infoBtn);
+    if (isOpen) {
+      closeTooltip();
+    } else {
+      openTooltip();
     }
   };
   tooltip.onclick = (e) => e.stopPropagation();
