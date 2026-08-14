@@ -21,6 +21,7 @@ import {
   buildJsonQuizExport,
 } from "../../shared/quiz-json.js";
 import { renderMarkdown } from "../../shared/markdown.js";
+import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -40,6 +41,10 @@ let bulkModeActive = false;
 let selectedQuestions = new Set();
 let isTemplatesPanelOpen = false;
 let editingQuizId = null;
+
+// ── Admin detection ──────────────────────────────────────────────────────────
+// Set once on DOMContentLoaded; controls whether media-upload tabs are shown.
+let isAdmin = false;
 
 // ============================================================================
 // LATEX / KATEX RENDERING
@@ -200,6 +205,9 @@ function setupMdEditor(id, onChange) {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Detect admin role — controls upload-tab visibility
+  isAdmin = isAdminAuthenticated();
+
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get("edit");
   if (editId) {
@@ -440,6 +448,8 @@ window.addQuestion = function () {
     options: ["", ""],
     correct: 0,
     image: "",
+    audio: "",
+    video: "",
     explanation: "",
   };
 
@@ -586,26 +596,9 @@ function renderQuestion(question, insertAtIndex = null) {
                 </div>
             </div>
             
-            <div class="collapsible-section">
-                <div class="collapsible-header" onclick="toggleCollapsible(${question.id}, 'image')">
-                    <h4><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-icon lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg> صورة (اختيارية)</h4>
-                    <span class="collapsible-toggle" id="toggle-image-${question.id}"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg></span>
-                </div>
-                <div class="collapsible-content" id="content-image-${question.id}">
-                    <div class="form-group">
-                        <label>رابط الصورة</label>
-                        <input 
-                            type="url" class="ltr"
-                            id="question-image-${question.id}" 
-                            placeholder="https://example.com/image.jpg"
-                            value="${escapeHtml(question.image || "")}"
-                            aria-describedby="image-help-${question.id}"
-                        />
-                        <small id="image-help-${question.id}">أدخل رابط الصورة (يجب أن يبدأ بـ http:// أو https://)</small>
-                    </div>
-                    <div id="image-preview-${question.id}" class="image-preview-container"></div>
-                </div>
-            </div>
+            ${renderMediaSection(question, 'image')}
+            ${isAdmin ? renderMediaSection(question, 'audio') : ''}
+            ${isAdmin ? renderMediaSection(question, 'video') : ''}
             
             <div class="collapsible-section">
                 <div class="collapsible-header" onclick="toggleCollapsible(${question.id}, 'explanation')">
@@ -637,10 +630,10 @@ function renderQuestion(question, insertAtIndex = null) {
   setupDragAndDrop(questionCard);
   renderMathIn(questionCard);
 
-  // Load image preview if exists
-  if (question.image) {
-    updateImagePreview(question.id, question.image);
-  }
+  // Load media previews if existing values present (image always; audio+video for admins)
+  if (question.image) updateImagePreview(question.id, question.image);
+  if (isAdmin && question.audio) updateAudioPreview(question.id, question.audio);
+  if (isAdmin && question.video) updateVideoPreview(question.id, question.video);
 }
 
 // Click on header area (but not buttons/drag) collapses the card
@@ -690,16 +683,11 @@ function setupQuestionEventListeners(questionId) {
     updateQuestionData(questionId, "q", val),
   );
 
-  // Image input
-  const imageInput = document.getElementById(`question-image-${questionId}`);
-  if (imageInput) {
-    imageInput.addEventListener(
-      "input",
-      debounce((e) => {
-        updateQuestionData(questionId, "image", e.target.value);
-        updateImagePreview(questionId, e.target.value);
-      }, 500),
-    );
+  // Media section listeners (image always; audio+video only for admins)
+  setupMediaSectionListeners(questionId, "image");
+  if (isAdmin) {
+    setupMediaSectionListeners(questionId, "audio");
+    setupMediaSectionListeners(questionId, "video");
   }
 
   // Explanation: inline md editor
@@ -709,6 +697,308 @@ function setupQuestionEventListeners(questionId) {
 
   // Option md editors are set up after rerenderOptions via setupOptionMdEditors
   setupOptionMdEditors(questionId);
+}
+
+// ============================================================================
+// MEDIA SECTIONS: IMAGE / AUDIO / VIDEO
+// ============================================================================
+
+/**
+ * Build the HTML for the collapsible media section of a question.
+ * - image: admin gets upload+URL tabs; user gets URL only
+ * - audio: admin only — upload+URL tabs
+ * - video: admin only — URL only + YouTube notice
+ */
+function renderMediaSection(question, mediaType) {
+  const qId = question.id;
+  const currentVal = escapeHtml(question[mediaType] || "");
+
+  const icons = {
+    image: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+    audio: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+    video: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`,
+  };
+
+  const labels = {
+    image: "صورة (اختيارية)",
+    audio: `ملف صوتي (اختياري) <span class="admin-only-badge">للمشرفين</span>`,
+    video: `فيديو (اختياري) <span class="admin-only-badge">للمشرفين</span>`,
+  };
+
+  const chevron = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+
+  let contentHtml;
+
+  if (mediaType === "video") {
+    // Video: URL only + YouTube hint (no upload for anyone)
+    contentHtml = `
+      <div class="form-group">
+        <div class="video-youtube-hint">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          لا يمكن رفع ملفات الفيديو مباشرةً لأسباب تتعلق بالسعة. الرجاء رفع الفيديو على <strong>YouTube</strong> وإدراج الرابط هنا — سيتم تضمينه تلقائياً كفيديو.
+        </div>
+        <label>رابط الفيديو (YouTube أو رابط مباشر .mp4)</label>
+        <input
+          type="url" class="ltr"
+          id="question-video-${qId}"
+          placeholder="https://www.youtube.com/watch?v=..."
+          value="${currentVal}"
+        />
+        <small>روابط YouTube تُضمَّن تلقائياً كمشغّل. الروابط الأخرى تُعرض كملف فيديو مباشر.</small>
+      </div>
+      <div id="video-preview-${qId}" class="video-preview-container"></div>`;
+  } else {
+    // Image & audio: tabs (Upload / Link) for admin, Link only for users
+    contentHtml = renderMediaTabHtml(qId, mediaType, currentVal);
+  }
+
+  return `
+    <div class="collapsible-section">
+      <div class="collapsible-header" onclick="toggleCollapsible(${qId}, '${mediaType}')">
+        <h4>${icons[mediaType]} ${labels[mediaType]}</h4>
+        <span class="collapsible-toggle" id="toggle-${mediaType}-${qId}">${chevron}</span>
+      </div>
+      <div class="collapsible-content" id="content-${mediaType}-${qId}">
+        ${contentHtml}
+      </div>
+    </div>`;
+}
+
+/**
+ * Build the inner HTML for image/audio media section:
+ * - Admin: two tabs (رفع ملف / رابط)
+ * - User: URL input only
+ */
+function renderMediaTabHtml(qId, mediaType, currentVal) {
+  const placeholders = {
+    image: "https://example.com/image.jpg",
+    audio: "https://example.com/audio.mp3",
+  };
+  const helpText = {
+    image: "أدخل رابط الصورة (يجب أن يبدأ بـ http:// أو https://)",
+    audio: "أدخل رابط ملف الصوت (mp3, ogg, wav...)",
+  };
+  const accepts = {
+    image: "image/jpeg,image/png,image/gif,image/webp,image/svg+xml",
+    audio: "audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/aac",
+  };
+  const previewBlock = {
+    image: `<div id="image-preview-${qId}" class="image-preview-container"></div>`,
+    audio: `<div id="audio-preview-${qId}" class="audio-preview-container"></div>`,
+  };
+
+  if (!isAdmin) {
+    // Regular user — URL input only
+    return `
+      <div class="form-group">
+        <label>رابط ${mediaType === "image" ? "الصورة" : "الصوت"}</label>
+        <input
+          type="url" class="ltr"
+          id="question-${mediaType}-${qId}"
+          placeholder="${placeholders[mediaType]}"
+          value="${currentVal}"
+          aria-describedby="${mediaType}-help-${qId}"
+        />
+        <small id="${mediaType}-help-${qId}">${helpText[mediaType]}</small>
+      </div>
+      ${previewBlock[mediaType]}`;
+  }
+
+  // Admin — tab toggle
+  return `
+    <div class="media-tab-toggle" id="media-tab-toggle-${mediaType}-${qId}" data-active-tab="link">
+      <button
+        class="media-tab-btn media-tab-btn--link active"
+        onclick="switchMediaTab(event, ${qId}, '${mediaType}', 'link')"
+        type="button"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        رابط
+      </button>
+      <button
+        class="media-tab-btn media-tab-btn--upload"
+        onclick="switchMediaTab(event, ${qId}, '${mediaType}', 'upload')"
+        type="button"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        رفع ملف
+      </button>
+    </div>
+
+    <!-- Link tab -->
+    <div class="media-tab-panel" id="media-panel-link-${mediaType}-${qId}">
+      <div class="form-group">
+        <label>رابط ${mediaType === "image" ? "الصورة" : "الصوت"}</label>
+        <input
+          type="url" class="ltr"
+          id="question-${mediaType}-${qId}"
+          placeholder="${placeholders[mediaType]}"
+          value="${currentVal}"
+          aria-describedby="${mediaType}-help-${qId}"
+        />
+        <small id="${mediaType}-help-${qId}">${helpText[mediaType]}</small>
+      </div>
+    </div>
+
+    <!-- Upload tab -->
+    <div class="media-tab-panel" id="media-panel-upload-${mediaType}-${qId}" style="display:none;">
+      <div class="file-upload-zone" id="upload-zone-${mediaType}-${qId}"
+           onclick="document.getElementById('upload-input-${mediaType}-${qId}').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-active')"
+           ondragleave="this.classList.remove('drag-active')"
+           ondrop="handleMediaDrop(event, ${qId}, '${mediaType}')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>اسحب وأفلت الملف هنا<br><span>أو انقر للاختيار</span></p>
+        <p class="upload-size-hint">${mediaType === "image" ? "الصور: حتى 5 ميجابايت (JPEG, PNG, GIF, WebP, SVG)" : "الصوت: حتى 10 ميجابايت (MP3, OGG, WAV, AAC)"}</p>
+      </div>
+      <input
+        type="file"
+        id="upload-input-${mediaType}-${qId}"
+        accept="${accepts[mediaType]}"
+        style="display:none;"
+      />
+      <div class="upload-progress" id="upload-progress-${mediaType}-${qId}" style="display:none;">
+        <div class="upload-progress-bar" id="upload-progress-bar-${mediaType}-${qId}"></div>
+        <span class="upload-progress-text" id="upload-progress-text-${mediaType}-${qId}">جاري الرفع...</span>
+      </div>
+    </div>
+
+    ${previewBlock[mediaType]}`;
+}
+
+/** Wire all event listeners for one question's media section */
+function setupMediaSectionListeners(questionId, mediaType) {
+  // URL input (both admin and user)
+  const urlInput = document.getElementById(`question-${mediaType}-${questionId}`);
+  if (urlInput) {
+    urlInput.addEventListener(
+      "input",
+      debounce((e) => {
+        updateQuestionData(questionId, mediaType, e.target.value);
+        if (mediaType === "image") updateImagePreview(questionId, e.target.value);
+        if (mediaType === "audio") updateAudioPreview(questionId, e.target.value);
+        if (mediaType === "video") updateVideoPreview(questionId, e.target.value);
+      }, 500),
+    );
+    // Load preview on mount if value already exists
+    if (urlInput.value) {
+      if (mediaType === "image") updateImagePreview(questionId, urlInput.value);
+      if (mediaType === "audio") updateAudioPreview(questionId, urlInput.value);
+      if (mediaType === "video") updateVideoPreview(questionId, urlInput.value);
+    }
+  }
+
+  if (!isAdmin) return; // no upload listeners for regular users
+
+  // File input change (admin upload)
+  const fileInput = document.getElementById(`upload-input-${mediaType}-${questionId}`);
+  if (fileInput) {
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files && fileInput.files[0]) {
+        uploadMediaFile(questionId, mediaType, fileInput.files[0]);
+      }
+    });
+  }
+}
+
+/** Switch between Link and Upload tabs */
+window.switchMediaTab = function (e, questionId, mediaType, tab) {
+  e.stopPropagation();
+  const linkPanel   = document.getElementById(`media-panel-link-${mediaType}-${questionId}`);
+  const uploadPanel = document.getElementById(`media-panel-upload-${mediaType}-${questionId}`);
+  const toggleEl   = document.getElementById(`media-tab-toggle-${mediaType}-${questionId}`);
+  if (!linkPanel || !uploadPanel || !toggleEl) return;
+
+  const btns = toggleEl.querySelectorAll(".media-tab-btn");
+  btns.forEach((b) => b.classList.remove("active"));
+
+  if (tab === "link") {
+    linkPanel.style.display = "";
+    uploadPanel.style.display = "none";
+    toggleEl.querySelector(".media-tab-btn--link").classList.add("active");
+  } else {
+    linkPanel.style.display = "none";
+    uploadPanel.style.display = "";
+    toggleEl.querySelector(".media-tab-btn--upload").classList.add("active");
+  }
+};
+
+/** Handle drop event on the upload zone */
+window.handleMediaDrop = function (e, questionId, mediaType) {
+  e.preventDefault();
+  const zone = document.getElementById(`upload-zone-${mediaType}-${questionId}`);
+  if (zone) zone.classList.remove("drag-active");
+  const file = e.dataTransfer?.files?.[0];
+  if (file) uploadMediaFile(questionId, mediaType, file);
+};
+
+/**
+ * Upload a media file to /api/upload-media and store the returned URL.
+ */
+async function uploadMediaFile(questionId, mediaType, file) {
+  const progressEl  = document.getElementById(`upload-progress-${mediaType}-${questionId}`);
+  const progressBar = document.getElementById(`upload-progress-bar-${mediaType}-${questionId}`);
+  const progressTxt = document.getElementById(`upload-progress-text-${mediaType}-${questionId}`);
+  const zone        = document.getElementById(`upload-zone-${mediaType}-${questionId}`);
+
+  // Show progress
+  if (progressEl) progressEl.style.display = "flex";
+  if (progressBar) progressBar.style.width = "30%";
+  if (progressTxt) progressTxt.textContent = "جاري الرفع...";
+  if (zone) zone.style.opacity = "0.5";
+
+  try {
+    const token = getToken();
+    if (!token) throw new Error("غير مسجّل كمشرف.");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("type", mediaType);
+
+    if (progressBar) progressBar.style.width = "60%";
+
+    const res = await fetch("/api/upload-media", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+
+    if (progressBar) progressBar.style.width = "90%";
+
+    const data = await res.json();
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || "فشل الرفع");
+    }
+
+    // Store the returned URL in question data
+    updateQuestionData(questionId, mediaType, data.url);
+
+    // Also populate the URL input in the link tab (so admin can see/copy it)
+    const urlInput = document.getElementById(`question-${mediaType}-${questionId}`);
+    if (urlInput) urlInput.value = data.url;
+
+    // Update preview
+    if (mediaType === "image") updateImagePreview(questionId, data.url);
+    if (mediaType === "audio") updateAudioPreview(questionId, data.url);
+
+    // Switch back to link tab to show the stored URL
+    window.switchMediaTab({ stopPropagation: () => {} }, questionId, mediaType, "link");
+
+    if (progressBar) progressBar.style.width = "100%";
+    if (progressTxt) progressTxt.textContent = "تم الرفع بنجاح ✓";
+    setTimeout(() => {
+      if (progressEl) progressEl.style.display = "none";
+      if (progressBar) progressBar.style.width = "0%";
+    }, 2000);
+
+    showNotification("تم الرفع", "تم رفع الملف بنجاح وحفظ الرابط.", "success");
+  } catch (err) {
+    console.error("[uploadMediaFile]", err);
+    if (progressEl) progressEl.style.display = "none";
+    showNotification("خطأ في الرفع", err.message || "حدث خطأ أثناء رفع الملف.", "error");
+  } finally {
+    if (zone) zone.style.opacity = "";
+  }
 }
 
 function updateImagePreview(questionId, imageUrl) {
@@ -734,6 +1024,53 @@ function updateImagePreview(questionId, imageUrl) {
       '<div class="image-error"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-off-icon lucide-image-off"><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/><line x1="13.5" x2="6" y1="13.5" y2="21"/><line x1="18" x2="21" y1="12" y2="15"/><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/><path d="M21 15V5a2 2 0 0 0-2-2H9"/></svg> فشل تحميل الصورة. تحقق من الرابط.</div>';
   };
   img.src = imageUrl;
+}
+
+function updateAudioPreview(questionId, audioUrl) {
+  const container = document.getElementById(`audio-preview-${questionId}`);
+  if (!container) return;
+  if (!audioUrl || !audioUrl.trim()) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = `
+    <audio class="question-audio-preview" controls preload="metadata">
+      <source src="${escapeHtml(audioUrl)}">
+      متصفحك لا يدعم تشغيل الصوت.
+    </audio>`;
+}
+
+function updateVideoPreview(questionId, videoUrl) {
+  const container = document.getElementById(`video-preview-${questionId}`);
+  if (!container) return;
+  if (!videoUrl || !videoUrl.trim()) {
+    container.innerHTML = "";
+    return;
+  }
+
+  // YouTube embed
+  const ytMatch = videoUrl.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/,
+  );
+  if (ytMatch) {
+    container.innerHTML = `
+      <div class="video-preview-embed">
+        <iframe
+          src="https://www.youtube.com/embed/${ytMatch[1]}"
+          frameborder="0" allowfullscreen
+          loading="lazy"
+          title="معاينة الفيديو"
+        ></iframe>
+      </div>`;
+    return;
+  }
+
+  // Direct video file
+  container.innerHTML = `
+    <video class="question-video-preview" controls preload="metadata">
+      <source src="${escapeHtml(videoUrl)}">
+      متصفحك لا يدعم تشغيل الفيديو.
+    </video>`;
 }
 
 function updateQuestionData(questionId, field, value) {
@@ -1360,6 +1697,8 @@ window.addQuestionFromTemplate = function (templateType) {
       options: ["", "", "", ""],
       correct: 0,
       image: "",
+      audio: "",
+      video: "",
       explanation: "",
     },
     truefalse: {
@@ -1367,6 +1706,8 @@ window.addQuestionFromTemplate = function (templateType) {
       options: ["True", "False"],
       correct: 0,
       image: "",
+      audio: "",
+      video: "",
       explanation: "",
     },
     essay: {
@@ -1374,6 +1715,8 @@ window.addQuestionFromTemplate = function (templateType) {
       options: [""],
       correct: 0,
       image: "",
+      audio: "",
+      video: "",
       explanation: "",
     },
   };
@@ -1703,6 +2046,8 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   const questions = (quizToSave.questions || []).map((q) => {
     const out = { q: q.q };
     if (q.image?.trim()) out.image = q.image;
+    if (q.audio?.trim()) out.audio = q.audio;
+    if (q.video?.trim()) out.video = q.video;
     // Normalize essay: old 1-option → new answer field
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] ?? "";
@@ -1821,6 +2166,8 @@ window.exportQuiz = function () {
   const exportQuestions = quizData.questions.map((q) => {
     const out = { q: q.q };
     if (q.image?.trim()) out.image = q.image;
+    if (q.audio?.trim()) out.audio = q.audio;
+    if (q.video?.trim()) out.video = q.video;
     // Essay question: has 1 option (legacy) or has `answer` field → export as { q, answer }
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] || "";
