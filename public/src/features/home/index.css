@@ -659,76 +659,7 @@ body {
   }
 }
 
-/* ============================================================================
-   quiz-info-modal — "معلومات الإمتحان" read-only details table.
-   ============================================================================ */
-.quiz-info-modal-card {
-  text-align: right;
-  direction: rtl;
-  padding-left: 0px !important;
-  padding-right: 0px !important;
-  background-color: var(--color-background) !important;
-}
 
-.quiz-info-table-wrap {
-  margin: 16px 0 8px;
-  max-height: 50vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-text-secondary) transparent;
-  padding: 24px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
-  border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
-  background-color: var(--color-background-light);
-}
-
-.quiz-info-loading,
-.quiz-info-empty {
-  text-align: center;
-  color: var(--color-text-secondary);
-  padding: 20px 0;
-}
-
-.quiz-info-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.quiz-info-table tr {
-  border-bottom: 1px solid var(--color-border);
-}
-
-.quiz-info-table tr:last-child {
-  border-bottom: none;
-}
-
-.quiz-info-table th,
-.quiz-info-table td {
-  padding: 10px 8px;
-  vertical-align: top;
-}
-
-.quiz-info-table th {
-  color: var(--color-text-secondary);
-  font-weight: 600;
-  white-space: nowrap;
-  width: 40%;
-  text-align: right;
-  width: fit-content;
-}
-
-.quiz-info-table td {
-  color: var(--color-text-primary);
-  text-align: left;
-  direction: ltr;
-}
-
-.quiz-info-table td a {
-  color: var(--color-primary);
-  word-break: break-all;
-}
 
 /* ============================================================================
    BREADCRUMB MOBILE RESPONSIVE FIXES

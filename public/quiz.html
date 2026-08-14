@@ -82,6 +82,7 @@
     <!-- CSS Files - CRITICAL ORDER -->
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/features/quiz/quiz.css">
+    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
     <link rel="stylesheet" href="src/styles/markdown.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
 
@@ -396,28 +397,8 @@
         </div>
     </div>
 
-    <!-- Quiz Information Dialog -->
-    <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle">
-        <div class="quiz-info-dialog-inner">
-            <div class="quiz-info-dialog-header">
-                <h2 id="quizInfoDialogTitle">تفاصيل الإمتحان</h2>
-                <button class="quiz-info-dialog-close" id="quizInfoDialogClose" aria-label="إغلاق" type="button">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path d="M18 6 6 18M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="quiz-info-dialog-body">
-                <table class="quiz-info-table" id="quizInfoTable">
-                    <tbody>
-                        <!-- Populated dynamically by quiz.js -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </dialog>
+    <!-- Quiz Information Dialog (Shell populated by JS) -->
+    <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle"></dialog>
 
     <script type="module" src="src/features/quiz/quiz.js"></script>
     <script type="module">

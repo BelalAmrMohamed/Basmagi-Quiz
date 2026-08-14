@@ -23,6 +23,7 @@ showNotification(
 );
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
+import { buildQuizInfoModalHtml } from "../../components/quiz-info-modal/quiz-info-html.js";
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -84,24 +85,19 @@ const els = {
   quizSource: document.getElementById("quizSource"),
   quizInfoBtn: document.getElementById("quizInfoBtn"),
   quizInfoDialog: document.getElementById("quizInfoDialog"),
-  quizInfoDialogClose: document.getElementById("quizInfoDialogClose"),
-  quizInfoTable: document.getElementById("quizInfoTable"),
 };
 
 // === Quiz Info Dialog: open / close wiring ===
+// The dialog is a shell (#quizInfoDialog) populated on-demand by
+// populateInfoDialog() in init() once metaData is available.
 (function initInfoDialog() {
   const btn = els.quizInfoBtn;
   const dialog = els.quizInfoDialog;
-  const closeBtn = els.quizInfoDialogClose;
   if (!btn || !dialog) return;
 
   btn.addEventListener("click", () => {
     if (typeof dialog.showModal === "function") dialog.showModal();
   });
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => dialog.close());
-  }
 
   // Close on backdrop click
   dialog.addEventListener("click", (e) => {
@@ -1258,66 +1254,36 @@ async function init() {
 
     // === Populate Quiz Info Dialog ===
     (function populateInfoDialog() {
-      const tbody = els.quizInfoTable?.querySelector("tbody");
-      if (!tbody) return;
+      const dialog = els.quizInfoDialog;
+      if (!dialog) return;
 
-      // Reuse updateBreadcrumb() itself — it already computes the full
-      // course trail (e.g. "IELTS Exams/Cambridge IELTS 2020/Test 2").
-      // No separate/duplicate logic here.
+      // Build the config for the shared HTML builder.
+      // Use updateBreadcrumb to get the computed category name from the path.
       const { fullBreadcrumb } = updateBreadcrumb(metaData);
 
-      // Normalise the date display
-      const formatDate = (raw) => {
-        if (!raw) return null;
-        let d = String(raw);
-        if (d.includes(",")) d = d.split(",")[0];
-        else if (d.includes(" - ")) d = d.split(" - ")[0];
-        else if (d.includes(" ")) d = d.split(" ")[0];
-        return d || null;
+      const config = {
+        id: metaData.id,
+        title: metaData.title,
+        description: metaData.description || null,
+        // The breadcrumb gives the course name (المادة), while metaData.path
+        // gives the raw file path for the المسار field in the builder.
+        category: fullBreadcrumb || metaData.category || null,
+        path: metaData.path || null,
+        createdAt: metaData.createdAt || null,
+        source: metaData.source || null,
+        author: metaData.author || null,
+        mode: metaData.mode || null,
+        view: metaData.view || null,
+        questionTypes: metaData.questionTypes || null,
       };
 
-      // Explicit ordered list of allowed fields — nothing else is ever shown
-      const ROWS = [
-        { label: "ID", val: metaData.id },
-        { label: "العنوان", val: metaData.title },
-        { label: "الوصف", val: metaData.description },
-        // { label: "المادة", val: fullBreadcrumb || null },
-        // { label: "المادة", val: metaData.category || extractCategoryFromPath(metaData.path) || null },
-        { label: "المادة", val: metaData.path },
-        { label: "التاريخ", val: formatDate(metaData.createdAt) },
-        { label: "المصدر", val: metaData.source },
-        { label: "صاحب الإمتحان", val: metaData.author },
-        { label: "نوع الإمتحان الإجباري", val: metaData.mode },
-        {
-          label: "الشكل الإجباري",
-          val:
-            metaData.view === "pagination"
-              ? "كل سؤال في صفحة (Pagination)"
-              : metaData.view === "vertical"
-                ? "كل الأسئلة في صفحة واحدة (Vertical)"
-                : null,
-        },
-        { label: "نوع الأسئلة", val: metaData.questionTypes },
-        { label: "عدد الأسئلة", val: questions.length },
-      ].filter((r) => r.val);
+      dialog.innerHTML = buildQuizInfoModalHtml(config, questions.length);
 
-      if (!ROWS.length) {
-        tbody.innerHTML = `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
-        return;
+      // Wire up close button (rendered dynamically into the shell)
+      const closeBtn = dialog.querySelector(".quiz-info-dialog-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => dialog.close());
       }
-
-      const isUrl = (s) => /^https?:\/\//i.test(s);
-
-      tbody.innerHTML = ROWS.map(({ label, val }) => {
-        const v = String(val);
-        const displayVal = isUrl(v)
-          ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
-          : escapeHtml(v);
-        return `<tr>
-          <th scope="row">${escapeHtml(label)}</th>
-          <td>${displayVal}</td>
-        </tr>`;
-      }).join("");
     })();
 
     // Update Title UI

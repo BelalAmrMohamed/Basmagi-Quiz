@@ -23,11 +23,8 @@ import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
 import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
-import {
-  extractCategoryFromPath,
-  formatDateForInfo,
-  showQuizInfoModal,
-} from "./quiz-info-modal.js";
+import { showQuizInfoModal } from "./quiz-info-modal.js";
+import { extractCategoryFromPath, formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
   createExamInfoSubmenu,
   openExamDropdownMenu,
