@@ -110,75 +110,33 @@ export function refreshUI(options = {}) {
     };
   }
 
-  // Setup User Info Modal
-  const showUserInfoBtn = document.getElementById("showUserInfoBtn");
-  if (showUserInfoBtn) {
-    showUserInfoBtn.onclick = () => {
-      document.getElementById("userInfoOverlay").style.display = "flex";
-      document.getElementById("infoModalName").textContent = currentName;
-
-      const roleInfo = getAdminRoleInfo();
-      if (
-        roleInfo &&
-        (roleInfo.handle || roleInfo.email || roleInfo.isOwner || roleInfo.role)
-      ) {
-        document.getElementById("infoModalAdminSection").style.display =
-          "block";
-
-        const emailBlock =
-          document.getElementById("infoModalEmail").parentElement;
-        if (roleInfo.email) {
-          emailBlock.style.display = "flex";
-          document.getElementById("infoModalEmail").textContent =
-            roleInfo.email;
+  // Display Admin Handle
+  const roleInfo = getAdminRoleInfo();
+  const currentHandle = roleInfo?.handle || window.fetchedAdminHandle;
+  const adminHandleWrap = document.getElementById("adminHandleDisplayWrap");
+  if (adminHandleWrap && currentHandle) {
+    document.getElementById("adminHandleDisplay").textContent = "@" + currentHandle;
+    adminHandleWrap.style.display = "inline-flex";
+    
+    const copyBtn = document.getElementById("inlineCopyLinkBtn");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const url = window.location.origin + "/@" + currentHandle;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url).then(() => {
+            copyBtn.classList.add("is-copied");
+            setTimeout(() => {
+              copyBtn.classList.remove("is-copied");
+            }, 2000);
+          });
         } else {
-          emailBlock.style.display = "none";
+          _prompt("انسخ الرابط التالي:", url);
         }
-
-        const handleBlock =
-          document.getElementById("infoModalHandle").parentElement
-            .parentElement;
-        const currentHandle = roleInfo.handle || fetchedAdminHandle;
-        if (currentHandle) {
-          handleBlock.style.display = "flex";
-          document.getElementById("infoModalHandle").textContent =
-            "@" + currentHandle;
-
-          const copyBtn = document.getElementById("modalCopyLinkBtn");
-          if (copyBtn) {
-            copyBtn.onclick = () => {
-              const url = window.location.origin + "/@" + currentHandle;
-              if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(url).then(() => {
-                  const label = copyBtn.querySelector(
-                    ".user-info-copy-btn-label",
-                  );
-                  const origLabel = label ? label.textContent : null;
-                  copyBtn.classList.add("is-copied");
-                  copyBtn.setAttribute("aria-live", "polite");
-                  if (label) label.textContent = "تم النسخ";
-                  setTimeout(() => {
-                    copyBtn.classList.remove("is-copied");
-                    if (label && origLabel !== null)
-                      label.textContent = origLabel;
-                  }, 2000);
-                });
-              } else {
-                _prompt("انسخ الرابط التالي:", url);
-              }
-            };
-          }
-        } else {
-          handleBlock.style.display = "none";
-        }
-      } else {
-        document.getElementById("infoModalAdminSection").style.display = "none";
-      }
-    };
+      };
+    }
   }
 
   // Handle Admin/Developer Badges for Owner View
-  const roleInfo = getAdminRoleInfo();
   if (roleInfo) {
     applyRoleBadges(roleInfo.role, roleInfo.isOwner);
     setActivityLabel(roleInfo);
@@ -623,50 +581,28 @@ async function setupVisitorView(handle) {
     console.error("Failed to render visitor heatmap", e);
   }
 
-  // Update User Info Modal for Visitor View
-  const showUserInfoBtn = document.getElementById("showUserInfoBtn");
-  if (showUserInfoBtn) {
-    showUserInfoBtn.onclick = () => {
-      document.getElementById("userInfoOverlay").style.display = "flex";
-      // Prefer the server-injected meta/displayName (publicName) when available
-      document.getElementById("infoModalName").textContent =
-        publicName ||
-        (visitedRole && visitedRole.displayName
-          ? visitedRole.displayName
-          : handle);
-
-      document.getElementById("infoModalAdminSection").style.display = "block";
-      const emailBlock =
-        document.getElementById("infoModalEmail").parentElement;
-      emailBlock.style.display = "none";
-
-      const handleBlock =
-        document.getElementById("infoModalHandle").parentElement.parentElement;
-      handleBlock.style.display = "flex";
-      document.getElementById("infoModalHandle").textContent = "@" + handle;
-
-      const copyBtn = document.getElementById("modalCopyLinkBtn");
-      if (copyBtn) {
-        copyBtn.onclick = () => {
-          const url = window.location.origin + "/@" + handle;
-          if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(url).then(() => {
-              const label = copyBtn.querySelector(".user-info-copy-btn-label");
-              const origLabel = label ? label.textContent : null;
-              copyBtn.classList.add("is-copied");
-              copyBtn.setAttribute("aria-live", "polite");
-              if (label) label.textContent = "تم النسخ";
-              setTimeout(() => {
-                copyBtn.classList.remove("is-copied");
-                if (label && origLabel !== null) label.textContent = origLabel;
-              }, 2000);
-            });
-          } else {
-            _prompt("انسخ الرابط التالي:", url);
-          }
-        };
-      }
-    };
+  // Display Admin Handle for Visitor View
+  const adminHandleWrap = document.getElementById("adminHandleDisplayWrap");
+  if (adminHandleWrap && handle) {
+    document.getElementById("adminHandleDisplay").textContent = "@" + handle;
+    adminHandleWrap.style.display = "inline-flex";
+    
+    const copyBtn = document.getElementById("inlineCopyLinkBtn");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        const url = window.location.origin + "/@" + handle;
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(url).then(() => {
+            copyBtn.classList.add("is-copied");
+            setTimeout(() => {
+              copyBtn.classList.remove("is-copied");
+            }, 2000);
+          });
+        } else {
+          _prompt("انسخ الرابط التالي:", url);
+        }
+      };
+    }
   }
 }
 
