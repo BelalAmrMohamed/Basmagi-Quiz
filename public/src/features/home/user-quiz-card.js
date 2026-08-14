@@ -110,7 +110,7 @@ export function createUserQuizCard(quiz, index) {
   playBtn.type = "button";
   playBtn.style.flex = "1";
   playBtn.style.minWidth = "0";
-  playBtn.textContent = "إبدأ الإختبار";
+  playBtn.textContent = "إبدأ";
   playBtn.setAttribute("aria-label", `بدء اختبار ${qz(quiz, "title")}`);
   playBtn.onclick = (e) => {
     e.stopPropagation();

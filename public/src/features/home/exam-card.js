@@ -108,7 +108,7 @@ export function createExamCard(exam) {
   btn.type = "button";
   btn.style.flex = "1";
   btn.style.minWidth = "0";
-  btn.textContent = "إبدأ الإختبار";
+  btn.textContent = "إبدأ";
   btn.setAttribute("aria-label", `بدء اختبار ${exam.title || exam.id}`);
   btn.onclick = (ev) => {
     ev.stopPropagation();
