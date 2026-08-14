@@ -21,7 +21,8 @@ import {
   buildJsonQuizExport,
 } from "../../shared/quiz-json.js";
 import { renderMarkdown } from "../../shared/markdown.js";
-import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
+import { isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -933,7 +934,8 @@ window.handleMediaDrop = function (e, questionId, mediaType) {
 };
 
 /**
- * Upload a media file to /api/upload-media and store the returned URL.
+ * Upload a media file directly to Supabase Storage using the admin's
+ * authenticated Supabase session. No Vercel serverless function needed.
  */
 async function uploadMediaFile(questionId, mediaType, file) {
   const progressEl  = document.getElementById(`upload-progress-${mediaType}-${questionId}`);
@@ -941,47 +943,92 @@ async function uploadMediaFile(questionId, mediaType, file) {
   const progressTxt = document.getElementById(`upload-progress-text-${mediaType}-${questionId}`);
   const zone        = document.getElementById(`upload-zone-${mediaType}-${questionId}`);
 
-  // Show progress
+  // ── Client-side validation (UX guard; bucket enforces server-side too) ──
+  const ALLOWED_MIME = {
+    image: new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]),
+    audio: new Set(["audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac", "audio/x-m4a", "audio/mp4"]),
+  };
+  const MAX_SIZE = { image: 5 * 1024 * 1024, audio: 10 * 1024 * 1024 };
+  const EXT_MAP = {
+    "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
+    "image/webp": "webp", "image/svg+xml": "svg",
+    "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav",
+    "audio/webm": "webm", "audio/aac": "aac", "audio/x-m4a": "m4a", "audio/mp4": "m4a",
+  };
+
+  if (!ALLOWED_MIME[mediaType]?.has(file.type)) {
+    showNotification("نوع غير مدعوم", `نوع الملف (${file.type || "غير معروف"}) غير مدعوم.`, "error");
+    return;
+  }
+  if (file.size > MAX_SIZE[mediaType]) {
+    const maxMb = MAX_SIZE[mediaType] / (1024 * 1024);
+    showNotification("الملف كبير جدًا", `الحد الأقصى ${maxMb} ميجابايت.`, "error");
+    return;
+  }
+  if (file.size === 0) {
+    showNotification("ملف فارغ", "الملف المحدد فارغ.", "error");
+    return;
+  }
+
+  // ── Show progress ────────────────────────────────────────────────────────
   if (progressEl) progressEl.style.display = "flex";
-  if (progressBar) progressBar.style.width = "30%";
-  if (progressTxt) progressTxt.textContent = "جاري الرفع...";
+  if (progressBar) progressBar.style.width = "20%";
+  if (progressTxt) progressTxt.textContent = "جاري الاتصال...";
   if (zone) zone.style.opacity = "0.5";
 
   try {
-    const token = getToken();
-    if (!token) throw new Error("غير مسجّل كمشرف.");
+    // ── Get the shared Supabase client (admin has a live Supabase session) ──
+    const client = await ensureSharedSupabaseClient();
+    if (!client) throw new Error("تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.");
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("type", mediaType);
+    const { data: sessionData } = await client.auth.getSession();
+    if (!sessionData?.session) {
+      throw new Error("جلسة Supabase منتهية. أعد تسجيل الدخول.");
+    }
 
-    if (progressBar) progressBar.style.width = "60%";
+    if (progressBar) progressBar.style.width = "40%";
+    if (progressTxt) progressTxt.textContent = "جاري الرفع...";
 
-    const res = await fetch("/api/upload-media", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    // ── Build unique storage path ────────────────────────────────────────
+    const uid = sessionData.session.user.id;
+    const ext = EXT_MAP[file.type] || "bin";
+    const random = Math.random().toString(36).slice(2, 9);
+    const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
+    // e.g. "images/abc-uuid/1723593600000-ab12cd3.jpg"
+
+    // ── Upload directly to Supabase Storage ─────────────────────────────
+    const { error: uploadError } = await client.storage
+      .from("quiz-media")
+      .upload(storagePath, file, {
+        contentType: file.type,
+        upsert: false, // unique path guarantees no collision
+      });
+
+    if (uploadError) throw new Error(uploadError.message);
 
     if (progressBar) progressBar.style.width = "90%";
 
-    const data = await res.json();
-    if (!res.ok || !data.url) {
-      throw new Error(data.error || "فشل الرفع");
-    }
+    // ── Get the public CDN URL ───────────────────────────────────────────
+    const { data: urlData } = client.storage
+      .from("quiz-media")
+      .getPublicUrl(storagePath);
 
-    // Store the returned URL in question data
-    updateQuestionData(questionId, mediaType, data.url);
+    if (!urlData?.publicUrl) throw new Error("تم الرفع لكن فشل توليد الرابط.");
 
-    // Also populate the URL input in the link tab (so admin can see/copy it)
+    const publicUrl = urlData.publicUrl;
+
+    // ── Store URL in question data ───────────────────────────────────────
+    updateQuestionData(questionId, mediaType, publicUrl);
+
+    // Also populate the link-tab URL input so admin can see / copy it
     const urlInput = document.getElementById(`question-${mediaType}-${questionId}`);
-    if (urlInput) urlInput.value = data.url;
+    if (urlInput) urlInput.value = publicUrl;
 
     // Update preview
-    if (mediaType === "image") updateImagePreview(questionId, data.url);
-    if (mediaType === "audio") updateAudioPreview(questionId, data.url);
+    if (mediaType === "image") updateImagePreview(questionId, publicUrl);
+    if (mediaType === "audio") updateAudioPreview(questionId, publicUrl);
 
-    // Switch back to link tab to show the stored URL
+    // Switch to link tab to show the stored URL
     window.switchMediaTab({ stopPropagation: () => {} }, questionId, mediaType, "link");
 
     if (progressBar) progressBar.style.width = "100%";
