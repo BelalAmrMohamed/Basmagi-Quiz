@@ -598,8 +598,8 @@ function renderQuestion(question, insertAtIndex = null) {
             </div>
             
             ${renderMediaSection(question, 'image')}
-            ${isAdmin ? renderMediaSection(question, 'audio') : ''}
-            ${isAdmin ? renderMediaSection(question, 'video') : ''}
+            ${renderMediaSection(question, 'audio')}
+            ${renderMediaSection(question, 'video')}
             
             <div class="collapsible-section">
                 <div class="collapsible-header" onclick="toggleCollapsible(${question.id}, 'explanation')">
@@ -631,10 +631,10 @@ function renderQuestion(question, insertAtIndex = null) {
   setupDragAndDrop(questionCard);
   renderMathIn(questionCard);
 
-  // Load media previews if existing values present (image always; audio+video for admins)
+  // Load media previews if existing values present
   if (question.image) updateImagePreview(question.id, question.image);
-  if (isAdmin && question.audio) updateAudioPreview(question.id, question.audio);
-  if (isAdmin && question.video) updateVideoPreview(question.id, question.video);
+  if (question.audio) updateAudioPreview(question.id, question.audio);
+  if (question.video) updateVideoPreview(question.id, question.video);
 }
 
 // Click on header area (but not buttons/drag) collapses the card
@@ -684,12 +684,10 @@ function setupQuestionEventListeners(questionId) {
     updateQuestionData(questionId, "q", val),
   );
 
-  // Media section listeners (image always; audio+video only for admins)
+  // Media section listeners (image, audio, video)
   setupMediaSectionListeners(questionId, "image");
-  if (isAdmin) {
-    setupMediaSectionListeners(questionId, "audio");
-    setupMediaSectionListeners(questionId, "video");
-  }
+  setupMediaSectionListeners(questionId, "audio");
+  setupMediaSectionListeners(questionId, "video");
 
   // Explanation: inline md editor
   setupMdEditor(`question-explanation-${questionId}`, (val) =>
@@ -722,8 +720,8 @@ function renderMediaSection(question, mediaType) {
 
   const labels = {
     image: "صورة (اختيارية)",
-    audio: `ملف صوتي (اختياري) <span class="admin-only-badge">للمشرفين</span>`,
-    video: `فيديو (اختياري) <span class="admin-only-badge">للمشرفين</span>`,
+    audio: "ملف صوتي (اختياري)",
+    video: "فيديو (اختياري)",
   };
 
   const chevron = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
