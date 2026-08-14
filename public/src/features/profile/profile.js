@@ -16,6 +16,7 @@ import {
 } from "./profileWidgets.js";
 
 import {
+  showNotification,
   _confirm,
   _prompt,
 } from "../../components/notifications/notifications.js";
@@ -125,6 +126,7 @@ export function refreshUI(options = {}) {
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(url).then(() => {
             copyBtn.classList.add("is-copied");
+            showNotification("تم نسخ رابط الحساب بنجاح");
             setTimeout(() => {
               copyBtn.classList.remove("is-copied");
             }, 2000);
@@ -594,6 +596,7 @@ async function setupVisitorView(handle) {
         if (navigator.clipboard && window.isSecureContext) {
           navigator.clipboard.writeText(url).then(() => {
             copyBtn.classList.add("is-copied");
+            showNotification("تم نسخ الرابط بنجاح");
             setTimeout(() => {
               copyBtn.classList.remove("is-copied");
             }, 2000);

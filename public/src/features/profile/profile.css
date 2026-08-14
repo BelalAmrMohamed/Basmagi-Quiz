@@ -299,6 +299,10 @@ body {
   color: var(--color-text);
 }
 
+.inline-copy-icon-success {
+  display: none;
+}
+
 .inline-copy-link-btn.is-copied {
   color: var(--color-success, #16a34a);
 }
