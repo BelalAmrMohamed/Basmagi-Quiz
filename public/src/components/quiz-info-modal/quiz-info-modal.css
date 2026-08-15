@@ -175,6 +175,7 @@ dialog.quiz-info-dialog,
   background-color: var(--color-background, #fff);
   padding: 24px;
   border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  text-align: center;
 }
 
 .quiz-info-hero h3 {
@@ -196,6 +197,7 @@ dialog.quiz-info-dialog,
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  justify-content: center;
 }
 
 .quiz-metric-pill {
@@ -218,7 +220,7 @@ dialog.quiz-info-dialog,
 /* Grid layout for meta info */
 .quiz-meta-grid {
   display: grid;
-  grid-template-columns: minmax(120px, max-content) 1fr;
+  grid-template-columns: minmax(80px, max-content) 1fr;
   gap: 12px 16px;
   font-size: 0.9rem;
   align-items: start;
@@ -227,11 +229,15 @@ dialog.quiz-info-dialog,
 .quiz-meta-label {
   color: var(--color-text-secondary, #6b7280);
   font-weight: 600;
+  direction: rtl;
+  text-align: right;
 }
 
 .quiz-meta-value {
   color: var(--color-text-primary, #111);
   word-break: break-word;
+  direction: ltr;
+  text-align: left;
 }
 
 .quiz-meta-value a {

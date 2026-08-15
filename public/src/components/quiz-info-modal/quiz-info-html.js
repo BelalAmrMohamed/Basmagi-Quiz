@@ -18,8 +18,17 @@ export function extractCategoryFromPath(path) {
  */
 export function extractCleanPath(path) {
   if (!path) return "";
-  // Strip "quizzes/" if present
-  let clean = path.replace(/^quizzes\//, "");
+  // Strip "quizzes/" if present and decode API paths (/api/quiz-data?path=...)
+  let clean = path;
+  try {
+    const qIdx = path.indexOf("?");
+    if (qIdx !== -1) {
+      const params = new URLSearchParams(path.slice(qIdx + 1));
+      const p = params.get("path");
+      if (p) clean = decodeURIComponent(p);
+    }
+  } catch (_) {}
+  clean = clean.replace(/^quizzes\//, "");
   // Remove the file name at the end
   const lastSlash = clean.lastIndexOf("/");
   if (lastSlash !== -1) {
@@ -38,18 +47,49 @@ export function formatDateForInfo(raw) {
   return d || null;
 }
 
-/** Helper to generate fallback avatar for creator card */
-function getCreatorAvatar(author) {
-  if (!author) return "";
-  const svg = avatarEngine.generateDefaultAvatarSVG(author);
-  return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+/** Generate a fallback data-URL avatar from a name using avatarEngine */
+function getDefaultAvatarDataUrl(name) {
+  if (!name) return "";
+  try {
+    const svg = avatarEngine.generateDefaultAvatarSVG(name);
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  } catch (_) {
+    return "";
+  }
+}
+
+/**
+ * Fetches the creator's real account profile from the admin-stats API by handle.
+ * Returns { displayName, handle, avatarUrl } or null on failure.
+ */
+export async function fetchCreatorProfile(handle) {
+  if (!handle) return null;
+  const cleanHandle = handle.replace(/^@/, "");
+  if (!cleanHandle) return null;
+  try {
+    const res = await fetch(`/api/admin-stats?handle=${encodeURIComponent(cleanHandle)}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      displayName: data.displayName || cleanHandle,
+      handle: data.handle || cleanHandle,
+      avatarUrl: data.avatarUrl || null,
+    };
+  } catch (_) {
+    return null;
+  }
 }
 
 /**
  * Builds the modern modular HTML for the quiz info dialog inner contents.
  * Replaces the old single table with semantic sections.
+ *
+ * @param {object} config       - Quiz metadata (id, title, description, category, path, etc.)
+ * @param {number|null} questionCount
+ * @param {object|null} creatorProfile - Account data: { displayName, handle, avatarUrl }
+ *                                       Pass null to skip the creator card.
  */
-export function buildQuizInfoModalHtml(config, questionCount = null) {
+export function buildQuizInfoModalHtml(config, questionCount = null, creatorProfile = null) {
   const isUrl = (s) => /^https?:\/\//i.test(s);
   const linkify = (val) => {
     const v = String(val);
@@ -110,7 +150,7 @@ export function buildQuizInfoModalHtml(config, questionCount = null) {
   const pillsHtml = pills.length > 0 ? `<div class="quiz-metrics-row">${pills.join("")}</div>` : "";
 
   const heroHtml = `
-    <div class="quiz-info-hero" dir="auto">
+    <div class="quiz-info-hero">
       <h3>${escapeHtml(title)}</h3>
       ${descHtml}
       ${pillsHtml}
@@ -119,8 +159,8 @@ export function buildQuizInfoModalHtml(config, questionCount = null) {
 
   // 3. Classification & Source Grid
   const gridItems = [];
-  
-  // Subject
+
+  // Subject (المادة)
   const subject = config.category || extractCategoryFromPath(config.path);
   if (subject) {
     gridItems.push(`
@@ -129,12 +169,12 @@ export function buildQuizInfoModalHtml(config, questionCount = null) {
     `);
   }
 
-  // Path
+  // Path (المسار) — only for non-API paths (local quizzes)
   const cleanPath = extractCleanPath(config.path);
   if (cleanPath) {
     gridItems.push(`
       <div class="quiz-meta-label">المسار</div>
-      <div class="quiz-meta-value" dir="ltr" style="text-align: right; opacity: 0.85; font-size: 0.9em;">${escapeHtml(cleanPath)}</div>
+      <div class="quiz-meta-value" style="opacity: 0.85; font-size: 0.9em;">${escapeHtml(cleanPath)}</div>
     `);
   }
 
@@ -175,25 +215,25 @@ export function buildQuizInfoModalHtml(config, questionCount = null) {
     `;
   }
 
-  // 4. Creator Card
+  // 4. Creator Card — use creatorProfile from account, not quiz meta
   let creatorHtml = "";
-  if (config.author) {
-    const handle = config.authorHandle ? config.authorHandle.replace(/^@/, "") : "";
-    const profileHref = handle ? `/@${encodeURIComponent(handle)}` : null;
-    const avatarUrl = config.authorAvatar || getCreatorAvatar(config.author);
-    
-    // We wrap it in an <a> tag if there's a handle, else a <div>
+  if (creatorProfile) {
+    const { displayName, handle, avatarUrl } = creatorProfile;
+    const cleanHandle = handle ? handle.replace(/^@/, "") : "";
+    const profileHref = cleanHandle ? `/@${encodeURIComponent(cleanHandle)}` : null;
+    const avatarSrc = avatarUrl || getDefaultAvatarDataUrl(displayName || cleanHandle);
+
     const WrapperTag = profileHref ? "a" : "div";
     const hrefAttr = profileHref ? ` href="${profileHref}" target="_blank" rel="noopener noreferrer"` : "";
-    
+
     creatorHtml = `
       <div class="quiz-info-section">
         <div class="quiz-info-section-title">إعداد</div>
         <${WrapperTag} class="quiz-creator-card"${hrefAttr}>
-          <img src="${avatarUrl}" class="quiz-creator-avatar" alt="Avatar" loading="lazy" />
+          <img src="${escapeHtml(avatarSrc)}" class="quiz-creator-avatar" alt="" loading="lazy" onerror="this.src='${escapeHtml(getDefaultAvatarDataUrl(displayName || cleanHandle))}'" />
           <div class="quiz-creator-info">
-            <span class="quiz-creator-name">${escapeHtml(config.author)}</span>
-            ${handle ? `<span class="quiz-creator-handle">@${escapeHtml(handle)}</span>` : ""}
+            <span class="quiz-creator-name">${escapeHtml(displayName || cleanHandle)}</span>
+            ${cleanHandle ? `<span class="quiz-creator-handle">@${escapeHtml(cleanHandle)}</span>` : ""}
           </div>
           ${profileHref ? `
             <span class="quiz-creator-cta">
