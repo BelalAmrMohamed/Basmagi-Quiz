@@ -12,8 +12,11 @@ import { exportToPdf } from "../export/export-to-pdf.js";
 import { exportToWord } from "../export/export-to-word.js";
 import { exportToPptx } from "../export/export-to-pptx.js";
 import { buildQuizText } from "../export/export-to-text.js";
-import { exportToMarkdown } from "../export/export-to-markdown.js";
+import { exportToMarkdown, buildQuizMarkdown } from "../export/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
+import { buildStandaloneQuizHtml } from "../export/export-to-quiz.js";
+import { buildQuizHtml } from "../export/export-to-html.js";
+import { copyTextWithFallback } from "../home/export-helpers.js";
 
 // Notifications
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -535,6 +538,80 @@ document.addEventListener("DOMContentLoaded", async () => {
       withDownloadLoading(exportQuizBtn, async () =>
         exportToQuiz(config, questions),
       ));
+
+  // ── Copy-to-clipboard buttons ─────────────────────────────────────────────
+  // Small corner buttons next to the copyable format buttons in the side
+  // menu. Note the "with answers" formats (html/md/text) copy the same
+  // with-answers content as their download counterparts — result.userAnswers
+  // is passed through exactly like the download handlers above.
+  const copyQuizBtn = document.getElementById("copyQuizBtn");
+  const copyJsonBtn = document.getElementById("copyJsonBtn");
+  const copyHtmlBtn = document.getElementById("copyHtmlBtn");
+  const copyMdBtn = document.getElementById("copyMdBtn");
+  const copyTxtBtn = document.getElementById("copyTxtBtn");
+
+  async function withCopyFeedback(buttonEl, getText) {
+    if (!buttonEl) return;
+    const originalHtml = buttonEl.innerHTML;
+    try {
+      const text = await getText();
+      await copyTextWithFallback(text);
+      buttonEl.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+      buttonEl.classList.add("copied");
+      showNotification("تم النسخ", "تم نسخ المحتوى بنجاح!", "success");
+      setTimeout(() => {
+        buttonEl.innerHTML = originalHtml;
+        buttonEl.classList.remove("copied");
+      }, 2000);
+    } catch (err) {
+      console.error(err);
+      showNotification("خطأ", "فشل النسخ.", "error");
+    }
+  }
+
+  copyQuizBtn &&
+    (copyQuizBtn.onclick = (e) => {
+      e.stopPropagation();
+      withCopyFeedback(copyQuizBtn, async () =>
+        await buildStandaloneQuizHtml(config, questions),
+      );
+    });
+  copyJsonBtn &&
+    (copyJsonBtn.onclick = (e) => {
+      e.stopPropagation();
+      withCopyFeedback(copyJsonBtn, async () => {
+        const payload = await buildJsonQuizExport(
+          config.title,
+          config.description,
+          config.source,
+          questions,
+          config.createdAt,
+        );
+        return JSON.stringify(payload, null, 2);
+      });
+    });
+  copyHtmlBtn &&
+    (copyHtmlBtn.onclick = (e) => {
+      e.stopPropagation();
+      withCopyFeedback(copyHtmlBtn, async () =>
+        await buildQuizHtml(config, questions, result.userAnswers),
+      );
+    });
+  copyMdBtn &&
+    (copyMdBtn.onclick = (e) => {
+      e.stopPropagation();
+      withCopyFeedback(copyMdBtn, async () =>
+        buildQuizMarkdown(config, questions, result.userAnswers),
+      );
+    });
+  copyTxtBtn &&
+    (copyTxtBtn.onclick = (e) => {
+      e.stopPropagation();
+      withCopyFeedback(copyTxtBtn, async () =>
+        buildQuizText(config, questions, result.userAnswers),
+      );
+    });
 
   const limit = 30;
   const title = result.examTitle;

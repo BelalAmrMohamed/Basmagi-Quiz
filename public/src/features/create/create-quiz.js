@@ -15,11 +15,20 @@ import { exportToWord } from "../../features/export/export-to-word.js";
 import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
+import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
+import { buildQuizHtml } from "../../features/export/export-to-html.js";
+import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
 import {
   processQuizJsonFile,
   parseQuizJson,
   buildJsonQuizExport,
 } from "../../shared/quiz-json.js";
+import {
+  buildExportCard,
+  copyTextWithFallback,
+  triggerDownload,
+} from "../home/export-helpers.js";
+import { JSON_FILE_ICON_SVG, COPY_TEXT_ICON_SVG } from "../home/icons.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
@@ -2309,6 +2318,53 @@ window.exportQuiz = function () {
     return out;
   });
 
+  // Builds the JSON export meta (password/view/mode) from the current form
+  // state. Shared by the download and copy paths so both stay in sync.
+  const buildJsonExportMeta = () => {
+    const exportMeta = {
+      title: quizData.title,
+      description: quizData.description,
+      source: quizData.source,
+    };
+
+    const pwd = document.getElementById("quizPassword")?.value?.trim();
+    if (pwd) {
+      exportMeta.password = pwd;
+    } else {
+      delete exportMeta.password;
+    }
+    delete exportMeta.privacy;
+    delete exportMeta.lang;
+
+    const viewVal = document.querySelector(
+      'input[name="quizView"]:checked',
+    )?.value;
+    if (viewVal && viewVal !== "empty") exportMeta.view = viewVal;
+    const modeVal = document.querySelector(
+      'input[name="quizMode"]:checked',
+    )?.value;
+    if (modeVal && modeVal !== "empty") exportMeta.mode = modeVal;
+
+    return exportMeta;
+  };
+
+  const buildJsonPayloadString = async () => {
+    const exportMeta = buildJsonExportMeta();
+    const payload = await buildJsonQuizExport(
+      exportMeta.title,
+      exportMeta.description,
+      exportMeta.source,
+      exportQuestions,
+    );
+    Object.assign(payload.meta, exportMeta);
+    return JSON.stringify(payload, null, 2);
+  };
+
+  const safeFilename = (quizData.title || "quiz")
+    .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "");
+
   const doExport = async (format) => {
     showLoading("جاري التصدير...");
     try {
@@ -2331,56 +2387,18 @@ window.exportQuiz = function () {
         case "md":
           exportToMarkdown(config, exportQuestions);
           break;
+        case "text": {
+          const text = buildQuizText(config, exportQuestions);
+          const blob = new Blob([text], { type: "text/plain" });
+          triggerDownload(blob, `${safeFilename || "quiz"}.txt`);
+          break;
+        }
         case "json": {
-          const exportMeta = {
-            title: quizData.title,
-            description: quizData.description,
-            source: quizData.source,
-          };
-
-          const pwd = document.getElementById("quizPassword")?.value?.trim();
-          if (pwd) {
-            exportMeta.password = pwd;
-          } else {
-            delete exportMeta.password;
-          }
-          delete exportMeta.privacy;
-          delete exportMeta.lang;
-
-          const viewVal = document.querySelector(
-            'input[name="quizView"]:checked',
-          )?.value;
-          if (viewVal && viewVal !== "empty") exportMeta.view = viewVal;
-          const modeVal = document.querySelector(
-            'input[name="quizMode"]:checked',
-          )?.value;
-          if (modeVal && modeVal !== "empty") exportMeta.mode = modeVal;
-
-          const payload = await buildJsonQuizExport(
-            exportMeta.title,
-            exportMeta.description,
-            exportMeta.source,
-            exportQuestions,
-          );
-
-          Object.assign(payload.meta, exportMeta);
-
-          const safeFilename = (quizData.title || "quiz")
-            .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_")
-            .replace(/_+/g, "_")
-            .replace(/^_|_$/g, "");
-
-          const blob = new Blob([JSON.stringify(payload, null, 2)], {
+          const fileContent = await buildJsonPayloadString();
+          const blob = new Blob([fileContent], {
             type: "application/json",
           });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${safeFilename || "quiz"}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
+          triggerDownload(blob, `${safeFilename || "quiz"}.json`);
           break;
         }
       }
@@ -2397,150 +2415,85 @@ window.exportQuiz = function () {
   modal.className = "modal-overlay download-modal-overlay";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "createQuizDownloadTitle");
 
-  {
-    /* <img src="${icon}" alt="" class="icon" aria-hidden="true"></img> */
-  }
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card dl-modal-card";
 
-  const downloadOpts = [
-    {
-      icon: "./favicon.png",
-      label: "Quiz",
-      sublabel: "(.html)",
-      format: "quiz",
-    },
-    {
-      icon: "./assets/images/HTML_Icon.png",
-      label: "HTML",
-      sublabel: "(.html)",
-      format: "html",
-    },
-    {
-      icon: "./assets/images/mardownIcon.png",
-      label: "Markdown",
-      sublabel: "(.md)",
-      format: "md",
-    },
-    {
-      icon: "./assets/images/PDF_Icon.png",
-      label: "PDF",
-      sublabel: "(.pdf)",
-      format: "pdf",
-    },
-    {
-      icon: "./assets/images/pptx_icon.png",
-      label: "PowerPoint",
-      sublabel: "(.pptx)",
-      format: "pptx",
-    },
-    {
-      icon: "./assets/images/word_icon.png",
-      label: "Word",
-      sublabel: "(.docx)",
-      format: "docx",
-    },
-    {
-      icon: `<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-braces-icon lucide-file-braces"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1"/><path d="M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1"/></svg>`,
-      label: "JSON",
-      sublabel: "(.json)",
-      format: "json",
-    },
-    {
-      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`,
-      label: "نسخ",
-      sublabel: "(نص)",
-      format: "copy",
-    },
+  const header = document.createElement("div");
+  header.className = "modal-header";
+  header.innerHTML = `
+    <h2 id="createQuizDownloadTitle"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تحميل الإمتحان</h2>
+    <button class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+  `;
+
+  const subtitle = document.createElement("p");
+  subtitle.className = "dl-subtitle";
+  subtitle.textContent = "اختر صيغة التحميل";
+
+  const grid = document.createElement("div");
+  grid.className = "mode-grid";
+  grid.setAttribute("role", "group");
+  grid.setAttribute("aria-label", "خيارات التنزيل");
+
+  const allExportOptions = [
+    { format: "quiz", label: "Quiz (.html)", iconUrl: "./favicon.png", canCopy: true },
+    { format: "html", label: "HTML (.html)", iconUrl: "./assets/images/HTML_Icon.png", canCopy: true },
+    { format: "md", label: "Markdown (.md)", iconUrl: "./assets/images/mardownIcon.png", canCopy: true },
+    { format: "text", label: "Text (.txt)", iconSvg: COPY_TEXT_ICON_SVG, canCopy: true },
+    { format: "json", label: "JSON (.json)", iconSvg: JSON_FILE_ICON_SVG, canCopy: true },
+    { format: "pdf", label: "PDF (.pdf)", iconUrl: "./assets/images/PDF_Icon.png", canCopy: false },
+    { format: "pptx", label: "PowerPoint (.pptx)", iconUrl: "./assets/images/pptx_icon.png", canCopy: false },
+    { format: "docx", label: "Word (.docx)", iconUrl: "./assets/images/word_icon.png", canCopy: false },
   ];
 
-  // Conditionally add "Download Source" when the quiz has a source URL
-  if (quizData.source?.trim()) {
-    downloadOpts.push({
-      icon: `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-to-line-icon lucide-arrow-down-to-line"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>`,
-      label: "Download Source",
-      sublabel: "",
-      format: "source",
+  allExportOptions.forEach((opt) => {
+    const iconHtml = opt.iconSvg
+      ? opt.iconSvg
+      : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
+    const card = buildExportCard({
+      format: opt.format,
+      label: opt.label,
+      icon: iconHtml,
+      canCopy: opt.canCopy,
+      onDownload: async () => {
+        await doExport(opt.format);
+        modal.remove();
+      },
+      onCopy: async () => {
+        if (opt.format === "quiz") return await buildStandaloneQuizHtml(config, exportQuestions);
+        if (opt.format === "html") return await buildQuizHtml(config, exportQuestions);
+        if (opt.format === "md") return buildQuizMarkdown(config, exportQuestions);
+        if (opt.format === "text") return buildQuizText(config, exportQuestions);
+        if (opt.format === "json") return await buildJsonPayloadString();
+      },
     });
+    grid.appendChild(card);
+  });
+
+  // Show source button if the quiz has a source URL
+  if (quizData.source?.trim()) {
+    const sourceBtn = document.createElement("button");
+    sourceBtn.className = "mode-btn";
+    sourceBtn.type = "button";
+    sourceBtn.setAttribute("aria-label", "Download Source");
+    sourceBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg><strong>Download Source</strong>`;
+    sourceBtn.onclick = (ev) => {
+      ev.stopPropagation();
+      window.open(quizData.source, "_blank");
+      modal.remove();
+    };
+    grid.appendChild(sourceBtn);
   }
 
-  const optionsHtml = downloadOpts
-    .map(
-      ({ icon, label, sublabel, format }) => `
-    <button class="dl-option-btn" data-format="${format}" aria-label="تنزيل كـ ${label}">
-    ${format === "json" || format === "copy" || format === "source" ? icon : `<img style="max-width: 70px; max-height: 70px;" src="${icon}" alt="context icon" aria-hidden="true"></img>`}
-       
-      <span class="dl-label">${label}</span>
-      <span class="dl-sublabel">${sublabel}</span>
-    </button>
-  `,
-    )
-    .join("");
-
-  modal.innerHTML = `
-    <div class="modal-card dl-modal-card">
-      <div class="modal-header">
-        <h2><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تحميل الإمتحان</h2>
-        <button class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-      </div>
-      <p class="dl-subtitle">اختر صيغة التحميل</p>
-      <div class="dl-grid">${optionsHtml}</div>
-    </div>
-  `;
+  modalCard.appendChild(header);
+  modalCard.appendChild(subtitle);
+  modalCard.appendChild(grid);
+  modal.appendChild(modalCard);
 
   modal.querySelector(".dl-close").onclick = () => modal.remove();
   modal.addEventListener("click", (e) => {
     if (e.target === modal) modal.remove();
-  });
-
-  let quizTextBlob = null;
-  modal.querySelectorAll(".dl-option-btn").forEach((btn) => {
-    btn.onclick = async () => {
-      if (btn.dataset.format === "copy") {
-        if (!btn.dataset.copied) {
-          try {
-            const text = buildQuizText(
-              {
-                title: quizData.title,
-                description: quizData.description,
-                source: quizData.source,
-              },
-              exportQuestions,
-            );
-            await navigator.clipboard.writeText(text);
-            quizTextBlob = new Blob([text], { type: "text/plain" });
-            btn.dataset.copied = "true";
-            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg><span class="dl-label">تنزيل</span><span class="dl-sublabel">(.txt)</span>`;
-            showNotification(
-              "تم النسخ",
-              "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
-              "success",
-            );
-          } catch (err) {
-            console.error(err);
-            showNotification("خطأ", "فشل نسخ الإختبار", "error");
-          }
-        } else {
-          const url = URL.createObjectURL(quizTextBlob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${quizData.title}.txt`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          btn.dataset.copied = "";
-          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg><span class="dl-label">نسخ</span><span class="dl-sublabel">(نص)</span>`;
-        }
-        return;
-      }
-      if (btn.dataset.format === "source") {
-        window.open(quizData.source, "_blank");
-        modal.remove();
-        return;
-      }
-      modal.remove();
-      doExport(btn.dataset.format);
-    };
   });
 
   document.body.appendChild(modal);

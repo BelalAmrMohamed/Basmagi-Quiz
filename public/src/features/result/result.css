@@ -917,6 +917,65 @@ body {
   max-height: 30px;
 }
 
+/* ─── Side Menu: download row + copy-to-clipboard corner button ──────────────
+   Wraps a copyable .menu-item with a small square copy button. The
+   .menu-item keeps its full-width click target and existing behavior/id
+   untouched; the copy button sits docked to the row's trailing edge and
+   only shows once the sidebar is expanded (via .sidebar-expanded-only,
+   the same class already used elsewhere in this page for that purpose). */
+.menu-item-row {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.menu-item-row .menu-item {
+  flex: 1;
+  min-width: 0;
+  /* Reserve space so the label/icon in .menu-item doesn't run under the
+     absolutely-positioned copy button on its left. Adjust this value if
+     .menu-item's own horizontal padding (defined in side-menu.css) makes
+     it too tight or too loose in practice. */
+  padding-left: 32px;
+}
+
+.menu-copy-btn {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  z-index: 1;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.menu-copy-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.menu-copy-btn.copied {
+  border-color: var(--color-success, #16a34a);
+  color: var(--color-success, #16a34a);
+}
+
+/* Collapsed-sidebar hiding is handled by the .sidebar-expanded-only class
+   already applied to each copy button in result.html (see side-menu.css
+   for that rule — same convention used by the theme controls section). */
+
 /* ─── Review Card Stagger Animation ──────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes card-fadein {

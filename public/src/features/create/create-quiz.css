@@ -2803,6 +2803,151 @@ body {
 }
 
 /* ============================================================================
+   DOWNLOAD MODAL — export cards with split download / copy actions
+   (mirrors the home page's export-card pattern from export-helpers.js)
+   ============================================================================ */
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px 24px 24px;
+}
+
+.export-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 16px 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+  font-family: inherit;
+}
+
+.export-card:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.export-card:active {
+  transform: translateY(0);
+}
+
+.export-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.export-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.export-icon img,
+.export-icon svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.export-label {
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.mode-copy-btn {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.mode-copy-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mode-copy-btn.copied {
+  border-color: var(--color-success, #16a34a);
+  color: var(--color-success, #16a34a);
+}
+
+.mode-btn {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+
+.mode-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+[data-theme="dark"] .export-card,
+[data-theme="dark-slate"] .export-card,
+[data-theme="dark"] .mode-btn,
+[data-theme="dark-slate"] .mode-btn,
+[data-theme="dark"] .mode-copy-btn,
+[data-theme="dark-slate"] .mode-copy-btn {
+  background: var(--color-surface, var(--color-background));
+}
+
+[data-theme="dark"] .export-card:hover,
+[data-theme="dark-slate"] .export-card:hover,
+[data-theme="dark"] .mode-btn:hover,
+[data-theme="dark-slate"] .mode-btn:hover {
+  background: var(--color-primary-light);
+}
+
+/* ============================================================================
    IMPORT MODAL — DRAG & DROP ZONE
    ============================================================================ */
 
