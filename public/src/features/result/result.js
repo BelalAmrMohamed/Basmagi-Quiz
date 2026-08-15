@@ -13,6 +13,7 @@ import { exportToWord } from "../export/export-to-word.js";
 import { exportToPptx } from "../export/export-to-pptx.js";
 import { buildQuizText } from "../export/export-to-text.js";
 import { exportToMarkdown } from "../export/export-to-markdown.js";
+import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 
 // Notifications
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -280,8 +281,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const exportPptxBtn = document.getElementById("exportPptxBtn");
   const exportHtmlBtn = document.getElementById("exportHtmlBtn");
   const exportQuizBtn = document.getElementById("exportQuizBtn");
-  // const exportJsonBtn = document.getElementById("exportJsonBtn");
-  // const exportSourceBtn = document.getElementById("exportSourceBtn");
+  const exportJsonBtn = document.getElementById("exportJsonBtn");
+  const exportSourceBtn = document.getElementById("exportSourceBtn");
 
   const els = {
     breadcrumb: document.getElementById("quizBreadcrumb"),
@@ -300,16 +301,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Failed to load manifest", e);
   }
 
-  const config = examList.find((e) => e.id === result.examId) || {
+  const manifestEntry = examList.find((e) => e.id === result.examId);
+  const resultMeta = result.meta || {};
+
+  const config = {
     id: result.examId,
-    title: result.examTitle || "User Quiz",
-    description: "Custom user-created quiz",
-    source: result.source,
-    createdAt: result.createdAt,
-    path: null,
-    author: result.author || null,
-    authorHandle: result.authorHandle || null,
-    authorId: result.authorId || null,
+    title: result.examTitle || resultMeta.title || (manifestEntry && manifestEntry.title) || "User Quiz",
+    description: result.description || resultMeta.description || (manifestEntry && manifestEntry.description) || "Custom user-created quiz",
+    source: result.source || resultMeta.source || (manifestEntry && manifestEntry.source) || null,
+    createdAt: result.createdAt || resultMeta.createdAt || (manifestEntry && manifestEntry.createdAt) || null,
+    path: result.path || resultMeta.path || (manifestEntry && manifestEntry.path) || null,
+    author: result.author || resultMeta.author || (manifestEntry && manifestEntry.author) || null,
+    authorHandle: result.authorHandle || resultMeta.author_handle || (manifestEntry && manifestEntry.authorHandle) || null,
+    authorId: result.authorId || resultMeta.author_id || (manifestEntry && manifestEntry.authorId) || null,
+    category: result.category || resultMeta.category || (manifestEntry && manifestEntry.category) || null,
+    view: result.view || resultMeta.view || (manifestEntry && manifestEntry.view) || null,
+    mode: result.mode || resultMeta.mode || (manifestEntry && manifestEntry.mode) || null,
+    questionTypes: result.questionTypes || resultMeta.questionTypes || (manifestEntry && manifestEntry.questionTypes) || null,
   };
 
   // Patch runtime fields onto config.
@@ -324,33 +332,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     || null;
 
   let questions = [];
-  if (config.path) {
+  if (result.questions && Array.isArray(result.questions) && result.questions.length > 0) {
+    questions = result.questions;
+  } else if (config.path) {
     try {
-      const baseUrl = new URL(import.meta.url);
-      const quizUrl = new URL(config.path, baseUrl);
-      if (config.path.toLowerCase().endsWith(".json")) {
-        const res = await fetch(quizUrl.href);
+      let fetchUrl;
+      if (config.path.startsWith("/") || config.path.startsWith("http")) {
+        fetchUrl = new URL(config.path, window.location.origin).href;
+      } else {
+        fetchUrl = new URL(config.path, new URL("/data/", window.location.origin)).href;
+      }
+
+      if (config.path.toLowerCase().endsWith(".json") || config.path.startsWith("/api/") || config.path.includes("?")) {
+        const res = await fetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
           questions = data.questions || [];
           if (data.meta) {
-            if (data.meta.createdAt) config.createdAt = data.meta.createdAt;
-            if (data.meta.description) config.description = data.meta.description;
-            if (data.meta.source) config.source = data.meta.source;
-            if (data.meta.author) config.author = data.meta.author;
-            if (data.meta.author_handle) config.authorHandle = data.meta.author_handle;
-            if (data.meta.author_id) config.authorId = data.meta.author_id;
+            if (data.meta.createdAt && !config.createdAt) config.createdAt = data.meta.createdAt;
+            if (data.meta.description && !config.description) config.description = data.meta.description;
+            if (data.meta.source && !config.source) config.source = data.meta.source;
+            if (data.meta.author && !config.author) config.author = data.meta.author;
+            if (data.meta.author_handle && !config.authorHandle) config.authorHandle = data.meta.author_handle;
+            if (data.meta.author_id && !config.authorId) config.authorId = data.meta.author_id;
           }
         }
       } else {
-        const loaded = await import(quizUrl.href);
+        const loaded = await import(/* @vite-ignore */ fetchUrl);
         questions = loaded.questions || [];
       }
     } catch (e) {
       console.error("Failed to load questions", e);
     }
-  } else if (result.questions) {
-    questions = result.questions;
   } else {
     try {
       const userQuizzes = JSON.parse(
@@ -358,11 +371,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
       const found = userQuizzes.find((q) => q.id === result.examId);
       if (found) {
-        questions = found.questions;
-        config.title = found.title;
-        config.source = found.source || result.source;
-        config.createdAt = found.createdAt;
-        config.path = found.path;
+        questions = found.questions || [];
+        config.title = found.title || config.title;
+        config.source = found.source || config.source;
+        config.createdAt = found.createdAt || config.createdAt;
+        config.path = found.path || config.path;
       }
     } catch (e) {
       console.error("Error loading user quiz questions", e);
@@ -433,40 +446,65 @@ document.addEventListener("DOMContentLoaded", async () => {
     (exportTxtBtn.onclick = () =>
       withDownloadLoading(exportTxtBtn, async () => {
         try {
-          if (!isCopied) {
-            const text = buildQuizText(config, questions, result.userAnswers);
-            await navigator.clipboard.writeText(text);
-            quizTextBlob = new Blob([text], { type: "text/plain" });
-
-            exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Copy As Text</span>`;
-            isCopied = true;
-            showNotification(
-              "تم النسخ",
-              "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
-              "success",
-            );
-          } else {
-            const url = URL.createObjectURL(quizTextBlob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${config.title}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            isCopied = false;
-          }
+          const text = buildQuizText(config, questions, result.userAnswers);
+          const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${config.title || "quiz"}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showNotification(
+            "تم تحميل الملف",
+            "تم تحميل الإختبار كملف نصي بنجاح",
+            "success",
+          );
         } catch (e) {
           console.error(e);
-          showNotification("خطأ", "فشل نسخ أو تحميل الإختبار.", "error");
-        }
-      }).then(() => {
-        if (isCopied) {
-          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></span><span class="menu-label">Text <code>(.txt)</code></span>`;
-        } else {
-          exportTxtBtn.innerHTML = `<span><svg xmlns="http://www.w3.org/2000/svg" class="download-option-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></span><span class="menu-label">Copy As Text</span>`;
+          showNotification("خطأ", "فشل تحميل الإختبار.", "error");
         }
       }));
+
+  exportJsonBtn &&
+    (exportJsonBtn.onclick = () =>
+      withDownloadLoading(exportJsonBtn, async () => {
+        try {
+          const payload = await buildJsonQuizExport(
+            config.title,
+            config.description,
+            config.source,
+            questions,
+            config.createdAt,
+          );
+          const fileContent = JSON.stringify(payload, null, 2);
+          const blob = new Blob([fileContent], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${config.title || "quiz"}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showNotification(
+            "تم تحميل الملف",
+            "تم تحميل الإختبار كملف JSON بنجاح",
+            "success",
+          );
+        } catch (e) {
+          console.error(e);
+          showNotification("خطأ", "فشل تحميل ملف JSON.", "error");
+        }
+      }));
+
+  if (exportSourceBtn && config.source) {
+    exportSourceBtn.style.display = "";
+    exportSourceBtn.onclick = () => {
+      window.open(config.source, "_blank");
+    };
+  }
 
   exportPdfBtn &&
     (exportPdfBtn.onclick = () =>
@@ -505,11 +543,11 @@ document.addEventListener("DOMContentLoaded", async () => {
      but most exam Titles are in English (but not all), The placement
      of the `...` Should be dynamic */
   const quizTitleEl = document.getElementById("quiz-title");
-  quizTitleEl.textContent =
-    title.length > limit ? `${title.substring(0, limit)}...` : title;
-  // #quiz-title is set via textContent (outside renderMarkdown), so we must
-  // call scanDirections to apply the correct direction class.
-  scanDirections(quizTitleEl);
+  if (quizTitleEl) {
+    quizTitleEl.textContent =
+      title.length > limit ? `${title.substring(0, limit)}...` : title;
+    scanDirections(quizTitleEl.parentElement || quizTitleEl);
+  }
 
   // ── Quiz Info Dialog ───────────────────────────────────────────────────────
   // Populate the info dialog using the shared HTML builder.

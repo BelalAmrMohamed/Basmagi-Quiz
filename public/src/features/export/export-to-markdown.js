@@ -28,7 +28,7 @@ const mdLineBreaks = (str) => {
   return String(str).replace(/\n/g, "  \n");
 };
 
-export function exportToMarkdown(config, questions, userAnswers = []) {
+export function buildQuizMarkdown(config, questions, userAnswers = []) {
   let hasMCQ = false,
     hasTrueFalse = false,
     hasEssay = false;
@@ -150,6 +150,11 @@ export function exportToMarkdown(config, questions, userAnswers = []) {
     markdown += `---\n\n`;
   });
 
+  return markdown;
+}
+
+export function exportToMarkdown(config, questions, userAnswers = []) {
+  const markdown = buildQuizMarkdown(config, questions, userAnswers);
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -42,62 +42,99 @@ export async function copyTextWithFallback(text) {
 }
 
 /**
- * Creates a mode-grid button that copies quiz text on first click,
- * then offers a .txt download on the second click.
+ * Creates an export card with an optional top-left copy button.
  *
- * @param {Function} getTextFn — async () => string  — called on first click to
- *   retrieve the quiz text (load + format). Throw to surface an error notification.
- * @param {string} downloadFilename — base filename for the .txt download (no extension).
- * @returns {HTMLButtonElement}
+ * @param {object} options
+ * @param {string} options.format — The format identifier.
+ * @param {string} options.label — The text label on the card.
+ * @param {string} options.icon — The SVG icon for the card.
+ * @param {boolean} options.canCopy — Whether this format can be copied to clipboard.
+ * @param {Function} options.onDownload — Async function triggered on card click.
+ * @param {Function} options.onCopy — Async function triggered on copy button click (if canCopy=true). Returns the text to copy.
+ * @returns {HTMLDivElement}
  */
-export function buildCopyDownloadButton(getTextFn, downloadFilename) {
-  const btn = document.createElement("button");
-  btn.className = "mode-btn";
-  btn.type = "button";
-  btn.setAttribute("aria-label", "نسخ كنص");
+export function buildExportCard({ format, label, icon, canCopy, onDownload, onCopy }) {
+  const card = document.createElement("div");
+  card.className = "export-card";
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.setAttribute("aria-label", `Download as ${label}`);
+  card.dataset.format = format;
+  
+  const content = document.createElement("div");
+  content.className = "export-card-content";
+  content.innerHTML = `
+    <div class="export-icon">${icon}</div>
+    <div class="export-label">${label}</div>
+  `;
+  card.appendChild(content);
 
-  const copyIcon = COPY_TEXT_ICON_SVG;
-  const downloadIcon = DOWNLOAD_TXT_ICON_SVG;
-
-  btn.innerHTML = `${copyIcon}<strong>نسخ كنص</strong>`;
-
-  let isCopied = false;
-  let textBlob = null;
-
-  btn.onclick = (ev) => {
-    ev.stopPropagation();
-    withDownloadLoading(btn, async () => {
+  // Click on card -> download
+  card.onclick = (e) => {
+    // If clicked on the copy button, ignore
+    if (e.target.closest('.mode-copy-btn')) return;
+    
+    withDownloadLoading(card, async () => {
       try {
-        if (!isCopied) {
-          const text = await getTextFn();
-          await copyTextWithFallback(text);
-          textBlob = new Blob([text], { type: "text/plain" });
-          btn.innerHTML = `${downloadIcon}<strong>تنزيل .txt</strong>`;
-          btn.setAttribute("aria-label", "تنزيل .txt");
-          isCopied = true;
-          showNotification(
-            "تم النسخ",
-            "تم نسخ نص الإختبار! انقر مرة أخرى لتحميله كملف .txt",
-            "success",
-          );
-        } else {
-          triggerDownload(textBlob, `${downloadFilename}.txt`);
-          isCopied = false;
-        }
-      } catch (e) {
-        console.error(e);
-        showNotification("خطأ", "فشل نسخ أو تحميل الإختبار.", "error");
-      }
-    }).then(() => {
-      if (isCopied) {
-        btn.innerHTML = `${downloadIcon}<strong>تنزيل .txt</strong>`;
-      } else {
-        btn.innerHTML = `${copyIcon}<strong>نسخ كنص</strong>`;
+        await onDownload();
+      } catch (err) {
+        console.error(err);
+        showNotification("خطأ", "فشل التنزيل.", "error");
       }
     });
   };
 
-  return btn;
+  // Keyboard support for card
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      card.click();
+    }
+  });
+
+  if (canCopy) {
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "mode-copy-btn";
+    copyBtn.setAttribute("aria-label", `Copy ${label} to clipboard`);
+    copyBtn.title = `نسخ كنص`;
+    
+    const copyIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+    const checkIconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+    
+    copyBtn.innerHTML = copyIconSvg;
+    
+    copyBtn.onclick = async (e) => {
+      e.stopPropagation();
+      const originalHtml = copyBtn.innerHTML;
+      try {
+        copyBtn.innerHTML = '<i data-lucide="loader-circle" class="spin" style="width:14px;height:14px;"></i>';
+        const textToCopy = await onCopy();
+        await copyTextWithFallback(textToCopy);
+        
+        copyBtn.innerHTML = checkIconSvg;
+        copyBtn.classList.add('copied');
+        
+        showNotification(
+          "تم النسخ",
+          "تم نسخ المحتوى بنجاح!",
+          "success"
+        );
+        
+        setTimeout(() => {
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.classList.remove('copied');
+        }, 2000);
+      } catch (err) {
+        console.error(err);
+        copyBtn.innerHTML = copyIconSvg;
+        showNotification("خطأ", "فشل النسخ.", "error");
+      }
+    };
+    
+    card.appendChild(copyBtn);
+  }
+
+  return card;
 }
 
 /**

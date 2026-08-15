@@ -2,227 +2,6 @@
 /* CSS variables at themes.css */
 
 /* ============================================================================
-   MEDIA SECTIONS: IMAGE / AUDIO / VIDEO (Admin & User)
-   ============================================================================ */
-
-/* ── Media tab toggle (Upload / Link) ───────────────────────────────────── */
-.media-tab-toggle {
-  display: flex;
-  gap: 0;
-  margin-bottom: 14px;
-  border: 2px solid var(--color-border);
-  border-radius: 8px;
-  overflow: hidden;
-  width: fit-content;
-}
-
-.media-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 16px;
-  border: none;
-  background: var(--color-background);
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.18s, color 0.18s;
-  font-family: inherit;
-}
-
-.media-tab-btn:not(:last-child) {
-  border-left: 2px solid var(--color-border);
-}
-
-[dir="rtl"] .media-tab-btn:not(:last-child) {
-  border-left: none;
-  border-right: 2px solid var(--color-border);
-}
-
-.media-tab-btn.active {
-  background: var(--color-primary);
-  color: #fff;
-}
-
-.media-tab-btn:not(.active):hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-/* ── Media tab panel ────────────────────────────────────────────────────── */
-.media-tab-panel {
-  animation: fadeIn 0.18s ease;
-}
-
-/* ── File upload drop zone ──────────────────────────────────────────────── */
-.file-upload-zone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 28px 20px;
-  border: 2px dashed var(--color-border);
-  border-radius: 10px;
-  background: var(--color-background);
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
-  text-align: center;
-  color: var(--color-text-secondary);
-  margin-bottom: 10px;
-}
-
-.file-upload-zone:hover,
-.file-upload-zone.drag-active {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-}
-
-.file-upload-zone svg {
-  color: var(--color-text-tertiary);
-  transition: color 0.2s;
-}
-
-.file-upload-zone:hover svg,
-.file-upload-zone.drag-active svg {
-  color: var(--color-primary);
-}
-
-.file-upload-zone p {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.file-upload-zone p span {
-  font-size: 0.82rem;
-  color: var(--color-text-tertiary);
-  text-decoration: underline;
-}
-
-.file-upload-zone:hover p span,
-.file-upload-zone.drag-active p span {
-  color: var(--color-primary);
-}
-
-.upload-size-hint {
-  font-size: 0.78rem !important;
-  color: var(--color-text-tertiary) !important;
-  margin: 0 !important;
-}
-
-/* ── Upload progress bar ─────────────────────────────────────────────────── */
-.upload-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: var(--color-primary-light);
-  border-radius: 8px;
-  margin-bottom: 10px;
-  position: relative;
-  overflow: hidden;
-}
-
-.upload-progress-bar {
-  position: absolute;
-  inset: 0;
-  background: var(--color-primary);
-  opacity: 0.15;
-  transition: width 0.4s ease;
-  width: 0%;
-  border-radius: 8px;
-}
-
-.upload-progress-text {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-primary);
-  position: relative;
-  z-index: 1;
-}
-
-/* ── Audio preview ───────────────────────────────────────────────────────── */
-.audio-preview-container {
-  margin-top: 10px;
-}
-
-.question-audio-preview {
-  width: 100%;
-  border-radius: 8px;
-  accent-color: var(--color-primary);
-  background: var(--color-background);
-  outline: 2px solid var(--color-border);
-}
-
-/* ── Video preview ───────────────────────────────────────────────────────── */
-.video-preview-container {
-  margin-top: 10px;
-}
-
-.question-video-preview {
-  width: 100%;
-  border-radius: 10px;
-  max-height: 280px;
-  background: #000;
-  display: block;
-}
-
-.video-preview-embed {
-  position: relative;
-  width: 100%;
-  padding-top: 56.25%; /* 16:9 */
-  border-radius: 10px;
-  overflow: hidden;
-  background: #000;
-}
-
-.video-preview-embed iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-  border-radius: 10px;
-}
-
-/* ── YouTube / video URL hint banner ─────────────────────────────────────── */
-.video-youtube-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px 14px;
-  background: hsl(38 100% 50% / 0.08);
-  border: 1.5px solid hsl(38 100% 50% / 0.4);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: var(--color-text-primary);
-  margin-bottom: 14px;
-  line-height: 1.5;
-}
-
-.video-youtube-hint svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: hsl(38 100% 42%);
-}
-
-[data-theme="dark"] .video-youtube-hint,
-[data-theme="dark-slate"] .video-youtube-hint {
-  background: hsl(38 100% 50% / 0.06);
-  border-color: hsl(38 100% 50% / 0.3);
-}
-
-/* ── Fade-in animation for panels ───────────────────────────────────────── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ============================================================================
    LUCIDE ICON NORMALIZATION
    ============================================================================ */
 
@@ -823,20 +602,7 @@ body {
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.question-card.dragging {
-  opacity: 0.5;
-  cursor: move;
-  transform: rotate(2deg);
-}
-
-.question-card.drag-over {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  border-style: dashed;
-}
-
-.question-card.collapsed .form-group:not(:first-child),
-.question-card.collapsed .collapsible-section {
+.question-card.collapsed .form-group:not(:first-child) {
   display: none;
 }
 
@@ -886,22 +652,41 @@ body {
   accent-color: var(--color-primary);
 }
 
-.drag-handle {
-  cursor: grab;
-  color: var(--color-text-tertiary);
+.move-handle {
   display: inline-flex;
-  align-items: center;
-  padding: 4px;
-  transition: color 0.2s;
+  flex-direction: column;
+  gap: 1px;
   user-select: none;
 }
 
-.drag-handle:hover {
-  color: var(--color-primary);
+.move-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
 }
 
-.drag-handle:active {
-  cursor: grabbing;
+.move-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.move-btn:active {
+  transform: scale(0.9);
+}
+
+.move-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: transparent;
 }
 
 .question-actions {
@@ -1398,12 +1183,13 @@ body {
   background: var(--color-success-light);
 }
 
-.option-radio {
+.option-checkbox {
   flex-shrink: 0;
   width: 20px;
   height: 20px;
   cursor: pointer;
   accent-color: var(--color-success);
+  border-radius: 4px;
 }
 
 .option-input {
@@ -1460,53 +1246,228 @@ body {
 }
 
 /* ============================================================================
-   COLLAPSIBLE SECTIONS
+   MEDIA FORM GROUPS (always visible — image / audio / video)
    ============================================================================ */
 
-.collapsible-section {
+.media-form-group {
   margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--color-border-light, var(--color-border));
 }
 
-.collapsible-header {
+.media-form-group > label {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
-  cursor: pointer;
-  user-select: none;
-  transition: opacity 0.2s;
-}
-
-.collapsible-header:hover {
-  opacity: 0.7;
-}
-
-.collapsible-header h4 {
-  margin: 0;
+  gap: 6px;
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.collapsible-toggle {
-  color: var(--color-text-secondary);
-  display: inline-flex;
+.media-form-group > label svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Combined media dropzone (image/audio/video, auto-detected) ─────────── */
+.media-dropzone {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  transition: transform 0.3s;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border: 2px dashed var(--color-border);
+  border-radius: 10px;
+  background: var(--color-background);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin-bottom: 10px;
 }
 
-.collapsible-toggle.open {
-  transform: rotate(180deg);
+.media-dropzone:hover,
+.media-dropzone.drag-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
-.collapsible-content {
-  max-height: 0;
+.media-dropzone svg {
+  color: var(--color-text-tertiary);
+  transition: color 0.2s;
+}
+
+.media-dropzone:hover svg,
+.media-dropzone.drag-active svg {
+  color: var(--color-primary);
+}
+
+.media-dropzone p {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.media-dropzone p span {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  text-decoration: underline;
+}
+
+.media-dropzone:hover p span,
+.media-dropzone.drag-active p span {
+  color: var(--color-primary);
+}
+
+.media-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.media-link-row input {
+  flex: 1;
+}
+
+.media-link-row .btn-sm {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* ── Media chips: one per active image/audio/video field ────────────────── */
+.media-chip {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: var(--color-surface);
+}
+
+.media-chip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.media-chip-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.media-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.media-chip-remove:hover {
+  background: var(--color-danger-light, #fee2e2);
+  color: var(--color-danger, #dc2626);
+}
+
+.media-chip-url {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.upload-size-hint {
+  font-size: 0.78rem !important;
+  color: var(--color-text-tertiary) !important;
+  margin: 0 !important;
+}
+
+/* ── Upload progress bar ─────────────────────────────────────────────────── */
+.upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--color-primary-light);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  position: relative;
   overflow: hidden;
-  transition: max-height 0.3s ease;
 }
 
-.collapsible-content.open {
-  max-height: 800px;
+.upload-progress-bar {
+  position: absolute;
+  inset: 0;
+  background: var(--color-primary);
+  opacity: 0.15;
+  transition: width 0.4s ease;
+  width: 0%;
+  border-radius: 8px;
+}
+
+.upload-progress-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Audio preview ───────────────────────────────────────────────────────── */
+.audio-preview-container {
+  margin-top: 10px;
+}
+
+.question-audio-preview {
+  width: 100%;
+  border-radius: 8px;
+  accent-color: var(--color-primary);
+  background: var(--color-background);
+  outline: 2px solid var(--color-border);
+}
+
+/* ── Video preview ───────────────────────────────────────────────────────── */
+.video-preview-container {
+  margin-top: 10px;
+}
+
+.question-video-preview {
+  width: 100%;
+  border-radius: 10px;
+  max-height: 280px;
+  background: #000;
+  display: block;
+}
+
+.video-preview-embed {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 */
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+
+.video-preview-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 10px;
 }
 
 /* ============================================================================
@@ -2492,84 +2453,141 @@ body {
 }
 
 /* ============================================================================
-   INLINE MARKDOWN EDITOR
+   WRITE / PREVIEW MARKDOWN FIELD (GitHub-style)
    ============================================================================ */
 
-.md-editor-wrap {
-  position: relative;
+.wp-field {
   width: 100%;
-}
-
-/* Rendered view (default / read mode) */
-.md-rendered {
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 8px;
   border: 2px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  cursor: text;
-  font-size: 0.95rem;
-  line-height: 1.7;
-  transition:
-    border-color 0.18s,
-    background 0.18s;
-  word-break: break-word;
-  position: relative;
-}
-
-.md-rendered::after {
-  content: "✏️";
-  position: absolute;
-  bottom: 6px;
-  left: 10px;
-  font-size: 0.7rem;
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-
-.md-rendered:hover {
-  border-color: var(--color-primary);
-  background: var(--color-background);
-}
-
-.md-rendered:hover::after {
-  opacity: 0.4;
-}
-
-.md-rendered:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.md-placeholder {
-  color: var(--color-text-tertiary);
-  font-style: italic;
-  pointer-events: none;
-}
-
-.md-empty {
-  background: var(--color-background);
-}
-
-/* Edit panel: textarea + live preview stacked */
-.md-edit-panel {
-  border: 2px solid var(--color-primary);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 0 0 3px var(--color-primary-light);
   background: var(--color-background);
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
 
-/* Raw textarea (in edit mode) */
-.md-source {
+.wp-field:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.wp-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+
+.wp-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.wp-tab {
+  padding: 9px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.wp-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.wp-tab.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.wp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.wp-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.wp-tool-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wp-tool-btn:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.wp-tool-dropdown {
+  position: relative;
+}
+
+.wp-heading-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 110px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  gap: 1px;
+}
+
+.wp-heading-option {
+  display: block;
+  width: 100%;
+  text-align: right;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wp-heading-option:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.wp-pane-wrap {
+  position: relative;
+}
+
+.wp-textarea {
   width: 100%;
   min-height: 60px;
   padding: 10px 14px;
   border: none;
-  border-bottom: 1px dashed var(--color-border);
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: "Fira Code", "Courier New", monospace;
@@ -2581,36 +2599,40 @@ body {
   overflow: hidden;
 }
 
-.md-source:focus {
+.wp-textarea:focus {
   outline: none;
 }
 
-/* Live preview panel (below textarea while editing) */
-.md-live-preview {
-  display: none;
+.wp-preview-pane {
+  min-height: 60px;
   padding: 10px 14px;
-  background: var(--color-surface);
-  border-top: 1px dashed var(--color-border);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   line-height: 1.7;
   color: var(--color-text-primary);
+  word-break: break-word;
 }
 
-.md-live-preview:not(:empty) {
-  display: block;
+.wp-footer {
+  padding: 6px 14px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.md-live-preview-inner {
-  padding: 2px 0;
+.wp-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--color-text-tertiary);
+  font-size: 0.75rem;
 }
 
-/* Label above live preview */
-.md-edit-panel:has(.md-live-preview:not(:empty)) .md-source {
-  border-bottom: 1px dashed var(--color-border);
+.md-placeholder {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+  pointer-events: none;
 }
 
-.md-rendered .inline-code,
-.md-live-preview .inline-code,
+.wp-preview-pane .inline-code,
 .preview-question .inline-code,
 .option-md-wrap .inline-code {
   background: var(--color-primary-light);
@@ -2623,7 +2645,7 @@ body {
 }
 
 /* ============================================================================
-   OPTION MD EDITOR — compact single-line style
+   OPTION WRITE/PREVIEW FIELD — compact single-line style
    ============================================================================ */
 
 .option-md-wrap {
@@ -2631,30 +2653,24 @@ body {
   min-width: 0;
 }
 
-.option-md-wrap .md-rendered {
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: 0.92rem;
-  line-height: 1.5;
-}
-
-.option-md-wrap .md-rendered::after {
-  display: none;
-}
-
-.option-md-wrap .md-edit-panel {
-  box-shadow: 0 0 0 2px var(--color-primary-light);
-}
-
-.option-md-wrap .md-source {
+.option-md-wrap .wp-textarea,
+.option-md-wrap .wp-preview-pane {
   min-height: 36px;
   padding: 6px 10px;
   font-size: 0.9rem;
 }
 
-.option-md-wrap .md-live-preview {
-  font-size: 0.88rem;
+.option-md-wrap .wp-bar {
+  padding: 0 6px;
+}
+
+.option-md-wrap .wp-tab {
   padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.option-md-wrap .wp-footer {
+  display: none;
 }
 
 /* ============================================================================
@@ -2896,43 +2912,38 @@ body {
   border-color: var(--color-border);
 }
 
-/* Md editor */
-[data-theme="dark"] .md-rendered,
-[data-theme="dark-slate"] .md-rendered {
+/* Write/Preview field */
+[data-theme="dark"] .wp-field,
+[data-theme="dark-slate"] .wp-field {
   background: var(--color-background);
   border-color: var(--color-border);
-  color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .md-rendered:hover,
-[data-theme="dark-slate"] .md-rendered:hover {
+[data-theme="dark"] .wp-field:focus-within,
+[data-theme="dark-slate"] .wp-field:focus-within {
   border-color: var(--color-primary);
 }
 
-[data-theme="dark"] .md-edit-panel,
-[data-theme="dark-slate"] .md-edit-panel {
-  background: var(--color-background);
-  border-color: var(--color-primary);
-}
-
-[data-theme="dark"] .md-source,
-[data-theme="dark-slate"] .md-source {
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
-}
-
-[data-theme="dark"] .md-live-preview,
-[data-theme="dark-slate"] .md-live-preview {
+[data-theme="dark"] .wp-bar,
+[data-theme="dark-slate"] .wp-bar {
   background: var(--color-surface);
   border-color: var(--color-border);
+}
+
+[data-theme="dark"] .wp-textarea,
+[data-theme="dark-slate"] .wp-textarea {
+  background: var(--color-background);
   color: var(--color-text-primary);
 }
 
-[data-theme="dark"] .md-rendered .inline-code,
-[data-theme="dark-slate"] .md-rendered .inline-code,
-[data-theme="dark"] .md-live-preview .inline-code,
-[data-theme="dark-slate"] .md-live-preview .inline-code,
+[data-theme="dark"] .wp-preview-pane,
+[data-theme="dark-slate"] .wp-preview-pane {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+[data-theme="dark"] .wp-preview-pane .inline-code,
+[data-theme="dark-slate"] .wp-preview-pane .inline-code,
 [data-theme="dark"] .option-md-wrap .inline-code,
 [data-theme="dark-slate"] .option-md-wrap .inline-code {
   background: rgba(203, 166, 247, 0.15);
@@ -2949,12 +2960,6 @@ body {
 [data-theme="dark"] .option-item.correct,
 [data-theme="dark-slate"] .option-item.correct {
   background: var(--color-success-light);
-}
-
-/* Collapsible */
-[data-theme="dark"] .collapsible-header,
-[data-theme="dark-slate"] .collapsible-header {
-  color: var(--color-text-secondary);
 }
 
 /* Templates */
@@ -3193,8 +3198,7 @@ body {
 }
 
 /* Override original collapsed selector — we use .question-body now */
-.question-card.collapsed .form-group:not(:first-child),
-.question-card.collapsed .collapsible-section {
+.question-card.collapsed .form-group:not(:first-child) {
   display: block; /* reset — .question-body handles visibility */
 }
 
@@ -3325,11 +3329,6 @@ body {
   font-weight: 500;
 }
 
-/* ── Collapsible header: icon colour when open ──────────────────────────────── */
-.collapsible-section:has(.collapsible-content.open) .collapsible-header h4 {
-  color: var(--color-primary);
-}
-
 /* ── Question body: small top gap ──────────────────────────────────────────── */
 .question-body {
   padding-top: 8px;
@@ -3428,11 +3427,6 @@ body {
   .quiz-metadata .meta-grid .form-group:last-child {
     grid-column: 1 / -1;
   }
-}
-
-/* ── Tooltip on drag handle ─────────────────────────────────────────────────── */
-.drag-handle {
-  position: relative;
 }
 
 /* ── Question card: reduce padding on very small screens ────────────────────── */

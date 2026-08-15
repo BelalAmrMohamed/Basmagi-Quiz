@@ -1,4 +1,4 @@
--- Database-Schema.sql | Last updated on version `v7.1.1`
+-- Database-Schema.sql | Last updated on version `v7.1.2`
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 

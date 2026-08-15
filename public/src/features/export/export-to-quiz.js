@@ -27,6 +27,11 @@ import {
   _LABEL_PREFIX_REGEX,
   _FIRST_STRONG_CHAR_REGEX,
   _ARABIC_REGEX,
+  unescapeHtmlEntities,
+  detectLang,
+  ICON_COPY,
+  ICON_CHECK,
+  COPY_LABEL,
 } from "../../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
@@ -90,7 +95,7 @@ const serializeHlKeywords = (hlKeywords) => {
 const serializeHlBuiltinsJs = (set) =>
   `new Set([${Array.from(set).map((w) => JSON.stringify(w)).join(", ")}])`;
 
-export async function exportToQuiz(config, questions) {
+export async function buildStandaloneQuizHtml(config, questions) {
   const processedQuestions = await convertImagesToBase64(questions);
 
   if (!config.category) {
@@ -107,12 +112,16 @@ export async function exportToQuiz(config, questions) {
       if (base64) {
         creatorProfile.avatarUrl = base64;
       }
+      const cleanHandle = creatorProfile.handle ? creatorProfile.handle.replace(/^@/, "") : "";
+      if (cleanHandle) {
+        creatorProfile.profileUrl = `https://basmagi-quiz.vercel.app/@${encodeURIComponent(cleanHandle)}`;
+      }
     }
   }
 
-  const quizInfoModalHtml = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
+  const quizInfoModalHtml = buildQuizInfoModalHtml(config, processedQuestions.length, creatorProfile);
 
-  const quizHTML = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
   <html lang="ar" dir="rtl">
   <head>
   <meta charset="UTF-8">
@@ -133,7 +142,9 @@ export async function exportToQuiz(config, questions) {
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
   <script type="module">
-        const ICON_CHECK = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>\`;
+        const ICON_CHECK = \`\${ICON_CHECK}\`;
+        const ICON_COPY = \`\${ICON_COPY}\`;
+        const COPY_LABEL = \`\${COPY_LABEL}\`;
 
         window.copyCodeBlock = (btn) => {
           const wrapper = btn.closest(".code-block-wrapper");
@@ -1030,6 +1041,11 @@ export async function exportToQuiz(config, questions) {
   .question-badge.essay {
     background: var(--warning-bg);
     color: var(--warning-text);
+  }
+
+  .question-badge.truefalse {
+    background: var(--info-bg);
+    color: var(--info-text);
   }
 
   .flag-btn {
@@ -2000,6 +2016,10 @@ ${quizInfoModalHtml}
 
   ${detectDirection.toString()}
 
+  ${unescapeHtmlEntities.toString()}
+  
+  ${detectLang.toString()}
+
   ${_processElement.toString()}
 
   ${_processByLine.toString()}
@@ -2406,10 +2426,10 @@ ${quizInfoModalHtml}
     },
   
     renderQuestion(q, i) {
-      // There is a missing feature here: It doesn't recognise True/False questions.
       const isEssay = isEssayQuestion(q);
-      const badgeText = isEssay ? "مقالي" : "إختياري";
-      const badgeClass = isEssay ? "essay" : "";
+      const isTrueFalse = !isEssay && Array.isArray(q.options) && q.options.length === 2;
+      const badgeText = isEssay ? "مقالي" : (isTrueFalse ? "صح أم خطأ" : "إختياري");
+      const badgeClass = isEssay ? "essay" : (isTrueFalse ? "truefalse" : "");
   
       let optionsHtml = "";
       if (isEssay) {
@@ -3036,7 +3056,10 @@ ${quizInfoModalHtml}
   </script>
   </body>
   </html>`;
+}
 
+export async function exportToQuiz(config, questions) {
+  const quizHTML = await buildStandaloneQuizHtml(config, questions);
   const blob = new Blob([quizHTML], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

@@ -23,6 +23,12 @@
 
 export const MARKDOWN_CSS = `
 /* ══════════════════════════════════════════════════════════════════════════════
+   src/styles/markdown.css
+   Shared Markdown + KaTeX visual styles.
+   CSS variables at themes.css
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════════════════
    DIRECTION + OVERFLOW UTILITIES
    ══════════════════════════════════════════════════════════════════════════════ */
 
@@ -58,31 +64,25 @@ export const MARKDOWN_CSS = `
   color: var(--color-text-primary);
   line-height: 1.3;
 }
-
 .md-h1 {
   font-size: 1.6em;
   border-bottom: 2px solid var(--color-border);
   padding-bottom: 4px;
 }
-  
 .md-h2 {
   font-size: 1.35em;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 3px;
 }
-
 .md-h3 {
   font-size: 1.15em;
 }
-
 .md-h4 {
   font-size: 1.05em;
 }
-
 .md-h5 {
   font-size: 0.95em;
 }
-
 .md-h6 {
   font-size: 0.9em;
   opacity: 0.85;
@@ -180,7 +180,6 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-
 .md-img {
   max-width: 100%;
   height: auto;
@@ -203,11 +202,9 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   font-size: 1.05em;
   max-width: 100%;
 }
-
 .math-inline {
   display: inline;
 }
-
 .math-raw {
   font-family: "Courier New", Courier, monospace;
   font-size: 0.92em;
@@ -237,15 +234,10 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   word-break: break-all;
 }
 
-/* BUG FIX: this override previously set white text on a black background,
-   which is inverted for a *light* theme (and duplicated the dark palette
-   above almost exactly). Use the same --color-* design tokens the rest of
-   this file relies on so inline code stays legible and on-theme in light
-   mode instead of forcing hardcoded black/white. */
 [data-theme="light"] .inline-code {
-  background: var(--color-background-secondary, rgba(0, 0, 0, 0.04));
-  border-color: var(--color-border, #d0d0d5);
-  color: var(--color-primary, #b3261e);
+  background: black;
+  border-color: gray;
+  color: white;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -676,8 +668,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
      .sh-property   — object properties (alias of sh-attr)
      .sh-tag        — HTML / XML tag names
      .sh-variable   — CSS custom properties (--foo)
-     .sh-interp     — template-literal interpolation delimiters 
-     .sh-interp-body— expression inside 
+     .sh-interp     — template-literal interpolation delimiters \${ }
+     .sh-interp-body— expression inside \${ }
 
    Colours are tuned for a dark background (the default .code-block uses
    a near-black bg).  A separate [data-theme="light"] block overrides them

@@ -29,10 +29,12 @@ export async function sha256Hex(text) {
 
 export async function quizPasswordMatches(input, stored, dbSource) {
   if (!stored) return false;
-  if (isStoredPasswordHash(stored) || dbSource === "db") {
-    return (await sha256Hex(input)) === stored.toLowerCase();
+  const storedStr = String(stored).trim();
+  const inputStr = String(input).trim();
+  if (isStoredPasswordHash(storedStr)) {
+    return (await sha256Hex(inputStr)) === storedStr.toLowerCase();
   }
-  return input === stored;
+  return inputStr === storedStr;
 }
 
 export function isDownloadPasswordVerified(quizId) {

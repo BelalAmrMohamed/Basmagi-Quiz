@@ -37,7 +37,6 @@ let quizData = {
 
 let questionIdCounter = 0;
 let autosaveTimeout = null;
-let draggedElement = null;
 let bulkModeActive = false;
 let selectedQuestions = new Set();
 let isTemplatesPanelOpen = false;
@@ -78,67 +77,160 @@ function renderMathIn(container) {
 }
 
 // ============================================================================
-// MARKDOWN & INLINE EDITOR SYSTEM
+// WRITE / PREVIEW EDITOR SYSTEM (GitHub-style)
 // ============================================================================
+//
+// Each text field (question text, options, explanation, essay answer) is a
+// single bordered container with a Write / Preview tab pair and a small
+// markdown formatting toolbar, mirroring GitHub's comment/release editor.
+// Only one pane (textarea or rendered preview) is visible at a time — no
+// stacked "edit box + live preview beneath it" like the old system.
+
+const MD_TOOLBAR_ACTIONS = [
+  { cmd: "bold", title: "غامق", icon: "bold" },
+  { cmd: "italic", title: "مائل", icon: "italic" },
+  { cmd: "heading", title: "عنوان", icon: "heading", dropdown: true },
+  { cmd: "codeblock", title: "كتلة كود", icon: "codeblock" },
+  { cmd: "code", title: "كود مضمّن", icon: "code" },
+  { cmd: "ul", title: "قائمة نقطية", icon: "list" },
+  { cmd: "ol", title: "قائمة مرقمة", icon: "list-ordered" },
+];
+
+const HEADING_LEVELS = [1, 2, 3, 4, 5];
+
+const MD_TOOLBAR_ICONS = {
+  bold: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H6V4h8a4 4 0 0 1 0 8"/></svg>',
+  italic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>',
+  heading: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 12h12"/></svg>',
+  code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  codeblock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><polyline points="9 9 7 12 9 15"/><polyline points="15 9 17 12 15 15"/></svg>',
+  list: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  "list-ordered": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>',
+};
+
+function mdToolbarHtml(id) {
+  const buttons = MD_TOOLBAR_ACTIONS.map((a) => {
+    if (a.dropdown) {
+      const levelBtns = HEADING_LEVELS.map(
+        (lvl) =>
+          `<button type="button" class="wp-heading-option" onclick="applyMdToolbarAction(event, '${id}', 'heading', ${lvl})">عنوان ${lvl}</button>`,
+      ).join("");
+      return `
+        <div class="wp-tool-dropdown" id="heading-dropdown-${id}">
+          <button type="button" class="wp-tool-btn" title="${a.title}" aria-label="${a.title}" aria-haspopup="true" onclick="toggleHeadingDropdown(event, '${id}')">${MD_TOOLBAR_ICONS[a.icon]}</button>
+          <div class="wp-heading-menu" id="heading-menu-${id}" style="display:none;">${levelBtns}</div>
+        </div>`;
+    }
+    return `<button type="button" class="wp-tool-btn" title="${a.title}" aria-label="${a.title}" onclick="applyMdToolbarAction(event, '${id}', '${a.cmd}')">${MD_TOOLBAR_ICONS[a.icon]}</button>`;
+  }).join("");
+  return `<div class="wp-toolbar" id="toolbar-${id}">${buttons}</div>`;
+}
+
+/** Toggle the H1–H5 dropdown menu open/closed for one field */
+window.toggleHeadingDropdown = function (e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  const menu = document.getElementById(`heading-menu-${id}`);
+  if (!menu) return;
+  const isOpen = menu.style.display !== "none";
+  // Close any other open heading menus first
+  document.querySelectorAll(".wp-heading-menu").forEach((m) => {
+    m.style.display = "none";
+  });
+  menu.style.display = isOpen ? "none" : "block";
+};
+
+// Close any open heading dropdown when clicking elsewhere
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".wp-tool-dropdown")) {
+    document.querySelectorAll(".wp-heading-menu").forEach((m) => {
+      m.style.display = "none";
+    });
+  }
+});
 
 /**
- * Build the HTML for an inline markdown editor field.
- * Default state: shows rendered markdown (click to edit).
- * Edit state: shows textarea + live preview panel below.
+ * Build the HTML for a Write/Preview markdown field.
  */
 function mdEditorHtml(id, value, placeholder, rows = 2) {
   const safeValue = (value || "").replace(/\\n/g, "\n");
-  const rendered = safeValue.trim() ? renderMarkdown(safeValue) : "";
   const escaped = safeValue
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
   return `
-    <div class="md-editor-wrap" id="wrap-${id}">
-      <div
-        class="md-rendered${!rendered ? " md-empty" : ""} ltr"
-        id="rendered-${id}"
-        onclick="activateMdEditor(event, '${id}')"
-        onkeydown="if(event.key==='Enter'||event.key===' ')activateMdEditor(event, '${id}')"
-        tabindex="0"
-        role="button"
-        aria-label="انقر للتعديل: ${placeholder.replace(/"/g, "&quot;")}"
-      >${rendered || `<span class="md-placeholder">${placeholder}</span>`}</div>
-      <div class="md-edit-panel ltr" id="editpanel-${id}" style="display:none;">
+    <div class="wp-field" id="wrap-${id}">
+      <div class="wp-bar">
+        <div class="wp-tabs" role="tablist">
+          <button type="button" class="wp-tab active" id="tab-write-${id}" role="tab" aria-selected="true"
+            onclick="switchMdTab('${id}', 'write')">كتابة</button>
+          <button type="button" class="wp-tab" id="tab-preview-${id}" role="tab" aria-selected="false"
+            onclick="switchMdTab('${id}', 'preview')">معاينة</button>
+        </div>
+        ${mdToolbarHtml(id)}
+      </div>
+      <div class="wp-pane-wrap">
         <textarea
-          class="md-source ltr"
+          class="md-source wp-textarea ltr"
           id="${id}"
           rows="${rows}"
           placeholder="${placeholder}"
         >${escaped}</textarea>
-        <div class="md-live-preview ltr" id="livepreview-${id}">${rendered ? `<div class="md-live-preview-inner">${rendered}</div>` : ""}</div>
+        <div class="wp-preview-pane ltr" id="preview-${id}" style="display:none;"></div>
+      </div>
+      <div class="wp-footer">
+        <span class="wp-hint"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M9 15h6"/><path d="M6 9h1"/><path d="M6 12h1"/></svg> يدعم Markdown و LaTeX</span>
       </div>
     </div>`;
 }
 
-/** Switch a markdown editor field into edit mode */
+/** Switch a field between its Write and Preview tabs */
+window.switchMdTab = function (id, target) {
+  const source = document.getElementById(id);
+  const previewPane = document.getElementById(`preview-${id}`);
+  const tabWrite = document.getElementById(`tab-write-${id}`);
+  const tabPreview = document.getElementById(`tab-preview-${id}`);
+  const toolbar = document.getElementById(`toolbar-${id}`);
+  if (!source || !previewPane || !tabWrite || !tabPreview) return;
+
+  if (target === "preview") {
+    const val = source.value;
+    if (val.trim()) {
+      previewPane.innerHTML = renderMarkdown(val);
+      renderMathIn(previewPane);
+    } else {
+      previewPane.innerHTML = `<span class="md-placeholder">لا يوجد شيء للمعاينة</span>`;
+    }
+    source.style.display = "none";
+    previewPane.style.display = "block";
+    if (toolbar) toolbar.style.display = "none";
+    tabWrite.classList.remove("active");
+    tabWrite.setAttribute("aria-selected", "false");
+    tabPreview.classList.add("active");
+    tabPreview.setAttribute("aria-selected", "true");
+  } else {
+    source.style.display = "block";
+    previewPane.style.display = "none";
+    if (toolbar) toolbar.style.display = "flex";
+    tabPreview.classList.remove("active");
+    tabPreview.setAttribute("aria-selected", "false");
+    tabWrite.classList.add("active");
+    tabWrite.setAttribute("aria-selected", "true");
+    source.focus();
+  }
+};
+
+/** Backward-compatible helper: some call sites just want to focus the field */
 window.activateMdEditor = function (e, id) {
-  // Support both activateMdEditor(id) and activateMdEditor(event, id)
   if (typeof e === "string" && !id) {
     id = e;
-    e = null;
   }
-
-  if (e && e.target && e.target.closest && e.target.closest("button")) {
-    e.stopPropagation();
-    return;
-  }
-
-  const renderedDiv = document.getElementById(`rendered-${id}`);
-  const editPanel = document.getElementById(`editpanel-${id}`);
+  switchMdTab(id, "write");
   const source = document.getElementById(id);
-  if (!renderedDiv || !editPanel || !source) return;
-  renderedDiv.style.display = "none";
-  editPanel.style.display = "block";
-  // Auto-size textarea
-  autoResizeMdSource(source);
-  source.focus();
-  source.setSelectionRange(source.value.length, source.value.length);
+  if (source) {
+    source.focus();
+    source.setSelectionRange(source.value.length, source.value.length);
+  }
 };
 
 function autoResizeMdSource(ta) {
@@ -146,60 +238,98 @@ function autoResizeMdSource(ta) {
   ta.style.height = Math.max(ta.scrollHeight, 60) + "px";
 }
 
-/** Wire up all md-editor events: live preview, blur→render, auto-resize */
+/** Wire up a Write/Preview field: auto-resize + onChange. Preview renders on-demand (tab switch). */
 function setupMdEditor(id, onChange) {
   const source = document.getElementById(id);
-  const renderedDiv = document.getElementById(`rendered-${id}`);
-  const editPanel = document.getElementById(`editpanel-${id}`);
-  const livePreview = document.getElementById(`livepreview-${id}`);
-  if (!source || !renderedDiv || !editPanel) return;
+  if (!source) return;
 
-  const refreshLivePreview = () => {
-    if (!livePreview) return;
-    const val = source.value;
-    if (val.trim()) {
-      livePreview.innerHTML = `<div class="md-live-preview-inner">${renderMarkdown(val)}</div>`;
-      livePreview.style.display = "block";
-      renderMathIn(livePreview);
-    } else {
-      livePreview.innerHTML = "";
-      livePreview.style.display = "none";
-    }
-  };
+  autoResizeMdSource(source);
 
-  const refreshRenderedDiv = () => {
-    const val = source.value;
-    if (val.trim()) {
-      renderedDiv.innerHTML = renderMarkdown(val);
-      renderedDiv.classList.remove("md-empty");
-      renderMathIn(renderedDiv);
-    } else {
-      renderedDiv.innerHTML = `<span class="md-placeholder">${source.placeholder}</span>`;
-      renderedDiv.classList.add("md-empty");
-    }
-  };
-
-  // Live preview + auto-resize on every keystroke
   source.addEventListener("input", () => {
     autoResizeMdSource(source);
-    refreshLivePreview();
     if (onChange) onChange(source.value);
   });
-
-  // On blur: collapse edit panel, show rendered view
-  source.addEventListener("blur", () => {
-    // Small delay so clicks inside livePreview don't immediately close
-    setTimeout(() => {
-      if (document.activeElement === source) return;
-      refreshRenderedDiv();
-      editPanel.style.display = "none";
-      renderedDiv.style.display = "block";
-    }, 150);
-  });
-
-  // Initial live preview
-  refreshLivePreview();
 }
+
+/** Insert/wrap markdown syntax at the cursor of a Write/Preview textarea */
+window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
+  e.preventDefault();
+  e.stopPropagation();
+  const ta = document.getElementById(id);
+  if (!ta) return;
+
+  // Close the heading dropdown if this call came from picking a level
+  const menu = document.getElementById(`heading-menu-${id}`);
+  if (menu) menu.style.display = "none";
+
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const value = ta.value;
+  const selected = value.slice(start, end);
+
+  const wrap = (prefix, suffix = prefix, placeholder = "") => {
+    const text = selected || placeholder;
+    const newValue =
+      value.slice(0, start) + prefix + text + suffix + value.slice(end);
+    ta.value = newValue;
+    const cursorStart = start + prefix.length;
+    const cursorEnd = cursorStart + text.length;
+    ta.setSelectionRange(cursorStart, cursorEnd);
+  };
+
+  const linePrefix = (prefix) => {
+    // Apply prefix to the start of the current line (or each selected line)
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const affected = value.slice(lineStart, end || lineStart);
+    const lines = (affected || "").split("\n");
+    const newLines = lines
+      .map((line) => (line.startsWith(prefix) ? line : prefix + line))
+      .join("\n");
+    const newValue =
+      value.slice(0, lineStart) + newLines + value.slice(end || lineStart);
+    ta.value = newValue;
+    ta.setSelectionRange(
+      lineStart,
+      lineStart + newLines.length,
+    );
+  };
+
+  switch (cmd) {
+    case "bold":
+      wrap("**", "**", "نص غامق");
+      break;
+    case "italic":
+      wrap("*", "*", "نص مائل");
+      break;
+    case "code":
+      wrap("`", "`", "كود");
+      break;
+    case "codeblock": {
+      const text = selected || "كود";
+      const newValue =
+        value.slice(0, start) + "```\n" + text + "\n```" + value.slice(end);
+      ta.value = newValue;
+      const codeStart = start + 4;
+      ta.setSelectionRange(codeStart, codeStart + text.length);
+      break;
+    }
+    case "heading": {
+      const level = Math.min(Math.max(headingLevel || 3, 1), 5);
+      linePrefix("#".repeat(level) + " ");
+      break;
+    }
+    case "ul":
+      linePrefix("- ");
+      break;
+    case "ol":
+      linePrefix("1. ");
+      break;
+  }
+
+  ta.focus();
+  autoResizeMdSource(ta);
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+};
 
 // ============================================================================
 // INITIALIZATION
@@ -447,7 +577,7 @@ window.addQuestion = function () {
     id: questionId,
     q: "",
     options: ["", ""],
-    correct: 0,
+    correct: [],
     image: "",
     audio: "",
     video: "",
@@ -536,18 +666,21 @@ function renderQuestion(question, insertAtIndex = null) {
   const questionCard = document.createElement("div");
   questionCard.className = "question-card";
   questionCard.id = `question-${question.id}`;
-  questionCard.draggable = true;
   questionCard.dataset.questionId = question.id;
 
   // ── Detect question type and tag the card ──────────────────────────────────
   const isEssay = question.answer;
   if (isEssay) questionCard.classList.add("question-card--essay");
 
+  if (!isEssay) normalizeCorrectField(question);
+
   // Check if question is incomplete
   const isIncomplete =
     !question.q ||
     question.q.trim() === "" ||
-    question.options.some((opt) => !opt || opt.trim() === "");
+    question.options.some((opt) => !opt || opt.trim() === "") ||
+    (!isEssay &&
+      (!Array.isArray(question.correct) || question.correct.length === 0));
   if (isIncomplete) {
     questionCard.classList.add("incomplete");
   }
@@ -556,7 +689,10 @@ function renderQuestion(question, insertAtIndex = null) {
         <div class="question-header" onclick="handleHeaderClick(event, ${question.id})">
             <span class="question-number" id="qnum-${question.id}">
                 ${bulkModeActive ? `<input type="checkbox" class="question-select-checkbox" onchange="handleQuestionSelect(event, ${question.id})" onclick="event.stopPropagation()">` : ""}
-                <span class="drag-handle" title="اسحب لإعادة الترتيب" onclick="event.stopPropagation()"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-grip-vertical-icon lucide-grip-vertical"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg></span>
+                <span class="move-handle" onclick="event.stopPropagation()">
+                  <button type="button" class="move-btn move-btn--up" title="نقل للأعلى" aria-label="نقل السؤال للأعلى" onclick="moveQuestion(${question.id}, 'up')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
+                  <button type="button" class="move-btn move-btn--down" title="نقل للأسفل" aria-label="نقل السؤال للأسفل" onclick="moveQuestion(${question.id}, 'down')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                </span>
                 <span class="q-label">سؤال ${questionNumber}</span>
                 <span class="q-preview ltr" id="qpreview-${question.id}"></span>
             </span>
@@ -580,7 +716,7 @@ function renderQuestion(question, insertAtIndex = null) {
             </div>
             
             <div class="form-group">
-                <label class="options-label">${isEssay ? "الإجابة المرجعية" : "الإختيارات (إختيار واحد = سؤال مقالي)"}</label>
+                <label class="options-label">${isEssay ? "الإجابة المرجعية" : "الإختيارات (اختر إجابة واحدة أو أكثر كصحيحة)"}</label>
                 <div id="options-container-${question.id}" class="options-list">
                     ${renderOptions(question)}
                 </div>
@@ -597,21 +733,11 @@ function renderQuestion(question, insertAtIndex = null) {
                 </div>
             </div>
             
-            ${renderMediaSection(question, 'image')}
-            ${renderMediaSection(question, 'audio')}
-            ${renderMediaSection(question, 'video')}
+            ${renderCombinedMediaSection(question)}
             
-            <div class="collapsible-section">
-                <div class="collapsible-header" onclick="toggleCollapsible(${question.id}, 'explanation')">
-                    <h4><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح (اختياري)</h4>
-                    <span class="collapsible-toggle" id="toggle-explanation-${question.id}"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down-icon lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg></span>
-                </div>
-                <div class="collapsible-content" id="content-explanation-${question.id}">
-                    <div class="form-group">
-                        <label>شرح الإجابة الصحيحة</label>
-                        ${mdEditorHtml(`question-explanation-${question.id}`, question.explanation || "", "قدم تفسيرًا للإجابة الصحيحة", 3)}
-                    </div>
-                </div>
+            <div class="form-group">
+                <label><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح (اختياري)</label>
+                ${mdEditorHtml(`question-explanation-${question.id}`, question.explanation || "", "قدم تفسيرًا للإجابة الصحيحة", 3)}
             </div>
         </div>
     `;
@@ -628,7 +754,6 @@ function renderQuestion(question, insertAtIndex = null) {
   }
 
   setupQuestionEventListeners(question.id);
-  setupDragAndDrop(questionCard);
   renderMathIn(questionCard);
 
   // Load media previews if existing values present
@@ -642,7 +767,7 @@ window.handleHeaderClick = function (e, questionId) {
   // Only collapse if clicking directly on header/label, not child interactive elements
   if (
     e.target.closest(".question-actions") ||
-    e.target.closest(".drag-handle") ||
+    e.target.closest(".move-handle") ||
     e.target.closest(".question-select-checkbox") ||
     e.target.tagName === "BUTTON" ||
     e.target.tagName === "INPUT"
@@ -685,9 +810,7 @@ function setupQuestionEventListeners(questionId) {
   );
 
   // Media section listeners (image, audio, video)
-  setupMediaSectionListeners(questionId, "image");
-  setupMediaSectionListeners(questionId, "audio");
-  setupMediaSectionListeners(questionId, "video");
+  setupCombinedMediaListeners(questionId);
 
   // Explanation: inline md editor
   setupMdEditor(`question-explanation-${questionId}`, (val) =>
@@ -699,268 +822,243 @@ function setupQuestionEventListeners(questionId) {
 }
 
 // ============================================================================
-// MEDIA SECTIONS: IMAGE / AUDIO / VIDEO
+// COMBINED MEDIA DROPZONE (image / audio / video, auto-detected)
 // ============================================================================
+//
+// One dropzone + one link input per question, instead of three separate
+// always-visible sections. Admins can drop/select any file or paste any
+// link; the type (image / audio / video) is auto-detected from the file's
+// MIME type or the URL's extension/host (e.g. YouTube), then routed into
+// the matching `question.image` / `question.audio` / `question.video`
+// field. Non-admin users get the link input only (no upload).
+
+const MEDIA_MIME_MAP = {
+  image: new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]),
+  audio: new Set(["audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac", "audio/x-m4a", "audio/mp4"]),
+  video: new Set(["video/mp4", "video/webm", "video/ogg"]),
+};
+const MEDIA_MAX_SIZE = {
+  image: 5 * 1024 * 1024,
+  audio: 10 * 1024 * 1024,
+  video: 50 * 1024 * 1024,
+};
+const MEDIA_EXT_MAP = {
+  "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
+  "image/webp": "webp", "image/svg+xml": "svg",
+  "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav",
+  "audio/webm": "webm", "audio/aac": "aac", "audio/x-m4a": "m4a", "audio/mp4": "m4a",
+  "video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogv",
+};
+
+/** Detect media type ("image"|"audio"|"video"|null) from a File's MIME type. */
+function detectMediaTypeFromFile(file) {
+  if (!file || !file.type) return null;
+  for (const type of ["image", "audio", "video"]) {
+    if (MEDIA_MIME_MAP[type].has(file.type)) return type;
+  }
+  return null;
+}
+
+/** Detect media type ("image"|"audio"|"video"|null) from a URL string. */
+function detectMediaTypeFromUrl(url) {
+  if (!url) return null;
+  const clean = url.split("?")[0].split("#")[0].trim().toLowerCase();
+  if (/youtube\.com\/watch\?v=|youtu\.be\//i.test(url)) return "video";
+  if (/\.(jpe?g|png|gif|webp|svg)$/.test(clean)) return "image";
+  if (/\.(mp3|ogg|wav|webm|aac|m4a)$/.test(clean)) return "audio";
+  if (/\.(mp4|ogv|mov)$/.test(clean)) return "video";
+  return null;
+}
+
+/** Which media field(s) a question currently has content in. */
+function getActiveMediaFields(question) {
+  return ["image", "audio", "video"].filter((t) => question[t] && question[t].trim());
+}
+
+const MEDIA_TYPE_LABELS = { image: "صورة", audio: "ملف صوتي", video: "فيديو" };
+const MEDIA_TYPE_ICONS = {
+  image: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
+  audio: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
+  video: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`,
+};
 
 /**
- * Build the HTML for the collapsible media section of a question.
- * - image: admin gets upload+URL tabs; user gets URL only
- * - audio: admin only — upload+URL tabs
- * - video: admin only — URL only + YouTube notice
+ * Build the HTML for one question's combined media dropzone.
+ * Shows a chip + preview for each media field that currently has content,
+ * plus a single dropzone/link input to add another (or replace one).
  */
-function renderMediaSection(question, mediaType) {
+function renderCombinedMediaSection(question) {
   const qId = question.id;
-  const currentVal = escapeHtml(question[mediaType] || "");
+  const active = getActiveMediaFields(question);
 
-  const icons = {
-    image: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
-    audio: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
-    video: `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`,
-  };
+  const chips = active
+    .map((type) => {
+      const val = escapeHtml(question[type] || "");
+      return `
+        <div class="media-chip" id="media-chip-${type}-${qId}">
+          <div class="media-chip-header">
+            <span class="media-chip-label">${MEDIA_TYPE_ICONS[type]} ${MEDIA_TYPE_LABELS[type]}</span>
+            <button type="button" class="media-chip-remove" title="إزالة" aria-label="إزالة ${MEDIA_TYPE_LABELS[type]}" onclick="removeQuestionMedia(${qId}, '${type}')">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+          </div>
+          <input type="url" class="ltr media-chip-url" id="question-${type}-${qId}" value="${val}" placeholder="https://..." />
+          <div id="${type}-preview-${qId}" class="${type}-preview-container"></div>
+        </div>`;
+    })
+    .join("");
 
-  const labels = {
-    image: "صورة (اختيارية)",
-    audio: "ملف صوتي (اختياري)",
-    video: "فيديو (اختياري)",
-  };
-
-  const chevron = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
-
-  let contentHtml;
-
-  if (mediaType === "video") {
-    // Video: URL only + YouTube hint (no upload for anyone)
-    contentHtml = `
-      <div class="form-group">
-        <div class="video-youtube-hint">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          لا يمكن رفع ملفات الفيديو مباشرةً لأسباب تتعلق بالسعة. الرجاء رفع الفيديو على <strong>YouTube</strong> وإدراج الرابط هنا — سيتم تضمينه تلقائياً كفيديو.
-        </div>
-        <label>رابط الفيديو (YouTube أو رابط مباشر .mp4)</label>
-        <input
-          type="url" class="ltr"
-          id="question-video-${qId}"
-          placeholder="https://www.youtube.com/watch?v=..."
-          value="${currentVal}"
-        />
-        <small>روابط YouTube تُضمَّن تلقائياً كمشغّل. الروابط الأخرى تُعرض كملف فيديو مباشر.</small>
+  const dropzone = isAdmin
+    ? `
+      <div class="media-dropzone" id="media-dropzone-${qId}"
+           onclick="document.getElementById('media-upload-input-${qId}').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-active')"
+           ondragleave="this.classList.remove('drag-active')"
+           ondrop="handleCombinedMediaDrop(event, ${qId})">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p>اسحب صورة أو صوت أو فيديو هنا<br><span>أو انقر للاختيار — أو الصق رابط YouTube أدناه</span></p>
+        <p class="upload-size-hint">صور حتى 5MB · صوت حتى 10MB · فيديو حتى 50MB (أو رابط YouTube)</p>
       </div>
-      <div id="video-preview-${qId}" class="video-preview-container"></div>`;
-  } else {
-    // Image & audio: tabs (Upload / Link) for admin, Link only for users
-    contentHtml = renderMediaTabHtml(qId, mediaType, currentVal);
-  }
+      <input type="file" id="media-upload-input-${qId}" accept="${[...MEDIA_MIME_MAP.image, ...MEDIA_MIME_MAP.audio, ...MEDIA_MIME_MAP.video].join(",")}" style="display:none;" />
+      <div class="upload-progress" id="media-upload-progress-${qId}" style="display:none;">
+        <div class="upload-progress-bar" id="media-upload-progress-bar-${qId}"></div>
+        <span class="upload-progress-text" id="media-upload-progress-text-${qId}">جاري الرفع...</span>
+      </div>`
+    : "";
 
   return `
-    <div class="collapsible-section">
-      <div class="collapsible-header" onclick="toggleCollapsible(${qId}, '${mediaType}')">
-        <h4>${icons[mediaType]} ${labels[mediaType]}</h4>
-        <span class="collapsible-toggle" id="toggle-${mediaType}-${qId}">${chevron}</span>
-      </div>
-      <div class="collapsible-content" id="content-${mediaType}-${qId}">
-        ${contentHtml}
+    <div class="form-group media-form-group">
+      <label>وسائط السؤال (اختيارية)</label>
+      ${chips}
+      ${dropzone}
+      <div class="media-link-row">
+        <input type="url" class="ltr" id="media-link-input-${qId}" placeholder="أو الصق رابط صورة / صوت / فيديو / YouTube هنا" />
+        <button type="button" class="btn btn-secondary btn-sm" onclick="addMediaFromLinkInput(${qId})">إضافة</button>
       </div>
     </div>`;
 }
 
-/**
- * Build the inner HTML for image/audio media section:
- * - Admin: two tabs (رفع ملف / رابط)
- * - User: URL input only
- */
-function renderMediaTabHtml(qId, mediaType, currentVal) {
-  const placeholders = {
-    image: "https://example.com/image.jpg",
-    audio: "https://example.com/audio.mp3",
-  };
-  const helpText = {
-    image: "أدخل رابط الصورة (يجب أن يبدأ بـ http:// أو https://)",
-    audio: "أدخل رابط ملف الصوت (mp3, ogg, wav...)",
-  };
-  const accepts = {
-    image: "image/jpeg,image/png,image/gif,image/webp,image/svg+xml",
-    audio: "audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/aac",
-  };
-  const previewBlock = {
-    image: `<div id="image-preview-${qId}" class="image-preview-container"></div>`,
-    audio: `<div id="audio-preview-${qId}" class="audio-preview-container"></div>`,
-  };
-
-  if (!isAdmin) {
-    // Regular user — URL input only
-    return `
-      <div class="form-group">
-        <label>رابط ${mediaType === "image" ? "الصورة" : "الصوت"}</label>
-        <input
-          type="url" class="ltr"
-          id="question-${mediaType}-${qId}"
-          placeholder="${placeholders[mediaType]}"
-          value="${currentVal}"
-          aria-describedby="${mediaType}-help-${qId}"
-        />
-        <small id="${mediaType}-help-${qId}">${helpText[mediaType]}</small>
-      </div>
-      ${previewBlock[mediaType]}`;
-  }
-
-  // Admin — tab toggle
-  return `
-    <div class="media-tab-toggle" id="media-tab-toggle-${mediaType}-${qId}" data-active-tab="link">
-      <button
-        class="media-tab-btn media-tab-btn--link active"
-        onclick="switchMediaTab(event, ${qId}, '${mediaType}', 'link')"
-        type="button"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-        رابط
-      </button>
-      <button
-        class="media-tab-btn media-tab-btn--upload"
-        onclick="switchMediaTab(event, ${qId}, '${mediaType}', 'upload')"
-        type="button"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        رفع ملف
-      </button>
-    </div>
-
-    <!-- Link tab -->
-    <div class="media-tab-panel" id="media-panel-link-${mediaType}-${qId}">
-      <div class="form-group">
-        <label>رابط ${mediaType === "image" ? "الصورة" : "الصوت"}</label>
-        <input
-          type="url" class="ltr"
-          id="question-${mediaType}-${qId}"
-          placeholder="${placeholders[mediaType]}"
-          value="${currentVal}"
-          aria-describedby="${mediaType}-help-${qId}"
-        />
-        <small id="${mediaType}-help-${qId}">${helpText[mediaType]}</small>
-      </div>
-    </div>
-
-    <!-- Upload tab -->
-    <div class="media-tab-panel" id="media-panel-upload-${mediaType}-${qId}" style="display:none;">
-      <div class="file-upload-zone" id="upload-zone-${mediaType}-${qId}"
-           onclick="document.getElementById('upload-input-${mediaType}-${qId}').click()"
-           ondragover="event.preventDefault();this.classList.add('drag-active')"
-           ondragleave="this.classList.remove('drag-active')"
-           ondrop="handleMediaDrop(event, ${qId}, '${mediaType}')">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <p>اسحب وأفلت الملف هنا<br><span>أو انقر للاختيار</span></p>
-        <p class="upload-size-hint">${mediaType === "image" ? "الصور: حتى 5 ميجابايت (JPEG, PNG, GIF, WebP, SVG)" : "الصوت: حتى 10 ميجابايت (MP3, OGG, WAV, AAC)"}</p>
-      </div>
-      <input
-        type="file"
-        id="upload-input-${mediaType}-${qId}"
-        accept="${accepts[mediaType]}"
-        style="display:none;"
-      />
-      <div class="upload-progress" id="upload-progress-${mediaType}-${qId}" style="display:none;">
-        <div class="upload-progress-bar" id="upload-progress-bar-${mediaType}-${qId}"></div>
-        <span class="upload-progress-text" id="upload-progress-text-${mediaType}-${qId}">جاري الرفع...</span>
-      </div>
-    </div>
-
-    ${previewBlock[mediaType]}`;
-}
-
-/** Wire all event listeners for one question's media section */
-function setupMediaSectionListeners(questionId, mediaType) {
-  // URL input (both admin and user)
-  const urlInput = document.getElementById(`question-${mediaType}-${questionId}`);
-  if (urlInput) {
-    urlInput.addEventListener(
+/** Wire listeners for one question's combined media dropzone + chip URL inputs + link-add row */
+function setupCombinedMediaListeners(questionId) {
+  // Chip URL inputs (for existing media, editable in place)
+  ["image", "audio", "video"].forEach((type) => {
+    const input = document.getElementById(`question-${type}-${questionId}`);
+    if (!input) return;
+    input.addEventListener(
       "input",
       debounce((e) => {
-        updateQuestionData(questionId, mediaType, e.target.value);
-        if (mediaType === "image") updateImagePreview(questionId, e.target.value);
-        if (mediaType === "audio") updateAudioPreview(questionId, e.target.value);
-        if (mediaType === "video") updateVideoPreview(questionId, e.target.value);
+        updateQuestionData(questionId, type, e.target.value);
+        updateMediaPreview(questionId, type, e.target.value);
       }, 500),
     );
-    // Load preview on mount if value already exists
-    if (urlInput.value) {
-      if (mediaType === "image") updateImagePreview(questionId, urlInput.value);
-      if (mediaType === "audio") updateAudioPreview(questionId, urlInput.value);
-      if (mediaType === "video") updateVideoPreview(questionId, urlInput.value);
-    }
+    if (input.value) updateMediaPreview(questionId, type, input.value);
+  });
+
+  // Quick-add link row
+  const linkInput = document.getElementById(`media-link-input-${questionId}`);
+  if (linkInput) {
+    linkInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addMediaFromLinkInput(questionId);
+      }
+    });
   }
 
-  if (!isAdmin) return; // no upload listeners for regular users
+  if (!isAdmin) return;
 
-  // File input change (admin upload)
-  const fileInput = document.getElementById(`upload-input-${mediaType}-${questionId}`);
+  const fileInput = document.getElementById(`media-upload-input-${questionId}`);
   if (fileInput) {
     fileInput.addEventListener("change", () => {
       if (fileInput.files && fileInput.files[0]) {
-        uploadMediaFile(questionId, mediaType, fileInput.files[0]);
+        uploadCombinedMediaFile(questionId, fileInput.files[0]);
       }
     });
   }
 }
 
-/** Switch between Link and Upload tabs */
-window.switchMediaTab = function (e, questionId, mediaType, tab) {
-  e.stopPropagation();
-  const linkPanel   = document.getElementById(`media-panel-link-${mediaType}-${questionId}`);
-  const uploadPanel = document.getElementById(`media-panel-upload-${mediaType}-${questionId}`);
-  const toggleEl   = document.getElementById(`media-tab-toggle-${mediaType}-${questionId}`);
-  if (!linkPanel || !uploadPanel || !toggleEl) return;
+/** Add media from the free-text link input, auto-detecting its type */
+window.addMediaFromLinkInput = function (questionId) {
+  const linkInput = document.getElementById(`media-link-input-${questionId}`);
+  if (!linkInput) return;
+  const url = linkInput.value.trim();
+  if (!url) return;
 
-  const btns = toggleEl.querySelectorAll(".media-tab-btn");
-  btns.forEach((b) => b.classList.remove("active"));
-
-  if (tab === "link") {
-    linkPanel.style.display = "";
-    uploadPanel.style.display = "none";
-    toggleEl.querySelector(".media-tab-btn--link").classList.add("active");
-  } else {
-    linkPanel.style.display = "none";
-    uploadPanel.style.display = "";
-    toggleEl.querySelector(".media-tab-btn--upload").classList.add("active");
+  const type = detectMediaTypeFromUrl(url);
+  if (!type) {
+    showNotification(
+      "تعذّر تحديد نوع الرابط",
+      "تأكد أن الرابط ينتهي بامتداد صورة/صوت/فيديو معروف، أو أنه رابط YouTube.",
+      "error",
+    );
+    return;
   }
+
+  updateQuestionData(questionId, type, url);
+  linkInput.value = "";
+  rerenderCombinedMedia(questionId);
 };
 
-/** Handle drop event on the upload zone */
-window.handleMediaDrop = function (e, questionId, mediaType) {
+/** Remove one media field from a question and re-render the dropzone section */
+window.removeQuestionMedia = function (questionId, type) {
+  updateQuestionData(questionId, type, "");
+  rerenderCombinedMedia(questionId);
+};
+
+/** Re-render just the media section for a question, in place */
+function rerenderCombinedMedia(questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+  const card = document.getElementById(`question-${questionId}`);
+  const oldSection = card?.querySelector(".media-form-group");
+  if (!oldSection) return;
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = renderCombinedMediaSection(question);
+  const newSection = wrapper.firstElementChild;
+  oldSection.replaceWith(newSection);
+  setupCombinedMediaListeners(questionId);
+}
+
+/** Render the preview for a given media field/type */
+function updateMediaPreview(questionId, type, url) {
+  if (type === "image") updateImagePreview(questionId, url);
+  if (type === "audio") updateAudioPreview(questionId, url);
+  if (type === "video") updateVideoPreview(questionId, url);
+}
+
+/** Handle a file dropped on the combined dropzone */
+window.handleCombinedMediaDrop = function (e, questionId) {
   e.preventDefault();
-  const zone = document.getElementById(`upload-zone-${mediaType}-${questionId}`);
+  const zone = document.getElementById(`media-dropzone-${questionId}`);
   if (zone) zone.classList.remove("drag-active");
   const file = e.dataTransfer?.files?.[0];
-  if (file) uploadMediaFile(questionId, mediaType, file);
+  if (file) uploadCombinedMediaFile(questionId, file);
 };
 
 /**
- * Upload a media file directly to Supabase Storage using the admin's
- * authenticated Supabase session. No Vercel serverless function needed.
+ * Upload a media file directly to Supabase Storage, auto-detecting its
+ * type (image/audio/video) from its MIME type, then route it into the
+ * matching question field. No Vercel serverless function needed.
  */
-async function uploadMediaFile(questionId, mediaType, file) {
-  const progressEl  = document.getElementById(`upload-progress-${mediaType}-${questionId}`);
-  const progressBar = document.getElementById(`upload-progress-bar-${mediaType}-${questionId}`);
-  const progressTxt = document.getElementById(`upload-progress-text-${mediaType}-${questionId}`);
-  const zone        = document.getElementById(`upload-zone-${mediaType}-${questionId}`);
-
-  // ── Client-side validation (UX guard; bucket enforces server-side too) ──
-  const ALLOWED_MIME = {
-    image: new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]),
-    audio: new Set(["audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac", "audio/x-m4a", "audio/mp4"]),
-  };
-  const MAX_SIZE = { image: 5 * 1024 * 1024, audio: 10 * 1024 * 1024 };
-  const EXT_MAP = {
-    "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
-    "image/webp": "webp", "image/svg+xml": "svg",
-    "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav",
-    "audio/webm": "webm", "audio/aac": "aac", "audio/x-m4a": "m4a", "audio/mp4": "m4a",
-  };
-
-  if (!ALLOWED_MIME[mediaType]?.has(file.type)) {
-    showNotification("نوع غير مدعوم", `نوع الملف (${file.type || "غير معروف"}) غير مدعوم.`, "error");
+async function uploadCombinedMediaFile(questionId, file) {
+  const mediaType = detectMediaTypeFromFile(file);
+  if (!mediaType) {
+    showNotification(
+      "نوع غير مدعوم",
+      `نوع الملف (${file.type || "غير معروف"}) غير مدعوم. الأنواع المدعومة: صور، صوت، فيديو.`,
+      "error",
+    );
     return;
   }
-  if (file.size > MAX_SIZE[mediaType]) {
-    const maxMb = MAX_SIZE[mediaType] / (1024 * 1024);
-    showNotification("الملف كبير جدًا", `الحد الأقصى ${maxMb} ميجابايت.`, "error");
+
+  const progressEl  = document.getElementById(`media-upload-progress-${questionId}`);
+  const progressBar = document.getElementById(`media-upload-progress-bar-${questionId}`);
+  const progressTxt = document.getElementById(`media-upload-progress-text-${questionId}`);
+  const zone        = document.getElementById(`media-dropzone-${questionId}`);
+
+  if (file.size > MEDIA_MAX_SIZE[mediaType]) {
+    const maxMb = MEDIA_MAX_SIZE[mediaType] / (1024 * 1024);
+    showNotification("الملف كبير جدًا", `الحد الأقصى لـ ${MEDIA_TYPE_LABELS[mediaType]} هو ${maxMb} ميجابايت.`, "error");
     return;
   }
   if (file.size === 0) {
@@ -968,14 +1066,12 @@ async function uploadMediaFile(questionId, mediaType, file) {
     return;
   }
 
-  // ── Show progress ────────────────────────────────────────────────────────
   if (progressEl) progressEl.style.display = "flex";
   if (progressBar) progressBar.style.width = "20%";
   if (progressTxt) progressTxt.textContent = "جاري الاتصال...";
   if (zone) zone.style.opacity = "0.5";
 
   try {
-    // ── Get the shared Supabase client (admin has a live Supabase session) ──
     const client = await ensureSharedSupabaseClient();
     if (!client) throw new Error("تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.");
 
@@ -987,26 +1083,22 @@ async function uploadMediaFile(questionId, mediaType, file) {
     if (progressBar) progressBar.style.width = "40%";
     if (progressTxt) progressTxt.textContent = "جاري الرفع...";
 
-    // ── Build unique storage path ────────────────────────────────────────
     const uid = sessionData.session.user.id;
-    const ext = EXT_MAP[file.type] || "bin";
+    const ext = MEDIA_EXT_MAP[file.type] || "bin";
     const random = Math.random().toString(36).slice(2, 9);
     const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
-    // e.g. "images/abc-uuid/1723593600000-ab12cd3.jpg"
 
-    // ── Upload directly to Supabase Storage ─────────────────────────────
     const { error: uploadError } = await client.storage
       .from("quiz-media")
       .upload(storagePath, file, {
         contentType: file.type,
-        upsert: false, // unique path guarantees no collision
+        upsert: false,
       });
 
     if (uploadError) throw new Error(uploadError.message);
 
     if (progressBar) progressBar.style.width = "90%";
 
-    // ── Get the public CDN URL ───────────────────────────────────────────
     const { data: urlData } = client.storage
       .from("quiz-media")
       .getPublicUrl(storagePath);
@@ -1015,34 +1107,24 @@ async function uploadMediaFile(questionId, mediaType, file) {
 
     const publicUrl = urlData.publicUrl;
 
-    // ── Store URL in question data ───────────────────────────────────────
     updateQuestionData(questionId, mediaType, publicUrl);
-
-    // Also populate the link-tab URL input so admin can see / copy it
-    const urlInput = document.getElementById(`question-${mediaType}-${questionId}`);
-    if (urlInput) urlInput.value = publicUrl;
-
-    // Update preview
-    if (mediaType === "image") updateImagePreview(questionId, publicUrl);
-    if (mediaType === "audio") updateAudioPreview(questionId, publicUrl);
-
-    // Switch to link tab to show the stored URL
-    window.switchMediaTab({ stopPropagation: () => {} }, questionId, mediaType, "link");
+    rerenderCombinedMedia(questionId);
 
     if (progressBar) progressBar.style.width = "100%";
     if (progressTxt) progressTxt.textContent = "تم الرفع بنجاح ✓";
     setTimeout(() => {
-      if (progressEl) progressEl.style.display = "none";
-      if (progressBar) progressBar.style.width = "0%";
+      const stillProgressEl = document.getElementById(`media-upload-progress-${questionId}`);
+      if (stillProgressEl) stillProgressEl.style.display = "none";
     }, 2000);
 
-    showNotification("تم الرفع", "تم رفع الملف بنجاح وحفظ الرابط.", "success");
+    showNotification("تم الرفع", `تم رفع ${MEDIA_TYPE_LABELS[mediaType]} بنجاح وحفظ الرابط.`, "success");
   } catch (err) {
-    console.error("[uploadMediaFile]", err);
+    console.error("[uploadCombinedMediaFile]", err);
     if (progressEl) progressEl.style.display = "none";
     showNotification("خطأ في الرفع", err.message || "حدث خطأ أثناء رفع الملف.", "error");
   } finally {
-    if (zone) zone.style.opacity = "";
+    const stillZone = document.getElementById(`media-dropzone-${questionId}`);
+    if (stillZone) stillZone.style.opacity = "";
   }
 }
 
@@ -1141,76 +1223,43 @@ function updateQuestionNumbers() {
 }
 
 // ============================================================================
-// DRAG AND DROP
+// QUESTION REORDERING
 // ============================================================================
+//
+// Previously implemented with native HTML5 drag-and-drop, armed from a
+// `.drag-handle` mousedown. That approach broke on touch devices: touchstart
+// set `draggable = true`, but native HTML5 DnD is mouse-only, so no matching
+// `dragstart` ever fired — leaving the element in a stuck intermediate drag
+// state that froze the page with no console error. Replaced with explicit
+// move-up/move-down buttons: deterministic, keyboard-accessible, no native
+// drag gesture involved at all.
 
-function setupDragAndDrop(element) {
-  element.addEventListener("dragstart", handleDragStart);
-  element.addEventListener("dragend", handleDragEnd);
-  element.addEventListener("dragover", handleDragOver);
-  element.addEventListener("drop", handleDrop);
-  element.addEventListener("dragenter", handleDragEnter);
-  element.addEventListener("dragleave", handleDragLeave);
-}
+window.moveQuestion = function (questionId, direction) {
+  const index = quizData.questions.findIndex((q) => q.id === questionId);
+  if (index === -1) return;
 
-function handleDragStart(e) {
-  draggedElement = this;
-  this.classList.add("dragging");
-  e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/html", this.innerHTML);
-}
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= quizData.questions.length) return;
 
-function handleDragEnd(e) {
-  this.classList.remove("dragging");
-  document.querySelectorAll(".question-card").forEach((card) => {
-    card.classList.remove("drag-over");
-  });
-}
+  const [moved] = quizData.questions.splice(index, 1);
+  quizData.questions.splice(targetIndex, 0, moved);
 
-function handleDragOver(e) {
-  if (e.preventDefault) {
-    e.preventDefault();
-  }
-  e.dataTransfer.dropEffect = "move";
-  return false;
-}
+  const container = document.getElementById("questionsContainer");
+  const card = document.getElementById(`question-${questionId}`);
+  const siblingCard =
+    direction === "up" ? card.previousElementSibling : card.nextElementSibling;
 
-function handleDragEnter(e) {
-  if (this !== draggedElement) {
-    this.classList.add("drag-over");
-  }
-}
-
-function handleDragLeave(e) {
-  this.classList.remove("drag-over");
-}
-
-function handleDrop(e) {
-  if (e.stopPropagation) {
-    e.stopPropagation();
+  if (card && siblingCard) {
+    if (direction === "up") {
+      container.insertBefore(card, siblingCard);
+    } else {
+      container.insertBefore(siblingCard, card);
+    }
   }
 
-  if (draggedElement !== this) {
-    const draggedId = parseInt(draggedElement.dataset.questionId);
-    const droppedOnId = parseInt(this.dataset.questionId);
-
-    const draggedIndex = quizData.questions.findIndex(
-      (q) => q.id === draggedId,
-    );
-    const droppedIndex = quizData.questions.findIndex(
-      (q) => q.id === droppedOnId,
-    );
-
-    const [draggedQuestion] = quizData.questions.splice(draggedIndex, 1);
-    quizData.questions.splice(droppedIndex, 0, draggedQuestion);
-
-    rerenderAllQuestions();
-    autosave();
-    showNotification("تم إعادة الترتيب", "تم تغيير ترتيب الأسئلة", "success");
-  }
-
-  return false;
-}
+  updateQuestionNumbers();
+  autosave();
+};
 
 function rerenderAllQuestions() {
   const container = document.getElementById("questionsContainer");
@@ -1224,6 +1273,21 @@ function rerenderAllQuestions() {
 // ============================================================================
 // OPTIONS MANAGEMENT
 // ============================================================================
+
+/**
+ * Normalize a question's `correct` field to always be an array of indices.
+ * Older/imported data may still use a single number — this coerces it in
+ * place so every render/export path can assume an array.
+ */
+function normalizeCorrectField(question) {
+  if (!question) return;
+  if (Array.isArray(question.correct)) return;
+  if (typeof question.correct === "number" && !Number.isNaN(question.correct)) {
+    question.correct = [question.correct];
+  } else {
+    question.correct = [];
+  }
+}
 
 function renderOptions(question) {
   if (question.answer) {
@@ -1242,18 +1306,20 @@ function renderOptions(question) {
     `;
   }
 
-  // ── MCQ / True-False ─────────────────────────────────────────────────────
+  normalizeCorrectField(question);
+
+  // ── MCQ / True-False — checkboxes so more than one option can be correct ──
   return question.options
     .map((option, index) => {
       const optId = `option-text-${question.id}-${index}`;
+      const isCorrect = question.correct.includes(index);
       return `
-        <div class="option-item ${question.correct === index ? "correct" : ""}" id="option-${question.id}-${index}">
+        <div class="option-item ${isCorrect ? "correct" : ""}" id="option-${question.id}-${index}">
             <input 
-                type="radio" 
-                name="correct-${question.id}" 
-                class="option-radio"
-                ${question.correct === index ? "checked" : ""}
-                onchange="setCorrectAnswer(${question.id}, ${index})"
+                type="checkbox" 
+                class="option-checkbox"
+                ${isCorrect ? "checked" : ""}
+                onchange="toggleCorrectAnswer(${question.id}, ${index})"
                 title="تحديد كإجابة صحيحة"
                 aria-label="تحديد الخيار ${index + 1} كإجابة صحيحة"
             />
@@ -1294,11 +1360,20 @@ window.updateOption = function (questionId, optionIndex, value) {
   }
 };
 
-window.setCorrectAnswer = function (questionId, optionIndex) {
+/** Toggle whether an option is one of the correct answers (multi-select) */
+window.toggleCorrectAnswer = function (questionId, optionIndex) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (question) {
-    question.correct = optionIndex;
+    normalizeCorrectField(question);
+    const pos = question.correct.indexOf(optionIndex);
+    if (pos === -1) {
+      question.correct.push(optionIndex);
+    } else {
+      question.correct.splice(pos, 1);
+    }
+    question.correct.sort((a, b) => a - b);
     rerenderOptions(questionId);
+    updateIncompleteState(questionId);
     autosave();
   }
 };
@@ -1326,7 +1401,7 @@ function rerenderOptions(questionId) {
   if (label) {
     label.textContent = isEssay
       ? "الإجابة المرجعية"
-      : "الإختيارات (إختيار واحد = سؤال مقالي)";
+      : "الإختيارات (اختر إجابة واحدة أو أكثر كصحيحة)";
   }
 
   const btnDiv = document.getElementById(`option-btn-${questionId}`);
@@ -1356,12 +1431,15 @@ window.addOption = function (questionId) {
 window.removeOption = function (questionId, optionIndex) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (question && question.options.length >= 2) {
+    normalizeCorrectField(question);
     question.options.splice(optionIndex, 1);
-    if (question.correct >= question.options.length) {
-      question.correct = question.options.length - 1;
-    }
+    // Drop the removed index from `correct` and shift indices above it down.
+    question.correct = question.correct
+      .filter((i) => i !== optionIndex)
+      .map((i) => (i > optionIndex ? i - 1 : i));
     rerenderOptions(questionId);
     updateStatistics();
+    updateIncompleteState(questionId);
     autosave();
   }
 };
@@ -1372,33 +1450,32 @@ window.convertEssayToMcq = function (questionId) {
   if (!question) return;
   // Keep the model-answer text as the first option
   while (question.options.length < 4) question.options.push("");
-  question.correct = 0;
+  question.correct = [0];
   rerenderOptions(questionId);
   updateStatistics();
   autosave();
   showNotification("تم التحويل", "تم تحويل السؤال إلى اختيار متعدد", "success");
 };
 
+/** Recompute the "incomplete" badge on a card (e.g. after toggling correct answers) */
+function updateIncompleteState(questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  const card = document.getElementById(`question-${questionId}`);
+  if (!question || !card) return;
+
+  const isIncomplete =
+    !question.q ||
+    question.q.trim() === "" ||
+    question.options.some((opt) => !opt || opt.trim() === "") ||
+    (!question.answer &&
+      (!Array.isArray(question.correct) || question.correct.length === 0));
+
+  card.classList.toggle("incomplete", isIncomplete);
+}
+
 // ============================================================================
 // COLLAPSIBLE SECTIONS
 // ============================================================================
-
-window.toggleCollapsible = function (questionId, section) {
-  const toggle = document.getElementById(`toggle-${section}-${questionId}`);
-  const content = document.getElementById(`content-${section}-${questionId}`);
-
-  if (toggle && content) {
-    const isOpen = content.classList.contains("open");
-
-    if (isOpen) {
-      toggle.classList.remove("open");
-      content.classList.remove("open");
-    } else {
-      toggle.classList.add("open");
-      content.classList.add("open");
-    }
-  }
-};
 
 // ============================================================================
 // SEARCH AND FILTER - ENHANCED
@@ -1447,35 +1524,6 @@ window.clearSearch = function () {
       card.style.display = "block";
     });
   }
-};
-
-window.sortQuestions = function (type = "alpha") {
-  const container = document.getElementById("questionsContainer");
-  const cards = Array.from(container.children);
-
-  cards.sort((a, b) => {
-    if (type === "alpha") {
-      const textA = (
-        a.querySelector(".md-source") ||
-        a.querySelector("textarea") || { value: "" }
-      ).value.toLowerCase();
-      const textB = (
-        b.querySelector(".md-source") ||
-        b.querySelector("textarea") || { value: "" }
-      ).value.toLowerCase();
-      return textA.localeCompare(textB, "ar");
-    } else if (type === "recent") {
-      const idA = parseInt(a.dataset.questionId);
-      const idB = parseInt(b.dataset.questionId);
-      return idB - idA;
-    }
-    return 0;
-  });
-
-  cards.forEach((card) => container.appendChild(card));
-
-  const sortName = type === "alpha" ? "أبجديًا" : "حسب الأحدث";
-  showNotification("تم الترتيب", `تم ترتيب الأسئلة ${sortName}`, "success");
 };
 
 window.toggleExpand = function () {
@@ -1673,8 +1721,11 @@ function validateQuiz() {
         errors.push(`السؤال ${questionNum}: جميع الخيارات يجب أن تحتوي على نص`);
       }
 
-      if (q.correct === undefined || q.correct === null) {
-        errors.push(`السؤال ${questionNum}: يجب تحديد الإجابة الصحيحة`);
+      if (
+        !Array.isArray(q.correct) ||
+        q.correct.length === 0
+      ) {
+        errors.push(`السؤال ${questionNum}: يجب تحديد إجابة صحيحة واحدة على الأقل`);
       }
     }
 
@@ -1740,7 +1791,7 @@ window.addQuestionFromTemplate = function (templateType) {
     mcq: {
       q: "",
       options: ["", "", "", ""],
-      correct: 0,
+      correct: [0],
       image: "",
       audio: "",
       video: "",
@@ -1749,7 +1800,7 @@ window.addQuestionFromTemplate = function (templateType) {
     truefalse: {
       q: "",
       options: ["True", "False"],
-      correct: 0,
+      correct: [0],
       image: "",
       audio: "",
       video: "",
@@ -1758,7 +1809,7 @@ window.addQuestionFromTemplate = function (templateType) {
     essay: {
       q: "",
       options: [""],
-      correct: 0,
+      correct: [],
       image: "",
       audio: "",
       video: "",
@@ -1789,11 +1840,20 @@ window.addQuestionFromTemplate = function (templateType) {
     const questionCard = document.getElementById(`question-${questionId}`);
     if (questionCard) {
       questionCard.scrollIntoView({ behavior: "smooth", block: "center" });
-      activateMdEditor(`question-text-${questionId}`);
 
-      // Auto-open image section if image template
+      // Image section is always visible now — focus it directly for image
+      // templates, otherwise focus the question text field.
       if (templateType === "image") {
-        toggleCollapsible(questionId, "image");
+        const imageInput = document.getElementById(
+          `question-image-${questionId}`,
+        );
+        if (imageInput) {
+          imageInput.focus();
+        } else {
+          activateMdEditor(`question-text-${questionId}`);
+        }
+      } else {
+        activateMdEditor(`question-text-${questionId}`);
       }
     }
   }, 100);
@@ -1875,12 +1935,23 @@ function normalizeQuestionForEditor(q) {
     return {
       ...q,
       options: [q.answer ?? ""],
-      correct: 0,
+      correct: [],
     };
   }
   // Ensure options is never empty
   if (q.options.length === 0) {
-    return { ...q, options: [""], correct: 0 };
+    return { ...q, options: [""], correct: [] };
+  }
+  // Normalize a legacy single-index `correct` (old saved quizzes) into an
+  // array so every render/export path downstream can assume an array.
+  if (!Array.isArray(q.correct)) {
+    return {
+      ...q,
+      correct:
+        typeof q.correct === "number" && !Number.isNaN(q.correct)
+          ? [q.correct]
+          : [],
+    };
   }
   return q;
 }
@@ -2100,7 +2171,13 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
       out.answer = q.answer;
     } else if (Array.isArray(q.options)) {
       out.options = q.options;
-      if (q.correct !== undefined) out.correct = q.correct;
+      if (q.correct !== undefined && q.correct !== null) {
+        out.correct = Array.isArray(q.correct)
+          ? q.correct
+          : typeof q.correct === "number"
+            ? [q.correct]
+            : [];
+      }
     }
     if (q.explanation?.trim()) out.explanation = q.explanation;
     return out;
@@ -2220,8 +2297,13 @@ window.exportQuiz = function () {
       out.answer = q.answer || "";
     } else {
       out.options = q.options;
-      if (q.correct !== undefined && q.correct !== null)
-        out.correct = q.correct;
+      if (q.correct !== undefined && q.correct !== null) {
+        out.correct = Array.isArray(q.correct)
+          ? q.correct
+          : typeof q.correct === "number"
+            ? [q.correct]
+            : [];
+      }
     }
     if (q.explanation?.trim()) out.explanation = q.explanation;
     return out;
@@ -2533,6 +2615,11 @@ window.previewQuiz = function () {
   `;
 
   quizData.questions.forEach((q, index) => {
+    const correctSet = Array.isArray(q.correct)
+      ? q.correct
+      : typeof q.correct === "number"
+        ? [q.correct]
+        : [];
     html += `
       <div class="preview-question">
         <h4>السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
@@ -2541,7 +2628,7 @@ window.previewQuiz = function () {
           ${q.options
             .map(
               (opt, i) =>
-                `<li class="${i === q.correct ? "correct" : ""}">${renderMarkdown(opt)}${i === q.correct ? " ✓" : ""}</li>`,
+                `<li class="${correctSet.includes(i) ? "correct" : ""}">${renderMarkdown(opt)}${correctSet.includes(i) ? " ✓" : ""}</li>`,
             )
             .join("")}
         </ul>
@@ -2794,11 +2881,19 @@ window.processImport = async function () {
     // Add questions to current quiz
     allImportedQuestions.forEach((q) => {
       const questionId = ++questionIdCounter;
+      let importedCorrect;
+      if (Array.isArray(q.correct)) {
+        importedCorrect = q.correct;
+      } else if (typeof q.correct === "number" && !Number.isNaN(q.correct)) {
+        importedCorrect = [q.correct];
+      } else {
+        importedCorrect = [];
+      }
       const question = {
         id: questionId,
         q: q.q || "",
         options: q.options || ["", ""],
-        correct: q.correct || 0,
+        correct: importedCorrect,
         image: q.image || "",
         explanation: q.explanation || "",
       };

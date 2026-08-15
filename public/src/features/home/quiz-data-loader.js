@@ -29,8 +29,15 @@ export async function loadFullQuizData(exam) {
   let rawMeta = null;
   let rawStats = null;
 
-  if (path.endsWith(".json")) {
-    const res = await fetch(path);
+  let fetchUrl;
+  if (path.startsWith("/") || path.startsWith("http")) {
+    fetchUrl = new URL(path, window.location.origin).href;
+  } else {
+    fetchUrl = new URL(path, new URL("/data/", window.location.origin)).href;
+  }
+
+  if (path.endsWith(".json") || path.startsWith("/api/") || path.includes("?")) {
+    const res = await fetch(fetchUrl);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     questions = data.questions;
@@ -42,14 +49,14 @@ export async function loadFullQuizData(exam) {
     // the dynamic import fails, fall back to fetching the same path with a
     // ".json" extension instead.
     try {
-      const mod = await import(/* @vite-ignore */ path);
+      const mod = await import(/* @vite-ignore */ fetchUrl);
       questions = mod.questions;
       rawMeta = mod.meta || null;
       rawStats = mod.stats || null;
     } catch (jsErr) {
       console.warn("Failed to load as JS, trying JSON substitute...", jsErr);
-      const jsonPath = path.replace(/\.js$/, ".json");
-      const res = await fetch(jsonPath);
+      const jsonUrl = fetchUrl.replace(/\.js$/, ".json");
+      const res = await fetch(jsonUrl);
       if (!res.ok) throw new Error("Failed to load as JSON as well");
       const data = await res.json();
       questions = data.questions;
@@ -57,11 +64,21 @@ export async function loadFullQuizData(exam) {
       rawStats = data.stats || null;
     }
   } else {
-    // Fallback for any other extension-less/unexpected path shape.
-    const mod = await import(/* @vite-ignore */ path);
-    questions = mod.questions;
-    rawMeta = mod.meta || null;
-    rawStats = mod.stats || null;
+    // Fallback: try fetching as JSON first
+    try {
+      const res = await fetch(fetchUrl);
+      if (res.ok) {
+        const data = await res.json();
+        questions = data.questions;
+        rawMeta = data.meta || null;
+        rawStats = data.stats || null;
+      }
+    } catch (_) {
+      const mod = await import(/* @vite-ignore */ fetchUrl);
+      questions = mod.questions;
+      rawMeta = mod.meta || null;
+      rawStats = mod.stats || null;
+    }
   }
 
   return { questions: questions || [], meta: rawMeta, stats: rawStats };

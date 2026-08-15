@@ -1994,7 +1994,8 @@ Container
   margin: 24px 0;
 }
 
-.mode-btn {
+.mode-btn,
+.export-card {
   border: 2px solid var(--color-border);
   border-radius: 12px;
   padding: 16px;
@@ -2004,22 +2005,79 @@ Container
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  background: none;
+  background: var(--color-surface);
+  position: relative;
+  min-height: 110px;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
-.mode-btn:hover {
+.mode-btn:hover,
+.export-card:hover,
+.export-card:focus-visible {
   transform: translateY(-3px);
   box-shadow: var(--shadow-sm);
   background: var(--color-primary-light);
   border-color: var(--color-primary);
 }
 
-.mode-btn .icon {
+.export-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  pointer-events: none;
+}
+
+.mode-btn .icon,
+.export-card .icon,
+.export-icon img,
+.export-icon svg {
   font-size: 2rem;
-  width: 70px;
-  height: 70px;
-  object-fit: cover;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
   border-radius: 8px;
+}
+
+.export-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.mode-copy-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 2;
+  padding: 0;
+}
+
+.mode-copy-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  transform: scale(1.1);
+}
+
+.mode-copy-btn.copied {
+  background: var(--color-success, #22c55e);
+  color: #fff;
+  border-color: var(--color-success, #22c55e);
 }
 
 /* Close modal button */
@@ -2291,13 +2349,18 @@ Container
     font-size: 0.92rem;
   }
 
-  .mode-btn {
-    padding: 5px;
+  .mode-btn,
+  .export-card {
+    padding: 8px 4px;
+    min-height: 90px;
   }
 
-  .mode-btn .icon {
-    max-width: 40px;
-    max-height: 40px;
+  .mode-btn .icon,
+  .export-card .icon,
+  .export-icon img,
+  .export-icon svg {
+    max-width: 38px;
+    max-height: 38px;
   }
 
   #breadcrumb {

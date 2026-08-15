@@ -223,7 +223,7 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   if (creatorProfile) {
     const { displayName, handle, avatarUrl } = creatorProfile;
     const cleanHandle = handle ? handle.replace(/^@/, "") : "";
-    const profileHref = cleanHandle ? `/@${encodeURIComponent(cleanHandle)}` : null;
+    const profileHref = creatorProfile.profileUrl || (cleanHandle ? `/@${encodeURIComponent(cleanHandle)}` : null);
     const avatarSrc = avatarUrl || getDefaultAvatarDataUrl(displayName || cleanHandle);
 
     const WrapperTag = profileHref ? "a" : "div";

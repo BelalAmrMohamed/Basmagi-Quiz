@@ -11,22 +11,27 @@ import {
   executeExport,
   triggerDownload,
   withDownloadLoading,
-  buildCopyDownloadButton,
+  buildExportCard,
 } from "./export-helpers.js";
+import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
+import { buildQuizHtml } from "../../features/export/export-to-html.js";
+import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildQuizText } from "../../features/export/export-to-text.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
-import { JSON_FILE_ICON_SVG, DOWNLOAD_SOURCE_ICON_SVG } from "./icons.js";
+import { JSON_FILE_ICON_SVG, DOWNLOAD_SOURCE_ICON_SVG, COPY_TEXT_ICON_SVG } from "./icons.js";
 
 // ============================================================================
 // show UserQuiz Download Popup
 // ============================================================================
-const opts = [
-  ["./favicon.png", "Quiz (.html)", "quiz"],
-  ["./assets/images/HTML_Icon.png", "HTML (.html)", "html"],
-  ["./assets/images/mardownIcon.png", "Markdown (.md)", "md"],
-  ["./assets/images/PDF_Icon.png", "PDF (.pdf)", "pdf"],
-  ["./assets/images/pptx_icon.png", "PowerPoint (.pptx)", "pptx"],
-  ["./assets/images/word_icon.png", "Word (.docx)", "docx"],
+const allExportOptions = [
+  { format: "quiz", label: "Quiz (.html)", iconUrl: "./favicon.png", canCopy: true },
+  { format: "html", label: "HTML (.html)", iconUrl: "./assets/images/HTML_Icon.png", canCopy: true },
+  { format: "md", label: "Markdown (.md)", iconUrl: "./assets/images/mardownIcon.png", canCopy: true },
+  { format: "text", label: "Text (.txt)", iconSvg: COPY_TEXT_ICON_SVG, canCopy: true },
+  { format: "json", label: "JSON (.json)", iconSvg: JSON_FILE_ICON_SVG, canCopy: true },
+  { format: "pdf", label: "PDF (.pdf)", iconUrl: "./assets/images/PDF_Icon.png", canCopy: false },
+  { format: "pptx", label: "PowerPoint (.pptx)", iconUrl: "./assets/images/pptx_icon.png", canCopy: false },
+  { format: "docx", label: "Word (.docx)", iconUrl: "./assets/images/word_icon.png", canCopy: false },
 ];
 export async function showUserQuizDownloadPopup(quiz) {
   const allowed = await ensureDownloadAllowed(
@@ -86,79 +91,40 @@ export async function showUserQuizDownloadPopup(quiz) {
 
   const questions = quiz.questions;
 
-  const onDownloadOption = async (format) => {
-    await executeExport(format, config, questions);
-  };
-
-  opts.forEach(([icon, label, format]) => {
-    const b = document.createElement("button");
-    b.className = "mode-btn";
-    b.type = "button";
-    b.setAttribute("aria-label", `تنزيل كـ ${label}`);
-    b.innerHTML = `<img src="${icon}" alt="" class="icon" aria-hidden="true"><strong>${label}</strong>`;
-    b.onclick = (ev) => {
-      ev.stopPropagation();
-      withDownloadLoading(b, () => onDownloadOption(format)).then(() =>
-        modal.remove(),
-      );
-    };
-    grid.appendChild(b);
-  });
-
-  const copyBtn = buildCopyDownloadButton(
-    async () => {
-      const config = {
-        id: qz(quiz, "id") || quiz.id,
-        title: qz(quiz, "title") || quiz.id,
-        description: qz(quiz, "description"),
-        source: qz(quiz, "source"),
-        createdAt: qz(quiz, "createdAt"),
-        author: qz(quiz, "author"),
-        author_email: qz(quiz, "author_email"),
-        password: qz(quiz, "password"),
-        view: qz(quiz, "view"),
-        mode: qz(quiz, "mode"),
-        questionTypes: qz(quiz, "type"),
-        questionCount: qz(quiz, "count"),
-      };
-      return buildQuizText(config, quiz.questions);
-    },
-    (qz(quiz, "title") || quiz.id).replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, "_"),
-  );
-  grid.appendChild(copyBtn);
-
-  const jsonBtn = document.createElement("button");
-  jsonBtn.className = "mode-btn";
-  jsonBtn.type = "button";
-  jsonBtn.setAttribute("aria-label", `Download JSON (.json)`);
-  jsonBtn.innerHTML = `${JSON_FILE_ICON_SVG}<strong>JSON (.json)</strong>`;
-  jsonBtn.onclick = (ev) => {
-    ev.stopPropagation();
-    withDownloadLoading(jsonBtn, async () => {
-      try {
-        const title = qz(quiz, "title");
-        const description = qz(quiz, "description");
-        const source = qz(quiz, "source");
-        const createdAt = qz(quiz, "createdAt");
-
-        const payload = await buildJsonQuizExport(
-          title,
-          description,
-          source,
-          quiz.questions || [],
-          createdAt,
-        );
-
-        const fileContent = JSON.stringify(payload, null, 2);
-        const blob = new Blob([fileContent], { type: "application/json" });
-        triggerDownload(blob, `${title || "quiz"}.json`);
-      } catch (e) {
-        console.error("JSON Error:", e);
-        alert("فشل تنزيل ملف JSON");
+  allExportOptions.forEach(opt => {
+    const iconHtml = opt.iconSvg ? opt.iconSvg : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
+    const card = buildExportCard({
+      format: opt.format,
+      label: opt.label,
+      icon: iconHtml,
+      canCopy: opt.canCopy,
+      onDownload: async () => {
+         if (opt.format === "text") {
+             const text = await buildQuizText(config, quiz.questions);
+             const blob = new Blob([text], { type: "text/plain" });
+             triggerDownload(blob, `${config.title || quiz.id}.txt`);
+         } else if (opt.format === "json") {
+             const payload = await buildJsonQuizExport(config.title, config.description, config.source, quiz.questions || [], config.createdAt);
+             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+             triggerDownload(blob, `${config.title || "quiz"}.json`);
+         } else {
+             await executeExport(opt.format, config, quiz.questions);
+         }
+         modal.remove();
+      },
+      onCopy: async () => {
+          if (opt.format === "quiz") return await buildStandaloneQuizHtml(config, quiz.questions);
+          if (opt.format === "html") return await buildQuizHtml(config, quiz.questions);
+          if (opt.format === "md") return buildQuizMarkdown(config, quiz.questions);
+          if (opt.format === "text") return await buildQuizText(config, quiz.questions);
+          if (opt.format === "json") {
+              const payload = await buildJsonQuizExport(config.title, config.description, config.source, quiz.questions || [], config.createdAt);
+              return JSON.stringify(payload, null, 2);
+          }
       }
-    }).then(() => modal.remove());
-  };
-  grid.appendChild(jsonBtn);
+    });
+    grid.appendChild(card);
+  });
 
   // Show source button if the quiz has a source URL
   const quizSource = qz(quiz, "source");
