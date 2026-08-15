@@ -83,9 +83,7 @@ export default async function handler(req, res) {
     };
 
     if (quizMeta.description) quizEntry.description = quizMeta.description;
-    if (quizMeta.author) quizEntry.author = quizMeta.author;
-    if (quizMeta.author_email) quizEntry.author_email = quizMeta.author_email;
-    if (quizMeta.author_handle) quizEntry.author_handle = quizMeta.author_handle;
+    if (quizMeta.author_id) quizEntry.author_id = quizMeta.author_id;
     if (row.password) quizEntry.password = row.password;
 
     //  This might be wrong, it might be `dbSource`, but I don't know, insure it's correct.

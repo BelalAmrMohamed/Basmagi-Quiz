@@ -739,11 +739,6 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
 
       <span class="adm-path-chip">${locationLabel}</span>
 
-      <div class="adm-field">
-        <label for="adm-author">اسم المشرف صاحب الإمتحان <span class="adm-badge adm-badge-opt">اختياري</span></label>
-        <input type="text" id="adm-author" placeholder="مثال: د. أحمد محمد" maxlength="100" value="${saved.author || localStorage.getItem("username") || ""}" />
-      </div>
-
       <div class="adm-preview">
         <div class="adm-preview-row"><span class="adm-preview-lbl">نوع المسار</span><span class="adm-preview-val">${trackLbl}</span></div>
         ${college ? `<div class="adm-preview-row"><span class="adm-preview-lbl">الكلية</span><span class="adm-preview-val">${college}</span></div>` : ""}
@@ -768,9 +763,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
     renderStep2({ educationType, college, year, term });
   });
   document.getElementById("adm-s3-upload").addEventListener("click", () => {
-    const author = document.getElementById("adm-author")?.value?.trim() || "";
-    persistSaved({ author });
-    doUpload({ educationType, college, subject, year, term, subfolder, author });
+    doUpload({ educationType, college, subject, year, term, subfolder });
   });
 }
 
@@ -782,7 +775,7 @@ function quizLinkHref(quizId) {
   return window.location.origin + "/q/" + encodeURIComponent(quizId);
 }
 
-async function doUpload({ educationType, college, subject, year, term, subfolder, author }) {
+async function doUpload({ educationType, college, subject, year, term, subfolder }) {
   const isBatch = _quizzes.length > 1;
   const items   = _quizzes.map((q, i) => ({
     quiz:  q,

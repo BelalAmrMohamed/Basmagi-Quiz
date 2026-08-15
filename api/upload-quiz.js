@@ -51,8 +51,6 @@ export default async function handler(req, res) {
     term,
     subject,
     subfolder,
-    author,
-    author_email,
     education_type: rawEducationType,
     quiz,
   } = req.body || {};
@@ -125,16 +123,10 @@ export default async function handler(req, res) {
   }
 
   // Identity enforcement:
-  // - `uploaded_by` (adminId) and `author_handle` are ALWAYS server-derived and
-  //   never trusted from the client — these are the stable identifiers the
-  //   future admin profile page depends on (see admin-upload-wizard-overhaul.md §2).
-  // - `author` (the display byline) is cosmetic and per-quiz editable (Step 3 of
-  //   the wizard), so a trimmed client-provided value takes precedence over the
-  //   admin's current `display_name`, falling back to it when omitted/blank.
-  delete cleanQuiz.meta.author_email;
-  cleanQuiz.meta.author_handle = adminHandle;
-  const clientAuthor = typeof author === "string" ? author.trim() : "";
-  cleanQuiz.meta.author = clientAuthor || adminDisplayName;
+  // - `author_id` (adminId) is ALWAYS server-derived and never trusted from the client.
+  //   This is the stable identifier used to fetch up-to-date admin profile data
+  //   (display name, handle, avatar) during rendering.
+  cleanQuiz.meta.author_id = adminId;
 
   // `view` / `mode` come from validated quiz.meta — already in cleanQuiz
 

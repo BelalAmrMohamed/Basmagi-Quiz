@@ -7,7 +7,7 @@
 
 import { qz, formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
-import { buildQuizInfoModalHtml } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
 export { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 
 /**
@@ -76,6 +76,7 @@ export async function showQuizInfoModal(exam) {
     source: exam.source || null,
     author: exam.author || null,
     authorHandle: exam.authorHandle || null, // Can be provided in newer manifests
+    authorId: exam.author_id || null,
     mode: null,
     view: null,
     questionTypes: formatQuestionTypesForDownload(exam.questionTypes),
@@ -89,6 +90,8 @@ export async function showQuizInfoModal(exam) {
         if (!config.description) config.description = meta.description || null;
         if (!config.source) config.source = meta.source || null;
         if (!config.author) config.author = meta.author || null;
+        if (!config.authorHandle) config.authorHandle = meta.author_handle || null;
+        if (!config.authorId) config.authorId = meta.author_id || null;
         if (!config.createdAt) config.createdAt = meta.createdAt || null;
         config.mode = meta.mode || null;
         config.view = meta.view || null;
@@ -104,10 +107,17 @@ export async function showQuizInfoModal(exam) {
     console.warn("Failed to load quiz file for info modal", e);
   }
 
+  let creatorProfile = null;
+  const authorIdentifier = config.authorId || config.authorHandle;
+  if (authorIdentifier) {
+    const type = config.authorId ? "id" : "handle";
+    creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
+  }
+
   if (!dialog.isConnected) return; // user closed the modal while we were fetching
 
   // Replace with fully loaded HTML
-  dialog.innerHTML = buildQuizInfoModalHtml(config, questionCount);
+  dialog.innerHTML = buildQuizInfoModalHtml(config, questionCount, creatorProfile);
   
   // Re-bind close handler after innerHTML replacement
   const closeBtn = dialog.querySelector(".quiz-info-dialog-close");
@@ -138,8 +148,6 @@ export function showUserQuizInfoModal(quiz) {
   };
   const questionCount = qz(quiz, "count") || null;
 
-  const ROWS = buildQuizInfoRows(config, questionCount);
-  renderQuizInfoTable(tableWrap, ROWS);
-
-  document.body.appendChild(modal);
+  const html = buildQuizInfoModalHtml(config, questionCount, null);
+  createAndShowDialog(html);
 }

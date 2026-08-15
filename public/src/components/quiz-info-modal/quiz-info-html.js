@@ -59,20 +59,23 @@ function getDefaultAvatarDataUrl(name) {
 }
 
 /**
- * Fetches the creator's real account profile from the admin-stats API by handle.
+ * Fetches the creator's real account profile from the admin-stats API.
  * Returns { displayName, handle, avatarUrl } or null on failure.
+ * @param {string} identifier - The handle or ID of the creator.
+ * @param {string} type - 'handle' (default) or 'id'.
  */
-export async function fetchCreatorProfile(handle) {
-  if (!handle) return null;
-  const cleanHandle = handle.replace(/^@/, "");
-  if (!cleanHandle) return null;
+export async function fetchCreatorProfile(identifier, type = "handle") {
+  if (!identifier) return null;
+  const cleanId = identifier.replace(/^@/, "");
+  if (!cleanId) return null;
   try {
-    const res = await fetch(`/api/admin-stats?handle=${encodeURIComponent(cleanHandle)}`);
+    const queryParam = type === "id" ? "id" : "handle";
+    const res = await fetch(`/api/admin-stats?${queryParam}=${encodeURIComponent(cleanId)}`);
     if (!res.ok) return null;
     const data = await res.json();
     return {
-      displayName: data.displayName || cleanHandle,
-      handle: data.handle || cleanHandle,
+      displayName: data.displayName || cleanId,
+      handle: data.handle || (type === "handle" ? cleanId : null),
       avatarUrl: data.avatarUrl || null,
     };
   } catch (_) {

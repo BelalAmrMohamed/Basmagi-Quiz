@@ -177,6 +177,7 @@ export default async function handler(req, res) {
   }
 
   const handle = req.query.handle;
+  const id = req.query.id;
 
   const isLeaderboard = req.query.leaderboard === "true";
 
@@ -220,7 +221,16 @@ export default async function handler(req, res) {
 
   let adminUser = null;
 
-  if (handle) {
+  if (id) {
+    const { data, error } = await supabase
+      .from("admin_users")
+      .select(
+        "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    adminUser = data;
+  } else if (handle) {
     // Find admin id and stats
     const normalizedHandle = handle
       .trim()

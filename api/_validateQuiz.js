@@ -15,9 +15,7 @@ const ALLOWED_META_KEYS = new Set([
   "source",
   "path",
   "createdAt",
-  "author",
-  "author_email",
-  "author_handle",
+  "author_id",
   "password",
   "view",
   "mode",
@@ -149,33 +147,10 @@ export function validateQuizPayload(raw) {
     }
   }
 
-  // meta.author — optional string
-  if (meta.author !== undefined) {
-    if (typeof meta.author !== "string") {
-      throw new Error("INVALID_META_FIELD: author must be a string");
-    }
-    if (meta.author.length > 100) {
-      throw new Error("INVALID_META_FIELD: author exceeds 100 characters");
-    }
-  }
-
-  // meta.author_email — optional string (legacy)
-  if (meta.author_email !== undefined) {
-    if (typeof meta.author_email !== "string") {
-      throw new Error("INVALID_META_FIELD: author_email must be a string");
-    }
-    if (meta.author_email.length > 150) {
-      throw new Error("INVALID_META_FIELD: author exceeds 150 characters");
-    }
-  }
-
-  // meta.author_handle — optional string
-  if (meta.author_handle !== undefined) {
-    if (typeof meta.author_handle !== "string") {
-      throw new Error("INVALID_META_FIELD: author_handle must be a string");
-    }
-    if (meta.author_handle.length > 50) {
-      throw new Error("INVALID_META_FIELD: author_handle exceeds 50 characters");
+  // meta.author_id — optional string
+  if (meta.author_id !== undefined) {
+    if (typeof meta.author_id !== "string") {
+      throw new Error("INVALID_META_FIELD: author_id must be a string");
     }
   }
 
