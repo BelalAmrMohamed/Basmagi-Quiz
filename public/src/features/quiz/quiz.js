@@ -23,7 +23,7 @@ showNotification(
 );
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
-import { buildQuizInfoModalHtml } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -1253,7 +1253,7 @@ async function init() {
     document.title = metaData.title;
 
     // === Populate Quiz Info Dialog ===
-    (function populateInfoDialog() {
+    (async function populateInfoDialog() {
       const dialog = els.quizInfoDialog;
       if (!dialog) return;
 
@@ -1272,12 +1272,21 @@ async function init() {
         createdAt: metaData.createdAt || null,
         source: metaData.source || null,
         author: metaData.author || null,
+        authorHandle: metaData.author_handle || null,
+        authorId: metaData.author_id || null,
         mode: metaData.mode || null,
         view: metaData.view || null,
         questionTypes: metaData.questionTypes || null,
       };
 
-      dialog.innerHTML = buildQuizInfoModalHtml(config, questions.length);
+      const authorIdentifier = config.authorId || config.authorHandle;
+      let creatorProfile = null;
+      if (authorIdentifier) {
+        const type = config.authorId ? "id" : "handle";
+        creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
+      }
+
+      dialog.innerHTML = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
 
       // Wire up close button (rendered dynamically into the shell)
       const closeBtn = dialog.querySelector(".quiz-info-dialog-close");

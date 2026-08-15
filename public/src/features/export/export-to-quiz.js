@@ -61,59 +61,14 @@ const extractCategoryFromPath = (path) => {
   return "";
 };
 
+import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { QuizInfoModalCSS } from "../../components/quiz-info-modal/quiz-info-modal-css.js";
+
 // Builds the <tr> rows for the quiz-info dialog at export time (the dialog
 // content is static once downloaded, so this runs once here rather than
 // being re-derived client-side). Field set and Arabic labels match the
 // quiz-info dialog used on the results page exactly.
-const buildQuizInfoRows = (config, questionCount) => {
-  const formatDate = (raw) => {
-    if (!raw) return null;
-    let d = String(raw);
-    if (d.includes(",")) d = d.split(",")[0];
-    else if (d.includes(" - ")) d = d.split(" - ")[0];
-    else if (d.includes(" ")) d = d.split(" ")[0];
-    return d || null;
-  };
 
-  const ROWS = [
-    { label: "ID", val: config.id },
-    { label: "العنوان", val: config.title },
-    { label: "الوصف", val: config.description },
-    { label: "المادة", val: config.category || extractCategoryFromPath(config.path) || null },
-    { label: "التاريخ", val: formatDate(config.createdAt) },
-    { label: "المصدر", val: config.source },
-    { label: "صاحب الإمتحان", val: config.author },
-    { label: "نوع الإمتحان الإجباري", val: config.mode },
-    {
-      label: "الشكل الإجباري",
-      val:
-        config.view === "pagination"
-          ? "كل سؤال في صفحة (Pagination)"
-          : config.view === "vertical"
-            ? "كل الأسئلة في صفحة واحدة (Vertical)"
-            : null,
-    },
-    { label: "نوع الأسئلة", val: config.questionTypes },
-    { label: "عدد الأسئلة", val: questionCount },
-  ].filter((r) => r.val);
-
-  if (!ROWS.length) {
-    return `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
-  }
-
-  const isUrl = (s) => /^https?:\/\//i.test(s);
-
-  return ROWS.map(({ label, val }) => {
-    const v = String(val);
-    const displayVal = isUrl(v)
-      ? `<a href="${escHtml(v)}" target="_blank" rel="noopener noreferrer">${escHtml(v)}</a>`
-      : escHtml(v);
-    return `<tr>
-        <th scope="row">${escHtml(label)}</th>
-        <td>${displayVal}</td>
-      </tr>`;
-  }).join("");
-};
 
 // highlightCode (imported above) is serialized into the export via
 // .toString(), same as renderMarkdown/escHtml/etc — but it also reads two
@@ -137,7 +92,25 @@ const serializeHlBuiltinsJs = (set) =>
 
 export async function exportToQuiz(config, questions) {
   const processedQuestions = await convertImagesToBase64(questions);
-  const quizInfoRowsHtml = buildQuizInfoRows(config, questions.length);
+
+  if (!config.category) {
+    config.category = extractCategoryFromPath(config.path);
+  }
+
+  const authorIdentifier = config.authorId || config.authorHandle;
+  let creatorProfile = null;
+  if (authorIdentifier) {
+    const type = config.authorId ? "id" : "handle";
+    creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
+    if (creatorProfile && creatorProfile.avatarUrl) {
+      const base64 = await getDataUrl(creatorProfile.avatarUrl);
+      if (base64) {
+        creatorProfile.avatarUrl = base64;
+      }
+    }
+  }
+
+  const quizInfoModalHtml = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
 
   const quizHTML = `<!DOCTYPE html>
   <html lang="ar" dir="rtl">
@@ -1746,6 +1719,7 @@ export async function exportToQuiz(config, questions) {
   }
 
   ${MARKDOWN_CSS}
+  ${QuizInfoModalCSS}
 
   /* ── Print ───────────────────────────────────────────────────── */
   @media print {
@@ -1948,19 +1922,7 @@ export async function exportToQuiz(config, questions) {
     </header>
 
     <dialog class="quiz-info-dialog" id="quizInfoDialog" aria-labelledby="quizInfoDialogTitle">
-      <div class="quiz-info-dialog-inner">
-        <div class="quiz-info-dialog-header">
-          <h2 id="quizInfoDialogTitle">معلومات الإمتحان</h2>
-          <button class="quiz-info-dialog-close" id="quizInfoDialogClose" type="button" aria-label="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          </button>
-        </div>
-        <div class="quiz-info-dialog-body">
-          <table class="quiz-info-table">
-            <tbody id="quizInfoTable">${quizInfoRowsHtml}</tbody>
-          </table>
-        </div>
-      </div>
+${quizInfoModalHtml}
     </dialog>
 
     <main id="main-content" class="quiz-body"></main>

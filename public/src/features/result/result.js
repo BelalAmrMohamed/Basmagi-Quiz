@@ -25,6 +25,8 @@ import {
   isAnswerCorrect,
 } from "../../shared/rate-answers.js";
 
+import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
+
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
 // scanDirections:           post-render direction scan for non-markdown elements
@@ -306,6 +308,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     createdAt: result.createdAt,
     path: null,
     author: result.author || null,
+    authorHandle: result.authorHandle || null,
+    authorId: result.authorId || null,
   };
 
   // Patch runtime fields onto config.
@@ -331,9 +335,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           questions = data.questions || [];
           if (data.meta) {
             if (data.meta.createdAt) config.createdAt = data.meta.createdAt;
-            if (data.meta.description)
-              config.description = data.meta.description;
+            if (data.meta.description) config.description = data.meta.description;
             if (data.meta.source) config.source = data.meta.source;
+            if (data.meta.author) config.author = data.meta.author;
+            if (data.meta.author_handle) config.authorHandle = data.meta.author_handle;
+            if (data.meta.author_id) config.authorId = data.meta.author_id;
           }
         }
       } else {
@@ -506,70 +512,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   scanDirections(quizTitleEl);
 
   // ── Quiz Info Dialog ───────────────────────────────────────────────────────
-  // Populate the info table and wire open/close for the quiz-info dialog.
-  if (els.quizInfoTable) {
-
-    // Normalise the date display
-    const formatDate = (raw) => {
-      if (!raw) return null;
-      let d = String(raw);
-      if (d.includes(",")) d = d.split(",")[0];
-      else if (d.includes(" - ")) d = d.split(" - ")[0];
-      else if (d.includes(" ")) d = d.split(" ")[0];
-      return d || null;
-    };
-
-    // Explicit ordered list of allowed fields — nothing else is ever shown
-    const ROWS = [
-      { label: "ID", val: config.id },
-      { label: "العنوان", val: config.title },
-      { label: "الوصف", val: config.description },
-      { label: "المادة", val: config.category || extractCategoryFromPath(config.path) || null },
-      { label: "التاريخ", val: formatDate(config.createdAt) },
-      { label: "المصدر", val: config.source },
-      { label: "صاحب الإمتحان", val: config.author },
-      { label: "نوع الإمتحان الإجباري", val: config.mode },
-      {
-        label: "الشكل الإجباري",
-        val:
-          config.view === "pagination"
-            ? "كل سؤال في صفحة (Pagination)"
-            : config.view === "vertical"
-              ? "كل الأسئلة في صفحة واحدة (Vertical)"
-              : null,
-      },
-      { label: "نوع الأسئلة", val: config.questionTypes },
-      { label: "عدد الأسئلة", val: questions.length },
-    ].filter((r) => r.val);
-
-    if (!ROWS.length) {
-      tbody.innerHTML = `<tr><td colspan="2" style="padding:12px 8px;opacity:0.6;">لا توجد معلومات إضافية</td></tr>`;
-      return;
+  // Populate the info dialog using the shared HTML builder.
+  if (els.quizInfoDialog) {
+    if (!config.category) {
+      config.category = extractCategoryFromPath(config.path);
     }
-
-    const isUrl = (s) => /^https?:\/\//i.test(s);
-
-    els.quizInfoTable.innerHTML = ROWS.map(({ label, val }) => {
-      const v = String(val);
-      const displayVal = isUrl(v)
-        ? `<a href="${escapeHtml(v)}" target="_blank" rel="noopener noreferrer">${escapeHtml(v)}</a>`
-        : escapeHtml(v);
-      return `<tr>
-        <th scope="row">${escapeHtml(label)}</th>
-        <td>${displayVal}</td>
-      </tr>`;
-    }).join("");
+    
+    const authorIdentifier = config.authorId || config.authorHandle;
+    let creatorProfile = null;
+    if (authorIdentifier) {
+      const type = config.authorId ? "id" : "handle";
+      creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
+    }
+    
+    els.quizInfoDialog.innerHTML = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
+    
+    // Wire up close button (rendered dynamically into the shell)
+    const closeBtn = els.quizInfoDialog.querySelector(".quiz-info-dialog-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => els.quizInfoDialog.close());
+    }
   }
 
   if (els.quizInfoBtn && els.quizInfoDialog) {
     els.quizInfoBtn.addEventListener("click", () => {
       els.quizInfoDialog.showModal();
-    });
-  }
-
-  if (els.quizInfoDialogClose && els.quizInfoDialog) {
-    els.quizInfoDialogClose.addEventListener("click", () => {
-      els.quizInfoDialog.close();
     });
   }
 
