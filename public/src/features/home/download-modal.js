@@ -4,18 +4,17 @@
 // user-made quizzes. The manifest-exam equivalent lives as a closure
 // inside createExamCard() (exam-card.js) since it captures per-card state.
 //
-// This now renders the exact same modal as the create-quiz page's download
-// popup (see showDownloadModal() in export-helpers.js) instead of a
-// separately-styled copy — the two had drifted out of sync, and the
-// create-quiz version is the better-looking, better-formatted one. The only
-// thing this module still owns is the password gate (ensureDownloadAllowed),
-// which the create-quiz page doesn't need since you're actively editing your
-// own quiz there.
+// This renders the shared download-quiz-modal component (see
+// showDownloadModal() in components/download-quiz-modal/download-quiz-modal.js)
+// instead of a separately-styled copy — the two had drifted out of sync
+// before this was extracted. The only thing this module still owns is the
+// password gate (ensureDownloadAllowed), which the create-quiz page doesn't
+// need since you're actively editing your own quiz there.
 // ============================================================================
 
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
-import { showDownloadModal } from "./export-helpers.js";
+import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 
 // ============================================================================
 // show UserQuiz Download Popup

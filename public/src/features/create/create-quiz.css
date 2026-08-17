@@ -26,8 +26,8 @@
 }
 
 /* ============================================================================
-       LAYOUT & CONTAINER
-       ============================================================================ */
+         LAYOUT & CONTAINER
+         ============================================================================ */
 * {
   margin: 0;
   padding: 0;
@@ -168,8 +168,8 @@ body {
 }
 
 /* ============================================================================
-       QUIZ CREATOR SECTIONS
-       ============================================================================ */
+         QUIZ CREATOR SECTIONS
+         ============================================================================ */
 
 .quiz-creator {
   display: flex;
@@ -226,8 +226,8 @@ body {
 }
 
 /* ============================================================================
-       FORM ELEMENTS
-       ============================================================================ */
+         FORM ELEMENTS
+         ============================================================================ */
 
 .form-group {
   margin-bottom: 20px;
@@ -288,8 +288,8 @@ body {
 }
 
 /* ============================================================================
-       QUESTIONS SECTION - ENHANCED
-       ============================================================================ */
+         QUESTIONS SECTION - ENHANCED
+         ============================================================================ */
 
 .questions-section {
   padding: 30px;
@@ -1141,8 +1141,8 @@ body {
 }
 
 /* ============================================================================
-       OPTIONS SECTION
-       ============================================================================ */
+         OPTIONS SECTION
+         ============================================================================ */
 
 .options-list {
   margin-top: 20px;
@@ -1241,8 +1241,8 @@ body {
 }
 
 /* ============================================================================
-       MEDIA FORM GROUPS (always visible — image / audio / video)
-       ============================================================================ */
+         MEDIA FORM GROUPS (always visible — image / audio / video)
+         ============================================================================ */
 
 .media-form-group {
   margin-top: 15px;
@@ -1471,8 +1471,8 @@ body {
 }
 
 /* ============================================================================
-       BUTTONS
-       ============================================================================ */
+         BUTTONS
+         ============================================================================ */
 
 .btn {
   padding: 12px 24px;
@@ -1547,8 +1547,8 @@ body {
 }
 
 /* ============================================================================
-       ACTION BAR
-       ============================================================================ */
+         ACTION BAR
+         ============================================================================ */
 
 .action-bar {
   background: var(--color-surface);
@@ -1583,8 +1583,8 @@ body {
 }
 
 /* ============================================================================
-       STATISTICS CARD
-       ============================================================================ */
+         STATISTICS CARD
+         ============================================================================ */
 
 .stats-card h3 {
   margin: 0 0 20px 0;
@@ -1630,8 +1630,8 @@ body {
 }
 
 /* ============================================================================
-       EMPTY STATE
-       ============================================================================ */
+         EMPTY STATE
+         ============================================================================ */
 
 .empty-state {
   text-align: center;
@@ -1674,8 +1674,8 @@ body {
 }
 
 /* ============================================================================
-       MODAL / PREVIEW
-       ============================================================================ */
+         MODAL / PREVIEW
+         ============================================================================ */
 
 /* Modal Styles */
 .modal-overlay {
@@ -1842,8 +1842,8 @@ body {
 }
 
 /* ============================================================================
-       LOADING OVERLAY
-       ============================================================================ */
+         LOADING OVERLAY
+         ============================================================================ */
 
 .loading-overlay {
   position: fixed;
@@ -1880,8 +1880,8 @@ body {
 }
 
 /* ============================================================================
-       KEYBOARD SHORTCUTS PANEL
-       ============================================================================ */
+         KEYBOARD SHORTCUTS PANEL
+         ============================================================================ */
 
 .shortcuts-panel {
   position: fixed;
@@ -1950,8 +1950,8 @@ body {
 }
 
 /* ============================================================================
-       WATERMARK
-       ============================================================================ */
+         WATERMARK
+         ============================================================================ */
 
 .watermark {
   text-align: center;
@@ -1982,16 +1982,16 @@ body {
 }
 
 /* ============================================================================
-       Ltr
-       ============================================================================ */
+         Ltr
+         ============================================================================ */
 
 .ltr {
   direction: ltr;
 }
 
 /* ============================================================================
-       ANIMATIONS
-       ============================================================================ */
+         ANIMATIONS
+         ============================================================================ */
 
 @keyframes fadeIn {
   from {
@@ -2055,8 +2055,8 @@ body {
 }
 
 /* ============================================================================
-       ESSAY QUESTION — DISTINCT VISUAL TREATMENT
-       ============================================================================ */
+         ESSAY QUESTION — DISTINCT VISUAL TREATMENT
+         ============================================================================ */
 
 /* Card-level accent: warm amber left border to distinguish from MCQ */
 .question-card--essay {
@@ -2140,8 +2140,8 @@ body {
 }
 
 /* ============================================================================
-       FULL MARKDOWN RENDERER — HEADINGS, LISTS, BLOCKQUOTES, RULES
-       ============================================================================ */
+         FULL MARKDOWN RENDERER — HEADINGS, LISTS, BLOCKQUOTES, RULES
+         ============================================================================ */
 
 .md-h1,
 .md-h2,
@@ -2219,8 +2219,8 @@ body {
 }
 
 /* ============================================================================
-       LATEX / KATEX MATH
-       ============================================================================ */
+         LATEX / KATEX MATH
+         ============================================================================ */
 
 /* Block math (display mode) */
 .math-block {
@@ -2248,8 +2248,8 @@ body {
 }
 
 /* ============================================================================
-       RESPONSIVE — MODAL FIXES
-       ============================================================================ */
+         RESPONSIVE — MODAL FIXES
+         ============================================================================ */
 
 @media (max-width: 640px) {
   .modal-card {
@@ -2281,8 +2281,8 @@ body {
   }
 
   /* ============================================================================
-       RESPONSIVE DESIGN
-       ============================================================================ */
+         RESPONSIVE DESIGN
+         ============================================================================ */
   body {
     padding: 20px 16px;
   }
@@ -2387,8 +2387,8 @@ body {
 }
 
 /* ============================================================================
-       UTILITY CLASSES
-       ============================================================================ */
+         UTILITY CLASSES
+         ============================================================================ */
 
 .hidden {
   display: none !important;
@@ -2403,8 +2403,8 @@ body {
 }
 
 /* ============================================================================
-       DARK MODE ADJUSTMENTS
-       ============================================================================ */
+         DARK MODE ADJUSTMENTS
+         ============================================================================ */
 
 [data-theme="dark"] .question-card,
 [data-theme="dark-slate"] .question-card {
@@ -2417,8 +2417,8 @@ body {
 }
 
 /* ============================================================================
-       PRINT STYLES
-       ============================================================================ */
+         PRINT STYLES
+         ============================================================================ */
 
 @media print {
   .menu-container,
@@ -2445,8 +2445,8 @@ body {
 }
 
 /* ============================================================================
-       WRITE / PREVIEW MARKDOWN FIELD (GitHub-style)
-       ============================================================================ */
+         WRITE / PREVIEW MARKDOWN FIELD (GitHub-style)
+         ============================================================================ */
 
 .wp-field {
   width: 100%;
@@ -2643,8 +2643,8 @@ body {
 }
 
 /* ============================================================================
-       OPTION WRITE/PREVIEW FIELD — compact single-line style
-       ============================================================================ */
+         OPTION WRITE/PREVIEW FIELD — compact single-line style
+         ============================================================================ */
 
 .option-md-wrap {
   flex: 1;
@@ -2672,8 +2672,8 @@ body {
 }
 
 /* ============================================================================
-       QUESTION CARD — COLLAPSED
-       ============================================================================ */
+         QUESTION CARD — COLLAPSED
+         ============================================================================ */
 
 /* Hide body when collapsed */
 .question-card.collapsed .question-body {
@@ -2724,271 +2724,15 @@ body {
 }
 
 /* ============================================================================
-       QUESTION BODY WRAPPER
-       ============================================================================ */
+         QUESTION BODY WRAPPER
+         ============================================================================ */
 .question-body {
   padding-top: 4px;
 }
 
 /* ============================================================================
-       DOWNLOAD MODAL — 3-column grid
-       ============================================================================ */
-
-.dl-modal-card {
-  max-width: 520px;
-  width: 95vw;
-  padding: 0;
-  overflow: hidden;
-  text-align: initial;
-  max-height: min(85vh, 640px);
-  display: flex;
-  flex-direction: column;
-}
-
-.dl-modal-card .modal-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.dl-subtitle {
-  padding: 0 24px;
-  margin: 12px 0 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.88rem;
-  flex-shrink: 0;
-}
-
-.dl-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 12px 24px 24px;
-}
-
-.dl-option-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  padding: 16px 8px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition:
-    border-color 0.18s,
-    background 0.18s,
-    transform 0.18s,
-    box-shadow 0.18s;
-  font-family: inherit;
-}
-
-.dl-option-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-}
-
-.dl-option-btn:active {
-  transform: translateY(0);
-}
-
-.dl-label {
-  font-weight: 600;
-  font-size: 0.82rem;
-}
-
-.dl-sublabel {
-  font-size: 0.7rem;
-  color: var(--color-text-tertiary);
-}
-
-@media (max-width: 640px) {
-  .dl-modal-card {
-    width: 94vw;
-    max-height: min(80vh, 80dvh);
-  }
-
-  .mode-grid {
-    grid-template-columns: repeat(3, 1fr);
-    padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .dl-modal-card .modal-header {
-    padding: 16px 16px 12px;
-  }
-
-  .dl-subtitle {
-    padding: 0 16px;
-  }
-}
-
-/* ============================================================================
-       DOWNLOAD MODAL — export cards with split download / copy actions
-       (mirrors the home page's export-card pattern from export-helpers.js)
-       ============================================================================ */
-
-.mode-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 12px 24px 24px;
-  overflow-y: auto;
-}
-
-.export-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  direction: ltr;
-  gap: 5px;
-  padding: 16px 8px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition:
-    border-color 0.18s,
-    background 0.18s,
-    transform 0.18s,
-    box-shadow 0.18s;
-  font-family: inherit;
-}
-
-.export-card:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-md);
-}
-
-.export-card:active {
-  transform: translateY(0);
-}
-
-.export-card-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-}
-
-.export-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-}
-
-.export-icon img,
-.export-icon svg {
-  display: block;
-  width: 48px;
-  height: 48px;
-  max-width: 48px;
-  max-height: 48px;
-  object-fit: contain;
-}
-
-.export-label {
-  font-weight: 600;
-  font-size: 0.82rem;
-  text-align: center;
-}
-
-.export-extension {
-  font-size: 0.7rem;
-  color: var(--color-text-tertiary);
-  text-align: center;
-  margin-top: -3px;
-}
-
-.mode-copy-btn {
-  position: absolute;
-  top: 6px;
-  inset-inline-end: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  transition:
-    border-color 0.15s,
-    color 0.15s,
-    background 0.15s;
-}
-
-.mode-copy-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.mode-copy-btn.copied {
-  border-color: var(--color-success, #16a34a);
-  color: var(--color-success, #16a34a);
-}
-
-.mode-btn {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.85rem;
-  transition:
-    border-color 0.18s,
-    background 0.18s;
-}
-
-.mode-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-.mode-btn svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
-
-[data-theme="dark"] .export-card,
-[data-theme="dark-slate"] .export-card,
-[data-theme="dark"] .mode-btn,
-[data-theme="dark-slate"] .mode-btn,
-[data-theme="dark"] .mode-copy-btn,
-[data-theme="dark-slate"] .mode-copy-btn {
-  background: var(--color-surface, var(--color-background));
-}
-
-[data-theme="dark"] .export-card:hover,
-[data-theme="dark-slate"] .export-card:hover,
-[data-theme="dark"] .mode-btn:hover,
-[data-theme="dark-slate"] .mode-btn:hover {
-  background: var(--color-primary-light);
-}
-
-/* ============================================================================
-       IMPORT MODAL — DRAG & DROP ZONE
-       ============================================================================ */
+         IMPORT MODAL — DRAG & DROP ZONE
+         ============================================================================ */
 
 .import-dropzone {
   display: flex;
@@ -3028,8 +2772,8 @@ body {
 }
 
 /* ============================================================================
-       MODAL HEADER — close button fix
-       ============================================================================ */
+         MODAL HEADER — close button fix
+         ============================================================================ */
 
 .modal-header {
   display: flex;
@@ -3051,8 +2795,8 @@ body {
 }
 
 /* ============================================================================
-       DARK / DARK-SLATE THEME OVERRIDES
-       ============================================================================ */
+         DARK / DARK-SLATE THEME OVERRIDES
+         ============================================================================ */
 
 /* Backgrounds */
 [data-theme="dark"] body,
@@ -3344,8 +3088,8 @@ body {
 }
 
 /* ============================================================================
-       PROGRESS BAR
-       ============================================================================ */
+         PROGRESS BAR
+         ============================================================================ */
 
 .progress-bar-container {
   height: 6px;
@@ -3363,8 +3107,8 @@ body {
 }
 
 /* ============================================================================
-       FORM SECTION ENHANCEMENTS
-       ============================================================================ */
+         FORM SECTION ENHANCEMENTS
+         ============================================================================ */
 
 /* Make question card hover effect not apply when collapsed */
 .question-card.collapsed:hover {
@@ -3382,8 +3126,8 @@ body {
 }
 
 /* ============================================================================
-       SEARCH BAR COLLAPSE
-       ============================================================================ */
+         SEARCH BAR COLLAPSE
+         ============================================================================ */
 
 .search-bar-collapse {
   overflow: hidden;
@@ -3403,8 +3147,8 @@ body {
 }
 
 /* ============================================================================
-       ENHANCED UI IMPROVEMENTS — Appended patch
-       ============================================================================ */
+         ENHANCED UI IMPROVEMENTS — Appended patch
+         ============================================================================ */
 
 /* ── Quiz Metadata card: source field ──────────────────────────────────────── */
 .quiz-metadata .form-group + .form-group {
@@ -3621,16 +3365,16 @@ body {
 }
 
 /* ============================================================================
-       OPTION CARDS — Privacy & Default Settings sections
-       ============================================================================ */
+         OPTION CARDS — Privacy & Default Settings sections
+         ============================================================================ */
 
 /*
-     * .option-cards   — grid wrapper for radio-button card groups
-     * .option-card    — individual selectable card (wraps a hidden <input> + content)
-     * .option-card-content — inner flex column (title + description)
-     * .option-card-title   — primary label
-     * .option-card-desc    — secondary hint text
-     */
+       * .option-cards   — grid wrapper for radio-button card groups
+       * .option-card    — individual selectable card (wraps a hidden <input> + content)
+       * .option-card-content — inner flex column (title + description)
+       * .option-card-title   — primary label
+       * .option-card-desc    — secondary hint text
+       */
 
 .option-cards {
   display: grid;
@@ -3720,8 +3464,8 @@ body {
 }
 
 /* ============================================================================
-       FORM SELECT — .form-control (quiz language dropdown, etc.)
-       ============================================================================ */
+         FORM SELECT — .form-control (quiz language dropdown, etc.)
+         ============================================================================ */
 
 .form-control {
   width: 100%;
@@ -3756,8 +3500,8 @@ body {
 }
 
 /* ============================================================================
-       PRIVATE SETTINGS SECTION — conditional reveal block
-       ============================================================================ */
+         PRIVATE SETTINGS SECTION — conditional reveal block
+         ============================================================================ */
 
 #privateSettingsSection {
   border-radius: 10px;
@@ -3781,8 +3525,8 @@ body {
 }
 
 /* ============================================================================
-       DARK / DARK-SLATE — option-cards, form-control, private section
-       ============================================================================ */
+         DARK / DARK-SLATE — option-cards, form-control, private section
+         ============================================================================ */
 
 [data-theme="dark"] .option-card,
 [data-theme="dark-slate"] .option-card {
@@ -3831,8 +3575,8 @@ body {
 }
 
 /* ============================================================================
-       RESPONSIVE — option-cards on small screens
-       ============================================================================ */
+         RESPONSIVE — option-cards on small screens
+         ============================================================================ */
 
 @media (max-width: 640px) {
   .option-cards {

@@ -1,0 +1,217 @@
+/* ============================================================================
+   public/src/components/download-quiz-modal/download-quiz-modal.css
+   Shared styles for the "اختر صيغة التحميل" (Download Quiz) format-picker
+   popup across all pages. Styles the markup built by showDownloadModal() in
+   download-quiz-modal.js. Relies on the page's own generic .modal-overlay /
+   .modal-card / .modal-header / .close-btn primitives for the outer shell.
+   ============================================================================ */
+
+.dl-modal-card {
+  max-width: 520px;
+  width: 95vw;
+  padding: 0;
+  overflow: hidden;
+  text-align: initial;
+  max-height: min(85vh, 640px);
+  display: flex;
+  flex-direction: column;
+}
+
+.dl-modal-card .modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.dl-subtitle {
+  padding: 0 24px;
+  margin: 12px 0 4px;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+/* ── Export cards with split download / copy actions ── */
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px 24px 24px;
+  overflow-y: auto;
+}
+
+.export-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  direction: ltr;
+  gap: 5px;
+  padding: 16px 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+  font-family: inherit;
+}
+
+.export-card:hover,
+.export-card:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.export-card:active {
+  transform: translateY(0);
+}
+
+.export-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.export-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.export-icon img,
+.export-icon svg {
+  display: block;
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.export-label {
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-align: center;
+  color: var(--color-text-primary);
+}
+
+.export-extension {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  margin-top: -3px;
+}
+
+.mode-copy-btn {
+  position: absolute;
+  top: 6px;
+  inset-inline-end: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+  z-index: 2;
+}
+
+.mode-copy-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mode-copy-btn.copied {
+  border-color: var(--color-success, #16a34a);
+  color: var(--color-success, #16a34a);
+}
+
+.mode-btn {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+
+.mode-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.mode-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .export-card,
+[data-theme="dark-slate"] .export-card,
+[data-theme="dark"] .mode-btn,
+[data-theme="dark-slate"] .mode-btn,
+[data-theme="dark"] .mode-copy-btn,
+[data-theme="dark-slate"] .mode-copy-btn {
+  background: var(--color-surface, var(--color-background));
+}
+
+[data-theme="dark"] .export-card:hover,
+[data-theme="dark-slate"] .export-card:hover,
+[data-theme="dark"] .mode-btn:hover,
+[data-theme="dark-slate"] .mode-btn:hover {
+  background: var(--color-primary-light);
+}
+
+/* Phones: this modal may share the page with a fixed bottom-nav bar —
+     pull the card height in further and pad its scrollable grid so the last
+     row clears the nav instead of sitting underneath it. */
+@media (max-width: 640px) {
+  .dl-modal-card {
+    width: 94vw;
+    max-height: min(80vh, 80dvh);
+  }
+
+  .mode-grid {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dl-modal-card .modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .dl-subtitle {
+    padding: 0 16px;
+  }
+}

@@ -11,7 +11,7 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
-import { showDownloadModal } from "./export-helpers.js";
+import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
@@ -143,8 +143,8 @@ export function createExamCard(exam) {
 
     // Same shared "اختر صيغة التحميل" modal used on the homepage's "My
     // Quizzes" popup and the create-quiz page (see showDownloadModal() in
-    // export-helpers.js) — identical markup/styling/behavior across all
-    // three download entry points.
+    // components/download-quiz-modal/download-quiz-modal.js) — identical
+    // markup/styling/behavior across all three download entry points.
     showDownloadModal({
       config: initialConfig,
       questions: [],

@@ -13,7 +13,7 @@ import {
   parseQuizJson,
   buildJsonQuizExport,
 } from "../../shared/quiz-json.js";
-import { showDownloadModal } from "../home/export-helpers.js";
+import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
@@ -2400,9 +2400,10 @@ window.exportQuiz = function () {
     .replace(/^_|_$/g, "");
 
   // Shared modal (also used on the homepage's "My Quizzes" download popup —
-  // see showDownloadModal() in ../home/export-helpers.js). buildJsonPayloadString
-  // is passed through so the JSON export/copy still carries the current
-  // password/view/mode form state.
+  // see showDownloadModal() in
+  // ../../components/download-quiz-modal/download-quiz-modal.js).
+  // buildJsonPayloadString is passed through so the JSON export/copy still
+  // carries the current password/view/mode form state.
   showDownloadModal({
     config,
     questions: exportQuestions,
