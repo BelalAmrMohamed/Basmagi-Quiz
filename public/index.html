@@ -292,6 +292,37 @@
 </head>
 
 <body>
+    <!-- CRITICAL: Anti-flash sidebar-state script — must run before the
+         sidebar/body markup below paints, or the sidebar briefly renders
+         collapsed (64px) before snapping to its saved expanded (240px)
+         state on desktop. This is a synchronous, non-module, non-deferred
+         script placed as the very first thing in <body> — it runs the
+         instant the parser reaches this point, before the .sidebar element
+         a few lines down (or anything after it) is painted.
+         side-menu.js's init() reads window.__sidebarExpandedInit instead of
+         re-deriving this, so the two never disagree. -->
+    <script>
+        (function () {
+            try {
+                var MOBILE_BP = 768;
+                var isMobile = window.innerWidth <= MOBILE_BP;
+                var saved = localStorage.getItem("sidebar_expanded");
+                var expanded = !isMobile && (saved === "true");
+                window.__sidebarExpandedInit = expanded;
+                if (expanded) {
+                    document.body.classList.add("sidebar-expanded");
+                }
+                // The .sidebar element itself is added a few lines below;
+                // side-menu.js's init() applies the "expanded" class to it
+                // synchronously on DOMContentLoaded using the same value —
+                // by then the body padding above has already been correct
+                // since first paint, which is what prevents the visible jump.
+            } catch (e) {
+                console.error("Sidebar state initialization error:", e);
+            }
+        })();
+    </script>
+
     <!-- Side Menu, Uses seperate files: `side-menu.css` and `side-menu.js` -->
     <!-- Backdrop (mobile overlay) -->
     <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
@@ -299,6 +330,23 @@
     <!-- Side-menu (using side-menu.js and side-menu.css) -->
     <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true"
         tabindex="-1">
+
+        <script>
+            // Applies the saved expanded/collapsed class the instant this
+            // element exists in the DOM — still before the browser paints
+            // anything below it — so the sidebar never renders collapsed
+            // first. Kept tiny and inline (not deferred to side-menu.js)
+            // specifically so it runs synchronously mid-parse.
+            (function () {
+                try {
+                    if (window.__sidebarExpandedInit) {
+                        document.currentScript.closest(".sidebar").classList.add("expanded");
+                    }
+                } catch (e) {
+                    console.error("Sidebar expand-state initialization error:", e);
+                }
+            })();
+        </script>
 
         <!-- Drag handle — mobile bottom-sheet only. A real element (not a
              ::before pseudo-element) so it can receive pointer events for
@@ -317,7 +365,17 @@
         </button>
 
         <!-- Sidebar Logo Thumbnail -->
+        <!-- Collapsed (desktop, minimized rail): icon-only favicon —
+                 visible whenever the sidebar is NOT expanded, same as any
+                 other collapsed-rail icon, instead of disappearing entirely. 
+                 Shouldn't be a link, because it's too close to the expand button, 
+                 and poeple would press it by accident-->
+        <div class="sidebar-favicon" title="منصة إمتحانات بصمجي">
+            <img src="./favicon.png" alt="" width="28" height="28">
+        </div>
+
         <a href="/">
+            <!-- Expanded: full wordmark (icon + Arabic text) -->
             <div class="sidebar-logo sidebar-expanded-only" title="منصة إمتحانات بصمجي">
                 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="40" viewBox="0 0 220 40"
                     style="direction: ltr;">
@@ -458,7 +516,7 @@
                 </div>
             </div>
 
-            <div class="menu-divider" role="separator"></div>
+            <div class="menu-divider desktop-only-divider" role="separator"></div>
 
             <a href="settings.html" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -483,9 +541,40 @@
 
             <div class="menu-divider" role="separator" aria-hidden="true"></div>
 
-            <!-- Theme controls -->
+            <!-- Theme controls — collapsible/accordion so it can be tucked
+                 away to save vertical space; starts expanded. Only relevant
+                 in the expanded sidebar (desktop expanded / mobile sheet);
+                 in the collapsed desktop rail this whole block is hidden by
+                 the existing .sidebar:not(.expanded) rules, same as before. -->
             <div class="theme-controls-section">
-                <div class="theme-section-header sidebar-expanded-only" data-tooltip="الخلفية">
+                <button type="button" class="theme-controls-toggle sidebar-expanded-only" id="themeControlsToggle"
+                    aria-expanded="true" aria-controls="themeControlsPanel">
+                    <span class="theme-controls-toggle-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path
+                                d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
+                            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                        </svg>
+                        <span class="menu-label">المظهر والأداء</span>
+                    </span>
+                    <svg class="theme-controls-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </button>
+
+                <!-- Collapsed-rail entry point: the toggle button above is
+                     hidden (sidebar-expanded-only), so give the collapsed
+                     64px rail its own icon-only affordance that just
+                     expands the sidebar itself (handled in side-menu.js). -->
+                <button type="button" class="theme-section-header sidebar-collapsed-only" data-tooltip="الخلفية"
+                    title="المظهر والأداء" aria-label="فتح إعدادات المظهر والأداء">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         aria-hidden="true">
@@ -496,113 +585,122 @@
                         <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
                         <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
                     </svg>
-                    <span class="menu-label sidebar-expanded-only">الخلفية</span>
-                </div>
-                <div class="theme-selector-grid sidebar-expanded-only" role="group" aria-label="اختيار الخلفية">
-                    <button class="theme-selector-btn" title="الخلفية السوداء" data-theme="dark" aria-pressed="false">
-                        <span class="theme-btn-preview" aria-hidden="true">
-                            <span class="theme-btn-preview-header"></span>
-                            <span class="theme-btn-preview-list">
-                                <span class="theme-btn-preview-row"></span>
-                                <span class="theme-btn-preview-row"></span>
-                            </span>
-                        </span>
-                        <span class="theme-btn-check" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                        </span>
-                        <span class="theme-btn-label">السوداء</span>
-                    </button>
-                    <button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate"
-                        aria-pressed="false">
-                        <span class="theme-btn-preview" aria-hidden="true">
-                            <span class="theme-btn-preview-header"></span>
-                            <span class="theme-btn-preview-list">
-                                <span class="theme-btn-preview-row"></span>
-                                <span class="theme-btn-preview-row"></span>
-                            </span>
-                        </span>
-                        <span class="theme-btn-check" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                        </span>
-                        <span class="theme-btn-label">الزرقاء</span>
-                    </button>
-                    <button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light" aria-pressed="false">
-                        <span class="theme-btn-preview" aria-hidden="true">
-                            <span class="theme-btn-preview-header"></span>
-                            <span class="theme-btn-preview-list">
-                                <span class="theme-btn-preview-row"></span>
-                                <span class="theme-btn-preview-row"></span>
-                            </span>
-                        </span>
-                        <span class="theme-btn-check" aria-hidden="true">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                        </span>
-                        <span class="theme-btn-label">البيضاء</span>
-                    </button>
-                </div>
-
-                <div class="animation-section-header sidebar-expanded-only">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path
-                            d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
-                        <path d="M20 2v4M22 4h-4" />
-                        <circle cx="4" cy="20" r="2" />
-                    </svg>
-                    <span class="menu-label">الرسوم المتحركة</span>
-                </div>
-                <label class="animation-toggle-container sidebar-expanded-only"
-                    title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
-                    <span class="animation-toggle-label">رسوم الخلفية</span>
-                    <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations" checked
-                        aria-label="رسوم الخلفية المتحركة">
-                    <span class="toggle-switch" aria-hidden="true"></span>
-                </label>
-
-                <label class="animation-toggle-container sidebar-expanded-only"
-                    title="إيقاف كل الرسوم المتحركة والانتقالات في الموقع بالكامل لأفضل أداء ممكن">
-                    <span class="animation-toggle-label">الوضع الفائق الأداء</span>
-                    <input type="checkbox" id="highPerformanceToggle" class="toggle-input"
-                        data-control="high-performance" aria-label="تفعيل الوضع الفائق الأداء (إيقاف كل الحركات)">
-                    <span class="toggle-switch" aria-hidden="true"></span>
-                </label>
-
-                <div class="menu-divider sidebar-expanded-only" role="separator"></div>
-
-                <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل"
-                    data-tooltip="تواصل مع المطور">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path
-                            d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
-                        <path d="M8 12h.01M12 12h.01M16 12h.01" />
-                    </svg>
-                    <span class="menu-label">تواصل مع المطور</span>
                 </button>
 
-                <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp"
-                    data-tooltip="تثبيت التطبيق" style="display:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-                        <path d="M12 18h.01" />
-                    </svg>
-                    <span class="menu-label">تثبيت التطبيق</span>
-                </button>
+                <div class="theme-controls-panel" id="themeControlsPanel">
+                    <div class="theme-selector-grid sidebar-expanded-only" role="group" aria-label="اختيار الخلفية">
+                        <button class="theme-selector-btn" title="الخلفية السوداء" data-theme="dark"
+                            aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">السوداء</span>
+                        </button>
+                        <button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate"
+                            aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">الزرقاء</span>
+                        </button>
+                        <button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light"
+                            aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">البيضاء</span>
+                        </button>
+                    </div>
+
+                    <div class="animation-section-header sidebar-expanded-only">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true">
+                            <path
+                                d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
+                            <path d="M20 2v4M22 4h-4" />
+                            <circle cx="4" cy="20" r="2" />
+                        </svg>
+                        <span class="menu-label">الرسوم المتحركة</span>
+                    </div>
+                    <label class="animation-toggle-container sidebar-expanded-only"
+                        title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
+                        <span class="animation-toggle-label">تفعيل الرسوم</span>
+                        <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations"
+                            checked aria-label="تفعيل الرسوم المتحركة">
+                        <span class="toggle-switch" aria-hidden="true"></span>
+                    </label>
+
+                    <label class="animation-toggle-container high-performance-toggle-container sidebar-expanded-only"
+                        title="إيقاف كل الرسوم المتحركة والانتقالات في الموقع بالكامل لأفضل أداء ممكن">
+                        <span class="animation-toggle-label">الأداء الفائق</span>
+                        <input type="checkbox" id="highPerformanceToggle" class="toggle-input"
+                            data-control="high-performance" aria-label="تفعيل الأداء الفائق (إيقاف كل الحركات)">
+                        <span class="toggle-switch" aria-hidden="true"></span>
+                    </label>
+                </div>
             </div>
         </nav>
+
+        <!-- Pinned bottom actions — always visible at the foot of the
+             sidebar, regardless of how long/scrollable the nav content
+             above becomes, and regardless of expanded/collapsed state.
+             Sits as a sibling of <nav> (not inside it) so it can be
+             positioned outside the scroll container. -->
+        <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
+            <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل"
+                data-tooltip="تواصل مع المطور">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path
+                        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+                    <path d="M8 12h.01M12 12h.01M16 12h.01" />
+                </svg>
+                <span class="menu-label">تواصل مع المطور</span>
+            </button>
+
+            <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp"
+                data-tooltip="تثبيت التطبيق" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                    <path d="M12 18h.01" />
+                </svg>
+                <span class="menu-label">تثبيت التطبيق</span>
+            </button>
+        </div>
     </aside>
     <!-- End of the Side Menu -->
 

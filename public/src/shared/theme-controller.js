@@ -28,6 +28,7 @@ export const themeManager = {
     );
     const onReducedMotionChange = () => {
       this.applyHighPerformance(this.getHighPerformanceEnabled());
+      this.updateHighPerformanceToggleVisibility();
     };
     if (typeof reducedMotionQuery.addEventListener === "function") {
       reducedMotionQuery.addEventListener("change", onReducedMotionChange);
@@ -172,6 +173,24 @@ export const themeManager = {
       });
   },
 
+  /**
+   * The High Performance toggle is redundant (and hidden via CSS media
+   * query) when the OS-level prefers-reduced-motion is already on, since
+   * every animation is already off in that case. This JS-side mirror of
+   * that CSS rule covers browsers/contexts where an inline style or a
+   * later stylesheet could otherwise override the CSS `display: none`.
+   */
+  updateHighPerformanceToggleVisibility() {
+    const reducedMotionPref = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    document
+      .querySelectorAll(".high-performance-toggle-container")
+      .forEach((el) => {
+        el.style.display = reducedMotionPref ? "none" : "";
+      });
+  },
+
   // FIXED: New method to restore body background
   restoreBodyBackground() {
     const animationsEnabled = this.getAnimationsEnabled();
@@ -300,9 +319,11 @@ export const themeManager = {
       });
 
     // High Performance Mode toggle switches/buttons
-    document.querySelectorAll(".high-performance-toggle-btn").forEach((btn) => {
-      btn.onclick = () => this.toggleHighPerformance();
-    });
+    document
+      .querySelectorAll(".high-performance-toggle-btn")
+      .forEach((btn) => {
+        btn.onclick = () => this.toggleHighPerformance();
+      });
 
     document
       .querySelectorAll(".high-performance-toggle-switch")
@@ -315,13 +336,15 @@ export const themeManager = {
         'input[type="checkbox"][data-control="high-performance"]',
       )
       .forEach((checkbox) => {
-        checkbox.onchange = (e) => this.applyHighPerformance(e.target.checked);
+        checkbox.onchange = (e) =>
+          this.applyHighPerformance(e.target.checked);
       });
 
     // Initialize UI state
     this.updateThemeUI(this.getCurrentTheme());
     this.updateAnimationsUI(this.getAnimationsEnabled());
     this.updateHighPerformanceUI(this.getHighPerformanceEnabled());
+    this.updateHighPerformanceToggleVisibility();
 
     // FIXED: Ensure body background is correct on initialization
     this.restoreBodyBackground();

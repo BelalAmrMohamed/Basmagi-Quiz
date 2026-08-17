@@ -63,6 +63,7 @@
 
   --sidebar-collapsed-width: 64px;
   --sidebar-expanded-width: 240px;
+  --bottom-nav-height: 54px;
 }
 
 /* ==================== DARK MODE (TRUE BLACK) ==================== */
@@ -372,9 +373,9 @@ html[data-theme="light"] {
 }
 
 /* Make surfaces slightly transparent when the background animation is active
-     so the Lightfall shader subtly shows through cards/panels.
-     Both data-animations and data-theme live on the <html> element,
-     so the compound selector must target the same element. */
+   so the Lightfall shader subtly shows through cards/panels.
+   Both data-animations and data-theme live on the <html> element,
+   so the compound selector must target the same element. */
 html[data-animations="enabled"][data-theme="light"],
 html[data-animations="enabled"]:not([data-theme]) {
   --color-surface: rgba(255, 255, 255, 0.7);
@@ -389,21 +390,13 @@ html[data-animations="enabled"][data-theme="dark"] {
 }
 
 /* ==================== HIGH PERFORMANCE MODE ====================
-     Global motion kill-switch. Expands on the existing
-     [data-animations="disabled"] attribute (which originally only
-     stopped the background canvas shader) so that turning on
-     "الوضع الفائق الأداء" / High Performance Mode also strips every
-     CSS transition and animation across the whole site, not just the
-     background. Anything using --duration- --ease- tokens or a raw
-     transition/animation collapses to instant.
-     data-motion="reduced" is set by theme-controller.js whenever the
-     user explicitly enables High Performance Mode OR the OS-level
-     prefers-reduced-motion media query matches. It is intentionally a
-     separate attribute from data-animations: the background shader
-     toggle stays a distinct, narrower preference, while data-motion is
-     the one true "kill all motion" switch other components can also
-     hook into.
-     ===================================================================== */
+   Global motion kill-switch. Expands on the existing
+   [data-animations="disabled"] attribute (which originally only
+   stopped the background canvas shader) so that turning on
+   "الأداء الفائق" / High Performance Mode also strips every
+   CSS transition and animation across the whole site, not just the
+   background.
+   ===================================================================== */
 html[data-motion="reduced"] *,
 html[data-motion="reduced"] *::before,
 html[data-motion="reduced"] *::after {
@@ -414,7 +407,7 @@ html[data-motion="reduced"] *::after {
 }
 
 /* Safety net for the moment before theme-controller.js has run, or for
-     users who never touch the toggle but have the OS setting on. */
+   users who never touch the toggle but have the OS setting on. */
 @media (prefers-reduced-motion: reduce) {
   html:not([data-motion="reduced"]) *,
   html:not([data-motion="reduced"]) *::before,

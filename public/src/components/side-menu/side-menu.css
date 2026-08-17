@@ -51,6 +51,29 @@ body.sidebar-expanded {
   display: none;
 }
 
+/* ── Pinned Bottom Actions ────────────────────────────────────────────────
+   Sibling of <nav> (not inside it), so it sits outside the scrollable area
+   and stays fixed at the very bottom of the sidebar column regardless of
+   how tall/scrollable the nav content above becomes. flex-shrink: 0 keeps
+   it from being squeezed as nav's sibling in the column; nav's own
+   flex: 1 + overflow-y: auto does the rest of the work by absorbing all
+   remaining space and scrolling internally instead of pushing this down. */
+.sidebar-pinned-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+  background: var(--sidebar-color);
+}
+
+/* Collapsed rail: center the icon-only buttons like every other rail icon */
+.sidebar:not(.expanded) .sidebar-pinned-actions {
+  padding: 8px 0;
+  align-items: center;
+}
+
 /* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
 .sidebar-toggle {
   display: flex;
@@ -193,6 +216,15 @@ body.sidebar-expanded {
   padding-top: 8px;
 }
 
+/* Collapsed rail: .sidebar-favicon is now always in-flow just above <nav>
+   (see Persistent Minimized Logo below), so it already provides the top
+   clearance the 64px padding used to exist for. Cut nav's own top padding
+   down to a small breathing gap instead of double-spacing above the first
+   icon. */
+.sidebar:not(.expanded) nav {
+  padding-top: 12px;
+}
+
 .sidebar nav::-webkit-scrollbar {
   width: 4px;
 }
@@ -226,22 +258,42 @@ body.sidebar-expanded {
   padding: 0 12px;
 }
 
-/* Favicon-only pill shown in collapsed state */
+/* Sidebar Logo Thumbnail — the <a> wrapping both the collapsed favicon and
+   expanded wordmark is made a full-width flex container so the collapsed
+   favicon can center itself horizontally in the 64px rail. The expanded
+   wordmark keeps its own original left-aligned flex behavior (unaffected
+   here) since .sidebar-logo sets its own display/align rules below. */
+.sidebar > a:has(.sidebar-logo) {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* Favicon-only pill shown in collapsed state. In the actual markup this is
+   a direct flex child of .sidebar itself (a sibling of the <a> that wraps
+   the expanded wordmark, NOT nested inside it) — so the .sidebar > a:has(...)
+   centering rule above never applies to it. .sidebar has no align-items
+   override (defaults to stretch), and stretch is a no-op on a cross-axis
+   item with a fixed width, so the pill was left flush to the cross-axis
+   start instead of centered in the 64px rail. width: 100% turns
+   .sidebar-favicon into a full-width centering wrapper (its own
+   justify-content: center below then centers the fixed 36px pill inside
+   it) without changing the pill's own size/shape. */
 .sidebar-favicon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  overflow: hidden;
+  width: 100%;
   flex-shrink: 0;
+  margin-top: 9px;
+  margin-bottom: 7px;
   transition: opacity 200ms ease;
 }
 
 .sidebar-favicon img {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
   object-fit: contain;
 }
 
@@ -297,6 +349,16 @@ body.sidebar-expanded {
    desktop now that it's reachable from inside the profile dropdown. */
 @media (min-width: 769px) {
   .mobile-only-menu-item {
+    display: none !important;
+  }
+}
+
+/* The desktop-style profile dropdown (avatar cover, email row, sign-out,
+   etc.) is not meant for mobile — the bottom nav already has its own
+   direct "الحساب" tab/link to profile.html. Hide the trigger + popover
+   entirely in the mobile bottom-sheet so it isn't duplicated. */
+@media (max-width: 768px) {
+  .menu-item-dropdown-wrap {
     display: none !important;
   }
 }
@@ -579,8 +641,7 @@ body.sidebar-expanded {
   flex-shrink: 0;
   min-width: 22px;
   transition:
-    transform var(--duration-base, 240ms)
-      var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    transform var(--duration-base, 240ms) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
     opacity var(--duration-fast, 120ms) ease;
   transform: scale(1) translateY(0);
   will-change: transform;
@@ -669,14 +730,25 @@ body.sidebar-expanded {
 }
 
 /* ── Tooltips (collapsed state, desktop only) ────────────────────────────── */
-/* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon       */
-.sidebar:not(.expanded) [data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  right: calc(100% + 10px); /* left of the icon, toward the content area */
-  left: auto;
-  top: 50%;
-  transform: translateY(-50%);
+/* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon.
+ *
+ * This used to be a plain [data-tooltip]::after pseudo-element positioned
+ * with `right: calc(100% + 10px)`. That only ever worked for the two
+ * .sidebar-pinned-actions buttons (contactDevBtn / install-app), which sit
+ * OUTSIDE <nav>. Every other .menu-item lives INSIDE <nav>, and .sidebar
+ * nav has `overflow-x: clip` (see that rule's comment) — which hard-clips
+ * anything painted past nav's left/right edges, including a ::after
+ * positioned a full icon-width outside the icon itself. So the label
+ * silently never became visible for any in-nav item.
+ *
+ * Fixed the same way the profile dropdown already solves this exact
+ * problem (see positionTooltip()/side-menu.js): one shared element,
+ * `position: fixed` (not absolute), positioned via JS from the hovered/
+ * focused icon's getBoundingClientRect(). `fixed` escapes nav's clipping
+ * ancestor entirely, so this now works for every .menu-item uniformly.
+ */
+.sidebar-hover-tooltip {
+  position: fixed;
   background: var(--color-surface, #fff);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -693,7 +765,7 @@ body.sidebar-expanded {
   direction: rtl;
 }
 
-.sidebar:not(.expanded) [data-tooltip]:hover::after {
+.sidebar-hover-tooltip.visible {
   opacity: 1;
 }
 
@@ -740,11 +812,36 @@ body.sidebar-expanded {
   color: var(--color-text-tertiary, #888);
   white-space: nowrap;
   position: relative;
+  /* Button reset — this element is a <div> in most places but a <button>
+     for the collapsed-rail accordion entry point; these properties are
+     harmless no-ops on the <div> instances. */
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color var(--duration-fast, 120ms) ease;
 }
 
+.theme-section-header:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.theme-section-header:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+/* Match the sizing of the surrounding collapsed-rail .menu-item icons:
+   same vertical padding (10px, not the expanded state's 8px) and an
+   explicit full width so this button's hit area/footprint lines up with
+   every other icon in the 64px rail instead of sizing to its own content. */
 .sidebar:not(.expanded) .theme-section-header {
   justify-content: center;
-  padding: 8px 0;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  gap: 0;
 }
 
 /* ── Items visible only when expanded ────────────────────────────────────── */
@@ -774,6 +871,94 @@ body.sidebar-expanded {
   transition:
     opacity 150ms ease 100ms,
     max-height 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+/* ── Items visible only when collapsed (inverse of the above) ───────────── */
+.sidebar-collapsed-only {
+  display: none;
+}
+
+.sidebar:not(.expanded) .sidebar-collapsed-only {
+  display: flex;
+}
+
+/* ── Retractable / Accordion Section (theme + animation controls) ───────────
+   Collapsible so the appearance/performance controls can be tucked away to
+   save vertical space in a long sidebar. Only meaningful in the expanded
+   sidebar / mobile sheet — the collapsed 64px rail hides this whole
+   section via the existing .sidebar:not(.expanded) rules further up and
+   shows its own single icon-only entry point instead
+   (.sidebar-collapsed-only), which just expands the sidebar on click. */
+.theme-controls-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-tertiary, #888);
+  font: inherit;
+  text-align: right;
+  direction: rtl;
+  transition: background-color var(--duration-fast, 120ms) ease;
+}
+
+.theme-controls-toggle:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.theme-controls-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.theme-controls-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.theme-controls-toggle-label .menu-label {
+  flex: none;
+  opacity: 1;
+  max-width: none;
+  pointer-events: auto;
+}
+
+.theme-controls-toggle-chevron {
+  flex-shrink: 0;
+  transition: transform var(--duration-base, 240ms)
+    var(--ease-out-expo, ease);
+}
+
+/* Chevron points down when open (default markup state, aria-expanded="true"),
+   rotates to point up (toward the content, since it collapses upward) when
+   closed. */
+.theme-controls-toggle[aria-expanded="false"] .theme-controls-toggle-chevron {
+  transform: rotate(-90deg);
+}
+
+.theme-controls-panel {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition:
+    max-height var(--duration-slow, 400ms) var(--ease-out-expo, ease),
+    opacity var(--duration-base, 240ms) ease;
+}
+
+.theme-controls-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ── Theme Selector Grid ─────────────────────────────────────────────────── */
@@ -1050,6 +1235,19 @@ body.sidebar-expanded {
   border-color: var(--color-primary);
 }
 
+/* Redundant when the OS already forces reduced motion — animations are
+   disabled site-wide either way, so don't render a toggle that would do
+   nothing (see data-motion="reduced" fallback in themes.css). Hidden with
+   the same technique as .sidebar-expanded-only (display:none is not
+   enough on its own here since this element is *also* gated by that
+   class — max-height:0 avoids fighting its own opacity/max-height
+   transition when both rules would otherwise apply at once). */
+@media (prefers-reduced-motion: reduce) {
+  .high-performance-toggle-container {
+    display: none !important;
+  }
+}
+
 .animation-toggle-label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -1114,7 +1312,7 @@ body.sidebar-expanded {
   .sidebar {
     top: auto;
     bottom: calc(
-      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
     );
     left: 0;
     right: 0;
@@ -1126,10 +1324,22 @@ body.sidebar-expanded {
     transform: translateY(100%); /* hidden below the viewport */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: none;
-    overflow-y: hidden; /* nav handles scrolling so header can stay sticky */
+    /*
+     * .sidebar itself is now the scroll container on mobile (was: nav
+     * scrolled internally while .sidebar-pinned-actions sat pinned below
+     * it as nav's flex sibling — see that rule's own comment). Pinned
+     * actions take real vertical space in a short mobile viewport, so
+     * "pinned outside the scroll area" meant they permanently ate into
+     * the sheet's budget instead of scrolling away with the rest of the
+     * content. Scrolling .sidebar as one unit lets nav + pinned-actions
+     * flow and scroll together; .sidebar-header/.sidebar-drag-handle stay
+     * put via position: sticky (below) instead of relying on being
+     * outside the scroll container.
+     */
+    overflow-y: auto;
     overflow-x: hidden;
     max-height: calc(
-      85dvh - var(--bottom-nav-height, 64px) - env(safe-area-inset-bottom, 0px)
+      85dvh - var(--bottom-nav-height, 54px) - env(safe-area-inset-bottom, 0px)
     );
   }
 
@@ -1137,14 +1347,17 @@ body.sidebar-expanded {
     transform: translateY(0); /* slide up into view */
     box-shadow: var(--shadow-xl);
     bottom: calc(
-      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
     );
   }
 
   /* Drag handle — real element, grabbable and draggable (see side-menu.js).
      Generous 44px touch-target height even though the visible bar is thin,
      per standard mobile hit-target sizing; the bar itself is centered
-     inside it. */
+     inside it. Sticky (not just "first in flow") because .sidebar is now
+     the scroll container on mobile — without this the handle would
+     scroll away with the rest of the content instead of always staying
+     reachable at the top of the sheet. */
   .sidebar-drag-handle {
     display: flex;
     align-items: center;
@@ -1154,6 +1367,10 @@ body.sidebar-expanded {
     flex-shrink: 0;
     touch-action: none;
     cursor: grab;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--sidebar-color);
   }
 
   .sidebar-drag-handle:active {
@@ -1165,8 +1382,7 @@ body.sidebar-expanded {
     height: 4px;
     border-radius: 2px;
     background: var(--color-border);
-    transition:
-      background-color var(--duration-fast, 120ms) ease,
+    transition: background-color var(--duration-fast, 120ms) ease,
       width var(--duration-fast, 120ms) ease;
   }
 
@@ -1196,7 +1412,7 @@ body.sidebar-expanded {
 
   /* Old HTML: logo lives in a bare <a> directly inside .sidebar (no .sidebar-header).
      Center it and add a separator line below to match the new-HTML header style. */
-  .sidebar > a:has(.sidebar-logo) {
+  .sidebar > a:has(.sidebar-favicon, .sidebar-logo) {
     display: flex;
     justify-content: center;
     padding-bottom: 6px;
@@ -1227,7 +1443,7 @@ body.sidebar-expanded {
   body.sidebar-expanded {
     padding-right: 16px !important;
     padding-bottom: calc(
-      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px) + 16px
+      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
     ) !important;
   }
 
@@ -1264,16 +1480,20 @@ body.sidebar-expanded {
   }
 
   /* Nav: no extra top padding — logo lives in .sidebar-header now.
-     overflow-y: auto makes nav the scroll root so the sticky header above it works. */
+     .sidebar itself is the scroll root on mobile now (see .sidebar rule
+     above), so nav no longer needs to scroll internally — flex: 1 would
+     otherwise fight with .sidebar's own scroll height, and a nested
+     overflow:auto here would just create an empty second scrollbar. */
   .sidebar nav {
     padding-top: 8px;
-    overflow-y: auto;
+    flex: none;
+    overflow-y: visible;
     overflow-x: visible;
   }
 
   /* Suppress desktop tooltips on mobile */
-  .sidebar:not(.expanded) [data-tooltip]::after {
-    display: none;
+  .sidebar-hover-tooltip {
+    display: none !important;
   }
 
   /* The sheet opened by "المزيد" reuses the desktop sidebar's <nav>, so hide
@@ -1289,14 +1509,15 @@ body.sidebar-expanded {
 
   /* The divider that used to separate the create-quiz link from settings
      would otherwise leave an orphaned line at the very top of the sheet. */
-  .sidebar nav > .menu-divider:first-of-type {
+  /* .sidebar nav > .menu-divider:first-of-type, */
+  .desktop-only-divider {
     display: none;
   }
 
   /* ── Bottom Navigation Bar ────────────────────────────────────────────── */
-  :root {
-    --bottom-nav-height: 64px;
-  }
+  /* --bottom-nav-height now lives centrally in themes.css :root alongside
+     the other layout tokens (--sidebar-collapsed-width, etc.) — no need
+     to redeclare it here, this media query just consumes it. */
 
   .bottom-nav {
     position: fixed;
@@ -1325,8 +1546,8 @@ body.sidebar-expanded {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
-    padding: 6px 2px 0;
+    gap: 2px;
+    padding: 4px 2px 0;
     background: none;
     border: none;
     text-decoration: none;
@@ -1354,21 +1575,21 @@ body.sidebar-expanded {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     transition: transform 0.18s
       var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
   .bottom-nav-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
     stroke-width: 2;
     transition: stroke-width 0.18s ease;
   }
 
   .bottom-nav-label {
-    font-size: 0.66rem;
+    font-size: 0.64rem;
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
@@ -1417,14 +1638,31 @@ body.sidebar-expanded {
     background: var(--color-accent);
   }
 
-  /* "الحساب" (Profile) — emphasized as the primary action, Play-Store-esque */
+  /* "الحساب" (Profile) — was previously raised above the bar (Play-Store
+     style, margin-top: -14px) which is what kept the bar's overall height
+     taller than necessary. Realigned flush with the other icons: same
+     size class, no negative margin, so the bar can be shortened without
+     the profile icon poking out past its top edge. Keeps a filled pill
+     background + gradient so it still reads as the primary action, just
+     without sitting proud of the row.
+
+     FIXED: this pill is 30x30 vs every other .bottom-nav-icon's 24x24.
+     .bottom-nav-item is a column flexbox (icon, 2px gap, label) with
+     align-items: center — growing the icon's box height by 6px shifts
+     the whole icon+label column, but because only the icon (not the
+     label) grew, the label ends up sitting ~3px lower than every other
+     tab's label instead of sharing their baseline. A negative margin
+     equal to half that delta pulls the pill back up so it occupies the
+     same 24px vertical footprint as a regular icon (extending 3px above
+     and 3px below it) without touching layout for the other tabs. */
   .bottom-nav-icon-profile {
-    width: 34px;
-    height: 34px;
+    width: 30px;
+    height: 30px;
+    margin-top: -3px;
+    margin-bottom: -3px;
     border-radius: var(--radius-full, 9999px);
     background: var(--gradient-accent);
     color: #fff;
-    margin-top: -14px;
     box-shadow: var(--shadow-md);
   }
 
@@ -1446,6 +1684,29 @@ body.sidebar-expanded {
 
   .bottom-nav-item-profile:active .bottom-nav-icon-profile {
     transform: scale(0.92);
+  }
+
+  /* Pinned bottom actions (contactDevBtn / install-app) — on desktop these
+     stay fixed at the foot of the rail outside nav's scroll area (see the
+     base .sidebar-pinned-actions rule), which is fine there because the
+     64px/240px rail is full viewport height. On mobile the sheet is short
+     and capped at 85dvh, so a permanently-pinned block ate into that
+     budget on every page regardless of how much nav content there was to
+     scroll. .sidebar is now the scroll root on mobile (see .sidebar rule
+     above), so removing the "pinned" behavior here just lets this section
+     flow as the last item in that single scrollable column, alongside
+     nav's own content, instead of camping at the bottom of the sheet. */
+  .sidebar-pinned-actions {
+    flex-shrink: initial;
+    margin-top: 4px;
+  }
+
+  .sidebar:not(.expanded) .sidebar-pinned-actions {
+    /* Mobile sidebar is always full-width/expanded-style (labels visible),
+       so the collapsed-rail centering variant never actually applies here
+       — kept only so nothing regresses if that assumption ever changes. */
+    padding: 8px;
+    align-items: stretch;
   }
 
   /* More button opened state (drawer visible) */
