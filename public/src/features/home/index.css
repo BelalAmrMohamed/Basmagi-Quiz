@@ -2085,10 +2085,6 @@ Container
   padding: 0;
   overflow: hidden;
   text-align: initial;
-  /* Cap height and leave room so the card never runs under the bottom nav
-     on phones — the fixed bottom-nav bar sits above the modal's z-index,
-     so without this the last grid row can end up partly hidden beneath it.
-     env(safe-area-inset-bottom) accounts for home-indicator devices too. */
   max-height: min(85vh, 640px);
   display: flex;
   flex-direction: column;
