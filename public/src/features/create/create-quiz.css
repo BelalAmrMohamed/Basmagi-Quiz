@@ -2844,6 +2844,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  direction: ltr;
   gap: 5px;
   padding: 16px 8px 12px;
   border-radius: 10px;
