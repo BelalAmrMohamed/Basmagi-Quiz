@@ -164,10 +164,12 @@
             try {
                 const savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
                 const savedAnimations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const savedHighPerformance = localStorage.getItem("quiz_high_performance_pref") === "enabled";
                 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
                 document.documentElement.setAttribute("data-theme", savedTheme);
-                document.documentElement.setAttribute("data-animations", (savedAnimations && !reducedMotion) ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-animations", (savedAnimations && !reducedMotion && !savedHighPerformance) ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-motion", (savedHighPerformance || reducedMotion) ? "reduced" : "normal");
 
                 // Add loading class to prevent FOUC
                 document.documentElement.classList.add('is-loading');
@@ -297,6 +299,13 @@
     <!-- Side-menu (using side-menu.js and side-menu.css) -->
     <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true"
         tabindex="-1">
+
+        <!-- Drag handle — mobile bottom-sheet only. A real element (not a
+             ::before pseudo-element) so it can receive pointer events for
+             the drag-to-dismiss gesture. Hidden on desktop via CSS. -->
+        <div class="sidebar-drag-handle" id="sidebarDragHandle" aria-hidden="true">
+            <span class="sidebar-drag-handle-bar"></span>
+        </div>
 
         <!-- Desktop expand/collapse toggle -->
         <button class="sidebar-toggle" title="القائمة الجانبية" id="sidebarToggle" aria-label="توسيع القائمة"
@@ -554,9 +563,17 @@
                 </div>
                 <label class="animation-toggle-container sidebar-expanded-only"
                     title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
-                    <span class="animation-toggle-label">تفعيل الرسوم</span>
+                    <span class="animation-toggle-label">رسوم الخلفية</span>
                     <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations" checked
-                        aria-label="تفعيل الرسوم المتحركة">
+                        aria-label="رسوم الخلفية المتحركة">
+                    <span class="toggle-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="animation-toggle-container sidebar-expanded-only"
+                    title="إيقاف كل الرسوم المتحركة والانتقالات في الموقع بالكامل لأفضل أداء ممكن">
+                    <span class="animation-toggle-label">الوضع الفائق الأداء</span>
+                    <input type="checkbox" id="highPerformanceToggle" class="toggle-input"
+                        data-control="high-performance" aria-label="تفعيل الوضع الفائق الأداء (إيقاف كل الحركات)">
                     <span class="toggle-switch" aria-hidden="true"></span>
                 </label>
 

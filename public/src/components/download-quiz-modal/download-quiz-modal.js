@@ -2,6 +2,17 @@
 // public/src/components/download-quiz-modal/download-quiz-modal.js
 // DOWNLOAD QUIZ MODAL — the shared "اختر صيغة التحميل" format-picker popup.
 // ============================================================================
+// Extracted out of features/home/export-helpers.js so the same modal can be
+// used from more than the two original call sites (create-quiz page, and
+// the home page's "My Quizzes" / manifest-exam download buttons) without
+// duplicating markup/styling. See quiz-info-modal/ for the sibling
+// component this mirrors the structure of.
+//
+// Call sites:
+//   - features/home/download-modal.js       (home: user-made quiz cards)
+//   - features/home/exam-card.js             (home: manifest-exam cards)
+//   - features/create/create-quiz.js         (create-quiz page)
+// ============================================================================
 
 import { exportToQuiz } from "../../features/export/export-to-quiz.js";
 import { exportToHtml } from "../../features/export/export-to-html.js";
@@ -163,26 +174,38 @@ export function buildExportCard({
  * @param {string} format — one of: "quiz" | "html" | "md" | "pdf" | "pptx" | "docx"
  * @param {object} config — { id, title, description, path?, source? }
  * @param {Array}  questions
+ * @param {object} [userAnswers] — optional answer map. When provided (e.g.
+ *   from the result page), the exported file includes the user's answers
+ *   alongside each question instead of a blank/answer-key-only copy.
+ * @param {object} [resultMeta] — optional full result/score object, passed
+ *   through only to exportToPdf (score summary in the PDF). Only the result
+ *   page has this; other callers omit it.
  */
-export async function executeExport(format, config, questions) {
+export async function executeExport(
+  format,
+  config,
+  questions,
+  userAnswers,
+  resultMeta,
+) {
   switch (format) {
     case "quiz":
       await exportToQuiz(config, questions);
       break;
     case "html":
-      await exportToHtml(config, questions);
+      await exportToHtml(config, questions, userAnswers);
       break;
     case "pdf":
-      await exportToPdf(config, questions);
+      await exportToPdf(config, questions, userAnswers, resultMeta);
       break;
     case "docx":
-      await exportToWord(config, questions);
+      await exportToWord(config, questions, userAnswers);
       break;
     case "pptx":
-      await exportToPptx(config, questions);
+      await exportToPptx(config, questions, userAnswers);
       break;
     case "md":
-      exportToMarkdown(config, questions);
+      exportToMarkdown(config, questions, userAnswers);
       break;
   }
 }
@@ -300,6 +323,15 @@ const DOWNLOAD_FORMAT_OPTIONS = [
  *   questionTypes, questionCount }. Only `title`/`description`/`source` are
  *   required by the exporters; the rest are passed through when present.
  * @param {Array}  options.questions — quiz questions array.
+ * @param {object} [options.userAnswers] — optional answer map (keyed the
+ *   same way as questions). When provided, every "with answers" export
+ *   format (html/md/text/pdf/docx/pptx) includes it — used by the result
+ *   page so downloads reflect the user's own answers. Callers that don't
+ *   pass this (home page, create-quiz page) get plain answer-free exports,
+ *   exactly as before.
+ * @param {object} [options.resultMeta] — optional full result/score object
+ *   (e.g. { score, total, percentage, ... }), passed through only to the
+ *   PDF exporter for its score summary. Only the result page has this.
  * @param {Function} [options.buildJsonPayloadString] — async () => string.
  *   Optional override for building the JSON export payload (lets callers
  *   fold in extra export-time metadata, e.g. create-quiz.js's password/view/
@@ -318,6 +350,8 @@ const DOWNLOAD_FORMAT_OPTIONS = [
 export function showDownloadModal({
   config,
   questions,
+  userAnswers,
+  resultMeta,
   buildJsonPayloadString,
   filenameBase,
   resolveExportData,
@@ -328,7 +362,9 @@ export function showDownloadModal({
   // Every onDownload/onCopy handler below should read through this instead
   // of closing over `config`/`questions` directly, so a resolveExportData
   // hook — if provided — only ever runs once no matter which/how many
-  // format cards get clicked.
+  // format cards get clicked. userAnswers is never touched by
+  // resolveExportData (it's a runtime/session value, not fetched data) —
+  // it's carried straight through from the caller.
   let resolvedPromise = null;
   const getExportData = () => {
     if (!resolvedPromise) {
@@ -395,7 +431,7 @@ export function showDownloadModal({
       onDownload: async () => {
         if (opt.format === "text") {
           const { config: c, questions: q } = await getExportData();
-          const text = await buildQuizText(c, q);
+          const text = await buildQuizText(c, q, userAnswers);
           const blob = new Blob([text], { type: "text/plain" });
           triggerDownload(blob, `${safeBase}.txt`);
         } else if (opt.format === "json") {
@@ -404,16 +440,18 @@ export function showDownloadModal({
           triggerDownload(blob, `${safeBase}.json`);
         } else {
           const { config: c, questions: q } = await getExportData();
-          await executeExport(opt.format, c, q);
+          await executeExport(opt.format, c, q, userAnswers, resultMeta);
         }
         modal.remove();
       },
       onCopy: async () => {
         const { config: c, questions: q } = await getExportData();
         if (opt.format === "quiz") return await buildStandaloneQuizHtml(c, q);
-        if (opt.format === "html") return await buildQuizHtml(c, q);
-        if (opt.format === "md") return buildQuizMarkdown(c, q);
-        if (opt.format === "text") return await buildQuizText(c, q);
+        if (opt.format === "html")
+          return await buildQuizHtml(c, q, userAnswers);
+        if (opt.format === "md") return buildQuizMarkdown(c, q, userAnswers);
+        if (opt.format === "text")
+          return await buildQuizText(c, q, userAnswers);
         if (opt.format === "json") return await buildJsonString();
       },
     });

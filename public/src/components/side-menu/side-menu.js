@@ -90,6 +90,9 @@
   const closeBtn = document.getElementById("closeMenuBtn"); // mobile-only
   const toggleBtn = document.getElementById("sidebarToggle"); // desktop-only
   const animationToggle = document.getElementById("animationToggle");
+  const highPerformanceToggle = document.getElementById(
+    "highPerformanceToggle",
+  );
   const bottomNav = document.getElementById("bottomNav"); // mobile-only
   const moreBtn = document.getElementById("bottomNavMoreBtn"); // mobile-only, opens the sheet
 
@@ -200,6 +203,11 @@
       animationToggle.checked = animsEnabled;
     }
 
+    // Sync high performance toggle state
+    if (highPerformanceToggle && typeof themeManager !== "undefined") {
+      highPerformanceToggle.checked = themeManager.getHighPerformanceEnabled();
+    }
+
     // Sync bottom nav active tab (mobile)
     syncBottomNavActiveState();
   }
@@ -240,6 +248,85 @@
 
   if (backdrop) {
     backdrop.addEventListener("click", closeMobileSidebar);
+  }
+
+  // ── Draggable Bottom Sheet (mobile) ─────────────────────────────────────────
+  // Grab-and-drag the sheet up/down by its handle, YouTube-comments-style.
+  // Dragging up snaps back open; dragging down past a distance/velocity
+  // threshold and releasing dismisses the sheet.
+
+  const dragHandle = document.getElementById("sidebarDragHandle");
+
+  if (dragHandle && sidebar) {
+    const DISMISS_DISTANCE_RATIO = 0.28; // fraction of sheet height
+    const DISMISS_VELOCITY = 0.5; // px/ms, fast downward flick dismisses early
+
+    let dragging = false;
+    let startY = 0;
+    let currentY = 0;
+    let startTime = 0;
+    let sheetHeight = 0;
+    let pointerId = null;
+
+    function onPointerDown(e) {
+      if (!isMobile()) return;
+      if (!sidebar.classList.contains("expanded")) return;
+
+      dragging = true;
+      pointerId = e.pointerId;
+      startY = e.clientY;
+      currentY = e.clientY;
+      startTime = performance.now();
+      sheetHeight = sidebar.getBoundingClientRect().height || 1;
+
+      sidebar.classList.add("dragging");
+      dragHandle.classList.add("dragging");
+
+      try {
+        dragHandle.setPointerCapture(pointerId);
+      } catch (_) {}
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+    }
+
+    function onPointerMove(e) {
+      if (!dragging) return;
+      currentY = e.clientY;
+      const deltaY = Math.max(0, currentY - startY); // only allow downward drag
+      sidebar.style.transform = `translateY(${deltaY}px)`;
+    }
+
+    function onPointerUp() {
+      if (!dragging) return;
+      dragging = false;
+
+      sidebar.classList.remove("dragging");
+      dragHandle.classList.remove("dragging");
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+
+      const deltaY = Math.max(0, currentY - startY);
+      const elapsed = Math.max(1, performance.now() - startTime);
+      const velocity = deltaY / elapsed; // px per ms
+
+      // Clear the inline transform either way — closing uses the sheet's
+      // own CSS transition (translateY(100%)); staying open just resets
+      // back to the sheet's normal expanded position (translateY(0)).
+      sidebar.style.transform = "";
+
+      const shouldDismiss =
+        deltaY > sheetHeight * DISMISS_DISTANCE_RATIO ||
+        velocity > DISMISS_VELOCITY;
+
+      if (shouldDismiss) {
+        closeMobileSidebar();
+      }
+    }
+
+    dragHandle.addEventListener("pointerdown", onPointerDown);
   }
 
   // ── Focus trap (mobile keyboard) ───────────────────────────────────────────
@@ -346,6 +433,19 @@
     animationToggle.addEventListener("change", () => {
       if (typeof themeManager !== "undefined" && themeManager.applyAnimations) {
         themeManager.applyAnimations(animationToggle.checked);
+      }
+    });
+  }
+
+  // ── High Performance toggle ─────────────────────────────────────────────────
+
+  if (highPerformanceToggle) {
+    highPerformanceToggle.addEventListener("change", () => {
+      if (
+        typeof themeManager !== "undefined" &&
+        themeManager.applyHighPerformance
+      ) {
+        themeManager.applyHighPerformance(highPerformanceToggle.checked);
       }
     });
   }

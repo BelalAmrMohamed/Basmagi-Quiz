@@ -2,6 +2,7 @@
 
 const THEME_KEY = "quiz_theme_pref";
 const ANIMATIONS_KEY = "quiz_animations_pref";
+const HIGH_PERFORMANCE_KEY = "quiz_high_performance_pref";
 
 export const themeManager = {
   themes: {
@@ -14,9 +15,26 @@ export const themeManager = {
     // Load saved preferences or use defaults
     const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
     const savedAnimations = localStorage.getItem(ANIMATIONS_KEY) !== "disabled";
+    const savedHighPerformance =
+      localStorage.getItem(HIGH_PERFORMANCE_KEY) === "enabled";
 
     this.applyTheme(savedTheme);
     this.applyAnimations(savedAnimations);
+    this.applyHighPerformance(savedHighPerformance);
+
+    // Keep in sync if the OS-level setting changes while the page is open.
+    const reducedMotionQuery = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const onReducedMotionChange = () => {
+      this.applyHighPerformance(this.getHighPerformanceEnabled());
+    };
+    if (typeof reducedMotionQuery.addEventListener === "function") {
+      reducedMotionQuery.addEventListener("change", onReducedMotionChange);
+    } else if (typeof reducedMotionQuery.addListener === "function") {
+      // Safari < 14 fallback
+      reducedMotionQuery.addListener(onReducedMotionChange);
+    }
 
     // Setup controls when DOM is ready
     if (document.readyState === "loading") {
@@ -85,6 +103,73 @@ export const themeManager = {
 
     // 3. Update UI
     this.updateAnimationsUI(enabled);
+  },
+
+  /**
+   * High Performance Mode: the "kill everything" motion switch. Sets
+   * data-motion="reduced" on <html>, which themes.css uses to zero out
+   * every CSS transition/animation duration site-wide (not just the
+   * background shader). Also forces the background canvas/animation
+   * toggle off, since the background is the single most expensive
+   * animation on the page — but the two preferences are stored
+   * separately, so re-disabling High Performance Mode restores whatever
+   * the user had the background animation toggle set to before.
+   */
+  applyHighPerformance(enabled) {
+    const reducedMotionPref = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const shouldReduceMotion = enabled || reducedMotionPref;
+
+    document.documentElement.setAttribute(
+      "data-motion",
+      shouldReduceMotion ? "reduced" : "normal",
+    );
+    localStorage.setItem(
+      HIGH_PERFORMANCE_KEY,
+      enabled ? "enabled" : "disabled",
+    );
+
+    if (enabled) {
+      // Force the background animation off too — remember the user's prior
+      // background-animation preference isn't touched in storage here,
+      // applyAnimations(false) just doesn't persist under HIGH_PERFORMANCE_KEY.
+      this.applyAnimations(false);
+    } else {
+      // Restore whatever the user's own background-animation preference was.
+      const savedAnimations =
+        localStorage.getItem(ANIMATIONS_KEY) !== "disabled";
+      this.applyAnimations(savedAnimations);
+    }
+
+    this.updateHighPerformanceUI(enabled);
+  },
+
+  getHighPerformanceEnabled() {
+    return (
+      document.documentElement.getAttribute("data-motion") === "reduced" &&
+      localStorage.getItem(HIGH_PERFORMANCE_KEY) === "enabled"
+    );
+  },
+
+  toggleHighPerformance() {
+    this.applyHighPerformance(!this.getHighPerformanceEnabled());
+  },
+
+  updateHighPerformanceUI(enabled) {
+    document
+      .querySelectorAll(".high-performance-toggle-switch")
+      .forEach((toggle) => {
+        toggle.classList.toggle("active", enabled);
+      });
+
+    document
+      .querySelectorAll(
+        'input[type="checkbox"][data-control="high-performance"]',
+      )
+      .forEach((checkbox) => {
+        checkbox.checked = enabled;
+      });
   },
 
   // FIXED: New method to restore body background
@@ -214,9 +299,29 @@ export const themeManager = {
         checkbox.onchange = (e) => this.applyAnimations(e.target.checked);
       });
 
+    // High Performance Mode toggle switches/buttons
+    document.querySelectorAll(".high-performance-toggle-btn").forEach((btn) => {
+      btn.onclick = () => this.toggleHighPerformance();
+    });
+
+    document
+      .querySelectorAll(".high-performance-toggle-switch")
+      .forEach((toggle) => {
+        toggle.onclick = () => this.toggleHighPerformance();
+      });
+
+    document
+      .querySelectorAll(
+        'input[type="checkbox"][data-control="high-performance"]',
+      )
+      .forEach((checkbox) => {
+        checkbox.onchange = (e) => this.applyHighPerformance(e.target.checked);
+      });
+
     // Initialize UI state
     this.updateThemeUI(this.getCurrentTheme());
     this.updateAnimationsUI(this.getAnimationsEnabled());
+    this.updateHighPerformanceUI(this.getHighPerformanceEnabled());
 
     // FIXED: Ensure body background is correct on initialization
     this.restoreBodyBackground();

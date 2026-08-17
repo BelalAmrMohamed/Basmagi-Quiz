@@ -720,13 +720,12 @@ body {
   background: rgba(59, 130, 246, 0.15);
 }
 
-
 .essay-answer-box .small-text {
   gap: 5px;
   margin-bottom: 10px;
 }
 
-.essay-answer-box em{
+.essay-answer-box em {
   color: var(--color-error);
 }
 
@@ -798,10 +797,9 @@ body {
 }
 
 /* ─── Labels ────────────────────────────────────────────────────────*/
-.centered-label{
+.centered-label {
   text-align: center;
-    align-items: center;
-
+  align-items: center;
 }
 
 /* ─── Question Image ──────────────────────────────────────────────────────── */
@@ -911,70 +909,123 @@ body {
   border: 0;
 }
 
-/* ─── Side Menu download options' images ──────────────────────────────────────────────────────────── */
-.download-option-image {
-  max-width: 30px;
-  max-height: 30px;
-}
+/* ─── Side Menu download button ───────────────────────────────────────────
+   The download section used to be a list of individual per-format buttons
+   here; it's now a single .menu-item ("تحميل الإمتحان") that opens the
+   shared download-quiz-modal component — see
+   public/src/components/download-quiz-modal/download-quiz-modal.css for
+   that modal's styling. No page-specific CSS needed here anymore. */
 
-/* ─── Side Menu: download row + copy-to-clipboard corner button ──────────────
-   Wraps a copyable .menu-item with a small square copy button. The
-   .menu-item keeps its full-width click target and existing behavior/id
-   untouched; the copy button sits docked to the row's trailing edge and
-   only shows once the sidebar is expanded (via .sidebar-expanded-only,
-   the same class already used elsewhere in this page for that purpose). */
-.menu-item-row {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-}
+/* ============================================================================
+   GENERIC MODAL SHELL — .modal-overlay / .modal-card / .modal-header /
+   .close-btn / .page-data-lucide.
 
-.menu-item-row .menu-item {
-  flex: 1;
-  min-width: 0;
-  /* Reserve space so the label/icon in .menu-item doesn't run under the
-     absolutely-positioned copy button on its left. Adjust this value if
-     .menu-item's own horizontal padding (defined in side-menu.css) makes
-     it too tight or too loose in practice. */
-  padding-left: 32px;
-}
-
-.menu-copy-btn {
-  position: absolute;
-  top: 50%;
-  left: 8px;
-  transform: translateY(-50%);
+   This page's only modal used to be the native <dialog>-based quiz-info
+   popup (fully self-styled via quiz-info-modal.css, incl. its own
+   ::backdrop) — result.css never needed this div-based overlay pattern.
+   The download-quiz-modal component (download-quiz-modal.css) builds on
+   top of it though, the same way index.css / create-quiz.css already do,
+   so it has to be defined here too or the modal renders as unstyled
+   content dumped into the page instead of a centered floating dialog.
+   Ported verbatim from index.css so all three pages match.
+   ============================================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border-radius: 6px;
+  z-index: 2000;
+}
+
+/* Phones show a fixed bottom-nav bar over the page. Reserve its height (plus
+   the home-indicator safe area) as bottom padding on the overlay so a
+   vertically-centered modal card is centered in the space ABOVE the nav,
+   not the full viewport. --bottom-nav-height falls back to a safe generic
+   estimate if the layout stylesheet hasn't set it. */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding-bottom: calc(
+      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+    );
+    align-items: center;
+    box-sizing: border-box;
+  }
+}
+
+.modal-card {
+  padding: 32px;
+  border-radius: 20px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
-  background: var(--color-background);
-  color: var(--color-text-secondary);
+  background: var(--color-surface);
+}
+
+.modal-card p {
+  direction: rtl;
+}
+
+/* Normalizes inline <svg class="page-data-lucide"> icons (e.g. the download
+   modal's header icon and its close-X) to a consistent 1em instead of
+   their raw intrinsic size. */
+.page-data-lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  stroke-width: 2;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
   cursor: pointer;
-  z-index: 1;
+  color: var(--color-text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition:
-    border-color 0.15s,
-    color 0.15s,
-    background 0.15s;
+    background-color 0.2s,
+    color 0.2s;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
 }
 
-.menu-copy-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+.close-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text-primary);
 }
-
-.menu-copy-btn.copied {
-  border-color: var(--color-success, #16a34a);
-  color: var(--color-success, #16a34a);
-}
-
-/* Collapsed-sidebar hiding is handled by the .sidebar-expanded-only class
-   already applied to each copy button in result.html (see side-menu.css
-   for that rule — same convention used by the theme controls section). */
 
 /* ─── Review Card Stagger Animation ──────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
@@ -1784,7 +1835,8 @@ dialog.quiz-info-dialog {
   outline-offset: 2px;
 }
 
-.option-row input[type="radio"], .option-row input[type="checkbox"] {
+.option-row input[type="radio"],
+.option-row input[type="checkbox"] {
   width: 20px;
   height: 20px;
   accent-color: var(--color-primary);

@@ -45,6 +45,12 @@ body.sidebar-expanded {
   width: var(--sidebar-expanded-width);
 }
 
+/* Drag handle only exists for the mobile bottom-sheet; not part of the
+   desktop rail layout at all. */
+.sidebar-drag-handle {
+  display: none;
+}
+
 /* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
 .sidebar-toggle {
   display: flex;
@@ -550,8 +556,8 @@ body.sidebar-expanded {
   white-space: nowrap;
   position: relative;
   transition:
-    background-color 0.18s ease,
-    color 0.18s ease;
+    background-color var(--duration-base, 240ms) var(--ease-out-expo, ease),
+    color var(--duration-base, 240ms) var(--ease-out-expo, ease);
 }
 
 /*
@@ -572,6 +578,28 @@ body.sidebar-expanded {
 .menu-item svg {
   flex-shrink: 0;
   min-width: 22px;
+  transition:
+    transform var(--duration-base, 240ms)
+      var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    opacity var(--duration-fast, 120ms) ease;
+  transform: scale(1) translateY(0);
+  will-change: transform;
+}
+
+/* Icons lift and scale up slightly on hover/focus — a quick, springy nudge
+   rather than a slow ease, similar to the sidebar icon interaction on
+   claude.ai. Kept subtle (4% scale, 1px lift) so it reads as responsive
+   rather than showy. Disabled entirely under reduced motion / High
+   Performance Mode via the global [data-motion="reduced"] rule in
+   themes.css, which zeroes the transition-duration above. */
+.menu-item:hover svg,
+.menu-item:focus-visible svg {
+  transform: scale(1.08) translateY(-1px);
+}
+
+.menu-item:active svg {
+  transform: scale(0.94) translateY(0);
+  transition-duration: var(--duration-fast, 120ms);
 }
 
 /* Collapsed: center icons perfectly.
@@ -618,6 +646,11 @@ body.sidebar-expanded {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
   border-radius: 10px;
+}
+
+.menu-item:active {
+  background: var(--color-hover-overlay, var(--color-background-secondary));
+  transition-duration: var(--duration-fast, 120ms);
 }
 
 .menu-item.active {
@@ -1108,16 +1141,46 @@ body.sidebar-expanded {
     );
   }
 
-  /* Drag handle pill at the top of the sheet */
-  .sidebar::before {
-    content: "";
-    display: block;
+  /* Drag handle — real element, grabbable and draggable (see side-menu.js).
+     Generous 44px touch-target height even though the visible bar is thin,
+     per standard mobile hit-target sizing; the bar itself is centered
+     inside it. */
+  .sidebar-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 28px;
+    flex-shrink: 0;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sidebar-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .sidebar-drag-handle-bar {
     width: 40px;
     height: 4px;
     border-radius: 2px;
     background: var(--color-border);
-    margin: 12px auto 4px;
-    flex-shrink: 0;
+    transition:
+      background-color var(--duration-fast, 120ms) ease,
+      width var(--duration-fast, 120ms) ease;
+  }
+
+  .sidebar-drag-handle:hover .sidebar-drag-handle-bar,
+  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar {
+    background: var(--color-text-tertiary);
+    width: 48px;
+  }
+
+  /* While the user is actively dragging, kill the transform transition so
+     the sheet tracks the finger 1:1 with zero lag. Restored the instant the
+     gesture ends (side-menu.js removes this class on pointerup). */
+  .sidebar.dragging {
+    transition: none !important;
   }
 
   /* Sidebar header on mobile: sits above the nav, full-width, sticky */
@@ -1403,6 +1466,7 @@ body.sidebar-expanded {
   .toggle-switch::after,
   .side-menu-backdrop,
   .menu-item,
+  .menu-item svg,
   .theme-selector-btn,
   .sidebar-toggle,
   .toggle-chevron,
@@ -1410,6 +1474,12 @@ body.sidebar-expanded {
   .sidebar-expanded-only,
   body {
     transition: none !important;
+  }
+
+  .menu-item:hover svg,
+  .menu-item:focus-visible svg,
+  .menu-item:active svg {
+    transform: none !important;
   }
 }
 

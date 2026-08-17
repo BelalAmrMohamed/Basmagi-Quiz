@@ -5,27 +5,11 @@ console.log("result.js loaded successfully");
 
 import { getManifest } from "../../shared/quizManifest.js";
 
-// Download functions
-import { exportToQuiz } from "../export/export-to-quiz.js";
-import { exportToHtml } from "../export/export-to-html.js";
-import { exportToPdf } from "../export/export-to-pdf.js";
-import { exportToWord } from "../export/export-to-word.js";
-import { exportToPptx } from "../export/export-to-pptx.js";
-import { buildQuizText } from "../export/export-to-text.js";
-import {
-  exportToMarkdown,
-  buildQuizMarkdown,
-} from "../export/export-to-markdown.js";
-import { buildJsonQuizExport } from "../../shared/quiz-json.js";
-import { buildStandaloneQuizHtml } from "../export/export-to-quiz.js";
-import { buildQuizHtml } from "../export/export-to-html.js";
-import { copyTextWithFallback } from "../home/export-helpers.js";
+// Download modal (shared component)
+import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 
 // Notifications
-import {
-  _alert,
-  showNotification,
-} from "../../components/notifications/notifications.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // Question helpers
 import {
@@ -285,15 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const scoreDisplay = document.getElementById("scoreDisplay");
   const container = document.getElementById("reviewContainer");
   const backBtn = document.getElementById("backHomeBtn");
-  const exportMdBtn = document.getElementById("exportMdBtn");
-  const exportTxtBtn = document.getElementById("exportTxtBtn");
-  const exportPdfBtn = document.getElementById("exportPdfBtn");
-  const exportWordBtn = document.getElementById("exportWordBtn");
-  const exportPptxBtn = document.getElementById("exportPptxBtn");
-  const exportHtmlBtn = document.getElementById("exportHtmlBtn");
-  const exportQuizBtn = document.getElementById("exportQuizBtn");
-  const exportJsonBtn = document.getElementById("exportJsonBtn");
-  const exportSourceBtn = document.getElementById("exportSourceBtn");
+  const openDownloadModalBtn = document.getElementById("openDownloadModalBtn");
 
   const els = {
     breadcrumb: document.getElementById("quizBreadcrumb"),
@@ -481,211 +457,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const displayTotal =
     result.total !== undefined ? result.total : mcqTotal + essayMaxTotal;
 
-  // Helper for loading state
-  async function withDownloadLoading(buttonEl, asyncFn) {
-    if (!buttonEl) return;
-    const originalHtml = buttonEl.innerHTML;
-    const originalWidth = buttonEl.offsetWidth;
-
-    buttonEl.disabled = true;
-    buttonEl.style.width = `${originalWidth > 0 ? originalWidth : buttonEl.getBoundingClientRect().width}px`;
-    buttonEl.style.justifyContent = "center";
-    buttonEl.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" class="spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-circle-icon lucide-loader-circle"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="menu-label">جاري التحميل...</span>';
-
-    // Allow DOM to update
-    await new Promise((r) => setTimeout(r, 50));
-
-    try {
-      await asyncFn();
-    } catch (error) {
-      console.error("Export error:", error);
-      _alert("حدث خطأ أثناء التحميل. حاول مرة أخرى.");
-    } finally {
-      buttonEl.disabled = false;
-      buttonEl.innerHTML = originalHtml;
-      buttonEl.style.width = "";
-      buttonEl.style.justifyContent = "";
-    }
-  }
-
-  let isCopied = false;
-  let quizTextBlob = null;
-
   backBtn && (backBtn.onclick = goHome);
-  exportMdBtn &&
-    (exportMdBtn.onclick = () =>
-      withDownloadLoading(exportMdBtn, async () =>
-        exportToMarkdown(config, questions, result.userAnswers),
-      ));
-  exportTxtBtn &&
-    (exportTxtBtn.onclick = () =>
-      withDownloadLoading(exportTxtBtn, async () => {
-        try {
-          const text = buildQuizText(config, questions, result.userAnswers);
-          const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${config.title || "quiz"}.txt`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          showNotification(
-            "تم تحميل الملف",
-            "تم تحميل الإختبار كملف نصي بنجاح",
-            "success",
-          );
-        } catch (e) {
-          console.error(e);
-          showNotification("خطأ", "فشل تحميل الإختبار.", "error");
-        }
-      }));
 
-  exportJsonBtn &&
-    (exportJsonBtn.onclick = () =>
-      withDownloadLoading(exportJsonBtn, async () => {
-        try {
-          const payload = await buildJsonQuizExport(
-            config.title,
-            config.description,
-            config.source,
-            questions,
-            config.createdAt,
-          );
-          const fileContent = JSON.stringify(payload, null, 2);
-          const blob = new Blob([fileContent], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${config.title || "quiz"}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          showNotification(
-            "تم تحميل الملف",
-            "تم تحميل الإختبار كملف JSON بنجاح",
-            "success",
-          );
-        } catch (e) {
-          console.error(e);
-          showNotification("خطأ", "فشل تحميل ملف JSON.", "error");
-        }
-      }));
-
-  if (exportSourceBtn && config.source) {
-    exportSourceBtn.style.display = "";
-    exportSourceBtn.onclick = () => {
-      window.open(config.source, "_blank");
-    };
-  }
-
-  exportPdfBtn &&
-    (exportPdfBtn.onclick = () =>
-      withDownloadLoading(
-        exportPdfBtn,
-        async () =>
-          await exportToPdf(config, questions, result.userAnswers, result),
-      ));
-  exportWordBtn &&
-    (exportWordBtn.onclick = () =>
-      withDownloadLoading(
-        exportWordBtn,
-        async () => await exportToWord(config, questions, result.userAnswers),
-      ));
-  exportPptxBtn &&
-    (exportPptxBtn.onclick = () =>
-      withDownloadLoading(
-        exportPptxBtn,
-        async () => await exportToPptx(config, questions, result.userAnswers),
-      ));
-  exportHtmlBtn &&
-    (exportHtmlBtn.onclick = () =>
-      withDownloadLoading(exportHtmlBtn, async () =>
-        exportToHtml(config, questions, result.userAnswers),
-      ));
-  exportQuizBtn &&
-    (exportQuizBtn.onclick = () =>
-      withDownloadLoading(exportQuizBtn, async () =>
-        exportToQuiz(config, questions),
-      ));
-
-  // ── Copy-to-clipboard buttons ─────────────────────────────────────────────
-  // Small corner buttons next to the copyable format buttons in the side
-  // menu. Note the "with answers" formats (html/md/text) copy the same
-  // with-answers content as their download counterparts — result.userAnswers
-  // is passed through exactly like the download handlers above.
-  const copyQuizBtn = document.getElementById("copyQuizBtn");
-  const copyJsonBtn = document.getElementById("copyJsonBtn");
-  const copyHtmlBtn = document.getElementById("copyHtmlBtn");
-  const copyMdBtn = document.getElementById("copyMdBtn");
-  const copyTxtBtn = document.getElementById("copyTxtBtn");
-
-  async function withCopyFeedback(buttonEl, getText) {
-    if (!buttonEl) return;
-    const originalHtml = buttonEl.innerHTML;
-    try {
-      const text = await getText();
-      await copyTextWithFallback(text);
-      buttonEl.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-      buttonEl.classList.add("copied");
-      showNotification("تم النسخ", "تم نسخ المحتوى بنجاح!", "success");
-      setTimeout(() => {
-        buttonEl.innerHTML = originalHtml;
-        buttonEl.classList.remove("copied");
-      }, 2000);
-    } catch (err) {
-      console.error(err);
-      showNotification("خطأ", "فشل النسخ.", "error");
-    }
-  }
-
-  copyQuizBtn &&
-    (copyQuizBtn.onclick = (e) => {
-      e.stopPropagation();
-      withCopyFeedback(
-        copyQuizBtn,
-        async () => await buildStandaloneQuizHtml(config, questions),
-      );
-    });
-  copyJsonBtn &&
-    (copyJsonBtn.onclick = (e) => {
-      e.stopPropagation();
-      withCopyFeedback(copyJsonBtn, async () => {
-        const payload = await buildJsonQuizExport(
-          config.title,
-          config.description,
-          config.source,
-          questions,
-          config.createdAt,
-        );
-        return JSON.stringify(payload, null, 2);
+  openDownloadModalBtn &&
+    (openDownloadModalBtn.onclick = () => {
+      showDownloadModal({
+        config,
+        questions,
+        userAnswers: result.userAnswers,
+        resultMeta: result,
+        filenameBase: config.title || "quiz",
       });
-    });
-  copyHtmlBtn &&
-    (copyHtmlBtn.onclick = (e) => {
-      e.stopPropagation();
-      withCopyFeedback(
-        copyHtmlBtn,
-        async () => await buildQuizHtml(config, questions, result.userAnswers),
-      );
-    });
-  copyMdBtn &&
-    (copyMdBtn.onclick = (e) => {
-      e.stopPropagation();
-      withCopyFeedback(copyMdBtn, async () =>
-        buildQuizMarkdown(config, questions, result.userAnswers),
-      );
-    });
-  copyTxtBtn &&
-    (copyTxtBtn.onclick = (e) => {
-      e.stopPropagation();
-      withCopyFeedback(copyTxtBtn, async () =>
-        buildQuizText(config, questions, result.userAnswers),
-      );
     });
 
   const limit = 30;

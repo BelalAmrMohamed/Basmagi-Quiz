@@ -41,7 +41,8 @@
     <meta name="twitter:creator" content="@BelalAmrDev">
     <meta name="twitter:title" content="صفحة الإمتحان | منصة إمتحانات بصمجي">
     <meta name="twitter:description" content="أقل من 5% من الناس تقدر تختم اغلب الإمتحانات، هل انت واحد منهم؟">
-    <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/quiz-thumbnail.png?v=3">
+    <meta name="twitter:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/quiz-thumbnail.png?v=3">
     <meta name="twitter:image:alt" content="صفحة الإمتحان | منصة إمتحانات بصمجي">
 
     <!-- PWA Meta Tags -->
@@ -306,10 +307,19 @@
                             <circle cx="4" cy="20" r="2" />
                         </svg></span> الرسوم المتحركة
                 </div>
-                <label class="animation-toggle-container">
-                    <span class="animation-toggle-label">تفعيل الرسوم</span>
+                <label class="animation-toggle-container sidebar-expanded-only"
+                    title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
+                    <span class="animation-toggle-label">رسوم الخلفية</span>
                     <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations" checked
-                        aria-label="تفعيل الرسوم المتحركة">
+                        aria-label="رسوم الخلفية المتحركة">
+                    <span class="toggle-switch" aria-hidden="true"></span>
+                </label>
+
+                <label class="animation-toggle-container sidebar-expanded-only"
+                    title="إيقاف كل الرسوم المتحركة والانتقالات في الموقع بالكامل لأفضل أداء ممكن">
+                    <span class="animation-toggle-label">الوضع الفائق الأداء</span>
+                    <input type="checkbox" id="highPerformanceToggle" class="toggle-input"
+                        data-control="high-performance" aria-label="تفعيل الوضع الفائق الأداء (إيقاف كل الحركات)">
                     <span class="toggle-switch" aria-hidden="true"></span>
                 </label>
             </div>
