@@ -3150,6 +3150,56 @@ init();
     });
   }
 
+  // ── Theme Controls Accordion ────────────────────────────────────────────────
+  // Retractable "المظهر والأداء" (appearance & performance) section — mirrors
+  // the main side-menu's theme-controls accordion pattern exactly. Persists
+  // open/closed across page loads the same way the sidebar's own
+  // expanded/collapsed state does. Only wired for the toggle button itself;
+  // the collapsed-rail icon (.sidebar-collapsed-only) below just expands the
+  // whole sidebar, matching how every other collapsed-rail icon behaves.
+
+  const THEME_ACCORDION_KEY = "theme_controls_expanded";
+  const themeControlsToggle = document.getElementById("themeControlsToggle");
+  const themeControlsPanel = document.getElementById("themeControlsPanel");
+
+  function setThemeControlsExpanded(expanded) {
+    if (!themeControlsToggle || !themeControlsPanel) return;
+    themeControlsToggle.setAttribute("aria-expanded", String(expanded));
+    themeControlsPanel.classList.toggle("collapsed", !expanded);
+    try {
+      localStorage.setItem(THEME_ACCORDION_KEY, String(expanded));
+    } catch (_) {}
+  }
+
+  if (themeControlsToggle && themeControlsPanel) {
+    const savedAccordionState = localStorage.getItem(THEME_ACCORDION_KEY);
+    // Defaults open (matches the toggle's markup-default aria-expanded="true")
+    setThemeControlsExpanded(savedAccordionState !== "false");
+
+    themeControlsToggle.addEventListener("click", () => {
+      const isExpanded =
+        themeControlsToggle.getAttribute("aria-expanded") === "true";
+      setThemeControlsExpanded(!isExpanded);
+    });
+  }
+
+  // Collapsed-rail entry point for the theme/animation section — same
+  // pattern as clicking any other icon while collapsed: there's no href to
+  // follow, so clicking it simply opens the sidebar (desktop) so the person
+  // can reach the actual controls.
+  const themeSectionCollapsedIcon = sidebar.querySelector(
+    ".theme-controls-section .sidebar-collapsed-only",
+  );
+  if (themeSectionCollapsedIcon) {
+    themeSectionCollapsedIcon.addEventListener("click", () => {
+      if (isMobile()) return; // not shown on mobile anyway (always expanded sheet)
+      applyDesktopState(true);
+      try {
+        localStorage.setItem(STORAGE_KEY, "true");
+      } catch (_) {}
+    });
+  }
+
   // ── Question Navigation Accordion ───────────────────────────────────────────
   // Retractable "التنقل بين الأسئلة" (question navigation) section — mirrors
   // the main side-menu's theme-controls accordion pattern exactly. Persists
@@ -3163,11 +3213,22 @@ init();
   const QUIZ_NAV_ACCORDION_KEY = "quiz_nav_expanded";
   const quizNavToggle = document.getElementById("quizNavToggle");
   const quizNavPanel = document.getElementById("menuNavContainer");
+  // #viewToggle now lives inside .quiz-nav-section (moved there so it
+  // retracts/expands together with the question-nav list/grid), but it is
+  // a sibling of #menuNavContainer, not a child of it — #menuNavContainer's
+  // innerHTML is fully rebuilt by quiz.js on every render, so anything that
+  // needs to survive those re-renders has to stay outside it. That means
+  // the "collapsed" class can't live on #menuNavContainer alone anymore; it
+  // has to also apply to #viewToggle directly.
+  const quizNavViewToggle = document.getElementById("viewToggle");
 
   function setQuizNavExpanded(expanded) {
     if (!quizNavToggle || !quizNavPanel) return;
     quizNavToggle.setAttribute("aria-expanded", String(expanded));
     quizNavPanel.classList.toggle("collapsed", !expanded);
+    if (quizNavViewToggle) {
+      quizNavViewToggle.classList.toggle("collapsed", !expanded);
+    }
     try {
       localStorage.setItem(QUIZ_NAV_ACCORDION_KEY, String(expanded));
     } catch (_) {}

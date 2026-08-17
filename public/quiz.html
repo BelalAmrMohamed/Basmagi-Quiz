@@ -425,18 +425,7 @@
                 </div>
             </div>
 
-            <div class="menu-divider sidebar-expanded-only"></div>
-
-            <button id="viewToggle" class="menu-item view-toggle-btn sidebar-expanded-only" data-tooltip="شكل القائمة">
-                <span id="viewIcon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" aria-hidden="true">
-                        <path d="M3 5h.01M3 12h.01M3 19h.01M8 5h13M8 12h13M8 19h13" />
-                    </svg></span>
-                <span class="menu-label" id="viewText">شكل القائمة</span>
-            </button>
-
-            <div class="menu-divider sidebar-expanded-only"></div>
+            <div class="menu-divider"></div>
 
             <!-- Question navigation — collapsible/accordion so it can be
                  tucked away to save vertical space; starts expanded. Only
@@ -446,7 +435,14 @@
                  as the theme controls section. Mirrors .theme-controls-section
                  exactly, but wraps #menuNavContainer (whose innerHTML is
                  fully re-rendered by quiz.js on every question/view change)
-                 instead of a static panel. -->
+                 instead of a static panel.
+
+                 #viewToggle lives here (as a sibling of #menuNavContainer,
+                 not inside it) so it retracts/expands together with the
+                 rest of this section. quiz.js's accordion logic toggles a
+                 matching "collapsed" class on #viewToggle directly, since
+                 #menuNavContainer's innerHTML is rebuilt on every render and
+                 can't safely hold anything that needs to persist outside it. -->
             <div class="quiz-nav-section">
                 <button type="button" class="quiz-nav-toggle sidebar-expanded-only" id="quizNavToggle"
                     aria-expanded="true" aria-controls="menuNavContainer">
@@ -463,6 +459,16 @@
                         stroke-linejoin="round" aria-hidden="true">
                         <path d="M6 9l6 6 6-6" />
                     </svg>
+                </button>
+
+                <button id="viewToggle" class="menu-item view-toggle-btn sidebar-expanded-only"
+                    data-tooltip="شكل القائمة">
+                    <span id="viewIcon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 5h.01M3 12h.01M3 19h.01M8 5h13M8 12h13M8 19h13" />
+                        </svg></span>
+                    <span class="menu-label" id="viewText">شكل القائمة</span>
                 </button>
 
                 <!-- Collapsed-rail entry point: the toggle button above is
@@ -487,7 +493,6 @@
                 <div id="menuNavContainer" class="quiz-nav-panel">
                 </div>
             </div>
-            <div class="menu-divider sidebar-expanded-only"></div>
         </nav>
     </aside>
 
