@@ -2095,23 +2095,22 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 .avatar-picker-card {
   background: var(--color-surface);
   border-radius: 20px;
-  padding: 28px;
   max-width: 420px;
   width: 100%;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border-light);
-  /* 90vh is based on the largest viewport height and doesn't shrink
-         when mobile browser chrome (address bar, etc.) is on-screen, so
-         the card could end up taller than what's actually visible.
-         100dvh tracks the real visible viewport; vh stays as a fallback
-         for browsers without dvh support. */
+  overflow: hidden;
+}
+
+.avatar-picker-scroll {
+  padding: 28px;
   max-height: 90vh;
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
 }
 
 @media (max-width: 480px) {
-  .avatar-picker-card {
+  .avatar-picker-scroll {
     padding: 20px;
     max-height: calc(100dvh - 24px);
   }
