@@ -422,10 +422,7 @@ import {
 // Supabase-only session getting re-derived into a local JWT after the page
 // has already painted) can refresh the badge WITHOUT a full reload.
 function refreshNavBadges() {
-  const targets = [
-    { imgId: "navSidebarAvatar" },
-    { imgId: "navBottomAvatar" },
-  ];
+  const targets = [{ imgId: "navSidebarAvatar" }, { imgId: "navBottomAvatar" }];
 
   let roleInfo = null;
   try {
@@ -765,7 +762,7 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
 
     const validation = validateUsername(newName);
     if (!validation.valid) {
-      alert(validation.message);
+      _alert(validation.message);
       return;
     }
 
@@ -806,6 +803,6 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
     }
   } catch (error) {
     console.error("Error changing username:", error);
-    alert("حدث خطأ أثناء تغيير الاسم. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء تغيير الاسم. حاول مرة أخرى.");
   }
 };

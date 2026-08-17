@@ -61,15 +61,15 @@ export function showNotification(
     : `<span class="notification-icon">${icon}</span>`;
 
   toast.innerHTML = `
-    <div class="notification-content" title="${escapeHtml(title)}">
-      ${iconHTML}
-      <div>
-        <strong>${escapeHtml(title)}</strong>
-        <p>${escapeHtml(message)}</p>
+      <div class="notification-content" title="${escapeHtml(title)}">
+        ${iconHTML}
+        <div>
+          <strong>${escapeHtml(title)}</strong>
+          <p>${escapeHtml(message)}</p>
+        </div>
+        <button class="close-btn-notification">×</button>
       </div>
-      <button class="close-btn-notification">×</button>
-    </div>
-  `;
+    `;
 
   // 5. Append to Container
   // Prepend makes new ones appear at the top, Append at the bottom.
@@ -136,8 +136,8 @@ function isURL_orPath(string) {
 }
 
 /* ============================
-    Confirmation Modal
-   ============================ */
+      Confirmation Modal
+     ============================ */
 
 export function _confirm(message) {
   return new Promise((resolve) => {
@@ -151,14 +151,14 @@ export function _confirm(message) {
 
     // 3. Content
     modal.innerHTML = `
-      <div class="confirmation-content">
-        <p class="confirmation-message">${escapeHtml(message)}</p>
-        <div class="confirmation-actions">
-          <button class="confirmation-btn confirm">نعم</button>
-          <button class="confirmation-btn cancel">لا</button>
+        <div class="confirmation-content">
+          <p class="confirmation-message">${escapeHtml(message)}</p>
+          <div class="confirmation-actions">
+            <button class="confirmation-btn confirm">نعم</button>
+            <button class="confirmation-btn cancel">لا</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
@@ -240,12 +240,103 @@ export function _confirm(message) {
 }
 
 /* ============================
-    Prompt Modal
-    Drop-in async replacement for window.prompt()
-    Usage: const answer = await _prompt("Your name?", "Guest");
-    Resolves with the entered string, or null if cancelled
-    (matches native prompt() semantics exactly).
-   ============================ */
+      Alert Modal
+      Drop-in async replacement for window.alert()
+      Usage: await _alert("Something happened.");
+      Resolves with no value once the user dismisses it
+      (matches native alert() semantics: blocks until acknowledged).
+     ============================ */
+
+export function _alert(message) {
+  return new Promise((resolve) => {
+    // 1. Create Overlay
+    const overlay = document.createElement("div");
+    overlay.className = "confirmation-overlay";
+
+    // 2. Create Modal
+    const modal = document.createElement("div");
+    modal.className = "confirmation-modal alert-modal";
+
+    // 3. Content
+    modal.innerHTML = `
+        <div class="confirmation-content">
+          <p class="confirmation-message">${escapeHtml(message)}</p>
+          <div class="confirmation-actions">
+            <button class="confirmation-btn confirm">حسناً</button>
+          </div>
+        </div>
+      `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // 4. Focus Management
+    const okBtn = modal.querySelector(".confirm");
+    const previousActiveElement = document.activeElement;
+
+    // Animation entry
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      modal.classList.add("show");
+      okBtn.focus();
+    });
+
+    // 5. Cleanup function
+    const cleanup = () => {
+      window.removeEventListener("keydown", handleKeydown);
+      overlay.classList.remove("show");
+      modal.classList.remove("show");
+
+      // Wait for animation to finish
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (
+          previousActiveElement &&
+          document.body.contains(previousActiveElement)
+        ) {
+          previousActiveElement.focus();
+        }
+      }, 300);
+    };
+
+    const handleDismiss = () => {
+      cleanup();
+      resolve();
+    };
+
+    // 6. Keyboard support (Enter/Escape both dismiss, Tab trapping on the single button)
+    const handleKeydown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleDismiss();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleDismiss();
+      } else if (e.key === "Tab") {
+        // Only one focusable element — keep focus trapped on it
+        e.preventDefault();
+        okBtn.focus();
+      }
+    };
+
+    // Event Listeners
+    okBtn.addEventListener("click", handleDismiss);
+    window.addEventListener("keydown", handleKeydown);
+
+    // Click outside treats as dismiss (alert has no "cancel" concept, just acknowledgement)
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) handleDismiss();
+    });
+  });
+}
+
+/* ============================
+      Prompt Modal
+      Drop-in async replacement for window.prompt()
+      Usage: const answer = await _prompt("Your name?", "Guest");
+      Resolves with the entered string, or null if cancelled
+      (matches native prompt() semantics exactly).
+     ============================ */
 
 export function _prompt(message, defaultValue = "") {
   return new Promise((resolve) => {
@@ -259,15 +350,15 @@ export function _prompt(message, defaultValue = "") {
 
     // 3. Content
     modal.innerHTML = `
-      <div class="confirmation-content">
-        <p class="confirmation-message">${escapeHtml(message)}</p>
-        <input type="text" class="prompt-input" value="${escapeHtml(defaultValue)}" />
-        <div class="confirmation-actions">
-          <button class="confirmation-btn confirm">نعم</button>
-          <button class="confirmation-btn cancel">لا</button>
+        <div class="confirmation-content">
+          <p class="confirmation-message">${escapeHtml(message)}</p>
+          <input type="text" class="prompt-input" value="${escapeHtml(defaultValue)}" />
+          <div class="confirmation-actions">
+            <button class="confirmation-btn confirm">نعم</button>
+            <button class="confirmation-btn cancel">لا</button>
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);

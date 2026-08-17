@@ -19,8 +19,8 @@
 }
 
 /* =========================
-   Glass Notification Base
-   ========================= */
+     Glass Notification Base
+     ========================= */
 .notification.glass-toast {
   pointer-events: auto; /* Re-enable clicks on the toast itself */
   position: relative;
@@ -46,8 +46,8 @@
 }
 
 /* =========================
-   Inner Content Styling
-   ========================= */
+     Inner Content Styling
+     ========================= */
 .notification-content {
   display: flex;
   align-items: center; /* Center icon vertically with text */
@@ -88,8 +88,8 @@
 }
 
 /* =========================
-   Close Button
-   ========================= */
+     Close Button
+     ========================= */
 .close-btn-notification {
   position: absolute;
   top: -8px;
@@ -121,9 +121,9 @@
 }
 
 /* =========================
-   Type-Specific Accents
-   (Optional: Adds subtle border color)
-   ========================= */
+     Type-Specific Accents
+     (Optional: Adds subtle border color)
+     ========================= */
 .notification.success {
   border-left: 4px solid #4caf50;
 }
@@ -138,8 +138,8 @@
 }
 
 /* =========================
-   Animations
-   ========================= */
+     Animations
+     ========================= */
 @keyframes toastSlideIn {
   from {
     transform: translateX(120%);
@@ -161,9 +161,48 @@
     opacity: 0;
   }
 }
+
+/* =========================
+     Responsive (Mobile)
+     ========================= */
+@media (max-width: 480px) {
+  #notification-container {
+    bottom: 12px;
+    right: 12px;
+    left: 12px; /* Constrain container to viewport width */
+  }
+
+  .notification.glass-toast {
+    min-width: 0; /* Let the toast shrink instead of forcing 320px */
+    max-width: 100%; /* Never exceed the container/viewport */
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .notification-content {
+    gap: 12px;
+  }
+
+  .notification-image {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+  }
+
+  .notification-icon {
+    font-size: 1.6rem;
+  }
+
+  .notification-content strong,
+  .notification-content p {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+}
 /* ===========================
-   Confirmation Modal Styles
-   =========================== */
+     Confirmation Modal Styles
+     =========================== */
 
 .confirmation-overlay {
   position: fixed;
@@ -229,7 +268,9 @@
   font-size: 1rem;
   font-family: inherit;
   box-sizing: border-box;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .prompt-input:focus {

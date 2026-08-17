@@ -5,6 +5,8 @@
 // user-quiz-card.js since it's only ever called from that card.)
 // ============================================================================
 
+import { _alert } from "../../components/notifications/notifications.js";
+
 export function startQuiz(id) {
   try {
     localStorage.setItem("quiz_start_time", Date.now().toString());
@@ -13,6 +15,6 @@ export function startQuiz(id) {
     window.location.href = `/q/${encodeURIComponent(id)}`;
   } catch (error) {
     console.error("Error starting quiz:", error);
-    alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
   }
 }

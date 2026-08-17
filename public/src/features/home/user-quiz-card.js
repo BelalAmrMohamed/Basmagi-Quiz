@@ -42,6 +42,7 @@ import {
 import {
   showNotification,
   _confirm,
+  _alert,
 } from "../../components/notifications/notifications.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,7 +240,7 @@ export function playUserQuiz(quiz) {
     window.location.href = `/q/${encodeURIComponent(quiz.id)}?type=user`;
   } catch (error) {
     console.error("Error playing user quiz:", error);
-    alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
   }
 }
 
@@ -263,7 +264,7 @@ export async function deleteUserQuiz(quizId) {
     showNotification("تم الحذف", "تم حذف الاختبار بنجاح", "./favicon.png");
   } catch (error) {
     console.error("Error deleting quiz:", error);
-    alert("Error deleting quiz. Please try again.");
+    _alert("Error deleting quiz. Please try again.");
   }
 }
 

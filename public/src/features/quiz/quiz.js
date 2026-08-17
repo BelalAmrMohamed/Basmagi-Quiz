@@ -6,8 +6,9 @@ console.log("quiz.js loaded successfully");
 import { getManifest } from "../../shared/quizManifest.js";
 import { gameEngine } from "../../shared/gameEngine.js";
 import {
-  showNotification,
   _confirm,
+  _alert,
+  showNotification,
 } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { initKeyboardNav } from "./keyboard-nav.js";
@@ -23,7 +24,10 @@ showNotification(
 );
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
-import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
+import {
+  buildQuizInfoModalHtml,
+  fetchCreatorProfile,
+} from "../../components/quiz-info-modal/quiz-info-html.js";
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -1053,7 +1057,7 @@ async function init() {
   // Validate quiz data exists
   if (!examId && !quizType) {
     console.error("No quiz selected");
-    alert("لم يتم اختيار اختبار. سيتم توجيهك للصفحة الرئيسية.");
+    _alert("لم يتم اختيار اختبار. سيتم توجيهك للصفحة الرئيسية.");
     window.location.href = "/";
     return;
   }
@@ -1065,7 +1069,7 @@ async function init() {
     if (now - parseInt(startTime) > maxSessionAge) {
       console.warn("Quiz session expired");
       localStorage.removeItem("quiz_start_time");
-      alert("انتهت صلاحية الجلسة. يرجى بدء الاختبار من جديد.");
+      _alert("انتهت صلاحية الجلسة. يرجى بدء الاختبار من جديد.");
       window.location.href = "/";
       return;
     }
@@ -1123,7 +1127,7 @@ async function init() {
       }
 
       if (!userQuizData) {
-        alert("Quiz not found!");
+        _alert("Quiz not found!");
         window.location.href = "/";
         return;
       }
@@ -1173,7 +1177,7 @@ async function init() {
       const config = examList.find((e) => e.id === examId);
 
       if (!config) {
-        alert("Exam not found!");
+        _alert("Exam not found!");
         window.location.href = "/";
         return;
       }
@@ -1290,7 +1294,11 @@ async function init() {
         creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
       }
 
-      dialog.innerHTML = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
+      dialog.innerHTML = buildQuizInfoModalHtml(
+        config,
+        questions.length,
+        creatorProfile,
+      );
 
       // Wire up close button (rendered dynamically into the shell)
       const closeBtn = dialog.querySelector(".quiz-info-dialog-close");
@@ -2752,41 +2760,46 @@ window.addEventListener("popstate", async () => {
   }
 });
 
-function startTimer() {
-  if (timerInterval) clearInterval(timerInterval);
+async function startTimer() {
+  try {
+    if (timerInterval) clearInterval(timerInterval);
 
-  timerInterval = setInterval(() => {
-    if (quizMode === "timed" || quizMode === "timed_exam") {
-      timeRemaining--;
-      if (timeRemaining <= 0) {
-        clearInterval(timerInterval);
-        alert("Time's up! Submitting quiz...");
-        finish(true);
-        return;
-      }
+    timerInterval = setInterval(() => {
+      if (quizMode === "timed" || quizMode === "timed_exam") {
+        timeRemaining--;
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          _alert("Time's up! Submitting quiz...");
+          finish(true);
+          return;
+        }
 
-      const mins = Math.floor(timeRemaining / 60)
-        .toString()
-        .padStart(2, "0");
-      const secs = (timeRemaining % 60).toString().padStart(2, "0");
-      if (els.timer) {
-        els.timer.textContent = `${mins}:${secs}`;
-        if (timeRemaining < 30) els.timer.style.color = "var(--color-error)";
-      }
-    } else {
-      timeElapsed++;
-      const mins = Math.floor(timeElapsed / 60)
-        .toString()
-        .padStart(2, "0");
-      const secs = (timeElapsed % 60).toString().padStart(2, "0");
-      if (els.timer) els.timer.textContent = `${mins}:${secs}`;
+        const mins = Math.floor(timeRemaining / 60)
+          .toString()
+          .padStart(2, "0");
+        const secs = (timeRemaining % 60).toString().padStart(2, "0");
+        if (els.timer) {
+          els.timer.textContent = `${mins}:${secs}`;
+          if (timeRemaining < 30) els.timer.style.color = "var(--color-error)";
+        }
+      } else {
+        timeElapsed++;
+        const mins = Math.floor(timeElapsed / 60)
+          .toString()
+          .padStart(2, "0");
+        const secs = (timeElapsed % 60).toString().padStart(2, "0");
+        if (els.timer) els.timer.textContent = `${mins}:${secs}`;
 
-      // Save less frequently during timer (every 10 seconds)
-      if (timeElapsed % 10 === 0) {
-        saveStateDebounced();
+        // Save less frequently during timer (every 10 seconds)
+        if (timeElapsed % 10 === 0) {
+          saveStateDebounced();
+        }
       }
-    }
-  }, 1000);
+    }, 1000);
+  } catch (error) {
+    console.error("Error starting timer:", error);
+    _alert("Error starting timer. Please try again.");
+  }
 }
 
 function stopTimer() {

@@ -3,7 +3,10 @@
 // Deals with the export from both main page and results/summary page
 // `jsPDF` library used, included in here `loadPdfLib`
 
-import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  _alert,
+  showNotification,
+} from "../../components/notifications/notifications.js";
 
 // Question helpers
 import {
@@ -62,7 +65,7 @@ export async function exportToPdf(
         "Issue is From the website",
         "error",
       );
-      alert("PDF library could not be loaded.");
+      _alert("PDF library could not be loaded.");
       return;
     }
 
@@ -446,7 +449,7 @@ export async function exportToPdf(
               ctx2.drawImage(img, 0, 0);
 
               // ── Security Catch ──────────────
-              // If the SVG contains external fonts/links, browser may 'taint' 
+              // If the SVG contains external fonts/links, browser may 'taint'
               // the canvas, throwing a SecurityError on toDataURL().
               const url = cv.toDataURL("image/png");
 
@@ -478,7 +481,10 @@ export async function exportToPdf(
         try {
           await loadHtml2Canvas();
         } catch (loadErr) {
-          console.error("[PDF] Failed to load html2canvas fallback:", loadErr.message);
+          console.error(
+            "[PDF] Failed to load html2canvas fallback:",
+            loadErr.message,
+          );
           return null;
         }
 
@@ -2710,7 +2716,7 @@ export async function exportToPdf(
     return { success: true, filename };
   } catch (error) {
     console.error("PDF Export Error:", error);
-    alert(`Failed to export PDF: ${error.message}`);
+    _alert(`Failed to export PDF: ${error.message}`);
     showNotification("Failed to export PDF", `${error.message}`, "error");
     return { success: false, error: error.message };
   }

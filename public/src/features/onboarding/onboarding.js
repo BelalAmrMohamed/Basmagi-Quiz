@@ -1,7 +1,7 @@
 // public/src/features/onboarding/onboarding.js
 
 // Temporary | For performance debugging
-console.log("onboarding.js loaded successfully")
+console.log("onboarding.js loaded successfully");
 
 import { userProfile } from "../../shared/userProfile.js";
 import { getManifest } from "../../shared/quizManifest.js";
@@ -15,6 +15,7 @@ import {
 } from "../../shared/filterUtils.js";
 
 import {
+  _alert,
   showNotification,
 } from "../../components/notifications/notifications.js";
 
@@ -232,7 +233,7 @@ async function init() {
     renderStep();
   } catch (e) {
     console.error("Failed to load manifest", e);
-    alert("Failed to load application data. Please refresh.");
+    _alert("Failed to load application data. Please refresh.");
   }
 }
 
@@ -274,7 +275,8 @@ function updateProgress() {
   const prevBtn = document.getElementById("prevBtn");
   const nextBtn = document.getElementById("nextBtn");
 
-  prevBtn.style.visibility = findPrevStepIndex(currentStepIndex) < 0 ? "hidden" : "visible";
+  prevBtn.style.visibility =
+    findPrevStepIndex(currentStepIndex) < 0 ? "hidden" : "visible";
   nextBtn.textContent =
     currentStep.id === "welcome" ? "ابدأ رحلتك 🚀" : "التالي";
 }
@@ -374,8 +376,7 @@ function renderFacultyStep() {
 
   const faculties = getAvailableFaculties(categoryTree, "University");
   if (faculties.length === 0) {
-    container.innerHTML =
-      "<p>لا توجد كليات متاحة حالياً.</p>";
+    container.innerHTML = "<p>لا توجد كليات متاحة حالياً.</p>";
     return;
   }
 
@@ -485,7 +486,7 @@ function renderCoursesStep() {
       year: state.year,
       term: state.term,
     });
-    
+
     state.subscribedCourses = [];
 
     filterTrackCourses(categoryTree, autoFilters).forEach((c) => {
@@ -615,7 +616,7 @@ async function saveAndRedirect() {
     }
   } catch (e) {
     console.error("Error saving", e);
-    alert("حدث خطأ أثناء الحفظ");
+    _alert("حدث خطأ أثناء الحفظ");
   }
 }
 

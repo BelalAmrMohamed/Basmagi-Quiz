@@ -1,7 +1,7 @@
 // public/src/features/result/result.js
 
 // Temporary | For performance debugging
-console.log("result.js loaded successfully")
+console.log("result.js loaded successfully");
 
 import { getManifest } from "../../shared/quizManifest.js";
 
@@ -12,14 +12,20 @@ import { exportToPdf } from "../export/export-to-pdf.js";
 import { exportToWord } from "../export/export-to-word.js";
 import { exportToPptx } from "../export/export-to-pptx.js";
 import { buildQuizText } from "../export/export-to-text.js";
-import { exportToMarkdown, buildQuizMarkdown } from "../export/export-to-markdown.js";
+import {
+  exportToMarkdown,
+  buildQuizMarkdown,
+} from "../export/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 import { buildStandaloneQuizHtml } from "../export/export-to-quiz.js";
 import { buildQuizHtml } from "../export/export-to-html.js";
 import { copyTextWithFallback } from "../home/export-helpers.js";
 
 // Notifications
-import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  _alert,
+  showNotification,
+} from "../../components/notifications/notifications.js";
 
 // Question helpers
 import {
@@ -29,7 +35,10 @@ import {
   isAnswerCorrect,
 } from "../../shared/rate-answers.js";
 
-import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
+import {
+  buildQuizInfoModalHtml,
+  fetchCreatorProfile,
+} from "../../components/quiz-info-modal/quiz-info-html.js";
 
 // ── Shared Markdown engine ─────────
 // renderMarkdown:           full GFM renderer with KaTeX, tables, copy buttons
@@ -232,7 +241,6 @@ function escapeHTML(input) {
  * @returns {string} Category string, or "" if the path is absent / malformed.
  */
 
-
 function extractCategoryFromPath(path) {
   if (!path) return "";
 
@@ -309,18 +317,66 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const config = {
     id: result.examId,
-    title: result.examTitle || resultMeta.title || (manifestEntry && manifestEntry.title) || "User Quiz",
-    description: result.description || resultMeta.description || (manifestEntry && manifestEntry.description) || "Custom user-created quiz",
-    source: result.source || resultMeta.source || (manifestEntry && manifestEntry.source) || null,
-    createdAt: result.createdAt || resultMeta.createdAt || (manifestEntry && manifestEntry.createdAt) || null,
-    path: result.path || resultMeta.path || (manifestEntry && manifestEntry.path) || null,
-    author: result.author || resultMeta.author || (manifestEntry && manifestEntry.author) || null,
-    authorHandle: result.authorHandle || resultMeta.author_handle || (manifestEntry && manifestEntry.authorHandle) || null,
-    authorId: result.authorId || resultMeta.author_id || (manifestEntry && manifestEntry.authorId) || null,
-    category: result.category || resultMeta.category || (manifestEntry && manifestEntry.category) || null,
-    view: result.view || resultMeta.view || (manifestEntry && manifestEntry.view) || null,
-    mode: result.mode || resultMeta.mode || (manifestEntry && manifestEntry.mode) || null,
-    questionTypes: result.questionTypes || resultMeta.questionTypes || (manifestEntry && manifestEntry.questionTypes) || null,
+    title:
+      result.examTitle ||
+      resultMeta.title ||
+      (manifestEntry && manifestEntry.title) ||
+      "User Quiz",
+    description:
+      result.description ||
+      resultMeta.description ||
+      (manifestEntry && manifestEntry.description) ||
+      "Custom user-created quiz",
+    source:
+      result.source ||
+      resultMeta.source ||
+      (manifestEntry && manifestEntry.source) ||
+      null,
+    createdAt:
+      result.createdAt ||
+      resultMeta.createdAt ||
+      (manifestEntry && manifestEntry.createdAt) ||
+      null,
+    path:
+      result.path ||
+      resultMeta.path ||
+      (manifestEntry && manifestEntry.path) ||
+      null,
+    author:
+      result.author ||
+      resultMeta.author ||
+      (manifestEntry && manifestEntry.author) ||
+      null,
+    authorHandle:
+      result.authorHandle ||
+      resultMeta.author_handle ||
+      (manifestEntry && manifestEntry.authorHandle) ||
+      null,
+    authorId:
+      result.authorId ||
+      resultMeta.author_id ||
+      (manifestEntry && manifestEntry.authorId) ||
+      null,
+    category:
+      result.category ||
+      resultMeta.category ||
+      (manifestEntry && manifestEntry.category) ||
+      null,
+    view:
+      result.view ||
+      resultMeta.view ||
+      (manifestEntry && manifestEntry.view) ||
+      null,
+    mode:
+      result.mode ||
+      resultMeta.mode ||
+      (manifestEntry && manifestEntry.mode) ||
+      null,
+    questionTypes:
+      result.questionTypes ||
+      resultMeta.questionTypes ||
+      (manifestEntry && manifestEntry.questionTypes) ||
+      null,
   };
 
   // Patch runtime fields onto config.
@@ -330,12 +386,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!config.view) config.view = result.view || null;
   if (!config.mode) config.mode = result.mode || null;
   config.questionTypes =
-    formatQuestionTypes({ questionTypes: config.questionTypes })
-    || formatQuestionTypes({ questionTypes: result.questionTypes })
-    || null;
+    formatQuestionTypes({ questionTypes: config.questionTypes }) ||
+    formatQuestionTypes({ questionTypes: result.questionTypes }) ||
+    null;
 
   let questions = [];
-  if (result.questions && Array.isArray(result.questions) && result.questions.length > 0) {
+  if (
+    result.questions &&
+    Array.isArray(result.questions) &&
+    result.questions.length > 0
+  ) {
     questions = result.questions;
   } else if (config.path) {
     try {
@@ -343,21 +403,34 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (config.path.startsWith("/") || config.path.startsWith("http")) {
         fetchUrl = new URL(config.path, window.location.origin).href;
       } else {
-        fetchUrl = new URL(config.path, new URL("/data/", window.location.origin)).href;
+        fetchUrl = new URL(
+          config.path,
+          new URL("/data/", window.location.origin),
+        ).href;
       }
 
-      if (config.path.toLowerCase().endsWith(".json") || config.path.startsWith("/api/") || config.path.includes("?")) {
+      if (
+        config.path.toLowerCase().endsWith(".json") ||
+        config.path.startsWith("/api/") ||
+        config.path.includes("?")
+      ) {
         const res = await fetch(fetchUrl);
         if (res.ok) {
           const data = await res.json();
           questions = data.questions || [];
           if (data.meta) {
-            if (data.meta.createdAt && !config.createdAt) config.createdAt = data.meta.createdAt;
-            if (data.meta.description && !config.description) config.description = data.meta.description;
-            if (data.meta.source && !config.source) config.source = data.meta.source;
-            if (data.meta.author && !config.author) config.author = data.meta.author;
-            if (data.meta.author_handle && !config.authorHandle) config.authorHandle = data.meta.author_handle;
-            if (data.meta.author_id && !config.authorId) config.authorId = data.meta.author_id;
+            if (data.meta.createdAt && !config.createdAt)
+              config.createdAt = data.meta.createdAt;
+            if (data.meta.description && !config.description)
+              config.description = data.meta.description;
+            if (data.meta.source && !config.source)
+              config.source = data.meta.source;
+            if (data.meta.author && !config.author)
+              config.author = data.meta.author;
+            if (data.meta.author_handle && !config.authorHandle)
+              config.authorHandle = data.meta.author_handle;
+            if (data.meta.author_id && !config.authorId)
+              config.authorId = data.meta.author_id;
           }
         }
       } else {
@@ -427,7 +500,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await asyncFn();
     } catch (error) {
       console.error("Export error:", error);
-      alert("حدث خطأ أثناء التحميل. حاول مرة أخرى.");
+      _alert("حدث خطأ أثناء التحميل. حاول مرة أخرى.");
     } finally {
       buttonEl.disabled = false;
       buttonEl.innerHTML = originalHtml;
@@ -573,8 +646,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   copyQuizBtn &&
     (copyQuizBtn.onclick = (e) => {
       e.stopPropagation();
-      withCopyFeedback(copyQuizBtn, async () =>
-        await buildStandaloneQuizHtml(config, questions),
+      withCopyFeedback(
+        copyQuizBtn,
+        async () => await buildStandaloneQuizHtml(config, questions),
       );
     });
   copyJsonBtn &&
@@ -594,8 +668,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   copyHtmlBtn &&
     (copyHtmlBtn.onclick = (e) => {
       e.stopPropagation();
-      withCopyFeedback(copyHtmlBtn, async () =>
-        await buildQuizHtml(config, questions, result.userAnswers),
+      withCopyFeedback(
+        copyHtmlBtn,
+        async () => await buildQuizHtml(config, questions, result.userAnswers),
       );
     });
   copyMdBtn &&
@@ -632,18 +707,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!config.category) {
       config.category = extractCategoryFromPath(config.path);
     }
-    
+
     const authorIdentifier = config.authorId || config.authorHandle;
     let creatorProfile = null;
     if (authorIdentifier) {
       const type = config.authorId ? "id" : "handle";
       creatorProfile = await fetchCreatorProfile(authorIdentifier, type);
     }
-    
-    els.quizInfoDialog.innerHTML = buildQuizInfoModalHtml(config, questions.length, creatorProfile);
-    
+
+    els.quizInfoDialog.innerHTML = buildQuizInfoModalHtml(
+      config,
+      questions.length,
+      creatorProfile,
+    );
+
     // Wire up close button (rendered dynamically into the shell)
-    const closeBtn = els.quizInfoDialog.querySelector(".quiz-info-dialog-close");
+    const closeBtn = els.quizInfoDialog.querySelector(
+      ".quiz-info-dialog-close",
+    );
     if (closeBtn) {
       closeBtn.addEventListener("click", () => els.quizInfoDialog.close());
     }
@@ -1075,9 +1156,7 @@ function renderReview(container, questions, userAnswers) {
       const userText = userAns
         ? renderMarkdown(String(userAns))
         : "<em>لم تُجِب</em>";
-      const formalText = renderMarkdown(
-        getEssayAnswer(q),
-      );
+      const formalText = renderMarkdown(getEssayAnswer(q));
       const explanationText = q.explanation
         ? renderMarkdown(q.explanation)
         : "";
@@ -1146,33 +1225,37 @@ function renderReview(container, questions, userAnswers) {
           ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-minus-icon lucide-circle-minus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>`
           : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`;
 
-      const optionsHtml = q.options.map((opt, i) => {
-        let isSelected = false;
-        if (isMultiple) {
-          isSelected = Array.isArray(userAns) && userAns.includes(i);
-        } else {
-          isSelected = userAns === i;
-        }
-        
-        let optionClass = "option-row locked";
-        if (isSelected) optionClass += " selected";
-        
-        const isCorrectOption = isMultiple 
-          ? Array.isArray(correctIdx) && correctIdx.includes(i)
-          : i === correctIdx;
-          
-        if (isCorrectOption) optionClass += " correct";
-        if (isSelected && !isCorrectOption) optionClass += " wrong";
-        
-        const inputType = isMultiple ? "checkbox" : "radio";
-        const inputName = isMultiple ? `answer-${index}-${i}` : `answer-${index}`;
-        
-        return `
+      const optionsHtml = q.options
+        .map((opt, i) => {
+          let isSelected = false;
+          if (isMultiple) {
+            isSelected = Array.isArray(userAns) && userAns.includes(i);
+          } else {
+            isSelected = userAns === i;
+          }
+
+          let optionClass = "option-row locked";
+          if (isSelected) optionClass += " selected";
+
+          const isCorrectOption = isMultiple
+            ? Array.isArray(correctIdx) && correctIdx.includes(i)
+            : i === correctIdx;
+
+          if (isCorrectOption) optionClass += " correct";
+          if (isSelected && !isCorrectOption) optionClass += " wrong";
+
+          const inputType = isMultiple ? "checkbox" : "radio";
+          const inputName = isMultiple
+            ? `answer-${index}-${i}`
+            : `answer-${index}`;
+
+          return `
           <div class="${optionClass}">
             <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} disabled aria-label="Option ${i + 1}">
             <span class="option-label">${renderMarkdown(opt)}</span>
           </div>`;
-      }).join("");
+        })
+        .join("");
 
       const explanationText = q.explanation
         ? renderMarkdown(q.explanation)

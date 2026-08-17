@@ -3,7 +3,10 @@
 // Deals with the export from both main page and results page
 // `docx` library used, included in this file.
 
-import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  _alert,
+  showNotification,
+} from "../../components/notifications/notifications.js";
 
 /* ============= IMPORTANT PENDING UPDATES =============
 1. Update it to support markdown: tables, code blocks, inline code, etc...
@@ -1057,7 +1060,7 @@ export async function exportToWord(config, questions, userAnswers = []) {
     return { success: true, filename };
   } catch (error) {
     console.error("Word Export Error:", error);
-    alert(`Failed to export Word document: ${error.message}`);
+    _alert(`Failed to export Word document: ${error.message}`);
     return { success: false, error: error.message };
   }
 }

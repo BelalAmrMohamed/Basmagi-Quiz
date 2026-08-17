@@ -27,7 +27,10 @@ import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
 import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
-import { extractCategoryFromPath, formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
+import {
+  extractCategoryFromPath,
+  formatDateForInfo,
+} from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
   createExamInfoSubmenu,
   openExamDropdownMenu,
@@ -47,17 +50,58 @@ import {
 import {
   showNotification,
   _confirm,
+  _alert,
 } from "../../components/notifications/notifications.js";
 
 const allExportOptions = [
-  { format: "quiz", label: "Quiz (.html)", iconUrl: "./favicon.png", canCopy: true },
-  { format: "html", label: "HTML (.html)", iconUrl: "./assets/images/HTML_Icon.png", canCopy: true },
-  { format: "md", label: "Markdown (.md)", iconUrl: "./assets/images/mardownIcon.png", canCopy: true },
-  { format: "text", label: "Text (.txt)", iconSvg: COPY_TEXT_ICON_SVG, canCopy: true },
-  { format: "json", label: "JSON (.json)", iconSvg: JSON_FILE_ICON_SVG, canCopy: true },
-  { format: "pdf", label: "PDF (.pdf)", iconUrl: "./assets/images/PDF_Icon.png", canCopy: false },
-  { format: "pptx", label: "PowerPoint (.pptx)", iconUrl: "./assets/images/pptx_icon.png", canCopy: false },
-  { format: "docx", label: "Word (.docx)", iconUrl: "./assets/images/word_icon.png", canCopy: false },
+  {
+    format: "quiz",
+    label: "Quiz (.html)",
+    iconUrl: "./favicon.png",
+    canCopy: true,
+  },
+  {
+    format: "html",
+    label: "HTML (.html)",
+    iconUrl: "./assets/images/HTML_Icon.png",
+    canCopy: true,
+  },
+  {
+    format: "md",
+    label: "Markdown (.md)",
+    iconUrl: "./assets/images/mardownIcon.png",
+    canCopy: true,
+  },
+  {
+    format: "text",
+    label: "Text (.txt)",
+    iconSvg: COPY_TEXT_ICON_SVG,
+    canCopy: true,
+  },
+  {
+    format: "json",
+    label: "JSON (.json)",
+    iconSvg: JSON_FILE_ICON_SVG,
+    canCopy: true,
+  },
+  {
+    format: "pdf",
+    label: "PDF (.pdf)",
+    iconUrl: "./assets/images/PDF_Icon.png",
+    canCopy: false,
+  },
+  {
+    format: "pptx",
+    label: "PowerPoint (.pptx)",
+    iconUrl: "./assets/images/pptx_icon.png",
+    canCopy: false,
+  },
+  {
+    format: "docx",
+    label: "Word (.docx)",
+    iconUrl: "./assets/images/word_icon.png",
+    canCopy: false,
+  },
 ];
 
 function buildExamShareUrl(examId) {
@@ -152,7 +196,7 @@ export function createExamCard(exam) {
       rawStats = loaded.stats;
     } catch (e) {
       console.error("Load failed", e);
-      alert("Failed to load exam data.");
+      _alert("Failed to load exam data.");
       return;
     }
 
@@ -233,77 +277,103 @@ export function createExamCard(exam) {
     grid.setAttribute("aria-label", "خيارات التنزيل");
 
     const getLoadedConfigAndQuestions = async () => {
-        const config = {
-          id: exam.id,
-          title: exam.title || exam.id,
-          path: exam.path,
-          source: exam.source || null,
-          description: exam.description || null,
-          createdAt: exam.createdAt || null,
-          author: exam.author || null,
-          author_email: exam.author_email || null,
-          password: exam.password || null,
-          view: null,
-          mode: null,
-          questionTypes: exam.questionTypes || null,
-          questionCount: exam.questionCount || null,
-        };
-        const loaded = await loadFullQuizData(exam);
-        const questions = loaded.questions;
-        const rawMeta = loaded.meta;
-        const rawStats = loaded.stats;
-        if (rawMeta) {
-          if (!config.source) config.source = rawMeta.source || null;
-          if (!config.description) config.description = rawMeta.description || null;
-          if (!config.createdAt) config.createdAt = rawMeta.createdAt || null;
-          if (!config.author) config.author = rawMeta.author || null;
-          if (!config.author_email) config.author_email = rawMeta.author_email || null;
-          if (!config.password) config.password = rawMeta.password || null;
-          config.view = rawMeta.view || null;
-          config.mode = rawMeta.mode || null;
-        }
-        if (rawStats) {
-          if (!config.questionTypes) config.questionTypes = formatQuestionTypesForDownload(rawStats.questionTypes);
-          if (!config.questionCount) config.questionCount = rawStats.questionCount ?? (questions || []).length;
-        }
-        return { config, questions };
+      const config = {
+        id: exam.id,
+        title: exam.title || exam.id,
+        path: exam.path,
+        source: exam.source || null,
+        description: exam.description || null,
+        createdAt: exam.createdAt || null,
+        author: exam.author || null,
+        author_email: exam.author_email || null,
+        password: exam.password || null,
+        view: null,
+        mode: null,
+        questionTypes: exam.questionTypes || null,
+        questionCount: exam.questionCount || null,
+      };
+      const loaded = await loadFullQuizData(exam);
+      const questions = loaded.questions;
+      const rawMeta = loaded.meta;
+      const rawStats = loaded.stats;
+      if (rawMeta) {
+        if (!config.source) config.source = rawMeta.source || null;
+        if (!config.description)
+          config.description = rawMeta.description || null;
+        if (!config.createdAt) config.createdAt = rawMeta.createdAt || null;
+        if (!config.author) config.author = rawMeta.author || null;
+        if (!config.author_email)
+          config.author_email = rawMeta.author_email || null;
+        if (!config.password) config.password = rawMeta.password || null;
+        config.view = rawMeta.view || null;
+        config.mode = rawMeta.mode || null;
+      }
+      if (rawStats) {
+        if (!config.questionTypes)
+          config.questionTypes = formatQuestionTypesForDownload(
+            rawStats.questionTypes,
+          );
+        if (!config.questionCount)
+          config.questionCount =
+            rawStats.questionCount ?? (questions || []).length;
+      }
+      return { config, questions };
     };
 
-    allExportOptions.forEach(opt => {
-      const iconHtml = opt.iconSvg ? opt.iconSvg : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
+    allExportOptions.forEach((opt) => {
+      const iconHtml = opt.iconSvg
+        ? opt.iconSvg
+        : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
       const card = buildExportCard({
         format: opt.format,
         label: opt.label,
         icon: iconHtml,
         canCopy: opt.canCopy,
         onDownload: async () => {
-           if (opt.format === "text") {
-               const { config, questions } = await getLoadedConfigAndQuestions();
-               const text = await buildQuizText(config, questions);
-               const blob = new Blob([text], { type: "text/plain" });
-               triggerDownload(blob, `${config.title || exam.id}.txt`);
-           } else if (opt.format === "json") {
-               const { config, questions } = await getLoadedConfigAndQuestions();
-               const payload = await buildJsonQuizExport(config.title, config.description, config.source, questions, config.createdAt);
-               const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-               triggerDownload(blob, `${config.title || exam.id}.json`);
-           } else {
-               await onDownloadOption(opt.format);
-           }
-           modal.remove();
+          if (opt.format === "text") {
+            const { config, questions } = await getLoadedConfigAndQuestions();
+            const text = await buildQuizText(config, questions);
+            const blob = new Blob([text], { type: "text/plain" });
+            triggerDownload(blob, `${config.title || exam.id}.txt`);
+          } else if (opt.format === "json") {
+            const { config, questions } = await getLoadedConfigAndQuestions();
+            const payload = await buildJsonQuizExport(
+              config.title,
+              config.description,
+              config.source,
+              questions,
+              config.createdAt,
+            );
+            const blob = new Blob([JSON.stringify(payload, null, 2)], {
+              type: "application/json",
+            });
+            triggerDownload(blob, `${config.title || exam.id}.json`);
+          } else {
+            await onDownloadOption(opt.format);
+          }
+          modal.remove();
         },
         onCopy: async () => {
-            const { config, questions } = await getLoadedConfigAndQuestions();
-            
-            if (opt.format === "quiz") return await buildStandaloneQuizHtml(config, questions);
-            if (opt.format === "html") return await buildQuizHtml(config, questions);
-            if (opt.format === "md") return buildQuizMarkdown(config, questions);
-            if (opt.format === "text") return await buildQuizText(config, questions);
-            if (opt.format === "json") {
-                const payload = await buildJsonQuizExport(config.title, config.description, config.source, questions, config.createdAt);
-                return JSON.stringify(payload, null, 2);
-            }
-        }
+          const { config, questions } = await getLoadedConfigAndQuestions();
+
+          if (opt.format === "quiz")
+            return await buildStandaloneQuizHtml(config, questions);
+          if (opt.format === "html")
+            return await buildQuizHtml(config, questions);
+          if (opt.format === "md") return buildQuizMarkdown(config, questions);
+          if (opt.format === "text")
+            return await buildQuizText(config, questions);
+          if (opt.format === "json") {
+            const payload = await buildJsonQuizExport(
+              config.title,
+              config.description,
+              config.source,
+              questions,
+              config.createdAt,
+            );
+            return JSON.stringify(payload, null, 2);
+          }
+        },
       });
       grid.appendChild(card);
     });

@@ -40,6 +40,7 @@ import {
   fullSignOut,
 } from "./adminAuth.js";
 import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
+import { _alert } from "../components/notifications/notifications.js";
 
 /**
  * Reconciles local admin auth state with the live Supabase session, without
@@ -85,7 +86,7 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
         // but is NOT an admin. Without explicitly destroying the Supabase
         // session here, this function would be called again on the next
         // page load, get 403 again, and loop forever.
-        alert("أنت لست من مشرفين المنصة. تم رفض الوصول.");
+        _alert("أنت لست من مشرفين المنصة. تم رفض الوصول.");
         await fullSignOut(client);
         // Belt-and-suspenders: also clear any Supabase localStorage keys.
         try {

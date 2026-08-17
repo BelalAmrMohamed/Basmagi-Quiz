@@ -4,7 +4,10 @@
 // ============================================================================
 
 import { userProfile } from "../../shared/userProfile.js";
-import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  _alert,
+  showNotification,
+} from "../../components/notifications/notifications.js";
 
 export function addSubscribeButton(card, course) {
   try {
@@ -63,6 +66,6 @@ function subscribeToCourse(course, button) {
     );
   } catch (error) {
     console.error("Error subscribing to course:", error);
-    alert("حدث خطأ أثناء الإشتراك. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء الإشتراك. حاول مرة أخرى.");
   }
 }
