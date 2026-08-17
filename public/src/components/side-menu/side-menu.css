@@ -52,12 +52,17 @@ body.sidebar-expanded {
 }
 
 /* ── Pinned Bottom Actions ────────────────────────────────────────────────
-   Sibling of <nav> (not inside it), so it sits outside the scrollable area
-   and stays fixed at the very bottom of the sidebar column regardless of
-   how tall/scrollable the nav content above becomes. flex-shrink: 0 keeps
-   it from being squeezed as nav's sibling in the column; nav's own
-   flex: 1 + overflow-y: auto does the rest of the work by absorbing all
-   remaining space and scrolling internally instead of pushing this down. */
+   Lives as the LAST CHILD INSIDE <nav> (not a sibling of it) so that on
+   mobile — where .sidebar itself must stay locked/non-scrolling and <nav>
+   is the single scroll owner (see the mobile media query) — it naturally
+   flows and scrolls as part of nav's own content instead of requiring a
+   second, separate scroll region.
+   On desktop this would normally mean it scrolls away with the rest of
+   nav's content, which breaks the "always reachable without scrolling"
+   design intent — position: sticky + bottom: 0 (further down, desktop-only)
+   keeps it glued to the bottom of nav's own scrollport while remaining a
+   real nav child, giving both breakpoints what they need from one DOM
+   structure. */
 .sidebar-pinned-actions {
   flex-shrink: 0;
   display: flex;
@@ -66,6 +71,19 @@ body.sidebar-expanded {
   padding: 8px;
   border-top: 1px solid var(--color-border);
   background: var(--sidebar-color);
+}
+
+/* Desktop only: stick to the bottom of nav's own scrollport instead of
+   scrolling away with the rest of the nav content, reproducing the old
+   "sibling of nav, always visible" behavior while staying a real nav
+   child (required for the mobile single-scroll fix below). */
+@media (min-width: 769px) {
+  .sidebar-pinned-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: auto;
+  }
 }
 
 /* Collapsed rail: center the icon-only buttons like every other rail icon */
@@ -1325,19 +1343,19 @@ body.sidebar-expanded {
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: none;
     /*
-     * .sidebar itself is now the scroll container on mobile (was: nav
-     * scrolled internally while .sidebar-pinned-actions sat pinned below
-     * it as nav's flex sibling — see that rule's own comment). Pinned
-     * actions take real vertical space in a short mobile viewport, so
-     * "pinned outside the scroll area" meant they permanently ate into
-     * the sheet's budget instead of scrolling away with the rest of the
-     * content. Scrolling .sidebar as one unit lets nav + pinned-actions
-     * flow and scroll together; .sidebar-header/.sidebar-drag-handle stay
-     * put via position: sticky (below) instead of relying on being
-     * outside the scroll container.
+     * .sidebar stays locked/non-scrolling on mobile — <nav> is the single
+     * scroll owner (below). Previously .sidebar itself scrolled, which put
+     * an unstyled native scrollbar flush against the sheet's own rounded
+     * edge (all the thin/custom scrollbar rules only ever targeted nav,
+     * never .sidebar) — a big ugly bar right on the outer corner. Locking
+     * .sidebar and moving .sidebar-pinned-actions to be nav's last child
+     * (see that rule's comment) gives mobile one clean scroll region with
+     * the existing thin-scrollbar styling, while .sidebar-header/
+     * .sidebar-drag-handle stay visible via their own position: sticky.
      */
-    overflow-y: auto;
-    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     max-height: calc(
       85dvh - var(--bottom-nav-height, 54px) - env(safe-area-inset-bottom, 0px)
     );
@@ -1354,10 +1372,9 @@ body.sidebar-expanded {
   /* Drag handle — real element, grabbable and draggable (see side-menu.js).
      Generous 44px touch-target height even though the visible bar is thin,
      per standard mobile hit-target sizing; the bar itself is centered
-     inside it. Sticky (not just "first in flow") because .sidebar is now
-     the scroll container on mobile — without this the handle would
-     scroll away with the rest of the content instead of always staying
-     reachable at the top of the sheet. */
+     inside it. .sidebar is locked/non-scrolling on mobile (nav is the
+     sole scroll owner), so the handle is simply always visible by being
+     outside nav's scroll — no sticky positioning needed. */
   .sidebar-drag-handle {
     display: flex;
     align-items: center;
@@ -1367,10 +1384,6 @@ body.sidebar-expanded {
     flex-shrink: 0;
     touch-action: none;
     cursor: grab;
-    position: sticky;
-    top: 0;
-    z-index: 4;
-    background: var(--sidebar-color);
   }
 
   .sidebar-drag-handle:active {
@@ -1480,14 +1493,16 @@ body.sidebar-expanded {
   }
 
   /* Nav: no extra top padding — logo lives in .sidebar-header now.
-     .sidebar itself is the scroll root on mobile now (see .sidebar rule
-     above), so nav no longer needs to scroll internally — flex: 1 would
-     otherwise fight with .sidebar's own scroll height, and a nested
-     overflow:auto here would just create an empty second scrollbar. */
+     nav is the single scroll owner on mobile — .sidebar itself stays
+     locked (overflow: hidden, see .sidebar rule above) so its own edge
+     never grows a native scrollbar. flex: 1 lets nav absorb all the
+     remaining height in .sidebar's column and scroll internally, with
+     .sidebar-pinned-actions flowing as nav's own last child (moved there
+     in the HTML) instead of needing a second scroll region. */
   .sidebar nav {
     padding-top: 8px;
-    flex: none;
-    overflow-y: visible;
+    flex: 1;
+    overflow-y: auto;
     overflow-x: visible;
   }
 
@@ -1686,18 +1701,12 @@ body.sidebar-expanded {
     transform: scale(0.92);
   }
 
-  /* Pinned bottom actions (contactDevBtn / install-app) — on desktop these
-     stay fixed at the foot of the rail outside nav's scroll area (see the
-     base .sidebar-pinned-actions rule), which is fine there because the
-     64px/240px rail is full viewport height. On mobile the sheet is short
-     and capped at 85dvh, so a permanently-pinned block ate into that
-     budget on every page regardless of how much nav content there was to
-     scroll. .sidebar is now the scroll root on mobile (see .sidebar rule
-     above), so removing the "pinned" behavior here just lets this section
-     flow as the last item in that single scrollable column, alongside
-     nav's own content, instead of camping at the bottom of the sheet. */
+  /* Pinned bottom actions (contactDevBtn / install-app) — now nav's own
+     last child (see the base .sidebar-pinned-actions rule), and the
+     desktop-only sticky rule there doesn't apply under this breakpoint,
+     so on mobile this simply flows as the final item in nav's single
+     scroll region, right after the last menu link. */
   .sidebar-pinned-actions {
-    flex-shrink: initial;
     margin-top: 4px;
   }
 

@@ -208,6 +208,13 @@
             })();
         </script>
 
+        <!-- Drag handle — mobile bottom-sheet only. A real element (not a
+             ::before pseudo-element) so it can receive pointer events for
+             the drag-to-dismiss gesture. Hidden on desktop via CSS. -->
+        <div class="sidebar-drag-handle" id="sidebarDragHandle" aria-hidden="true">
+            <span class="sidebar-drag-handle-bar"></span>
+        </div>
+
         <!-- Desktop expand/collapse toggle -->
         <button class="sidebar-toggle" title="القائمة الجانبية" id="sidebarToggle" aria-label="توسيع القائمة"
             type="button">
@@ -394,9 +401,9 @@
                     </div>
                     <label class="animation-toggle-container sidebar-expanded-only"
                         title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
-                        <span class="animation-toggle-label">تفعيل الرسوم</span>
+                        <span class="animation-toggle-label">رسوم الخلفية</span>
                         <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations"
-                            checked aria-label="تفعيل الرسوم المتحركة">
+                            checked aria-label="رسوم الخلفية المتحركة">
                         <span class="toggle-switch" aria-hidden="true"></span>
                     </label>
 
