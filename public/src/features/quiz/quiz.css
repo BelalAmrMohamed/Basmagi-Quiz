@@ -173,6 +173,13 @@ body.sidebar-expanded {
   width: var(--sidebar-expanded-width);
 }
 
+/* Drag handle only exists for the mobile bottom-sheet; not part of the
+   desktop rail layout at all. Styled for real inside the
+   @media (max-width: 768px) block below. */
+.sidebar-drag-handle {
+  display: none;
+}
+
 /* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
 .sidebar-toggle {
   display: flex;
@@ -285,6 +292,19 @@ body.sidebar-expanded {
   padding-top: 15px;
 }
 
+/* Bug 4 Fix — Collapsed favicon spacing: nav's base rule (`padding: 64px 8px
+   24px`, further up in this file) reserves 64px of top padding to clear an
+   absolutely-positioned toggle button in a different layout. That 64px only
+   ever got overridden for the *expanded* state above — nothing brought it
+   back down for the collapsed 64px rail, so the favicon (which already
+   provides its own top clearance via .sidebar-favicon's margin-top/bottom)
+   was left floating with ~64px of dead space beneath it before the first
+   nav icon. Matches the reference side-menu.css's
+   `.sidebar:not(.expanded) nav { padding-top: 12px; }` exactly. */
+.sidebar:not(.expanded) nav {
+  padding-top: 12px;
+}
+
 .sidebar:not(.expanded) .sidebar-logo {
   display: none;
 }
@@ -298,6 +318,49 @@ body.sidebar-expanded {
 
 .sidebar-logo {
   pointer-events: none;
+}
+
+/* ── Sidebar Favicon (collapsed rail only) ───────────────────────────────────
+   Icon-only pill shown in the collapsed 64px rail in place of the full
+   wordmark logo. It's a direct flex child of .sidebar (a sibling of
+   .sidebar-logo, positioned before <nav> in the markup), so .sidebar's
+   default align-items: stretch would otherwise leave it flush to the
+   cross-axis start instead of centered in the rail. width: 100% turns
+   .sidebar-favicon into a full-width centering wrapper — its own
+   justify-content: center then centers the fixed 36px pill inside it —
+   without changing the pill's own size/shape.
+   Note: unlike the main side-menu, this is NOT wrapped in a link on the
+   Quiz page — the logo is intentionally not clickable here, so no
+   pointer/anchor styling is applied. */
+.sidebar-favicon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  flex-shrink: 0;
+  margin-top: 9px;
+  margin-bottom: 7px;
+  transition: opacity 200ms ease;
+  pointer-events: none;
+}
+
+.sidebar-favicon img {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  object-fit: contain;
+}
+
+/* Collapsed: show favicon (centered), hide wordmark */
+.sidebar:not(.expanded) .sidebar-favicon {
+  display: flex;
+  opacity: 1;
+}
+
+/* Expanded: hide favicon, show wordmark (handled above by .sidebar-logo) */
+.sidebar.expanded .sidebar-favicon {
+  display: none;
 }
 
 /* ── Menu Items ──────────────────────────────────────────────────────────── */
@@ -328,6 +391,24 @@ body.sidebar-expanded {
 .menu-item svg {
   flex-shrink: 0;
   min-width: 22px;
+  transition:
+    transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.12s ease;
+  transform: scale(1) translateY(0);
+  will-change: transform;
+}
+
+/* Icons lift and scale up slightly on hover/focus — a quick, springy nudge
+   rather than a slow ease. Kept subtle (8% scale, 1px lift) so it reads as
+   responsive rather than showy. */
+.menu-item:hover svg,
+.menu-item:focus-visible svg {
+  transform: scale(1.08) translateY(-1px);
+}
+
+.menu-item:active svg {
+  transform: scale(0.94) translateY(0);
+  transition-duration: 0.12s;
 }
 
 /* Collapsed: center icons perfectly. gap must be 0 — the .menu-label still
@@ -458,8 +539,15 @@ body.sidebar-expanded {
   position: relative;
 }
 
+/* Bug Fix — Messed-up collapsed-rail icon styling: this rule was missing
+   `width: 100%`, unlike its sibling `.sidebar:not(.expanded) .quiz-nav-header`
+   below, which has it. Without a full-width box to center within, the
+   button just shrunk to hug its 18px icon and sat flush to one side of the
+   64px rail instead of centered like every other collapsed-rail icon. */
 .sidebar:not(.expanded) .theme-section-header {
   justify-content: center;
+  align-items: center;
+  width: 100%;
   padding: 8px 0;
 }
 
@@ -467,7 +555,6 @@ body.sidebar-expanded {
 .sidebar:not(.expanded) .animation-toggle-container,
 .sidebar:not(.expanded) .animation-section-header,
 .sidebar:not(.expanded) .animation-toggle-label,
-.sidebar:not(.expanded) .theme-section-header,
 .sidebar:not(.expanded) .theme-selector-grid,
 .sidebar:not(.expanded) .menu-divider.sidebar-expanded-only,
 .sidebar:not(.expanded) .toggle-switch {
@@ -493,6 +580,186 @@ body.sidebar-expanded {
   transition:
     opacity 150ms ease 100ms,
     max-height 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+/* ── Items visible only when collapsed (inverse of the above) ───────────── */
+.sidebar-collapsed-only {
+  display: none;
+}
+
+.sidebar:not(.expanded) .sidebar-collapsed-only {
+  display: flex;
+}
+
+/* ── Retractable / Accordion Section (question navigation) ──────────────────
+   Collapsible so the question-navigation list/grid can be tucked away to
+   save vertical space, mirroring the .theme-controls-section accordion.
+   Only meaningful in the expanded sidebar / mobile sheet — the collapsed
+   64px rail hides this whole section via the existing
+   .sidebar:not(.expanded) rules and shows its own single icon-only entry
+   point instead (.sidebar-collapsed-only), which just expands the sidebar
+   on click. */
+.quiz-nav-section {
+  margin-top: 4px;
+}
+
+.sidebar:not(.expanded) .quiz-nav-section {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Bug 3 Fix — Duplicate icon: this rule used to declare `display: flex`
+   directly on `.quiz-nav-header`, which sits later in the stylesheet than
+   `.sidebar-collapsed-only { display: none; }` (see the "Items visible only
+   when collapsed" block above). Both selectors have equal specificity
+   (one class), so the later rule in source order won — this one — and it
+   permanently forced the collapsed-rail icon to render even while the
+   sidebar was expanded, showing up as a second icon underneath the
+   `.quiz-nav-toggle` row. `.theme-section-header` (its sibling/reference
+   equivalent) never has this problem because it has no bare `display` of
+   its own; visibility is controlled entirely by `.sidebar-collapsed-only` /
+   `.sidebar:not(.expanded) .sidebar-collapsed-only`. Removing `display`
+   here restores that same single source of truth. */
+.quiz-nav-header {
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-tertiary, #888);
+  white-space: nowrap;
+  position: relative;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background-color 0.12s ease;
+}
+
+.quiz-nav-header:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.quiz-nav-header:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.sidebar:not(.expanded) .quiz-nav-header {
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.quiz-nav-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-text-tertiary, #888);
+  font: inherit;
+  text-align: right;
+  direction: rtl;
+  transition: background-color 0.12s ease;
+}
+
+.quiz-nav-toggle:hover {
+  background: var(--color-background-secondary, #f5f5f5);
+}
+
+.quiz-nav-toggle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: 8px;
+}
+
+.quiz-nav-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.quiz-nav-toggle-label .menu-label {
+  flex: none;
+  opacity: 1;
+  max-width: none;
+  pointer-events: auto;
+}
+
+.quiz-nav-toggle-chevron {
+  flex-shrink: 0;
+  transition: transform 240ms ease;
+}
+
+/* Chevron points down when open (default markup state, aria-expanded="true"),
+   rotates to point up (toward the content, since it collapses upward) when
+   closed. */
+.quiz-nav-toggle[aria-expanded="false"] .quiz-nav-toggle-chevron {
+  transform: rotate(-90deg);
+}
+
+/* The panel is #menuNavContainer itself — its innerHTML is fully rebuilt by
+   quiz.js on every render, but this class (and the "collapsed" state below)
+   live on the element itself, so they persist across re-renders.
+
+   Bug Fix — Accordion vs. sidebar-rail state conflict: this element used to
+   also carry `sidebar-expanded-only`, which sets its own max-height/opacity
+   based purely on whether the *sidebar* is expanded. That's a second,
+   independent state system fighting over the exact same CSS properties as
+   the accordion's own `.quiz-nav-panel`/`.collapsed` classes, on the exact
+   same element. Because both rule sets had matching specificity, whichever
+   happened to come later in the stylesheet (or have a stray `!important`)
+   silently won — e.g. `.quiz-nav-panel`'s base `max-height: 2000px` was
+   overriding `.sidebar-expanded-only`'s `max-height: 0`, so the panel could
+   be technically "expanded" and full-height even while the sidebar itself
+   was collapsed. The reference `.theme-controls-panel` avoids this
+   entirely by never mixing the two systems on one element — its visibility
+   is owned solely by its own `.collapsed` class. `#menuNavContainer` now
+   follows the same pattern: `sidebar-expanded-only` has been removed from
+   its class list in quiz.html, and the two rules directly below explicitly
+   and independently cover "sidebar is collapsed" and "accordion is
+   collapsed" without contending over the same declarations. */
+.quiz-nav-panel {
+  overflow: hidden;
+  max-height: 2000px;
+  opacity: 1;
+  transition:
+    max-height 400ms ease,
+    opacity 240ms ease;
+}
+
+/* Sidebar rail is collapsed: the whole question-nav section (including its
+   toggle) is hidden via .sidebar-expanded-only on .quiz-nav-toggle already,
+   but #menuNavContainer itself no longer carries that class (see above), so
+   it needs its own explicit rule here to stay hidden too — regardless of
+   the accordion's own open/closed state, which is irrelevant while the
+   rail is collapsed. */
+.sidebar:not(.expanded) .quiz-nav-panel {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Accordion manually collapsed (sidebar itself may still be expanded). */
+.quiz-nav-panel.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* ── Theme Selector Grid ─────────────────────────────────────────────────── */
@@ -849,22 +1116,67 @@ body.sidebar-expanded {
     box-shadow: var(--shadow-xl);
   }
 
-  /* Drag handle pill at the top of the sheet */
-  .sidebar::before {
-    content: "";
-    display: block;
+  /* Bug 5 Fix — Mobile draggability. This used to be a `::before`
+     pseudo-element: purely decorative, painted on `.sidebar` itself, and
+     therefore unable to receive pointer events, so it could never be
+     grabbed or dragged even after wiring up JS. quiz.html already renders
+     a real `#sidebarDragHandle`/`.sidebar-drag-handle` element for exactly
+     this purpose; style that real element instead so the pointerdown
+     listener added in quiz.js has something visible and grabbable to
+     attach to. Matches the reference side-menu.css implementation. */
+  .sidebar-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 28px;
+    flex-shrink: 0;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sidebar-drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .sidebar-drag-handle-bar {
     width: 40px;
     height: 4px;
     border-radius: 2px;
     background: var(--color-border);
-    margin: 12px auto 4px;
-    flex-shrink: 0;
+    transition:
+      background-color var(--duration-fast, 120ms) ease,
+      width var(--duration-fast, 120ms) ease;
+  }
+
+  .sidebar-drag-handle:hover .sidebar-drag-handle-bar,
+  .sidebar-drag-handle.dragging .sidebar-drag-handle-bar {
+    background: var(--color-text-tertiary);
+    width: 48px;
+  }
+
+  /* While the user is actively dragging, kill the transform transition so
+     the sheet tracks the finger 1:1 with zero lag. Restored the instant the
+     gesture ends (quiz.js removes this class on pointerup). */
+  .sidebar.dragging {
+    transition: none !important;
   }
 
   /* No body padding shift on mobile — sidebar is an overlay */
   body,
   body.sidebar-expanded {
     padding-right: 16px !important;
+  }
+
+  /* Always show the full logo in the mobile sheet — the collapsed-rail
+     favicon is a desktop-only affordance. */
+  .sidebar .sidebar-logo {
+    display: flex !important;
+    align-items: center;
+  }
+
+  .sidebar .sidebar-favicon {
+    display: none !important;
   }
 
   /* Full labels always visible on mobile */
@@ -920,6 +1232,7 @@ body.sidebar-expanded {
   .toggle-switch::after,
   .side-menu-backdrop,
   .menu-item,
+  .menu-item svg,
   .theme-selector-btn,
   .sidebar-toggle,
   .toggle-chevron,
@@ -927,6 +1240,12 @@ body.sidebar-expanded {
   .sidebar-expanded-only,
   body {
     transition: none !important;
+  }
+
+  .menu-item:hover svg,
+  .menu-item:focus-visible svg,
+  .menu-item:active svg {
+    transform: none !important;
   }
 }
 

@@ -17,17 +17,31 @@ import {
   isEssayQuestion,
   isAnswerCorrect,
 } from "../../shared/rate-answers.js";
-showNotification(
-  "الإمتحان بدأ",
-  "أسأل الله لك التوفيق والسداد",
-  "./assets/images/صلى_على_النبي_2.png",
-);
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
+
+// Bug 1 Fix — "start of exam" notification moved out of the top-level
+// import block and wrapped in try/catch. It previously ran as a bare
+// statement sandwiched between two `import`s: any throw inside
+// showNotification() (e.g. a missing toast container, a not-yet-ready
+// DOM node, anything) would abort evaluation of this entire module,
+// silently killing every feature defined below it in the file —
+// including the whole sidebar/accordion wiring IIFE near the bottom.
+// A single non-critical notification must never be able to take down
+// the rest of the page's interactivity.
+try {
+  showNotification(
+    "الإمتحان بدأ",
+    "أسأل الله لك التوفيق والسداد",
+    "./assets/images/صلى_على_النبي_2.png",
+  );
+} catch (err) {
+  console.error("Failed to show 'exam started' notification:", err);
+}
 
 // === MEMORY CACHE for exam modules ===
 const examModuleCache = new Map();
@@ -2990,6 +3004,88 @@ init();
     });
   }
 
+  // ── Draggable Bottom Sheet (mobile) ─────────────────────────────────────────
+  // Bug 5 Fix — Mobile draggability. quiz.html already renders a
+  // #sidebarDragHandle element, but nothing in this file ever wired it up,
+  // so the mobile bottom-sheet couldn't be dragged/swiped. Ported verbatim
+  // from side-menu.js: grab-and-drag the sheet up/down by its handle,
+  // YouTube-comments-style. Dragging up snaps back open; dragging down past
+  // a distance/velocity threshold and releasing dismisses the sheet.
+
+  const dragHandle = document.getElementById("sidebarDragHandle");
+
+  if (dragHandle && sidebar) {
+    const DISMISS_DISTANCE_RATIO = 0.28; // fraction of sheet height
+    const DISMISS_VELOCITY = 0.5; // px/ms, fast downward flick dismisses early
+
+    let dragging = false;
+    let startY = 0;
+    let currentY = 0;
+    let startTime = 0;
+    let sheetHeight = 0;
+    let pointerId = null;
+
+    const onPointerDown = (e) => {
+      if (!isMobile()) return;
+      if (!sidebar.classList.contains("expanded")) return;
+
+      dragging = true;
+      pointerId = e.pointerId;
+      startY = e.clientY;
+      currentY = e.clientY;
+      startTime = performance.now();
+      sheetHeight = sidebar.getBoundingClientRect().height || 1;
+
+      sidebar.classList.add("dragging");
+      dragHandle.classList.add("dragging");
+
+      try {
+        dragHandle.setPointerCapture(pointerId);
+      } catch (_) {}
+
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", onPointerUp);
+      window.addEventListener("pointercancel", onPointerUp);
+    };
+
+    const onPointerMove = (e) => {
+      if (!dragging) return;
+      currentY = e.clientY;
+      const deltaY = Math.max(0, currentY - startY); // only allow downward drag
+      sidebar.style.transform = `translateY(${deltaY}px)`;
+    };
+
+    const onPointerUp = () => {
+      if (!dragging) return;
+      dragging = false;
+
+      sidebar.classList.remove("dragging");
+      dragHandle.classList.remove("dragging");
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+
+      const deltaY = Math.max(0, currentY - startY);
+      const elapsed = Math.max(1, performance.now() - startTime);
+      const velocity = deltaY / elapsed; // px per ms
+
+      // Clear the inline transform either way — closing uses the sheet's
+      // own CSS transition (translateY(100%)); staying open just resets
+      // back to the sheet's normal expanded position (translateY(0)).
+      sidebar.style.transform = "";
+
+      const shouldDismiss =
+        deltaY > sheetHeight * DISMISS_DISTANCE_RATIO ||
+        velocity > DISMISS_VELOCITY;
+
+      if (shouldDismiss) {
+        closeMobileSidebar();
+      }
+    };
+
+    dragHandle.addEventListener("pointerdown", onPointerDown);
+  }
+
   // ── Resize: reset state on breakpoint cross ─────────────────────────────────
 
   let lastMobile = isMobile();
@@ -3051,6 +3147,59 @@ init();
       if (typeof themeManager !== "undefined" && themeManager.applyAnimations) {
         themeManager.applyAnimations(animationToggle.checked);
       }
+    });
+  }
+
+  // ── Question Navigation Accordion ───────────────────────────────────────────
+  // Retractable "التنقل بين الأسئلة" (question navigation) section — mirrors
+  // the main side-menu's theme-controls accordion pattern exactly. Persists
+  // open/closed across page loads the same way the sidebar's own
+  // expanded/collapsed state does. #menuNavContainer doubles as the panel:
+  // renderMenuNavigation()/renderGridView()/renderListView() in quiz.js only
+  // ever touch its innerHTML, never its classList, so the "collapsed" class
+  // toggled here survives every re-render triggered by answering a question
+  // or switching grid/list view.
+
+  const QUIZ_NAV_ACCORDION_KEY = "quiz_nav_expanded";
+  const quizNavToggle = document.getElementById("quizNavToggle");
+  const quizNavPanel = document.getElementById("menuNavContainer");
+
+  function setQuizNavExpanded(expanded) {
+    if (!quizNavToggle || !quizNavPanel) return;
+    quizNavToggle.setAttribute("aria-expanded", String(expanded));
+    quizNavPanel.classList.toggle("collapsed", !expanded);
+    try {
+      localStorage.setItem(QUIZ_NAV_ACCORDION_KEY, String(expanded));
+    } catch (_) {}
+  }
+
+  if (quizNavToggle && quizNavPanel) {
+    const savedNavAccordionState = localStorage.getItem(
+      QUIZ_NAV_ACCORDION_KEY,
+    );
+    // Defaults open (matches the toggle's markup-default aria-expanded="true")
+    setQuizNavExpanded(savedNavAccordionState !== "false");
+
+    quizNavToggle.addEventListener("click", () => {
+      const isExpanded = quizNavToggle.getAttribute("aria-expanded") === "true";
+      setQuizNavExpanded(!isExpanded);
+    });
+  }
+
+  // Collapsed-rail entry point for the question-navigation section — same
+  // pattern as clicking any other icon while collapsed: there's no href to
+  // follow, so clicking it simply opens the sidebar (desktop) so the person
+  // can reach the actual navigation list/grid.
+  const quizNavCollapsedIcon = sidebar.querySelector(
+    ".quiz-nav-section .sidebar-collapsed-only",
+  );
+  if (quizNavCollapsedIcon) {
+    quizNavCollapsedIcon.addEventListener("click", () => {
+      if (isMobile()) return; // not shown on mobile anyway (always expanded sheet)
+      applyDesktopState(true);
+      try {
+        localStorage.setItem(STORAGE_KEY, "true");
+      } catch (_) {}
     });
   }
 
