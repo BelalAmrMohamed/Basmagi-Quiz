@@ -31,18 +31,18 @@ body {
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   /*
-       * side-menu.css owns the sidebar-side inset (physical padding-right,
-       * RTL-only today — out of scope for this pass). We only control the
-       * non-sidebar side here, using a logical property so at least this
-       * declaration is direction-safe.
-       */
+         * side-menu.css owns the sidebar-side inset (physical padding-right,
+         * RTL-only today — out of scope for this pass). We only control the
+         * non-sidebar side here, using a logical property so at least this
+         * declaration is direction-safe.
+         */
   padding-top: 40px;
   padding-bottom: 40px;
   padding-left: 24px;
   padding-right: 24px;
   position: relative;
   /* clip (not hidden) so nested overflow-x:auto scrollers like the activity
-         heatmap can still receive horizontal pans on mobile WebKit. */
+           heatmap can still receive horizontal pans on mobile WebKit. */
   overflow-x: clip;
 }
 
@@ -54,15 +54,15 @@ body {
 }
 
 /* ============================================================
-       IDENTITY BAND — Facebook/X-style cover: a short banner strip
-       with the avatar overlapping its bottom edge, not a tall 16:9
-       hero the rest of the page sits underneath. Structure:
-         .identity-cover    → fixed-height banner (edit btn top-end)
-         .identity-body     → padded card body below the cover
-           .identity-header   → avatar (overlapping upward) + name/
-                                 role/info/level row
-           .stats-grid        → 4 stat chips
-       ============================================================ */
+         IDENTITY BAND — Facebook/X-style cover: a short banner strip
+         with the avatar overlapping its bottom edge, not a tall 16:9
+         hero the rest of the page sits underneath. Structure:
+           .identity-cover    → fixed-height banner (edit btn top-end)
+           .identity-body     → padded card body below the cover
+             .identity-header   → avatar (overlapping upward) + name/
+                                   role/info/level row
+             .stats-grid        → 4 stat chips
+         ============================================================ */
 .identity-band {
   border-radius: 24px;
   box-shadow: var(--shadow-xl);
@@ -84,12 +84,12 @@ body {
 }
 
 /* ============================================================
-       COVER — a short strip (not a tall 16:9 hero), so the identity
-       row and stats are visible without scrolling. object-fit-style
-       center-cover cropping via background-size:cover. Empty by
-       default (no background-image, no .has-thumbnail) — the gradient
-       scrim and edit button only make sense once a picture is set.
-       ============================================================ */
+         COVER — a short strip (not a tall 16:9 hero), so the identity
+         row and stats are visible without scrolling. object-fit-style
+         center-cover cropping via background-size:cover. Empty by
+         default (no background-image, no .has-thumbnail) — the gradient
+         scrim and edit button only make sense once a picture is set.
+         ============================================================ */
 .identity-cover {
   position: relative;
   height: clamp(135px, 19vw, 250px);
@@ -109,8 +109,8 @@ body {
   position: absolute;
   inset: 0;
   /* Gentle scrim along the bottom edge only, so the cover photo
-         itself stays visible instead of being washed out — this strip
-         is short enough that a heavy scrim would hide most of it. */
+           itself stays visible instead of being washed out — this strip
+           is short enough that a heavy scrim would hide most of it. */
   background: linear-gradient(
     to bottom,
     transparent 60%,
@@ -119,18 +119,18 @@ body {
 }
 
 /* Default cover gradient when the user/admin hasn't set one.
-     Distinct treatment from the circular avatar so defaults are
-     visually different and clearly convey "no custom cover yet":
-       - Its own offset palette entry (see thumbnailGradientForName in
-         avatarEngine.js) so the hue never matches the avatar's own
-         background gradient.
-       - A faint diagonal stripe overlay (::before) so the banner has a
-         distinct texture at a glance, not just a different flat color —
-         this also keeps a plain gradient fill from being mistaken for a
-         loading/broken-image state.
-     background-image itself (the actual gradient colors/angle) is set
-     inline by renderThumbnail()/setupVisitorView() per-user; this rule
-     only supplies the shared texture and sizing. */
+       Distinct treatment from the circular avatar so defaults are
+       visually different and clearly convey "no custom cover yet":
+         - Its own offset palette entry (see thumbnailGradientForName in
+           avatarEngine.js) so the hue never matches the avatar's own
+           background gradient.
+         - A faint diagonal stripe overlay (::before) so the banner has a
+           distinct texture at a glance, not just a different flat color —
+           this also keeps a plain gradient fill from being mistaken for a
+           loading/broken-image state.
+       background-image itself (the actual gradient colors/angle) is set
+       inline by renderThumbnail()/setupVisitorView() per-user; this rule
+       only supplies the shared texture and sizing. */
 .identity-cover.is-default-thumbnail {
   background-size: cover;
   background-position: center;
@@ -185,12 +185,21 @@ body {
   transform: scale(1.06);
 }
 
+@media (max-width: 480px) {
+  .thumbnail-edit-btn {
+    width: 26px;
+    height: 26px;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+  }
+}
+
 /* ============================================================
-       BODY — everything below the cover. The avatar is pulled
-       upward with a negative margin so it overlaps the cover's
-       bottom edge (Facebook/X signature), while the rest of the
-       identity row sits at normal body flow beside/below it.
-       ============================================================ */
+         BODY — everything below the cover. The avatar is pulled
+         upward with a negative margin so it overlaps the cover's
+         bottom edge (Facebook/X signature), while the rest of the
+         identity row sits at normal body flow beside/below it.
+         ============================================================ */
 .identity-body {
   position: relative;
   z-index: 1;
@@ -203,9 +212,9 @@ body {
   flex-wrap: wrap;
   gap: 16px 24px;
   /* Pull up so the avatar overlaps the cover above by roughly half
-         its own height (Facebook/X-style) — tuned to the 128px avatar
-         below; the responsive rules adjust this to match each
-         breakpoint's own avatar size. */
+           its own height (Facebook/X-style) — tuned to the 128px avatar
+           below; the responsive rules adjust this to match each
+           breakpoint's own avatar size. */
   margin-block-start: -64px;
   padding-block-end: 12px;
 }
@@ -352,16 +361,16 @@ body {
 }
 
 /* ============================================================
-       ROLE INFO MODAL — opened by #roleBadge. Reuses the shared
-       .contact-overlay / .contact-overlay-card shell (defined outside
-       this file) for the backdrop + positioning, but overrides its own
-       layout here rather than the inline-style approach #userInfoOverlay
-       used, since this card's content (centered icon/title/desc, no
-       header row) doesn't fit that shell's default header/body/footer
-       structure. Scoped to #roleInfoOverlay so #userInfoOverlay and
-       #contactDevOverlay, which still use the shared shell as-is, are
-       unaffected.
-       ============================================================ */
+         ROLE INFO MODAL — opened by #roleBadge. Reuses the shared
+         .contact-overlay / .contact-overlay-card shell (defined outside
+         this file) for the backdrop + positioning, but overrides its own
+         layout here rather than the inline-style approach #userInfoOverlay
+         used, since this card's content (centered icon/title/desc, no
+         header row) doesn't fit that shell's default header/body/footer
+         structure. Scoped to #roleInfoOverlay so #userInfoOverlay and
+         #contactDevOverlay, which still use the shared shell as-is, are
+         unaffected.
+         ============================================================ */
 .role-info-card {
   max-width: 340px;
   padding: 28px 24px 24px;
@@ -402,8 +411,8 @@ body {
 }
 
 /* Reuse the exact same gradients as .role-badge.admin-badge /
-       .developer-badge so the modal icon visually matches the badge
-       that opened it. */
+         .developer-badge so the modal icon visually matches the badge
+         that opened it. */
 .role-info-icon.admin-badge {
   background: linear-gradient(135deg, #3b82f6, #1e40af);
 }
@@ -425,17 +434,17 @@ body {
 }
 
 /* Avatar — sized to read clearly overlapping the cover photo above
-       it (Facebook/X-style), larger than a plain inline avatar would
-       need to be. border matches .identity-band's own surface color so
-       it reads as a cutout over the cover, same trick FB/X use. */
+         it (Facebook/X-style), larger than a plain inline avatar would
+         need to be. border matches .identity-band's own surface color so
+         it reads as a cutout over the cover, same trick FB/X use. */
 .avatar-wrapper {
   position: relative;
   width: 128px;
   height: 128px;
   flex-shrink: 0;
   /* Locks the column to the avatar's own size so it can never be
-         squeezed by neighboring grid/flex content (was the cause of the
-         avatar overlapping the name/buttons next to it). */
+           squeezed by neighboring grid/flex content (was the cause of the
+           avatar overlapping the name/buttons next to it). */
   min-width: 128px;
 }
 
@@ -472,22 +481,29 @@ body {
   transform: scale(1.08);
 }
 
+@media (max-width: 480px) {
+  .avatar-edit-btn {
+    width: 26px;
+    height: 26px;
+  }
+}
+
 /* ============================================================
-       LEVEL GAUGE — radial SVG gauge replacing the old flat progress
-       bar. Progress resets visually every level (gameEngine already
-       computes pointsInCurrentLevel/progressPercent per-level, this
-       just renders it). Tier color shifts by level bracket so the
-       gauge itself communicates rank at a glance, which is the whole
-       point: something worth chasing, not just a number going up.
-       ============================================================ */
+         LEVEL GAUGE — radial SVG gauge replacing the old flat progress
+         bar. Progress resets visually every level (gameEngine already
+         computes pointsInCurrentLevel/progressPercent per-level, this
+         just renders it). Tier color shifts by level bracket so the
+         gauge itself communicates rank at a glance, which is the whole
+         point: something worth chasing, not just a number going up.
+         ============================================================ */
 .identity-level {
   display: flex;
   align-items: center;
   gap: 20px;
   min-width: 280px;
   /* Sits in the flex .identity-header alongside the avatar/text —
-         flex-basis lets it wrap onto its own full-width row once the
-         header gets tight, rather than being squeezed thin. */
+           flex-basis lets it wrap onto its own full-width row once the
+           header gets tight, rather than being squeezed thin. */
   flex: 1 1 280px;
   justify-content: flex-start;
   padding-block-end: 4px;
@@ -614,11 +630,11 @@ body {
 }
 
 /* Stats Grid — 4 compact chips under the identity row. #userStatsGrid
-       sits inside .identity-body, which already supplies the horizontal
-       inset, so no side padding is added here. #adminStatsGrid reuses
-       this same .stats-grid class as a page-level sibling of
-       .identity-band instead (see markup) and must NOT get any of
-       .identity-body's padding — it supplies its own margin instead. */
+         sits inside .identity-body, which already supplies the horizontal
+         inset, so no side padding is added here. #adminStatsGrid reuses
+         this same .stats-grid class as a page-level sibling of
+         .identity-band instead (see markup) and must NOT get any of
+         .identity-body's padding — it supplies its own margin instead. */
 .stats-grid {
   position: relative;
   z-index: 1;
@@ -676,8 +692,8 @@ body {
 }
 
 /* Admin stats grid — same skeleton as .stats-grid, but visually set apart
-       (dashed divider, muted surface, small eyebrow label) so it doesn't read
-       as a stray, mismatched duplicate of the main stats row underneath it. */
+         (dashed divider, muted surface, small eyebrow label) so it doesn't read
+         as a stray, mismatched duplicate of the main stats row underneath it. */
 #adminStatsGrid {
   grid-template-columns: repeat(3, 1fr);
   position: relative;
@@ -734,7 +750,7 @@ body {
   }
 
   /* 3 admin cards over 2 columns leaves a lone card on its own row —
-         let it span both columns instead of sitting stranded on one side. */
+           let it span both columns instead of sitting stranded on one side. */
   #adminStatsGrid .stat-card:last-child {
     grid-column: 1 / -1;
   }
@@ -757,8 +773,8 @@ body {
 }
 
 /* ============================================================
-       MAIN GRID
-       ============================================================ */
+         MAIN GRID
+         ============================================================ */
 .profile-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -781,7 +797,7 @@ body {
   flex-direction: column;
   gap: 20px;
   /* Cap height so a very long rail scrolls independently instead of
-         pushing the footer far below the shorter main column. */
+           pushing the footer far below the shorter main column. */
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   scrollbar-width: thin;
@@ -801,12 +817,12 @@ body {
 }
 
 /* ============================================================
-       HISTORY / BOOKMARKS / FLAGGED — dense list rows
-       All three widgets reuse .history-item, rebuilt as a compact
-       grid row: [score-pill] [info] [actions]. Height target ~56px
-       so 8+ rows are visible on a standard mobile viewport without
-       scrolling.
-       ============================================================ */
+         HISTORY / BOOKMARKS / FLAGGED — dense list rows
+         All three widgets reuse .history-item, rebuilt as a compact
+         grid row: [score-pill] [info] [actions]. Height target ~56px
+         so 8+ rows are visible on a standard mobile viewport without
+         scrolling.
+         ============================================================ */
 .history-list {
   display: flex;
   flex-direction: column;
@@ -893,9 +909,9 @@ body {
 }
 
 /* "Go to exam / question" — icon-only on compact rows. The label text is
-       kept in the DOM (from profile.js/profileWidgets.js templates) for
-       accessibility/SEO, but visually replaced with a compact arrow glyph via
-       a fixed square button so it never wraps or bloats the row. */
+         kept in the DOM (from profile.js/profileWidgets.js templates) for
+         accessibility/SEO, but visually replaced with a compact arrow glyph via
+         a fixed square button so it never wraps or bloats the row. */
 .history-actions .nav-btn.primary {
   display: inline-flex;
   align-items: center;
@@ -918,14 +934,14 @@ body {
   width: 15px;
   height: 15px;
   /* Arrow icon via mask so `currentColor` (the pill's text color) drives
-         it — flips automatically with `transform` in RTL vs LTR below. */
+           it — flips automatically with `transform` in RTL vs LTR below. */
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
   -webkit-mask-size: contain;
   mask-size: contain;
   background-color: currentColor;
   /* Default markup direction is RTL (arrow should point start/right);
-         mirror it for LTR documents below. */
+           mirror it for LTR documents below. */
   transform: scaleX(-1);
 }
 
@@ -1007,8 +1023,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       SIDEBAR / RAIL CARDS
-       ============================================================ */
+         SIDEBAR / RAIL CARDS
+         ============================================================ */
 .sidebar-card {
   padding: 22px;
   background-color: var(--color-surface);
@@ -1023,11 +1039,11 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Badge Display
-   Each tile is a fixed-height flip card: icon + label sit on the front
-   face at all times (label is clamped to 2 lines with ellipsis so a
-   long word like "Perfectionist" can never blow out the grid), and the
-   description swaps in on hover/focus so it never has to be crammed
-   into the tile itself. */
+     Each tile is a fixed-height flip card: icon + label sit on the front
+     face at all times (label is clamped to 2 lines with ellipsis so a
+     long word like "Perfectionist" can never blow out the grid), and the
+     description swaps in on hover/focus so it never has to be crammed
+     into the tile itself. */
 .badge-display-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
@@ -1077,9 +1093,9 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Description face: absolutely positioned over the tile, fades in on
-   hover/focus in place of the icon+title. Small enough font + clamp so
-   longer descriptions still fit the fixed tile height without leaking
-   outside it. */
+     hover/focus in place of the icon+title. Small enough font + clamp so
+     longer descriptions still fit the fixed tile height without leaking
+     outside it. */
 .badge-desc-overlay {
   position: absolute;
   inset: 0;
@@ -1191,12 +1207,12 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Hover card: a single shared tooltip element, appended directly to
-       <body> and driven by JS (see leaderboardIdentity.js's attachHoverCard),
-       rather than one `position: absolute` card per row. .profile-rail
-       scrolls (overflow-y: auto), and an absolutely-positioned descendant
-       can never escape a scrolling ancestor's clipping box no matter its
-       z-index — so a per-row card was always going to get cut off there.
-       `position: fixed` on a body-level element sidesteps that entirely. */
+         <body> and driven by JS (see leaderboardIdentity.js's attachHoverCard),
+         rather than one `position: absolute` card per row. .profile-rail
+         scrolls (overflow-y: auto), and an absolutely-positioned descendant
+         can never escape a scrolling ancestor's clipping box no matter its
+         z-index — so a per-row card was always going to get cut off there.
+         `position: fixed` on a body-level element sidesteps that entirely. */
 .lb-hover-card {
   position: fixed;
   min-width: 180px;
@@ -1234,7 +1250,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Arrow direction flips depending on whether JS placed the card above
-       or below the avatar (near the top of the viewport, below is used). */
+         or below the avatar (near the top of the viewport, below is used). */
 .lb-hover-card[data-placement="top"]::after {
   inset-block-start: 100%;
   border-top-color: var(--color-surface);
@@ -1340,26 +1356,26 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       ACTIVITY HEATMAP — redesigned after the 21st.dev heatmap-chart
-       component: rounded cells with a soft enter animation, a wider
-       card (spans the full widget-row instead of sharing 1fr with
-       category mastery), month/day axis labels, and a legend that
-       mirrors the swatch styling used in the cells themselves.
-       Still degrades to a snap-scroll strip with fading edges when
-       the natural grid is wider than the container.
-       ============================================================ */
+         ACTIVITY HEATMAP — redesigned after the 21st.dev heatmap-chart
+         component: rounded cells with a soft enter animation, a wider
+         card (spans the full widget-row instead of sharing 1fr with
+         category mastery), month/day axis labels, and a legend that
+         mirrors the swatch styling used in the cells themselves.
+         Still degrades to a snap-scroll strip with fading edges when
+         the natural grid is wider than the container.
+         ============================================================ */
 .heatmap-widget-card {
   display: flex;
   flex-direction: column;
   min-width: 0;
   /* Span the full .widget-row instead of sharing 1fr with the mastery
-         card — the heatmap reads far better wide, mastery doesn't need it. */
+           card — the heatmap reads far better wide, mastery doesn't need it. */
   grid-column: 1 / -1;
 }
 
 #activityHeatmap {
   /* Compact year grid: ~53 weeks need to scroll, but cells stay dense
-         enough that most of a desktop card shows ~8–10 months at once. */
+           enough that most of a desktop card shows ~8–10 months at once. */
   --heatmap-cell: clamp(9px, 1.35vw, 12px);
   --heatmap-gap: 2px;
   min-width: 0;
@@ -1374,7 +1390,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Edge fades live on the body wrapper — NOT on .heatmap-grid. Masking the
-       scrollport itself breaks touch horizontal scrolling on iOS/WebKit. */
+         scrollport itself breaks touch horizontal scrolling on iOS/WebKit. */
 .heatmap-body.is-overflowing::before,
 .heatmap-body.is-overflowing::after {
   content: "";
@@ -1428,8 +1444,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Matches the month-label row's height at the top of each .heatmap-col,
-       so the day-letter rows beneath it still line up with the grid's cell
-       rows despite the grid having one extra header cell per column. */
+         so the day-letter rows beneath it still line up with the grid's cell
+         rows despite the grid having one extra header cell per column. */
 .heatmap-daylabels-spacer {
   height: 16px !important;
 }
@@ -1443,13 +1459,13 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   padding-block-end: 8px;
   padding-block-start: 2px;
   /* Extra inline padding so absolute month labels aren't clipped by the
-         scrollport edge on phones (labels don't contribute to scrollWidth). */
+           scrollport edge on phones (labels don't contribute to scrollWidth). */
   padding-inline: 6px;
   scroll-snap-type: x proximity;
   flex: 1;
   min-width: 0;
   /* Never center an overflowing flex row — start-side content becomes
-         unreachable. Sparse years still look fine packed to the start. */
+           unreachable. Sparse years still look fine packed to the start. */
   justify-content: flex-start;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
@@ -1474,7 +1490,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   gap: var(--heatmap-gap);
   scroll-snap-align: start;
   /* Lock width to the cell — full Arabic month names must NOT stretch
-         a single week column (that was creating huge empty gaps between months). */
+           a single week column (that was creating huge empty gaps between months). */
   width: var(--heatmap-cell);
   flex: 0 0 var(--heatmap-cell);
 }
@@ -1495,7 +1511,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Reserve label row space inside the column without letting the text
-       contribute to the column's flex width. */
+         contribute to the column's flex width. */
 .heatmap-col::before {
   content: "";
   display: block;
@@ -1574,7 +1590,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Out-of-year week padding (before Jan 1 / after Dec 31) — muted so
-       they read as disabled vs empty in-year days (data-level="0"). */
+         they read as disabled vs empty in-year days (data-level="0"). */
 .heatmap-cell-disabled {
   background: transparent;
   box-shadow: inset 0 0 0 1px
@@ -1669,15 +1685,15 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       CATEGORY MASTERY — up to 8 rows (renderCategoryMastery() already
-       caps at 8), which on some layouts pushes the card visibly taller
-       than heatmap-widget-card beside it in .widget-row. Collapsed by
-       default to a max-height showing ~3 rows, with a fade + the shared
-       .show-more-row/.show-more-btn pattern (already used by History/
-       Bookmarks/Flagged) to reveal the rest. renderCategoryMastery()
-       only adds the collapse/toggle when there are enough rows to need
-       it — 3 or fewer rows render with no cap and no button at all.
-       ============================================================ */
+         CATEGORY MASTERY — up to 8 rows (renderCategoryMastery() already
+         caps at 8), which on some layouts pushes the card visibly taller
+         than heatmap-widget-card beside it in .widget-row. Collapsed by
+         default to a max-height showing ~3 rows, with a fade + the shared
+         .show-more-row/.show-more-btn pattern (already used by History/
+         Bookmarks/Flagged) to reveal the rest. renderCategoryMastery()
+         only adds the collapse/toggle when there are enough rows to need
+         it — 3 or fewer rows render with no cap and no button at all.
+         ============================================================ */
 .category-mastery-card {
   min-width: 0;
 }
@@ -1771,8 +1787,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       NEXT BADGE TEASERS
-       ============================================================ */
+         NEXT BADGE TEASERS
+         ============================================================ */
 .next-badge-row {
   display: flex;
   align-items: center;
@@ -1827,18 +1843,18 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       INFINITE SCROLL SENTINEL
-       ============================================================ */
+         INFINITE SCROLL SENTINEL
+         ============================================================ */
 .infinite-scroll-sentinel {
   height: 1px;
 }
 
 /* ============================================================
-       SHOW MORE — pill button centered on a horizontal rule, after
-       the first page of a list (History / Bookmarks / Flagged /
-       Uploaded Quizzes). Chevron flips when expanded via
-       .show-more-row.is-expanded — used for the "Show less" state.
-       ============================================================ */
+         SHOW MORE — pill button centered on a horizontal rule, after
+         the first page of a list (History / Bookmarks / Flagged /
+         Uploaded Quizzes). Chevron flips when expanded via
+         .show-more-row.is-expanded — used for the "Show less" state.
+         ============================================================ */
 .show-more-row {
   display: flex;
   align-items: center;
@@ -1890,8 +1906,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       RESPONSIVE
-       ============================================================ */
+         RESPONSIVE
+         ============================================================ */
 
 /* Tablet: rail moves below main content, still 2-col stats */
 @media (max-width: 1024px) {
@@ -1910,8 +1926,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   }
 
   /* .identity-header already wraps (flex-wrap: wrap); once the level
-         gauge drops to its own row, let it take the full row width
-         instead of sitting flex-basis 280px off to one side. */
+           gauge drops to its own row, let it take the full row width
+           instead of sitting flex-basis 280px off to one side. */
   .identity-level {
     flex-basis: 100%;
     justify-content: flex-start;
@@ -1945,7 +1961,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 
   .identity-header {
     /* Half of the smaller 84px mobile avatar, matching the desktop
-           ratio (see .identity-header's own -64px comment). */
+             ratio (see .identity-header's own -64px comment). */
     margin-block-start: -42px;
     gap: 12px 16px;
     padding-block-end: 10px;
@@ -1981,8 +1997,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   }
 
   /* History rows: keep the same compact grid, just tighten padding —
-         this is the key mobile-density fix. No column collapsing to
-         flex-column here, so rows stay ~52px tall and 8+ fit on screen. */
+           this is the key mobile-density fix. No column collapsing to
+           flex-column here, so rows stay ~52px tall and 8+ fit on screen. */
   .history-item {
     padding: 8px 10px;
     min-height: 52px;
@@ -2084,8 +2100,25 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   width: 100%;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border-light);
+  /* 90vh is based on the largest viewport height and doesn't shrink
+         when mobile browser chrome (address bar, etc.) is on-screen, so
+         the card could end up taller than what's actually visible.
+         100dvh tracks the real visible viewport; vh stays as a fallback
+         for browsers without dvh support. */
   max-height: 90vh;
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
+}
+
+@media (max-width: 480px) {
+  .avatar-picker-card {
+    padding: 20px;
+    max-height: calc(100dvh - 24px);
+  }
+
+  .avatar-picker-overlay {
+    padding: 12px;
+  }
 }
 
 .avatar-picker-header {
@@ -2109,10 +2142,10 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* ============================================================
-       PICKER MODE TABS — "الصورة الشخصية" / "الصورة المصغرة".
-       Same overlay, avatarPicker.js swaps which store/grid/labels
-       are active; this is just the switch itself.
-       ============================================================ */
+         PICKER MODE TABS — "الصورة الشخصية" / "الصورة المصغرة".
+         Same overlay, avatarPicker.js swaps which store/grid/labels
+         are active; this is just the switch itself.
+         ============================================================ */
 .avatar-picker-tabs {
   display: flex;
   gap: 4px;
@@ -2186,8 +2219,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Thumbnail preset grid uses the same button/grid mechanics as the avatar
-     grid above, but previews should read as small banner swatches (matching
-     the cover's own wide aspect) rather than circular avatar swatches. */
+       grid above, but previews should read as small banner swatches (matching
+       the cover's own wide aspect) rather than circular avatar swatches. */
 .thumbnail-preset-btn {
   aspect-ratio: 3 / 1;
   border-radius: 10px;
@@ -2228,7 +2261,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Primary variant — used for the crop step's confirm button, where it's
-     the clear "commit this action" choice next to a plain-styled cancel. */
+       the clear "commit this action" choice next to a plain-styled cancel. */
 .avatar-action-btn.primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -2282,21 +2315,21 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Thumbnail overlay's camera preview needs the wide aspect, not the
-     avatar's square — same element/class, scoped by which overlay it's
-     nested in rather than a second class, since every other rule in
-     .avatar-camera-preview (radius, background, object-fit) is identical
-     between the two. */
+       avatar's square — same element/class, scoped by which overlay it's
+       nested in rather than a second class, since every other rule in
+       .avatar-camera-preview (radius, background, object-fit) is identical
+       between the two. */
 #thumbnailPickerOverlay .avatar-camera-preview {
   aspect-ratio: 3 / 1;
 }
 
 /* ============================================================
-       CROP STEP — appears in place of the picker body once a file is
-       chosen (upload/drop/camera), before the picture is actually saved.
-       See cropperEngine.js for the interaction model this drives:
-       dragging pans, wheel/pinch/the slider below zoom, around whatever
-       point the user is interacting with.
-       ============================================================ */
+         CROP STEP — appears in place of the picker body once a file is
+         chosen (upload/drop/camera), before the picture is actually saved.
+         See cropperEngine.js for the interaction model this drives:
+         dragging pans, wheel/pinch/the slider below zoom, around whatever
+         point the user is interacting with.
+         ============================================================ */
 .avatar-crop-step {
   display: flex;
   flex-direction: column;
@@ -2321,7 +2354,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 .avatar-crop-stage-square {
   aspect-ratio: 1;
   /* Circular mask so what's previewed while cropping matches the
-       circular avatar it will actually render as. */
+         circular avatar it will actually render as. */
   border-radius: 50%;
 }
 
@@ -2330,10 +2363,10 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 /* Positioned by cropperEngine.js: absolutely centered at natural size,
-     then panned/scaled via an inline transform (translate + scale) set on
-     every drag/zoom update. Centering here (rather than in the transform
-     itself) keeps the transform's math to pure translate+scale, with no
-     baked-in centering offset to account for. */
+       then panned/scaled via an inline transform (translate + scale) set on
+       every drag/zoom update. Centering here (rather than in the transform
+       itself) keeps the transform's math to pure translate+scale, with no
+       baked-in centering offset to account for. */
 .cropper-image {
   position: absolute;
   top: 50%;
@@ -2394,14 +2427,14 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 /* ==================== Nav Role Badge Overlay ==================== */
 /* Small role badge (owner/admin) pinned to the corner of the nav avatar.
-       Injected by avatarEngine.js's syncNavAvatars() (and mirrored by the
-       synchronous instant-badge script in profile.html's <head> so it paints
-       on first frame) onto both the desktop sidebar avatar (.menu-item-avatar,
-       larger) and the mobile bottom-nav avatar (.bottom-nav-avatar, much
-       smaller icon-sized image). A single fixed 16px/top:3px/right:3px was
-       previously hardcoded in JS for both contexts, which fit the sidebar but
-       covered most of the smaller bottom-nav icon on mobile. Sizing now lives
-       here so each context can be tuned independently. */
+         Injected by avatarEngine.js's syncNavAvatars() (and mirrored by the
+         synchronous instant-badge script in profile.html's <head> so it paints
+         on first frame) onto both the desktop sidebar avatar (.menu-item-avatar,
+         larger) and the mobile bottom-nav avatar (.bottom-nav-avatar, much
+         smaller icon-sized image). A single fixed 16px/top:3px/right:3px was
+         previously hardcoded in JS for both contexts, which fit the sidebar but
+         covered most of the smaller bottom-nav icon on mobile. Sizing now lives
+         here so each context can be tuned independently. */
 .nav-badge-overlay {
   position: absolute;
   width: 16px;
@@ -2416,8 +2449,8 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 
 @media (max-width: 768px) {
   /* Bottom-nav avatar is a small icon-sized image — scale the badge down
-         and pull it further into the corner so it no longer overlaps the
-         avatar itself. */
+           and pull it further into the corner so it no longer overlaps the
+           avatar itself. */
   .bottom-nav-item-profile .nav-badge-overlay {
     width: 11px;
     height: 11px;
@@ -2460,4 +2493,3 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     padding-block-end: 10px;
   }
 }
-

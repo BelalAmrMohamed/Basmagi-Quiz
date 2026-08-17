@@ -116,9 +116,10 @@ export function refreshUI(options = {}) {
   const currentHandle = roleInfo?.handle || window.fetchedAdminHandle;
   const adminHandleWrap = document.getElementById("adminHandleDisplayWrap");
   if (adminHandleWrap && currentHandle) {
-    document.getElementById("adminHandleDisplay").textContent = "@" + currentHandle;
+    document.getElementById("adminHandleDisplay").textContent =
+      "@" + currentHandle;
     adminHandleWrap.style.display = "inline-flex";
-    
+
     const copyBtn = document.getElementById("inlineCopyLinkBtn");
     if (copyBtn) {
       copyBtn.onclick = () => {
@@ -218,7 +219,7 @@ function openRoleInfoModal(isOwner) {
     iconEl.className = "role-info-icon developer-badge";
     titleEl.textContent = "مطور";
     descEl.textContent =
-      "هذا الحساب هو حساب مطور المنصة، ولديه صلاحية كاملة على النظام، بما في ذلك إدارة المستخدمين والاختبارات والإعدادات.";
+      "هذا الحساب هو حساب أحد مطوري المنصة، ولديه صلاحية كاملة على النظام، بما في ذلك إدارة المستخدمين والاختبارات والإعدادات.";
   } else {
     iconEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
     iconEl.className = "role-info-icon admin-badge";
@@ -420,6 +421,7 @@ async function setupVisitorView(handle) {
   if (heatmapCard) heatmapCard.style.display = "";
 
   document.getElementById("avatarEditBtn").style.display = "none";
+  document.getElementById("thumbnailEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
 
   const displayNameMeta = document.querySelector(
@@ -588,7 +590,7 @@ async function setupVisitorView(handle) {
   if (adminHandleWrap && handle) {
     document.getElementById("adminHandleDisplay").textContent = "@" + handle;
     adminHandleWrap.style.display = "inline-flex";
-    
+
     const copyBtn = document.getElementById("inlineCopyLinkBtn");
     if (copyBtn) {
       copyBtn.onclick = () => {
