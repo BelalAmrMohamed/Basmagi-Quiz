@@ -11,17 +11,7 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
-import {
-  executeExport,
-  triggerDownload,
-  withDownloadLoading,
-  buildExportCard,
-} from "./export-helpers.js";
-import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
-import { buildQuizHtml } from "../../features/export/export-to-html.js";
-import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
-import { buildQuizText } from "../../features/export/export-to-text.js";
-import { buildJsonQuizExport } from "../../shared/quiz-json.js";
+import { showDownloadModal } from "./export-helpers.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
@@ -41,68 +31,13 @@ import {
   COPY_ICON_SVG,
   DUPLICATE_ICON_SVG,
   SHARE_ICON_SVG,
-  JSON_FILE_ICON_SVG,
-  DOWNLOAD_SOURCE_ICON_SVG,
   MORE_DOTS_ICON_SVG,
   TRASH_ICON_SVG,
-  COPY_TEXT_ICON_SVG,
 } from "./icons.js";
 import {
   showNotification,
   _confirm,
-  _alert,
 } from "../../components/notifications/notifications.js";
-
-const allExportOptions = [
-  {
-    format: "quiz",
-    label: "Quiz (.html)",
-    iconUrl: "./favicon.png",
-    canCopy: true,
-  },
-  {
-    format: "html",
-    label: "HTML (.html)",
-    iconUrl: "./assets/images/HTML_Icon.png",
-    canCopy: true,
-  },
-  {
-    format: "md",
-    label: "Markdown (.md)",
-    iconUrl: "./assets/images/mardownIcon.png",
-    canCopy: true,
-  },
-  {
-    format: "text",
-    label: "Text (.txt)",
-    iconSvg: COPY_TEXT_ICON_SVG,
-    canCopy: true,
-  },
-  {
-    format: "json",
-    label: "JSON (.json)",
-    iconSvg: JSON_FILE_ICON_SVG,
-    canCopy: true,
-  },
-  {
-    format: "pdf",
-    label: "PDF (.pdf)",
-    iconUrl: "./assets/images/PDF_Icon.png",
-    canCopy: false,
-  },
-  {
-    format: "pptx",
-    label: "PowerPoint (.pptx)",
-    iconUrl: "./assets/images/pptx_icon.png",
-    canCopy: false,
-  },
-  {
-    format: "docx",
-    label: "Word (.docx)",
-    iconUrl: "./assets/images/word_icon.png",
-    canCopy: false,
-  },
-];
 
 function buildExamShareUrl(examId) {
   return window.location.origin + "/q/" + encodeURIComponent(examId);
@@ -162,72 +97,6 @@ export function createExamCard(exam) {
     startQuiz(exam.id);
   };
 
-  const onDownloadOption = async (format) => {
-    const config = {
-      id: exam.id,
-      title: exam.title || exam.id,
-      path: exam.path,
-      source: exam.source || null,
-      description: exam.description || null,
-      createdAt: exam.createdAt || null,
-      author: exam.author || null,
-      author_email: exam.author_email || null,
-      password: exam.password || null,
-      // view/mode are never present on manifest entries (see quizManifest.js)
-      // — they only get backfilled below once we've loaded the raw quiz file.
-      view: null,
-      mode: null,
-      // BUG FIX: the manifest entry uses `questionTypes`/`questionCount`,
-      // not `type`/`count` — those never existed on `exam`, so this was
-      // always null regardless of what the quiz file contained.
-      questionTypes: exam.questionTypes || null,
-      questionCount: exam.questionCount || null,
-    };
-
-    // Load exam data (HANDLES .js vs .json issue) — shared with the info
-    // modal and copy-to-my-quizzes via quiz-data-loader.js.
-    let questions = [];
-    let rawMeta = null;
-    let rawStats = null;
-    try {
-      const loaded = await loadFullQuizData(exam);
-      questions = loaded.questions;
-      rawMeta = loaded.meta;
-      rawStats = loaded.stats;
-    } catch (e) {
-      console.error("Load failed", e);
-      _alert("Failed to load exam data.");
-      return;
-    }
-
-    // Defensive patch: the manifest is a lossy summary (it never carries
-    // view/mode, and may be stale/incomplete for other fields). Now that
-    // we have the raw quiz file in hand anyway, backfill anything missing
-    // on config from its meta/stats — same pattern result.js uses.
-    if (rawMeta) {
-      if (!config.source) config.source = rawMeta.source || null;
-      if (!config.description) config.description = rawMeta.description || null;
-      if (!config.createdAt) config.createdAt = rawMeta.createdAt || null;
-      if (!config.author) config.author = rawMeta.author || null;
-      if (!config.author_email)
-        config.author_email = rawMeta.author_email || null;
-      if (!config.password) config.password = rawMeta.password || null;
-      config.view = rawMeta.view || null;
-      config.mode = rawMeta.mode || null;
-    }
-    if (rawStats) {
-      if (!config.questionTypes)
-        config.questionTypes = formatQuestionTypesForDownload(
-          rawStats.questionTypes,
-        );
-      if (!config.questionCount)
-        config.questionCount =
-          rawStats.questionCount ?? (questions || []).length;
-    }
-
-    await executeExport(format, config, questions);
-  };
-
   const showDownloadPopup = async () => {
     let password = exam.password;
     if (!password) {
@@ -248,169 +117,68 @@ export function createExamCard(exam) {
     );
     if (!allowed) return;
 
-    const modal = document.createElement("div");
-    modal.className = "modal-overlay";
-    modal.style.transform = "translateZ(0)";
-    modal.style.willChange = "opacity";
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("aria-labelledby", "downloadModalTitle");
-
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) modal.remove();
-    });
-
-    const modalCard = document.createElement("div");
-    modalCard.className = "modal-card";
-    modalCard.style.contain = "layout style paint";
-
-    const h2 = document.createElement("h2");
-    h2.id = "downloadModalTitle";
-    h2.textContent = exam.title || exam.id;
-
-    const p = document.createElement("p");
-    p.textContent = "اختر طريقة التنزيل";
-
-    const grid = document.createElement("div");
-    grid.className = "mode-grid";
-    grid.setAttribute("role", "group");
-    grid.setAttribute("aria-label", "خيارات التنزيل");
-
-    const getLoadedConfigAndQuestions = async () => {
-      const config = {
-        id: exam.id,
-        title: exam.title || exam.id,
-        path: exam.path,
-        source: exam.source || null,
-        description: exam.description || null,
-        createdAt: exam.createdAt || null,
-        author: exam.author || null,
-        author_email: exam.author_email || null,
-        password: exam.password || null,
-        view: null,
-        mode: null,
-        questionTypes: exam.questionTypes || null,
-        questionCount: exam.questionCount || null,
-      };
-      const loaded = await loadFullQuizData(exam);
-      const questions = loaded.questions;
-      const rawMeta = loaded.meta;
-      const rawStats = loaded.stats;
-      if (rawMeta) {
-        if (!config.source) config.source = rawMeta.source || null;
-        if (!config.description)
-          config.description = rawMeta.description || null;
-        if (!config.createdAt) config.createdAt = rawMeta.createdAt || null;
-        if (!config.author) config.author = rawMeta.author || null;
-        if (!config.author_email)
-          config.author_email = rawMeta.author_email || null;
-        if (!config.password) config.password = rawMeta.password || null;
-        config.view = rawMeta.view || null;
-        config.mode = rawMeta.mode || null;
-      }
-      if (rawStats) {
-        if (!config.questionTypes)
-          config.questionTypes = formatQuestionTypesForDownload(
-            rawStats.questionTypes,
-          );
-        if (!config.questionCount)
-          config.questionCount =
-            rawStats.questionCount ?? (questions || []).length;
-      }
-      return { config, questions };
+    // Initial config built straight from the manifest summary — enough to
+    // render the modal (title, source button) immediately. The full quiz
+    // file — needed for questions and to backfill view/mode/description/etc.
+    // — is only fetched lazily, once, the first time the user actually picks
+    // a format (see resolveExportData below), matching this card's original
+    // lazy-load behavior instead of forcing a fetch before the modal opens.
+    const initialConfig = {
+      id: exam.id,
+      title: exam.title || exam.id,
+      path: exam.path,
+      source: exam.source || null,
+      description: exam.description || null,
+      createdAt: exam.createdAt || null,
+      author: exam.author || null,
+      author_email: exam.author_email || null,
+      password: exam.password || null,
+      // view/mode are never present on manifest entries (see quizManifest.js)
+      // — they only get backfilled once the raw quiz file is loaded.
+      view: null,
+      mode: null,
+      questionTypes: exam.questionTypes || null,
+      questionCount: exam.questionCount || null,
     };
 
-    allExportOptions.forEach((opt) => {
-      const iconHtml = opt.iconSvg
-        ? opt.iconSvg
-        : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
-      const card = buildExportCard({
-        format: opt.format,
-        label: opt.label,
-        icon: iconHtml,
-        canCopy: opt.canCopy,
-        onDownload: async () => {
-          if (opt.format === "text") {
-            const { config, questions } = await getLoadedConfigAndQuestions();
-            const text = await buildQuizText(config, questions);
-            const blob = new Blob([text], { type: "text/plain" });
-            triggerDownload(blob, `${config.title || exam.id}.txt`);
-          } else if (opt.format === "json") {
-            const { config, questions } = await getLoadedConfigAndQuestions();
-            const payload = await buildJsonQuizExport(
-              config.title,
-              config.description,
-              config.source,
-              questions,
-              config.createdAt,
+    // Same shared "اختر صيغة التحميل" modal used on the homepage's "My
+    // Quizzes" popup and the create-quiz page (see showDownloadModal() in
+    // export-helpers.js) — identical markup/styling/behavior across all
+    // three download entry points.
+    showDownloadModal({
+      config: initialConfig,
+      questions: [],
+      filenameBase: exam.title || exam.id,
+      resolveExportData: async ({ config }) => {
+        const loaded = await loadFullQuizData(exam);
+        const questions = loaded.questions;
+        const rawMeta = loaded.meta;
+        const rawStats = loaded.stats;
+        const resolved = { ...config };
+        if (rawMeta) {
+          if (!resolved.source) resolved.source = rawMeta.source || null;
+          if (!resolved.description)
+            resolved.description = rawMeta.description || null;
+          if (!resolved.createdAt)
+            resolved.createdAt = rawMeta.createdAt || null;
+          if (!resolved.author) resolved.author = rawMeta.author || null;
+          if (!resolved.author_email)
+            resolved.author_email = rawMeta.author_email || null;
+          if (!resolved.password) resolved.password = rawMeta.password || null;
+          resolved.view = rawMeta.view || null;
+          resolved.mode = rawMeta.mode || null;
+        }
+        if (rawStats) {
+          if (!resolved.questionTypes)
+            resolved.questionTypes = formatQuestionTypesForDownload(
+              rawStats.questionTypes,
             );
-            const blob = new Blob([JSON.stringify(payload, null, 2)], {
-              type: "application/json",
-            });
-            triggerDownload(blob, `${config.title || exam.id}.json`);
-          } else {
-            await onDownloadOption(opt.format);
-          }
-          modal.remove();
-        },
-        onCopy: async () => {
-          const { config, questions } = await getLoadedConfigAndQuestions();
-
-          if (opt.format === "quiz")
-            return await buildStandaloneQuizHtml(config, questions);
-          if (opt.format === "html")
-            return await buildQuizHtml(config, questions);
-          if (opt.format === "md") return buildQuizMarkdown(config, questions);
-          if (opt.format === "text")
-            return await buildQuizText(config, questions);
-          if (opt.format === "json") {
-            const payload = await buildJsonQuizExport(
-              config.title,
-              config.description,
-              config.source,
-              questions,
-              config.createdAt,
-            );
-            return JSON.stringify(payload, null, 2);
-          }
-        },
-      });
-      grid.appendChild(card);
-    });
-
-    // Show source button if source URL is available in the manifest
-    if (exam.source && typeof exam.source === "string") {
-      const sourceBtn = document.createElement("button");
-      sourceBtn.className = "mode-btn";
-      sourceBtn.type = "button";
-      sourceBtn.setAttribute("aria-label", `Download Source`);
-      sourceBtn.innerHTML = `${DOWNLOAD_SOURCE_ICON_SVG}<strong>Download Source</strong>`;
-      sourceBtn.onclick = (ev) => {
-        ev.stopPropagation();
-        window.open(exam.source, "_blank");
-        modal.remove();
-      };
-      grid.appendChild(sourceBtn);
-    }
-
-    const closeBtn = document.createElement("button");
-    closeBtn.className = "close-modal";
-    closeBtn.type = "button";
-    closeBtn.textContent = "إلغاء";
-    closeBtn.setAttribute("aria-label", "إغلاق النافذة");
-    closeBtn.onclick = () => modal.remove();
-
-    modalCard.appendChild(h2);
-    modalCard.appendChild(p);
-    modalCard.appendChild(grid);
-    modalCard.appendChild(closeBtn);
-    modal.appendChild(modalCard);
-
-    requestAnimationFrame(() => {
-      document.body.appendChild(modal);
-      // Focus first button
-      const firstBtn = grid.querySelector("button");
-      if (firstBtn) firstBtn.focus();
+          if (!resolved.questionCount)
+            resolved.questionCount =
+              rawStats.questionCount ?? (questions || []).length;
+        }
+        return { config: resolved, questions };
+      },
     });
   };
 

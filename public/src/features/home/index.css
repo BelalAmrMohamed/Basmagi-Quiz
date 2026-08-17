@@ -659,8 +659,6 @@ body {
   }
 }
 
-
-
 /* ============================================================================
    BREADCRUMB MOBILE RESPONSIVE FIXES
    ============================================================================ */
@@ -1972,6 +1970,22 @@ Container
   z-index: 2000;
 }
 
+/* Phones show a fixed bottom-nav bar over the page. Reserve its height (plus
+   the home-indicator safe area) as bottom padding on the overlay so a
+   vertically-centered modal card is centered in the space ABOVE the nav,
+   not the full viewport — otherwise a tall card's bottom edge can land
+   underneath the nav bar. --bottom-nav-height falls back to a safe generic
+   estimate if the layout stylesheet hasn't set it. */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding-bottom: calc(
+      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
+    );
+    align-items: center;
+    box-sizing: border-box;
+  }
+}
+
 .modal-card {
   padding: 32px;
   border-radius: 20px;
@@ -1987,97 +2001,295 @@ Container
   direction: rtl;
 }
 
-.mode-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px;
-  margin: 24px 0;
+/* ============================================================================
+   LUCIDE ICON NORMALIZATION — ported from create-quiz.css. Was missing here
+   entirely, which is why inline <svg class="page-data-lucide"> icons (e.g.
+   the download modal's header icon and its close-X) rendered at their raw
+   intrinsic size instead of a normalized 1em — the giant unstyled icon and
+   missing circular close button on this page's download popup.
+   ============================================================================ */
+.page-data-lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  stroke-width: 2;
+  flex-shrink: 0;
+  display: inline-block;
 }
 
-.mode-btn,
-.export-card {
-  border: 2px solid var(--color-border);
-  border-radius: 12px;
-  padding: 16px;
+/* ============================================================================
+   MODAL HEADER / CLOSE BUTTON — also ported from create-quiz.css (missing
+   here for the same reason as above). Used by the download modal and any
+   other .modal-card that includes a .modal-header row.
+   ============================================================================ */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 2px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 1.2rem;
+  /* Tight line-height + flex keeps the h2's box hugging its icon+text
+     content, so .modal-header's align-items:center lines it up with the
+     36px close button instead of centering an inflated line-box (the same
+     fix applied on the create-quiz page's .modal-header h2). */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.2;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  color: var(--color-text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+/* ============================================================================
+   DOWNLOAD MODAL — ported from the create-quiz page's .dl-modal-card so both
+   pages render the exact same, better-styled download popup (the homepage
+   previously had its own, out-of-sync generic .mode-grid/.export-card rules
+   below — replaced here). See showDownloadModal() in
+   src/features/home/export-helpers.js for the shared markup this styles.
+   ============================================================================ */
+
+.dl-modal-card {
+  max-width: 520px;
+  width: 95vw;
+  padding: 0;
+  overflow: hidden;
+  text-align: initial;
+  /* Cap height and leave room so the card never runs under the bottom nav
+     on phones — the fixed bottom-nav bar sits above the modal's z-index,
+     so without this the last grid row can end up partly hidden beneath it.
+     env(safe-area-inset-bottom) accounts for home-indicator devices too. */
+  max-height: min(85vh, 640px);
+  display: flex;
+  flex-direction: column;
+}
+
+.dl-modal-card .modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.dl-subtitle {
+  padding: 0 24px;
+  margin: 12px 0 4px;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  flex-shrink: 0;
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px 24px 24px;
+  overflow-y: auto;
+}
+
+.export-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  background: var(--color-surface);
-  position: relative;
-  min-height: 110px;
-  justify-content: center;
-  box-sizing: border-box;
+  gap: 5px;
+  padding: 16px 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+  font-family: inherit;
 }
 
-.mode-btn:hover,
 .export-card:hover,
 .export-card:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-sm);
-  background: var(--color-primary-light);
   border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.export-card:active {
+  transform: translateY(0);
 }
 
 .export-card-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  gap: 5px;
   pointer-events: none;
 }
 
-.mode-btn .icon,
-.export-card .icon,
+.export-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
 .export-icon img,
 .export-icon svg {
-  font-size: 2rem;
-  width: 54px;
-  height: 54px;
+  display: block;
+  width: 48px;
+  height: 48px;
+  max-width: 48px;
+  max-height: 48px;
   object-fit: contain;
   border-radius: 8px;
 }
 
 .export-label {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.82rem;
   text-align: center;
+  color: var(--color-text-primary);
+}
+
+.export-extension {
+  font-size: 0.7rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+  margin-top: -3px;
 }
 
 .mode-copy-btn {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-secondary);
+  top: 6px;
+  inset-inline-end: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  z-index: 2;
+  width: 24px;
+  height: 24px;
   padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+  z-index: 2;
 }
 
 .mode-copy-btn:hover {
-  background: var(--color-primary);
-  color: #fff;
   border-color: var(--color-primary);
-  transform: scale(1.1);
+  color: var(--color-primary);
 }
 
 .mode-copy-btn.copied {
-  background: var(--color-success, #22c55e);
-  color: #fff;
-  border-color: var(--color-success, #22c55e);
+  border-color: var(--color-success, #16a34a);
+  color: var(--color-success, #16a34a);
+}
+
+.mode-btn {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+}
+
+.mode-btn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.mode-btn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .export-card,
+[data-theme="dark-slate"] .export-card,
+[data-theme="dark"] .mode-btn,
+[data-theme="dark-slate"] .mode-btn,
+[data-theme="dark"] .mode-copy-btn,
+[data-theme="dark-slate"] .mode-copy-btn {
+  background: var(--color-surface, var(--color-background));
+}
+
+[data-theme="dark"] .export-card:hover,
+[data-theme="dark-slate"] .export-card:hover,
+[data-theme="dark"] .mode-btn:hover,
+[data-theme="dark-slate"] .mode-btn:hover {
+  background: var(--color-primary-light);
+}
+
+/* Phones: this modal now shares the page with a fixed bottom-nav bar
+   (the create-quiz page's version doesn't need this since its layout puts
+   the nav differently) — pull the card height in further and pad its
+   scrollable grid so the last row clears the nav instead of sitting
+   underneath it. */
+@media (max-width: 640px) {
+  .dl-modal-card {
+    width: 94vw;
+    max-height: min(80vh, 80dvh);
+  }
+
+  .mode-grid {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dl-modal-card .modal-header {
+    padding: 16px 16px 12px;
+  }
+
+  .dl-subtitle {
+    padding: 0 16px;
+  }
 }
 
 /* Close modal button */
@@ -2347,20 +2559,6 @@ Container
 
   .header p {
     font-size: 0.92rem;
-  }
-
-  .mode-btn,
-  .export-card {
-    padding: 8px 4px;
-    min-height: 90px;
-  }
-
-  .mode-btn .icon,
-  .export-card .icon,
-  .export-icon img,
-  .export-icon svg {
-    max-width: 38px;
-    max-height: 38px;
   }
 
   #breadcrumb {
@@ -3236,10 +3434,13 @@ kbd {
   transform: translateY(20px);
   opacity: 0;
   animation: modalPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  max-height: 90vh;
+  /* Leave room above/below so the card never touches the viewport edges —
+     the overlay already centers it, this just caps its own height. */
+  max-height: min(90vh, 720px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 .inline-quiz-textarea {
@@ -3276,36 +3477,76 @@ kbd {
   flex: 1;
 }
 
-#inlineQuizCancel {
-  font-size: 0.85rem !important;
-  background: inherit !important;
-  color: var(--color-text-secondary);
-  text-decoration: underline;
-  padding: 8px !important;
-  border: none;
-  cursor: pointer;
-  font-weight: 500;
-  transition: color 0.2s;
-  align-self: center;
-}
-
-#inlineQuizCancel:hover {
-  background-color: transparent !important;
-  color: var(--color-text-primary) !important;
+/* Tablet / small-desktop: trim the outer padding a bit before the phone
+   breakpoint kicks in, so the modal doesn't feel oversized on narrow
+   windows that aren't quite "phone" width. */
+@media (max-width: 640px) {
+  .create-quiz-inline-modal {
+    padding: 20px;
+    max-height: 92vh;
+  }
 }
 
 @media (max-width: 480px) {
   .create-quiz-inline-modal {
-    padding: 16px;
+    padding: 14px 16px;
+    width: 94vw;
+    /* Cap relative to the *dynamic* viewport height where supported, so
+       mobile browser chrome (address bar) doesn't cause the modal to
+       overflow the visible area; falls back to 92vh otherwise. */
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 16px;
+    gap: 2px;
   }
+
+  .create-quiz-modal__title {
+    font-size: 1.15rem;
+    gap: 8px;
+  }
+
+  .create-quiz-modal__title-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .create-quiz-modal__form-group--content {
+    /* Let the textarea's own flex-shrink do the work instead of a fixed
+       margin eating into the shrinking height budget. */
+    margin-bottom: 14px;
+  }
+
   .inline-quiz-textarea {
-    height: 15vh !important;
-    min-height: 120px;
+    height: auto !important;
+    min-height: 90px;
+    flex: 1 1 auto;
   }
 
   .inline-quiz-btn {
     width: 100%;
     padding: 9px 15px;
+  }
+
+  .create-quiz-modal__main-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-height: 640px) and (max-width: 480px) {
+  /* Short phones in the wild (older/smaller devices, or a phone rotated
+     with a keyboard open) — shrink chrome further rather than clipping. */
+  .create-quiz-inline-modal {
+    padding: 10px 14px;
+  }
+  .create-quiz-modal__subtitle {
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+  }
+  .create-quiz-modal__form-group {
+    margin-bottom: 10px;
+  }
+  .inline-quiz-textarea {
+    min-height: 60px;
   }
 }
 
@@ -3314,8 +3555,39 @@ kbd {
    (inline-create-quiz flow triggered from the profile "New Quiz" action)
    ========================================================================== */
 
-.create-quiz-modal__title {
+.create-quiz-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
+}
+
+.create-quiz-modal__close-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.create-quiz-modal__close-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+
+.create-quiz-modal__title {
+  margin-bottom: 0;
   font-size: 1.5rem;
   display: flex;
   align-items: center;
@@ -3325,19 +3597,20 @@ kbd {
 }
 
 .create-quiz-modal__title-icon {
+  flex-shrink: 0;
   color: var(--color-primary);
 }
 
 .create-quiz-modal__copy-prompt-btn {
   position: relative;
-  margin-right: auto;
+  margin-bottom: 14px;
   font-size: 0.7rem;
   padding: 4px 10px;
   border-radius: 8px;
   border: 1.5px solid var(--color-border);
   background: var(--color-background-secondary);
   color: var(--color-text-secondary);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
@@ -3462,22 +3735,6 @@ kbd {
 .create-quiz-modal__btn--create:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(220, 38, 38, 0.5);
-}
-
-.create-quiz-modal__btn--cancel {
-  align-self: flex-start;
-  background: transparent;
-  border: none;
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 10px 12px;
-  transition: color 0.2s;
-}
-
-.create-quiz-modal__btn--cancel:hover {
-  color: var(--color-text-primary);
 }
 
 .create-quiz-modal__file-input {

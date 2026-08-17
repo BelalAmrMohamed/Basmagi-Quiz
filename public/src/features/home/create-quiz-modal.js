@@ -117,17 +117,22 @@ function openInlineCreateQuizModal() {
   }
 
   modalCard.innerHTML = `
-    <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
-      <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
-      إنشاء إمتحان جديد
-      <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
-        Prompt
-        <span id="createQuizPromptHintArrow" class="create-quiz-modal__prompt-hint-arrow" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
-        </span>
+    <div class="create-quiz-modal__header">
+      <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
+        إنشاء إمتحان جديد
+      </h2>
+      <button type="button" id="inlineQuizClose" class="create-quiz-modal__close-btn" aria-label="إغلاق">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
-    </h2>
+    </div>
+    <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+      Prompt
+      <span id="createQuizPromptHintArrow" class="create-quiz-modal__prompt-hint-arrow" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" width="35" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
+      </span>
+    </button>
     <p class="create-quiz-modal__subtitle">قم باستخدام ميزة الـ \`prompt\` لتحويل أي إمتحان تملكه إلى كود باستخدام الذكاء الإصطناعي</p>
     <div class="create-quiz-modal__form-group">
       <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الإمتحان</label>
@@ -145,7 +150,6 @@ function openInlineCreateQuizModal() {
         </button>
         <button type="button" id="inlineQuizCreate" class="inline-quiz-btn create-quiz-modal__btn create-quiz-modal__btn--create">إنشاء  ✨</button>
       </div>
-      <button type="button" id="inlineQuizCancel" class="create-quiz-modal__btn create-quiz-modal__btn--cancel">إلغاء</button>
     </div>
     <input type="file" id="inlineQuizFileInput" class="create-quiz-modal__file-input" accept=".json,application/json" />
   `;
@@ -193,7 +197,7 @@ function openInlineCreateQuizModal() {
 
   const titleInput = modalCard.querySelector("#inlineQuizTitle");
   const contentInput = modalCard.querySelector("#inlineQuizContent");
-  const cancelBtn = modalCard.querySelector("#inlineQuizCancel");
+  const closeBtn = modalCard.querySelector("#inlineQuizClose");
   const createBtn = modalCard.querySelector("#inlineQuizCreate");
   const importBtn = modalCard.querySelector("#inlineQuizImport");
   const fileInput = modalCard.querySelector("#inlineQuizFileInput");
@@ -222,14 +226,6 @@ function openInlineCreateQuizModal() {
     importBtn.style.borderColor = "var(--color-border)";
     importBtn.style.color = "var(--color-text-primary)";
   };
-  cancelBtn.onmouseover = () => {
-    cancelBtn.style.background = "var(--color-background-secondary)";
-    cancelBtn.style.color = "var(--color-text-primary)";
-  };
-  cancelBtn.onmouseout = () => {
-    cancelBtn.style.background = "transparent";
-    cancelBtn.style.color = "var(--color-text-secondary)";
-  };
   createBtn.onmouseover = () => {
     createBtn.style.transform = "translateY(-2px)";
     createBtn.style.boxShadow = "0 6px 20px rgba(220, 38, 38, 0.5)";
@@ -246,7 +242,7 @@ function openInlineCreateQuizModal() {
     fadeOutAndRemove(overlay, modalCard),
   );
 
-  cancelBtn.onclick = close;
+  closeBtn.onclick = close;
 
   importBtn.onclick = () => fileInput.click();
 

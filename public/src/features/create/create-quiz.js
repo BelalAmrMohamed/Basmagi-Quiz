@@ -8,27 +8,12 @@ import {
   _confirm,
 } from "../../components/notifications/notifications.js";
 
-import { exportToQuiz } from "../../features/export/export-to-quiz.js";
-import { exportToHtml } from "../../features/export/export-to-html.js";
-import { exportToPdf } from "../../features/export/export-to-pdf.js";
-import { exportToWord } from "../../features/export/export-to-word.js";
-import { exportToPptx } from "../../features/export/export-to-pptx.js";
-import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
-import { buildQuizText } from "../../features/export/export-to-text.js";
-import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
-import { buildQuizHtml } from "../../features/export/export-to-html.js";
-import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
 import {
   processQuizJsonFile,
   parseQuizJson,
   buildJsonQuizExport,
 } from "../../shared/quiz-json.js";
-import {
-  buildExportCard,
-  copyTextWithFallback,
-  triggerDownload,
-} from "../home/export-helpers.js";
-import { JSON_FILE_ICON_SVG, COPY_TEXT_ICON_SVG } from "../home/icons.js";
+import { showDownloadModal } from "../home/export-helpers.js";
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
@@ -109,12 +94,16 @@ const HEADING_LEVELS = [1, 2, 3, 4, 5];
 
 const MD_TOOLBAR_ICONS = {
   bold: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h9a4 4 0 0 1 0 8H6V4h8a4 4 0 0 1 0 8"/></svg>',
-  italic: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>',
-  heading: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 12h12"/></svg>',
+  italic:
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>',
+  heading:
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v16"/><path d="M18 4v16"/><path d="M6 12h12"/></svg>',
   code: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-  codeblock: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><polyline points="9 9 7 12 9 15"/><polyline points="15 9 17 12 15 15"/></svg>',
+  codeblock:
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><polyline points="9 9 7 12 9 15"/><polyline points="15 9 17 12 15 15"/></svg>',
   list: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
-  "list-ordered": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>',
+  "list-ordered":
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>',
 };
 
 function mdToolbarHtml(id) {
@@ -297,10 +286,7 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
     const newValue =
       value.slice(0, lineStart) + newLines + value.slice(end || lineStart);
     ta.value = newValue;
-    ta.setSelectionRange(
-      lineStart,
-      lineStart + newLines.length,
-    );
+    ta.setSelectionRange(lineStart, lineStart + newLines.length);
   };
 
   switch (cmd) {
@@ -842,8 +828,22 @@ function setupQuestionEventListeners(questionId) {
 // field. Non-admin users get the link input only (no upload).
 
 const MEDIA_MIME_MAP = {
-  image: new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]),
-  audio: new Set(["audio/mpeg", "audio/ogg", "audio/wav", "audio/webm", "audio/aac", "audio/x-m4a", "audio/mp4"]),
+  image: new Set([
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    "image/svg+xml",
+  ]),
+  audio: new Set([
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/webm",
+    "audio/aac",
+    "audio/x-m4a",
+    "audio/mp4",
+  ]),
   video: new Set(["video/mp4", "video/webm", "video/ogg"]),
 };
 const MEDIA_MAX_SIZE = {
@@ -852,11 +852,21 @@ const MEDIA_MAX_SIZE = {
   video: 50 * 1024 * 1024,
 };
 const MEDIA_EXT_MAP = {
-  "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif",
-  "image/webp": "webp", "image/svg+xml": "svg",
-  "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav",
-  "audio/webm": "webm", "audio/aac": "aac", "audio/x-m4a": "m4a", "audio/mp4": "m4a",
-  "video/mp4": "mp4", "video/webm": "webm", "video/ogg": "ogv",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/svg+xml": "svg",
+  "audio/mpeg": "mp3",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/webm": "webm",
+  "audio/aac": "aac",
+  "audio/x-m4a": "m4a",
+  "audio/mp4": "m4a",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/ogg": "ogv",
 };
 
 /** Detect media type ("image"|"audio"|"video"|null) from a File's MIME type. */
@@ -881,7 +891,9 @@ function detectMediaTypeFromUrl(url) {
 
 /** Which media field(s) a question currently has content in. */
 function getActiveMediaFields(question) {
-  return ["image", "audio", "video"].filter((t) => question[t] && question[t].trim());
+  return ["image", "audio", "video"].filter(
+    (t) => question[t] && question[t].trim(),
+  );
 }
 
 const MEDIA_TYPE_LABELS = { image: "صورة", audio: "ملف صوتي", video: "فيديو" };
@@ -1060,14 +1072,24 @@ async function uploadCombinedMediaFile(questionId, file) {
     return;
   }
 
-  const progressEl  = document.getElementById(`media-upload-progress-${questionId}`);
-  const progressBar = document.getElementById(`media-upload-progress-bar-${questionId}`);
-  const progressTxt = document.getElementById(`media-upload-progress-text-${questionId}`);
-  const zone        = document.getElementById(`media-dropzone-${questionId}`);
+  const progressEl = document.getElementById(
+    `media-upload-progress-${questionId}`,
+  );
+  const progressBar = document.getElementById(
+    `media-upload-progress-bar-${questionId}`,
+  );
+  const progressTxt = document.getElementById(
+    `media-upload-progress-text-${questionId}`,
+  );
+  const zone = document.getElementById(`media-dropzone-${questionId}`);
 
   if (file.size > MEDIA_MAX_SIZE[mediaType]) {
     const maxMb = MEDIA_MAX_SIZE[mediaType] / (1024 * 1024);
-    showNotification("الملف كبير جدًا", `الحد الأقصى لـ ${MEDIA_TYPE_LABELS[mediaType]} هو ${maxMb} ميجابايت.`, "error");
+    showNotification(
+      "الملف كبير جدًا",
+      `الحد الأقصى لـ ${MEDIA_TYPE_LABELS[mediaType]} هو ${maxMb} ميجابايت.`,
+      "error",
+    );
     return;
   }
   if (file.size === 0) {
@@ -1082,7 +1104,10 @@ async function uploadCombinedMediaFile(questionId, file) {
 
   try {
     const client = await ensureSharedSupabaseClient();
-    if (!client) throw new Error("تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.");
+    if (!client)
+      throw new Error(
+        "تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.",
+      );
 
     const { data: sessionData } = await client.auth.getSession();
     if (!sessionData?.session) {
@@ -1122,15 +1147,25 @@ async function uploadCombinedMediaFile(questionId, file) {
     if (progressBar) progressBar.style.width = "100%";
     if (progressTxt) progressTxt.textContent = "تم الرفع بنجاح ✓";
     setTimeout(() => {
-      const stillProgressEl = document.getElementById(`media-upload-progress-${questionId}`);
+      const stillProgressEl = document.getElementById(
+        `media-upload-progress-${questionId}`,
+      );
       if (stillProgressEl) stillProgressEl.style.display = "none";
     }, 2000);
 
-    showNotification("تم الرفع", `تم رفع ${MEDIA_TYPE_LABELS[mediaType]} بنجاح وحفظ الرابط.`, "success");
+    showNotification(
+      "تم الرفع",
+      `تم رفع ${MEDIA_TYPE_LABELS[mediaType]} بنجاح وحفظ الرابط.`,
+      "success",
+    );
   } catch (err) {
     console.error("[uploadCombinedMediaFile]", err);
     if (progressEl) progressEl.style.display = "none";
-    showNotification("خطأ في الرفع", err.message || "حدث خطأ أثناء رفع الملف.", "error");
+    showNotification(
+      "خطأ في الرفع",
+      err.message || "حدث خطأ أثناء رفع الملف.",
+      "error",
+    );
   } finally {
     const stillZone = document.getElementById(`media-dropzone-${questionId}`);
     if (stillZone) stillZone.style.opacity = "";
@@ -1730,11 +1765,10 @@ function validateQuiz() {
         errors.push(`السؤال ${questionNum}: جميع الخيارات يجب أن تحتوي على نص`);
       }
 
-      if (
-        !Array.isArray(q.correct) ||
-        q.correct.length === 0
-      ) {
-        errors.push(`السؤال ${questionNum}: يجب تحديد إجابة صحيحة واحدة على الأقل`);
+      if (!Array.isArray(q.correct) || q.correct.length === 0) {
+        errors.push(
+          `السؤال ${questionNum}: يجب تحديد إجابة صحيحة واحدة على الأقل`,
+        );
       }
     }
 
@@ -2365,138 +2399,16 @@ window.exportQuiz = function () {
     .replace(/_+/g, "_")
     .replace(/^_|_$/g, "");
 
-  const doExport = async (format) => {
-    showLoading("جاري التصدير...");
-    try {
-      switch (format) {
-        case "quiz":
-          await exportToQuiz(config, exportQuestions);
-          break;
-        case "html":
-          await exportToHtml(config, exportQuestions);
-          break;
-        case "pdf":
-          await exportToPdf(config, exportQuestions);
-          break;
-        case "docx":
-          await exportToWord(config, exportQuestions);
-          break;
-        case "pptx":
-          await exportToPptx(config, exportQuestions);
-          break;
-        case "md":
-          exportToMarkdown(config, exportQuestions);
-          break;
-        case "text": {
-          const text = buildQuizText(config, exportQuestions);
-          const blob = new Blob([text], { type: "text/plain" });
-          triggerDownload(blob, `${safeFilename || "quiz"}.txt`);
-          break;
-        }
-        case "json": {
-          const fileContent = await buildJsonPayloadString();
-          const blob = new Blob([fileContent], {
-            type: "application/json",
-          });
-          triggerDownload(blob, `${safeFilename || "quiz"}.json`);
-          break;
-        }
-      }
-      hideLoading();
-    } catch (err) {
-      hideLoading();
-      console.error("Export error:", err);
-      showNotification("خطأ", "حدث خطأ أثناء التصدير", "error");
-    }
-  };
-
-  // Build popup modal
-  const modal = document.createElement("div");
-  modal.className = "modal-overlay download-modal-overlay";
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.setAttribute("aria-labelledby", "createQuizDownloadTitle");
-
-  const modalCard = document.createElement("div");
-  modalCard.className = "modal-card dl-modal-card";
-
-  const header = document.createElement("div");
-  header.className = "modal-header";
-  header.innerHTML = `
-    <h2 id="createQuizDownloadTitle"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg> تحميل الإمتحان</h2>
-    <button class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-  `;
-
-  const subtitle = document.createElement("p");
-  subtitle.className = "dl-subtitle";
-  subtitle.textContent = "اختر صيغة التحميل";
-
-  const grid = document.createElement("div");
-  grid.className = "mode-grid";
-  grid.setAttribute("role", "group");
-  grid.setAttribute("aria-label", "خيارات التنزيل");
-
-  const allExportOptions = [
-    { format: "quiz", label: "Quiz (.html)", iconUrl: "./favicon.png", canCopy: true },
-    { format: "html", label: "HTML (.html)", iconUrl: "./assets/images/HTML_Icon.png", canCopy: true },
-    { format: "md", label: "Markdown (.md)", iconUrl: "./assets/images/mardownIcon.png", canCopy: true },
-    { format: "text", label: "Text (.txt)", iconSvg: COPY_TEXT_ICON_SVG, canCopy: true },
-    { format: "json", label: "JSON (.json)", iconSvg: JSON_FILE_ICON_SVG, canCopy: true },
-    { format: "pdf", label: "PDF (.pdf)", iconUrl: "./assets/images/PDF_Icon.png", canCopy: false },
-    { format: "pptx", label: "PowerPoint (.pptx)", iconUrl: "./assets/images/pptx_icon.png", canCopy: false },
-    { format: "docx", label: "Word (.docx)", iconUrl: "./assets/images/word_icon.png", canCopy: false },
-  ];
-
-  allExportOptions.forEach((opt) => {
-    const iconHtml = opt.iconSvg
-      ? opt.iconSvg
-      : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
-    const card = buildExportCard({
-      format: opt.format,
-      label: opt.label,
-      icon: iconHtml,
-      canCopy: opt.canCopy,
-      onDownload: async () => {
-        await doExport(opt.format);
-        modal.remove();
-      },
-      onCopy: async () => {
-        if (opt.format === "quiz") return await buildStandaloneQuizHtml(config, exportQuestions);
-        if (opt.format === "html") return await buildQuizHtml(config, exportQuestions);
-        if (opt.format === "md") return buildQuizMarkdown(config, exportQuestions);
-        if (opt.format === "text") return buildQuizText(config, exportQuestions);
-        if (opt.format === "json") return await buildJsonPayloadString();
-      },
-    });
-    grid.appendChild(card);
+  // Shared modal (also used on the homepage's "My Quizzes" download popup —
+  // see showDownloadModal() in ../home/export-helpers.js). buildJsonPayloadString
+  // is passed through so the JSON export/copy still carries the current
+  // password/view/mode form state.
+  showDownloadModal({
+    config,
+    questions: exportQuestions,
+    buildJsonPayloadString,
+    filenameBase: safeFilename || "quiz",
   });
-
-  // Show source button if the quiz has a source URL
-  if (quizData.source?.trim()) {
-    const sourceBtn = document.createElement("button");
-    sourceBtn.className = "mode-btn";
-    sourceBtn.type = "button";
-    sourceBtn.setAttribute("aria-label", "Download Source");
-    sourceBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg><strong>Download Source</strong>`;
-    sourceBtn.onclick = (ev) => {
-      ev.stopPropagation();
-      window.open(quizData.source, "_blank");
-      modal.remove();
-    };
-    grid.appendChild(sourceBtn);
-  }
-
-  modalCard.appendChild(header);
-  modalCard.appendChild(subtitle);
-  modalCard.appendChild(grid);
-  modal.appendChild(modalCard);
-
-  modal.querySelector(".dl-close").onclick = () => modal.remove();
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
-  });
-
-  document.body.appendChild(modal);
 };
 
 // ============================================================================

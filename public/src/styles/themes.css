@@ -389,27 +389,30 @@ html[data-animations="enabled"][data-theme="dark"] {
 }
 
 /* Scrollbar */
-html {
-  scroll-behavior: smooth;
+* {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-html::-webkit-scrollbar {
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
   width: 8px;
 }
 
-html::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: var(--scrollbar-track);
 }
 
-html::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
   border-radius: 10px;
 }
 
 /* Accessibility */
-*:focus-visible {
+:focus-visible {
   outline: 3px solid var(--color-focus-ring, var(--color-primary));
   outline-offset: 3px;
   border-radius: 8px;
