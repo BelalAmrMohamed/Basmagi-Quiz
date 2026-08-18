@@ -353,7 +353,8 @@ body.sidebar-expanded {
 .sidebar:not(.expanded) .theme-section-header,
 .sidebar:not(.expanded) .theme-selector-grid,
 .sidebar:not(.expanded) .menu-divider.sidebar-expanded-only,
-.sidebar:not(.expanded) .toggle-switch {
+.sidebar:not(.expanded) .toggle-switch,
+.sidebar:not(.expanded) .theme-controls-toggle {
   display: none;
 }
 

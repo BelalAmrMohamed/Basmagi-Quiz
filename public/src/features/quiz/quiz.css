@@ -519,11 +519,6 @@ body.sidebar-expanded {
   margin-block: 0;
 }
 
-/* Bug Fix — Unstyled gray button: this rule was missing the same button
-   normalization/interaction styles its sibling .quiz-nav-header has
-   (background, border, font-family, cursor, border-radius, plus :hover
-   and :focus-visible states). Without them the browser's default <button>
-   UA styles (gray background, inset border) show through instead. */
 .theme-section-header {
   display: flex;
   align-items: center;
@@ -554,11 +549,6 @@ body.sidebar-expanded {
   outline-offset: -2px;
 }
 
-/* Bug Fix — Messed-up collapsed-rail icon styling: this rule was missing
-   `width: 100%`, unlike its sibling `.sidebar:not(.expanded) .quiz-nav-header`
-   below, which has it. Without a full-width box to center within, the
-   button just shrunk to hug its 18px icon and sat flush to one side of the
-   64px rail instead of centered like every other collapsed-rail icon. */
 .sidebar:not(.expanded) .theme-section-header {
   justify-content: center;
   align-items: center;
@@ -572,7 +562,10 @@ body.sidebar-expanded {
 .sidebar:not(.expanded) .animation-toggle-label,
 .sidebar:not(.expanded) .theme-selector-grid,
 .sidebar:not(.expanded) .menu-divider.sidebar-expanded-only,
-.sidebar:not(.expanded) .toggle-switch {
+.sidebar:not(.expanded) .toggle-switch,
+.sidebar:not(.expanded) .theme-controls-toggle,
+.sidebar:not(.expanded) .quiz-nav-toggle,
+.sidebar:not(.expanded) .view-toggle-btn {
   display: none;
 }
 
@@ -605,30 +598,11 @@ body.sidebar-expanded {
   display: flex;
 }
 
-/* ── Retractable / Accordion Section (question navigation) ──────────────────
-   Collapsible so the question-navigation list/grid can be tucked away to
-   save vertical space, mirroring the .theme-controls-section accordion.
-   Only meaningful in the expanded sidebar / mobile sheet — the collapsed
-   64px rail hides this whole section via the existing
-   .sidebar:not(.expanded) rules and shows its own single icon-only entry
-   point instead (.sidebar-collapsed-only), which just expands the sidebar
-   on click. */
+/* ── Retractable / Accordion Section (question navigation) ────────────────── */
 .sidebar:not(.expanded) .quiz-nav-section {
   margin-bottom: 0;
 }
 
-/* Bug 3 Fix — Duplicate icon: this rule used to declare `display: flex`
-   directly on `.quiz-nav-header`, which sits later in the stylesheet than
-   `.sidebar-collapsed-only { display: none; }` (see the "Items visible only
-   when collapsed" block above). Both selectors have equal specificity
-   (one class), so the later rule in source order won — this one — and it
-   permanently forced the collapsed-rail icon to render even while the
-   sidebar was expanded, showing up as a second icon underneath the
-   `.quiz-nav-toggle` row. `.theme-section-header` (its sibling/reference
-   equivalent) never has this problem because it has no bare `display` of
-   its own; visibility is controlled entirely by `.sidebar-collapsed-only` /
-   `.sidebar:not(.expanded) .sidebar-collapsed-only`. Removing `display`
-   here restores that same single source of truth. */
 .quiz-nav-header {
   align-items: center;
   justify-content: center;
@@ -724,25 +698,7 @@ body.sidebar-expanded {
 
 /* The panel is #menuNavContainer itself — its innerHTML is fully rebuilt by
    quiz.js on every render, but this class (and the "collapsed" state below)
-   live on the element itself, so they persist across re-renders.
-
-   Bug Fix — Accordion vs. sidebar-rail state conflict: this element used to
-   also carry `sidebar-expanded-only`, which sets its own max-height/opacity
-   based purely on whether the *sidebar* is expanded. That's a second,
-   independent state system fighting over the exact same CSS properties as
-   the accordion's own `.quiz-nav-panel`/`.collapsed` classes, on the exact
-   same element. Because both rule sets had matching specificity, whichever
-   happened to come later in the stylesheet (or have a stray `!important`)
-   silently won — e.g. `.quiz-nav-panel`'s base `max-height: 2000px` was
-   overriding `.sidebar-expanded-only`'s `max-height: 0`, so the panel could
-   be technically "expanded" and full-height even while the sidebar itself
-   was collapsed. The reference `.theme-controls-panel` avoids this
-   entirely by never mixing the two systems on one element — its visibility
-   is owned solely by its own `.collapsed` class. `#menuNavContainer` now
-   follows the same pattern: `sidebar-expanded-only` has been removed from
-   its class list in quiz.html, and the two rules directly below explicitly
-   and independently cover "sidebar is collapsed" and "accordion is
-   collapsed" without contending over the same declarations. */
+   live on the element itself, so they persist across re-renders. */
 .quiz-nav-panel {
   overflow: hidden;
   max-height: 2000px;
