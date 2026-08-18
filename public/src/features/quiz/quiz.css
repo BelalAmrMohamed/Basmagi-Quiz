@@ -260,11 +260,20 @@ body.sidebar-expanded {
 /* ── Nav Scroll Container ────────────────────────────────────────────────── */
 .sidebar nav {
   flex: 1;
-  /*
-   * overflow-x: clip (not hidden) so children's transforms (e.g.
-   * theme-selector-btn:hover translateY(-2px)) aren't clipped by a BFC.
-   */
   overflow-y: auto;
+  /*
+   * overflow-x: clip (not hidden) — critical distinction:
+   *   hidden → creates a Block Formatting Context (BFC) that traps children's
+   *            translateY transforms inside the element's paint bounds, causing
+   *            theme-selector-btn:active translateY(-2px) to be clipped at top.
+   *   clip   → clips visually without creating a BFC, so children's transforms
+   *            can paint outside the block edge. Supported in all modern browsers.
+   *
+   * Note this also clips a plain [data-tooltip]::after bubble positioned
+   * outside nav's edge — that's why tooltips use a JS-positioned
+   * `.sidebar-hover-tooltip` (position: fixed) instead; see its rule below
+   * and setupHoverTooltips() in quiz.js.
+   */
   overflow-x: clip;
   padding: 64px 8px 24px; /* .sidebar-logo is in-flow above nav, so no extra top clearance needed */
   display: flex;
@@ -467,14 +476,8 @@ body.sidebar-expanded {
 }
 
 /* ── Tooltips (collapsed state, desktop only) ────────────────────────────── */
-/* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon */
-.sidebar:not(.expanded) [data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  right: calc(100% + 10px);
-  left: auto;
-  top: 50%;
-  transform: translateY(-50%);
+.sidebar-hover-tooltip {
+  position: fixed;
   background: var(--color-surface, #fff);
   color: var(--color-text);
   border: 1px solid var(--color-border);
@@ -491,7 +494,7 @@ body.sidebar-expanded {
   direction: rtl;
 }
 
-.sidebar:not(.expanded) [data-tooltip]:hover::after {
+.sidebar-hover-tooltip.visible {
   opacity: 1;
 }
 
@@ -574,6 +577,7 @@ body.sidebar-expanded {
   max-height: 0;
   overflow: hidden;
   pointer-events: none;
+  /* margin: 0; */
   transition:
     opacity 0s,
     max-height 0s;
@@ -825,11 +829,6 @@ body.sidebar-expanded {
   gap: 8px;
   margin-block: 4px 6px;
   margin-inline: 4px;
-  /*
-   * padding-top gives vertical room for the translateY(-2px) lift on hover/active.
-   * Since .sidebar nav now uses overflow-x: clip (not hidden), the nav no longer
-   * creates a BFC that would trap this upward movement.
-   */
   padding-top: 4px;
   overflow: visible;
 }
@@ -1275,8 +1274,8 @@ body.sidebar-expanded {
   }
 
   /* Suppress desktop tooltips on mobile */
-  .sidebar:not(.expanded) [data-tooltip]::after {
-    display: none;
+  .sidebar-hover-tooltip {
+    display: none !important;
   }
 }
 

@@ -2913,6 +2913,104 @@ init();
     hamburgerBtn.focus();
   }
 
+  // ── Collapsed-rail hover tooltips ────────────────────────────────────────
+  // .sidebar nav uses `overflow-x: clip` (see that rule's comment in
+  // quiz.css), which clips anything painted past nav's edges — including a
+  // plain [data-tooltip]::after positioned outside the icon. That's why
+  // labels used to only work for the two .sidebar-pinned-actions buttons,
+  // the only .menu-items that live OUTSIDE <nav>. Fixed the same way the
+  // reference side-menu.js solves this exact problem: one shared element,
+  // `position: fixed`, positioned from the hovered/focused icon's own
+  // getBoundingClientRect() instead of relying on CSS containment.
+  function setupHoverTooltips() {
+    let tooltipEl = document.querySelector(".sidebar-hover-tooltip");
+    if (!tooltipEl) {
+      tooltipEl = document.createElement("div");
+      tooltipEl.className = "sidebar-hover-tooltip";
+      tooltipEl.setAttribute("role", "tooltip");
+      tooltipEl.setAttribute("aria-hidden", "true");
+      document.body.appendChild(tooltipEl);
+    }
+
+    let activeTarget = null;
+
+    function positionTooltip(target) {
+      const rect = target.getBoundingClientRect();
+      const GAP = 10;
+      tooltipEl.style.top = `${rect.top + rect.height / 2}px`;
+      // RTL sidebar sits on the right edge — tooltip opens to the left of
+      // the icon, toward the content area.
+      tooltipEl.style.right = `${window.innerWidth - rect.left + GAP}px`;
+      tooltipEl.style.left = "auto";
+      tooltipEl.style.transform = "translateY(-50%)";
+    }
+
+    function showTooltip(target) {
+      // Only relevant for the collapsed desktop rail — expanded sidebar
+      // already shows full text labels inline, and mobile suppresses this
+      // element entirely via CSS.
+      if (isMobile() || sidebar.classList.contains("expanded")) return;
+      const label = target.getAttribute("data-tooltip");
+      if (!label) return;
+
+      activeTarget = target;
+      tooltipEl.textContent = label;
+      positionTooltip(target);
+      tooltipEl.classList.add("visible");
+    }
+
+    function hideTooltip() {
+      activeTarget = null;
+      tooltipEl.classList.remove("visible");
+    }
+
+    // Delegate from the sidebar itself so this covers every current and
+    // future [data-tooltip] element (.menu-item links/buttons, the
+    // collapsed-rail .theme-section-header, pinned actions) uniformly,
+    // instead of re-querying and re-binding after every DOM change.
+    sidebar.addEventListener("mouseover", (e) => {
+      const target = e.target.closest("[data-tooltip]");
+      if (target && sidebar.contains(target)) showTooltip(target);
+    });
+
+    sidebar.addEventListener("mouseout", (e) => {
+      const target = e.target.closest("[data-tooltip]");
+      if (target && target === activeTarget) hideTooltip();
+    });
+
+    sidebar.addEventListener(
+      "focusin",
+      (e) => {
+        const target = e.target.closest("[data-tooltip]");
+        if (target) showTooltip(target);
+      },
+      true,
+    );
+
+    sidebar.addEventListener(
+      "focusout",
+      (e) => {
+        const target = e.target.closest("[data-tooltip]");
+        if (target && target === activeTarget) hideTooltip();
+      },
+      true,
+    );
+
+    // Keep it glued to its target through scroll/resize/expand-collapse
+    // instead of leaving a stale tooltip floating in place.
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (activeTarget) positionTooltip(activeTarget);
+      },
+      true,
+    );
+    window.addEventListener("resize", hideTooltip);
+    sidebar.addEventListener("transitionend", (e) => {
+      if (e.propertyName === "width") hideTooltip();
+    });
+  }
+
   // ── Initialise ─────────────────────────────────────────────────────────────
 
   function init() {
@@ -2946,6 +3044,9 @@ init();
         document.documentElement.getAttribute("data-animations") !== "disabled";
       animationToggle.checked = animsEnabled;
     }
+
+    // Collapsed-rail hover tooltips (desktop only; no-ops safely on mobile)
+    setupHoverTooltips();
   }
 
   // ── Desktop Toggle ──────────────────────────────────────────────────────────
