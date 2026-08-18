@@ -348,7 +348,6 @@ body.sidebar-expanded {
 /**/
 .sidebar:not(.expanded) .menu-section-title,
 .sidebar:not(.expanded) .animation-toggle-container,
-.sidebar:not(.expanded) .animation-section-header,
 .sidebar:not(.expanded) .animation-toggle-label,
 .sidebar:not(.expanded) .theme-section-header,
 .sidebar:not(.expanded) .theme-selector-grid,
@@ -798,8 +797,7 @@ body.sidebar-expanded {
 }
 
 /* ── Section header labels: must NOT stretch (flex:1 is for menu-items only) */
-.theme-section-header .menu-label,
-.animation-section-header .menu-label {
+.theme-section-header .menu-label {
   flex: none;
 }
 
@@ -812,10 +810,6 @@ body.sidebar-expanded {
 .sidebar:not(.expanded) .theme-controls-section {
   margin-top: 0;
   margin-bottom: 0;
-}
-
-.sidebar:not(.expanded) .animation-section-header {
-  margin-block: 0;
 }
 
 .theme-section-header {
@@ -1218,21 +1212,6 @@ body.sidebar-expanded {
 }
 
 /* ── Animation Toggle ────────────────────────────────────────────────────── */
-.animation-section-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: var(--color-text-tertiary, #888);
-  margin-block: 10px 8px; /* logical: replaces margin: 10px 4px 8px */
-  margin-inline: 4px; /* logical: left/right */
-  padding: 0 4px;
-}
-
 .animation-toggle-container {
   display: flex;
   align-items: center;
@@ -1483,8 +1462,7 @@ body.sidebar-expanded {
     transition: none !important;
   }
 
-  .theme-section-header,
-  .animation-section-header {
+  .theme-section-header {
     justify-content: center !important;
     padding: 8px 14px !important;
   }
