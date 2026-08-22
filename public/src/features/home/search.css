@@ -560,20 +560,18 @@
    =========================== */
 
 /* Respect reduced motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .search-container,
-  .search-filters,
-  .search-results-summary,
-  .search-bar,
-  .search-close,
-  .search-filters-toggle,
-  .filter-chip,
-  .filter-tag,
-  .btn-apply-filters,
-  .btn-reset-filters {
-    animation: none;
-    transition: none;
-  }
+html[data-motion="reduced"] .search-container,
+html[data-motion="reduced"] .search-filters,
+html[data-motion="reduced"] .search-results-summary,
+html[data-motion="reduced"] .search-bar,
+html[data-motion="reduced"] .search-close,
+html[data-motion="reduced"] .search-filters-toggle,
+html[data-motion="reduced"] .filter-chip,
+html[data-motion="reduced"] .filter-tag,
+html[data-motion="reduced"] .btn-apply-filters,
+html[data-motion="reduced"] .btn-reset-filters {
+  animation: none;
+  transition: none;
 }
 
 /* High contrast mode support */

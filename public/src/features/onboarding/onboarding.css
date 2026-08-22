@@ -198,16 +198,14 @@ body {
 }
 
 /* Honour user's motion preference */
-@media (prefers-reduced-motion: reduce) {
-  .step-panel {
-    animation: none;
-  }
-  * {
-    transition-duration: 0.01ms !important;
-  }
-  .welcome-icon {
-    animation: none;
-  }
+html[data-motion="reduced"] .step-panel {
+  animation: none;
+}
+html[data-motion="reduced"] * {
+  transition-duration: 0.01ms !important;
+}
+html[data-motion="reduced"] .welcome-icon {
+  animation: none;
 }
 
 .step-title {

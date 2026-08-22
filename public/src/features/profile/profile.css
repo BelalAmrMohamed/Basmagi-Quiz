@@ -578,13 +578,11 @@ body {
   filter: drop-shadow(0 0 6px currentColor);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .level-gauge-fill {
-    transition: none;
-  }
-  .level-gauge-leveled-up {
-    animation: none;
-  }
+html[data-motion="reduced"] .level-gauge-fill {
+  transition: none;
+}
+html[data-motion="reduced"] .level-gauge-leveled-up {
+  animation: none;
 }
 
 .level-gauge-info {
@@ -1555,7 +1553,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   .heatmap-cell {
     animation: none;
     opacity: 1;
@@ -1616,7 +1614,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   .heatmap-cell-disabled {
     animation: none;
     opacity: 0.35;

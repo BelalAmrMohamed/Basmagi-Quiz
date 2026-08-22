@@ -788,12 +788,10 @@ export async function buildStandaloneQuizHtml(config, questions) {
     to { opacity: 1; transform: translateY(0); }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .quiz-info-dialog-header h2 {
-      animation: none;
-      opacity: 1;
-      transform: none;
-    }
+  html[data-motion="reduced"] .quiz-info-dialog-header h2 {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 
   [data-theme="dark"] .quiz-info-dialog-header h2 {
@@ -1838,12 +1836,12 @@ export async function buildStandaloneQuizHtml(config, questions) {
   }
 
   /* ── Reduced Motion ──────────────────────────────────────────── */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
+  html[data-motion="reduced"] *,
+  html[data-motion="reduced"] *::before,
+  html[data-motion="reduced"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 
   /* ── Accessibility ───────────────────────────────────────────── */

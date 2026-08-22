@@ -389,8 +389,10 @@ li strong {
 /* ─────────────────────────────────────────
     REDUCED MOTION
 ───────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { transition: none !important; }
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+    transition: none !important;
 }
 
 /* ─────────────────────────────────────────

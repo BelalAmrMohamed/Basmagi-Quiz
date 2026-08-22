@@ -304,8 +304,19 @@
     }
 
     // Sync high performance toggle state
-    if (highPerformanceToggle && typeof themeManager !== "undefined") {
-      highPerformanceToggle.checked = themeManager.getHighPerformanceEnabled();
+    if (highPerformanceToggle) {
+      if (typeof themeManager !== "undefined") {
+        highPerformanceToggle.checked =
+          themeManager.getHighPerformanceEnabled();
+      }
+      highPerformanceToggle.disabled = false;
+      const highPerformanceContainer = highPerformanceToggle.closest(
+        ".high-performance-toggle-container",
+      );
+      if (highPerformanceContainer) {
+        highPerformanceContainer.classList.remove("is-disabled");
+        highPerformanceContainer.removeAttribute("aria-disabled");
+      }
     }
 
     // Sync bottom nav active tab (mobile)

@@ -1258,7 +1258,7 @@ body.sidebar-expanded {
 }
 
 /* ── Reduced Motion ──────────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   .sidebar,
   .hamburger-icon .bar,
   .toggle-switch,

@@ -14,12 +14,21 @@ export const themeManager = {
   init() {
     // Load saved preferences or use defaults
     const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
-    const savedAnimations = localStorage.getItem(ANIMATIONS_KEY) !== "disabled";
-    const savedHighPerformance =
-      localStorage.getItem(HIGH_PERFORMANCE_KEY) === "enabled";
+    const reducedMotionPref = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const hasSavedAnimations = localStorage.getItem(ANIMATIONS_KEY) !== null;
+    const hasSavedHighPerformance =
+      localStorage.getItem(HIGH_PERFORMANCE_KEY) !== null;
+    const savedAnimations = hasSavedAnimations
+      ? localStorage.getItem(ANIMATIONS_KEY) !== "disabled"
+      : !reducedMotionPref;
+    const savedHighPerformance = hasSavedHighPerformance
+      ? localStorage.getItem(HIGH_PERFORMANCE_KEY) === "enabled"
+      : reducedMotionPref;
 
     this.applyTheme(savedTheme);
-    this.applyAnimations(savedAnimations);
+    this.applyAnimations(savedAnimations, { persist: hasSavedAnimations });
     this.applyHighPerformance(savedHighPerformance);
 
     // Keep in sync if the OS-level setting changes while the page is open.
@@ -61,49 +70,20 @@ export const themeManager = {
     this.updateThemeUI(theme);
   },
 
-  applyAnimations(enabled) {
-    // 1. Manage the physical CSS file in the <head>
-    const ANIM_ID = "dynamic-animations-stylesheet";
-    let link = document.getElementById(ANIM_ID);
+  applyAnimations(enabled, { persist = true } = {}) {
+    const flowField = document.getElementById("flow-field-bg");
+    if (flowField) flowField.style.display = enabled ? "" : "none";
 
-    if (enabled) {
-      // Show canvas if it exists
-      const canvas = document.getElementById("canvas-bg");
-      if (canvas) {
-        canvas.style.display = "block";
-      }
-
-      if (!link) {
-        link = document.createElement("link");
-        link.id = ANIM_ID;
-        link.rel = "stylesheet";
-        link.href = "src/styles/animations.css";
-        document.head.appendChild(link);
-      }
-    } else {
-      // FIXED: Hide canvas and restore body background
-      const canvas = document.getElementById("canvas-bg");
-      if (canvas) {
-        canvas.style.display = "none";
-      }
-
-      if (link) {
-        link.remove();
-      }
-
-      // FIXED: Restore body background immediately
-      this.restoreBodyBackground();
-    }
-
-    // 2. Existing logic for attributes and storage
     document.documentElement.setAttribute(
       "data-animations",
       enabled ? "enabled" : "disabled",
     );
-    localStorage.setItem(ANIMATIONS_KEY, enabled ? "enabled" : "disabled");
+    if (persist) {
+      localStorage.setItem(ANIMATIONS_KEY, enabled ? "enabled" : "disabled");
+    }
 
-    // 3. Update UI
     this.updateAnimationsUI(enabled);
+    if (!enabled) this.restoreBodyBackground();
   },
 
   /**
@@ -117,31 +97,14 @@ export const themeManager = {
    * the user had the background animation toggle set to before.
    */
   applyHighPerformance(enabled) {
-    const reducedMotionPref = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    const shouldReduceMotion = enabled || reducedMotionPref;
-
     document.documentElement.setAttribute(
       "data-motion",
-      shouldReduceMotion ? "reduced" : "normal",
+      enabled ? "reduced" : "normal",
     );
     localStorage.setItem(
       HIGH_PERFORMANCE_KEY,
       enabled ? "enabled" : "disabled",
     );
-
-    if (enabled) {
-      // Force the background animation off too — remember the user's prior
-      // background-animation preference isn't touched in storage here,
-      // applyAnimations(false) just doesn't persist under HIGH_PERFORMANCE_KEY.
-      this.applyAnimations(false);
-    } else {
-      // Restore whatever the user's own background-animation preference was.
-      const savedAnimations =
-        localStorage.getItem(ANIMATIONS_KEY) !== "disabled";
-      this.applyAnimations(savedAnimations);
-    }
 
     this.updateHighPerformanceUI(enabled);
   },
@@ -173,21 +136,19 @@ export const themeManager = {
       });
   },
 
-  /**
-   * The High Performance toggle is redundant (and hidden via CSS media
-   * query) when the OS-level prefers-reduced-motion is already on, since
-   * every animation is already off in that case. This JS-side mirror of
-   * that CSS rule covers browsers/contexts where an inline style or a
-   * later stylesheet could otherwise override the CSS `display: none`.
-   */
+  /** Keep the control visible and actionable for every motion preference. */
   updateHighPerformanceToggleVisibility() {
-    const reducedMotionPref = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
     document
       .querySelectorAll(".high-performance-toggle-container")
       .forEach((el) => {
-        el.style.display = reducedMotionPref ? "none" : "";
+        el.style.display = "";
+        el.classList.remove("is-disabled");
+        el.removeAttribute("aria-disabled");
+        el.querySelectorAll(
+          'input[type="checkbox"][data-control="high-performance"]',
+        ).forEach((checkbox) => {
+          checkbox.disabled = false;
+        });
       });
   },
 

@@ -1676,7 +1676,7 @@ dialog.quiz-info-dialog {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   .quiz-info-dialog-header h2 {
     animation: none;
     opacity: 1;

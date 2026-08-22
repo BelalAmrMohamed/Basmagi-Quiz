@@ -406,19 +406,6 @@ html[data-motion="reduced"] *::after {
   scroll-behavior: auto !important;
 }
 
-/* Safety net for the moment before theme-controller.js has run, or for
-   users who never touch the toggle but have the OS setting on. */
-@media (prefers-reduced-motion: reduce) {
-  html:not([data-motion="reduced"]) *,
-  html:not([data-motion="reduced"]) *::before,
-  html:not([data-motion="reduced"]) *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
 /* Scrollbar */
 * {
   scrollbar-width: thin;

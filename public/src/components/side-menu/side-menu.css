@@ -1233,19 +1233,6 @@ body.sidebar-expanded {
   border-color: var(--color-primary);
 }
 
-/* Redundant when the OS already forces reduced motion — animations are
-   disabled site-wide either way, so don't render a toggle that would do
-   nothing (see data-motion="reduced" fallback in themes.css). Hidden with
-   the same technique as .sidebar-expanded-only (display:none is not
-   enough on its own here since this element is *also* gated by that
-   class — max-height:0 avoids fighting its own opacity/max-height
-   transition when both rules would otherwise apply at once). */
-@media (prefers-reduced-motion: reduce) {
-  .high-performance-toggle-container {
-    display: none !important;
-  }
-}
-
 .animation-toggle-label {
   font-size: 0.85rem;
   font-weight: 600;
@@ -1709,27 +1696,25 @@ body.sidebar-expanded {
 }
 
 /* ── Reduced Motion ──────────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-  .sidebar,
-  .toggle-switch,
-  .toggle-switch::after,
-  .side-menu-backdrop,
-  .menu-item,
-  .menu-item svg,
-  .theme-selector-btn,
-  .sidebar-toggle,
-  .toggle-chevron,
-  .menu-label,
-  .sidebar-expanded-only,
-  body {
-    transition: none !important;
-  }
+html[data-motion="reduced"] .sidebar,
+html[data-motion="reduced"] .toggle-switch,
+html[data-motion="reduced"] .toggle-switch::after,
+html[data-motion="reduced"] .side-menu-backdrop,
+html[data-motion="reduced"] .menu-item,
+html[data-motion="reduced"] .menu-item svg,
+html[data-motion="reduced"] .theme-selector-btn,
+html[data-motion="reduced"] .sidebar-toggle,
+html[data-motion="reduced"] .toggle-chevron,
+html[data-motion="reduced"] .menu-label,
+html[data-motion="reduced"] .sidebar-expanded-only,
+html[data-motion="reduced"] body {
+  transition: none !important;
+}
 
-  .menu-item:hover svg,
-  .menu-item:focus-visible svg,
-  .menu-item:active svg {
-    transform: none !important;
-  }
+html[data-motion="reduced"] .menu-item:hover svg,
+html[data-motion="reduced"] .menu-item:focus-visible svg,
+html[data-motion="reduced"] .menu-item:active svg {
+  transform: none !important;
 }
 
 /* ============================================================================
@@ -1899,22 +1884,20 @@ body.sidebar-expanded {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .nav-badge-overlay,
-  .menu-item:hover .nav-badge-overlay,
-  .menu-item:focus-visible .nav-badge-overlay,
-  .bottom-nav-item-profile:hover .nav-badge-overlay,
-  .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
-  .nav-badge-overlay:hover {
-    animation: none !important;
-    transition: none;
-  }
+html[data-motion="reduced"] .nav-badge-overlay,
+html[data-motion="reduced"] .menu-item:hover .nav-badge-overlay,
+html[data-motion="reduced"] .menu-item:focus-visible .nav-badge-overlay,
+html[data-motion="reduced"] .bottom-nav-item-profile:hover .nav-badge-overlay,
+html[data-motion="reduced"] .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
+html[data-motion="reduced"] .nav-badge-overlay:hover {
+  animation: none !important;
+  transition: none;
+}
 
-  .menu-item:hover .nav-badge-overlay,
-  .menu-item:focus-visible .nav-badge-overlay,
-  .nav-badge-overlay:hover {
-    transform: scale(1.12);
-  }
+html[data-motion="reduced"] .menu-item:hover .nav-badge-overlay,
+html[data-motion="reduced"] .menu-item:focus-visible .nav-badge-overlay,
+html[data-motion="reduced"] .nav-badge-overlay:hover {
+  transform: scale(1.12);
 }
 
 /* ============================================================================
@@ -2100,3 +2083,4 @@ body.sidebar-expanded {
 [data-theme="dark-slate"] .contact-telegram:hover {
   background: rgba(44, 165, 224, 0.08);
 }
+*/

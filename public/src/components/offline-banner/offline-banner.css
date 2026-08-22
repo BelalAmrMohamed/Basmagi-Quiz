@@ -171,7 +171,7 @@ body.has-offline-banner {
 }
 
 /* ── Reduced-motion: skip the slide animation, just fade ──────────────────── */
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   #offlineBanner {
     transition:
       opacity var(--transition-base, 0.3s ease),

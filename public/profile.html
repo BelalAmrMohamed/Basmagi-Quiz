@@ -532,38 +532,34 @@
 
 
 
-            <!-- Pinned bottom actions — nav's own last child so mobile can
-                 scroll them together with the rest of nav's content as one
-                 region. On desktop, .sidebar-pinned-actions uses
-                 position: sticky + bottom: 0 (see side-menu.css) to stay
-                 glued to the bottom of nav's scrollport, reproducing the
-                 "always visible without scrolling" look without needing a
-                 separate DOM sibling outside <nav>. -->
-            <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
-                <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل"
-                    data-tooltip="تواصل مع المطور">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <path
-                            d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
-                        <path d="M8 12h.01M12 12h.01M16 12h.01" />
-                    </svg>
-                    <span class="menu-label">تواصل مع المطور</span>
-                </button>
-
-                <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp"
-                    data-tooltip="تثبيت التطبيق" style="display:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
-                        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
-                        <path d="M12 18h.01" />
-                    </svg>
-                    <span class="menu-label">تثبيت التطبيق</span>
-                </button>
-            </div>
         </nav>
+
+        <!-- Pinned bottom actions stay outside the scrollable nav so long
+                  menus cannot paint underneath them. -->
+        <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
+            <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل"
+                data-tooltip="تواصل مع المطور">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path
+                        d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+                    <path d="M8 12h.01M12 12h.01M16 12h.01" />
+                </svg>
+                <span class="menu-label">تواصل مع المطور</span>
+            </button>
+
+            <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp"
+                data-tooltip="تثبيت التطبيق" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                    <path d="M12 18h.01" />
+                </svg>
+                <span class="menu-label">تثبيت التطبيق</span>
+            </button>
+        </div>
     </aside>
     <!-- End of the Side Menu -->
 
@@ -1304,7 +1300,7 @@
             });
         });
     </script>
-    <script type="module" src="src/shared/canvas-animation.js"></script>
+    <script type="module" src="src/shared/flow-field.js"></script>
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
 
     <script type="module">
