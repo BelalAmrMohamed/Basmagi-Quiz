@@ -86,39 +86,49 @@
    .text-rtl/.text-ltr class from the per-message detection engine (see
    ai-agent-chat.js::appendMessage / markdown.js::detectDirection), so
    English and Arabic messages align independently in the same list. */
-/* ── Chat header ("New Chat" button) ── */
-.ai-agent-chat-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 8px 10px 0;
-  direction: rtl;
+
+/* .ai-agent-panel already establishes a flex column; add relative
+   positioning here specifically for .ai-agent-chat-panel so the floating
+   "new chat" button below can anchor to its corner. */
+.ai-agent-chat-panel {
+  position: relative;
 }
 
+/* "New chat" — a small floating icon-only button pinned to the corner of
+   the message list (see newChatBtn in ai-agent-chat.js). Hidden via the
+   `hidden` attribute whenever the current conversation has no messages
+   yet, so it never invites starting a new chat from one that's already
+   new/empty. Icon-only + subtle so it doesn't compete with the actual
+   conversation for attention, unlike the earlier full-width labeled
+   button this replaces. */
 .ai-agent-new-chat-btn {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  padding: 6px 10px;
+  border-radius: 50%;
   background: var(--color-surface);
   color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: 0.78rem;
-  font-weight: 700;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
 .ai-agent-new-chat-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: var(--color-primary-light);
+  transform: translateY(-1px);
 }
 
-.ai-agent-new-chat-btn svg {
-  flex-shrink: 0;
+.ai-agent-new-chat-btn[hidden] {
+  display: none;
 }
 
 .ai-agent-chat-messages {

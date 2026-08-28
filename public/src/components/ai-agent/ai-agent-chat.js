@@ -94,27 +94,32 @@ export function createChatPanel(options = {}) {
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
 
-  // Chat header — currently just the "New Chat" action. Previously the
-  // only way to start a fresh conversation was to close and reopen the
-  // whole AI Helper modal (panel.startNewConversation() existed already
-  // but had no UI hooked up to it). Always shown, not just once a
-  // conversation has messages, so it's predictable/discoverable rather
-  // than popping in and out.
-  const chatHeaderEl = document.createElement("div");
-  chatHeaderEl.className = "ai-agent-chat-header";
+  const messagesEl = document.createElement("div");
+  messagesEl.className = "ai-agent-chat-messages";
+  panel.appendChild(messagesEl);
+
+  // "New chat" — a small floating icon button in the corner of the message
+  // list (not a full header row; it only needs to be there when there's
+  // actually something to leave behind). Hidden whenever the current
+  // conversation has no messages yet — a brand new chat, or right after
+  // pressing this same button — since starting a new chat from an already
+  // empty one is a no-op the user shouldn't be invited to reach for.
+  // updateNewChatVisibility() (called after every state change: send,
+  // loadConversation, startNewConversation) keeps this in sync.
   const newChatBtn = document.createElement("button");
   newChatBtn.type = "button";
   newChatBtn.className = "ai-agent-new-chat-btn";
   newChatBtn.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>محادثة جديدة</span>';
+    '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   newChatBtn.title = "بدء محادثة جديدة";
+  newChatBtn.setAttribute("aria-label", "بدء محادثة جديدة");
+  newChatBtn.hidden = true;
   newChatBtn.addEventListener("click", () => panel.startNewConversation());
-  chatHeaderEl.appendChild(newChatBtn);
-  panel.appendChild(chatHeaderEl);
+  panel.appendChild(newChatBtn);
 
-  const messagesEl = document.createElement("div");
-  messagesEl.className = "ai-agent-chat-messages";
-  panel.appendChild(messagesEl);
+  function updateNewChatVisibility() {
+    newChatBtn.hidden = history.length === 0;
+  }
 
   // Suggestion chips — only meaningful before the conversation starts;
   // removed from the DOM (not just hidden) once the first message is sent
@@ -400,6 +405,7 @@ export function createChatPanel(options = {}) {
     const outgoingUserMessage = { role: "user", content: text };
     if (attachment) outgoingUserMessage.attachments = [attachment];
     history.push(outgoingUserMessage);
+    updateNewChatVisibility();
 
     const typingEl = showTyping();
 
@@ -581,13 +587,16 @@ export function createChatPanel(options = {}) {
     } else {
       history.forEach((m) => appendMessage(m.role, m.content, m.attachments?.[0]?.name));
     }
+    updateNewChatVisibility();
   };
 
   /**
    * Starts a fresh conversation in this same panel instance: clears
    * in-memory state and mints a new id so the next turn creates a new IDB
-   * record rather than continuing the previous one. Wired to the "محادثة
-   * جديدة" button in the chat header (see chatHeaderEl above).
+   * record rather than continuing the previous one. Wired to the floating
+   * "new chat" icon button (see newChatBtn above) — that button hides
+   * itself once the conversation is empty, so this never fires on an
+   * already-empty chat.
    */
   panel.startNewConversation = function startNewConversation() {
     conversationId = crypto.randomUUID();
@@ -597,7 +606,10 @@ export function createChatPanel(options = {}) {
     renderAttachmentChip();
     messagesEl.innerHTML = "";
     renderEmptyState();
+    updateNewChatVisibility();
   };
+
+  updateNewChatVisibility();
 
   return panel;
 }
