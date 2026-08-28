@@ -155,6 +155,37 @@ export function createChatPanel(options = {}) {
 
   let fileInput = null;
   let attachBtn = null;
+
+  /**
+   * Shared by both the paperclip button's file picker and drag-and-drop
+   * (see the panel-level drop listener below) — validates and reads a
+   * single File into pendingAttachment. A second drop/pick while one is
+   * already pending simply replaces it (v1 is one file at a time, see
+   * AI_HELPER_IMPROVEMENT_PLAN.md Task 3).
+   * @param {File} file
+   */
+  async function handlePickedFile(file) {
+    if (!file) return;
+
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      appendError("حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).");
+      return;
+    }
+
+    try {
+      const base64 = await fileToBase64(file);
+      pendingAttachment = {
+        mimeType: file.type || "application/octet-stream",
+        base64,
+        name: file.name,
+      };
+      renderAttachmentChip();
+    } catch (err) {
+      console.error("[ai-agent-chat] failed to read file:", err);
+      appendError("تعذرت قراءة الملف. حاول مرة أخرى.");
+    }
+  }
+
   if (enableFileUpload) {
     fileInput = document.createElement("input");
     fileInput.type = "file";
@@ -173,25 +204,7 @@ export function createChatPanel(options = {}) {
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
       fileInput.value = ""; // allow re-picking the same file later
-      if (!file) return;
-
-      if (file.size > MAX_ATTACHMENT_BYTES) {
-        appendError("حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).");
-        return;
-      }
-
-      try {
-        const base64 = await fileToBase64(file);
-        pendingAttachment = {
-          mimeType: file.type || "application/octet-stream",
-          base64,
-          name: file.name,
-        };
-        renderAttachmentChip();
-      } catch (err) {
-        console.error("[ai-agent-chat] failed to read file:", err);
-        appendError("تعذرت قراءة الملف. حاول مرة أخرى.");
-      }
+      await handlePickedFile(file);
     });
   }
 
