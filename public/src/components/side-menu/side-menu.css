@@ -336,7 +336,6 @@ body.sidebar-expanded {
 .sidebar.expanded .sidebar-logo {
   display: flex;
   align-items: center;
-  margin-top: 10px;
   margin-bottom: 0px;
 }
 
@@ -1397,6 +1396,7 @@ body.sidebar-expanded {
     justify-content: center;
     padding-bottom: 6px;
     margin-left: 10px;
+    margin-right: 10px;
     border-bottom: 1px solid var(--color-border);
     background: var(--sidebar-color);
     position: sticky;
@@ -2083,4 +2083,3 @@ html[data-motion="reduced"] .nav-badge-overlay:hover {
 [data-theme="dark-slate"] .contact-telegram:hover {
   background: rgba(44, 165, 224, 0.08);
 }
-*/
