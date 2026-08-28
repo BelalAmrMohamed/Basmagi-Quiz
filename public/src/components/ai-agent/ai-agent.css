@@ -299,6 +299,87 @@
   cursor: not-allowed;
 }
 
+/* ── History tab ── */
+.ai-agent-history-panel {
+  padding: 8px;
+  overflow-y: auto;
+  direction: rtl;
+}
+
+.ai-agent-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-agent-history-loading,
+.ai-agent-history-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.ai-agent-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.ai-agent-history-item:hover {
+  border-color: var(--color-primary);
+  background: var(--color-background-secondary);
+}
+
+.ai-agent-history-item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-agent-history-item-title {
+  font-size: 0.87rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-agent-history-item-time {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.ai-agent-history-item-delete {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ai-agent-history-item-delete:hover {
+  background: var(--color-danger-light, rgba(220, 38, 38, 0.12));
+  color: var(--color-danger, #dc2626);
+}
+
 /* ── Settings tab ──
    Structural chrome (labels, notes, buttons) stays RTL to match the app's
    UI language — this panel doesn't render arbitrary user/AI content, so a

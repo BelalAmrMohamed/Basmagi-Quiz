@@ -379,6 +379,7 @@ export function renderUserQuizzesView() {
         pageKey: "home",
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
         suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
+        enableFileUpload: true,
         contextSummary,
         enableTools: true,
         onToolCall: handleQuizToolCall,

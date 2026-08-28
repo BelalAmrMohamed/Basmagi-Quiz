@@ -10,6 +10,7 @@ import { renderMarkdown, detectDirection } from "../../shared/markdown.js";
 import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
+import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
 
 /**
  * Reads a File into a bare base64 string (no "data:...;base64," prefix —
@@ -50,7 +51,12 @@ function fileToBase64(file) {
  *   next to the input. One file at a time (v1) — see AI_HELPER_IMPROVEMENT_PLAN.md
  *   Task 3. Supported today: images, PDF (sent natively to Google/Claude),
  *   and .docx (text-extracted server-side, works with any provider).
- * @returns {HTMLElement} the chat panel root element
+ * @param {() => void} [options.onHistoryChanged] - called after a
+ *   conversation is saved, so the History tab (if open/rendered already)
+ *   can refresh its list without polling.
+ * @returns {HTMLElement} the chat panel root element — also carries a
+ *   `.loadConversation(conversation)` method (see bottom of this function)
+ *   that the History tab calls when the user picks a past conversation.
  */
 export function createChatPanel(options = {}) {
   const {
@@ -63,7 +69,16 @@ export function createChatPanel(options = {}) {
     contextSummary = null,
     suggestedPrompts = [],
     enableFileUpload = false,
+    onHistoryChanged = null,
   } = options;
+
+  // Identifies this conversation in IndexedDB across its whole lifetime —
+  // generated once per panel instance (i.e. once per "new chat"), reused
+  // for every save so saveConversation() overwrites the same record rather
+  // than creating a new one per turn. Reassigned wholesale by
+  // loadConversation() below when the user opens a past conversation.
+  let conversationId = crypto.randomUUID();
+  let conversationCreatedAt = Date.now();
 
   const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // keep in sync with api/ai-agent/chat.js
   const ACCEPTED_ATTACHMENT_TYPES =
@@ -345,6 +360,28 @@ export function createChatPanel(options = {}) {
         history.push({ role: "assistant", content: data.text });
       }
 
+      // Persist after every successful turn (not just tool calls) — cheap
+      // at this scale (one small IDB write per turn), and means a
+      // conversation is never lost to a refresh/close mid-chat. Only saved
+      // once there's at least one assistant reply in it, so an empty
+      // "opened the panel, never sent anything" session never creates a
+      // history entry.
+      try {
+        await saveConversation({
+          id: conversationId,
+          pageKey,
+          title: deriveConversationTitle(history),
+          createdAt: conversationCreatedAt,
+          updatedAt: Date.now(),
+          messages: history.map(({ role, content }) => ({ role, content })), // drop attachments — see note below
+        });
+        if (typeof onHistoryChanged === "function") onHistoryChanged();
+      } catch (histErr) {
+        // Non-fatal — history is a convenience feature, never block the
+        // actual chat on a storage failure.
+        console.error("[ai-agent-chat] failed to save conversation:", histErr);
+      }
+
       if (data.toolCall?.name && typeof onToolCall === "function") {
         try {
           const resultText = onToolCall(data.toolCall);
@@ -375,6 +412,51 @@ export function createChatPanel(options = {}) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     textarea.style.direction = detectDirection(textarea.value) === "rtl" ? "rtl" : "ltr";
   });
+
+  /**
+   * Loads a past conversation (from ai-agent-history-idb.js) into this
+   * panel: replaces the in-memory `history`, re-renders every message, and
+   * takes over that conversation's id so further turns overwrite the same
+   * IDB record instead of forking a new one. Called by the History tab
+   * (ai-agent-history.js) when the user picks a saved conversation.
+   * @param {import("./ai-agent-history-idb.js").Conversation} conversation
+   */
+  panel.loadConversation = function loadConversation(conversation) {
+    if (suggestionsEl) {
+      suggestionsEl.remove();
+      suggestionsEl = null;
+    }
+    pendingAttachment = null;
+    renderAttachmentChip();
+
+    conversationId = conversation.id;
+    conversationCreatedAt = conversation.createdAt || Date.now();
+    history.length = 0;
+    history.push(...conversation.messages.map(({ role, content }) => ({ role, content })));
+
+    messagesEl.innerHTML = "";
+    if (!history.length) {
+      renderEmptyState();
+    } else {
+      history.forEach((m) => appendMessage(m.role, m.content));
+    }
+  };
+
+  /**
+   * Starts a fresh conversation in this same panel instance: clears
+   * in-memory state and mints a new id so the next turn creates a new IDB
+   * record rather than continuing the previous one. Exposed for a future
+   * "new chat" button; not wired to any UI yet.
+   */
+  panel.startNewConversation = function startNewConversation() {
+    conversationId = crypto.randomUUID();
+    conversationCreatedAt = Date.now();
+    history.length = 0;
+    pendingAttachment = null;
+    renderAttachmentChip();
+    messagesEl.innerHTML = "";
+    renderEmptyState();
+  };
 
   return panel;
 }
