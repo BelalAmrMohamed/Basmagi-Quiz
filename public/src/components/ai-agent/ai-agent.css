@@ -167,38 +167,36 @@
 
 /* ── Suggested prompt chips ──
    Shown above the input row only before the first message is sent (see
-   ai-agent-chat.js). Horizontally scrollable row of tappable chips, each
-   sending its own text as a normal chat message on click. */
+   ai-agent-chat.js). Vertical stacked list (each chip full-width, its own
+   row) rather than a horizontal scroller — reads much better for Arabic
+   prompt text of varying length, matches the pattern YouTube's "Ask" panel
+   uses for its own suggested questions. */
 .ai-agent-suggestions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 10px 10px 0;
-  overflow-x: auto;
   direction: rtl;
-  scrollbar-width: none;
-}
-
-.ai-agent-suggestions::-webkit-scrollbar {
-  display: none;
 }
 
 .ai-agent-suggestion-chip {
-  flex: 0 0 auto;
-  white-space: nowrap;
+  width: 100%;
+  text-align: start;
   border: 1.5px solid var(--color-border);
-  border-radius: 999px;
-  padding: 7px 14px;
+  border-radius: 14px;
+  padding: 10px 14px;
   background: var(--color-surface);
   color: var(--color-text-primary);
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-family: inherit;
+  line-height: 1.4;
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .ai-agent-suggestion-chip:hover {
   border-color: var(--color-primary);
-  transform: translateY(-1px);
+  background: var(--color-background-secondary);
 }
 
 /* ── File attachment (Task 3) ── */
