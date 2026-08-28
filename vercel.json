@@ -2,18 +2,6 @@
   "buildCommand": null,
   "outputDirectory": "public",
   "framework": null,
-  "functions": {
-    "api/admin.js": {},
-    "api/ai-agent/chat.js": {},
-    "api/auth.js": {},
-    "api/delete-quiz.js": {},
-    "api/og.js": {},
-    "api/render-profile.js": {},
-    "api/render-quiz.js": {},
-    "api/upload-quiz.js": {},
-    "api/user-profile/identify.js": {},
-    "api/user-profile/sync-progress.js": {}
-  },
   "rewrites": [
     {
       "source": "/@:handle",
