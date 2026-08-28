@@ -1608,6 +1608,36 @@ export function _processByLine(element) {
 }
 
 /**
+ * Direct-text direction for a block-level element (li, p, etc.) — i.e. the
+ * element's own text, ignoring any nested block descendants (a nested
+ * <ul>/<ol> inside an <li>, a nested <blockquote>, etc.). Without this, an
+ * <li> whose own text is plain English but which contains a nested
+ * sub-list of Arabic options would have its direction computed from the
+ * concatenated text of itself PLUS every nested item — occasionally
+ * flipping the outer item's direction to match its sub-list instead of
+ * its own sentence.
+ * @param {HTMLElement} element
+ * @returns {string}
+ */
+function _ownText(element) {
+  let text = "";
+  element.childNodes.forEach((node) => {
+    if (node.nodeType === 3) {
+      // Text node — always part of this element's own content.
+      text += node.textContent;
+    } else if (node.nodeType === 1 && !node.matches(_BLOCK_CHILD_SELECTOR)) {
+      // Inline element (strong, em, a, span, ...) — its text is still
+      // visually part of this element's own line, so include it. Only
+      // nested block-level children (matched by _BLOCK_CHILD_SELECTOR,
+      // e.g. a <ul>/<ol>'s <li>) are excluded, since those get their own
+      // independent direction verdict.
+      text += node.textContent;
+    }
+  });
+  return text;
+}
+
+/**
  * Evaluates and applies direction classes to a single element — per block
  * child if the element contains block-level markdown output, or per visual
  * line for plain-text leaves.  Never touches LTR-only subtrees.
@@ -1626,19 +1656,38 @@ export function _processElement(element) {
     _applyDirectionClass(zone, "ltr");
   });
 
+  // An element that is itself a block-child type (li, p, td, ...) gets its
+  // direction from its OWN text only, never from a nested block descendant
+  // (e.g. a <ul> of lettered options inside an <li>). This is evaluated
+  // before the "does it contain block children" branch below because such
+  // an element commonly does contain further block children (a nested
+  // list) — those still get their own independent direction verdicts via
+  // the tree walker visiting them directly, but they must never leak back
+  // up and override their own parent's direction.
+  if (element.matches(_BLOCK_CHILD_SELECTOR)) {
+    _applyDirectionClass(element, detectDirection(_ownText(element)));
+    return;
+  }
+
   // Containers with block-level markdown children get per-child evaluation.
   const blockChildren = element.querySelectorAll(_BLOCK_CHILD_SELECTOR);
   if (blockChildren.length) {
-    blockChildren.forEach((child) => {
+    // Only DIRECT block children — a nested list's items are reached (and
+    // classed) independently when the tree walker visits them, and must
+    // not be double-counted here as if they belonged to this container.
+    const directBlockChildren = Array.from(blockChildren).filter(
+      (c) => c.parentElement === element,
+    );
+    directBlockChildren.forEach((child) => {
       if (child.closest(_LTR_ONLY_SELECTOR)) return; // already pinned LTR
-      _applyDirectionClass(child, detectDirection(child.textContent));
+      _applyDirectionClass(child, detectDirection(_ownText(child)));
     });
     // Container itself follows its first real (non-LTR-only) block so that
     // CSS logical properties (list padding, etc.) have a sane base direction.
-    const firstReal = Array.from(blockChildren).find(
+    const firstReal = directBlockChildren.find(
       (c) => !c.closest(_LTR_ONLY_SELECTOR),
     );
-    _applyDirectionClass(element, detectDirection(firstReal?.textContent));
+    _applyDirectionClass(element, detectDirection(firstReal ? _ownText(firstReal) : ""));
     return;
   }
 
