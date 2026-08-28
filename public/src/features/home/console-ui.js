@@ -13,7 +13,7 @@ import { isAdminAuthenticated, hasAdminSessionHint } from "../../shared/adminAut
 import { getSubscribedCourses } from "../../shared/filterUtils.js";
 import { getCategoryTree, getSearchManager } from "./app-state.js";
 import { getCourseItemCount } from "./course-count.js";
-
+/*
 (function initIndexConsole(global) {
   'use strict';
   const core = global.__basmagiCore;
@@ -210,3 +210,4 @@ import { getCourseItemCount } from "./course-count.js";
   boot();
  
 })(window);
+*/

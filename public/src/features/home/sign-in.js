@@ -19,7 +19,7 @@
 // =============================================================================
 
 import { signInWithSupabase } from "../../shared/adminAuth.js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../../shared/public-config.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
 
 // ── Module state ──────────────────────────────────────────────────────────────
 
@@ -66,12 +66,13 @@ export async function openSignInDialog() {
 
 async function _initSupabase() {
   try {
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      _supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY
-      );
-    }
+    // ensureSharedSupabaseClient() is memoized — if index.html's own
+    // session-sync (or another component) already created the client this
+    // page load, this reuses that exact instance instead of creating a
+    // second GoTrueClient against the same "sb-...-auth-token" storage
+    // key (that duplication was the source of the "Multiple GoTrueClient
+    // instances" console warning and the intermittent Supabase 503s).
+    _supabaseClient = await ensureSharedSupabaseClient();
   } catch (err) {
     console.error("[sign-in-dialog] Failed to initialize Supabase:", err);
   }

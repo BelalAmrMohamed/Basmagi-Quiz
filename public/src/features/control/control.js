@@ -8,15 +8,20 @@ import {
   getToken,
   isAdminAuthenticated,
   fullSignOut,
-  signInWithSupabase,
 } from "../../shared/adminAuth.js";
+import { syncAdminSession } from "../../shared/adminBadgeSync.js";
 
 import { _alert } from "../../components/notifications/notifications.js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../../shared/public-config.js";
 
 const API_URL = "/api/admin-control";
 
-// Module-scoped Supabase client — set once in init(), used in logout()
+// Module-scoped Supabase client — set once in init() via the shared
+// registry (see supabaseClientRegistry.js), used in logout(). Previously
+// this called window.supabase.createClient() directly, which created a
+// second GoTrueClient instance racing the home page's client against the
+// same "sb-...-auth-token" localStorage key — the source of the "Multiple
+// GoTrueClient instances" warning and the intermittent 503s from Supabase
+// (concurrent session refresh calls stepping on each other).
 let _supabaseClient = null;
 let _token = getToken();
 
@@ -28,41 +33,18 @@ async function init() {
     return;
   }
 
-  // 2. Initialize Supabase client for session reconciliation + logout
+  // 2. Reconcile local admin state with the live Supabase session, reusing
+  //    the shared client (ensureSharedSupabaseClient() inside
+  //    syncAdminSession — memoized, so this is a no-op if a client already
+  //    exists) instead of creating a second one here.
   try {
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      _supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_ANON_KEY,
-      );
-
-      // 3. Reconcile: if Supabase session exists but our JWT was
-      //    wiped (new tab / browser restart), re-derive it from
-      //    the live Supabase session. If Supabase session is gone
-      //    but JWT still exists, clear the stale JWT.
-      const {
-        data: { session },
-      } = await _supabaseClient.auth.getSession();
-
-      if (session && !isAdminAuthenticated()) {
-        const ok = await signInWithSupabase(session.access_token);
-        if (ok) {
-          _token = getToken();
-        } else {
-          // Non-admin Supabase session — destroy it and redirect
-          await fullSignOut(_supabaseClient);
-          window.location.href = "/#my-quizzes";
-          return;
-        }
-      } else if (!session && isAdminAuthenticated()) {
-        // Stale JWT with no live Supabase session — clear and redirect
-        await fullSignOut(null);
+    _supabaseClient = await syncAdminSession({
+      onSignedOut: () => {
         window.location.href = "/#my-quizzes";
-        return;
-      }
-    }
+      },
+    });
   } catch (err) {
-    console.error("[control] Failed to initialize Supabase:", err);
+    console.error("[control] Failed to sync admin session:", err);
   }
 
   // Re-read token in case reconciliation updated it
@@ -73,7 +55,7 @@ async function init() {
     return;
   }
 
-  // 4. Load admin-control data (admins + platform stats)
+  // 3. Load admin-control data (admins + platform stats)
   loadData();
 }
 

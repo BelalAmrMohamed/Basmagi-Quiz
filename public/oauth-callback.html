@@ -79,6 +79,19 @@
                     throw new Error('Missing Supabase configuration');
                 }
 
+                // NOTE: this file runs in a separate popup window/document
+                // (see the window.opener check above) — a different JS realm
+                // than the opener page's module graph, so the shared
+                // in-memory client registry (supabaseClientRegistry.js)
+                // isn't reachable from here; there's no way to reuse the
+                // opener's client instance across windows. This IS a second
+                // GoTrueClient briefly coexisting with the opener's, but
+                // it's short-lived (this window closes within ~1s of success
+                // or ~3s on error — see below) rather than persisting for a
+                // full page lifetime, so it doesn't reproduce the sustained
+                // "Multiple GoTrueClient instances" contention that came
+                // from control.js/sign-in.js each creating their own
+                // long-lived client on top of the home page's.
                 const supabaseClient = window.supabase.createClient(
                     SUPABASE_URL,
                     SUPABASE_ANON_KEY,
