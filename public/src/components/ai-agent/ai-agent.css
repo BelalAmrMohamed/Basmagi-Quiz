@@ -86,6 +86,41 @@
    .text-rtl/.text-ltr class from the per-message detection engine (see
    ai-agent-chat.js::appendMessage / markdown.js::detectDirection), so
    English and Arabic messages align independently in the same list. */
+/* ── Chat header ("New Chat" button) ── */
+.ai-agent-chat-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 10px 0;
+  direction: rtl;
+}
+
+.ai-agent-new-chat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.ai-agent-new-chat-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.ai-agent-new-chat-btn svg {
+  flex-shrink: 0;
+}
+
 .ai-agent-chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -93,6 +128,17 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+/* Drag-and-drop a file anywhere onto the chat panel (see
+   ai-agent-chat.js — mirrors the .user-quizzes-drag-over pattern from
+   quiz-file-import.js). Shown on .ai-agent-chat-panel specifically (not
+   the whole widget) since drop is only wired when enableFileUpload is on,
+   scoped to whichever panel instance owns the listener. */
+.ai-agent-chat-panel.ai-agent-drag-over {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: -2px;
+  background: var(--color-primary-light);
 }
 
 .ai-agent-msg {
@@ -108,6 +154,33 @@
   align-self: flex-start;
   background: var(--gradient-accent);
   color: #fff;
+}
+
+/* File chip shown inside a user's own message bubble when they sent an
+   attachment (see appendMessage()'s attachmentName param in
+   ai-agent-chat.js) — makes the sent file visible in the chat itself
+   (and in reopened history), not just something the AI silently saw. */
+.ai-agent-msg-attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 0.78rem;
+  font-weight: 600;
+  direction: rtl;
+}
+
+.ai-agent-msg-attachment svg {
+  flex-shrink: 0;
+}
+
+.ai-agent-msg-attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ai-agent-msg--assistant {
@@ -175,7 +248,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 10px 0;
+  padding: 10px;
   direction: rtl;
 }
 
@@ -268,6 +341,14 @@
   color: var(--color-text-primary);
   min-height: 40px;
   max-height: 120px;
+  /* Per-line direction detection, native to the browser: each visual line
+     resolves its own RTL/LTR base direction instead of the whole field
+     following whichever direction the first character happened to be.
+     Mirrors the same technique already used for form controls in
+     markdown.js (see _processElement's INPUT/TEXTAREA skip comment) —
+     deliberately NOT driven by JS here since that would fight the
+     browser's native caret placement while typing. */
+  unicode-bidi: plaintext;
 }
 
 .ai-agent-chat-input:focus {

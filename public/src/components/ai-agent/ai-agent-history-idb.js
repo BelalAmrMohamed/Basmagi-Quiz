@@ -119,6 +119,13 @@ export async function deleteConversation(id) {
 export function deriveConversationTitle(messages) {
   const firstUserMsg = messages.find((m) => m.role === "user");
   const text = (firstUserMsg?.content || "").trim();
-  if (!text) return "محادثة بدون عنوان";
+  if (!text) {
+    // Attachment-only first message (e.g. "just convert this exam", no
+    // accompanying text) — fall back to the filename instead of a generic
+    // "untitled" label, so the history list still gives a useful hint at
+    // a glance about what the conversation was about.
+    const attachmentName = firstUserMsg?.attachments?.[0]?.name;
+    return attachmentName ? `📎 ${attachmentName}` : "محادثة بدون عنوان";
+  }
   return text.length > 40 ? `${text.slice(0, 40)}…` : text;
 }

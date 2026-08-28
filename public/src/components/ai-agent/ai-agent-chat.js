@@ -6,7 +6,7 @@
 // "إمتحاناتك" view or result.html with different contextual system prompts.
 // =============================================================================
 
-import { renderMarkdown, detectDirection } from "../../shared/markdown.js";
+import { renderMarkdown, _processByLine } from "../../shared/markdown.js";
 import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
@@ -93,6 +93,24 @@ export function createChatPanel(options = {}) {
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
+
+  // Chat header — currently just the "New Chat" action. Previously the
+  // only way to start a fresh conversation was to close and reopen the
+  // whole AI Helper modal (panel.startNewConversation() existed already
+  // but had no UI hooked up to it). Always shown, not just once a
+  // conversation has messages, so it's predictable/discoverable rather
+  // than popping in and out.
+  const chatHeaderEl = document.createElement("div");
+  chatHeaderEl.className = "ai-agent-chat-header";
+  const newChatBtn = document.createElement("button");
+  newChatBtn.type = "button";
+  newChatBtn.className = "ai-agent-new-chat-btn";
+  newChatBtn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>محادثة جديدة</span>';
+  newChatBtn.title = "بدء محادثة جديدة";
+  newChatBtn.addEventListener("click", () => panel.startNewConversation());
+  chatHeaderEl.appendChild(newChatBtn);
+  panel.appendChild(chatHeaderEl);
 
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
@@ -206,13 +224,59 @@ export function createChatPanel(options = {}) {
       fileInput.value = ""; // allow re-picking the same file later
       await handlePickedFile(file);
     });
+
+    // Drag-and-drop onto the whole panel — mirrors the drag-active-class
+    // pattern used by wireJsonFileDropZone() in quiz-file-import.js, but
+    // generalized to any file type (server already validates/rejects
+    // unsupported ones) and routed through the same handlePickedFile()
+    // the file-input change handler above uses, so both paths behave
+    // identically (size check, base64 read, attachment chip).
+    const isFileDrag = (e) => Array.from(e.dataTransfer?.types || []).includes("Files");
+
+    panel.addEventListener("dragenter", (e) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      panel.classList.add("ai-agent-drag-over");
+    });
+
+    panel.addEventListener("dragover", (e) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+      panel.classList.add("ai-agent-drag-over");
+    });
+
+    panel.addEventListener("dragleave", (e) => {
+      // Only clear when leaving the panel itself, not entering a child.
+      if (e.relatedTarget && panel.contains(e.relatedTarget)) return;
+      panel.classList.remove("ai-agent-drag-over");
+    });
+
+    panel.addEventListener("drop", async (e) => {
+      panel.classList.remove("ai-agent-drag-over");
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      // v1 is one file at a time (see AI_HELPER_IMPROVEMENT_PLAN.md Task 3)
+      // — if multiple files are dropped, only the first is used, same as
+      // the file-input which has no `multiple` attribute.
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      await handlePickedFile(file);
+    });
   }
 
   const textarea = document.createElement("textarea");
   textarea.className = "ai-agent-chat-input";
   textarea.placeholder = placeholder;
   textarea.rows = 1;
-  textarea.dir = "ltr";
+  // "auto" (not a hardcoded "ltr"/"rtl") so the very first line — before
+  // any CSS unicode-bidi kicks in visually — still gets a sane base
+  // direction/alignment from its own content instead of always starting
+  // LTR even for an Arabic-only message.
+  textarea.dir = "auto";
 
   const sendBtn = document.createElement("button");
   sendBtn.type = "button";
@@ -230,15 +294,51 @@ export function createChatPanel(options = {}) {
   }
   renderEmptyState();
 
-  function appendMessage(role, content) {
+  /**
+   * @param {"user"|"assistant"} role
+   * @param {string} content
+   * @param {string} [attachmentName] - when the user sent a file with this
+   *   message, its original filename — rendered as a small chip inside the
+   *   bubble so the attachment is visible in the chat itself (previously
+   *   it was only visible to the AI; the user had no confirmation it was
+   *   actually sent, and it silently disappeared from the transcript,
+   *   including on reload from history). Assistant messages never carry
+   *   one; only ever passed for role === "user".
+   */
+  function appendMessage(role, content, attachmentName) {
     const el = document.createElement("div");
     el.className = `ai-agent-msg ai-agent-msg--${role}`;
-    if (role === "assistant") {
-      el.innerHTML = renderMarkdown(content);
-    } else {
-      el.textContent = content;
-      el.classList.add(detectDirection(content) === "rtl" ? "text-rtl" : "text-ltr");
+
+    if (attachmentName) {
+      const chip = document.createElement("div");
+      chip.className = "ai-agent-msg-attachment";
+      chip.innerHTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "ai-agent-msg-attachment-name";
+      nameSpan.textContent = attachmentName;
+      chip.appendChild(nameSpan);
+      el.appendChild(chip);
     }
+
+    if (role === "assistant") {
+      el.insertAdjacentHTML("beforeend", renderMarkdown(content));
+    } else if (content) {
+      // Per-line direction, not one direction for the whole bubble — a
+      // message can mix an Arabic line and an English line (e.g. someone
+      // pasting a question stem with an English fill-in-the-blank), and
+      // each line should align independently rather than the first
+      // detected direction dragging the rest of the bubble along with it.
+      // _processByLine (markdown.js) already implements exactly this:
+      // split on newlines, wrap each in a direction-classed <span
+      // class="text-line">, and set the container's own class from the
+      // first line so bubble alignment/padding still has a sane base.
+      const textEl = document.createElement("div");
+      textEl.textContent = content;
+      _processByLine(textEl);
+      el.appendChild(textEl);
+    }
+
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
     }
@@ -296,7 +396,7 @@ export function createChatPanel(options = {}) {
       suggestionsEl = null;
     }
 
-    appendMessage("user", text || `📎 ${attachment.name}`);
+    appendMessage("user", text, attachment?.name);
     const outgoingUserMessage = { role: "user", content: text };
     if (attachment) outgoingUserMessage.attachments = [attachment];
     history.push(outgoingUserMessage);
@@ -386,7 +486,17 @@ export function createChatPanel(options = {}) {
           title: deriveConversationTitle(history),
           createdAt: conversationCreatedAt,
           updatedAt: Date.now(),
-          messages: history.map(({ role, content }) => ({ role, content })), // drop attachments — see note below
+          // Keep the attachment's filename (a few bytes) but drop the
+          // base64 payload itself (see comment on Task 5's summary in the
+          // history-idb module — full attachment data would bloat
+          // IndexedDB fast). This is enough for a reopened "convert this
+          // exam" conversation to still show which file was sent, even
+          // though the file content itself isn't available anymore.
+          messages: history.map(({ role, content, attachments }) => ({
+            role,
+            content,
+            ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
+          })),
         });
         if (typeof onHistoryChanged === "function") onHistoryChanged();
       } catch (histErr) {
@@ -423,7 +533,15 @@ export function createChatPanel(options = {}) {
   textarea.addEventListener("input", () => {
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-    textarea.style.direction = detectDirection(textarea.value) === "rtl" ? "rtl" : "ltr";
+    // No manual textarea.style.direction here on purpose. Setting one
+    // direction for the *whole field* based on the first strong character
+    // is exactly the bug being fixed — a line of Arabic followed by a line
+    // of English (or vice versa) would drag both lines the same way. CSS
+    // `unicode-bidi: plaintext` (see .ai-agent-chat-input below) makes the
+    // browser resolve direction per paragraph/line natively, so each line
+    // aligns independently as the user types, and the caret still behaves
+    // correctly since we're not fighting it with JS (see the same
+    // rationale already documented for INPUT/TEXTAREA in markdown.js).
   });
 
   /**
@@ -445,21 +563,31 @@ export function createChatPanel(options = {}) {
     conversationId = conversation.id;
     conversationCreatedAt = conversation.createdAt || Date.now();
     history.length = 0;
-    history.push(...conversation.messages.map(({ role, content }) => ({ role, content })));
+    // Reconstruct the `attachments` shape appendMessage/sendMessage expect
+    // from the persisted `attachmentName` (see saveConversation call in
+    // sendMessage) — no base64 data available after a reload, but the
+    // filename is enough to redraw the same chip the user originally saw.
+    history.push(
+      ...conversation.messages.map(({ role, content, attachmentName }) => ({
+        role,
+        content,
+        ...(attachmentName ? { attachments: [{ name: attachmentName }] } : {}),
+      })),
+    );
 
     messagesEl.innerHTML = "";
     if (!history.length) {
       renderEmptyState();
     } else {
-      history.forEach((m) => appendMessage(m.role, m.content));
+      history.forEach((m) => appendMessage(m.role, m.content, m.attachments?.[0]?.name));
     }
   };
 
   /**
    * Starts a fresh conversation in this same panel instance: clears
    * in-memory state and mints a new id so the next turn creates a new IDB
-   * record rather than continuing the previous one. Exposed for a future
-   * "new chat" button; not wired to any UI yet.
+   * record rather than continuing the previous one. Wired to the "محادثة
+   * جديدة" button in the chat header (see chatHeaderEl above).
    */
   panel.startNewConversation = function startNewConversation() {
     conversationId = crypto.randomUUID();
