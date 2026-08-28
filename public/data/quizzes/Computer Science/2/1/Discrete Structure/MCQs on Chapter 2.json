@@ -1,0 +1,566 @@
+{
+  "meta": {
+    "title": "MCQs On Chapter 2",
+    "id": "SUWCHGVU",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Discrete Structure/MCQs on Chapter 2.json"
+  },
+  "stats": {
+    "questionCount": 50,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which of the following is an example of a set?",
+      "explanation": "A set is a well-defined collection of distinct objects. Both a group of students and a collection of numbers (where order does not matter) fit the definition.",
+      "options": [
+        "A collection of students in a class",
+        "A list of numbers in no particular order",
+        "Both A and B",
+        "None of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The set of positive integers less than 5 is:",
+      "explanation": "Positive integers start from 1. Therefore, the positive integers strictly less than 5 are 1, 2, 3, and 4.",
+      "options": [
+        "{0, 1, 2, 3, 4}",
+        "{1, 2, 3, 4}",
+        "{1, 2, 3, 4, 5}",
+        "{0, 1, 2, 3, 4, 5}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The set builder notation for the set {2, 4, 6, 8} is:",
+      "explanation": "The set contains even numbers starting at 2 and ending at 8. Option B correctly bounds x between 2 and 8 inclusive.",
+      "options": [
+        "{x | x is even and 0 < x < 10}",
+        "{x | x is even and 2 ≤ x ≤ 8}",
+        "{x | x is even and x < 10}",
+        "{x | x is even}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is the empty set?",
+      "explanation": "The empty set is the set with no elements, denoted by {} or ∅. {0} contains the number 0, and {∅} contains the empty set itself.",
+      "options": [
+        "{0}",
+        "{ }",
+        "{∅}",
+        "{∅, {∅}}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If A = {1, 2, {3, 4}}, then |A| is:",
+      "explanation": "The cardinality |A| is the number of elements in the set. A has three elements: 1, 2, and the set {3, 4}.",
+      "options": [
+        "3",
+        "4",
+        "2",
+        "1"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A set is infinite if:",
+      "explanation": "By definition, a set is infinite if it is not finite (i.e., its cardinality is not a non-negative integer).",
+      "options": [
+        "It has no elements",
+        "It has a finite number of elements",
+        "It is not finite",
+        "It has only one element"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If A ⊆ B and B ⊆ A, then:",
+      "explanation": "If every element of A is in B and every element of B is in A, the sets contain exactly the same elements and are therefore equal.",
+      "options": [
+        "A ⊂ B",
+        "A = B",
+        "A ≠ B",
+        "A and B are disjoint"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The power set of {a, b} is:",
+      "explanation": "The power set is the set of all subsets. For {a, b}, the subsets are the empty set ∅, {a}, {b}, and the set itself {a, b}.",
+      "options": [
+        "{∅, {a}, {b}}",
+        "{∅, {a}, {b}, {a, b}}",
+        "{{a}, {b}, {a, b}}",
+        "{∅, {a, b}}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If A = {1, 2} and B = {x, y}, then A × B is:",
+      "explanation": "The Cartesian product A × B consists of all ordered pairs (a, b) where a ∈ A and b ∈ B.",
+      "options": [
+        "{(1, x), (2, y)}",
+        "{(1, x), (1, y), (2, x), (2, y)}",
+        "{(x, 1), (y, 2)}",
+        "{(1, 2), (x, y)}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Cartesian product A × B × C, where A = {0}, B = {1}, C = {2}, is:",
+      "explanation": "The product is the set of ordered triples (a, b, c). Since each set has only one element, the result is the single triple {(0, 1, 2)}.",
+      "options": [
+        "{(0, 1, 2)}",
+        "{(0, 1), (1, 2)}",
+        "{(0, 2), (1, 2)}",
+        "{(0), (1), (2)}"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If A = {1, 3, 5} and B = {1, 2, 3}, then A ∪ B is:",
+      "explanation": "The union A ∪ B contains all elements that are in A OR in B. Combining {1, 3, 5} and {1, 2, 3} gives {1, 2, 3, 5}.",
+      "options": [
+        "{1, 3}",
+        "{1, 2, 3, 5}",
+        "{1, 2, 3}",
+        "{5}"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If A = {1, 3, 5} and B = {1, 2, 3}, then A ∩ B is:",
+      "explanation": "The intersection A ∩ B contains elements common to both sets. Here, 1 and 3 are in both sets.",
+      "options": [
+        "{1, 3}",
+        "{1, 2, 3, 5}",
+        "{5}",
+        "∅"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If A = {1, 3, 5} and B = {1, 2, 3}, then A − B is:",
+      "explanation": "The difference A − B contains elements in A that are NOT in B. 1 and 3 are in B, so only 5 remains.",
+      "options": [
+        "{5}",
+        "{2}",
+        "{1, 3}",
+        "{1, 2, 3}"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If U = {1, 2, 3, 4, 5} and A = {1, 3}, then A' is:",
+      "explanation": "The complement A' contains elements in the universal set U that are not in A. U - A = {2, 4, 5}.",
+      "options": [
+        "{2, 4, 5}",
+        "{1, 3, 5}",
+        "{1, 2, 3}",
+        "{4, 5}"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which law states: A ∩ U = A?",
+      "explanation": "The Identity Law states that the intersection of a set with the universal set returns the set itself.",
+      "options": [
+        "Identity law",
+        "Domination law",
+        "Idempotent law",
+        "Complement law"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "De Morgan’s Law states:",
+      "explanation": "De Morgan's Laws relate the complement of unions and intersections. Specifically, the complement of an intersection is the union of the complements.",
+      "options": [
+        "A ∩ B = B ∩ A",
+        "A ∪ (B ∩ C) = (A ∪ B) ∩ (A ∪ C)",
+        "(A ∩ B)' = A' ∪ B'",
+        "A ∪ A = A"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The set difference A − B is also called:",
+      "explanation": "A − B consists of elements in A not in B, which is synonymous with the relative complement of B in A.",
+      "options": [
+        "Complement of B with respect to A",
+        "Complement of A with respect to B",
+        "Symmetric difference",
+        "Union complement"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If A and B are disjoint, then:",
+      "explanation": "Two sets are disjoint if they share no common elements, meaning their intersection is the empty set.",
+      "options": [
+        "A ∩ B = ∅",
+        "A ∪ B = U",
+        "A ⊆ B",
+        "B ⊆ A"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The symmetric difference of A and B is defined as:",
+      "explanation": "Symmetric difference contains elements in A or B but not both. Both definitions A and B are mathematically equivalent.",
+      "options": [
+        "(A − B) ∪ (B − A)",
+        "(A ∪ B) − (A ∩ B)",
+        "Both A and B",
+        "None of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The membership table for A ∩ (B ∪ C) and (A ∩ B) ∪ (A ∩ C) shows they are:",
+      "explanation": "These expressions represent the Distributive Law of sets, so their membership tables will yield identical results.",
+      "options": [
+        "Equal",
+        "Not equal",
+        "Subsets",
+        "Disjoint"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A function f: A → B is:",
+      "explanation": "The definition of a function requires that every element in the domain (A) maps to a single, unique element in the codomain (B).",
+      "options": [
+        "A relation where each element of A maps to exactly one element of B",
+        "A relation where each element of B maps to exactly one element of A",
+        "Any subset of A × B",
+        "Always bijective"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The set of all images of elements of A under f is called:",
+      "explanation": "While B is the codomain, the actual set of values produced by the function from the domain A is called the range (or image).",
+      "options": [
+        "Domain",
+        "Codomain",
+        "Range",
+        "Preimage"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A function f is injective if:",
+      "explanation": "Injectivity (one-to-one) means that distinct elements in the domain map to distinct elements in the codomain. If outputs are equal, inputs must be equal.",
+      "options": [
+        "f(a) = f(b) ⇒ a = b",
+        "For every b ∈ B, ∃ a ∈ A such that f(a) = b",
+        "It is both injective and surjective",
+        "It maps A onto B"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A function f is surjective if:",
+      "explanation": "Surjectivity (onto) means every element in the codomain B has at least one corresponding element in the domain A.",
+      "options": [
+        "f(a) = f(b) ⇒ a = b",
+        "For every b ∈ B, ∃ a ∈ A such that f(a) = b",
+        "It is one-to-one",
+        "It is invertible"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A bijection is:",
+      "explanation": "A bijective function is a one-to-one correspondence, meaning it is both injective (one-to-one) and surjective (onto).",
+      "options": [
+        "Injective only",
+        "Surjective only",
+        "Both injective and surjective",
+        "Neither injective nor surjective"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is a bijection from R to R?",
+      "explanation": "f(x) = x³ passes both the horizontal line test (injective) and covers all real numbers (surjective). x² and |x| are not injective.",
+      "options": [
+        "f(x) = x²",
+        "f(x) = x³",
+        "f(x) = |x|",
+        "f(x) = x² + 1"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The inverse of a function f exists if f is:",
+      "explanation": "For a function to be invertible, it must map every input to a unique output and cover every possible output, i.e., it must be bijective.",
+      "options": [
+        "Injective",
+        "Surjective",
+        "Bijective",
+        "Any function"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If f(x) = 2x + 1 and g(x) = x − 1, then (f ∘ g)(x) is:",
+      "explanation": "(f ∘ g)(x) = f(g(x)) = f(x - 1) = 2(x - 1) + 1 = 2x - 2 + 1 = 2x - 1.",
+      "options": [
+        "2x − 1",
+        "2x + 1",
+        "x + 2",
+        "2x"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The floor function ⌊x⌋ returns:",
+      "explanation": "The floor function maps a real number to the greatest integer that is less than or equal to that number.",
+      "options": [
+        "The smallest integer ≥ x",
+        "The largest integer ≤ x",
+        "x rounded to nearest integer",
+        "x + 1"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The ceiling function ⌈x⌉ returns:",
+      "explanation": "The ceiling function maps a real number to the least integer that is greater than or equal to that number.",
+      "options": [
+        "The smallest integer ≥ x",
+        "The largest integer ≤ x",
+        "x rounded down",
+        "x − 1"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A sequence is:",
+      "explanation": "A sequence is an ordered list of elements, often defined as a function from integers to a set.",
+      "options": [
+        "A set of unordered numbers",
+        "An ordered list of numbers",
+        "A power set",
+        "A function from R to R"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The sequence 2, 4, 8, 16, … is:",
+      "explanation": "Each term is multiplied by a constant ratio of 2 (2×2=4, 4×2=8...), making it a geometric progression.",
+      "options": [
+        "Arithmetic",
+        "Geometric",
+        "Fibonacci",
+        "Harmonic"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The general term of an arithmetic progression is:",
+      "explanation": "In an arithmetic progression starting at 'a' with difference 'd', the nth term is a + (n-1)d.",
+      "options": [
+        "a + nd",
+        "arⁿ",
+        "a + (n − 1)d",
+        "a ⋅ rⁿ⁻¹"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The Fibonacci sequence is defined by:",
+      "explanation": "The Fibonacci sequence is defined recursively where each term is the sum of the two preceding terms.",
+      "options": [
+        "fₙ = fₙ₋₁ + fₙ₋₂",
+        "fₙ = fₙ₋₁ × fₙ₋₂",
+        "fₙ = n²",
+        "fₙ = 2ⁿ"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The sum \\sum_{k=1}^{5} k^2 is:",
+      "explanation": "1² + 2² + 3² + 4² + 5² = 1 + 4 + 9 + 16 + 25 = 55.",
+      "options": [
+        "15",
+        "30",
+        "55",
+        "65"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The sum \\sum_{k=0}^{\\infty} r^k for |r| < 1 is:",
+      "explanation": "This is the formula for the sum of an infinite geometric series where the absolute value of the ratio r is less than 1.",
+      "options": [
+        "1/(1 − r)",
+        "1/(1 + r)",
+        "∞",
+        "0"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "\\sum_{i=1}^{3} \\sum_{j=1}^{2} (i + j) =",
+      "explanation": "For i=1: (1+1)+(1+2)=5; i=2: (2+1)+(2+2)=7; i=3: (3+1)+(3+2)=9. Sum = 5+7+9 = 21.",
+      "options": [
+        "6",
+        "12",
+        "18",
+        "21"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "The closed form of \\sum_{k=1}^{n} k is:",
+      "explanation": "This is the standard formula for the sum of the first n integers (arithmetic series).",
+      "options": [
+        "n(n + 1)/2",
+        "n(n + 1)(2n + 1)/6",
+        "n²(n + 1)²/4",
+        "n²"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The sequence defined by aₙ = 1/n is:",
+      "explanation": "As n increases (1, 2, 3...), 1/n gets smaller (1, 0.5, 0.33...), so the sequence is strictly decreasing.",
+      "options": [
+        "Increasing",
+        "Decreasing",
+        "Constant",
+        "Geometric"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The value of \\sum_{j=0}^{4} (-1)^j is:",
+      "explanation": "(-1)⁰ + (-1)¹ + (-1)² + (-1)³ + (-1)⁴ = 1 - 1 + 1 - 1 + 1 = 1.",
+      "options": [
+        "0",
+        "1",
+        "−1",
+        "2"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A matrix with m rows and n columns is called:",
+      "explanation": "Matrix dimensions are always specified as rows × columns, hence an m × n matrix.",
+      "options": [
+        "Square matrix",
+        "m × n matrix",
+        "Column matrix",
+        "Row matrix"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The identity matrix Iₙ has:",
+      "explanation": "An identity matrix is a square matrix with ones on the main diagonal and zeros everywhere else.",
+      "options": [
+        "1’s on diagonal, 0’s elsewhere",
+        "0’s everywhere",
+        "1’s everywhere",
+        "1’s in first row"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If A is 2 × 3 and B is 3 × 2, then AB is:",
+      "explanation": "Multiplying (m × n) by (n × p) results in an (m × p) matrix. Here, (2 × 3) × (3 × 2) results in a 2 × 2 matrix.",
+      "options": [
+        "2 × 2",
+        "3 × 3",
+        "2 × 3",
+        "Not defined"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The transpose of a matrix:",
+      "explanation": "The transpose operation flips a matrix over its diagonal, switching the row and column indices of the matrix.",
+      "options": [
+        "Swaps rows and columns",
+        "Adds matrices",
+        "Multiplies matrices",
+        "Finds determinant"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A square matrix A is symmetric if:",
+      "explanation": "A symmetric matrix is equal to its own transpose, meaning the entry at (i, j) is the same as (j, i).",
+      "options": [
+        "A = Aᵀ",
+        "A = −Aᵀ",
+        "A = A⁻¹",
+        "A = 0"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a zero-one matrix, entries are:",
+      "explanation": "A zero-one matrix (or Boolean matrix) is defined specifically as a matrix where every element is either 0 or 1.",
+      "options": [
+        "0 or 1",
+        "Any integer",
+        "Positive numbers",
+        "Real numbers"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The join of two zero-one matrices A and B is:",
+      "explanation": "The join operation corresponds to the bitwise OR (∨) of the corresponding elements in the matrices.",
+      "options": [
+        "A ∧ B",
+        "A ∨ B",
+        "A + B",
+        "A × B"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The meet of two zero-one matrices A and B is:",
+      "explanation": "The meet operation corresponds to the bitwise AND (∧) of the corresponding elements in the matrices.",
+      "options": [
+        "A ∧ B",
+        "A ∨ B",
+        "A − B",
+        "Aᵀ"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If A = [1 0; 0 1] and B = [0 1; 1 0], then A ∨ B is:",
+      "explanation": "Perform OR on each position: (1∨0)=1, (0∨1)=1, (0∨1)=1, (1∨0)=1. The result is all 1s.",
+      "options": [
+        "[1 1; 1 1]",
+        "[0 0; 0 0]",
+        "[1 0; 0 1]",
+        "[0 1; 1 0]"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The zero matrix has:",
+      "explanation": "By definition, a zero matrix is a matrix where every single element is the number 0.",
+      "options": [
+        "All entries 0",
+        "All entries 1",
+        "Diagonal entries 1",
+        "First row 1’s"
+      ],
+      "correct": 0
+    }
+  ]
+}

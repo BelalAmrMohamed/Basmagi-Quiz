@@ -1,0 +1,720 @@
+{
+  "meta": {
+    "title": "Quiz 5",
+    "id": "DOVXTUID",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Discrete Structure/Quiz 5.json"
+  },
+  "stats": {
+    "questionCount": 64,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "To show specifications are inconsistent, what must we show?",
+      "explanation": "If specifications lead to a contradiction (a situation that cannot be true), they are logically inconsistent.",
+      "options": [
+        "They lead to a contradiction",
+        "They are all false",
+        "They are all true",
+        "They use different variables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the output of an OR gate equal when both inputs are 0?",
+      "explanation": "In an OR gate, the output is only 0 (False) if all inputs are 0.",
+      "options": [
+        "0",
+        "1",
+        "Undefined",
+        "Error"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the output of a NAND gate equal when both inputs are 1?",
+      "explanation": "NAND is 'Not AND'. If inputs are 1 and 1, AND is 1, so NAND flips it to 0.",
+      "options": [
+        "0",
+        "1",
+        "Undefined",
+        "Same as inputs"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the output of a NOR gate equal when both inputs are 0?",
+      "explanation": "NOR is 'Not OR'. If inputs are 0 and 0, OR is 0, so NOR flips it to 1.",
+      "options": [
+        "1",
+        "0",
+        "Undefined",
+        "Error"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the bitwise AND of 1101 and 1011?",
+      "explanation": "Compare bit by bit: 1&1=1, 1&0=0, 0&1=0, 1&1=1. Result: 1001.",
+      "options": [
+        "1001",
+        "1111",
+        "0110",
+        "1101"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the bitwise OR of 1100 and 0110?",
+      "explanation": "Compare bit by bit: 1|0=1, 1|1=1, 0|1=1, 0|0=0. Result: 1110.",
+      "options": [
+        "1110",
+        "0100",
+        "1010",
+        "0010"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the bitwise XOR of 1111 and 0000?",
+      "explanation": "XOR results in 1 if bits are different. Here, every position differs (1 vs 0), so all result in 1.",
+      "options": [
+        "1111",
+        "0000",
+        "1010",
+        "0101"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In predicate logic, what is a predicate?",
+      "explanation": "A predicate refers to a property that depends on variables (like 'x is greater than 5').",
+      "options": [
+        "A property that can be true or false for elements in a domain",
+        "A true statement",
+        "A quantifier",
+        "A logical operator"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the domain of discourse?",
+      "explanation": "The domain of discourse defines the specific set of values (like integers or real numbers) that a variable can represent.",
+      "options": [
+        "The set of all possible values for variables",
+        "The set of all propositions",
+        "The set of all quantifiers",
+        "The set of all predicates"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If P(x) is 'x > 5' and the domain is integers, is P(3) true?",
+      "explanation": "Replacing x with 3 gives '3 > 5', which is False.",
+      "options": [
+        "False",
+        "True",
+        "Undefined",
+        "Depends on context"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "To translate 'No students failed the exam' into predicate logic (domain: all students), which is correct?",
+      "explanation": "'No student failed' is equivalent to saying 'It is not the case that there exists a student who failed' (¬∃x F(x)).",
+      "options": [
+        "¬∃x F(x) or ∀x ¬F(x)",
+        "∃x ¬F(x)",
+        "∀x F(x)",
+        "∃x F(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How would you express 'At least two elements satisfy P(x)'?",
+      "explanation": "You need to find two distinct variables (x ≠ y) where both satisfy the predicate P.",
+      "options": [
+        "∃x ∃y (x ≠ y ∧ P(x) ∧ P(y))",
+        "∃x P(x)",
+        "∀x ∀y P(x)",
+        "∃x (P(x) ∧ P(x))"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the negation of ∀x ∃y (x + y = 0)?",
+      "explanation": "By De Morgan's laws for quantifiers, you flip ∀ to ∃, ∃ to ∀, and negate the inner statement.",
+      "options": [
+        "∃x ∀y (x + y ≠ 0)",
+        "∃x ∃y (x + y ≠ 0)",
+        "∀x ∀y (x + y ≠ 0)",
+        "∀x ∃y (x + y ≠ 0)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which statement correctly expresses 'The sum of two positive integers is always positive'?",
+      "explanation": "This uses universal quantifiers (always) and an implication (if x and y are positive, then sum is positive).",
+      "options": [
+        "∀x ∀y ((x > 0 ∧ y > 0) → (x + y > 0))",
+        "∃x ∃y ((x > 0 ∧ y > 0) → (x + y > 0))",
+        "∀x ∀y (x + y > 0)",
+        "∃x ∀y ((x > 0 ∧ y > 0) → (x + y > 0))"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the primary purpose of studying discrete structures in computer science?",
+      "explanation": "Discrete structures provide the essential logic, set theory, and graph theory used to build algorithms and data structures.",
+      "options": [
+        "To develop mathematical foundations for CS applications",
+        "To learn programming languages",
+        "To design hardware only",
+        "To study continuous mathematics"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following courses directly uses concepts from discrete structures?",
+      "explanation": "These core CS subjects rely on discrete math concepts like logic, graphs, and sets.",
+      "options": [
+        "Data Structures, Algorithms, and Databases",
+        "Only programming courses",
+        "Only hardware courses",
+        "Physical education"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the absorption law p ∧ (p ∨ q) simplify to?",
+      "explanation": "The Absorption Law states that p ∧ (p ∨ q) is logically equivalent to just p.",
+      "options": [
+        "p",
+        "q",
+        "p ∨ q",
+        "p ∧ q"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If the domain is all real numbers and P(x) is 'x² ≥ 0', what is the truth value of ∀x P(x)?",
+      "explanation": "The square of any real number is always non-negative, so the statement is True.",
+      "options": [
+        "True",
+        "False",
+        "Unknown",
+        "Undefined"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If the domain is integers and P(x) is 'x² = 2', what is the truth value of ∃x P(x)?",
+      "explanation": "There is no integer that, when squared, equals 2 (the root is irrational), so this is False.",
+      "options": [
+        "False",
+        "True",
+        "Unknown",
+        "Undefined"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the result of applying the distributive law to p ∨ (q ∧ r)?",
+      "explanation": "Distributing OR over AND results in (p OR q) AND (p OR r).",
+      "options": [
+        "(p ∨ q) ∧ (p ∨ r)",
+        "(p ∧ q) ∨ (p ∧ r)",
+        "p ∧ q ∧ r",
+        "p ∨ q ∨ r"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In Boolean algebra, what is p ∧ T equivalent to?",
+      "explanation": "Identity Law: ANDing any value with True results in the original value.",
+      "options": [
+        "p",
+        "T",
+        "F",
+        "¬p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In Boolean algebra, what is p ∨ T equivalent to?",
+      "explanation": "Domination Law: ORing any value with True always results in True.",
+      "options": [
+        "T",
+        "p",
+        "F",
+        "¬p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What logical equivalence allows us to rewrite ¬(p → q)?",
+      "explanation": "An implication is only false if the hypothesis (p) is true and the conclusion (q) is false.",
+      "options": [
+        "¬(p → q) ≡ p ∧ ¬q",
+        "¬(p → q) ≡ ¬p ∨ q",
+        "¬(p → q) ≡ p ∨ ¬q",
+        "¬(p → q) ≡ ¬p ∧ q"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "To prove a statement of the form ∃x ∀y P(x,y), what approach is most direct?",
+      "explanation": "You need to find one 'witness' x that works universally for every possible y.",
+      "options": [
+        "Find a specific value for x, then prove P(x,y) for all y",
+        "Prove it for all x and y",
+        "Find specific values for both x and y",
+        "Use proof by contradiction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the negation of (p ∧ q) → r?",
+      "explanation": "The negation of A → B is A ∧ ¬B. Here, A is (p ∧ q) and B is r.",
+      "options": [
+        "(p ∧ q) ∧ ¬r",
+        "(p ∨ q) → ¬r",
+        "¬(p ∧ q) ∨ r",
+        "(p ∧ q) ∨ ¬r"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which statement about predicates is correct?",
+      "explanation": "A predicate is a template; it only becomes a true/false proposition once specific values are plugged in.",
+      "options": [
+        "A predicate becomes a proposition when all variables are assigned values",
+        "A predicate is always a proposition",
+        "A predicate cannot contain variables",
+        "A predicate has no truth value"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If P(x,y) is 'x + y = 10' with domain being positive integers, what is the truth value of ∃x ∃y P(x,y)?",
+      "explanation": "Since there exist integers (like 3 and 7) that sum to 10, the statement is True.",
+      "options": [
+        "True (e.g., x=3, y=7)",
+        "False",
+        "Unknown",
+        "Depends on order"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the converse of 'If it snows, then school is cancelled'?",
+      "explanation": "The converse swaps the hypothesis and the conclusion (q → p).",
+      "options": [
+        "If school is cancelled, then it snows",
+        "If it doesn't snow, then school is not cancelled",
+        "If school is not cancelled, then it doesn't snow",
+        "It snows and school is cancelled"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the inverse of 'If you study, then you pass'?",
+      "explanation": "The inverse negates both the hypothesis and the conclusion (¬p → ¬q).",
+      "options": [
+        "If you don't study, then you don't pass",
+        "If you pass, then you study",
+        "If you don't pass, then you don't study",
+        "You study and you pass"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which two forms of a conditional are logically equivalent?",
+      "explanation": "A statement (p → q) is always logically equivalent to its contrapositive (¬q → ¬p).",
+      "options": [
+        "A conditional and its contrapositive",
+        "A conditional and its converse",
+        "A conditional and its inverse",
+        "Converse and inverse"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Are the converse and inverse of a conditional logically equivalent?",
+      "explanation": "The inverse is the contrapositive of the converse, making them logically equivalent to each other.",
+      "options": [
+        "Yes, they are equivalent to each other",
+        "No, never",
+        "Only sometimes",
+        "Only when the original is true"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a truth table with 3 propositional variables, how many rows are needed?",
+      "explanation": "The number of rows is 2^n. For n=3, 2^3 = 8.",
+      "options": [
+        "8",
+        "6",
+        "9",
+        "3"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a truth table with n propositional variables, how many rows are needed?",
+      "explanation": "Each variable has 2 states (T/F), so for n variables, there are 2^n combinations.",
+      "options": [
+        "2^n",
+        "n^2",
+        "2n",
+        "n!"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What type of proof would you use to prove 'There exists an irrational number'?",
+      "explanation": "A constructive proof demonstrates existence by pointing to a specific example, such as the square root of 2.",
+      "options": [
+        "Constructive existence proof (show an example like √2)",
+        "Proof by contraposition",
+        "Vacuous proof",
+        "Trivial proof"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the statement ∀x ∀y (x + y = y + x) express?",
+      "explanation": "The commutative property states that the order of operands does not change the result.",
+      "options": [
+        "Addition is commutative",
+        "Addition is associative",
+        "Addition has an identity",
+        "Addition is distributive"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How would you translate 'Not all birds can fly' into predicate logic?",
+      "explanation": "'Not all' means it is false that every bird flies, which implies there exists at least one bird that does not fly.",
+      "options": [
+        "¬∀x F(x) or equivalently ∃x ¬F(x)",
+        "∀x ¬F(x)",
+        "¬∃x F(x)",
+        "∃x F(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is meant by a 'valid argument'?",
+      "explanation": "Validity refers to the logical structure: if the starting points are true, the result is guaranteed to be true.",
+      "options": [
+        "If all premises are true, then the conclusion must be true",
+        "The conclusion is always true",
+        "All premises are true",
+        "The argument looks reasonable"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Can a valid argument have a false conclusion?",
+      "explanation": "Yes. Validity only preserves truth. If you start with false premises (garbage in), you may get a false conclusion (garbage out).",
+      "options": [
+        "Yes, if at least one premise is false",
+        "No, never",
+        "Only in propositional logic",
+        "Only in predicate logic"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is a sound argument?",
+      "explanation": "Soundness is the 'gold standard': the logic is valid AND the starting premises are actually true.",
+      "options": [
+        "A valid argument with all true premises",
+        "Any valid argument",
+        "An argument that sounds convincing",
+        "An invalid argument"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the resolution rule, from (p ∨ q) and (¬p ∨ r), what can we conclude?",
+      "explanation": "The variable 'p' appears in positive and negative forms, essentially cancelling out, leaving 'q OR r'.",
+      "options": [
+        "q ∨ r",
+        "p ∨ r",
+        "q ∧ r",
+        "¬q ∨ r"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does the law of excluded middle state?",
+      "explanation": "This law states that a proposition must be either True or False; there is no middle ground.",
+      "options": [
+        "p ∨ ¬p is always true",
+        "p ∧ ¬p is always false",
+        "p → ¬p is false",
+        "¬p → p is true"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the law of non-contradiction?",
+      "explanation": "This law states that a proposition cannot be both True and False at the same time.",
+      "options": [
+        "p ∧ ¬p is always false",
+        "p ∨ ¬p is always true",
+        "p → p is true",
+        "¬¬p ≡ p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If we want to prove 'For all even integers n, n² is even', which method is most straightforward?",
+      "explanation": "A direct proof works best: assume n is even (n=2k), then square it to show the result is also a multiple of 2.",
+      "options": [
+        "Direct proof",
+        "Proof by contraposition",
+        "Proof by contradiction",
+        "Vacuous proof"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "To prove an 'if and only if' statement p ↔ q, what must we prove?",
+      "explanation": "Biconditional statements require proving the implication in both directions.",
+      "options": [
+        "Both p → q and q → p",
+        "Only p → q",
+        "Only q → p",
+        "Either p → q or q → p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the scope of a quantifier?",
+      "explanation": "The scope is the specific section of the formula that the quantifier binds or controls.",
+      "options": [
+        "The part of the logical expression where the quantifier applies",
+        "The entire statement",
+        "Just the variable",
+        "The domain only"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In ∀x (P(x) → Q(x)), what is the scope of ∀x?",
+      "explanation": "The parentheses indicate that the quantifier applies to the entire implication P(x) → Q(x).",
+      "options": [
+        "(P(x) → Q(x))",
+        "P(x) only",
+        "Q(x) only",
+        "The entire universe"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does a bound variable mean?",
+      "explanation": "A variable is 'bound' if it is attached to a quantifier like ∀ or ∃.",
+      "options": [
+        "A variable that appears within the scope of a quantifier",
+        "A variable with no quantifier",
+        "A constant",
+        "A proposition"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does a free variable mean?",
+      "explanation": "A variable is 'free' if it is not restricted or defined by a quantifier in the expression.",
+      "options": [
+        "A variable not bound by any quantifier",
+        "A variable bound by ∀",
+        "A variable bound by ∃",
+        "Any variable"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the expression ∀x P(x,y), which variable is free?",
+      "explanation": "x is bound by the quantifier ∀x, leaving y as the free variable.",
+      "options": [
+        "y",
+        "x",
+        "Both x and y",
+        "Neither"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the expression ∃x ∀y P(x,y,z), which variable(s) is/are free?",
+      "explanation": "x and y are bound by quantifiers, leaving z as the only free variable.",
+      "options": [
+        "z only",
+        "x and y",
+        "x only",
+        "All variables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does it mean for specifications to be complete?",
+      "explanation": "Completeness means the specifications cover all required aspects of the system without leaving anything undefined.",
+      "options": [
+        "They specify all necessary system requirements",
+        "They are consistent",
+        "They contain no contradictions",
+        "They use all variables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In logic circuits, what is a combinatorial circuit?",
+      "explanation": "Combinatorial circuits have no memory; their output is determined purely by the current state of inputs.",
+      "options": [
+        "A circuit whose output depends only on current inputs",
+        "A circuit with memory",
+        "A circuit with feedback",
+        "A sequential circuit"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "How many basic logic gates are mentioned in the course?",
+      "explanation": "The fundamental building blocks are usually NOT, AND, and OR.",
+      "options": [
+        "3 (NOT, AND, OR)",
+        "2 (AND, OR)",
+        "4 (NOT, AND, OR, XOR)",
+        "5 (NOT, AND, OR, NAND, NOR)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the output of XOR gate when inputs are different?",
+      "explanation": "XOR (Exclusive OR) outputs True only when the inputs differ from each other.",
+      "options": [
+        "1 (True)",
+        "0 (False)",
+        "Undefined",
+        "Same as first input"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the output of XOR gate when inputs are the same?",
+      "explanation": "If both inputs are the same (both 0 or both 1), XOR outputs False.",
+      "options": [
+        "0 (False)",
+        "1 (True)",
+        "Undefined",
+        "Error"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In Boolean searches, what does the AND operator do?",
+      "explanation": "AND requires all conditions to be met, which reduces the number of matching results.",
+      "options": [
+        "Narrows the search (both terms must appear)",
+        "Broadens the search",
+        "Excludes results",
+        "Finds exact matches"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In Boolean searches, what does the OR operator do?",
+      "explanation": "OR allows any of the conditions to be met, increasing the number of matching results.",
+      "options": [
+        "Broadens the search (either term can appear)",
+        "Narrows the search",
+        "Excludes results",
+        "Finds exact phrases"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the purpose of using logical equivalences in proofs?",
+      "explanation": "Equivalences act like algebraic rules, allowing you to rewrite complex logic into simpler, easier-to-prove forms.",
+      "options": [
+        "To simplify expressions and transform them into equivalent forms",
+        "To make proofs longer",
+        "To add complexity",
+        "To avoid using truth tables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Can we prove a tautology is true using a truth table?",
+      "explanation": "A truth table exhausts all possible combinations; if the result is always True, it proves the statement is a tautology.",
+      "options": [
+        "Yes, by showing it's true for all truth value assignments",
+        "No, never",
+        "Only for simple tautologies",
+        "Only with 2 variables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does ∀x (x² ≥ x) mean when the domain is real numbers?",
+      "explanation": "The symbol ∀x means 'for all x', so it translates directly to 'For all real numbers x...'.",
+      "options": [
+        "For all real numbers x, x² is greater than or equal to x",
+        "Some x satisfies x² ≥ x",
+        "No x satisfies x² ≥ x",
+        "x² is always greater than x"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Is the statement ∀x (x² ≥ x) true when the domain is real numbers?",
+      "explanation": "It is false because fractions between 0 and 1 get smaller when squared.",
+      "options": [
+        "False (counterexample: x = 0.5, since 0.25 < 0.5)",
+        "True",
+        "Unknown",
+        "Undefined"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What technique involves breaking a proof into several cases?",
+      "explanation": "Proof by cases involves splitting the problem into distinct categories (like positive vs. negative numbers) and proving each separately.",
+      "options": [
+        "Proof by cases (case analysis)",
+        "Direct proof",
+        "Proof by contraposition",
+        "Proof by contradiction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "When is proof by cases useful?",
+      "explanation": "It is useful when a single argument doesn't cover all possibilities, but breaking it down covers the whole domain.",
+      "options": [
+        "When the hypothesis naturally breaks into different scenarios",
+        "Only for simple proofs",
+        "Never",
+        "Only for propositions"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is a constructive existence proof?",
+      "explanation": "It proves something exists by actually producing or constructing the specific value that satisfies the condition.",
+      "options": [
+        "Proving existence by explicitly finding an example",
+        "Proving existence without finding an example",
+        "Disproving existence",
+        "Assuming existence"
+      ],
+      "correct": 0
+    }
+  ]
+}

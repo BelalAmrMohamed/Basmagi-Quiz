@@ -1,0 +1,418 @@
+{
+  "meta": {
+    "title": "Lecture 4",
+    "id": "XHE3PKIQ",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 4.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What year was the OSI model created by the International Organization for Standardization (ISO)?",
+      "explanation": "The OSI model was created in 1984 by ISO.",
+      "options": [
+        "1974",
+        "1984",
+        "1994",
+        "2004"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "How many abstraction layers are in the OSI reference model?",
+      "explanation": "The OSI model is split into seven different abstraction layers.",
+      "options": [
+        "4",
+        "5",
+        "7",
+        "8"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which layer is the highest layer (Layer 7) in the OSI model?",
+      "explanation": "The Application layer is the 7th and top layer of the OSI model.",
+      "options": [
+        "Physical",
+        "Network",
+        "Session",
+        "Application"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which layer is responsible for transmitting raw bits over a physical medium (Layer 1)?",
+      "explanation": "The Physical layer is Layer 1 of the OSI model.",
+      "options": [
+        "Data Link",
+        "Physical",
+        "Transport",
+        "Presentation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the primary purpose of the OSI model?",
+      "explanation": "It is a reference framework to standardize network communication and explain data transmission.",
+      "options": [
+        "To replace the Internet",
+        "To provide a reference framework that standardizes network communication",
+        "To define only hardware specifications",
+        "To eliminate the need for protocols"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: The OSI model supports interoperability between different products and software.",
+      "explanation": "The model characterizes functions into rules to support interoperability.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the TCP/IP suite, functionality is divided into how many layers?",
+      "explanation": "TCP/IP functionality is divided into four layers.",
+      "options": [
+        "3",
+        "4",
+        "7",
+        "10"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is an Application layer protocol in the TCP/IP model?",
+      "explanation": "HTTP, FTP, and SMTP are Application layer protocols.",
+      "options": [
+        "IP",
+        "TCP",
+        "HTTP",
+        "Ethernet"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which layer in the TCP/IP model is responsible for maintaining end-to-end communications?",
+      "explanation": "The Transport layer maintains end-to-end communications across the network.",
+      "options": [
+        "Link layer",
+        "Internet layer",
+        "Transport layer",
+        "Application layer"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the TCP/IP Network layer also commonly called?",
+      "explanation": "The network layer is also called the internet layer.",
+      "options": [
+        "Link layer",
+        "Internet layer",
+        "Session layer",
+        "Physical layer"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which protocol is used at the Network (Internet) layer for error reporting?",
+      "explanation": "ICMP (Internet Control Message Protocol) is used for error reporting.",
+      "options": [
+        "TCP",
+        "UDP",
+        "ICMP",
+        "SNMP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The TCP/IP 'Link' layer (Layer 1) is a combination of which two OSI layers?",
+      "explanation": "The TCP/IP Link layer corresponds to the OSI Physical and Data Link layers.",
+      "options": [
+        "Physical and Data Link",
+        "Network and Transport",
+        "Session and Presentation",
+        "Data Link and Network"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which protocol operates at the lowest (Link) layer of the TCP/IP suite?",
+      "explanation": "Protocols in this lowest layer include Ethernet and ARP.",
+      "options": [
+        "HTTP",
+        "IP",
+        "Ethernet",
+        "POP3"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What does the Application layer payload consist of?",
+      "explanation": "At the application layer, the payload is the actual application data.",
+      "options": [
+        "Packets",
+        "The actual application data",
+        "Frames",
+        "MAC addresses"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which protocol handles host communication and provides flow control and reliability?",
+      "explanation": "TCP handles communications between hosts and provides flow control and reliability.",
+      "options": [
+        "UDP",
+        "IP",
+        "TCP",
+        "ICMP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: User Datagram Protocol (UDP) is a Transport layer protocol.",
+      "explanation": "Transport protocols include TCP and User Datagram Protocol (UDP).",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "OSI Layer 3 (Network) maps directly to which TCP/IP layer?",
+      "explanation": "The OSI Network layer maps to the TCP/IP Internet layer.",
+      "options": [
+        "Application",
+        "Transport",
+        "Internet",
+        "Link"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "OSI Layer 4 (Transport) maps directly to which TCP/IP layer?",
+      "explanation": "The OSI Transport layer maps to the TCP/IP Transport layer.",
+      "options": [
+        "Application",
+        "Transport",
+        "Internet",
+        "Link"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "OSI Layers 5 (Session), 6 (Presentation), and 7 (Application) map to which single TCP/IP layer?",
+      "explanation": "These three upper OSI layers map to the TCP/IP Application layer.",
+      "options": [
+        "Transport",
+        "Internet",
+        "Application",
+        "Link"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What does 'OSI' stand for?",
+      "explanation": "OSI stands for Open Systems Interconnection.",
+      "options": [
+        "Open Systems Interconnection",
+        "Official Systems Interface",
+        "Optical Signal Interconnect",
+        "Operational System Integration"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which protocol is used for email retrieval as mentioned in the Application layer?",
+      "explanation": "Post Office Protocol 3 (POP3) is listed as an application layer protocol.",
+      "options": [
+        "SMTP",
+        "POP3",
+        "FTP",
+        "HTTP"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which protocol is used for transferring files?",
+      "explanation": "FTP (File Transfer Protocol) is an application layer protocol.",
+      "options": [
+        "SNMP",
+        "HTTP",
+        "FTP",
+        "ICMP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The term 'packets' is specifically associated with which TCP/IP layer?",
+      "explanation": "The network (internet) layer deals with packets.",
+      "options": [
+        "Application",
+        "Internet",
+        "Transport",
+        "Link"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which layer consists of protocols that operate only on a link interconnecting nodes?",
+      "explanation": "The physical/link layer consists of protocols that operate only on a link.",
+      "options": [
+        "Physical (Link) layer",
+        "Internet layer",
+        "Transport layer",
+        "Application layer"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: ARP (Address Resolution Protocol) is a Network (Internet) layer protocol in the TCP/IP model.",
+      "explanation": "ARP is categorized under the Physical/Link layer in the TCP/IP functionality description.",
+      "options": [
+        "False",
+        "True"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which protocol is used for managing devices on an IP network?",
+      "explanation": "SNMP (Simple Network Management Protocol) is an Application layer protocol.",
+      "options": [
+        "SMTP",
+        "SNMP",
+        "TCP",
+        "IP"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does 'multiplexing' provide in the Transport layer?",
+      "explanation": "TCP provides flow control, multiplexing, and reliability at the transport layer.",
+      "options": [
+        "Error reporting",
+        "Physical connectivity",
+        "Maintaining multiple communications",
+        "Data encryption"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: The OSI model was created by the ISO in 1984.",
+      "explanation": "This is the correct organization and year.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which layer handles the 'logical' transmission of data between different networks?",
+      "explanation": "The network layer connects independent networks to transport packets across boundaries.",
+      "options": [
+        "Application",
+        "Network (Internet)",
+        "Transport",
+        "Physical"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which OSI layer is Layer 2?",
+      "explanation": "The sequence is Physical (1), Data Link (2), Network (3).",
+      "options": [
+        "Physical",
+        "Data Link",
+        "Network",
+        "Transport"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which OSI layer is Layer 6?",
+      "explanation": "The sequence is Transport (4), Session (5), Presentation (6), Application (7).",
+      "options": [
+        "Application",
+        "Presentation",
+        "Session",
+        "Transport"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: TCP is connectionless.",
+      "explanation": "UDP is connectionless; TCP provides reliability and flow control.",
+      "options": [
+        "False",
+        "True"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which protocol is used to send emails?",
+      "explanation": "Simple Mail Transfer Protocol (SMTP) is used for standardized email exchange.",
+      "options": [
+        "POP3",
+        "FTP",
+        "SMTP",
+        "SNMP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which layer provides standardized data exchange for applications?",
+      "explanation": "The application layer provides applications with standardized data exchange.",
+      "options": [
+        "Application Layer",
+        "Transport Layer",
+        "Network Layer",
+        "Link Layer"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which OSI layer is responsible for managing communication sessions (Layer 5)?",
+      "explanation": "Layer 5 of the OSI model is the Session layer.",
+      "options": [
+        "Presentation",
+        "Session",
+        "Application",
+        "Network"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Essay: Name all seven layers of the OSI model in order from 1 to 7.",
+      "explanation": "Source:",
+      "answer": "1. Physical, 2. Data Link, 3. Network, 4. Transport, 5. Session, 6. Presentation, 7. Application"
+    },
+    {
+      "q": "Essay: List the four layers of the TCP/IP suite as described in Lecture 4.",
+      "explanation": "Source:",
+      "answer": "1. Application, 2. Transport, 3. Network (Internet), 4. Physical (Link)"
+    },
+    {
+      "q": "Essay: Name three protocols that operate at the TCP/IP Application layer.",
+      "explanation": "Source:",
+      "answer": "HTTP, FTP, POP3, SMTP, and SNMP"
+    },
+    {
+      "q": "Essay: What is the primary responsibility of the Transport layer?",
+      "explanation": "Source:",
+      "answer": "Maintaining end-to-end communications across the network, including flow control, multiplexing, and reliability."
+    },
+    {
+      "q": "Essay: Which OSI layers map to the TCP/IP 'Link' layer?",
+      "explanation": "Source:",
+      "answer": "The Physical layer and the Data Link layer."
+    }
+  ]
+}

@@ -1,0 +1,742 @@
+{
+  "meta": {
+    "title": "Quiz 4",
+    "id": "ZSJ6Y3UF",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Discrete Structure/Quiz 4.json"
+  },
+  "stats": {
+    "questionCount": 66,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "System specifications are considered \"consistent\" if:",
+      "explanation": "Consistency implies no conflicts; it is possible for all requirements to be satisfied simultaneously.",
+      "options": [
+        "They contain a contradiction",
+        "There is an assignment of truth values that makes them all true",
+        "They are all false",
+        "They use exactly three variables"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "System specifications are \"consistent\" if:",
+      "explanation": "If no assignment makes them all true, the system is inconsistent.",
+      "options": [
+        "They are all false",
+        "There is an assignment of truth values that makes them all true",
+        "They contain a contradiction",
+        "They use only one variable"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "System specifications are consistent if:",
+      "explanation": "Simultaneous satisfaction of all propositions is the definition of consistency.",
+      "options": [
+        "They are all false",
+        "There is an assignment of truth values that makes them all true at the same time",
+        "They contain a contradiction",
+        "They depend on only one variable"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A compound proposition that is always true is called a:",
+      "explanation": "A tautology is true regardless of the truth values of its constituent variables.",
+      "options": [
+        "Tautology",
+        "Contradiction",
+        "Contingency",
+        "Predicate"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A compound proposition that is always true is a:",
+      "explanation": "Example: p OR NOT p is always true.",
+      "options": [
+        "Tautology",
+        "Contradiction",
+        "Contingency",
+        "Logical equivalence"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A compound proposition that is always false is called a:",
+      "explanation": "A contradiction is false for every possible combination of truth values.",
+      "options": [
+        "Tautology",
+        "Contradiction",
+        "Contingency",
+        "Satisfiable statement"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A compound proposition that is always false is a:",
+      "explanation": "Example: p AND NOT p is always false.",
+      "options": [
+        "Tautology",
+        "Contradiction",
+        "Contingency",
+        "Identity"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The statement [(p ∨ q) ∧ ¬p] → q is an example of:",
+      "explanation": "This is Disjunctive Syllogism form. If (p or q) is true and p is false, q MUST be true. It's always valid.",
+      "options": [
+        "Contradiction",
+        "Tautology",
+        "Contingency",
+        "Non-logical statement"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A compound proposition is \"satisfiable\" if:",
+      "explanation": "Satisfiable means it is NOT a contradiction; there is at least one 'solution'.",
+      "options": [
+        "There is at least one assignment of truth values that makes it true",
+        "It is always false",
+        "It is a contradiction",
+        "All assignments make it true"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A compound proposition is \"satisfiable\" if:",
+      "explanation": "Being satisfiable means it has the potential to be true.",
+      "options": [
+        "At least one assignment of truth values makes it true",
+        "All assignments make it false",
+        "It is a contradiction",
+        "It has no variables"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If a proposition is false for every assignment of truth values, it is:",
+      "explanation": "Unsatisfiable is synonymous with being a contradiction.",
+      "options": [
+        "Satisfiable",
+        "Unsatisfiable",
+        "A tautology",
+        "A contingency"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Showing a proposition is \"unsatisfiable\" requires showing it is false for:",
+      "explanation": "You must prove there is no scenario where it can be true.",
+      "options": [
+        "At least one assignment",
+        "The first row of the truth table",
+        "Every assignment of truth values",
+        "Only when variables are true"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to De Morgan's Laws, ¬(p ∧ q) is equivalent to:",
+      "explanation": "The negation of AND is the OR of the negations.",
+      "options": [
+        "¬p ∧ ¬q",
+        "¬p ∨ ¬q",
+        "p ∨ q",
+        "¬p → q"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to De Morgan's Laws, ¬(p ∧ q) ≡:",
+      "explanation": "Often summarized as 'break the line, change the sign'.",
+      "options": [
+        "¬p ∧ ¬q",
+        "¬p ∨ ¬q",
+        "p ∨ q",
+        "¬p → q"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Showing that ¬(p ∨ q) and ¬p ∧ ¬q are equivalent uses:",
+      "explanation": "This is the second of De Morgan's laws: negation of OR is the AND of negations.",
+      "options": [
+        "Identity Laws",
+        "De Morgan's Laws",
+        "Distributive Laws",
+        "Modus Ponens"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "De Morgan's Law states that ¬(p ∨ q) is equivalent to:",
+      "explanation": "Distributing the NOT over an OR flips it to an AND.",
+      "options": [
+        "¬p ∨ ¬q",
+        "¬p ∧ ¬q",
+        "p ∧ q",
+        "¬p → q"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Double Negation Law states that ¬(¬p) ≡:",
+      "explanation": "Two negatives make a positive in logic.",
+      "options": [
+        "p",
+        "¬p",
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Double Negation Law states that ¬(¬p) ≡:",
+      "explanation": "It returns to the original value.",
+      "options": [
+        "F",
+        "T",
+        "p",
+        "¬p"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The Identity Law p ∧ T ≡:",
+      "explanation": "ANDing with True leaves the original value unchanged (True if p is true, False if p is false).",
+      "options": [
+        "p",
+        "T",
+        "F",
+        "¬p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The Identity Law p ∧ T ≡:",
+      "explanation": "Similar to multiplying by 1 in algebra.",
+      "options": [
+        "p",
+        "T",
+        "F",
+        "¬p"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The Domination Law p ∨ T ≡:",
+      "explanation": "If one part of an OR is True, the whole statement is True regardless of p.",
+      "options": [
+        "p",
+        "T",
+        "F",
+        "¬p"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Domination Law p ∨ T ≡:",
+      "explanation": "True dominates disjunction.",
+      "options": [
+        "p",
+        "T",
+        "F",
+        "q"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Absorption Law p ∨ (p ∧ q) ≡:",
+      "explanation": "The term (p AND q) is a subset of p; if p is true, the result is true. If p is false, both are false.",
+      "options": [
+        "p",
+        "q",
+        "T",
+        "F"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Two compound propositions are logically equivalent if:",
+      "explanation": "p ≡ q is the same as saying p ↔ q is always true.",
+      "options": [
+        "They are both contingencies",
+        "Their biconditional statement is a tautology",
+        "They have at least one same truth value",
+        "One is the negation of the other"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The logical equivalence p → q ≡ ¬p ∨ q is:",
+      "explanation": "This is the definition of implication in terms of OR and NOT.",
+      "options": [
+        "True",
+        "False",
+        "Only true if q is true",
+        "A contradiction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The logical equivalence p → q ≡ ¬p ∨ q is:",
+      "explanation": "This equivalence allows us to rewrite implications without the arrow operator.",
+      "options": [
+        "Always true",
+        "Always false",
+        "Only true if p is true",
+        "A contradiction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Translating \"Every student in this class has studied calculus\" (where S(x) means x is in class and P(x) means x studied calculus) results in:",
+      "explanation": "For 'Every' (universal), we use implication. We only care about x IF x is a student.",
+      "options": [
+        "∀x(S(x) → P(x))",
+        "∀x(S(x) ∧ P(x))",
+        "∃x(S(x) → P(x))",
+        "∃x(S(x) ∧ P(x))"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Translating \"Every student in this class has studied Java\" (if U is all people) results in:",
+      "explanation": "Using AND would imply that EVERY person in the universe is a student and studies Java, which is wrong.",
+      "options": [
+        "∀x(S(x) → J(x))",
+        "∀x(S(x) ∧ J(x))",
+        "∃x(S(x) → J(x))",
+        "∃x(S(x) ∨ J(x))"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Translating \"Every comedian is funny\" (C(x) is comedian, F(x) is funny) results in:",
+      "explanation": "Pattern: 'All A are B' translates to ∀x(A(x) → B(x)).",
+      "options": [
+        "∀x(C(x) → F(x))",
+        "∀x(C(x) ∧ F(x))",
+        "∃x(C(x) → F(x))",
+        "¬∀xF(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The sum of two rational numbers being rational is proven using:",
+      "explanation": "We assume m and n are rational (p), add them, and show the sum is rational (q).",
+      "options": [
+        "Direct Proof",
+        "Proof by Contradiction",
+        "Proof by Contraposition",
+        "Truth tables only"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In P(x), P is the ____ and x is the ____:",
+      "explanation": "P stands for Predicate (the property) and x is the subject variable.",
+      "options": [
+        "Predicate, variable",
+        "Quantifier, predicate",
+        "Variable, domain",
+        "Truth value, constant"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In the expression P(x), P is the:",
+      "explanation": "The predicate is the property being ascribed to x.",
+      "options": [
+        "Variable",
+        "Predicate",
+        "Domain",
+        "Quantifier"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A predicate logic expression P(x) becomes a proposition when:",
+      "explanation": "Once x has a specific value (is bound), the statement can be evaluated as True or False.",
+      "options": [
+        "x is a variable",
+        "A value is assigned to x",
+        "The predicate is removed",
+        "It is negated"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The symbol ∀ denotes the:",
+      "explanation": "It represents 'For All'.",
+      "options": [
+        "Universal Quantifier",
+        "Existential Quantifier",
+        "Uniqueness Quantifier",
+        "Negation"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The Universal Quantifier (∀) means:",
+      "explanation": "Also read as 'for every' or 'for each'.",
+      "options": [
+        "For all",
+        "There exists",
+        "Exactly one",
+        "None"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The symbol ∃ denotes the:",
+      "explanation": "It represents 'There Exists'.",
+      "options": [
+        "Universal Quantifier",
+        "Existential Quantifier",
+        "Uniqueness Quantifier",
+        "Identity"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Existential Quantifier (∃) means:",
+      "explanation": "Also read as 'for some'.",
+      "options": [
+        "For all",
+        "There exists at least one",
+        "Exactly one",
+        "None"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Existential Quantifier (∃) means:",
+      "explanation": "It requires finding just one example to be True.",
+      "options": [
+        "For every",
+        "There exists at least one",
+        "For all",
+        "For none"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Uniqueness Quantifier ∃!xP(x) means:",
+      "explanation": "The exclamation mark indicates uniqueness.",
+      "options": [
+        "There is at least one x such that P(x)",
+        "There exists exactly one x such that P(x)",
+        "P(x) is always true",
+        "No x satisfies P(x)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The uniqueness quantifier (∃!) states:",
+      "explanation": "It asserts existence AND uniqueness simultaneously.",
+      "options": [
+        "There are many such x",
+        "There exists exactly one x",
+        "No such x exists",
+        "All x satisfy the condition"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The notation ∃!xP(x) means:",
+      "explanation": "Only one specific element in the domain satisfies the predicate.",
+      "options": [
+        "There are many x such that P(x)",
+        "There exists a unique x such that P(x)",
+        "No x satisfies P(x)",
+        "For all x, P(x) is true"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "∀xP(x) is false if and only if:",
+      "explanation": "A single counterexample disproves a universal claim.",
+      "options": [
+        "P(x) is true for all x",
+        "There is a counterexample (at least one x where P(x) is false)",
+        "P(x) is false for all x",
+        "The domain is empty"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "∀xP(x) is false if and only if:",
+      "explanation": "If one element fails P, then P does not hold for ALL.",
+      "options": [
+        "P(x) is true for all x",
+        "There is a counterexample (an x for which P(x) is false)",
+        "P(x) is false for all x",
+        "The domain is empty"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "∃xP(x) is true if and only if:",
+      "explanation": "Finding one success makes the existential statement true.",
+      "options": [
+        "There is at least one x in the domain for which P(x) is true",
+        "P(x) is true for every x",
+        "P(x) is false for every x",
+        "The domain consists of integers only"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The negation ¬∀xP(x) is equivalent to:",
+      "explanation": "To deny 'all are P', you say 'at least one is NOT P'.",
+      "options": [
+        "∀x¬P(x)",
+        "∃x¬P(x)",
+        "¬∃xP(x)",
+        "∃xP(x)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The negation ¬∀xP(x) is logically equivalent to:",
+      "explanation": "De Morgan's law for quantifiers: Negation passes through and flips the quantifier.",
+      "options": [
+        "∀x¬P(x)",
+        "∃x¬P(x)",
+        "¬∃xP(x)",
+        "∀xP(x)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The negation ¬∃xP(x) is equivalent to:",
+      "explanation": "To deny 'there exists one', you must say 'for all, it is not true'.",
+      "options": [
+        "∀x¬P(x)",
+        "∃x¬P(x)",
+        "¬∀xP(x)",
+        "∀xP(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The negation ¬∃xP(x) is logically equivalent to:",
+      "explanation": "Existential quantifier flips to Universal when negated.",
+      "options": [
+        "∀x¬P(x)",
+        "∃x¬P(x)",
+        "¬∀xP(x)",
+        "∃xP(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The statement \"Every comedian is funny\" is expressed as:",
+      "explanation": "Universal + Implication is the standard form for 'All X are Y'.",
+      "options": [
+        "∀x(C(x) → F(x))",
+        "∀x(C(x) ∧ F(x))",
+        "∃x(C(x) → F(x))",
+        "∀xF(x) → C(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The statement \"Every comedian is funny\" is expressed as:",
+      "explanation": "This construction filters the domain for comedians before checking if they are funny.",
+      "options": [
+        "∀x(C(x) → F(x))",
+        "∀x(C(x) ∧ F(x))",
+        "∃x(C(x) → F(x))",
+        "∀xF(x) → C(x)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "\"There is a student in this class who has not read the book\" is expressed as:",
+      "explanation": "Existential statements ('There is') usually use conjunction (AND) to identify the item and its property.",
+      "options": [
+        "∀x(C(x) → ¬B(x))",
+        "∃x(C(x) ∧ ¬B(x))",
+        "∃x(C(x) → ¬B(x))",
+        "¬∃xB(x)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The truth value of ∀x(x+1>x) over all real numbers is:",
+      "explanation": "Adding 1 always increases the value, so this is always true.",
+      "options": [
+        "True",
+        "False",
+        "Counterexample exists",
+        "Contingent"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If the domain is positive integers, ∃x(x<2) is:",
+      "explanation": "The positive integer 1 is less than 2, so an example exists.",
+      "options": [
+        "True (for x=1)",
+        "False",
+        "A tautology",
+        "A contradiction"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In nested quantifiers, the order of ∀x∀y:",
+      "explanation": "If both are universal, they can be swapped without changing meaning.",
+      "options": [
+        "Does not matter (∀x∀y ≡ ∀y∀x)",
+        "Always matters",
+        "Only matters for x+y=0",
+        "Is always false"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In nested quantifiers, the order of ∀x∀y:",
+      "explanation": "Commutativity holds for identical adjacent quantifiers.",
+      "options": [
+        "Does not matter (∀x∀y ≡ ∀y∀x)",
+        "Always matters",
+        "Matters only for integers",
+        "Is always false"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The statement ∀x∀yP(x,y) is logically equivalent to:",
+      "explanation": "Same rule as above.",
+      "options": [
+        "∀y∀xP(x,y)",
+        "∃x∃yP(x,y)",
+        "∀x∃yP(x,y)",
+        "¬∀x∀yP(x,y)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The statement ∀x∃y(x+y=0) over real numbers means:",
+      "explanation": "For any number x, there is a specific number y (its negative) that zeroes it out.",
+      "options": [
+        "There is one y for all x",
+        "Every real number has an additive inverse",
+        "Addition is commutative",
+        "0+0=0"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The statement ∀x∃y(x+y=0) in the domain of real numbers means:",
+      "explanation": "The y depends on the x chosen (y = -x).",
+      "options": [
+        "There is one number y that works for all x",
+        "Every real number has an additive inverse",
+        "The sum of any two numbers is always zero",
+        "Zero is the neutral element"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The statement ∀x∃y(x+y=0) means:",
+      "explanation": "This describes the Inverse Property of Addition.",
+      "options": [
+        "There is one y that works for all x",
+        "Every real number has an additive inverse",
+        "x and y are always zero",
+        "Addition is commutative"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The statement ∃x∀y(x·y=0) over real numbers is:",
+      "explanation": "If x is 0, then 0 multiplied by ANY y is 0. So there exists such an x.",
+      "options": [
+        "True (if x=0)",
+        "False",
+        "A contradiction",
+        "A tautology"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following logical equivalences involving quantifiers is FALSE?",
+      "explanation": "Swapping mixed quantifiers changes the meaning (e.g., 'Everyone loves someone' vs 'Someone is loved by everyone').",
+      "options": [
+        "∀x∀yP(x,y) ≡ ∀y∀xP(x,y)",
+        "∃x∃yP(x,y) ≡ ∃y∃xP(x,y)",
+        "∀x∃yP(x,y) ≡ ∃y∀xP(x,y)",
+        "Negation of ∀xP(x) is ∃x¬P(x)"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "To translate \"Every student in school has a computer or has a friend who has a computer\", we use:",
+      "explanation": "For all x: (x has computer) OR (there exists y such that y has computer AND y is friend of x).",
+      "options": [
+        "∀x(C(x) ∨ ∃y(C(y) ∧ F(x,y)))",
+        "∀x(C(x) ∧ ∃y(C(y) ∨ F(x,y)))",
+        "∃x∀y(C(x) ∨ F(x,y))",
+        "∀x∀y(C(x) → C(y))"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The sentence \"There is a student whose friends are not friends with each other\" translates to:",
+      "explanation": "If y and z are both friends of x (and distinct), then y and z are NOT friends.",
+      "options": [
+        "∃x∀y∀z((F(x,y) ∧ F(x,z) ∧ (y≠z)) → ¬F(y,z))",
+        "∀x∃y∃z(F(x,y) ∧ F(y,z))",
+        "∃x∀y(F(x,y) → F(y,x))",
+        "¬∃x∀yF(x,y)"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "When negating the statement ∀x∃y(xy=1), the result is:",
+      "explanation": "Negation flips ∀ to ∃, ∃ to ∀, and negates the equals to not-equals.",
+      "options": [
+        "∃x∀y(xy=1)",
+        "∀x∃y(xy≠1)",
+        "∃x∀y(xy≠1)",
+        "∃x∃y(xy≠1)"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The order of quantifiers matters when:",
+      "explanation": "Mixed quantifiers depend on the scope and order of selection.",
+      "options": [
+        "All are universal",
+        "All are existential",
+        "There is a mix of universal and existential quantifiers",
+        "Never"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Precedence in logical operations places quantifiers (∀, ∃):",
+      "explanation": "Quantifiers bind to the immediate predicate or parenthesized expression before other operators apply.",
+      "options": [
+        "Higher than all other logical operators",
+        "Lower than negation (¬)",
+        "Equal to conjunction (∧)",
+        "At the end of the order"
+      ],
+      "correct": 0
+    }
+  ]
+}

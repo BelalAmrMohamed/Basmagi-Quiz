@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "title": "C Plus Plus Quiz",
+    "author": "Imported",
+    "id": "F3A3IZB6",
+    "createdAt": "2026-03-13 - 08:48",
+    "path": "quizzes/Computer Science/2/2/Website demo/أسئلة الدكتور/C_Plus_Plus_Quiz.json"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which operator is used to insert data into the cout stream?",
+      "explanation": "The insertion operator << \"pushes\" data into the output stream.",
+      "options": [
+        ">>",
+        "<<",
+        "<",
+        "*"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which data type is best suited for storing a single character like 'A' or '$'?",
+      "explanation": "char is specifically designed for single characters, whereas string is used for sequences of text.",
+      "options": [
+        "string",
+        "int",
+        "char",
+        "float"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the correct way to end a statement in C++?",
+      "explanation": "Much like a period ends a sentence in English, the semicolon ; tells the compiler that a statement is finished.",
+      "options": [
+        "A period .",
+        "A colon :",
+        "A semicolon ;",
+        "A closing parenthesis )"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of these is the correct header file to include for input and output?",
+      "explanation": "iostream stands for \"input-output stream\" and is necessary for using cin and cout.",
+      "options": [
+        "#include <iostream>",
+        "#include <stdio>",
+        "#include <inputoutput>",
+        "#include <stream>"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the index of the very first element in a C++ array?",
+      "explanation": "C++ uses zero-based indexing, meaning we start counting from 0.",
+      "options": [
+        "1",
+        "-1",
+        "0",
+        "It depends on the size."
+      ],
+      "correct": 2
+    },
+    {
+      "q": "C++ is a case-sensitive language.",
+      "explanation": "In C++, MyVariable and myvariable are treated as two completely different identifiers.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The int data type is used to store decimal numbers like 3.14.",
+      "explanation": "int is for integers (whole numbers). To store decimals, you should use float or double.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Comments in C++ are ignored by the compiler.",
+      "explanation": "Comments (starting with // or /* */) are only there for humans to read.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Every C++ program must have a function named main().",
+      "explanation": "The main() function is the entry point of the program where execution begins.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "You can change the value of a variable declared with the const keyword.",
+      "explanation": "const stands for \"constant,\" meaning the value is read-only once it is set.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Declare an integer variable named age and assign it the value 25.",
+      "explanation": "You must specify the type (int), the name (age), and use the assignment operator (=).",
+      "answer": "int age = 25;"
+    },
+    {
+      "q": "Write the syntax for a single-line comment.",
+      "explanation": "Anything following // on that same line is ignored by the compiler.",
+      "answer": "// This is a comment"
+    },
+    {
+      "q": "Write a code snippet that takes an integer input from the user and stores it in a variable called userNum.",
+      "explanation": "cin uses the extraction operator >> to pull data from the keyboard into a variable.",
+      "answer": "cin >> userNum;"
+    },
+    {
+      "q": "Write a basic if statement that checks if a variable x is greater than 10.",
+      "explanation": "The condition must be enclosed in parentheses, and the code to execute is usually placed inside curly braces.",
+      "answer": "if (x > 10) { /* code */ }"
+    },
+    {
+      "q": "Write the line of code that allows you to use cout and cin without typing std:: every time.",
+      "explanation": "This tells the compiler to look in the standard (std) namespace for identifiers.",
+      "answer": "using namespace std;"
+    }
+  ]
+}

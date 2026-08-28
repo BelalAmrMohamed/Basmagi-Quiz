@@ -1,0 +1,173 @@
+{
+  "meta": {
+    "id": "L3MU425I",
+    "title": "2020 - 2021 Summer Final",
+    "createdAt": "3/30/2026, 9:36:43 PM",
+    "source": "https://drive.google.com/file/d/1nY8_WFHbv7yC6j8tHALDo4UlGEx1CkaK/view?usp=drive_link",
+    "path": "quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2020 - 2021 Summer Final.json"
+  },
+  "stats": {
+    "questionCount": 19,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "If $A \\subset B$, then $P(B|A) =$",
+      "options": [
+        "$P(A|B)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 3,
+      "explanation": "By definition, $P(B|A) = \\frac{P(B \\cap A)}{P(A)}$. Since $A \\subset B$, it follows that $B \\cap A = A$. Therefore, $P(B|A) = \\frac{P(A)}{P(A)} = 1$. Since $1$ is not among the first three options, the correct choice is 'None of them'."
+    },
+    {
+      "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ cannot occur, the events $A$ and $B$ are said to be:",
+      "options": [
+        "Independent",
+        "Mutually exclusive",
+        "$A \\subset B$",
+        "$B \\subset A$"
+      ],
+      "correct": 1,
+      "explanation": "If the occurrence of $A$ prevents $B$ from occurring, then $A \\cap B = \\emptyset$. This is the definition of mutually exclusive events."
+    },
+    {
+      "q": "If $A$ and $B$ be independent events in a sample space $S$, then which of the following statement(s) are true:",
+      "options": [
+        "$A$ and $B^c$ are independent",
+        "$B$ and $A^c$ are independent",
+        "$A^c$ and $B^c$ are independent",
+        "All of preceding"
+      ],
+      "correct": 3,
+      "explanation": "A fundamental property of independent events is that if $A$ and $B$ are independent, then their complements ($A^c$ and $B^c$) are also independent of each other and independent of the original events."
+    },
+    {
+      "q": "A code consists of a digit chosen from 0 to 7 followed by a letter of the alphabet. What is the probability the code is 7Z?",
+      "options": [
+        "$\\frac{1}{260}$",
+        "$\\frac{1}{156}$",
+        "$\\frac{1}{208}$",
+        "None of them"
+      ],
+      "correct": 2,
+      "explanation": "The number of choices for the digit (0 to 7) is 8. The number of choices for the letter (A-Z) is 26. Total possible codes = $8 \\times 26 = 208$. Since '7Z' is a single specific outcome, the probability is $\\frac{1}{208}$."
+    },
+    {
+      "q": "For a continuous random variable $X$ with a probability density function $f(x)=\\begin{cases}k(x^{2}+1),&0\\le x\\le1\\\\ 0,&o.w.\\end{cases}$, then the value of $k$ is:",
+      "options": [
+        "$\\frac{1}{2}$",
+        "$\\frac{3}{4}$",
+        "$\\frac{1}{3}$",
+        "$\\frac{4}{5}$"
+      ],
+      "correct": 1,
+      "explanation": "For a valid PDF, $\\int_{-\\infty}^{\\infty} f(x)dx = 1$. \n$\\int_{0}^{1} k(x^2 + 1) dx = k[\\frac{x^3}{3} + x]_0^1 = k(\\frac{1}{3} + 1) = k(\\frac{4}{3}) = 1$. \nSolving for $k$ gives $k = \\frac{3}{4}$."
+    },
+    {
+      "q": "The value of $k$ when the probability mass function is given by $P(x)=\\begin{cases}\\frac{x}{k},&x=1,2,3\\\\ 0,&o.w.\\end{cases}$ is:",
+      "options": [
+        "9",
+        "6",
+        "$\\frac{1}{9}$",
+        "$\\frac{1}{6}$"
+      ],
+      "correct": 1,
+      "explanation": "For a PMF, $\\sum P(x) = 1$. \n$\\frac{1}{k} + \\frac{2}{k} + \\frac{3}{k} = 1 \\Rightarrow \\frac{6}{k} = 1 \\Rightarrow k = 6$."
+    },
+    {
+      "q": "The cumulative distribution function for the random variable $X$ for $f(x)=\\begin{cases}2x,&0\\le x<1\\\\ 0,&o.w.\\end{cases}$ is given by:",
+      "options": [
+        "$1-x$",
+        "$x-1$",
+        "$x^2$",
+        "None of them"
+      ],
+      "correct": 2,
+      "explanation": "The CDF $F(x) = \\int_{0}^{x} f(t) dt$. \nFor $0 \\le x < 1$, $F(x) = \\int_{0}^{x} 2t dt = [t^2]_0^x = x^2$."
+    },
+    {
+      "q": "If $f(x)=\\begin{cases}2e^{-2x},&0\\le x<\\infty\\\\ 0,&o.w.\\end{cases}$, then the value of $x$ such that $P(X>x)=0.1$ is:",
+      "options": [
+        "1.15",
+        "2.3",
+        "-2.3",
+        "None of them"
+      ],
+      "correct": 0,
+      "explanation": "$P(X > x) = \\int_{x}^{\\infty} 2e^{-2t} dt = [-e^{-2t}]_x^{\\infty} = 0 - (-e^{-2x}) = e^{-2x}$. \nGiven $e^{-2x} = 0.1$, take the natural log: $-2x = \\ln(0.1) \\approx -2.3025$. \n$x = \\frac{-2.3025}{-2} \\approx 1.15$."
+    },
+    {
+      "q": "If the variance of $x$ is $V(x)=2$, then $V(\\frac{x}{2}-5) =$",
+      "options": [
+        "$\\frac{1}{2}$",
+        "2",
+        "1",
+        "$\\frac{1}{4}$"
+      ],
+      "correct": 0,
+      "explanation": "Using the property $V(aX + b) = a^2 V(X)$, we have $V(\\frac{1}{2}x - 5) = (\\frac{1}{2})^2 V(X) = \\frac{1}{4} \\times 2 = \\frac{2}{4} = \\frac{1}{2}$."
+    },
+    {
+      "q": "$E(ax+b) =$",
+      "options": [
+        "$a^2 E(x+b)$",
+        "$a E(x)$",
+        "$a E(x) + b$",
+        "None of them"
+      ],
+      "correct": 2,
+      "explanation": "By the linearity of expectation, $E(aX + b) = aE(X) + E(b) = aE(X) + b$."
+    },
+    {
+      "q": "In a certain assembly plant, three machines, $B_1$, $B_2$ and $B_3$, make 30%, 45%, and 25%, respectively, of the products. It is known from past experience that 2%, 3%, and 2% of the products made by each machine, respectively, are defective. Now, suppose that a finished product is randomly selected.\n\n\n- $a)$ What is the probability that it is defective?",
+      "answer": "Let $D$ be the event that a product is defective. \nGiven probabilities:\n$P(B_1) = 0.30, P(B_2) = 0.45, P(B_3) = 0.25$\n$P(D|B_1) = 0.02, P(D|B_2) = 0.03, P(D|B_3) = 0.02$\n\n\n**a) Total Probability of Defective ($P(D)$):**\n$P(D) = P(B_1)P(D|B_1) + P(B_2)P(D|B_2) + P(B_3)P(D|B_3)$\n$P(D) = (0.30)(0.02) + (0.45)(0.03) + (0.25)(0.02)$\n$P(D) = 0.006 + 0.0135 + 0.005 = 0.0245$\n\n",
+      "explanation": "Part (a) uses the Law of Total Probability to sum the weighted probabilities of defects across all machines. Part (b) uses Bayes' Theorem to find the conditional probability of a specific cause ($B_3$) given the observed effect (Defective)."
+    },
+    {
+      "q": "In a certain assembly plant, three machines, $B_1$, $B_2$ and $B_3$, make 30%, 45%, and 25%, respectively, of the products. It is known from past experience that 2%, 3%, and 2% of the products made by each machine, respectively, are defective. Now, suppose that a finished product is randomly selected.\n\n\n- $b)$ If a product was chosen randomly and found to be defective, what is the probability that it was made by machine $B_3$?",
+      "answer": "Let $D$ be the event that a product is defective. \nGiven probabilities:\n$P(B_1) = 0.30, P(B_2) = 0.45, P(B_3) = 0.25$\n$P(D|B_1) = 0.02, P(D|B_2) = 0.03, P(D|B_3) = 0.02$\n\n\n**a) Total Probability of Defective ($P(D)$):**\n$P(D) = P(B_1)P(D|B_1) + P(B_2)P(D|B_2) + P(B_3)P(D|B_3)$\n$P(D) = (0.30)(0.02) + (0.45)(0.03) + (0.25)(0.02)$\n$P(D) = 0.006 + 0.0135 + 0.005 = 0.0245$\n\n",
+      "explanation": "Part (a) uses the Law of Total Probability to sum the weighted probabilities of defects across all machines. Part (b) uses Bayes' Theorem to find the conditional probability of a specific cause ($B_3$) given the observed effect (Defective)."
+    },
+    {
+      "q": "Mahmoud plays chess against his favorite computer program and wins with probability 0.60. \n\n\n- $a)$ What is the probability that Mahmoud wins 6 games, if he plays 10 games?",
+      "answer": "This follows a Binomial Distribution $B(n, p)$ where $n = 10$ and $p = 0.60$.\nThe formula is $P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k}$.\n\n$P(X=6) = \\binom{10}{6} (0.6)^6 (0.4)^4$\n$P(X=6) = 210 \\times 0.046656 \\times 0.0256 \\approx 0.2508$",
+      "explanation": "Binomial distribution is used because there are a fixed number of trials (10), two outcomes (win/loss), and constant probability of success (0.6)."
+    },
+    {
+      "q": "Mahmoud plays chess against his favorite computer program and wins with probability 0.60. \n\n\n- $b)$ What is the probability that Mahmoud wins 2 games at most, if he plays 10 games?",
+      "answer": "This follows a Binomial Distribution $B(n, p)$ where $n = 10$ and $p = 0.60$.\nThe formula is $P(X=k) = \\binom{n}{k} p^k (1-p)^{n-k}$.\n\n$P(X=6) = \\binom{10}{6} (0.6)^6 (0.4)^4$\n$P(X=6) = 210 \\times 0.046656 \\times 0.0256 \\approx 0.2508$",
+      "explanation": "Binomial distribution is used because there are a fixed number of trials (10), two outcomes (win/loss), and constant probability of success (0.6)."
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class.\n\n\n- $a)$ What is the probability that Fares makes 2 mistakes during one class?",
+      "answer": "**1.** $P(X \\ge 1) = 1 - P(X=0)$\n**2.** $P(X=0) = \\frac{e^{-1.2} (1.2)^0}{0!} = e^{-1.2} \\approx 0.3012$\n**3.** $P(X \\ge 1) = 1 - 0.3012 = 0.6988$",
+      "explanation": "The Poisson distribution models the number of events occurring in a fixed interval of time when the events occur with a known constant mean rate."
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class.\n\n\n- $b)$ What is the probability that Fares makes one mistake at least during one class?",
+      "answer": "**1.** $P(X \\ge 1) = 1 - P(X=0)$\n**2.** $P(X=0) = \\frac{e^{-1.2} (1.2)^0}{0!} = e^{-1.2} \\approx 0.3012$\n**3.** $P(X \\ge 1) = 1 - 0.3012 = 0.6988$",
+      "explanation": "The Poisson distribution models the number of events occurring in a fixed interval of time when the events occur with a known constant mean rate."
+    },
+    {
+      "q": "An introductory biology student wishes to determine the relationship between temperature (X) and heart rate (Y) in the common leopard frog. His data are presented below:\n\n| Temperature ($^{\\circ}C$) X | 2 | 4 | 6 | 8 | 10 | 12 | 14 | 16 | 18 |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| Heart rate (bpm) Y | 5 | 11 | 11 | 14 | 22 | 23 | 32 | 29 | 32 |\n\n- $a)$ Find the best line equation (simple linear regression equation) so that Y may be predicted from X.",
+      "answer": "**Data Analysis ($n=9$):**\n$\\sum X = 90, \\bar{X} = 10$\n$\\sum Y = 179, \\bar{Y} \\approx 19.889$\n$\\sum X^2 = 1140$\n$\\sum XY = 2216$\n$\\sum Y^2 = 4365$\n\n\n**Calculation of sums of squares:**\n$SS_{xx} = \\sum X^2 - \\frac{(\\sum X)^2}{n} = 1140 - \\frac{90^2}{9} = 240$\n$SS_{xy} = \\sum XY - \\frac{(\\sum X)(\\sum Y)}{n} = 2216 - \\frac{90 \\times 179}{9} = 426$\n$SS_{yy} = \\sum Y^2 - \\frac{(\\sum Y)^2}{n} = 4365 - \\frac{179^2}{9} \\approx 804.89$\n\n\n**Regression Equation ($Y = a + bX$):**\n$b = \\frac{SS_{xy}}{SS_{xx}} = \\frac{426}{240} = 1.775$\n$a = \\bar{Y} - b\\bar{X} = 19.889 - (1.775 \\times 10) = 2.139$\nEquation: $\\hat{Y} = 2.139 + 1.775X$",
+      "explanation": "Simple linear regression finds the line of best fit by minimizing the sum of squared residuals. The correlation coefficient $r$ measures the strength and direction of the linear relationship, where $0.969$ indicates a very strong positive correlation."
+    },
+    {
+      "q": "An introductory biology student wishes to determine the relationship between temperature (X) and heart rate (Y) in the common leopard frog. His data are presented below:\n\n| Temperature ($^{\\circ}C$) X | 2 | 4 | 6 | 8 | 10 | 12 | 14 | 16 | 18 |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| Heart rate (bpm) Y | 5 | 11 | 11 | 14 | 22 | 23 | 32 | 29 | 32 |\n\n\n- $b)$ Predict the heart rate when the temperature is 20$^{\\circ}C$.",
+      "answer": "**Data Analysis ($n=9$):**\n$\\sum X = 90, \\bar{X} = 10$\n$\\sum Y = 179, \\bar{Y} \\approx 19.889$\n$\\sum X^2 = 1140$\n$\\sum XY = 2216$\n$\\sum Y^2 = 4365$\n\n\n**Calculation of sums of squares:**\n$SS_{xx} = \\sum X^2 - \\frac{(\\sum X)^2}{n} = 1140 - \\frac{90^2}{9} = 240$\n$SS_{xy} = \\sum XY - \\frac{(\\sum X)(\\sum Y)}{n} = 2216 - \\frac{90 \\times 179}{9} = 426$\n$SS_{yy} = \\sum Y^2 - \\frac{(\\sum Y)^2}{n} = 4365 - \\frac{179^2}{9} \\approx 804.89$\n\n\n**Regression Equation ($Y = a + bX$):**\n$b = \\frac{SS_{xy}}{SS_{xx}} = \\frac{426}{240} = 1.775$\n$a = \\bar{Y} - b\\bar{X} = 19.889 - (1.775 \\times 10) = 2.139$\nEquation: $\\hat{Y} = 2.139 + 1.775X$",
+      "explanation": "Simple linear regression finds the line of best fit by minimizing the sum of squared residuals. The correlation coefficient $r$ measures the strength and direction of the linear relationship, where $0.969$ indicates a very strong positive correlation."
+    },
+    {
+      "q": "An introductory biology student wishes to determine the relationship between temperature (X) and heart rate (Y) in the common leopard frog. His data are presented below:\n\n| Temperature ($^{\\circ}C$) X | 2 | 4 | 6 | 8 | 10 | 12 | 14 | 16 | 18 |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n| Heart rate (bpm) Y | 5 | 11 | 11 | 14 | 22 | 23 | 32 | 29 | 32 |\n\n- $c)$ Compute the correlation coefficient $r$.",
+      "answer": "**Data Analysis ($n=9$):**\n$\\sum X = 90, \\bar{X} = 10$\n$\\sum Y = 179, \\bar{Y} \\approx 19.889$\n$\\sum X^2 = 1140$\n$\\sum XY = 2216$\n$\\sum Y^2 = 4365$\n\n\n**Calculation of sums of squares:**\n$SS_{xx} = \\sum X^2 - \\frac{(\\sum X)^2}{n} = 1140 - \\frac{90^2}{9} = 240$\n$SS_{xy} = \\sum XY - \\frac{(\\sum X)(\\sum Y)}{n} = 2216 - \\frac{90 \\times 179}{9} = 426$\n$SS_{yy} = \\sum Y^2 - \\frac{(\\sum Y)^2}{n} = 4365 - \\frac{179^2}{9} \\approx 804.89$\n\n\n**Regression Equation ($Y = a + bX$):**\n$b = \\frac{SS_{xy}}{SS_{xx}} = \\frac{426}{240} = 1.775$\n$a = \\bar{Y} - b\\bar{X} = 19.889 - (1.775 \\times 10) = 2.139$\nEquation: $\\hat{Y} = 2.139 + 1.775X$",
+      "explanation": "Simple linear regression finds the line of best fit by minimizing the sum of squared residuals. The correlation coefficient $r$ measures the strength and direction of the linear relationship, where $0.969$ indicates a very strong positive correlation."
+    }
+  ]
+}

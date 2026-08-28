@@ -1,0 +1,148 @@
+{
+  "meta": {
+    "title": "Introduction And Structure",
+    "id": "T352NJZ3",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Operatings Systems/Introduction and Structure.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary role of an operating system?",
+      "explanation": "An operating system is defined as a program that acts as an intermediary between a user of a computer and the computer hardware [1]. Its goals include executing user programs, making the system convenient to use, and using hardware efficiently [1].",
+      "options": [
+        "To serve as a hardware component for data storage",
+        "To act as an intermediary between a user and computer hardware",
+        "To perform complex mathematical calculations for the CPU",
+        "To provide the physical power required to run the motherboard"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A computer system can be divided into which four components?",
+      "explanation": "The computer system is divided into four components: the hardware, the operating system, application programs, and users [1, 2].",
+      "options": [
+        "Monitor, CPU, Keyboard, and Mouse",
+        "Input, Output, Storage, and Processing",
+        "Hardware, Operating System, Application Programs, and Users",
+        "Software, Firmware, Middleware, and Userware"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Where is a bootstrap program typically stored?",
+      "explanation": "A bootstrap program is loaded at power-up or reboot and is typically stored in ROM or EPROM, generally known as firmware [3].",
+      "options": [
+        "On the hard disk drive",
+        "In the CPU registers",
+        "In ROM or EPROM (firmware)",
+        "In the secondary storage cache"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the size of a Megabyte (MB) in standard computer storage terms?",
+      "explanation": "In computer storage measurements, a kilobyte (KB) is 1,024 bytes, and a megabyte (MB) is 1,024² bytes [4].",
+      "options": [
+        "1,024 bytes",
+        "1,000,000 bytes",
+        "1,024² bytes",
+        "1,024³ bytes"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In dual-mode operation, what is the 'mode bit' for kernel mode?",
+      "explanation": "A mode bit is added to the hardware to indicate the current mode: kernel mode is represented by 0, and user mode is represented by 1 [5].",
+      "options": [
+        "1",
+        "0",
+        "x86",
+        "73"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is an operating system service intended to help the user?",
+      "explanation": "Services that are helpful to the user include the user interface, program execution, I/O operations, file-system manipulation, communications, and error detection [6, 7]. Resource allocation and accounting are functions for ensuring efficient system operation [8].",
+      "options": [
+        "Resource allocation",
+        "Program execution",
+        "Accounting",
+        "Protection and security"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which API is commonly used for POSIX-based systems like Linux and Mac OS X?",
+      "explanation": "The three most common APIs are the Win32 API for Windows, the POSIX API for POSIX-based systems (UNIX, Linux, Mac OS X), and the Java API for the JVM [9].",
+      "options": [
+        "Win32 API",
+        "Java API",
+        "POSIX API",
+        "Mach API"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which operating system is described as having a 'Simple Structure' and not being divided into modules?",
+      "explanation": "MS-DOS is written to provide the most functionality in the least space and is not divided into modules, meaning its interfaces and levels of functionality are not well separated [10].",
+      "options": [
+        "UNIX",
+        "MS-DOS",
+        "Linux",
+        "Windows"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is a major benefit of the microkernel approach to system structure?",
+      "explanation": "Benefits of a microkernel include that it is easier to extend, easier to port to new architectures, and more reliable/secure because less code runs in kernel mode [11, 12].",
+      "options": [
+        "It is faster because communication is more direct",
+        "It is easier to extend and port to new architectures",
+        "It combines all system programs into the kernel space",
+        "It eliminates the need for message passing"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In OS design, the 'Mechanism' refers to:",
+      "explanation": "It is an important principle to separate policy from mechanism; mechanisms determine how to do something, while policies decide what will be done [13].",
+      "options": [
+        "What will be done",
+        "When it will be done",
+        "How to do something",
+        "Why it will be done"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which system call is used to read a file in UNIX systems?",
+      "explanation": "In UNIX and Linux systems, the read() function is a standard API for reading the contents of a file [14].",
+      "options": [
+        "read()",
+        "readFile()",
+        "GetFile()",
+        "input()"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the purpose of the DTrace tool in Solaris and Mac OS X?",
+      "explanation": "DTrace is a tool that allows live instrumentation on production systems by firing probes when code is executed to capture state data [15, 16].",
+      "options": [
+        "To load the bootstrap program",
+        "To allow live instrumentation and debugging on production systems",
+        "To manage the secondary storage hierarchy",
+        "To allocate CPU cycles to background processes"
+      ],
+      "correct": 1
+    }
+  ]
+}

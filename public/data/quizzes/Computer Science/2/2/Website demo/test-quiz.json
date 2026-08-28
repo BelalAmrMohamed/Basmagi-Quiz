@@ -1,0 +1,167 @@
+{
+  "meta": {
+    "title": "Test Quiz",
+    "id": "4OBRHDOR",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/2/Website demo/test-quiz.json",
+    "source": "https://www.w3schools.com/CPP/default.asp"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is 2 + 2?",
+      "explanation": "Basic arithmetic: 2 + 2 = 4.",
+      "options": [
+        "3",
+        "4",
+        "5",
+        "22"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is a valid way to declare a variable in JavaScript that cannot be reassigned?",
+      "explanation": "The `const` keyword declares a block-scoped variable that cannot be reassigned after its initial assignment.\n\n`var` is function-scoped and can be reassigned.\n`let` is block-scoped but CAN be reassigned.\n`static` is not a valid variable declaration keyword in JavaScript.",
+      "options": [
+        "var x = 10;",
+        "let x = 10;",
+        "const x = 10;",
+        "static x = 10;"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "```A company manufactures an electronic device to be used\nin a very wide temperature range. The company knows that \nincreased temperature shortens the lifetime of the device, \nand a study is therefore performed in which the lifetime is determined as a function of \ntemperature. The following data is found:```\nc) Find the coefficient of correlation `r`.",
+      "image": "./assets/quiz-media/final-2023-2024.jpg",
+      "explanation": "The correlation coefficient r measures the strength and direction of the linear relationship. Using the formula r = (n*ΣXY - ΣX*ΣY) / √([n*ΣX² - (ΣX)²] * [n*ΣY² - (ΣY)²]), and substituting the values from the data table (n=9, ΣX=450, ΣY=1691, ΣX²=28500, ΣY²=489857, ΣXY=52670), we find r ≈ -0.992. This indicates a very strong negative linear correlation between temperature and lifetime.",
+      "answer": "Using the following data (n = 9):\n\n1. Summary Statistics:\n- Σx = 450\n- Σy = 1,691\n- Σx² = 28,500\n- Σy² = 489,857\n- Σxy = 52,670\n\n2. Formula:\nr = [ n(Σxy) - (Σx)(Σy) ] / √[ [nΣx² - (Σx)²] [nΣy² - (Σy)²] ]\n\n3. Substitution:\n- Numerator: (9 × 52,670) - (450 × 1,691) = 474,030 - 760,950 = -286,920\n- Denominator (x-part): 9(28,500) - (450)² = 256,500 - 202,500 = 54,000\n- Denominator (y-part): 9(489,857) - (1,691)² = 4,408,713 - 2,859,481 = 1,549,232\n\n4. Final Calculation:\nr = -286,920 / √(54,000 × 1,549,232)\nr = -286,920 / 289,237.84\nr ≈ -0.992"
+    },
+    {
+      "q": "Based on the diagram below, Which is a picture from wikimedia, it's also an svg image. Based on it, identify the type of network topology shown.",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/d/d0/StarNetwork.svg",
+      "explanation": "This is a Star Topology where all devices connect to a central hub or switch.",
+      "options": [
+        "Bus Topology",
+        "Star Topology",
+        "Ring Topology",
+        "Mesh Topology"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If `A ⊂ B`, Then `P(A|B)` =",
+      "explanation": "Since A ⊂ B, we know A ∩ B = A. By the definition of conditional probability: P(A|B) = P(A ∩ B) / P(B) = P(A) / P(B). This expression P(A)/P(B) does not match any of the listed options, so the correct answer is 'None of them'.",
+      "options": [
+        "P(B|A)",
+        "P(A)",
+        "P(B)",
+        "None of them"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which OSI layer is responsible for end-to-end communication and reliability?",
+      "explanation": "Layer 4 (Transport) is responsible for:\n- End-to-end communication between hosts\n- Reliability through acknowledgements (TCP)\n- Flow control and error correction\n- Segmentation and reassembly\n\nTCP and UDP both operate at this layer.",
+      "options": [
+        "Layer 2 — Data Link",
+        "Layer 3 — Network",
+        "Layer 4 — Transport",
+        "Layer 5 — Session"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a relational database, what does the following SQL query return?\n```\nSELECT department, COUNT(*) AS total\nFROM employees\nWHERE salary > 5000\nGROUP BY department\nHAVING COUNT(*) > 2;\n```",
+      "explanation": "Breaking the query down:\n1. `WHERE salary > 5000` — first filters to only rows where salary exceeds 5000\n2. `GROUP BY department` — groups the filtered results by department\n3. `HAVING COUNT(*) > 2` — keeps only groups (departments) that have more than 2 such rows\n\nThe key distinction: `WHERE` filters individual rows *before* grouping; `HAVING` filters groups *after* grouping.",
+      "options": [
+        "All departments with more than 2 employees",
+        "All departments where every employee earns more than 5000",
+        "Departments that have more than 2 employees earning over 5000",
+        "The top 2 highest-paid departments"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which sorting algorithm has the best average-case and worst-case time complexity of O(n log n)?",
+      "explanation": "Merge Sort guarantees O(n log n) in ALL cases (best, average, and worst).\n\nComparison:\n| Algorithm | Best | Average | Worst |\n|---|---|---|---|\n| Bubble Sort | O(n) | O(n²) | O(n²) |\n| Quick Sort | O(n log n) | O(n log n) | O(n²) |\n| Merge Sort | O(n log n) | O(n log n) | O(n log n) |\n| Insertion Sort | O(n) | O(n²) | O(n²) |\n\nQuick Sort has O(n²) worst case (when pivot is always the smallest/largest element).",
+      "options": [
+        "Bubble Sort",
+        "Quick Sort",
+        "Merge Sort",
+        "Insertion Sort"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the value of `x` after this Python code runs?\n```\nx = 0\nfor i in range(1, 6):\n    if i % 2 == 0:\n        x += i\nprint(x)\n```",
+      "explanation": "`range(1, 6)` produces: 1, 2, 3, 4, 5\n\nOnly even numbers are added (`i % 2 == 0`):\n- i=1: odd, skip\n- i=2: even → x = 0 + 2 = 2\n- i=3: odd, skip\n- i=4: even → x = 2 + 4 = 6\n- i=5: odd, skip\n\nFinal value: x = **6**",
+      "options": [
+        "6",
+        "9",
+        "15",
+        "12"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "This question has an image attached. What colour is the Anthropic logo?",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Anthropic_logo.svg/400px-Anthropic_logo.svg.png",
+      "explanation": "The Anthropic logo uses dark tones — typically black/dark grey and white — with a minimal, geometric design aesthetic.",
+      "options": [
+        "Blue and white",
+        "Black and white / dark tones",
+        "Red and orange",
+        "Green and grey"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A very long question designed to stress-test text wrapping in the question card. You are designing a distributed system for a large e-commerce platform that handles 100,000 requests per second at peak load. The system must guarantee 99.99% uptime, support horizontal scaling, and ensure data consistency across multiple geographic regions. Given these constraints, which combination of architectural patterns best addresses all three requirements simultaneously?",
+      "explanation": "Option B is correct because:\n\n**Microservices** — enable horizontal scaling of individual components independently.\n\n**Eventual consistency + CQRS** — separates read and write workloads, allowing each to scale independently. Eventual consistency is the practical tradeoff for high availability across regions.\n\n**Multi-region active-active + Raft/Paxos** — ensures 99.99% uptime by eliminating single points of failure and handles partition tolerance (CAP theorem).\n\nThe other options fail because:\n- Option A: A single global database is a bottleneck and single point of failure\n- Option C: Single-region violates the geographic distribution requirement\n- Option D: Two-tier with a primary write node is still a single point of failure for writes",
+      "options": [
+        "Monolithic architecture with a single global database and load balancer — simple to operate and guarantees strong consistency across all regions",
+        "Microservices with eventual consistency, CQRS (Command Query Responsibility Segregation), and multi-region active-active replication using a distributed consensus protocol like Raft or Paxos",
+        "Serverless functions with a single-region relational database — serverless handles scaling automatically and SQL provides strong consistency guarantees",
+        "Two-tier client-server architecture with read replicas — read replicas handle the read load and the primary handles writes, giving a good balance"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Short Q: what is `null == undefined` in JavaScript?",
+      "explanation": "In JavaScript, `null == undefined` is `true` due to the loose equality (`==`) rules. Both are considered \"nullish\" values.\n\nHowever, `null === undefined` is `false` because strict equality also checks type.",
+      "options": [
+        "true",
+        "false"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What does `git rebase` do compared to `git merge`?",
+      "explanation": "**git merge** takes the endpoint of both branches and creates a new \"merge commit\" that ties them together. The branch history is fully preserved.\n\n**git rebase** moves or \"replays\" your branch's commits one by one on top of the target branch tip, rewriting commit hashes. This produces a cleaner, linear history.\n\nImportant rule: never rebase commits that have already been pushed to a shared remote, as it rewrites history and will conflict with other developers' work.",
+      "options": [
+        "They are identical — both combine two branches into one",
+        "Rebase replays your commits on top of the target branch, creating a linear history; merge creates a merge commit preserving the branch topology",
+        "Rebase is safer than merge because it never rewrites history",
+        "Merge replays commits one by one; rebase creates a single merge commit"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Explain what the OSI model is and describe the role of each of its 7 layers.",
+      "explanation": "A complete answer should mention all 7 layers by number and name, and describe each layer's primary function. Bonus points for examples of protocols at each layer.",
+      "answer": "The OSI (Open Systems Interconnection) model is a conceptual framework that standardises how different network protocols and systems communicate. It divides network communication into 7 ordered layers:\n1. Physical — transmits raw bits over a physical medium (cables, radio)\n2. Data Link — handles node-to-node data transfer and error detection (Ethernet, MAC addresses)\n3. Network — handles routing and logical addressing (IP)\n4. Transport — provides end-to-end communication and reliability (TCP/UDP)\n5. Session — manages sessions and connections between applications\n6. Presentation — handles data translation, encryption, and compression\n7. Application — the layer closest to the user; provides network services to apps (HTTP, FTP, DNS)"
+    },
+    {
+      "q": "Explain what Big O notation is and why it matters in software engineering. Give at least two examples.",
+      "explanation": "Key points to cover:\n- Big O is an *upper bound* (worst case)\n- It's about *growth rate*, not exact time\n- Hardware-independent comparison tool\n\nCommon complexities to know:\n- `O(1)` — constant: hash table lookup\n- `O(log n)` — logarithmic: binary search\n- `O(n)` — linear: simple loop\n- `O(n log n)` — merge sort, heap sort\n- `O(n²)` — quadratic: bubble sort, nested loops\n- `O(2^n)` — exponential: brute-force subset generation",
+      "answer": "Big O notation is a mathematical notation used to describe the upper bound of an algorithm's time or space complexity as the input size (n) grows toward infinity. It describes the worst-case scenario and allows engineers to compare algorithms independently of hardware. Examples: O(1) is constant time (e.g., array index access), O(n) is linear time (e.g., a simple loop through n elements), O(n²) is quadratic time (e.g., nested loops like bubble sort)."
+    }
+  ]
+}

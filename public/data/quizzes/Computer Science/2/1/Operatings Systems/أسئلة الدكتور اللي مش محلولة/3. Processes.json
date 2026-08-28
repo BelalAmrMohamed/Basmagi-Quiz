@@ -1,0 +1,125 @@
+{
+  "meta": {
+    "title": "3. Processes",
+    "id": "YS6WPPGF",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/3. Processes.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "Essay",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What are the four components of a process?",
+      "explanation": "These components store the code, global variables, dynamic memory, and temporary data (like function parameters).",
+      "answer": "Text section, data section, heap, and stack"
+    },
+    {
+      "q": "Provide at least three possible states a process may be in.",
+      "explanation": "Processes move between these states as they are scheduled or wait for I/O.",
+      "answer": "New, Running, Waiting, Ready, and Terminated"
+    },
+    {
+      "q": "What is a Process Control Block (PCB)?",
+      "explanation": "The PCB includes the process state, program counter, CPU registers, and more.",
+      "answer": "A data structure containing information about a process"
+    },
+    {
+      "q": "What is another term for process?",
+      "explanation": "The terms job and process are often used interchangeably in operating systems.",
+      "answer": "A job"
+    },
+    {
+      "q": "True or False? Most operating systems allow a process to have multiple threads.",
+      "explanation": "True. Multithreading allows a process to perform multiple tasks at once.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the role of the process scheduler?",
+      "explanation": "The scheduler aims to keep the CPU busy and provide fast response times.",
+      "answer": "To select an available process for execution on the CPU"
+    },
+    {
+      "q": "What is the degree of multiprogramming?",
+      "explanation": "Managing this degree is important for system balance.",
+      "answer": "The number of processes currently in memory"
+    },
+    {
+      "q": "What is the term that describes saving the state of one process, and restoring the state of another?",
+      "explanation": "The kernel must perform a context switch whenever it stops one process to start another.",
+      "answer": "Context switch"
+    },
+    {
+      "q": "What is a process identifier (PID)?",
+      "explanation": "The PID is used to identify and manage processes within the system.",
+      "answer": "A unique numerical ID for each process"
+    },
+    {
+      "q": "What system call creates a process on UNIX systems?",
+      "explanation": "The fork() call creates a new process that is a copy of the parent.",
+      "answer": "fork()"
+    },
+    {
+      "q": "What system call creates a process on Windows systems?",
+      "explanation": "Unlike Unix, Windows uses a single call to load a program and start a process.",
+      "answer": "CreateProcess()"
+    },
+    {
+      "q": "What system call terminates a process on UNIX systems?",
+      "explanation": "When a program finishes, it calls exit() to return its status to the OS.",
+      "answer": "exit()"
+    },
+    {
+      "q": "What is the name of the process that UNIX systems assign as the new parent of orphan processes?",
+      "explanation": "Orphans are processes whose parents ended; init 'adopts' them to clean up their resources later.",
+      "answer": "init (or systemd)"
+    },
+    {
+      "q": "What are the two fundamental models of interprocess communication?",
+      "explanation": "Shared memory is fast but needs synchronization; Message passing is easier to implement for small data.",
+      "answer": "Shared memory and Message passing"
+    },
+    {
+      "q": "What are the two system calls used with message-passing systems?",
+      "explanation": "These allow processes to exchange fixed or variable-sized messages.",
+      "answer": "send() and receive()"
+    },
+    {
+      "q": "True or False? Message passing is typically faster than shared memory.",
+      "explanation": "False. Shared memory is generally faster because it avoids kernel intervention for data transfers.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What system call is used to create a POSIX shared memory object?",
+      "explanation": "This call returns a file descriptor for the shared memory segment.",
+      "answer": "shm_open()"
+    },
+    {
+      "q": "What term does Windows use to name its message passing facility?",
+      "explanation": "ALPC is the internal mechanism for communication between processes on the same machine.",
+      "answer": "Advanced Local Procedure Call (ALPC)"
+    },
+    {
+      "q": "TCP sockets are (a) connection-oriented or (b) connection-less?",
+      "explanation": "TCP establishes a connection before sending data to ensure reliability.",
+      "answer": "(a) connection-oriented"
+    },
+    {
+      "q": "What are the two types of pipes?",
+      "explanation": "Ordinary pipes are for parent-child communication; Named pipes can be used by unrelated processes.",
+      "answer": "Ordinary pipes and Named pipes"
+    }
+  ]
+}

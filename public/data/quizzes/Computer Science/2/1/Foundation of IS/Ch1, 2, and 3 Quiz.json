@@ -1,0 +1,657 @@
+{
+  "meta": {
+    "title": "Ch1, 2, And 3 Quiz",
+    "id": "N6465BPF",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Foundation of IS/Ch1, 2, and 3 Quiz.json"
+  },
+  "stats": {
+    "questionCount": 60,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "An information system mainly supports?",
+      "explanation": "Information systems are designed to support decision making, control, coordination, and analysis within organizations.",
+      "options": [
+        "Hardware manufacturing",
+        "Decision making and control",
+        "Software programming only",
+        "Network installation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following best describes data?",
+      "explanation": "Data refers to raw, unprocessed facts and figures without context or meaning.",
+      "options": [
+        "Processed facts",
+        "Organized knowledge",
+        "Raw facts and figures",
+        "Business rules"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Information differs from data because information is?",
+      "explanation": "Information is data that has been processed and organized to provide meaning and support decision making.",
+      "options": [
+        "Always numerical",
+        "Raw and unprocessed",
+        "Processed and meaningful",
+        "Stored only in databases"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which activity converts data into useful outputs?",
+      "explanation": "Processing transforms raw data into meaningful information.",
+      "options": [
+        "Input",
+        "Storage",
+        "Processing",
+        "Feedback"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Feedback in an information system is used to?",
+      "explanation": "Feedback helps adjust input or processing to improve system performance.",
+      "options": [
+        "Produce reports",
+        "Store data permanently",
+        "Modify input or processing",
+        "Replace output"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is NOT a characteristic of valuable information?",
+      "explanation": "Valuable information should be economical, not expensive.",
+      "options": [
+        "Accurate",
+        "Complete",
+        "Expensive",
+        "Reliable"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The term organization refers to?",
+      "explanation": "An organization is a structured group of people working together to achieve goals.",
+      "options": [
+        "A group of computers",
+        "A collection of databases",
+        "A structured group of people with goals",
+        "A software application"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which IS role focuses on daily business activities?",
+      "explanation": "Managing operations focuses on supporting day-to-day business activities.",
+      "options": [
+        "Gaining competitive advantage",
+        "Managing operations",
+        "Improving productivity only",
+        "Supporting innovation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Business Intelligence is mainly related to?",
+      "explanation": "Business Intelligence focuses on analyzing data to support better decision making.",
+      "options": [
+        "Hardware maintenance",
+        "Data-driven decision making",
+        "Network security",
+        "Software testing"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which component of IS includes hardware and software?",
+      "explanation": "Technology includes hardware, software, and telecommunications.",
+      "options": [
+        "Data",
+        "People",
+        "Processes",
+        "Technology"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Business Process Management (BPM) focuses on?",
+      "explanation": "BPM is concerned with designing, optimizing, and improving business processes.",
+      "options": [
+        "Hardware optimization",
+        "Process design and improvement",
+        "Database security",
+        "Network protocols"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which IS component represents raw facts?",
+      "explanation": "Data represents raw facts used by information systems.",
+      "options": [
+        "Information",
+        "Technology",
+        "Data",
+        "Process"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which stage of the information processing cycle saves data for future use?",
+      "explanation": "Storage keeps data and information for future use.",
+      "options": [
+        "Input",
+        "Processing",
+        "Output",
+        "Storage"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Competitive advantage refers to?",
+      "explanation": "Competitive advantage means having an edge or lead over competitors.",
+      "options": [
+        "Lower salaries",
+        "Faster internet",
+        "Lead over competitors",
+        "Larger databases"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Manual systems are different from computer-based systems because they?",
+      "explanation": "Manual systems rely heavily on human effort rather than technology.",
+      "options": [
+        "Are more accurate",
+        "Depend on people rather than technology",
+        "Are faster",
+        "Use databases"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "SDLC stands for?",
+      "explanation": "SDLC stands for Software Development Life Cycle.",
+      "options": [
+        "System Design Life Cycle",
+        "Software Development Life Cycle",
+        "System Development Logic Control",
+        "Software Design Logic Cycle"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The SDLC process is considered a cycle because?",
+      "explanation": "SDLC is cyclical because feedback can cause phases to repeat or improve.",
+      "options": [
+        "It ends after deployment",
+        "It allows feedback and repetition",
+        "It never includes maintenance",
+        "It focuses only on coding"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which SDLC phase focuses on understanding business needs?",
+      "explanation": "Requirement Gathering & Analysis focuses on understanding business needs.",
+      "options": [
+        "Design",
+        "Testing",
+        "Requirement Gathering & Analysis",
+        "Deployment"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Functional requirements describe?",
+      "explanation": "Functional requirements define what the system must do.",
+      "options": [
+        "System behavior",
+        "System performance",
+        "What the system should do",
+        "Hardware specifications"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Non-functional requirements focus on?",
+      "explanation": "Non-functional requirements describe quality attributes like performance and security.",
+      "options": [
+        "Processes only",
+        "System behavior and quality",
+        "Database structure",
+        "User roles only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which phase converts logical designs into physical solutions?",
+      "explanation": "Implementation is where designs are converted into working systems.",
+      "options": [
+        "Analysis",
+        "Design",
+        "Implementation",
+        "Maintenance"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Unit testing is mainly performed during?",
+      "explanation": "Unit testing is done during implementation as code is written.",
+      "options": [
+        "Design",
+        "Implementation",
+        "Deployment",
+        "Maintenance"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which testing type ensures the system meets business needs?",
+      "explanation": "User Acceptance Testing confirms the system meets business requirements.",
+      "options": [
+        "Unit Testing",
+        "Integration Testing",
+        "System Testing",
+        "User Acceptance Testing"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Deployment means?",
+      "explanation": "Deployment is the release of the system to the production environment.",
+      "options": [
+        "Writing code",
+        "Fixing bugs",
+        "Releasing the system to users",
+        "Collecting requirements"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Maintenance focuses on?",
+      "explanation": "Maintenance involves fixing bugs and updating the system after deployment.",
+      "options": [
+        "Designing databases",
+        "Fixing and updating the system",
+        "Writing requirements",
+        "User training only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "An As-Is system refers to?",
+      "explanation": "As-Is system describes the current system in use.",
+      "options": [
+        "A new system",
+        "A future system",
+        "The current existing system",
+        "A prototype"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In Waterfall development, phases are?",
+      "explanation": "Waterfall follows a sequential phase-by-phase approach.",
+      "options": [
+        "Iterative",
+        "Random",
+        "Sequential",
+        "Parallel"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "One disadvantage of the Waterfall model is?",
+      "explanation": "Waterfall is inflexible and difficult to change once phases are completed.",
+      "options": [
+        "Easy to understand",
+        "Clear milestones",
+        "Difficulty handling changes",
+        "Strong documentation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Parallel development was introduced to?",
+      "explanation": "Parallel development reduces development time by working on subprojects simultaneously.",
+      "options": [
+        "Increase documentation",
+        "Reduce development time",
+        "Eliminate testing",
+        "Avoid design"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "RAD focuses on?",
+      "explanation": "RAD emphasizes rapid development and early user feedback.",
+      "options": [
+        "Heavy documentation",
+        "Fast delivery and user feedback",
+        "Fixed requirements",
+        "Long development cycles"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Iterative development delivers?",
+      "explanation": "Iterative development delivers multiple versions incrementally.",
+      "options": [
+        "One final version",
+        "Multiple versions over time",
+        "Only prototypes",
+        "No working software"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A disadvantage of iterative development is?",
+      "explanation": "Early versions are intentionally incomplete in iterative development.",
+      "options": [
+        "No user involvement",
+        "Incomplete early versions",
+        "Long schedules",
+        "High documentation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Agile values emphasize?",
+      "explanation": "Agile emphasizes individuals and interactions over processes and tools.",
+      "options": [
+        "Tools over people",
+        "Documentation over software",
+        "Individuals and interactions",
+        "Fixed plans"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which Agile value prefers working software over documents?",
+      "explanation": "V2 emphasizes working software over comprehensive documentation.",
+      "options": [
+        "V1",
+        "V2",
+        "V3",
+        "V4"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Agile welcomes?",
+      "explanation": "Agile welcomes changing requirements, even late in development.",
+      "options": [
+        "Fixed requirements",
+        "Late changes",
+        "Heavy planning",
+        "No customer involvement"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In Agile, the backlog is?",
+      "explanation": "The backlog is an ordered list of work items to be completed.",
+      "options": [
+        "Final documentation",
+        "Ordered list of work",
+        "Risk report",
+        "Test plan"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Agile methodology selection depends on?",
+      "explanation": "Methodology selection depends on factors like system complexity.",
+      "options": [
+        "Programmer salary",
+        "System complexity",
+        "Office location",
+        "Database size"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A system analyst mainly?",
+      "explanation": "System analysts focus on analyzing business problems and requirements.",
+      "options": [
+        "Writes code",
+        "Designs hardware",
+        "Analyzes business problems",
+        "Manages networks"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Technical skills help analysts to?",
+      "explanation": "Technical skills help analysts understand system technologies.",
+      "options": [
+        "Convince users",
+        "Understand business value",
+        "Understand technology",
+        "Write reports"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Business skills are important to?",
+      "explanation": "Business skills ensure the system delivers real business value.",
+      "options": [
+        "Manage hardware",
+        "Deliver business value",
+        "Test software",
+        "Design databases"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Analytical skills help in?",
+      "explanation": "Analytical skills help in problem solving and data analysis.",
+      "options": [
+        "Writing code",
+        "Parsing data and solving problems",
+        "Managing teams",
+        "Ethical decisions"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Interpersonal skills are needed to?",
+      "explanation": "Interpersonal skills are essential for communication with stakeholders.",
+      "options": [
+        "Program systems",
+        "Design networks",
+        "Communicate with stakeholders",
+        "Test software"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Ethical skills are related to?",
+      "explanation": "Ethical skills relate to issues such as data privacy and confidentiality.",
+      "options": [
+        "Coding speed",
+        "Data privacy",
+        "Hardware cost",
+        "System performance"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A business analyst focuses on?",
+      "explanation": "Business analysts focus on identifying and delivering business value.",
+      "options": [
+        "Technical infrastructure",
+        "Business value",
+        "Network design",
+        "Coding"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A requirements analyst is responsible for?",
+      "explanation": "Requirements analysts focus on eliciting and documenting requirements.",
+      "options": [
+        "Testing",
+        "Coding",
+        "Eliciting requirements",
+        "Deployment"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Infrastructure analysts focus on?",
+      "explanation": "Infrastructure analysts focus on hardware, networks, and technical infrastructure.",
+      "options": [
+        "Business strategy",
+        "User training",
+        "Hardware and networks",
+        "Documentation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Agile documentation is?",
+      "explanation": "Agile uses minimal documentation that supports development.",
+      "options": [
+        "Very detailed",
+        "Not needed at all",
+        "Minimal and supportive",
+        "Mandatory for every phase"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Agile reviews are usually done?",
+      "explanation": "Agile reviews are conducted after each sprint.",
+      "options": [
+        "At the end of the project",
+        "After each sprint",
+        "Only during testing",
+        "During deployment"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "System analysts act as?",
+      "explanation": "System analysts act as change agents within organizations.",
+      "options": [
+        "Programmers only",
+        "Change agents",
+        "Database administrators",
+        "Testers"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The main goal of Agile is?",
+      "explanation": "Agile aims to deliver maximum value to the customer.",
+      "options": [
+        "Following a strict plan",
+        "Maximizing documentation",
+        "Delivering customer value",
+        "Eliminating testing"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Data is more meaningful than information.",
+      "explanation": "Information is more meaningful because it is processed data.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "An information system only consists of hardware and software.",
+      "explanation": "Information systems also include people, processes, and data.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Feedback is used to improve system performance.",
+      "explanation": "Feedback helps adjust input and processing to improve performance.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Functional requirements describe system quality attributes.",
+      "explanation": "System quality attributes are described by non-functional requirements.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "SDLC phases may vary between organizations.",
+      "explanation": "Organizations may adapt SDLC phases to their needs.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Waterfall development handles changes easily.",
+      "explanation": "Waterfall is rigid and does not handle changes easily.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "RAD encourages early user involvement.",
+      "explanation": "RAD relies on early and frequent user feedback.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Agile values working software over comprehensive documentation.",
+      "explanation": "This is one of the core Agile values.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A system analyst must have only technical skills.",
+      "explanation": "System analysts need technical, business, analytical, and interpersonal skills.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Agile always requires a complete project plan at the beginning.",
+      "explanation": "Agile favors flexibility and evolving plans over fixed upfront planning.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    }
+  ]
+}

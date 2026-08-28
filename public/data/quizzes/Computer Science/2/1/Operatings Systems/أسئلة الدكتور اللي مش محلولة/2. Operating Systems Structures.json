@@ -1,0 +1,139 @@
+{
+  "meta": {
+    "title": "2. Operating Systems Structures",
+    "id": "E4ZS34V2",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/2. Operating Systems Structures.json"
+  },
+  "stats": {
+    "questionCount": 22,
+    "questionTypes": [
+      "Essay",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "List at least three operating system services that are useful to users.",
+      "explanation": "These services allow users to interact with the computer and run their tasks easily.",
+      "answer": "User interface, program execution, and I/O operations"
+    },
+    {
+      "q": "List at least three operating system functions that maintain efficient operation of the system.",
+      "explanation": "These background functions ensure that the hardware is used fairly and securely.",
+      "answer": "Resource allocation, accounting, and protection"
+    },
+    {
+      "q": "What are the two different approaches for providing a user interface?",
+      "explanation": "CLI uses text commands, while GUI uses icons and mouse interactions.",
+      "answer": "Command-Line Interface (CLI) and Graphical User Interface (GUI)"
+    },
+    {
+      "q": "What is a system call?",
+      "explanation": "System calls are the interface between a running program and the operating system.",
+      "answer": "A programmatic way to request services from the OS kernel"
+    },
+    {
+      "q": "What is an API?",
+      "explanation": "An API provides a set of functions that are easier for programmers to use than direct system calls.",
+      "answer": "Application Programming Interface"
+    },
+    {
+      "q": "What kernel data structure can be used for one technique of passing parameters to system calls?",
+      "explanation": "Parameters can be pushed onto a stack by the program and popped off by the operating system.",
+      "answer": "A stack"
+    },
+    {
+      "q": "List at least three of the major categories of system calls.",
+      "explanation": "Other categories include information maintenance and communications.",
+      "answer": "Process control, file management, and device management"
+    },
+    {
+      "q": "A program that has been loaded and executing is called a _____.",
+      "explanation": "A process is a unit of work in a modern time-sharing system.",
+      "answer": "Process"
+    },
+    {
+      "q": "What part of the operating system makes the decision with regards to which job will run?",
+      "explanation": "The OS must choose which jobs to load and run to maintain efficiency.",
+      "answer": "The scheduler"
+    },
+    {
+      "q": "List at least three of the categories of system programs.",
+      "explanation": "System programs provide a convenient environment for program development and execution.",
+      "answer": "File manipulation, status information, and programming-language support"
+    },
+    {
+      "q": "True or False? The view most users see of the OS is defined by application and system programs rather than system calls.",
+      "explanation": "True.  Most users interact with shells or desktops, not the raw system call interface.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What are the two basic goal groups that must be considered when designing an OS?",
+      "explanation": "User goals focus on convenience, while system goals focus on efficiency and reliability.",
+      "answer": "User goals and System goals"
+    },
+    {
+      "q": "What is the difference between policy and mechanism?",
+      "explanation": "Separating these allows for greater flexibility in changing how a system behaves.",
+      "answer": "Mechanism determines how to do something; Policy determines what will be done"
+    },
+    {
+      "q": "List at least three different ways for structuring an operating system.",
+      "explanation": "Modern systems often use modules or hybrid structures.",
+      "answer": "Simple structure, layered approach, and microkernels"
+    },
+    {
+      "q": "List at least two different hybrid operating systems.",
+      "explanation": "These systems combine different architectural styles like Mach microkernel and BSD Unix.",
+      "answer": "macOS and iOS"
+    },
+    {
+      "q": "What are the two devices that run the iOS operating system?",
+      "explanation": "iOS is the mobile OS designed by Apple specifically for these touch devices.",
+      "answer": "iPhone and iPad"
+    },
+    {
+      "q": "What technique do microkernels use to communicate between services?",
+      "explanation": "Since services run in user space, they communicate by sending messages through the kernel.",
+      "answer": "Message passing"
+    },
+    {
+      "q": "Provide an example of an operating system that uses the simple structure.",
+      "explanation": "MS-DOS did not have well-defined layers, allowing applications to access hardware directly.",
+      "answer": "MS-DOS"
+    },
+    {
+      "q": "True or False? Performance tuning is a type of debugging.",
+      "explanation": "True.  Debugging can include finding bottlenecks to improve system performance.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False? DTrace is available for Windows systems.",
+      "explanation": "False.  DTrace is a facility for dynamic tracing on Solaris, FreeBSD, and macOS, but not natively Windows.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does the term SYSGEN refer to?",
+      "explanation": "SYSGEN is the process of configuring the OS for a specific computer site.",
+      "answer": "System Generation"
+    },
+    {
+      "q": "What is the name of the small piece of code that locates the kernel and loads it into main memory?",
+      "explanation": "This code is stored in ROM and runs when the computer is powered on.",
+      "answer": "Bootstrap loader"
+    }
+  ]
+}

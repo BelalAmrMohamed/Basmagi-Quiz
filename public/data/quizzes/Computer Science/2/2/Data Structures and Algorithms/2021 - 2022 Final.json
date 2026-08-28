@@ -1,0 +1,288 @@
+{
+  "meta": {
+    "id": "EMUKKIAQ",
+    "title": "2021 - 2022 Final",
+    "createdAt": "3/30/2026, 6:56:51 AM",
+    "path": "quizzes/Computer Science/2/2/Data Structures and Algorithms/2021 - 2022 Final.json"
+  },
+  "stats": {
+    "questionCount": 25,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "___ is indexed by contiguous integers.",
+      "options": [
+        "Stack",
+        "Queue",
+        "Array",
+        "All of above"
+      ],
+      "correct": 2,
+      "explanation": "An **Array** is a linear data structure where elements are stored in contiguous memory locations and are accessed using contiguous integer indices."
+    },
+    {
+      "q": "Access time for the $10^{th}$ element in a single-dimensional **Array** is equal to....",
+      "options": [
+        "$arr\\_addr+elem\\_size\\times(10-first_index)$",
+        "$arr\\_addr+elem\\_size\\times(i-first\\_index)$",
+        "$arr\\_addr\\times(10-first\\_index)$",
+        "$arr\\_addr+(10-first\\_index)$"
+      ],
+      "correct": 0,
+      "explanation": "The memory address of an element at a given index in a 1D array is calculated as the base address (`arr_addr`) plus the product of the element size (`elem_size`) and the offset `(index - first_index)`."
+    },
+    {
+      "q": "The access time for element(2, 4) in 3-rows and a 6-column array is equal to...",
+      "options": [
+        "$arr\\_addr+elem\\_size\\times(2\\times4)$",
+        "$arr\\_addr+elem\\_size\\times(2+4)$",
+        "$arr\\_addr+elem\\_size\\times((2-1)\\times6+(4-1))$",
+        "$arr\\_addr+elem\\_size\\times((3-1)\\times6+(4-1))$"
+      ],
+      "correct": 2,
+      "explanation": "In row-major order with 1-based indexing, the offset for element `(i, j)` in a matrix with `C` columns is calculated as `((i-1) * C + (j-1))`. Here, $i=2$, $j=4$, and $C=6$."
+    },
+    {
+      "q": "The complexity of adding two elements to the end of an array is.......",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(2)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0,
+      "explanation": "Appending a fixed number of elements to the end of an array (provided there is available capacity) requires a constant number of operations, yielding an asymptotic time complexity of **O(1)**."
+    },
+    {
+      "q": "The correct order for the following lines in the PushFront(key) function is:\n\n| a) | `$node.next \\larr head$` |\n|---|---|\n| b) | `$node.key \\larr key$`|\n| c) | `$node \\larr new node$` |\n| d) | `$tail \\larr head$` |\n| e) | `$if tail=nil:$` |\n| f) | `$head \\larr node$` |",
+      "options": [
+        "c, a, b, f, e, d",
+        "c, b, f, a, e, d",
+        "c, b, a, f, e, d",
+        "e, d, c, b, a, f"
+      ],
+      "correct": 2,
+      "explanation": "The correct `PushFront(key)` sequence creates the node, assigns the key, points its `next` to the current `head`, updates the `head` pointer to the new node, and finally checks if the list was empty (`tail=nil`) to set the `tail` pointer to the new node. This corresponds to **c, b, a, f, e, d**."
+    },
+    {
+      "q": "Which of the following does not allow heterogeneous data elements?",
+      "options": [
+        "Stack",
+        "Array",
+        "Queue",
+        "LinkedList"
+      ],
+      "correct": 1,
+      "explanation": "In standard statically-typed languages (like C, C++, or Java), primitive **Arrays** require all elements to be of the exact same data type (homogeneous data)."
+    },
+    {
+      "q": "Each stack operation is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0,
+      "explanation": "Standard stack operations (Push, Pop, Top/Peek, IsEmpty) manipulate only the element at the top of the stack, which guarantees an **O(1)** time complexity."
+    },
+    {
+      "q": "The correct order for the following lines in the **PushBack(key)** function is:\n\n| a) | `node.next $\\larr$ nil` |\n|---|---|\n| b) | `node.key $\\larr$ key` |\n| c) | `node.next $\\larr$ head` |\n| d) | `head $\\larr$ tail $\\larr$ node` |\n| e) | `if $tail=nil:$` |\n| f) | `Else:` |\n| g) | `tail.next $\\larr$ node` |\n| h) | `node $\\larr$ new node` |\n| i) | `tail $\\larr$ node` |",
+      "options": [
+        "h, b, a, e, d, f, g, i",
+        "h, b, c, e, d, f, g, i",
+        "h, b, a, e, d, f, i, g",
+        "h, b, a, e, d, f, g, i"
+      ],
+      "correct": 0,
+      "explanation": "The proper logic for `PushBack` is to allocate the node (`h`), set its key (`b`) and `next` to nil (`a`). Then, if the list is empty (`e`), both head and tail point to the new node (`d`). Else (`f`), the current tail's `next` points to the new node (`g`), and the tail pointer is updated (`i`). Order: **h, b, a, e, d, f, g, i**."
+    },
+    {
+      "q": "Find(Key) in a single linked list with a tail is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1,
+      "explanation": "Even with a tail pointer, finding an arbitrary key requires a linear traversal from the head of the list, resulting in an **O(n)** worst-case time complexity."
+    },
+    {
+      "q": "AddAfter(Node, Key) in a single linked list without a tail is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0,
+      "explanation": "If the reference to the specific `Node` is already provided, adding a new node immediately after it only involves rewiring a couple of pointers (`new_node->next = node->next; node->next = new_node;`), which takes **O(1)** time."
+    },
+    {
+      "q": "Erase(Key) in a single linked list with no tail is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 1,
+      "explanation": "To erase a node by its key, you must first traverse the list to locate the node (and its predecessor) to update the pointers. Traversal takes **O(n)** time."
+    },
+    {
+      "q": "TopBack() in a single linked list with a tail is",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0,
+      "explanation": "The `TopBack()` operation retrieves the element at the back of the list. Since the list maintains a `tail` pointer, this element can be accessed instantly in **O(1)** time."
+    },
+    {
+      "q": "The correct order for the following lines in the PopBack() function is:\n\n| a) | `p $\\larr$ head` |\n|---|---|\n| b) | `head $\\larr$ tail` |\n| c) | `While p.next.next != nil` |\n| d) | `While p.next != nil` |\n| e) | `p $\\larr$ p.next` |\n| f) | `head $\\larr$ tail $\\larr$ nil` |\n| g) | `Else:` |\n| h) | `ERROR: empty list` |\n| i) | `if head=nil:` |\n| j) | `If tail=nil:` |\n| k) | `If head = tail:` |\n| l) | `tail $\\larr$ p` |\n| m) | `p.next $\\larr$ nil` |",
+      "options": [
+        "i, h, j, f, g, a, c, e, m, l",
+        "j, h, k, b, g, a, c, e, m, l",
+        "i, h, k, f, g, a, d, e, m, l",
+        "i, h, k, f, g, a, c, e, m, l"
+      ],
+      "correct": 3,
+      "explanation": "The `PopBack()` logic first handles the empty list (`i, h`), then handles the single-element list (`k, f`), and then handles the general case (`g`). For the general case, a pointer `p` traverses (`a`) until the second-to-last node (`c, e`), severs the last node (`m`), and updates the tail (`l`). The correct sequence is **i, h, k, f, g, a, c, e, m, l**."
+    },
+    {
+      "q": "removes and returns the least recently-added key from a queue is known as ..",
+      "options": [
+        "Key Pop()",
+        "Key Dequeue()",
+        "Key Enqueue()",
+        "Key Top()"
+      ],
+      "correct": 1,
+      "explanation": "The operation that removes and returns an item from the front of the queue (the least recently added element) is called **Dequeue**."
+    },
+    {
+      "q": "Stacks operations known as...",
+      "options": [
+        "FIFO",
+        "LILO",
+        "MILO",
+        "non of above"
+      ],
+      "correct": 3,
+      "explanation": "A Stack operates on a **LIFO** (Last In, First Out) principle. Since LIFO is not listed among the explicit options, the correct choice is **none of above**."
+    },
+    {
+      "q": "PushBack(Key) in a single linked list with a tail is .....",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n log n)$",
+        "$O(n2)$"
+      ],
+      "correct": 0,
+      "explanation": "Because a tail pointer is maintained, adding an element to the back of the list does not require traversal. The new node is appended directly using `tail->next = new_node`, taking **O(1)** time."
+    },
+    {
+      "q": "To return the most recently-added key in a stack, we use the....... function",
+      "options": [
+        "Key Top ()",
+        "KeyPop ()",
+        "Push(key)",
+        "Pop()"
+      ],
+      "correct": 0,
+      "explanation": "The **Top()** (or Peek()) function returns the value of the top element of the stack (the most recently added key) without removing it."
+    },
+    {
+      "q": "Queue operations are known as..",
+      "options": [
+        "FIFO",
+        "LIFO",
+        "MILO",
+        "non of above"
+      ],
+      "correct": 0,
+      "explanation": "A Queue operates on a **FIFO** (First In, First Out) principle."
+    },
+    {
+      "q": "Enqueue is implemented using the....... function",
+      "options": [
+        "AddAfter(Key)",
+        "AddBefore (Key)",
+        "PushFront(Key)",
+        "PushBack (key)"
+      ],
+      "correct": 3,
+      "explanation": "Enqueuing adds an element to the rear (back) of the queue. In a linked-list implementation, this is equivalent to the **PushBack()** operation."
+    },
+    {
+      "q": "The dequeue operation is implemented using the....... function",
+      "options": [
+        "TopFront ()",
+        "PopFront()",
+        "PushBack (key)",
+        "a and b"
+      ],
+      "correct": 3,
+      "explanation": "Dequeue requires both fetching the item at the front and removing it. In linked lists, **TopFront()** accesses the item, and **PopFront()** removes it, so both are involved."
+    },
+    {
+      "q": "In the Queue implementation with an array if read=write+1, we can perform Enqueue?",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1,
+      "explanation": "In a circular array-based queue, the condition `(write + 1) % capacity == read` (or simply `read == write + 1` in simplified modulo contexts) indicates that the queue is **full**. Therefore, an Enqueue operation cannot be performed."
+    },
+    {
+      "q": "In the Queue implementation with an array, the Queue is empty when..",
+      "options": [
+        "read $0$",
+        "write $=0$",
+        "read $=$ write",
+        "read $<$ write"
+      ],
+      "correct": 2,
+      "explanation": "An array-based queue is considered empty when the read pointer and the write pointer are at the exact same index (`read = write`)."
+    },
+    {
+      "q": "When a dynamic array is full and a pushback operation is performed",
+      "options": [
+        "error",
+        "the size increment",
+        "the size is duplicated",
+        "the size is increased by 2"
+      ],
+      "correct": 2,
+      "explanation": "When a dynamic array reaches its capacity, the standard approach is to allocate a new array with double (duplicate) the capacity and copy the old elements over."
+    },
+    {
+      "q": "Appending a new element to a dynamic array is.........",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n log n)$",
+        "$O(n^{2})$"
+      ],
+      "correct": 0,
+      "explanation": "While resizing a dynamic array takes O(n) time, resizing happens infrequently. When averaged over many operations, appending an element has an **amortized time complexity of O(1)**."
+    },
+    {
+      "q": "The drawback of dynamic arrays is that Some space is wasted",
+      "options": [
+        "true",
+        "false"
+      ],
+      "correct": 0,
+      "explanation": "**True**. Because dynamic arrays typically double in size when they run out of space, up to half of the newly allocated array may be empty and unused at any given time."
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "title": "Final Exam",
+    "id": "T3PBR4EY",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Object-Oriented Programming/Final Exam.json"
+  },
+  "stats": {
+    "questionCount": 10,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "In C++, which part of the class must be executed first when a derived class object is created?",
+      "explanation": "In C++, when a derived class object is created, the base class constructor is always executed first to initialize the inherited members[cite: 7, 13].",
+      "options": [
+        "The derived class constructor.",
+        "The derived class's main method.",
+        "The base class constructor.",
+        "The derived class's default destructor"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is invoked when using delete on an object?",
+      "explanation": "The delete operator is used to deallocate memory and automatically calls the object's destructor to clean up resources[cite: 17].",
+      "options": [
+        "Constructor",
+        "Destructor",
+        "Copy constructor",
+        "Friend Function"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the term for redefining a base class function in the derived class?",
+      "explanation": "Overriding occurs when a derived class provides a specific implementation for a function that is already defined in its base class[cite: 23].",
+      "options": [
+        "Overloading",
+        "Overriding",
+        "Hiding",
+        "Shadowing"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is used for file input?",
+      "explanation": "In C++, ifstream (input file stream) is specifically used to read information from files[cite: 29].",
+      "options": [
+        "ofstream",
+        "fstream",
+        "ifstream",
+        "streamin"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which concept allows one class to reuse another class's members?",
+      "explanation": "Inheritance allows a new class (derived) to inherit the properties and behaviors of an existing class (base)[cite: 33].",
+      "options": [
+        "Encapsulation",
+        "Inheritance",
+        "Polymorphism",
+        "Overloading"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Show the output: \nclass A { public: A(){cout<<\"O\";} }; \nclass B: public A { public: B(){cout<<\"B\";} }; \nint main() { B(); }",
+      "explanation": "Because B inherits from A, the constructor for A runs first (printing 'O'), followed by the constructor for B (printing 'B')[cite: 39, 44, 45].",
+      "options": [
+        "O",
+        "B",
+        "OB",
+        "BO"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is required for polymorphism?",
+      "explanation": "Polymorphism, specifically runtime polymorphism, requires inheritance to allow a derived class to be treated as an instance of its base class[cite: 48].",
+      "options": [
+        "Overloading only",
+        "Inheritance",
+        "Static variables",
+        "struct"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If a base class has no constructors whatsoever, then a derived class object cannot be instance.",
+      "explanation": "False.  If no constructor is defined, C++ provides a default constructor automatically, allowing instantiation[cite: 77, 78].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a class you can have more than one constructor with the same name.",
+      "explanation": "True.  This is known as constructor overloading, where multiple constructors exist with different parameter lists[cite: 79].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A derived class is often called a subclass because it represents a subset of its base class.",
+      "explanation": "True.  In object-oriented programming, a derived class is frequently referred to as a subclass[cite: 80].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    }
+  ]
+}

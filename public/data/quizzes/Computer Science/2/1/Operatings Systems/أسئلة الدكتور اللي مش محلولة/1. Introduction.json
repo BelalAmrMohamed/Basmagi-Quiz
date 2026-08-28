@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "title": "1. Introduction",
+    "id": "EFCUT6SY",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Operatings Systems/أسئلة الدكتور اللي مش محلولة/1. Introduction.json"
+  },
+  "stats": {
+    "questionCount": 31,
+    "questionTypes": [
+      "Essay",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What are the four components of a computer system?",
+      "explanation": "A computer system is divided into hardware (CPU, memory), the OS (controls hardware), applications (word processors, etc.), and the people or machines using it.",
+      "answer": "Hardware, operating system, application programs, and users"
+    },
+    {
+      "q": "Provide at least three resources the operating system allocates.",
+      "explanation": "The OS acts as a resource allocator, managing hardware and software needs to ensure efficiency.",
+      "answer": "CPU time, memory space, and file storage"
+    },
+    {
+      "q": "What is the common name used to refer to the operating system program?",
+      "explanation": "The kernel is the one program running at all times on the computer.",
+      "answer": "The kernel"
+    },
+    {
+      "q": "What do mobile operating systems often include in addition to the core kernel?",
+      "explanation": "Middleware is a set of software frameworks that provide additional services to application developers.",
+      "answer": "Middleware"
+    },
+    {
+      "q": "What is an interrupt?",
+      "explanation": "Interrupts signal the CPU to stop its current task and handle a specific event, like I/O completion.",
+      "answer": "A hardware signal to the CPU that an event has occurred"
+    },
+    {
+      "q": "What special operation triggers a software interrupt?",
+      "explanation": "A system call is a request by a user program for the OS to perform a specific task.",
+      "answer": "A system call (or trap)"
+    },
+    {
+      "q": "What is one advantage of using a solid state disk over a magnetic disk?",
+      "explanation": "SSDs are faster because they have no moving parts, unlike traditional spinning magnetic disks.",
+      "answer": "Faster access speed"
+    },
+    {
+      "q": "What is the difference between volatile and nonvolatile storage?",
+      "explanation": "RAM is volatile, while hard drives and SSDs are nonvolatile.",
+      "answer": "Volatile loses data when power is off; nonvolatile retains it"
+    },
+    {
+      "q": "What is another term for multiprocessor system?",
+      "explanation": "These systems have two or more CPUs in close communication sharing resources.",
+      "answer": "Parallel system"
+    },
+    {
+      "q": "Provide at least two advantages of multiprocessor systems.",
+      "explanation": "More processors do more work in less time, and if one fails, others can take over.",
+      "answer": "Increased throughput and increased reliability"
+    },
+    {
+      "q": "True or False? The most common multiple-processor system uses asymmetric multiprocessing.",
+      "explanation": "False.  Symmetric multiprocessing (SMP) is the most common, where each processor performs all tasks.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the name of a multiprocessor system that uses multiple computing cores?",
+      "explanation": "Multicore systems put multiple CPUs on a single chip.",
+      "answer": "Multicore system"
+    },
+    {
+      "q": "How does a clustered system differ from a multicore system?",
+      "explanation": "While multicore is on one chip, clustered systems are usually independent computers connected via a network.",
+      "answer": "Clusters consist of two or more individual systems joined together"
+    },
+    {
+      "q": "How does multiprogramming increase CPU utilization?",
+      "explanation": "If one job has to wait (like for I/O), the CPU simply switches to another job.",
+      "answer": "By keeping several jobs in memory so the CPU always has work"
+    },
+    {
+      "q": "What is the term for a program that has been loaded and is executing?",
+      "explanation": "A program is passive; a process is active.",
+      "answer": "A process"
+    },
+    {
+      "q": "What part of the operating system makes the decision with regards to which job will run?",
+      "explanation": "The scheduler picks which process in memory gets to use the CPU next.",
+      "answer": "The CPU scheduler"
+    },
+    {
+      "q": "What are the two separate modes of operation?",
+      "explanation": "These modes protect the system from errors caused by user programs.",
+      "answer": "User mode and Kernel mode"
+    },
+    {
+      "q": "What is the mode of the system at boot time?",
+      "explanation": "The system starts in kernel mode to initialize hardware before switching to user mode.",
+      "answer": "Kernel mode"
+    },
+    {
+      "q": "What is the mode of the system when the operating system gains control?",
+      "explanation": "Whenever an interrupt or trap occurs, the hardware switches to kernel mode.",
+      "answer": "Kernel mode"
+    },
+    {
+      "q": "What is the mode of the system when a user program is running?",
+      "explanation": "User programs run in user mode to prevent them from executing dangerous hardware instructions.",
+      "answer": "User mode"
+    },
+    {
+      "q": "Name at least two activities the operating system is responsible for in connection with process management.",
+      "explanation": "The OS manages the lifecycle and execution order of all active tasks.",
+      "answer": "Creating/deleting processes and scheduling processes"
+    },
+    {
+      "q": "Name at least two activities the operating system is responsible for in connection with memory management.",
+      "explanation": "The OS must decide which processes get memory and ensure they don't overwrite each other.",
+      "answer": "Allocating/deallocating space and tracking used memory"
+    },
+    {
+      "q": "True or False? Managing files is one of the most visible aspects of an operating system.",
+      "explanation": "True.  Users interact with the file system daily to save and organize data.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Name at least two activities the operating system is responsible for in connection with file management.",
+      "explanation": "The OS provides a logical view of storage and handles the actual writing to disks.",
+      "answer": "Creating/deleting files and mapping files to physical storage"
+    },
+    {
+      "q": "Name at least two activities the operating system is responsible for in connection with disk management.",
+      "explanation": "The OS manages how data is placed on the physical disk to improve performance.",
+      "answer": "Free-space management and disk scheduling"
+    },
+    {
+      "q": "Rank these from fastest to slowest: (1) main memory, (2) magnetic disk, (3) registers, (4) solid state disk, (5) cache.",
+      "explanation": "Registers are inside the CPU (fastest), followed by Cache, Main Memory (RAM), SSDs, and Magnetic Disks (slowest).",
+      "answer": "3, 5, 1, 4, 2"
+    },
+    {
+      "q": "What is the difference between protection and security?",
+      "explanation": "Protection is internal management;  Security is broader defense against threats like viruses or hackers.",
+      "answer": "Protection controls access to resources; Security defends against external/internal attacks"
+    },
+    {
+      "q": "List at least four common kernel data structures.",
+      "explanation": "The kernel uses these standard structures to organize data like process lists or file systems.",
+      "answer": "Lists, stacks, queues, and trees"
+    },
+    {
+      "q": "True or False? A bitmap of length N can be used to represent the status of 2^N items.",
+      "explanation": "False.  A bitmap of length N represents exactly N items, where each bit is 0 or 1.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "List at least five different types of computing environments.",
+      "explanation": "Computing has evolved from desktop setups to mobile, network-based, and virtualized cloud systems.",
+      "answer": "Traditional, Mobile, Distributed, Cloud, and Real-time"
+    },
+    {
+      "q": "Provide an example of an open source operating system.",
+      "explanation": "Linux is the most prominent OS where the source code is freely available for anyone to modify.",
+      "answer": "Linux"
+    }
+  ]
+}

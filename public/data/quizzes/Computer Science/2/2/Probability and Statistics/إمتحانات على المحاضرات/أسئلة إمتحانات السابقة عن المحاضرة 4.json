@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "id": "6W7GREF6",
+    "title": "أسئلة إمتحانات السابقة عن المحاضرة 4",
+    "createdAt": "3/16/2026, 7:40:39 AM",
+    "description": "A Quiz that includes all of the questions of '4. Probability - Statistical Distribution.md' that are mentioned in previous Final Examinations.",
+    "source": "https://drive.google.com/file/d/1rZyh1QYTR77LpCjQScN_Z-SvfW6-qgTb/view?usp=drive_link",
+    "path": "quizzes/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/أسئلة إمتحانات السابقة عن المحاضرة 4.json"
+  },
+  "stats": {
+    "questionCount": 8,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "When Farid plays chess against his favorite computer program, he wins with probability 0.60. What is the probability that Farid wins 6 games, if he plays 10 games?",
+      "answer": "This follows a Binomial distribution with $n = 10$, $p = 0.60$, $x = 6$.",
+      "explanation": "Using the Binomial formula:\n\n   $$P(X = k) = \\binom{n}{k} p^k (1-p)^{n-k}$$\n\n   Substituting $n=10$, $p=0.6$, $k=6$:\n\n   $$P(X=6) = \\binom{10}{6}(0.6)^6(0.4)^4 = 210 \\times 0.046656 \\times 0.0256 \\approx 0.2508$$"
+    },
+    {
+      "q": "When Farid plays chess against his favorite computer program, he wins with probability 0.60. What is the probability that Farid wins **at most 2 games**, if he plays 10 games?",
+      "answer": "$P(X \\leq 2) = P(X=0) + P(X=1) + P(X=2)$",
+      "explanation": "\"At most 2 wins\" means summing the first three terms of $\\text{Binomial}(n=10,\\ p=0.6)$:\n\n   $$P(X \\leq 2) = \\sum_{k=0}^{2} \\binom{10}{k}(0.6)^k(0.4)^{10-k} \\approx 0.012$$"
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class. What is the probability that Fares makes **exactly 2 mistakes** during one class?",
+      "answer": "Poisson distribution with $\\lambda = 1.2$, $x = 2$.",
+      "explanation": "Using the Poisson formula:\n\n   $$P(X = x) = \\frac{e^{-\\lambda}\\, \\lambda^x}{x!}$$\n\n   Substituting $\\lambda = 1.2$, $x = 2$:\n\n   $$P(X=2) = \\frac{e^{-1.2} \\times (1.2)^2}{2!} = \\frac{0.3012 \\times 1.44}{2} \\approx 0.216$$"
+    },
+    {
+      "q": "Fares makes mistakes in class according to a Poisson process with an average rate of 1.2 mistakes per class. What is the probability that Fares makes **at least one mistake** during one class?",
+      "answer": "Using the complement rule: $P(X \\geq 1) = 1 - P(X = 0)$",
+      "explanation": "Computing $P(X=0)$ first:\n\n   $$P(X=0) = \\frac{e^{-1.2} \\times (1.2)^0}{0!} = e^{-1.2} \\approx 0.3012$$\n\n   Therefore:\n\n   $$P(X \\geq 1) = 1 - P(X=0) \\approx 1 - 0.3012 = 0.699$$"
+    },
+    {
+      "q": "If $f(x) = \\binom{n}{x} p^x q^{n-x}$ for $x = 0, 1, 2, \\ldots, n$ — prove that this is a valid probability mass function; then find the **moment generating function (MGF)** and the **standard deviation** $\\sigma$.",
+      "answer": "**1. Proof that $f(x)$ is a valid PMF:**\n\n   - $f(x) \\geq 0$ for all $x$, since $p,\\, q \\geq 0$ and $\\binom{n}{x} \\geq 0$. $\\checkmark$\n   - By the Binomial Theorem: $\\displaystyle\\sum_{x=0}^{n} \\binom{n}{x} p^x q^{n-x} = (p+q)^n = 1^n = 1$ $\\checkmark$\n\n   **2. Moment Generating Function (MGF):**\n\n   $$M(t) = E\\!\\left[e^{tX}\\right] = \\sum_{x=0}^{n} e^{tx} \\binom{n}{x} p^x q^{n-x} = \\sum_{x=0}^{n} \\binom{n}{x}(pe^t)^x q^{n-x} = \\left(pe^t + q\\right)^n$$\n\n   **3. Standard Deviation $\\sigma$:**\n\n   $$\\mu = np, \\qquad \\sigma^2 = npq, \\qquad \\sigma = \\sqrt{npq}$$",
+      "explanation": "The proof uses the Binomial Theorem directly: $\\sum\\binom{n}{x}p^x q^{n-x} = (p+q)^n = 1$.\nThe MGF is obtained by substituting $p \\to pe^t$ in the same expansion.\nThe variance $\\sigma^2 = npq$ follows from the second moment, giving $\\sigma = \\sqrt{npq}$."
+    },
+    {
+      "q": "20% of customers at a store make a purchase. If 15 customers visit, what is the probability that **exactly 4** make a purchase?",
+      "answer": "Binomial distribution with $n = 15$, $p = 0.2$, $x = 4$.\n\n   $$P(X=4) = \\binom{15}{4}(0.2)^4(0.8)^{11} = 1365 \\times 0.0016 \\times 0.0859 \\approx 0.188$$",
+      "explanation": "Applying the Binomial formula $P(X=k) = \\binom{n}{k}p^k(1-p)^{n-k}$:\n\n   $$P(X=4) = \\binom{15}{4}(0.2)^4(0.8)^{11} \\approx 1365 \\times 0.0016 \\times 0.0859 \\approx 0.1876$$"
+    },
+    {
+      "q": "A call center receives an average of 5 calls per hour. What is the probability of receiving **exactly 3 calls** in an hour?",
+      "answer": "Using the Poisson formula with $\\lambda = 5$, $x = 3$:\n\n   $$P(X = 3) = \\frac{e^{-5} \\times 5^3}{3!} = \\frac{0.0067 \\times 125}{6} \\approx 0.140$$",
+      "explanation": "Substituting directly into $P(X=x) = \\dfrac{e^{-\\lambda}\\,\\lambda^x}{x!}$:\n\n   $$P(X=3) = \\frac{e^{-5} \\times 125}{6} \\approx \\frac{0.0067 \\times 125}{6} \\approx 0.1404$$"
+    },
+    {
+      "q": "Let $X$ be a Binomial random variable. Show that $V(X) = (1-p)\\cdot E(X)$.",
+      "answer": "For a Binomial distribution with parameters $n$ and $p$:\n\n   $$E(X) = np, \\qquad V(X) = np(1-p)$$\n\n   Substituting $E(X) = np$ into the variance formula:\n\n   $$V(X) = np(1-p) = E(X)\\cdot(1-p) \\qquad \\checkmark$$",
+      "explanation": "The identity follows directly from the standard Binomial moments.\nReplacing $np$ with $E(X)$ in $V(X) = np(1-p)$ immediately yields $V(X) = (1-p)\\,E(X)$."
+    }
+  ]
+}

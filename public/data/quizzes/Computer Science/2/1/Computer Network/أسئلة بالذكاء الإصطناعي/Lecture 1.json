@@ -1,0 +1,430 @@
+{
+  "meta": {
+    "title": "Lecture 1",
+    "id": "GJB3DS3S",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/Lecture 1.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is a computer network?",
+      "explanation": "A computer network consists of two or more devices connected to exchange data and resources [1].",
+      "options": [
+        "A single high-speed computer used for calculations",
+        "Two or more computing devices connected to exchange information and share resources",
+        "A software application for managing databases",
+        "A collection of devices that are not physically connected"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT listed as a resource shared over a network?",
+      "explanation": "Shared resources include hard drives, CD-Roms, and fax-modems [1].",
+      "options": [
+        "Hard drives",
+        "CD-Roms",
+        "Fax-modems",
+        "Monitor screens"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which medium can be used to connect a computer network?",
+      "explanation": "Connections can be made via copper wire, lasers, radio waves, satellites, or infrared beams [1].",
+      "options": [
+        "Copper wire",
+        "Lasers",
+        "Earth satellites",
+        "All of the above"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is a growing area of network use that enables access to financial institutions?",
+      "explanation": "e-Banking allows users to pay bills and manage bank accounts electronically [2].",
+      "options": [
+        "e-Banking",
+        "Personalized newspapers",
+        "Online digital libraries",
+        "Videoconferencing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Online newspapers can be personalized to download articles on specific topics.",
+      "explanation": "Newspapers online can be personalized to download specific articles to a hard disk [2].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What can electronic mail (email) contain besides text?",
+      "explanation": "Email is widely used and can contain audio and video as well as text [3].",
+      "options": [
+        "Only text",
+        "Audio and video",
+        "Hardware components",
+        "Physical mail"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What technology allows people at distant locations to hold meetings and see each other?",
+      "explanation": "Videoconferencing allows people to see and hear each other from distant locations [3].",
+      "options": [
+        "e-Banking",
+        "Videoconferencing",
+        "Unicasting",
+        "File Transfer Protocol"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is a 'virtual blackboard' used for in videoconferencing?",
+      "explanation": "Users can write on a shared virtual blackboard during videoconferencing [3].",
+      "options": [
+        "Managing bank accounts",
+        "Sharing written information during a meeting",
+        "Ordering hardware",
+        "Filtering network traffic"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the primary benefit of videoconferencing mentioned in the lecture?",
+      "explanation": "Videoconferencing is a tool for eliminating travel time and costs [3].",
+      "options": [
+        "Increasing hardware cost",
+        "Eliminating travel cost and time",
+        "Replacing the need for IP addresses",
+        "Connecting only two computers"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does the acronym LAN stand for?",
+      "explanation": "LAN stands for Local Area Network [3].",
+      "options": [
+        "Large Area Network",
+        "Local Area Network",
+        "Link Access Node",
+        "Logical Array Network"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "LANs are typically used to connect a ______ geographical area.",
+      "explanation": "LANs are used to connect limited geographical areas like homes or offices [3].",
+      "options": [
+        "Unlimited",
+        "Limited",
+        "Country-wide",
+        "Global"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the typical maximum radius of a LAN?",
+      "explanation": "LANs can span over a limited range of approximately 1 km in radius [3].",
+      "options": [
+        "100 meters",
+        "1 km",
+        "10 km",
+        "100 km"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: In a LAN, there is a strict requirement for a central computer to manage communications.",
+      "explanation": "In a LAN, there is no need for any central computer, and each computer has the same role [3].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the minimum number of computers required to form a LAN?",
+      "explanation": "The smallest LAN can consist of 2 computers [3].",
+      "options": [
+        "1",
+        "2",
+        "5",
+        "10"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Who usually owns and manages a LAN?",
+      "explanation": "LANs are usually owned, controlled, and managed by a single person or organization [3].",
+      "options": [
+        "A global committee",
+        "The government",
+        "A single person or organization",
+        "A regional registry"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following hardware is used for a LAN?",
+      "explanation": "Devices used for LAN include routers, switches, hubs, repeaters, and bridges [3].",
+      "options": [
+        "Ethernet switches",
+        "Repeaters",
+        "Bridges",
+        "All of the above"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What type of connectivity is provided by a LAN to local services?",
+      "explanation": "Full-time connectivity is provided to local services in a LAN [3].",
+      "options": [
+        "Part-time",
+        "Full-time",
+        "On-demand only",
+        "Satellite only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "LANs allow multi-access to what type of media?",
+      "explanation": "A LAN allows multi-access to high-bandwidth media [3].",
+      "options": [
+        "Low-bandwidth",
+        "High-bandwidth",
+        "Analog only",
+        "Physical mail only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: A LAN cannot be connected to a WAN.",
+      "explanation": "A LAN can be connected to other LANs or WANs [3].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which casting method sends data to a single recipient?",
+      "explanation": "Unicast sends data to a single recipient (One-to-One) [4].",
+      "options": [
+        "Broadcast",
+        "Multicast",
+        "Unicast",
+        "Anycast"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which casting method sends data to all devices in a network?",
+      "explanation": "Broadcast sends data to all devices in a network (One-to-All) [4].",
+      "options": [
+        "Unicast",
+        "Multicast",
+        "Broadcast",
+        "Directed Multicast"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which casting method sends data to a specific group of subscribed devices?",
+      "explanation": "Multicast sends data to a specific group of subscribed devices (One-to-Many) [4].",
+      "options": [
+        "Broadcast",
+        "Unicast",
+        "Multicast",
+        "Limited Broadcast"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is 'Limited Broadcast'?",
+      "explanation": "In Limited Broadcast, data reaches from a source to all hosts in the same network [4].",
+      "options": [
+        "Data reaches all hosts in a different network",
+        "Data reaches all hosts in the same network",
+        "Data reaches only one host",
+        "Data reaches only subscribed hosts"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is 'Directed Broadcast'?",
+      "explanation": "Directed Broadcast involves a host in one network sending a message to all hosts in another network [4].",
+      "options": [
+        "A host in one network sends a message to all hosts in another network",
+        "A host sends a message to a specific group",
+        "Data is sent to a single recipient",
+        "Data is sent via satellite only"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which transmission mode allows simultaneous two-way communication?",
+      "explanation": "Full-Duplex supports simultaneous two-way communication, such as a mobile phone call [5].",
+      "options": [
+        "Simplex",
+        "Half-Duplex",
+        "Full-Duplex",
+        "Single-Duplex"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is an example of Full-Duplex transmission?",
+      "explanation": "Examples of Full-Duplex include mobile phone calls, videoconferencing, and online gaming [5].",
+      "options": [
+        "Watching TV",
+        "Using a Walkie-Talkie",
+        "Online gaming",
+        "Reading a digital library"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "True or False: Online gaming is considered a Full-Duplex transmission mode.",
+      "explanation": "Online gaming is listed as an example of Full-Duplex [5].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the geographical scope typically associated with a LAN?",
+      "explanation": "LANs are used at home, a school, an office, or a college [3].",
+      "options": [
+        "A building or campus",
+        "A whole city",
+        "Multiple countries",
+        "An entire continent"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What allows users to communicate and transfer files within a limited area?",
+      "explanation": "A LAN network lets users communicate and transfer files in a limited area [3].",
+      "options": [
+        "LAN",
+        "MAN",
+        "WAN",
+        "APIPA"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In networking, what does 'One-to-Many' refer to?",
+      "explanation": "Multicast is a one-to-many data delivery method [4].",
+      "options": [
+        "Unicast",
+        "Broadcast",
+        "Multicast",
+        "Directed Broadcast"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network type is usually owned and managed by a single organization?",
+      "explanation": "LANs are usually owned and managed by a single person or organization [3].",
+      "options": [
+        "LAN",
+        "MAN",
+        "WAN",
+        "Internet"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The connection of two devices via radio waves is an example of a:",
+      "explanation": "A computer network can be connected via radio waves [1].",
+      "options": [
+        "Computer network",
+        "Software suite",
+        "Hardware protocol",
+        "Standalone system"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In which area has network growth enabled people to handle investments electronically?",
+      "explanation": "e-Banking enables people to manage bank accounts and handle investments electronically [2].",
+      "options": [
+        "Email",
+        "e-Banking",
+        "Casting",
+        "Videoconferencing"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What resource is shared if users are accessing the same CD-Rom over a network?",
+      "explanation": "Resource sharing includes devices such as CD-Roms [1].",
+      "options": [
+        "Hardware",
+        "Energy",
+        "Casting",
+        "Transmission mode"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "In a LAN, if all computers have the same role, it is a ________ network.",
+      "explanation": "In a LAN, there is no need for a central computer and each has the same role [3].",
+      "options": [
+        "Peer-to-Peer",
+        "Client-Server",
+        "Master-Slave",
+        "Centralized"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Broadcast casting delivers data to a specific subscribed group.",
+      "explanation": "Broadcast sends data to ALL devices, while Multicast sends to a specific group [4].",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which device is NOT listed as a LAN device in Lecture 1?",
+      "explanation": "Listed devices include routers, switches, hubs, repeaters, and bridges [3].",
+      "options": [
+        "Router",
+        "Bridge",
+        "Mainframe",
+        "Hub"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Essay: Briefly explain the three main types of casting defined in Lecture 1.",
+      "explanation": "These are the three data delivery methods based on recipient count [4].",
+      "answer": "Unicast (One-to-One), Broadcast (One-to-All), and Multicast (One-to-Many)."
+    },
+    {
+      "q": "Essay: Define a LAN and its typical ownership.",
+      "explanation": "LANs span ~1km and are privately managed [3].",
+      "answer": "A Local Area Network (LAN) connects a limited geographical area and is usually owned by a single person or organization."
+    },
+    {
+      "q": "Essay: List three examples of Full-Duplex communication mentioned in the lecture.",
+      "explanation": "Full-Duplex allows simultaneous two-way transmission [5].",
+      "answer": "Mobile phone calls, videoconferencing, and online gaming."
+    }
+  ]
+}

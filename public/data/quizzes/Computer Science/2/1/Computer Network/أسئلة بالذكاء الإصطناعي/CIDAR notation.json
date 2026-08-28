@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "title": "CIDAR Notation",
+    "id": "7M7U3RFJ",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Computer Network/أسئلة بالذكاء الإصطناعي/CIDAR notation.json"
+  },
+  "stats": {
+    "questionCount": 8,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.255.255.240?",
+      "explanation": "This notation indicates that the first 28 bits are reserved for the network address.",
+      "options": [
+        "/28",
+        "/27",
+        "/26",
+        "/30"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.255.192.0?",
+      "explanation": "This mask uses 18 bits for the network portion.",
+      "options": [
+        "/16",
+        "/17",
+        "/18",
+        "/19"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.252.0.0?",
+      "explanation": "This notation declares that 14 bits are reserved for the network address.",
+      "options": [
+        "/12",
+        "/14",
+        "/15",
+        "/16"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.255.255.252?",
+      "explanation": "30 bits are allocated to the network, leaving only 2 bits for hosts.",
+      "options": [
+        "/24",
+        "/28",
+        "/30",
+        "/32"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.255.248.0?",
+      "explanation": "This CIDR suffix indicates 21 bits are used for the network.",
+      "options": [
+        "/20",
+        "/21",
+        "/22",
+        "/23"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.248.0.0?",
+      "explanation": "This mask reserves 13 bits for the network portion.",
+      "options": [
+        "/11",
+        "/12",
+        "/13",
+        "/14"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.255.255.248?",
+      "explanation": "29 bits are reserved for the network address.",
+      "options": [
+        "/27",
+        "/28",
+        "/29",
+        "/30"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the CIDR notation for the subnet mask 255.254.0.0?",
+      "explanation": "This notation indicates that the first 15 bits are reserved for the network.",
+      "options": [
+        "/14",
+        "/15",
+        "/16",
+        "/17"
+      ],
+      "correct": 1
+    }
+  ]
+}

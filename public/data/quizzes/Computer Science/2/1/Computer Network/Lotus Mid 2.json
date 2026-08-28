@@ -1,0 +1,334 @@
+{
+  "meta": {
+    "title": "Lotus Mid 2",
+    "id": "2UELRZ7J",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/Computer Science/2/1/Computer Network/Lotus Mid 2.json"
+  },
+  "stats": {
+    "questionCount": 35,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which network type typically covers a city and uses technologies like WiMAX?",
+      "explanation": "A Metropolitan Area Network (MAN) spans a city or a large campus.",
+      "options": [
+        "LAN",
+        "WAN",
+        "MAN",
+        "PAN"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What unique identifier is burned into a NIC?",
+      "explanation": "The Media Access Control (MAC) address is a permanent physical address assigned to the network interface.",
+      "options": [
+        "IP Address",
+        "MAC Address",
+        "Subnet Mask",
+        "DNS Address"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The Protocol Data Units (PDUs) at transport layer:",
+      "explanation": "Data is encapsulated into Segments at the Transport Layer (Layer 4).",
+      "options": [
+        "Data",
+        "Segments",
+        "Packets",
+        "Frames"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which OSI layer would define encryption standards like SSL/TLS?",
+      "explanation": "The Presentation Layer (Layer 6) is responsible for data translation, encryption, and compression.",
+      "options": [
+        "Layer 6",
+        "Layer 5",
+        "Layer 4",
+        "Layer 7"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which early Ethernet device creates a single collision domain?",
+      "explanation": "A hub is a Layer 1 device that broadcasts all incoming traffic to all ports, creating one large collision domain.",
+      "options": [
+        "Switch",
+        "Router",
+        "Hub",
+        "Bridge"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which type of switch port carries traffic for multiple VLANs?",
+      "explanation": "Trunk ports use tagging (like 802.1Q) to carry traffic for multiple VLANs across switches.",
+      "options": [
+        "Access Port",
+        "Trunk Port",
+        "Console Port",
+        "Routed Port"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "For a device in VLAN 10 to communicate with a device in VLAN 20, what is required?",
+      "explanation": "Inter-VLAN routing requires a Layer 3 device like a router or a Multilayer switch.",
+      "options": [
+        "A hub",
+        "A bigger switch",
+        "Router/L3 Switch",
+        "A better cable"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "How many bits are reserved for the host portion in a Class A IP address?",
+      "explanation": "Class A addresses use 8 bits for the network and 24 bits for the host (255.0.0.0).",
+      "options": [
+        "8 bits",
+        "16 bits",
+        "24 bits",
+        "32 bits"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which device is primarily used to segment broadcast domains in a network?",
+      "explanation": "Routers do not forward broadcasts by default, effectively creating separate broadcast domains.",
+      "options": [
+        "Router",
+        "Switch",
+        "Repeater",
+        "Hub"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the default subnet mask for a Class B address?",
+      "explanation": "Class B uses a /16 prefix, which is 255.255.0.0.",
+      "options": [
+        "255.0.0.0",
+        "255.255.0.0",
+        "255.255.255.0",
+        "255.255.255.255"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The primary limitation of classful addressing that led to CIDR was:",
+      "explanation": "Classful addressing wasted many addresses; CIDR allows for more flexible, efficient subnetting.",
+      "options": [
+        "Inefficient allocation of IP addresses",
+        "It was too secure",
+        "It was too complex",
+        "It didn't support routing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which routing protocol uses hop count as its metric?",
+      "explanation": "RIP (Routing Information Protocol) selects the best path based solely on the number of routers (hops) it must pass through.",
+      "options": [
+        "OSPF",
+        "EIGRP",
+        "RIP",
+        "BGP"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the main function of a router?",
+      "explanation": "Routers operate at Layer 3 to route traffic between different logical networks.",
+      "options": [
+        "Connect devices within the same VLAN.",
+        "Forward packets between different IP networks.",
+        "Amplify electrical signals.",
+        "Filter MAC addresses."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the well-known port number for HTTP?",
+      "explanation": "HTTP uses port 80, while HTTPS uses port 443.",
+      "options": [
+        "25",
+        "53",
+        "80",
+        "443"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which field in the TCP header is used to reassemble data segments in the correct order?",
+      "explanation": "Sequence numbers allow the receiving device to reorder segments that arrive out of sequence.",
+      "options": [
+        "Checksum",
+        "Sequence Number",
+        "Window Size",
+        "Acknowledgment Number"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The combination of an IP address and a port number:",
+      "explanation": "A socket represents an endpoint for communication (IP:Port).",
+      "options": [
+        "Packet",
+        "Segment",
+        "Socket",
+        "Protocol"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which network topology has a single point of failure at the central device?",
+      "explanation": "In a Star topology, if the central hub or switch fails, the entire network goes down.",
+      "options": [
+        "Bus",
+        "Ring",
+        "Star",
+        "Mesh"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which medium is most immune to electromagnetic interference?",
+      "explanation": "Fiber optics use light instead of electricity, making them immune to EMI.",
+      "options": [
+        "Copper Cable",
+        "Fiber Optic",
+        "Co-axial Cable",
+        "Wireless"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In Peer-to-Peer networks:",
+      "explanation": "P2P networks allow devices to act as both clients and servers to one another.",
+      "options": [
+        "A central server manages all data",
+        "It is highly efficient for large networks",
+        "Dedicated resources are required",
+        "Devices share resources directly"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which topology is the most fault tolerant but expensive?",
+      "explanation": "Full Mesh provides redundant paths between every node, but requires the most cabling.",
+      "options": [
+        "Ring",
+        "Star",
+        "Mesh",
+        "Tree"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which type of cable connects a computer to a switch?",
+      "explanation": "Straight-through cables are used for connecting dissimilar devices (PC to Switch).",
+      "options": [
+        "Crossover",
+        "Coaxial",
+        "Straight-through",
+        "Fiber"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The second stage in DHCP process between client and servers.",
+      "explanation": "The process follows DORA: Discover, Offer, Request, Acknowledge.",
+      "options": [
+        "DHCPOFFER",
+        "DHCPDISCOVER",
+        "DHCPACK",
+        "DHCPREQUEST"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the key benefit of ARP in network communication?",
+      "explanation": "ARP (Address Resolution Protocol) finds the hardware MAC address associated with a known IP address.",
+      "options": [
+        "resolves IP addresses to Domain",
+        "resolves Domain addresses to IP",
+        "resolves MAC addresses to IP addresses",
+        "resolves IP addresses to MAC addresses"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which of the following is not a layer in the OSI model?",
+      "explanation": "The 'Internet' layer is part of the TCP/IP model, not the OSI model.",
+      "options": [
+        "Network",
+        "Session",
+        "Internet",
+        "Presentation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the first address in a subnet (like 192.168.1.0) typically reserved for?",
+      "explanation": "The first address identifies the network itself (Network ID) and cannot be assigned to a host.",
+      "options": [
+        "Default gateway.",
+        "Network ID.",
+        "Loopback address.",
+        "Broadcast address."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Define IPv4",
+      "answer": "Internet Protocol version 4: A 32-bit numerical labeling scheme used to identify devices on a network."
+    },
+    {
+      "q": "Define Subnet Mask",
+      "answer": "A 32-bit number that hides an IP address and divides the IP address into network address and host address."
+    },
+    {
+      "q": "Define Collision Domain",
+      "answer": "A network segment where data packets can collide with one another when being sent on a shared medium."
+    },
+    {
+      "q": "Define IP Routing",
+      "answer": "The process of sending packets from a host on one network to another host on a different remote network."
+    },
+    {
+      "q": "Define Variable-Length Subnet Masking (VLSM)",
+      "answer": "A technique that allows network administrators to divide an IP address space into subnets of different sizes."
+    },
+    {
+      "q": "Explain the difference between TCP and UDP and show why TCP Is Reliable?",
+      "explanation": "TCP uses a three-way handshake and error-checking to ensure all data arrives intact.",
+      "answer": "TCP is connection-oriented and ensures reliability through sequencing, acknowledgments, and retransmission. UDP is connectionless, faster, but has no delivery guarantees."
+    },
+    {
+      "q": "Classify the following IP addresses: 10.5.5.1, 172.16.254.2, 192.168.1.100, 169.254.18.154, 8.8.8.8.",
+      "answer": "10.5.5.1 (Class A, Private), 172.16.254.2 (Class B, Private), 192.168.1.100 (Class C, Private), 169.254.18.154 (APIPA/Link-Local), 8.8.8.8 (Class A, Public)."
+    },
+    {
+      "q": "Subnetting Task: 10.10.0.0/8, need 500 hosts per subnet. Determine New Mask and 2nd Subnet details.",
+      "explanation": "500 hosts require 9 bits ($2^9 = 512$). 32 - 9 = /23 mask.",
+      "answer": "New Mask: /23 (255.255.254.0). 2nd Subnet: Network: 10.10.2.0, Broadcast: 10.10.3.255, Range: 10.10.2.1 - 10.10.3.254."
+    },
+    {
+      "q": "Identify the classes of routing protocols and explain how they differ.",
+      "answer": "Distance Vector (e.g., RIP - uses hop count), Link-State (e.g., OSPF - builds a map of the network), and Hybrid (e.g., EIGRP - combines both)."
+    },
+    {
+      "q": "What is VLAN, what are the benefits of Using VLANs in a network?",
+      "answer": "Virtual Local Area Network. Benefits: Improved security, reduced broadcast traffic, easier management, and cost reduction by grouping users logically rather than physically."
+    }
+  ]
+}
