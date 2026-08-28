@@ -10,7 +10,10 @@
  */
 
 async function callGoogleAIStudio(apiKey, messages) {
-  const model = "gemini-2.0-flash";
+  // Model name per Google's deprecation notice (gemini-2.0-flash was
+  // retired). Kept as a named const so it's a one-line update if Google
+  // deprecates this one too.
+  const model = "gemini-flash-latest";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = messages.map((m) => ({
