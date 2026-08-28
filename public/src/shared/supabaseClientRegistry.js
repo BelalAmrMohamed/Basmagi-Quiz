@@ -15,6 +15,9 @@
 // (side-menu, etc.) can read whichever one was last set.
 
 let sharedSupabaseClient = null;
+// In-flight creation promise — see ensureSharedSupabaseClient() below for
+// why this exists separately from sharedSupabaseClient itself.
+let creationPromise = null;
 
 export function getSharedSupabaseClient() {
   return sharedSupabaseClient;
@@ -22,22 +25,50 @@ export function getSharedSupabaseClient() {
 
 export async function ensureSharedSupabaseClient() {
   if (sharedSupabaseClient) return sharedSupabaseClient;
-  if (typeof window !== "undefined" && window.supabase) {
-    try {
-      const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./public-config.js");
-      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-        sharedSupabaseClient = window.supabase.createClient(
-          SUPABASE_URL,
-          SUPABASE_ANON_KEY,
-        );
+
+  // BUG FIX: the previous version only memoized the *resolved* client,
+  // checked synchronously at the top of this function. But this function
+  // is async and awaits an import() before ever assigning
+  // sharedSupabaseClient — so two callers invoked back-to-back before that
+  // await resolves (e.g. session-sync.js's syncAdminSessionWithSupabase()
+  // and quizManifest.js's fetchDbManifest(), which both fire near page
+  // load on index.html) BOTH pass the `if (sharedSupabaseClient)` guard
+  // while it's still null, and BOTH call window.supabase.createClient(),
+  // producing two independent GoTrueClient instances fighting over the
+  // same "sb-...-auth-token" localStorage key. Memoizing the in-flight
+  // Promise itself (not just its eventual result) closes that window:
+  // every concurrent caller awaits the exact same createClient() call.
+  if (creationPromise) return creationPromise;
+
+  creationPromise = (async () => {
+    if (typeof window !== "undefined" && window.supabase) {
+      try {
+        const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./public-config.js");
+        if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+          sharedSupabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY,
+          );
+        }
+      } catch (err) {
+        console.error("Unable to initialize shared Supabase client:", err);
       }
-    } catch (err) {
-      console.error("Unable to initialize shared Supabase client:", err);
     }
-  }
-  return sharedSupabaseClient;
+    return sharedSupabaseClient;
+  })();
+
+  return creationPromise;
 }
 
 export function setSharedSupabaseClient(client) {
   sharedSupabaseClient = client;
+  // A client set explicitly (e.g. index.html's session-sync handing over
+  // the client it already resolved via syncAdminSession) satisfies any
+  // callers still awaiting an in-flight ensureSharedSupabaseClient() call
+  // from this point forward too, since sharedSupabaseClient is now set —
+  // but if creationPromise never got started, make sure a later
+  // ensureSharedSupabaseClient() call doesn't attempt a redundant create.
+  if (!creationPromise) {
+    creationPromise = Promise.resolve(client);
+  }
 }

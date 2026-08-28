@@ -96,7 +96,7 @@ function openAIAgentModal(options) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} المساعد الذكي</h2>
+    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} البشــمبصمج</h2>
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
@@ -136,8 +136,8 @@ export function createAIAgentFab(options = {}) {
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "ai-agent-fab";
-  fab.setAttribute("aria-label", "افتح المساعد الذكي");
-  fab.title = "المساعد الذكي";
+  fab.setAttribute("aria-label", "افتح البشــمبصمج");
+  fab.title = "البشــمبصمج";
   fab.innerHTML = SPARKLE_ICON_SVG;
   fab.addEventListener("click", () => openAIAgentModal(options));
   return fab;

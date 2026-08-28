@@ -66,7 +66,7 @@ export function createChatPanel(options = {}) {
   panel.appendChild(inputRow);
 
   function renderEmptyState() {
-    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل المساعد الذكي عن أي سؤال متعلق بامتحاناتك 👋</div>`;
+    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
   }
   renderEmptyState();
 
@@ -191,7 +191,7 @@ export function createChatPanel(options = {}) {
         );
         const msg = data.detail
           ? `${data.error || "خطأ"}: ${data.detail}`
-          : data.error || "حدث خطأ أثناء التواصل مع المساعد الذكي";
+          : data.error || "حدث خطأ أثناء التواصل مع البشــمبصمج";
         appendError(msg);
         return;
       }

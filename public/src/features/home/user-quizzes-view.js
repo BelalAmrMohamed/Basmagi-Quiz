@@ -59,7 +59,7 @@ function handleCreateQuizToolCall(toolCall) {
   if (!questions.length) {
     showNotification(
       "بيانات ناقصة",
-      "لم يتمكن المساعد الذكي من إنشاء الامتحان: لا توجد أسئلة صالحة.",
+      "لم يتمكن البشــمبصمج من إنشاء الامتحان: لا توجد أسئلة صالحة.",
       "warning",
       10,
     );
