@@ -1,0 +1,266 @@
+{
+  "meta": {
+    "title": "2025 2026 Final   دكتورة مختلفة   من يومين",
+    "id": "EPAHYLUZ",
+    "createdAt": "2026-06-04 - 18:14",
+    "path": "quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Final - دكتورة مختلفة - من يومين.json"
+  },
+  "stats": {
+    "questionCount": 26,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "Which of the following is true about a binary search tree?",
+      "explanation": "In a BST, the left sub-tree contains values **less than** the root, and the right sub-tree contains values **greater than** the root. Additionally, both sub-trees must themselves be valid binary search trees. Options (a) and (b) are incorrect statements, so only (c) is true.",
+      "options": [
+        "The left sub-tree has values greater than the root",
+        "The right sub-tree has values less than the root",
+        "Both sub-trees must be binary search trees",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a doubly linked list, each node contains:",
+      "explanation": "Each node in a doubly linked list holds two pointers: one pointing to the **next** node and one pointing to the **previous** node.",
+      "options": [
+        "Only one pointer",
+        "Two pointers",
+        "Three pointers",
+        "No pointers"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In the Queue implementation with an array, if `read == write`, we can perform Enqueue?",
+      "explanation": "When `read == write` in a circular array-based queue, the queue is considered **full** (or empty depending on convention). In the full-queue convention, Enqueue cannot be performed because it would cause an overflow.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the time complexity of deleting an element from a binary search tree?",
+      "explanation": "Deletion in a BST requires finding the node first, which takes $O(h)$ where $h$ is the height. In the **worst case** (a skewed tree), $h = n$, giving $O(n)$. On average (balanced tree) it is $O(\\log n)$, but the worst-case answer is $O(n)$.",
+      "options": [
+        "$O(1)$",
+        "$O(\\log n)$",
+        "$O(n)$",
+        "$O(n \\log n)$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following data structures uses FIFO (First In, First Out)?",
+      "explanation": "A **Queue** follows the FIFO principle — the first element inserted is the first one to be removed.",
+      "options": [
+        "Queue",
+        "Stack",
+        "Array",
+        "Linked List"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the value of the `next` pointer of the new node created in the `PushBack(key)` function?",
+      "explanation": "When appending a node to the back of a linked list, the new node becomes the last node. Therefore its `next` pointer is set to **nil** (null), indicating there is no node after it.",
+      "options": [
+        "head",
+        "key",
+        "nil",
+        "tail"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "In a binary search tree, the left child of a node contains a value that is:",
+      "explanation": "By the BST property, every value in the **left** subtree of a node must be **less than** the node's value.",
+      "options": [
+        "Greater than the parent",
+        "Less than the parent",
+        "Equal to the parent",
+        "Random"
+      ],
+      "correct": 1
+    },
+    {
+      "q": ".............. consisting of equal-size elements indexed by contiguous integers.",
+      "explanation": "An **Array** is a data structure consisting of equal-size elements stored in contiguous memory locations, accessed via integer indices.",
+      "options": [
+        "Stack",
+        "Queue",
+        "Array",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following operations is used to **set** the value of an element at index $i$ in a dynamic array?",
+      "explanation": "`Set(i, val)` assigns the value `val` to the element at index $i$. `Get(i)` retrieves the value, `Push-Back` appends to the end, and `Remove(i)` deletes an element.",
+      "options": [
+        "`Get(i)`",
+        "`Set(i, val)`",
+        "`Push-Back(val)`",
+        "`Remove(i)`"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Appending a new element to an **empty** dynamic array is:",
+      "explanation": "Appending to an empty dynamic array requires no shifting of elements and no resizing. It is a single write operation — $O(1)$.",
+      "options": [
+        "$O(1)$",
+        "$O(n)$",
+        "$O(n \\log n)$",
+        "$O(n^2)$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the purpose of the `if` statement in the `PushBack(key)` function?",
+      "explanation": "In `PushBack(key)`, the `if` statement checks whether the **tail** is nil (i.e., the list is empty). If so, both `head` and `tail` are set to the new node; otherwise, the new node is linked after the current tail.",
+      "options": [
+        "To check if the head node is nil.",
+        "To check if the tail node is nil.",
+        "To check if the new node is nil.",
+        "To check if the input parameter `key` is nil."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What happens if the `tail` variable is already pointing to a node when the `PushFront(key)` function is called?",
+      "explanation": "`PushFront(key)` inserts a new node at the **front** of the list. The `tail` only needs updating when the list is empty (so the new node is both head and tail). If `tail` already points to a node, it remains unchanged.",
+      "options": [
+        "The tail variable is updated to point to the new node",
+        "The tail variable is not updated",
+        "The tail variable is set to None",
+        "The tail variable is deleted from memory"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Stack operations are known as:",
+      "explanation": "Stacks operate on **LIFO** (Last In, First Out) principle. None of the given options (FIFO, LILO, MILO) correctly describe stack behavior, so the answer is **None of the above**.",
+      "options": [
+        "FIFO",
+        "LILO",
+        "MILO",
+        "None of the above"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the time complexity for inserting an element in a binary search tree **on average**?",
+      "explanation": "On average, a BST is reasonably balanced, so insertion requires traversing $O(\\log n)$ levels to find the correct position.",
+      "options": [
+        "$O(1)$",
+        "$O(\\log n)$",
+        "$O(n)$",
+        "$O(n \\log n)$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following traversal methods visits nodes in a binary tree in a **left → root → right** manner?",
+      "explanation": "**In-order** traversal visits: Left subtree → Root → Right subtree. This produces sorted output for a BST.",
+      "options": [
+        "Pre-order",
+        "In-order",
+        "Post-order",
+        "Level-order"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following traversal methods visits nodes in a binary tree in a **left → root → right** manner? *(repeated question)*",
+      "explanation": "**In-order** traversal follows the Left → Root → Right pattern. This question is a duplicate of Q15.",
+      "options": [
+        "Pre-order",
+        "In-order",
+        "Post-order",
+        "Level-order"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What happens if the `head` pointer is nil when the `PopBack()` function is called?",
+      "explanation": "If `head` is nil, the list is empty and there is nothing to pop. The function typically returns **None** (or null) to signal that the operation could not be completed.",
+      "options": [
+        "The function returns an error message",
+        "The function returns a None value",
+        "The function raises an exception",
+        "The function continues to execute normally"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of a **dynamically-allocated array**?",
+      "explanation": "A dynamically-allocated array grows or shrinks at runtime, allocating memory **as needed**. This contrasts with static arrays whose size is fixed at compile time.",
+      "options": [
+        "To allocate a fixed amount of memory for storing elements",
+        "To allocate memory as needed for storing elements",
+        "To allocate memory for storing only a specific number of elements",
+        "To allocate memory for storing elements of a specific type"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What happens if the `head` and `tail` pointers are the **same** when the `PopBack()` function is called?",
+      "explanation": "If `head == tail`, there is exactly one node in the list. Calling `PopBack()` removes that node, setting both `head` and `tail` to nil — the list becomes **empty**.",
+      "options": [
+        "The linked list becomes empty",
+        "The linked list remains unchanged",
+        "The function raises an exception",
+        "The function returns a None value"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is true about a binary search tree? *(repeated question)*",
+      "explanation": "Only option (c) is correct: both sub-trees of a BST must themselves be valid BSTs. Options (a) and (b) contradict the BST property.",
+      "options": [
+        "The left sub-tree has values greater than the root",
+        "The right sub-tree has values less than the root",
+        "Both sub-trees must be binary search trees",
+        "All of the above"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "**[Q2a]** Write an array function to insert the item **60** at index **5** in the following array:\n\n| Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |\n|---|---|---|---|---|---|---|---|---|---|---|\n| Value | 10 | 20 | 30 | 40 | 50 | _(empty)_ | 70 | 80 | 90 | _(empty)_ |\n\nWrite the pseudocode or code for this insertion.",
+      "explanation": "Insertion into an array requires shifting all elements from the target index onward one position to the right, then placing the new value at the target index. Time complexity: $O(n)$.",
+      "answer": "```python\ndef insert(arr, size, index, item):\n    # Shift elements to the right from the end down to index\n    for i in range(size - 1, index - 1, -1):\n        arr[i + 1] = arr[i]\n    arr[index] = item\n    return size + 1\n\n# Example:\narr = [10, 20, 30, 40, 50, 70, 80, 90, None, None]\nsize = 8\ninsert(arr, size, 5, 60)\n# Result: [10, 20, 30, 40, 50, 60, 70, 80, 90, None]\n```\n\n**Steps:**\n1. Start from the last element (`size - 1`) and shift each element one position to the right until index 5 is reached.\n2. Place `60` at index 5.\n\n| Index | 0 | 1 | 2 | 3 | 4 | **5** | 6 | 7 | 8 | 9 |\n|---|---|---|---|---|---|---|---|---|---|---|\n| Value | 10 | 20 | 30 | 40 | 50 | **60** | 70 | 80 | 90 | — |"
+    },
+    {
+      "q": "**[Q2b]** Write the functions for the following Stack methods:\n- `Push(Key)`\n- `Key Top()`\n- `Key Pop()`",
+      "explanation": "A Stack is a LIFO structure. `Push` adds to the top, `Top` peeks at the top element, and `Pop` removes and returns the top element. All three operations run in $O(1)$.",
+      "answer": "```python\nclass Stack:\n    def __init__(self):\n        self.data = []\n\n    def Push(self, key):\n        \"\"\"Insert key onto the top of the stack.\"\"\"\n        self.data.append(key)\n\n    def Top(self):\n        \"\"\"Return the top element without removing it.\"\"\"\n        if len(self.data) == 0:\n            return None  # Stack is empty\n        return self.data[-1]\n\n    def Pop(self):\n        \"\"\"Remove and return the top element.\"\"\"\n        if len(self.data) == 0:\n            return None  # Stack is empty\n        return self.data.pop()\n```\n\n**Pseudocode:**\n```\nPush(key):\n    top ← top + 1\n    stack[top] ← key\n\nTop():\n    if top < 0: return NULL\n    return stack[top]\n\nPop():\n    if top < 0: return NULL\n    key ← stack[top]\n    top ← top - 1\n    return key\n```"
+    },
+    {
+      "q": "**[Q3a]** Write an array function to delete the item **70** from the following array:\n\n| Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |\n|---|---|---|---|---|---|---|---|---|---|---|\n| Value | 10 | 20 | 30 | 40 | 50 | 70 | 80 | 90 | — | — |",
+      "explanation": "Deletion from an array involves finding the element, then shifting all subsequent elements one position to the left to close the gap. Time complexity: $O(n)$.",
+      "answer": "```python\ndef delete(arr, size, item):\n    # Find the index of the item\n    index = -1\n    for i in range(size):\n        if arr[i] == item:\n            index = i\n            break\n    if index == -1:\n        return size  # Item not found\n\n    # Shift elements left to fill the gap\n    for i in range(index, size - 1):\n        arr[i] = arr[i + 1]\n\n    arr[size - 1] = None  # Clear last slot\n    return size - 1\n\n# Example:\narr = [10, 20, 30, 40, 50, 70, 80, 90, None, None]\nsize = 8\nsize = delete(arr, size, 70)\n# Result: [10, 20, 30, 40, 50, 80, 90, None, None, None]\n```\n\n| Index | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |\n|---|---|---|---|---|---|---|---|---|\n| Value | 10 | 20 | 30 | 40 | 50 | 80 | 90 | — |"
+    },
+    {
+      "q": "**[Q3b]** Write the functions for the following Queue methods:\n- `Enqueue(key)`\n- `Dequeue()`\n- `IsFound(key)`",
+      "explanation": "A Queue is a FIFO structure. `Enqueue` adds to the rear ($O(1)$), `Dequeue` removes from the front ($O(1)$), and `IsFound` performs a linear scan ($O(n)$).",
+      "answer": "```python\nclass Queue:\n    def __init__(self, capacity):\n        self.data = [None] * capacity\n        self.read = 0   # front pointer\n        self.write = 0  # rear pointer\n        self.size = 0\n        self.capacity = capacity\n\n    def Enqueue(self, key):\n        \"\"\"Add key to the rear of the queue.\"\"\"\n        if self.size == self.capacity:\n            return  # Queue is full\n        self.data[self.write] = key\n        self.write = (self.write + 1) % self.capacity\n        self.size += 1\n\n    def Dequeue(self):\n        \"\"\"Remove and return the front element.\"\"\"\n        if self.size == 0:\n            return None  # Queue is empty\n        key = self.data[self.read]\n        self.read = (self.read + 1) % self.capacity\n        self.size -= 1\n        return key\n\n    def IsFound(self, key):\n        \"\"\"Check whether key exists in the queue.\"\"\"\n        for i in range(self.size):\n            index = (self.read + i) % self.capacity\n            if self.data[index] == key:\n                return True\n        return False\n```\n\n**Pseudocode:**\n```\nEnqueue(key):\n    if write == read and full: ERROR\n    queue[write] ← key\n    write ← (write + 1) mod capacity\n\nDequeue():\n    if read == write: return NULL\n    key ← queue[read]\n    read ← (read + 1) mod capacity\n    return key\n\nIsFound(key):\n    for each element in queue:\n        if element == key: return True\n    return False\n```"
+    },
+    {
+      "q": "**[Q4a]** Using the binary tree shown below (nodes: a, b, c, d, e, f, g, h, i, j), illustrate and write the function for each traversal:\n\n```\n            a\n           / \\\n          b   c\n         / \\ / \\\n        d  e    f\n       / \\ /     \\\n      g  h i      j\n```\n\n- a. Pre-order traversal\n- b. Post-order traversal\n- c. In-order traversal",
+      "explanation": "- **Pre-order**: visit root first, then recursively traverse left and right subtrees.\n- **Post-order**: recursively traverse both subtrees first, then visit root.\n- **In-order**: traverse left subtree, visit root, traverse right subtree. For a BST, in-order yields sorted output.",
+      "answer": "**Traversal Results on the given tree:**\n\n| Traversal | Order | Result |\n|---|---|---|\n| Pre-order | Root → Left → Right | a, b, d, g, h, e, c, f, i, j |\n| Post-order | Left → Right → Root | g, h, d, e, b, i, f, j, c, a |\n| In-order | Left → Root → Right | g, d, h, b, e, a, c, i, f, j |\n\n**Functions (Python):**\n\n```python\nclass Node:\n    def __init__(self, key):\n        self.key = key\n        self.left = None\n        self.right = None\n\ndef preorder(node):\n    \"\"\"Root → Left → Right\"\"\"\n    if node is None:\n        return\n    print(node.key, end=' ')\n    preorder(node.left)\n    preorder(node.right)\n\ndef postorder(node):\n    \"\"\"Left → Right → Root\"\"\"\n    if node is None:\n        return\n    postorder(node.left)\n    postorder(node.right)\n    print(node.key, end=' ')\n\ndef inorder(node):\n    \"\"\"Left → Root → Right\"\"\"\n    if node is None:\n        return\n    inorder(node.left)\n    print(node.key, end=' ')\n    inorder(node.right)\n```"
+    },
+    {
+      "q": "**[Q4b]** Build a Binary Search Tree (BST) by inserting the following nodes in order:\n\n**45, 15, 79, 90, 10, 55, 12, 20, 50**\n\nDraw the resulting BST and describe the structure.",
+      "explanation": "Each new key is compared to the current node: if smaller, go left; if larger, go right. This continues recursively until an empty spot is found. The in-order traversal of any valid BST always yields a sorted sequence.",
+      "answer": "**Insertion steps:**\n\n| Step | Insert | Comparison Path | Position |\n|---|---|---|---|\n| 1 | 45 | — | Root |\n| 2 | 15 | 15 < 45 | Left of 45 |\n| 3 | 79 | 79 > 45 | Right of 45 |\n| 4 | 90 | 90 > 45 → 90 > 79 | Right of 79 |\n| 5 | 10 | 10 < 45 → 10 < 15 | Left of 15 |\n| 6 | 55 | 55 > 45 → 55 < 79 | Left of 79 |\n| 7 | 12 | 12 < 45 → 12 < 15 → 12 > 10 | Right of 10 |\n| 8 | 20 | 20 < 45 → 20 > 15 | Right of 15 |\n| 9 | 50 | 50 > 45 → 50 < 79 → 50 < 55 | Left of 55 |\n\n**Resulting BST:**\n\n```\n              45\n            /    \\\n          15      79\n         /  \\   /   \\\n        10  20  55   90\n          \\    /\n          12  50\n```\n\n**Traversals on this BST:**\n- In-order (sorted): 10, 12, 15, 20, 45, 50, 55, 79, 90\n- Pre-order: 45, 15, 10, 12, 20, 79, 55, 50, 90\n- Post-order: 12, 10, 20, 15, 50, 55, 90, 79, 45"
+    }
+  ]
+}

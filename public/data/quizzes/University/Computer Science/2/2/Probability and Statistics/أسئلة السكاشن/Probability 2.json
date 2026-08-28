@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "id": "EFXYAJ3A",
+    "title": "Probability 2",
+    "createdAt": "4/1/2026, 3:10:59 PM",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 2.json"
+  },
+  "stats": {
+    "questionCount": 16,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "A database contains 1,000 records: 300 for Product A, 700 for Product B. Among Product A records, 100 are \"high priority.\" Among Product B records, 200 are \"high priority.\" What is the probability that a randomly selected record is \"high priority\" given it is Product A?",
+      "explanation": "Using the conditional probability formula: $P(H|A) = \\frac{\\#high\\ priority \\cap Product\\ A}{\\#Product\\ A} = \\frac{100}{300} \\approx 0.333$.",
+      "options": [
+        "0.10",
+        "0.333",
+        "0.30",
+        "0.143"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A firewall monitors 10,000 packets. Packets from trusted IPs: 6,000. Packets from trusted IPs that are malicious: 150. Total malicious packets: 500. Find $P(malicious | from\\ trusted\\ IP)$.",
+      "explanation": "The probability is calculated as: $P(M|T) = \\frac{\\#malicious\\ AND\\ from\\ trusted}{\\#from\\ trusted} = \\frac{150}{6,000} = 0.025$ or $2.5\\%$.",
+      "options": [
+        "0.05",
+        "0.30",
+        "0.025",
+        "0.015"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A process has two quality checks: Check 1 passes with probability $0.95$, and Check 2 passes with probability $0.90$ (given Check 1 passes). What's the probability that a product passes both checks?",
+      "explanation": "Using the Multiplication Rule: $P(C_1 \\cap C_2) = P(C_1) \\times P(C_2|C_1) = 0.95 \\times 0.90 = 0.855$.",
+      "options": [
+        "0.95",
+        "0.90",
+        "0.855",
+        "1.85"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Two systems A and B fail independently: $P(A\\ fails) = 0.05$ and $P(B\\ fails) = 0.03$. Calculate the probability that both fail.",
+      "explanation": "For independent events, the probability of both occurring is the product of their individual probabilities: $P(A \\cap B) = P(A) \\times P(B) = 0.05 \\times 0.03 = 0.0015$.",
+      "options": [
+        "0.08",
+        "0.0015",
+        "0.015",
+        "0.05"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A disease affects $2\\%$ of the population. A test has $95\\%$ sensitivity and $98\\%$ specificity. What's the probability someone who tests positive actually has the disease?",
+      "explanation": "Using Bayes' Theorem: $P(D|+) = \\frac{P(+|D) \\times P(D)}{P(+|D) \\times P(D) + P(+|\\overline{D}) \\times P(\\overline{D})} = \\frac{0.95 \\times 0.02}{0.95 \\times 0.02 + 0.02 \\times 0.98} \\approx 49.2\\%$.",
+      "options": [
+        "95.0%",
+        "2.0%",
+        "49.2%",
+        "98.0%"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Using the disease data (Prevalence: $2\\%$, Sensitivity: $95\\%$, Specificity: $98\\%$), what is the probability someone who tests negative actually does NOT have the disease?",
+      "explanation": "$P(\\overline{D}|-) = \\frac{P(-|\\overline{D}) \\times P(\\overline{D})}{P(-|\\overline{D}) \\times P(\\overline{D}) + P(-|D) \\times P(D)} = \\frac{0.98 \\times 0.98}{0.98 \\times 0.98 + 0.05 \\times 0.02} \\approx 99.9\\%$.",
+      "options": [
+        "99.9%",
+        "95.0%",
+        "98.0%",
+        "49.2%"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A spam filter has the following characteristics: Spam prior probability is $20\\%$. $P(marked\\ spam | actually\\ spam) = 0.95$ and $P(marked\\ spam | actually\\ legitimate) = 0.05$. If an email is marked as spam, what's the probability it truly is spam?",
+      "explanation": "$P(spam|marked) = \\frac{0.95 \\times 0.20}{0.95 \\times 0.20 + 0.05 \\times 0.80} = \\frac{0.19}{0.19 + 0.04} \\approx 82.6\\%$.",
+      "options": [
+        "95.0%",
+        "82.6%",
+        "20.0%",
+        "17.4%"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A cybersecurity system has three independent detection methods: \n- Method A: $90\\%$ sensitivity, $95\\%$ specificity\n- Method B: $85\\%$ sensitivity, $98\\%$ specificity\n- Method C: $88\\%$ sensitivity, $96\\%$ specificity\nIf threat prevalence is $0.5\\%$ and all three methods alert, what's the probability of an actual threat?",
+      "explanation": "Using Bayesian updating, the posterior probability after the first positive test ($8.3\\%$) becomes the new prior for the next test. Detailed calculation across all three positive alerts results in a final posterior of approximately $67\\%$.",
+      "options": [
+        "8.3%",
+        "90.0%",
+        "67.0%",
+        "99.9%"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Celiac disease has a prevalence of $1.4\\%$. A test has $96\\%$ sensitivity and $99\\%$ specificity. If a patient tests positive, what's the actual probability of having celiac disease?",
+      "explanation": "In 100,000 people: 1,400 have the disease (1,344 test positive) and 98,600 do not (986 test positive). Total positives = 2,330. $P(disease|+) = 1,344 / 2,330 \\approx 57.7\\%$.",
+      "options": [
+        "96.0%",
+        "57.7%",
+        "1.4%",
+        "99.0%"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a screened population, prostate cancer prevalence is $15\\%$. The PSA test has $21\\%$ sensitivity and $96\\%$ specificity. What is the probability of cancer given a positive PSA test?",
+      "explanation": "$P(C|+) = \\frac{0.21 \\times 0.15}{0.21 \\times 0.15 + 0.04 \\times 0.85} = \\frac{0.0315}{0.0315 + 0.034} \\approx 48.1\\%$.",
+      "options": [
+        "21.0%",
+        "15.0%",
+        "48.1%",
+        "4.0%"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "HIV prevalence in a high-risk population is $5\\%$. The test sensitivity and specificity are both $99.5\\%$. What is the probability of HIV given a positive test?",
+      "explanation": "$P(H|+) = \\frac{0.995 \\times 0.05}{0.995 \\times 0.05 + 0.005 \\times 0.95} = \\frac{0.04975}{0.04975 + 0.00475} \\approx 91.3\\%$. High prevalence increases reliability.",
+      "options": [
+        "99.5%",
+        "5.0%",
+        "91.3%",
+        "99.0%"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "SQL injection attempts represent $0.1\\%$ of web requests. A detector has $95\\%$ sensitivity and $99.9\\%$ specificity. Among 1,000,000 requests, an alert is triggered. What is the probability of an actual SQL injection?",
+      "explanation": "Actual injections: 950 detected. Normal requests flagged: 999. Total alerts: 1,949. $P(injection|alert) = 950 / 1,949 \\approx 48.7\\%$.",
+      "options": [
+        "95.0%",
+        "48.7%",
+        "99.9%",
+        "0.1%"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Zero-day vulnerabilities exist in $0.001\\%$ of servers. A detection system has $85\\%$ sensitivity and $99.99\\%$ specificity. If a server triggers an alert, what is the probability of an actual vulnerability?",
+      "explanation": "Among 10,000,000 servers: 85 detected as vulnerable, 9,999.9 safe servers flagged. Total alerts: 10,084.9. $P(vuln|alert) = 85 / 10,085 \\approx 0.84\\%$.",
+      "options": [
+        "85.0%",
+        "0.84%",
+        "99.99%",
+        "15.0%"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A two-stage authentication system is used (Assume $1\\%$ of users are attackers). Stage 1 (password): Legit user success $99\\%$, Attacker success $5\\%$. Stage 2 (2FA): Legit success $98\\%$, Attacker success $1\\%$. If both stages succeed, what is the probability of the user being legitimate?",
+      "explanation": "$P(both|legit) = 0.99 \\times 0.98 = 0.9702$. $P(both|attacker) = 0.05 \\times 0.01 = 0.0005$. Using Bayes: $P(legit|both) = \\frac{0.9702 \\times 0.99}{0.9702 \\times 0.99 + 0.0005 \\times 0.01} \\approx 99.999\\%$.",
+      "options": [
+        "99.999%",
+        "97.02%",
+        "99.0%",
+        "95.0%"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Traffic from botnets accounts for $2\\%$ of total traffic. Detection sensitivity is $88\\%$ and specificity is $99.5\\%$. If traffic is flagged as a botnet command, what is the actual probability?",
+      "explanation": "$P(B|flag) = \\frac{0.88 \\times 0.02}{0.88 \\times 0.02 + 0.005 \\times 0.98} = \\frac{0.0176}{0.0176 + 0.0049} \\approx 78.2\\%$.",
+      "options": [
+        "88.0%",
+        "78.2%",
+        "2.0%",
+        "99.5%"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A file is flagged as malware with a $78.2\\%$ probability. A second independent scan confirms it with $88\\%$ sensitivity and $99.5\\%$ specificity. What is the updated probability that the file is malware?",
+      "explanation": "Using $78.2\\%$ as the new prior: $P(B|flag_2) = \\frac{0.88 \\times 0.782}{0.88 \\times 0.782 + 0.005 \\times 0.218} = \\frac{0.688}{0.688 + 0.001} \\approx 99.85\\%$.",
+      "options": [
+        "78.2%",
+        "88.0%",
+        "99.85%",
+        "95.0%"
+      ],
+      "correct": 2
+    }
+  ]
+}

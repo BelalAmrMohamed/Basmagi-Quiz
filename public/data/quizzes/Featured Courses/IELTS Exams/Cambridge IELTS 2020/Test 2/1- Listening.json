@@ -1,0 +1,451 @@
+{
+  "meta": {
+    "title": "1  Listening",
+    "id": "5PDPSTXV",
+    "createdAt": "2026-06-10 - 22:47",
+    "path": "quizzes/Featured Courses/IELTS Exams/Cambridge IELTS 2020/Test 2/1- Listening.json"
+  },
+  "stats": {
+    "questionCount": 40,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1**\n\nLocal councils can arrange practical support to help those caring for elderly people at home. This support can give the carer time for other responsibilities, and also something else beginning with a specific word (Question 1).\n```\nQuestion 1: Apart from 'time for other responsibilities', what else can the support give the carer? *(Write ONE WORD AND/OR A NUMBER)*",
+      "video": "./assets/quiz-media/TEST_2/Part_1.mp4",
+      "explanation": "The correct answer is **break**. The council support gives the carer 'a break' — time away from caregiving duties. A 'break' here is a short rest or pause from responsibilities. Common collocation: *take a break*, *have a break*.",
+      "options": [
+        "a break",
+        "a rest",
+        "a holiday",
+        "a payment"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Assessment of Mother's Needs**\n\nThe assessment may include discussion of how much [Question 2] the caring involves.\n```\nQuestion 2: The assessment discusses how much ___ the caring involves. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **time**. The assessment looks at how much *time* the caring process takes. This is a key factor in evaluating carer needs. Collocation: *time-consuming*, *time commitment*.",
+      "options": [
+        "time",
+        "money",
+        "effort",
+        "help"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Types of Tasks**\n\nThe assessment discusses what types of tasks are involved, for example:\n- Help with dressing\n- Helping her have a ___ (Question 3)\n- Shopping\n- Helping with meals\n- Dealing with [Question 4]\n```\nQuestion 3: One task listed is 'helping her have a ___'. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **shower**. Personal hygiene tasks like helping someone have a shower are a common caregiving responsibility. Pronunciation: /ˈʃaʊ.ər/. Collocations: *take a shower*, *have a shower* (British English preferred).",
+      "options": [
+        "shower",
+        "rest",
+        "walk",
+        "meal"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Types of Tasks**\n\nThe assessment discusses tasks such as helping with meals, dealing with ___ (Question 4).\n```\nQuestion 4: The assessment mentions 'dealing with ___'. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **money**. Managing finances is a key caregiving task. 'Dealing with money' means handling financial matters on behalf of an elderly person. Collocation: *deal with finances*, *manage money*.",
+      "options": [
+        "money",
+        "doctors",
+        "medication",
+        "paperwork"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Difficult Aspects of Caring**\n\nThe assessment may cover aspects of caring that are especially difficult, such as:\n- Loss of ___ (Question 5)\n- ___ her (Question 6)\n- Preventing a ___ (Question 7)\n```\nQuestion 5: One difficult aspect of caring is 'loss of ___'. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **memory**. Memory loss is a challenging aspect of caring for elderly people, often associated with conditions like dementia. Pronunciation: /ˈmem.ər.i/. Collocation: *memory loss*, *short-term memory*.",
+      "options": [
+        "memory",
+        "mobility",
+        "income",
+        "sleep"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Difficult Aspects of Caring**\n\nDifficult aspects of caring include:\n- Loss of memory\n- ___ her (Question 6)\n- Preventing a fall (Question 7)\n```\nQuestion 6: One difficult aspect is '___ her'. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **lifting**. Physically lifting an elderly person is a demanding and potentially injurious task for carers. Pronunciation: /ˈlɪf.tɪŋ/. Collocations: *manual lifting*, *lifting techniques*, *lifting equipment*.",
+      "options": [
+        "lifting",
+        "calming",
+        "bathing",
+        "feeding"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Difficult Aspects of Caring**\n\nDifficult aspects of caring also include 'preventing a ___' (Question 7).\n```\nQuestion 7: One difficult aspect is 'preventing a ___'. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **fall**. Preventing falls is a major concern in elderly care, as falls can lead to serious injuries. Collocation: *fall prevention*, *risk of falling*, *fall-related injury*.",
+      "options": [
+        "fall",
+        "accident",
+        "fracture",
+        "crisis"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Types of Support for Carers**\n\nTypes of support that may be offered to carers include:\n- Transport costs, e.g. cost of a ___ (Question 8)\n- Car-related costs, e.g. fuel and ___ (Question 9)\n- Help with housework\n- Help to reduce ___ (Question 10)\n```\nQuestion 8: Transport support may cover the cost of a ___. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **taxi**. Councils may help cover the cost of taxi fares for carers who need to travel to the person they care for. Pronunciation: /ˈtæk.si/. Collocation: *taxi fare*, *taxi service*, *cab*.",
+      "options": [
+        "taxi",
+        "bus pass",
+        "train ticket",
+        "parking permit"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Types of Support for Carers**\n\nCar-related costs that may be covered include fuel and ___ (Question 9).\n```\nQuestion 9: Car-related support may cover fuel and ___. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **insurance**. Car insurance is a significant running cost that councils may help carers with. Pronunciation: /ɪnˈʃʊər.əns/. Collocation: *car insurance*, *insurance premium*, *insurance policy*.",
+      "options": [
+        "insurance",
+        "repairs",
+        "parking",
+        "tyres"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 1 – Types of Support for Carers**\n\nSupport may also include help to reduce ___ (Question 10).\n```\nQuestion 10: Support may include help to reduce ___. *(Write ONE WORD AND/OR A NUMBER)*",
+      "explanation": "The correct answer is **stress**. Carer stress is a recognised health issue, and councils may provide services specifically aimed at reducing it. Pronunciation: /stres/. Collocation: *carer stress*, *stress relief*, *stress management*.",
+      "options": [
+        "stress",
+        "costs",
+        "isolation",
+        "workload"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nVolunteers perform various roles in community activities. For **walking around the town centre** (Question 11), what is the volunteer's role?\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 11: What is the role of volunteers who are **walking around the town centre**?",
+      "video": "./assets/quiz-media/TEST_2/Part_2.mp4",
+      "explanation": "The correct answer is **D – giving advice to visitors**. Volunteers walking around the town centre act as guides or information points for visitors. Collocation: *tourist information*, *visitor advice*, *wayfinding*.",
+      "options": [
+        "D – giving advice to visitors",
+        "A – providing entertainment",
+        "B – providing publicity about a council service",
+        "H – encouraging cooperation between local organisations"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nFor **helping at concerts** (Question 12), volunteers play a specific role.\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 12: What is the role of volunteers **helping at concerts**?",
+      "explanation": "The correct answer is **I – helping people find their seats**. At concerts, volunteers act as ushers, guiding audience members to their allocated seats. Vocabulary: *usher* /ˈʌʃ.ər/ – a person who shows people to their seats.",
+      "options": [
+        "I – helping people find their seats",
+        "F – selling tickets",
+        "A – providing entertainment",
+        "E – collecting feedback on events"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nFor **getting involved with community groups** (Question 13), volunteers play a specific role.\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 13: What is the role of volunteers **getting involved with community groups**?",
+      "explanation": "The correct answer is **H – encouraging cooperation between local organisations**. Volunteers working with community groups help build partnerships between different local bodies. Collocation: *community engagement*, *inter-organisational cooperation*, *partnership working*.",
+      "options": [
+        "H – encouraging cooperation between local organisations",
+        "C – contacting local businesses",
+        "B – providing publicity about a council service",
+        "G – introducing guest speakers at an event"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nFor **helping with a magazine** (Question 14), volunteers play a specific role.\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 14: What is the role of volunteers **helping with a magazine**?",
+      "explanation": "The correct answer is **E – collecting feedback on events**. Volunteers helping with a magazine gather opinions and responses about local events to feature in the publication. Collocation: *reader feedback*, *event review*, *gather opinions*.",
+      "options": [
+        "E – collecting feedback on events",
+        "B – providing publicity about a council service",
+        "C – contacting local businesses",
+        "A – providing entertainment"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nFor **participating at lunches for retired people** (Question 15), volunteers play a specific role.\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 15: What is the role of volunteers **participating at lunches for retired people**?",
+      "explanation": "The correct answer is **A – providing entertainment**. At social lunches for retired people, volunteers provide entertainment to make the event enjoyable. Collocation: *social event*, *senior citizens*, *community lunch*, *live entertainment*.",
+      "options": [
+        "A – providing entertainment",
+        "G – introducing guest speakers at an event",
+        "F – selling tickets",
+        "D – giving advice to visitors"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2**\n\nFor **helping with the website** (Question 16), volunteers play a specific role.\n\n**Options:**\n| Letter | Role |\n|--------|------|\n| A | providing entertainment |\n| B | providing publicity about a council service |\n| C | contacting local businesses |\n| D | giving advice to visitors |\n| E | collecting feedback on events |\n| F | selling tickets |\n| G | introducing guest speakers at an event |\n| H | encouraging cooperation between local organisations |\n| I | helping people find their seats |\n```\nQuestion 16: What is the role of volunteers **helping with the website**?",
+      "explanation": "The correct answer is **B – providing publicity about a council service**. Volunteers managing or contributing to the website help publicise what the council offers to the public. Collocation: *online publicity*, *web content*, *digital promotion*.",
+      "options": [
+        "B – providing publicity about a council service",
+        "C – contacting local businesses",
+        "E – collecting feedback on events",
+        "H – encouraging cooperation between local organisations"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2 – Questions 17–20**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 17: Which event requires the **largest number of volunteers**?",
+      "explanation": "The correct answer is **B – the science festival**. Among the three festivals mentioned, the science festival demands the most volunteer support due to its scale or complexity. Collocation: *volunteer recruitment*, *event management*, *staffing requirements*.",
+      "options": [
+        "B – the science festival",
+        "A – the music festival",
+        "C – the book festival"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2 – Questions 17–20**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 18: What is the **most important requirement** for volunteers at the festivals?",
+      "explanation": "The correct answer is **A – interpersonal skills**. The ability to communicate and interact effectively with the public is the top priority for festival volunteers. Vocabulary: *interpersonal skills* /ˌɪn.tə.ˈpɜː.sən.əl skɪlz/ – the ability to communicate and work well with others.",
+      "options": [
+        "A – interpersonal skills",
+        "B – personal interest in the event",
+        "C – flexibility"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2 – Questions 17–20**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 19: New volunteers will start working in the week beginning ___.",
+      "explanation": "The correct answer is **B – 9 September**. The speaker confirms that newly recruited volunteers begin their duties in the week commencing 9 September. Vocabulary: *week beginning* = the Monday that starts a particular week.",
+      "options": [
+        "B – 9 September",
+        "A – 2 September",
+        "C – 23 September"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 2 – Questions 17–20**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 20: What is the **next annual event** for volunteers?",
+      "explanation": "The correct answer is **A – a boat trip**. The annual social event planned for volunteers is a boat trip. Collocation: *annual outing*, *volunteer appreciation event*, *team social*.",
+      "options": [
+        "A – a boat trip",
+        "B – a barbecue",
+        "C – a party"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 21–25**\n\nWhat is Rosie and Colin's opinion about each of the following aspects of human geography?\n\n| Letter | Opinion |\n|--------|---------|\n| A | The information given about this was too vague. |\n| B | This may not be relevant to their course. |\n| C | This will involve only a small number of statistics. |\n| D | It will be easy to find facts about this. |\n| E | The facts about this may not be reliable. |\n| F | No useful research has been done on this. |\n| G | The information provided about this was interesting. |\n```\nQuestion 21: What is the students' opinion about **Population** in the context of human geography?",
+      "video": "./assets/quiz-media/TEST_2/Part_3.mp4",
+      "explanation": "The correct answer is **D**. Rosie and Colin feel that population data is readily accessible and straightforward to research. Collocation: *population statistics*, *census data*, *demographic research*.",
+      "options": [
+        "D – It will be easy to find facts about this.",
+        "A – The information given about this was too vague.",
+        "E – The facts about this may not be reliable.",
+        "G – The information provided about this was interesting."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 21–25**\n\nWhat is Rosie and Colin's opinion about each of the following aspects of human geography?\n\n| Letter | Opinion |\n|--------|---------|\n| A | The information given about this was too vague. |\n| B | This may not be relevant to their course. |\n| C | This will involve only a small number of statistics. |\n| D | It will be easy to find facts about this. |\n| E | The facts about this may not be reliable. |\n| F | No useful research has been done on this. |\n| G | The information provided about this was interesting. |\n```\nQuestion 22: What is the students' opinion about **Health** in the context of human geography?",
+      "explanation": "The correct answer is **G**. The students found the content on health in human geography to be engaging and thought-provoking. Collocation: *global health*, *health geography*, *public health data*.",
+      "options": [
+        "G – The information provided about this was interesting.",
+        "D – It will be easy to find facts about this.",
+        "B – This may not be relevant to their course.",
+        "F – No useful research has been done on this."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 21–25**\n\nWhat is Rosie and Colin's opinion about each of the following aspects of human geography?\n\n| Letter | Opinion |\n|--------|---------|\n| A | The information given about this was too vague. |\n| B | This may not be relevant to their course. |\n| C | This will involve only a small number of statistics. |\n| D | It will be easy to find facts about this. |\n| E | The facts about this may not be reliable. |\n| F | No useful research has been done on this. |\n| G | The information provided about this was interesting. |\n```\nQuestion 23: What is the students' opinion about **Economies** in the context of human geography?",
+      "explanation": "The correct answer is **B**. The students question whether economic geography content is directly applicable to their specific course focus. Vocabulary: *relevant* /ˈrel.ə.vənt/ – closely connected or appropriate to what is being considered.",
+      "options": [
+        "B – This may not be relevant to their course.",
+        "C – This will involve only a small number of statistics.",
+        "E – The facts about this may not be reliable.",
+        "A – The information given about this was too vague."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 21–25**\n\nWhat is Rosie and Colin's opinion about each of the following aspects of human geography?\n\n| Letter | Opinion |\n|--------|---------|\n| A | The information given about this was too vague. |\n| B | This may not be relevant to their course. |\n| C | This will involve only a small number of statistics. |\n| D | It will be easy to find facts about this. |\n| E | The facts about this may not be reliable. |\n| F | No useful research has been done on this. |\n| G | The information provided about this was interesting. |\n```\nQuestion 24: What is the students' opinion about **Culture** in the context of human geography?",
+      "explanation": "The correct answer is **A**. Rosie and Colin feel the coverage of cultural geography lacked sufficient detail and specificity. Vocabulary: *vague* /veɪɡ/ – not clearly expressed or defined. Collocation: *cultural geography*, *vague description*, *lack of detail*.",
+      "options": [
+        "A – The information given about this was too vague.",
+        "G – The information provided about this was interesting.",
+        "D – It will be easy to find facts about this.",
+        "F – No useful research has been done on this."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 21–25**\n\nWhat is Rosie and Colin's opinion about each of the following aspects of human geography?\n\n| Letter | Opinion |\n|--------|---------|\n| A | The information given about this was too vague. |\n| B | This may not be relevant to their course. |\n| C | This will involve only a small number of statistics. |\n| D | It will be easy to find facts about this. |\n| E | The facts about this may not be reliable. |\n| F | No useful research has been done on this. |\n| G | The information provided about this was interesting. |\n```\nQuestion 25: What is the students' opinion about **Poverty** in the context of human geography?",
+      "explanation": "The correct answer is **E**. The students are concerned that data on poverty may be inaccurate or inconsistent across sources. Collocation: *poverty statistics*, *data reliability*, *income inequality research*.",
+      "options": [
+        "E – The facts about this may not be reliable.",
+        "A – The information given about this was too vague.",
+        "G – The information provided about this was interesting.",
+        "C – This will involve only a small number of statistics."
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 26–30**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 26: Rosie says that in her own city the main problem is ___.",
+      "explanation": "The correct answer is **C – unemployment**. Rosie identifies unemployment as the dominant urban issue in her city. Pronunciation: /ˌʌn.ɪmˈplɔɪ.mənt/. Collocation: *youth unemployment*, *unemployment rate*, *job market*.",
+      "options": [
+        "C – unemployment",
+        "A – crime",
+        "B – housing"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 26–30**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 27: What recent additions to the outskirts of their cities are both students happy about?",
+      "explanation": "The correct answer is **A – conference centres**. Both students express satisfaction with the development of conference facilities on the edges of their cities. Vocabulary: *outskirts* /ˈaʊt.skɜːts/ – the outer parts of a city or town. Collocation: *urban development*, *city periphery*, *convention centre*.",
+      "options": [
+        "A – conference centres",
+        "B – sports centres",
+        "C – retail centres"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 26–30**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 28: The students agree that developing disused industrial sites may ___.",
+      "explanation": "The correct answer is **A – have unexpected costs**. Both students acknowledge that redeveloping old industrial land often brings unforeseen financial challenges. Vocabulary: *disused* /ˌdɪsˈjuːzd/ – no longer being used. Collocation: *brownfield site*, *urban regeneration*, *hidden costs*.",
+      "options": [
+        "A – have unexpected costs",
+        "B – damage the urban environment",
+        "C – destroy valuable historical buildings"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 26–30**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 29: The students will mention Masdar City as an example of an attempt to achieve ___.",
+      "explanation": "The correct answer is **B – sustainable energy use**. Masdar City in Abu Dhabi is cited as a model eco-city designed around renewable energy and zero-carbon principles. Vocabulary: *sustainable* /səˈsteɪ.nə.bəl/ – able to be maintained without depleting resources. Collocation: *renewable energy*, *carbon-neutral city*, *eco-development*.",
+      "options": [
+        "B – sustainable energy use",
+        "A – daily collections for waste recycling",
+        "C – free transport for everyone"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 3 – Questions 26–30**\n\nChoose the correct letter, **A**, **B**, or **C**.\n```\nQuestion 30: When discussing the ecotown of Greenhill Abbots, Colin is uncertain about ___.",
+      "explanation": "The correct answer is **C – how much of it has actually been built**. Colin expresses doubt about the construction progress of Greenhill Abbots, unsure of how far the project has actually been completed. Collocation: *ecotown*, *construction progress*, *planning stages*, *built environment*.",
+      "options": [
+        "C – how much of it has actually been built",
+        "A – what its objectives were",
+        "B – why there was opposition to it"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Developing Food Trends (Questions 31–40)**\n\nComplete the notes below. Write **ONE WORD ONLY** for each answer.\n\n> *The growth in interest in food fashions started with* **[31]** *of food being shared on social media.*\n```\nQuestion 31: The growth in food fashion interest started with ___ of food being shared on social media. *(Write ONE WORD ONLY)*",
+      "video": "./assets/quiz-media/TEST_2/Part_4.mp4",
+      "explanation": "The correct answer is **photos** (also accepted: *photographs* or *pictures*). The trend in food fashion began with images of food being posted and shared on platforms like Instagram. Collocation: *food photography*, *social media post*, *viral image*, *food styling*.",
+      "options": [
+        "photos / photographs / pictures",
+        "videos",
+        "reviews",
+        "recipes"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Developing Food Trends**\n\n> *Influencers on social media become 'ambassadors' for a brand. Sales of* **[32]** *food brands have grown rapidly this way.*\n```\nQuestion 32: Sales of ___ food brands have grown rapidly through social media influencers. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **vegan**. Plant-based and vegan food brands have seen especially rapid growth through social media ambassador marketing. Vocabulary: *vegan* /ˈviː.ɡən/ – relating to a diet that excludes all animal products. Collocation: *vegan brand*, *plant-based diet*, *vegan influencer*.",
+      "options": [
+        "vegan",
+        "organic",
+        "healthy",
+        "ethnic"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Developing Food Trends**\n\n> *Supermarkets track demand for ingredients on social media. Famous* **[33]** *are influential.*\n```\nQuestion 33: Famous ___ are influential in shaping supermarket ingredient demand. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **chefs** (also accepted: *cooks*). Well-known chefs and cooks drive ingredient trends by featuring certain foods in their content. Vocabulary: *chef* /ʃef/ – a professional cook. Collocation: *celebrity chef*, *cooking show*, *signature dish*.",
+      "options": [
+        "chefs / cooks",
+        "bloggers",
+        "brands",
+        "celebrities"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Marketing Campaigns: The Avocado**\n\n> **[34]** *were invited to visit growers in South Africa.*\n```\nQuestion 34: ___ were invited to visit avocado growers in South Africa. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **journalists** (also accepted: *reporters*). Media professionals were brought to South African avocado farms as part of a PR and marketing campaign. Collocation: *press trip*, *media relations*, *food journalism*, *PR campaign*.",
+      "options": [
+        "journalists / reporters",
+        "chefs",
+        "influencers",
+        "buyers"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Marketing Campaigns: The Avocado**\n\n> *Advertising focused on its* **[35]** *benefits.*\n```\nQuestion 35: The avocado advertising focused on its ___ benefits. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **health**. Avocado marketing emphasised its health-promoting properties such as healthy fats and vitamins. Collocation: *health benefits*, *superfood*, *nutritional value*, *heart-healthy*.",
+      "options": [
+        "health",
+        "nutritional",
+        "environmental",
+        "taste"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Marketing Campaigns: Oat Milk**\n\n> *Promotion in the USA through* **[36]** *shops reduced the need for advertising.*\n```\nQuestion 36: Promotion of oat milk in the USA through ___ shops reduced the need for advertising. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **coffee**. Oat milk gained enormous popularity in the USA by being promoted through coffee shops, which served as organic advertising channels. Collocation: *coffee shop*, *barista blend*, *oat milk latte*, *plant-based milk*.",
+      "options": [
+        "coffee",
+        "health",
+        "grocery",
+        "vegan"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Marketing Campaigns: Oat Milk**\n\n> *It appealed to consumers who are concerned about the* **[37]**.\n```\nQuestion 37: Oat milk appealed to consumers concerned about the ___. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **environment**. Oat milk attracted environmentally conscious consumers as a more sustainable alternative to dairy. Vocabulary: *environment* /ɪnˈvaɪ.rən.mənt/. Collocation: *environmental impact*, *carbon footprint*, *eco-conscious consumer*.",
+      "options": [
+        "environment",
+        "climate",
+        "economy",
+        "health"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Marketing Campaigns: Norwegian Skrei**\n\n> *Norwegian skrei has helped strengthen the* **[38]** *of Norwegian seafood.*\n```\nQuestion 38: Norwegian skrei has helped strengthen the ___ of Norwegian seafood. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **reputation**. Skrei, a premium seasonal cod, has boosted the overall standing and image of Norwegian seafood internationally. Vocabulary: *reputation* /ˌrep.jəˈteɪ.ʃən/ – the beliefs held about something's quality. Collocation: *brand reputation*, *seafood industry*, *Norwegian cuisine*.",
+      "options": [
+        "reputation",
+        "quality",
+        "brand",
+        "market"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Ethical Concerns: Quinoa**\n\n> *Its success led to an increase in its* **[39]**.\n```\nQuestion 39: Quinoa's success led to an increase in its ___. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **price** (also accepted: *cost*). As global demand for quinoa rose sharply, so did its market price, making it less affordable for local consumers in producing countries. Pronunciation: *quinoa* /ˈkiː.nwɑː/. Collocation: *price surge*, *commodity price*, *food affordability*.",
+      "options": [
+        "price / cost",
+        "production",
+        "popularity",
+        "demand"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**Test 2 – Listening Part 4 – Ethical Concerns: Quinoa**\n\n> *Overuse of resources resulted in poor quality* **[40]**.\n```\nQuestion 40: Overuse of resources resulted in poor quality ___. *(Write ONE WORD ONLY)*",
+      "explanation": "The correct answer is **soil**. Intensive quinoa farming led to soil degradation, reducing the quality of the land used for cultivation. Vocabulary: *soil* /sɔɪl/ – the top layer of earth in which plants grow. Collocation: *soil quality*, *soil erosion*, *land degradation*, *overfarming*.",
+      "options": [
+        "soil",
+        "water",
+        "crops",
+        "land"
+      ],
+      "correct": 0
+    }
+  ]
+}

@@ -1,0 +1,547 @@
+{
+  "meta": {
+    "title": "Ch1 Quiz",
+    "id": "EC5JPOBO",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/1/Foundation of IS/Ch1 Quiz.json"
+  },
+  "stats": {
+    "questionCount": 50,
+    "questionTypes": [
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the primary role of Information Systems (IS) in organizations?",
+      "explanation": "Information systems are designed to transform data into useful information that helps managers and employees make better decisions and coordinate activities.",
+      "options": [
+        "Only to store data",
+        "To support decision making, control, and analysis",
+        "To replace human workers",
+        "To manage only financial transactions"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The difference between data and information is that:",
+      "explanation": "Information is data that has been organized, structured, or presented in a given context so as to make it useful.",
+      "options": [
+        "Data is processed; information is raw",
+        "Information is processed data with context",
+        "Data is always digital; information is always analog",
+        "Information is stored; data is displayed"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following describes 'Knowledge' in the DIKW model?",
+      "explanation": "Knowledge represents the practical application of information by experts to solve problems or make decisions.",
+      "options": [
+        "Raw facts",
+        "Processed data with meaning",
+        "Collective information with expertise",
+        "Evaluative understanding of why"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the first activity in the information processing cycle?",
+      "explanation": "The cycle begins with Input, where raw data is gathered and entered into the system.",
+      "options": [
+        "Processing",
+        "Output",
+        "Input",
+        "Storage"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which component of an IS includes hardware, software, and telecommunications?",
+      "explanation": "Technology is the physical and digital infrastructure that enables the system to function.",
+      "options": [
+        "People",
+        "Technology",
+        "Processes",
+        "Data"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Business Process Management (BPM) focuses on:",
+      "explanation": "BPM is a systematic approach to making an organization's workflow more effective, efficient, and capable of adapting to an ever-changing environment.",
+      "options": [
+        "Only automating processes",
+        "Designing, optimizing, and streamlining processes",
+        "Replacing employees with robots",
+        "Only financial auditing"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is NOT a characteristic of valuable information?",
+      "explanation": "Information should be simple and clear; being 'complicated' makes it harder to use and less valuable for decision-making.",
+      "options": [
+        "Accurate",
+        "Economical",
+        "Complicated",
+        "Reliable"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Digital Transformation (DT) refers to:",
+      "explanation": "DT is the process of using digital technologies to create new — or modify existing — business processes, culture, and customer experiences.",
+      "options": [
+        "Using only email in business",
+        "Integrating digital technology into all business areas",
+        "Replacing all managers with AI",
+        "Using only cloud storage"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does 'feedback' in an information system refer to?",
+      "explanation": "Feedback is the output that is returned to appropriate members of the organization to help them evaluate or correct the input stage.",
+      "options": [
+        "Sending data to the internet",
+        "Information used to change input or processing",
+        "Printing reports",
+        "Storing data forever"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is a type of software used for payroll and word processing?",
+      "explanation": "Application software allows users to perform specific tasks like writing documents or managing payroll.",
+      "options": [
+        "Operating System",
+        "Application Software",
+        "Firmware",
+        "Malware"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The role of IS in 'Managing Operations' includes:",
+      "explanation": "Operations management involves the administration of business practices to create the highest level of efficiency possible within an organization.",
+      "options": [
+        "Only marketing",
+        "Design, operation, and improvement of delivery systems",
+        "Only hiring employees",
+        "Only financial reporting"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the main purpose of an Operating System (OS)?",
+      "explanation": "The OS acts as an intermediary between the user and the computer hardware, managing resources and common services.",
+      "options": [
+        "To edit videos",
+        "To perform basic tasks like memory allocation and I/O handling",
+        "To replace all software",
+        "To connect to the internet only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Information systems can help gain competitive advantage by:",
+      "explanation": "Innovation through IS can differentiate a company's products or services from its competitors.",
+      "options": [
+        "Slowing down processes",
+        "Using outdated technology",
+        "Applying innovative IS solutions",
+        "Reducing customer interaction"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following is an example of an output device?",
+      "explanation": "A monitor displays the results of the computer's processing to the user.",
+      "options": [
+        "Keyboard",
+        "Mouse",
+        "Monitor",
+        "CPU"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is 'Business Intelligence'?",
+      "explanation": "Business Intelligence encompasses the strategies and technologies used by enterprises for data analysis of business information.",
+      "options": [
+        "Only internal sales data",
+        "All information managers use to make decisions",
+        "Only customer feedback",
+        "Only financial reports"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In the DIKW model, 'Wisdom' answers the question:",
+      "explanation": "Wisdom involves the evaluative understanding of principles and the 'why' behind actions and outcomes.",
+      "options": [
+        "What?",
+        "When?",
+        "How?",
+        "Why?"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which of these is NOT a component of an Information System?",
+      "explanation": "While weather might affect a business, it is not an internal component of the Information System itself.",
+      "options": [
+        "People",
+        "Weather",
+        "Processes",
+        "Data"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the main goal of using IS in customer interaction?",
+      "explanation": "IS helps track customer preferences and history to provide better service and build loyalty.",
+      "options": [
+        "To avoid customers",
+        "To support fundamental interactions for success",
+        "To replace customer service with chatbots only",
+        "To reduce service quality"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Programming languages are used to:",
+      "explanation": "Programming languages allow humans to give instructions to computers without having to write in binary machine code.",
+      "options": [
+        "Abstract hardware instructions into understandable statements",
+        "Only build websites",
+        "Replace all human decision-making",
+        "Only manage databases"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is TRUE about data in IS?",
+      "explanation": "Data is the raw material from which all information and knowledge within a system are built.",
+      "options": [
+        "It is always structured",
+        "It is the base of every IS",
+        "It is only numeric",
+        "It cannot be stored"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does 'economical' mean in the context of valuable information?",
+      "explanation": "The benefit derived from the information should outweigh the cost of collecting and processing it.",
+      "options": [
+        "Free of cost",
+        "Cost-effective to produce",
+        "Only available to managers",
+        "Requires high investment"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Collaboration in IS allows people to:",
+      "explanation": "Modern IS provides tools like cloud storage and video conferencing that enable remote and asynchronous teamwork.",
+      "options": [
+        "Work only in the office",
+        "Work together anytime, anywhere",
+        "Avoid teamwork",
+        "Only communicate via email"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which activity in IS involves converting data into useful outputs?",
+      "explanation": "Processing is the stage where the computer manipulates data to create meaningful information.",
+      "options": [
+        "Input",
+        "Processing",
+        "Output",
+        "Feedback"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the role of 'people' in IS?",
+      "explanation": "The 'People' component includes everyone who interacts with the system, from the technical staff who build it to the end-users.",
+      "options": [
+        "They are irrelevant",
+        "They act as developers, users, analysts, and managers",
+        "They only use output",
+        "They only input data"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is an example of application software?",
+      "explanation": "Microsoft Word is an application designed to help users perform the specific task of word processing.",
+      "options": [
+        "Windows OS",
+        "Microsoft Word",
+        "BIOS",
+        "Device driver"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does BPM stand for?",
+      "explanation": "Business Process Management focuses on aligning all aspects of an organization with the wants and needs of clients.",
+      "options": [
+        "Business Process Management",
+        "Business People Management",
+        "Basic Programming Model",
+        "Binary Process Method"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is a disadvantage of using IS?",
+      "explanation": "Setting up sophisticated Information Systems can require significant financial investment in hardware, software, and training.",
+      "options": [
+        "Improved decision making",
+        "High implementation cost",
+        "Better collaboration",
+        "Increased productivity"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the main benefit of data-driven decision making?",
+      "explanation": "By analyzing data, organizations can find hidden insights that might not be obvious through intuition alone.",
+      "options": [
+        "It ignores data",
+        "It reveals trends and patterns",
+        "It is based only on intuition",
+        "It slows down decisions"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of these is NOT part of the information processing cycle?",
+      "explanation": "The core cycle consists of Input, Processing, Output, and Storage. While deletion happens, it is not a primary stage of the cycle.",
+      "options": [
+        "Input",
+        "Deletion",
+        "Processing",
+        "Storage"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is 'digital transformation' mainly about?",
+      "explanation": "It involves a fundamental change in how an organization operates and delivers value to customers using technology.",
+      "options": [
+        "Using paper records",
+        "Integrating digital tech into all business areas",
+        "Avoiding technology",
+        "Using only old software"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which component directs computer hardware to perform tasks?",
+      "explanation": "Software consists of the programs and instructions that tell the hardware what to do.",
+      "options": [
+        "Hardware",
+        "Software",
+        "Data",
+        "People"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the purpose of storage in the information processing cycle?",
+      "explanation": "Storage allows information to be saved permanently (on hard drives, etc.) so it can be retrieved later.",
+      "options": [
+        "To delete data immediately",
+        "To keep information for future use",
+        "To only display data",
+        "To process data again"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of these is a characteristic of reliable information?",
+      "explanation": "Reliable information is dependable and can be trusted by decision-makers because it is accurate.",
+      "options": [
+        "Incomplete",
+        "Error-free",
+        "Expensive",
+        "Complex"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does 'flexible' information mean?",
+      "explanation": "Flexible information is versatile and can be used by different departments for various decision-making needs.",
+      "options": [
+        "Usable for many purposes",
+        "Only for one use",
+        "Hard to access",
+        "Not modifiable"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following supports teamwork in IS?",
+      "explanation": "Tools like Slack, Teams, and Google Workspace allow people to collaborate across different locations.",
+      "options": [
+        "Using only one computer",
+        "Innovative IS that enable remote collaboration",
+        "Avoiding communication tools",
+        "Working only during office hours"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is 'programming' in software development?",
+      "explanation": "Programming is the act of writing code to create a software program that performs specific functions.",
+      "options": [
+        "Designing software using basic instructions",
+        "Only testing software",
+        "Selling software",
+        "Only documenting software"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Which of the following is a benefit of IS for individual productivity?",
+      "explanation": "Automation and efficient tools free up individuals to focus on more complex and creative tasks.",
+      "options": [
+        "Increases tedious work",
+        "Elimates tedious work",
+        "Reduces access to information",
+        "Makes communication harder"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is 'telecommunications' part of in IS?",
+      "explanation": "Telecommunications refers to the hardware and software needed to connect computers and exchange data.",
+      "options": [
+        "People",
+        "Processes",
+        "Technology",
+        "Data"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of these is an input device?",
+      "explanation": "A scanner captures physical images or documents and converts them into digital data for the computer.",
+      "options": [
+        "Printer",
+        "Speaker",
+        "Scanner",
+        "Monitor"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the main focus of T1 in the course?",
+      "explanation": "Topic 1 usually introduces the fundamental relationship between technology, the people who use it, and the organization.",
+      "options": [
+        "Databases only",
+        "Information Systems and People",
+        "E-commerce only",
+        "Hardware only"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Information is raw, unprocessed facts.",
+      "explanation": "This is False. Data is raw facts; Information is the result of processing those facts.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: An information system consists only of hardware and software.",
+      "explanation": "This is False. A complete IS also includes people, processes, and data.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Knowledge in the DIKW model describes 'how'.",
+      "explanation": "This is True. Knowledge involves knowing how to apply information to achieve an objective.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Digital Transformation only affects IT departments, not the whole business.",
+      "explanation": "This is False. Digital Transformation changes how the entire organization operates and delivers value.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Feedback in an IS is used to improve input and processing activities.",
+      "explanation": "This is True. Feedback loops are essential for controlling and improving the performance of a system.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Valuable information must always be expensive to produce.",
+      "explanation": "This is False. Valuable information should be 'economical,' meaning its value should exceed its cost.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Business Process Management (BPM) ignores the human element in processes.",
+      "explanation": "This is False. Effective BPM considers how people interact with technology and the steps of the process.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Operating systems are a type of application software.",
+      "explanation": "This is False. Operating systems are 'System Software' that manage the computer's resources.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: IS can help organizations gain competitive advantage.",
+      "explanation": "This is True. Efficient and innovative use of IS can put a company ahead of its competitors.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Programming languages are used to make hardware instructions easier to understand and handle.",
+      "explanation": "This is True. They provide an abstraction layer so developers don't have to work with complex binary code.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    }
+  ]
+}

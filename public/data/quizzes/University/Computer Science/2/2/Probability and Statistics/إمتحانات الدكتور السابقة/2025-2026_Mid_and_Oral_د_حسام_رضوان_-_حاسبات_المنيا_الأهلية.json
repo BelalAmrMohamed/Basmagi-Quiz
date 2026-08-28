@@ -1,0 +1,198 @@
+{
+  "meta": {
+    "id": "HIPWRNXI",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025-2026_Mid_and_Oral_د_حسام_رضوان_-_حاسبات_المنيا_الأهلية.json",
+    "title": "2025-2026 Mid and Oral (د. حسام رضوان) - حاسبات المنيا الأهلية",
+    "createdAt": "4/23/2026, 8:35:03 PM"
+  },
+  "stats": {
+    "questionCount": 17,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "A code consists of a digit chosen from 0 to 7 followed by a letter of the alphabet. What is the probability the code is 7Z?",
+      "explanation": "Digits available: 0–7 → 8 choices. Letters: 26 choices. Total outcomes = $8 \\times 26 = 208$. Only one outcome is '7Z', so $P(\\text{7Z}) = \\dfrac{1}{208}$.",
+      "options": [
+        "$\\frac{1}{208}$",
+        "$\\frac{1}{156}$",
+        "$\\frac{1}{182}$",
+        "$\\frac{1}{280}$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "If $A$ and $B$ are two independent events such that $P(A) > 0$ and $P(B) \\neq 1$, then $P(B^c \\mid A^c)$ is equal to:",
+      "explanation": "Since $A$ and $B$ are independent, $A^c$ and $B^c$ are also independent. Therefore:\n$$P(B^c \\mid A^c) = P(B^c) = 1 - P(B)$$",
+      "options": [
+        "$P(B)$",
+        "$\\dfrac{P(A)}{P(B)}$",
+        "$P(B \\mid A)$",
+        "$1 - P(B)$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If $A$ and $B$ are independent events, then $P(B \\mid A) =$",
+      "explanation": "By definition of independence: $P(A \\cap B) = P(A) \\cdot P(B)$.\n$$P(B \\mid A) = \\frac{P(A \\cap B)}{P(A)} = \\frac{P(A) \\cdot P(B)}{P(A)} = P(B)$$",
+      "options": [
+        "$P(A \\mid B)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If $A \\subset B$, then $P(B \\mid A) =$",
+      "explanation": "If $A \\subset B$, then $A \\cap B = A$. Therefore:\n$$P(B \\mid A) = \\frac{P(A \\cap B)}{P(A)} = \\frac{P(A)}{P(A)} = 1$$\nSince none of the listed options equals 1 in general, the answer is **None of them**.",
+      "options": [
+        "$P(B \\mid A)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ **cannot** occur, the events $A$ and $B$ are said to be:",
+      "explanation": "Mutually exclusive events cannot occur simultaneously. If knowing $A$ occurred means $B$ cannot occur, then $A \\cap B = \\emptyset$, which is the definition of mutual exclusivity.",
+      "options": [
+        "Independent",
+        "Mutually exclusive",
+        "$A \\subset B$",
+        "$B \\subset A$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A data transmission system sends 200 packets. 6 packets contain transmission errors. Then $P(\\text{no error}) =$",
+      "explanation": "$P(\\text{error}) = \\dfrac{6}{200} = 0.03$\n\n$P(\\text{no error}) = 1 - 0.03 = 0.97$",
+      "options": [
+        "0.03",
+        "0.97",
+        "1",
+        "0"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A database has 5000 user records: 3000 active users, 1500 inactive users, and 500 deleted users (marked but not removed). What is the probability that a record is inactive or deleted?",
+      "explanation": "$$P(\\text{inactive or deleted}) = \\frac{1500 + 500}{5000} = \\frac{2000}{5000} = 0.4$$",
+      "options": [
+        "0.6",
+        "0.4",
+        "0.1",
+        "0.9"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A process has two quality checks:\n- Check 1 passes with probability **0.95**\n- Check 2 passes with probability **0.90** (given Check 1 passes)\n\nWhat's the probability that a product passes **both** checks?",
+      "explanation": "Using the multiplication rule:\n$$P(C_1 \\cap C_2) = P(C_1) \\times P(C_2 \\mid C_1) = 0.95 \\times 0.90 = 0.855$$",
+      "options": [
+        "0.855",
+        "0.588",
+        "0.655",
+        "0.556"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A disease affects **2%** of the population. A test has **95% sensitivity** and **98% specificity**. What is the probability that someone who tests positive actually has the disease?\n\n| | Has Disease $D$ | No Disease $D^c$ |\n|---|---|---|\n| Test Positive $(+)$ | $P(+\\mid D)=0.95$ | $P(+\\mid D^c)=0.02$ |\n| Test Negative $(-)$ | $P(-\\mid D)=0.05$ | $P(-\\mid D^c)=0.98$ |",
+      "explanation": "Using Bayes' theorem:\n$$P(D) = 0.02, \\quad P(D^c) = 0.98$$\n$$P(+) = P(+\\mid D)\\cdot P(D) + P(+\\mid D^c)\\cdot P(D^c)$$\n$$= (0.95)(0.02) + (0.02)(0.98) = 0.019 + 0.0196 = 0.0386$$\n$$P(D \\mid +) = \\frac{P(+\\mid D)\\cdot P(D)}{P(+)} = \\frac{0.019}{0.0386} \\approx 0.492$$",
+      "options": [
+        "0.924",
+        "0.492",
+        "0.252",
+        "0.102"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A code review process finds bugs:\n- Event $A$ = \"bug is found in initial review\"\n- Event $B$ = \"bug is found in second review\"\n\nGiven: $P(A) = 0.70$, $P(B) = 0.50$, $P(A \\cap B) = 0.40$\n\nWhat is the probability that a bug is found in the **initial review but NOT in the second review**?",
+      "explanation": "$$P(A \\cap B^c) = P(A) - P(A \\cap B) = 0.70 - 0.40 = 0.30$$",
+      "options": [
+        "0.8",
+        "0.3",
+        "0.2",
+        "0.1"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A mobile device attempts to connect to a Wi-Fi network **10 times** during a commute. Each attempt has a **0.70** probability of success.\n\n**(a)** What is the probability of **fewer than 6** successful connections?\n\n**(b)** Calculate the **standard deviation**.",
+      "explanation": "For a binomial distribution $B(n,p)$: mean $\\mu = np$, variance $\\sigma^2 = npq$, and $SD = \\sqrt{npq}$.",
+      "answer": "Given: $n = 10,\\ p = 0.7,\\ q = 0.3$. This is a **Binomial distribution** $X \\sim B(n, p)$.\n\n**Formula:** $P(X = x) = \\binom{n}{x} p^x q^{n-x}$\n\n**(a) $P(X < 6)$:**\n\n$$P(X < 6) = \\sum_{x=0}^{5} \\binom{10}{x}(0.7)^x(0.3)^{10-x}$$\n\n| $x$ | $P(X=x)$ |\n|---|---|\n| 0 | $\\approx 0.000006$ |\n| 1 | $\\approx 0.000138$ |\n| 2 | $\\approx 0.001447$ |\n| 3 | $\\approx 0.009001$ |\n| 4 | $\\approx 0.036757$ |\n| 5 | $\\approx 0.102919$ |\n| **Total** | $\\approx 0.1503$ |\n\n$$\\boxed{P(X < 6) \\approx 0.1503}$$\n\n**(b) Standard Deviation:**\n\n$$SD = \\sqrt{n \\cdot p \\cdot q} = \\sqrt{10 \\times 0.7 \\times 0.3} = \\sqrt{2.1} \\approx 1.449$$"
+    },
+    {
+      "q": "If the average of a series of values is 10 and their variance is 9, then the **coefficient of variation** is:",
+      "explanation": "$$SD = \\sqrt{\\text{Variance}} = \\sqrt{9} = 3$$\n$$CV = \\frac{SD}{\\bar{x}} \\times 100 = \\frac{3}{10} \\times 100 = 30\\%$$",
+      "options": [
+        "40%",
+        "20%",
+        "90%",
+        "30%"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If the standard deviation of a set of observations is **6** and each observation is **divided by 6**, the standard deviation of the new set of observations will be:",
+      "explanation": "When all observations are divided by a constant $c$, the standard deviation is also divided by $c$:\n$$SD_{\\text{new}} = \\frac{SD}{c} = \\frac{6}{6} = 1$$",
+      "options": [
+        "4",
+        "2",
+        "3",
+        "1"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Which measure of central tendency would **best** depict the following data?\n\n$$10,\\ 20,\\ 20,\\ 30,\\ 35,\\ 40,\\ 400$$",
+      "explanation": "The value 400 is an extreme outlier. The **mean** would be heavily skewed by it. The **median** is resistant to outliers and best represents the center of this dataset.\n\n$$\\text{Median} = 30 \\quad (\\text{4th value in sorted order})$$",
+      "options": [
+        "Mean",
+        "Variance",
+        "Range",
+        "Median"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "In meteorology, the intensity of UV-B radiation is classified as: *weak, moderate, strong, extreme*. What is the **best measure** for this data?",
+      "explanation": "This is **ordinal categorical** data (categories with a defined order but no numeric values). The **Mode** is the most appropriate measure of central tendency since arithmetic operations (mean, median) are not meaningful on categorical labels.",
+      "options": [
+        "Mean",
+        "Median",
+        "Mode",
+        "Mode and Median"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If $\\sum x_i = 20$ and $\\bar{x} = 2$, then the **rank of the Median** is:",
+      "explanation": "First find $n$:\n$$\\bar{x} = \\frac{\\sum x_i}{n} \\Rightarrow n = \\frac{\\sum x_i}{\\bar{x}} = \\frac{20}{2} = 10$$\n\nRank of the Median for even $n$:\n$$\\text{Median rank} = \\frac{n}{2} \\text{ and } \\frac{n}{2}+1 = \\text{5th and 6th values} \\Rightarrow \\text{rank } = 5.5$$",
+      "options": [
+        "2",
+        "5",
+        "6",
+        "5.5"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Characteristics that vary from one individual to another are called:",
+      "explanation": "A **variable** is any characteristic, number, or quantity that can be measured or counted and differs among individuals. Constants, by contrast, do not change.",
+      "options": [
+        "Constants",
+        "Variables",
+        "Sample",
+        "Population"
+      ],
+      "correct": 1
+    }
+  ]
+}

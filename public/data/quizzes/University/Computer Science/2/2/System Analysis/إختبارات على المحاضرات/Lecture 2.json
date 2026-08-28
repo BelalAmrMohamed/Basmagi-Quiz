@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "id": "CPXR2YJ4",
+    "title": "Ch 2 - Lec 2 Quiz",
+    "createdAt": "3/28/2026, 9:54:03 PM",
+    "path": "quizzes/University/Computer Science/2/2/System Analysis/إختبارات على المحاضرات/Lecture 2.json"
+  },
+  "stats": {
+    "questionCount": 24,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "According to the lecture, what is the correct definition of **Outsourcing**?",
+      "explanation": "The lecture defines **Outsourcing** as *'the process of hiring an external company or third party to develop or manage software instead of developing it internally within the organization.'*\n\nThis is distinct from:\n- **In-House Development** → using the organisation's own programmers\n- **Packaged Software** → purchasing ready-made software\n- **Cloud Computing** → accessing software via the Internet",
+      "options": [
+        "Developing software internally using the organisation's own programmers",
+        "Purchasing ready-made software from commercial software providers",
+        "Hiring an external company or third party to develop or manage software instead of developing it internally",
+        "Accessing software and computing services through the Internet via a web browser"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, a university hires a software company to build its student management system instead of developing it internally. This is an example of:",
+      "explanation": "The lecture uses exactly this scenario as the example for **Outsourcing**: *'A university hires a software company to build its student management system instead of developing it internally.'*\n\nOutsourcing is chosen when the organisation lacks the expertise or personnel to develop the system in-house, or when a suitable off-the-shelf system is not available.",
+      "options": [
+        "In-House Development",
+        "Cloud Computing",
+        "Outsourcing",
+        "Open Source"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, under which conditions should an organisation choose **Outsourcing**? Select the most complete answer.",
+      "explanation": "The lecture states two specific conditions for choosing **Outsourcing**:\n\n1. The organisation **does not have the expertise or the personnel** to develop the system in-house.\n2. A suitable **off-the-shelf system is not available**.\n\nBoth conditions together make outsourcing the appropriate choice. The other options describe conditions for in-house development or cloud computing.",
+      "options": [
+        "When the organisation wants full control over the software and has available in-house staff",
+        "When a suitable off-the-shelf system is not available and the organisation lacks in-house expertise",
+        "When the task is generic and cost is not a major concern",
+        "When the organisation needs instant access to an application via the Internet"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is listed as a **disadvantage** of Packaged Software (Off-the-Shelf) according to the lecture?",
+      "explanation": "According to the lecture, **Packaged Software** has the following profile:\n\n| | Detail |\n|---|---|\n| **Advantages** | Ready to use, Reliable, Lower cost than custom software |\n| **Disadvantage** | **Limited customization** |\n\nHigh cost and long deployment time are disadvantages of other sources (e.g., ERP or in-house). Requiring technical expertise is listed as a disadvantage of open-source software.",
+      "options": [
+        "It is expensive compared to custom software",
+        "It takes a long time to deploy",
+        "It offers limited customization",
+        "It requires significant technical expertise to use"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, an **ERP system** is best described as:",
+      "explanation": "The lecture defines an **ERP system** as: *'A system that integrates individual traditional business functions into a series of modules so that a single transaction occurs seamlessly within a single information system rather than several separate systems such as accounting, distribution, manufacturing, or human resources.'*\n\nKey ERP vendors mentioned: **SAP** and **Oracle**.",
+      "options": [
+        "Cloud-based software accessed via a web browser for generic business tasks",
+        "A system that integrates traditional business functions into modules within a single information system",
+        "Ready-made software purchased from commercial providers for common organisational needs",
+        "Software developed by a community and available for free modification"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is listed as an **advantage** of ERP systems in the lecture?",
+      "explanation": "According to the lecture, ERP systems have two key advantages:\n\n1. A firm can **integrate all parts of a business process** in a unified information system.\n2. They are **flexible** because additional modules can be added as needed once the basic system is in place.\n\nThe other options contradict the lecture's listed disadvantages of ERP systems (complex, long implementation, expensive consultants, may require business process changes).",
+      "options": [
+        "They are simple to implement and require no external consultants",
+        "They are low cost and can be deployed quickly",
+        "Additional modules can be added as needed once the basic system is in place",
+        "They do not require changes to existing business processes"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "The lecture states that in some cases, organisations must change how they do business in order to use enterprise solutions. This is listed as a **disadvantage** of which software source?",
+      "explanation": "The lecture explicitly lists this as a disadvantage of **ERP Systems**: *'In some cases, organizations must change how they do business in order to use enterprise solutions.'*\n\nThis highlights a significant drawback of ERP adoption — the organisation may need to restructure its own workflows to conform to the ERP's built-in processes, rather than the system adapting to the organisation.",
+      "options": [
+        "Open Source Software",
+        "Cloud Computing",
+        "In-House Development",
+        "ERP Systems"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "According to the lecture, **Cloud Computing** is also referred to as:",
+      "explanation": "The lecture states that cloud computing *'is also called **Software as a Service (SaaS)**.'*\n\nCloud computing provides software, storage, and computing services via the Internet, accessed through a web browser. Examples given include Google Docs, Gmail, and Microsoft 365 Online.",
+      "options": [
+        "Platform as a Service (PaaS)",
+        "Software as a Service (SaaS)",
+        "Infrastructure as a Service (IaaS)",
+        "Database as a Service (DBaaS)"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which of the following is **not** listed as a characteristic of Cloud Computing in the lecture?",
+      "explanation": "According to the lecture, the characteristics of **Cloud Computing** are:\n\n1. Software runs on remote servers\n2. Accessed through the Internet\n3. **No need to install software locally** ✅\n4. Managed by the cloud provider\n\n'Requires local installation' directly contradicts characteristic #3 — the absence of local installation is one of cloud computing's defining features.",
+      "options": [
+        "Software runs on remote servers",
+        "Accessed through the Internet",
+        "Requires local installation of software",
+        "Managed by the cloud provider"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, **Open-Source Software** is developed by:",
+      "explanation": "The lecture states that open-source software *'is developed by a community of interested people instead of employees of a particular company.'*\n\nExamples listed in the lecture: **Linux**, **MySQL**, **PostgreSQL**.\n\nOpen-source software performs the same functionality as commercial software but is available with its source code free for use and modification.",
+      "options": [
+        "A single vendor who releases the source code under a commercial licence",
+        "The organisation's own in-house programmers",
+        "A community of interested people instead of employees of a particular company",
+        "Third-party outsourcing firms hired by the organisation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following correctly matches a software source to its listed **disadvantage** according to the lecture?",
+      "explanation": "According to the lecture, each source has specific disadvantages:\n\n| Software Source | Disadvantage |\n|---|---|\n| Packaged Software | Limited customization |\n| ERP Systems | Complex, long implementation, expensive consultants |\n| **Open Source** | **Requires technical expertise** |\n| In-House Development | Expensive, takes longer time |\n\nOption D correctly matches **Open Source → Requires technical expertise**.",
+      "options": [
+        "Open Source → Limited customization",
+        "In-House Development → Requires technical expertise",
+        "Packaged Software → Complex and long implementation time",
+        "Open Source → Requires technical expertise"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "According to the lecture's comparison table, which software source should an organisation choose when 'the supported task is generic but **cost is an issue**'?",
+      "explanation": "The lecture's comparison table explicitly states:\n\n| Source | When to Use |\n|---|---|\n| Packaged software | When supported task is generic |\n| Cloud computing | For instant access; when task is generic |\n| **Open-source software** | **When task is generic but cost is an issue** |\n| In-house developers | When resources and staff are available |\n\n**Open-source software** is the correct answer because it is free and customizable, making it the best choice when cost is a primary concern.",
+      "options": [
+        "Packaged Software Providers",
+        "Cloud Computing",
+        "Open-Source Software",
+        "In-House Development"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, **In-House Development** is most appropriate when:",
+      "explanation": "The lecture's comparison table states that **In-House Development** is appropriate *'when resources and staff are available and system can be built from scratch.'*\n\nAdditionally, the lecture notes: *'The company should have the required expertise in-house to choose that option.'*\n\nOption C describes the condition for choosing **Outsourcing**, not In-House Development.",
+      "options": [
+        "The task is generic and no off-the-shelf solution exists",
+        "Resources and staff are available and the system can be built from scratch",
+        "The organisation lacks the expertise to develop the system internally",
+        "Instant access to an application is needed via the Internet"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the lecture, which **two criteria** for evaluating off-the-shelf software are considered the **most important**?",
+      "explanation": "The lecture explicitly states:\n\n> *'**Vendor support** and **vendor viability** are the most important criteria. Ranking the importance of the remaining criteria depends primarily on your specific situation.'*\n\n- **Vendor Support** → assistance with installation, training, and post-installation problems\n- **Vendor Viability** → the vendor's credibility and long-term reliability",
+      "options": [
+        "Cost and Functionality",
+        "Flexibility and Documentation",
+        "Vendor Support and Vendor Viability",
+        "Response Time and Ease of Installation"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "When evaluating off-the-shelf software, **Flexibility** refers to:",
+      "explanation": "The lecture defines **Flexibility** as *'how easy it is for you, or the vendor, to customize the software.'*\n\nThe lecture also warns that if the software is not sufficiently flexible, users may have to **adapt the way they work to fit the software** — which can disrupt established business processes.\n\nThe other options describe: Response Time, Ease of Installation, and Vendor Support respectively.",
+      "options": [
+        "How long it takes the software to respond to user requests",
+        "The ease of loading the software and making it operational",
+        "How easy it is for you or the vendor to customize the software",
+        "Whether the vendor can provide training and installation support"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "According to the lecture, **Vendor Viability** when evaluating off-the-shelf software means:",
+      "explanation": "The lecture states that **Vendor Viability** *'means vendor credibility.'*\n\nThis is distinct from **Vendor Support**, which refers to the vendor's ability to assist with installation, training, and post-installation problems.\n\nViability focuses on whether the vendor will remain a reliable, credible business partner over time — important for long-term software investments.",
+      "options": [
+        "The vendor's ability to provide training and technical help after installation",
+        "The vendor's credibility and long-term reliability",
+        "The cost of vendor upgrades and annual license fees",
+        "The availability of user manuals and technical documentation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The **Documentation** criterion when evaluating off-the-shelf software includes:",
+      "explanation": "According to the lecture, **Documentation** *'includes the user's manual as well as technical documentation.'*\n\nKey questions the lecture raises about documentation:\n- How understandable and up to date is it?\n- What is the cost for multiple copies, if required?\n\nThis criterion is separate from Vendor Support (training/installation) and Response Time (processing speed).",
+      "options": [
+        "The vendor's ability to train users and assist with installation",
+        "The user's manual and technical documentation",
+        "How long the software takes to complete running a job",
+        "The cost of purchasing the software compared to building it in-house"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the lecture, the **Cost** criterion when evaluating off-the-shelf software involves comparing:",
+      "explanation": "The lecture explains that the **Cost** criterion *'involves comparing the cost of developing the same system in-house to the cost of purchasing or licensing the software package.'*\n\nIt also advises: *'Be sure to include a comparison of the cost of purchasing vendor upgrades or annual license fees with the costs you would incur to maintain your own software.'*",
+      "options": [
+        "The price of different off-the-shelf packages from competing vendors",
+        "The cost of developing the system in-house versus purchasing or licensing the software",
+        "The cost of cloud computing subscriptions versus packaged software licences",
+        "The cost of open-source software versus ERP system implementation"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "**Open-source software** is free, so it has no disadvantages and is always the best choice for any organisation.",
+      "explanation": "This statement is **False**.\n\nWhile **open-source software** is free and customizable, the lecture explicitly lists a significant disadvantage:\n\n- **Requires technical expertise** to install, configure, and maintain.\n\nFurthermore, the lecture's comparison table indicates open-source is appropriate only *'when the supported task is generic but cost is an issue'* — not universally for all situations.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the lecture, **ERP systems** are flexible because additional modules can be added as needed once the basic system is in place.",
+      "explanation": "This statement is **True**.\n\nThe lecture lists this as one of the two key **advantages** of ERP systems:\n\n1. A firm can integrate all parts of a business process in a unified information system.\n2. **Flexible because additional modules can be added as needed** once the basic system is in place.\n\nThis modularity allows organisations to expand their ERP incrementally without replacing the entire system.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "According to the lecture, **Cloud Computing** requires users to install software locally on their machines before accessing it.",
+      "explanation": "This statement is **False**.\n\nThe lecture explicitly states that one of the key characteristics of **Cloud Computing** is that there is **no need to install software locally**. Software runs on remote servers and is accessed through the Internet using a web browser.\n\nExamples from the lecture: Google Docs, Gmail, Microsoft 365 Online — all accessed directly through a browser without local installation.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "According to the lecture, **Vendor Support** and **Vendor Viability** are the same concept and can be used interchangeably when evaluating off-the-shelf software.",
+      "explanation": "This statement is **False**.\n\nThe lecture presents them as two **distinct but related** criteria:\n\n| Criterion | Definition |\n|---|---|\n| **Vendor Support** | Whether the vendor can provide help with installation, user training, and post-installation problems |\n| **Vendor Viability** | The vendor's **credibility** — their long-term reliability as a business partner |\n\nThe lecture notes that *'related to support is the vendor's viability'*, implying they are related but not identical.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Define and compare **In-House Development** and **Outsourcing** as sources of software. In your answer, address when each option is appropriate and identify one advantage and one disadvantage of each.",
+      "explanation": "The lecture covers both sources directly. **In-house development** is characterised by full control and customization but at high cost and time. **Outsourcing** is chosen specifically when internal expertise is lacking or no off-the-shelf solution fits. Example firms for outsourcing listed in the lecture include Accenture, IBM, Capgemini, and HP.",
+      "answer": "**In-House Development** refers to software developed internally by the organisation's own programmers. It is appropriate when the organisation has the required resources, staff, and expertise available and the system needs to be built from scratch.\n\n- **Advantage:** Fully customized and gives the organisation full control over the software.\n- **Disadvantage:** Expensive and takes a longer time to develop.\n\n**Outsourcing** refers to hiring an external company or third party to develop or manage software. It is appropriate when the organisation lacks the in-house expertise or personnel, or when a suitable off-the-shelf system is not available.\n\n- **Advantage:** Provides access to specialised external expertise without needing to hire full-time staff.\n- **Disadvantage:** The organisation loses some control over the development process and may face higher costs for custom external work.\n\n**Key distinction:** In-house keeps everything internal but requires existing expertise; outsourcing leverages external capability when internal expertise is absent."
+    },
+    {
+      "q": "Explain the **eight criteria** used to evaluate off-the-shelf software as described in the lecture. Which two criteria are considered most important, and why?",
+      "explanation": "The lecture dedicates individual sections to each criterion and concludes with the explicit statement: 'Vendor support and vendor viability are the most important criteria.' A complete answer must list and briefly describe all eight, with a justified explanation for why the two vendor-related criteria rank highest.",
+      "answer": "According to the lecture, the eight criteria for evaluating off-the-shelf software are:\n\n1. **Cost** — Compare the cost of developing the system in-house vs. purchasing/licensing the software, including upgrade and licence fees.\n2. **Functionality** — Whether the software can perform all or the essential tasks users need.\n3. **Flexibility** — How easy it is to customise the software; inflexible software may force users to adapt their work processes.\n4. **Vendor Support** — Whether the vendor provides installation assistance, user training, and post-installation help.\n5. **Viability of Vendor** — The vendor's credibility and long-term reliability as a business partner.\n6. **Documentation** — Quality, clarity, and currency of the user manual and technical documentation.\n7. **Response Time** — How quickly the software responds to user requests or completes a processing job.\n8. **Ease of Installation** — How difficult it is to load and make the software operational.\n\n**Most important:** The lecture explicitly states that **Vendor Support** and **Vendor Viability** are the most important criteria. This is because without reliable vendor support, problems after installation may go unresolved, and if the vendor goes out of business (low viability), the organisation may lose access to updates, patches, and assistance entirely."
+    }
+  ]
+}

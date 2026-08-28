@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "id": "3TSGPZMW",
+    "title": "2017 - 2018 Final",
+    "createdAt": "3/28/2026, 10:02:41 PM",
+    "path": "quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2017 - 2018 Final.json"
+  },
+  "stats": {
+    "questionCount": 24,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "**Define** the term: **Systems Analysis and Design**.",
+      "explanation": "Defined in Ch1. The main goal of Systems Analysis and Design is developing application software to support organisational functions such as payroll or market analysis.",
+      "answer": "**Systems Analysis and Design** is the process of developing and maintaining an information system. It requires the analyst to understand the organisation's objectives, structure, and processes, and to have knowledge of how to use IT for the advantage of the organisation."
+    },
+    {
+      "q": "**Define** the term: **Project Management**.",
+      "explanation": "Defined in Ch3. Project management ensures a project is delivered on time, within scope, and within budget by following a structured, controlled process.",
+      "answer": "**Project Management** is a controlled process of initiating, planning, executing, and closing down a project. It involves four phases: (1) Initiating, (2) Planning, (3) Executing, and (4) Closing down the project."
+    },
+    {
+      "q": "**Define** the term: **Request for Proposal (RFP)**.",
+      "explanation": "An RFP is used when an organisation is considering outsourcing or purchasing software. It defines the organisation's needs and asks vendors to describe how they would meet those needs and at what cost.",
+      "answer": "A **Request for Proposal (RFP)** is a formal document issued by an organisation to invite external vendors to submit proposals for providing a specific product, service, or software solution."
+    },
+    {
+      "q": "**Define** the term: **Critical Path**.",
+      "explanation": "Defined in Ch3 under Critical Path Scheduling. It is a key concept in project planning — the critical path determines the minimum time needed to complete the project.",
+      "answer": "The **Critical Path** is the longest sequence of dependent tasks in a project whose order and duration directly affect the earliest possible completion date of the project. Any delay in a task on the critical path delays the entire project."
+    },
+    {
+      "q": "**Define** the term: **Gantt Chart**.",
+      "explanation": "Defined in Ch3. Gantt charts are produced from the Work Breakdown Structure (WBS) and are one of the two most commonly used project planning tools alongside network diagrams.",
+      "answer": "A **Gantt chart** is a graphical representation of a project that shows each task as a horizontal bar whose length is proportional to its time for completion. It is used for task scheduling, tracking progress, identifying dependencies, and allocating resources."
+    },
+    {
+      "q": "**Define** the term: **Slack Time**.",
+      "explanation": "Defined in Ch3. Some forms of Gantt charts can show slack time available within an earliest start and latest finish date. Slack time is also called float.",
+      "answer": "**Slack time** is the amount of time a task can be delayed without affecting the overall completion date of the project. Tasks on the critical path have zero slack time, meaning any delay will directly delay the project."
+    },
+    {
+      "q": "**Define** the term: **Process Modeling**.",
+      "explanation": "Process modeling is part of the Systems Analysis phase. It helps analysts document and communicate the logical flow of data through a system, forming a key component of the Software Requirements Specification (SRS).",
+      "answer": "**Process modeling** is a technique used to represent the processes of a system and how data flows between them. It uses tools such as **Data Flow Diagrams (DFDs)** to show what the system does without specifying how it is implemented."
+    },
+    {
+      "q": "**Define** the term: **Data Modeling**.",
+      "explanation": "Data modeling is performed during the Systems Analysis and Systems Design phases. It ensures the database structure accurately reflects the organisation's data needs and business rules.",
+      "answer": "**Data modeling** is a technique used to define and analyse the data requirements of a system. It describes the data that the system stores, the relationships between data entities, and the rules governing the data — typically using **Entity-Relationship (ER) diagrams**."
+    },
+    {
+      "q": "**Define** the term: **Balancing DFD**.",
+      "explanation": "Balancing is a quality check applied when decomposing DFDs. If a process at level 0 has two inputs and one output, the level 1 diagram that expands that process must collectively show the same two inputs and one output.",
+      "answer": "**Balancing a DFD** means ensuring that the data flows into and out of a process at one level of a Data Flow Diagram are consistent with the data flows shown at the next level of decomposition. In other words, what goes in and out of a parent process must match what goes in and out of its child diagram."
+    },
+    {
+      "q": "**Define** the term: **Context DFD**.",
+      "explanation": "The Context DFD is the starting point of process modeling. It gives a bird's-eye view of the system without showing any internal details. It is then decomposed into lower-level DFDs (Level 0, Level 1, etc.).",
+      "answer": "A **Context DFD** (also called a Context Diagram) is the highest-level Data Flow Diagram. It represents the entire system as a **single process** and shows all external entities that interact with it, along with the data flows between them and the system. It defines the system boundary."
+    },
+    {
+      "q": "**Define** the term: **Network Diagram**.",
+      "explanation": "Defined in Ch3. Network diagrams and Gantt charts are the two most commonly used project scheduling tools. A Gantt chart shows task duration and time overlap, while a network diagram shows task sequence and parallel execution possibilities.",
+      "answer": "A **network diagram** is a diagram that depicts project tasks and their **interrelationships**. Unlike a Gantt chart, it shows the sequence dependencies between tasks and identifies which tasks can be performed in parallel."
+    },
+    {
+      "q": "**Define** the term: **Project Communication Matrix**.",
+      "explanation": "The communication matrix is part of project planning. It prevents miscommunication by formalising the flow of information between project managers, team members, clients, and other stakeholders.",
+      "answer": "A **Project Communication Matrix** is a document that defines **who** receives **what** information, in **what format**, and **how frequently** throughout a project. It ensures all stakeholders remain appropriately informed at each stage of the project."
+    },
+    {
+      "q": "**Define** the term: **Baseline Project Plan**.",
+      "explanation": "Once a project plan is approved by stakeholders, it becomes the baseline. Any deviations from this baseline — in terms of time, cost, or scope — are tracked and managed as part of project execution and monitoring.",
+      "answer": "A **Baseline Project Plan** is the approved, agreed-upon version of the project plan. It serves as the **reference point** against which actual project performance (scope, schedule, and cost) is measured and controlled throughout the project lifecycle."
+    },
+    {
+      "q": "**Define** the term: **Project Scope Statement**.",
+      "explanation": "The scope statement is produced during project initiation and planning. It is critical for preventing scope creep — the tendency for a project's requirements to expand beyond the original agreement.",
+      "answer": "A **Project Scope Statement** is a document that clearly defines the **boundaries** of a project — what is included (in scope) and what is excluded (out of scope). It establishes a shared understanding between the project team and stakeholders about the project's deliverables and objectives."
+    },
+    {
+      "q": "**Define** the term: **Outsourcing**.",
+      "explanation": "Defined in Ch2 (Sources of Software). Outsourcing is one of six sources of software. Example outsourcing firms include Accenture, IBM, Capgemini, and HP.",
+      "answer": "**Outsourcing** is the process of hiring an external company or third party to develop or manage software instead of developing it internally within the organisation.\n\nOutsourcing is selected when:\n- The organisation does not have the expertise or personnel to develop the system in-house.\n- A suitable off-the-shelf system is not available.\n\n**Example:** A university hires a software company to build its student management system."
+    },
+    {
+      "q": "Explain the different approaches for system development including SDLC and how they are different from SDLC.",
+      "explanation": "The lecture (Ch1) defines the SDLC and lists five methodologies: Waterfall, Prototyping, RAD, Agile, and Spiral. The key distinction is that SDLC is the general life cycle model, while each methodology is an approach to executing it with different priorities (speed, flexibility, risk management, etc.).",
+      "answer": "The **SDLC (Systems Development Life Cycle)** is the series of phases used to develop an information system:\n1. Systems Planning and Selection\n2. Systems Analysis\n3. Systems Design\n4. Systems Implementation and Operation\n\nThe different **methodologies** of software development (approaches) include:\n\n| Methodology | Description | Key Difference from SDLC |\n|---|---|---|\n| **Waterfall** | Sequential, phase-by-phase development | Follows SDLC strictly; no going back to a previous phase |\n| **Prototyping** | Build a working model early for user feedback | Iterative; user sees the system before it is fully built |\n| **RAD (Rapid Application Development)** | Emphasis on speed using tools and components | Compresses the SDLC timeline significantly |\n| **Agile** | Incremental delivery in short sprints | Flexible; requirements can change mid-project |\n| **Spiral** | Combines iterative development with risk analysis | Repeats planning/analysis/design cycles with risk evaluation |\n\nThe SDLC is the **framework**; the methodologies are **specific ways** of implementing that framework."
+    },
+    {
+      "q": "Explain the difference between Methodologies, Techniques, and Tools in the context of systems development.",
+      "explanation": "This is a conceptual distinction tested in this course. Methodologies are the overarching approaches (like Agile), techniques are the specific methods used within them (like WBS or PERT), and tools are the software that automate or support the techniques (like MS Project or CASE tools).",
+      "answer": "| Term | Definition | Example |\n|---|---|---|\n| **Methodology** | A standardised, step-by-step process or approach used to develop an information system | Waterfall, Agile, Spiral, RAD |\n| **Technique** | A specific procedure or method used within a methodology to accomplish a task | Data flow diagrams (DFD), PERT, Work Breakdown Structure (WBS) |\n| **Tool** | A software application or instrument that supports the application of a technique | Microsoft Project (for Gantt charts), CASE tools (for diagramming), Smartsheet |\n\n**Summary:**\n- A **methodology** tells you *what steps to follow*.\n- A **technique** tells you *how to perform a specific step*.\n- A **tool** is the *instrument* that helps you apply the technique."
+    },
+    {
+      "q": "Explain the different approaches to software reuse.",
+      "explanation": "Software reuse is covered in Ch2 (Sources of Software). Each source of software is effectively an approach to avoiding building from scratch — which is the essence of reuse. In-house development is the only approach where full custom development occurs, while all other sources involve some degree of reuse.",
+      "answer": "Software reuse refers to using existing software components, systems, or knowledge to build new systems. The main approaches include:\n\n1. **Packaged Software (Off-the-Shelf):** Purchasing ready-made software designed for general use (e.g., Microsoft Office). Reduces development time and cost.\n2. **Open-Source Software:** Reusing freely available source code developed by a community (e.g., Linux, MySQL). Customisable but requires technical expertise.\n3. **ERP Systems:** Reusing large-scale integrated enterprise software modules (e.g., SAP, Oracle) that cover multiple business functions.\n4. **Cloud Computing / SaaS:** Accessing software as a service over the Internet without building it (e.g., Google Docs, Microsoft 365). No installation needed.\n5. **Outsourcing:** Delegating development to an external vendor who may reuse their own existing components and frameworks.\n6. **In-House Component Reuse:** Internally developed modules or libraries that are reused across different projects within the same organisation."
+    },
+    {
+      "q": "Briefly explain the four phases of project management.",
+      "explanation": "Covered in Ch3. The four phases map directly to the project management process defined in the lecture: Initiating → Planning → Executing → Closing Down. The planning phase is the most detail-heavy and involves tools such as WBS, Gantt charts, network diagrams, and PERT.",
+      "answer": "The project management process consists of four phases:\n\n1. **Initiating the Project:**\n   - Formally recognising the project exists.\n   - Defining the project at a high level (scope, objectives).\n   - Identifying the project manager and key stakeholders.\n\n2. **Planning the Project:**\n   - Creating a detailed roadmap for execution, monitoring, and control.\n   - Performing **Work Breakdown Structure (WBS)** to divide the project into manageable tasks.\n   - Producing a **Gantt chart** and **network diagram**.\n   - Estimating time using **PERT**: $ET = \\frac{o + 4r + p}{6}$\n\n3. **Executing the Project:**\n   - Carrying out the project plan.\n   - Managing resources, teams, and tasks.\n   - Monitoring progress and managing changes.\n\n4. **Closing Down the Project:**\n   - Formally completing and delivering the project.\n   - Documenting lessons learned.\n   - Releasing project resources."
+    },
+    {
+      "q": "Explain the criteria for choosing Off-the-Shelf Software.",
+      "explanation": "Covered in Ch2. The lecture explicitly lists these 8 criteria and highlights that vendor support and vendor viability are the most critical, because without a reliable vendor, all other criteria become irrelevant over time.",
+      "answer": "When evaluating off-the-shelf software, an organisation should assess the following **8 criteria**:\n\n| Criterion | Description |\n|---|---|\n| **Cost** | Compare the purchase/license cost against the cost of building the same system in-house. Include upgrade and maintenance fees. |\n| **Functionality** | Does the software perform all (or the core) tasks the users need? |\n| **Flexibility** | How easily can the software be customised by the organisation or the vendor? |\n| **Vendor Support** | Can the vendor assist with installation, training, and post-deployment problems? |\n| **Viability of Vendor** | Is the vendor credible and financially stable enough to continue supporting the product? |\n| **Documentation** | Is the user manual and technical documentation understandable and up to date? |\n| **Response Time** | How quickly does the software respond to user requests in an interactive session? |\n| **Ease of Installation** | How difficult is it to load and make the software operational? |\n\n> **Most important criteria: Vendor Support and Vendor Viability.** The ranking of remaining criteria depends on the organisation's specific situation."
+    },
+    {
+      "q": "What is the difference between **formal** and **informal** systems?",
+      "explanation": "Formal systems are built and maintained through Systems Analysis and Design processes. Understanding this distinction helps analysts recognise that not all organisational processes are captured in official systems — informal processes must also be discovered during requirements gathering.",
+      "answer": "| Feature | Formal System | Informal System |\n|---|---|---|\n| **Definition** | A system that follows established, documented rules and procedures | A system based on unwritten practices, habits, and personal relationships |\n| **Structure** | Highly structured and organised | Loosely structured |\n| **Documentation** | Fully documented | Little or no documentation |\n| **Examples** | Payroll system, hospital management system, university registration system | Word-of-mouth communication, informal networks among employees |\n| **Predictability** | Predictable and consistent | Unpredictable; varies by individual |\n| **Control** | Easier to control and audit | Difficult to control |\n\n**Summary:** Formal systems are planned, documented, and enforced by the organisation. Informal systems arise naturally from human behaviour and social interaction within the organisation."
+    },
+    {
+      "q": "Explain the different sources of software.",
+      "explanation": "Fully covered in Ch2. The lecture presents all six sources with their definitions, examples, advantages, disadvantages, and a comparison table of when to use each.",
+      "answer": "There are **six sources** of software available to organisations:\n\n| # | Source | Description | Example |\n|---|---|---|---|\n| 1 | **Outsourcing** | Hiring an external company to develop or manage software | A university hires a vendor to build its student system |\n| 2 | **Packaged Software (Off-the-Shelf)** | Ready-made software sold to many users | Microsoft Office |\n| 3 | **ERP Systems** | Large-scale software integrating business functions into one unified system | SAP, Oracle |\n| 4 | **Cloud Computing (SaaS)** | Software delivered over the Internet; no local installation needed | Google Docs, Gmail, Microsoft 365 |\n| 5 | **Open Source** | Free software with publicly available source code, developed by a community | Linux, MySQL, PostgreSQL |\n| 6 | **In-House Development** | Software built internally by the organisation's own programmers | Custom-built internal tools |\n\n**When to use each:**\n- Outsourcing → when expertise is unavailable in-house and no suitable off-the-shelf product exists.\n- Packaged software → when the task is generic.\n- ERP → for complete systems crossing functional boundaries.\n- Cloud → for instant access to generic applications.\n- Open source → when the task is generic but cost is an issue.\n- In-house → when resources and staff are available and the system must be built from scratch."
+    },
+    {
+      "q": "Explain both the **traditional** and **modern** methods for determining Information System Requirements.",
+      "explanation": "This topic bridges Ch1 (SDLC, methodologies) and Ch2 (systems analysis phase). Requirements determination is a core activity in Phase 2 (Systems Analysis) of the SDLC, and the distinction between traditional and modern approaches is a common exam topic.",
+      "answer": "**Traditional Methods** for determining IS requirements involve direct human interaction and document analysis:\n\n1. **Interviews** – One-on-one sessions with stakeholders to gather requirements.\n2. **Questionnaires / Surveys** – Written questions distributed to many users simultaneously.\n3. **Observation** – Watching users perform their work to understand processes first-hand.\n4. **Document Analysis** – Reviewing existing forms, reports, and procedures to understand the current system.\n5. **Joint Application Design (JAD)** – Structured group sessions with users, managers, and analysts to define requirements collaboratively.\n\n**Modern Methods** leverage technology and system analysis tools:\n\n1. **Prototyping** – Building a working model of the system early so users can provide feedback before full development.\n2. **CASE Tools** – Computer-Aided Software Engineering tools that automate parts of the requirements gathering and modelling process.\n3. **Agile / Iterative Methods** – Requirements are gathered incrementally through repeated short development cycles with continuous user feedback.\n4. **Use Cases / User Stories** – Structured narratives that describe how users interact with the system to capture functional requirements.\n\n**Key difference:** Traditional methods are largely manual and document-driven; modern methods are iterative, technology-supported, and user-feedback-driven."
+    },
+    {
+      "q": "Explain the deliverables of the **Systems Analysis** and **Systems Design** phases, showing how they are related to systems development.",
+      "explanation": "Covered in Ch1 (SDLC phases). Phase 2 outputs the SRS and Phase 3 outputs the System Design Document. The relationship is that analysis defines the problem space (requirements) and design defines the solution space (architecture, database, interface), both of which are essential inputs to implementation.",
+      "answer": "**Phase 2: Systems Analysis**\n\nThe goal of systems analysis is to understand *what* the system must do.\n\n**Deliverable: Software Requirements Specification (SRS)**\n\nThe SRS contains:\n- Gathered user requirements\n- **Functional requirements** — what the system should do (e.g., process orders, generate reports)\n- **Non-functional requirements** — system constraints (e.g., performance, security, scalability)\n- Process models (DFDs, use cases)\n- Data models (ER diagrams)\n\n---\n\n**Phase 3: Systems Design**\n\nThe goal of systems design is to define *how* the system will do it.\n\n**Deliverable: System Design Document**\n\nThe design document contains:\n- System architecture design\n- Database design (tables, relationships)\n- Interface design (screens, reports)\n- Module and component definitions\n\n---\n\n**Relationship to Systems Development:**\n\n```\nSystems Analysis (SRS)\n        ↓\n  Answers: What should the system do?\n        ↓\nSystems Design (Design Document)\n        ↓\n  Answers: How will the system do it?\n        ↓\nSystems Implementation\n  (Developers use the design document to write code)\n```\n\nThe SRS produced in analysis becomes the **input** to the design phase. The design document produced in design becomes the **blueprint** used by developers during implementation. Each phase's deliverable directly feeds the next, making the relationship sequential and tightly coupled."
+    }
+  ]
+}

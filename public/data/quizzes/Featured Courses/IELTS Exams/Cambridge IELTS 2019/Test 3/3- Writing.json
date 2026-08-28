@@ -1,0 +1,181 @@
+{
+  "meta": {
+    "title": "3  Writing",
+    "id": "5DT7V3SH",
+    "createdAt": "2026-06-11 - 13:27",
+    "path": "quizzes/Featured Courses/IELTS Exams/Cambridge IELTS 2019/Test 3/3- Writing.json"
+  },
+  "stats": {
+    "questionCount": 15,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Process Diagram**\n\nThe diagram below shows how a biofuel called **ethanol** is produced. Study the cyclic process carefully before answering the questions.\n\n**Stages in the cycle:**\n1. Energy (sunlight + carbon dioxide) → Plants and trees grow\n2. Plants and trees grow → Harvesting\n3. Harvesting → Pre-processing → Cellulose\n4. Cellulose → Processing → Sugars\n5. Sugars → Microbes added → Ethanol\n6. Ethanol is used by cars, trucks, and aircraft → Carbon Dioxide released\n7. Carbon Dioxide → back to Energy stage (cycle repeats)\n\n> **Note:** Carbon dioxide is released at multiple stages: harvesting, pre-processing, and during combustion by vehicles.\n```\nWhich of the following best describes the overall structure of the ethanol production process?",
+      "explanation": "The diagram is explicitly cyclic. The carbon dioxide released when ethanol is burned by vehicles feeds back into the growth stage (sunlight + CO₂ → plants grow), completing the loop. This is a key feature to identify and describe in Task 1.",
+      "options": [
+        "A linear process from planting to fuel combustion with no feedback loop",
+        "A cyclic process in which carbon dioxide released during combustion re-enters plant growth",
+        "A one-way process where plants are permanently consumed to produce ethanol",
+        "A process that begins with harvesting and ends with the release of sugars"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Process Diagram**\n\nRefer to the ethanol production cycle described above.\n```\nWhat is the correct chronological order of the main stages in ethanol production?",
+      "explanation": "After plants grow and are harvested, the biomass undergoes **pre-processing** to extract **cellulose**. The cellulose is then **processed** into **sugars**, and **microbes** are added to ferment the sugars into **ethanol**. Understanding this sequence is essential for a coherent Task 1 response.",
+      "options": [
+        "Harvesting → Pre-processing → Cellulose → Processing → Sugars → Microbes added → Ethanol",
+        "Pre-processing → Harvesting → Cellulose → Sugars → Processing → Microbes added → Ethanol",
+        "Harvesting → Cellulose → Processing → Pre-processing → Sugars → Microbes added → Ethanol",
+        "Plants grow → Sugars → Cellulose → Pre-processing → Harvesting → Microbes added → Ethanol"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Vocabulary in Context**\n\nThe verb *'summarise'* appears in the task instructions: *'Summarise the information by selecting and reporting the main features, and make comparisons where relevant.'*\n```\nIn IELTS Writing Task 1, what does the instruction 'make comparisons where relevant' require you to do?",
+      "explanation": "'Make comparisons where relevant' means you should identify **similarities or contrasts** within the visual data. For a process diagram, this could include noting that CO₂ is released at *multiple* stages, or contrasting early biological stages (plant growth) with later industrial stages (processing). Personal opinions and predictions are **not** appropriate in Task 1.",
+      "options": [
+        "Write a personal opinion about the diagram",
+        "Identify and highlight similarities or differences between stages or data points",
+        "Copy the labels from the diagram into your answer",
+        "Predict future trends based on the diagram"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Academic Vocabulary**\n\nBelow is a sample sentence from a model answer for the ethanol diagram task:\n\n*'Initially, plants and trees absorb solar energy and carbon dioxide during photosynthesis, after which they are harvested and subjected to pre-processing in order to isolate cellulose.'*\n```\nWhich word in the sample sentence above is a **discourse marker** indicating the starting point of a sequence?",
+      "explanation": "**'Initially'** (/ɪˈnɪʃ.ə.li/) is a sequencing discourse marker that signals the **first stage** of a process. It is commonly used in Task 1 process descriptions. Other sequencing markers include: *subsequently, following this, once, finally, at the next stage*. \n\n- *'After which'* = relative clause connector (not a sequencing opener)\n- *'In order to'* = purpose marker\n- *'Subjected to'* = passive verb phrase meaning 'exposed to a process'",
+      "options": [
+        "after which",
+        "Initially",
+        "in order to",
+        "subjected to"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the most appropriate sentence to use as an **overview** in an IELTS Task 1 response about the ethanol production diagram.",
+      "explanation": "A strong **overview** (often the second paragraph in Task 1) must:\n1. Identify the **overall nature** of the process (cyclic vs. linear)\n2. Mention the **beginning and end** points\n3. Highlight the **most significant feature** (e.g., CO₂ recycling)\n\nOption A is merely a definition. Option C is vague and uses informal language. Option D is a specific detail, not an overview. Option B fulfils all three criteria.",
+      "options": [
+        "The diagram shows ethanol, which is a type of biofuel used in cars.",
+        "Overall, ethanol production is a cyclic process involving several biological and industrial stages, beginning with plant growth and culminating in fuel combustion, with carbon dioxide continuously recycled throughout.",
+        "There are many stages in the production of ethanol, and they are all important.",
+        "Carbon dioxide is released when ethanol is burned by vehicles, trucks, and aircraft."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Grammar Focus: The Passive Voice**\n\nProcess diagrams in IELTS Task 1 typically require the **passive voice** because the focus is on *what happens* to materials, not on who performs the action.\n\n**Active:** Workers harvest the plants.\n**Passive:** The plants **are harvested**.\n\n**Active:** Scientists add microbes to the sugars.\n**Passive:** Microbes **are added** to the sugars.\n```\nWhich of the following correctly uses the **passive voice** to describe a stage in the ethanol process?",
+      "explanation": "The correct passive structure is: **subject + to be (present simple) + past participle**.\n\n✅ *'The cellulose **is processed** into sugars'* — correct passive, appropriate for describing a manufacturing/scientific process.\n\n❌ Option A: *'Cellulose processes'* — active, intransitive misuse.\n❌ Option C: *'They are processing'* — present continuous active; also 'they' is unspecified.\n❌ Option D: *'Processing cellulose makes'* — active gerund construction, acceptable informally but not preferred in formal Task 1 writing.",
+      "options": [
+        "Cellulose processes into sugars.",
+        "The cellulose is processed into sugars.",
+        "They are processing the cellulose into sugars.",
+        "Processing cellulose makes sugars."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 1 – Preposition Focus**\n\nPrepositions are critical in describing processes. Study these examples:\n- Plants grow **by** absorbing sunlight.\n- Ethanol is produced **from** sugars.\n- Carbon dioxide is released **into** the atmosphere.\n- Microbes are added **to** the sugars.\n```\nComplete the sentence with the correct preposition:\n\n'Ethanol is obtained ___ the fermentation of sugars with the help of microbes.'",
+      "explanation": "Both **'by'** and **'through'** are grammatically and semantically correct here:\n\n- *'obtained **by** the fermentation'* → 'by' introduces the **agent or method** in a passive construction.\n- *'obtained **through** the fermentation'* → 'through' indicates the **means or process**.\n\n**'From'** is also common (*ethanol is made **from** sugars*) but changes the meaning slightly — it emphasises the **raw material**, not the process. In this sentence, since the emphasis is on fermentation as a method, B and C are the best choices.",
+      "options": [
+        "from",
+        "by",
+        "through",
+        "Both B and C are correct"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 2 – Essay Prompt**\n\n*'It is important for everyone, including young people, to save money for their future.*\n*To what extent do you agree or disagree with this statement?'*\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.\nWrite at least **250 words**.\n```\nThis Task 2 question is best classified as which essay type?",
+      "explanation": "The phrase **'To what extent do you agree or disagree'** is the hallmark of an **Opinion (Agree/Disagree) essay**. You are expected to clearly state your position — fully agree, partially agree, or disagree — and support it with reasons and examples.\n\n- A **Discussion essay** uses prompts like *'Discuss both views and give your opinion'*.\n- A **Problem-Solution essay** uses *'What are the causes? What solutions can be suggested?'*\n- An **Advantages-Disadvantages essay** uses *'Do the advantages outweigh the disadvantages?'*",
+      "options": [
+        "Discussion essay (discuss both views)",
+        "Opinion / Agree-Disagree essay",
+        "Problem-Solution essay",
+        "Advantages-Disadvantages essay"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 2 – Essay Structure**\n\nFor the prompt: *'It is important for everyone, including young people, to save money for their future. To what extent do you agree or disagree?'*\n\nConsider the following paragraph openings:\n\n- **Para A:** *'I completely agree that saving money is crucial for all age groups, including the young.'*\n- **Para B:** *'One key reason why young people should save is financial security during emergencies.'*\n- **Para C:** *'However, some argue that young people should focus on investing in experiences and education rather than saving.'*\n- **Para D:** *'In conclusion, while there may be competing priorities, saving money from a young age remains fundamentally important.'*\n```\nWhich paragraph order represents the **most logical and band-scoring structure** for this essay?",
+      "explanation": "The recommended structure for an Agree/Disagree essay is:\n\n| Paragraph | Purpose |\n|-----------|----------|\n| **Introduction (A)** | State your clear position |\n| **Body 1 (B)** | Main argument supporting your view |\n| **Body 2 (C)** | Concession / counterargument (optional but shows balance) |\n| **Conclusion (D)** | Restate position, summarise |\n\nStarting with your **thesis statement** (Para A) before your supporting arguments (Para B) is essential for coherence and cohesion — a key IELTS marking criterion.",
+      "options": [
+        "B → A → C → D",
+        "A → B → C → D",
+        "C → B → A → D",
+        "A → C → B → D"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 2 – Vocabulary & Collocations**\n\nThe topic of *saving money* requires precise academic vocabulary. Study these collocations:\n\n| Verb | Noun |\n|------|------|\n| accumulate | savings / wealth |\n| build up | a financial cushion / reserves |\n| set aside | funds / a portion of income |\n| plan for | retirement / emergencies / the future |\n| invest in | assets / education / property |\n| incur | debt / expenses |\n\n**Pronunciation note:** *'accumulate'* = /əˈkjuːmjʊleɪt/; *'financial cushion'* = /faɪˈnænʃəl ˈkʊʃ.ən/\n```\nWhich sentence uses the collocation **most naturally and accurately** in the context of this essay topic?",
+      "explanation": "Option B uses **two strong collocations** correctly:\n- *'set aside a portion of income'* ✅ (natural, formal)\n- *'build up a financial cushion'* ✅ (idiomatic, appropriate register)\n\n❌ Option A: *'make savings'* is not standard; use *'make savings'* only in the context of cutting costs, not accumulating money.\n❌ Option C: *'do savings'* is ungrammatical. You **make, accumulate, or build up** savings.\n❌ Option D: *'save money into emergencies'* — wrong preposition. Use *'save money **for** emergencies'*.",
+      "options": [
+        "Young people should make savings for their future retirement.",
+        "Young people should set aside a portion of their income to build up a financial cushion for the future.",
+        "Young people must do savings regularly to get money in the future.",
+        "Young people should save money into future emergencies."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 2 – Cohesion & Linking Devices**\n\nRead this body paragraph:\n\n*'Saving money provides individuals with financial security. _______, if a person loses their job unexpectedly, having a reserve of savings can prevent them from falling into debt. _______, young people who begin saving early benefit from compound interest, meaning their wealth grows significantly over time.'*\n```\nWhich pair of linking words/phrases best completes the paragraph above?",
+      "explanation": "- The first blank introduces a **specific example** of financial security → **'For instance'** ✅\n- The second blank adds an **additional supporting point** → **'Furthermore'** ✅\n\n❌ Option A: 'However' signals contrast — inappropriate here as both sentences *support* the opening claim.\n❌ Option C: 'On the other hand' introduces an opposing view — contradicts the paragraph's purpose.\n❌ Option D: 'In contrast' and 'As a result' both misrepresent the logical relationship between the sentences.\n\n**Tip:** Vary your linking devices. Overusing *'however'* and *'also'* lowers your Coherence & Cohesion band score.",
+      "options": [
+        "However / In addition",
+        "For instance / Furthermore",
+        "On the other hand / Similarly",
+        "In contrast / As a result"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\n**IELTS Writing Task 2 – Grammar: Conditional Sentences**\n\nConditional sentences are useful for discussing hypothetical scenarios in Task 2 essays.\n\n| Type | Structure | Use |\n|------|-----------|-----|\n| Zero | If + present simple, present simple | General truths |\n| First | If + present simple, will + base verb | Real future possibilities |\n| Second | If + past simple, would + base verb | Hypothetical/unlikely situations |\n| Third | If + past perfect, would have + past participle | Past hypotheticals |\n```\nWhich sentence uses the **correct conditional form** to express a realistic future possibility related to saving money?",
+      "explanation": "Option B is a **First Conditional** sentence: *If + present simple (save), will + base verb (will be)*. This expresses a **realistic future possibility**, which is appropriate for making a logical argument in a Task 2 essay.\n\n❌ Option A mixes Second and Third conditional forms incorrectly.\n❌ Option C is a **Mixed Conditional** (past hypothetical applied to present) — grammatically possible but changes the meaning to a past regret scenario.\n❌ Option D has a subject-verb agreement error: *'young people **saves**'* should be *'young people **save**'* (plural subject).",
+      "options": [
+        "If young people saved money, they would have been financially secure.",
+        "If young people save money regularly, they will be better prepared for unexpected expenses.",
+        "If young people had saved money, they would be financially secure now.",
+        "If young people saves money, they will have financial security."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In IELTS Writing Task 1, how many words must you write at minimum, and approximately how long should you spend on the task?",
+      "explanation": "According to the IELTS task instructions:\n- **Task 1:** Minimum **150 words**, approximately **20 minutes**\n- **Task 2:** Minimum **250 words**, approximately **40 minutes**\n\nTask 2 carries **twice the marks** of Task 1, hence the longer time allocation. Writing significantly below the word count results in a **penalty** on the Task Achievement criterion.",
+      "options": [
+        "150 words, 20 minutes",
+        "250 words, 20 minutes",
+        "150 words, 40 minutes",
+        "200 words, 30 minutes"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\n**IELTS Writing – Band Score Criteria (Overview)**\n\nBoth Task 1 and Task 2 are assessed on four equally weighted criteria:\n\n| Criterion | Task 1 Label | Task 2 Label |\n|-----------|-------------|-------------|\n| Content | Task Achievement | Task Response |\n| Organisation | Coherence & Cohesion | Coherence & Cohesion |\n| Vocabulary | Lexical Resource | Lexical Resource |\n| Grammar | Grammatical Range & Accuracy | Grammatical Range & Accuracy |\n```\nA student writes a Task 2 essay that is well-organised and uses excellent grammar, but fails to directly address the question asked. Which criterion will be **most severely penalised**?",
+      "explanation": "**Task Response** assesses how fully and directly you address *all parts* of the task prompt. If your essay goes off-topic or fails to answer the question, your Task Response score will be significantly lowered — regardless of how well-written the essay is in other respects.\n\nThis is why **reading the question carefully** and **planning your answer** before writing is critical. A high grammar score cannot compensate for a weak Task Response score, as each criterion is weighted equally.",
+      "options": [
+        "Coherence & Cohesion",
+        "Lexical Resource",
+        "Task Response",
+        "Grammatical Range & Accuracy"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Which of the following phrases is most appropriate for introducing a **concession** (acknowledging the opposing view) in an IELTS Task 2 essay?",
+      "explanation": "**'Admittedly'** (/ədˈmɪtɪdli/) is a classic **concession marker** used to acknowledge an opposing argument before refuting or qualifying it. Common collocations:\n\n- *Admittedly, **some people believe** that young adults should prioritise experiences over savings.*\n- *It must be acknowledged that...*\n- *While it is true that..., nonetheless...*\n- *Granted, ...; however,...*\n\n❌ Options A and C are **result/consequence markers** (e.g., 'therefore', 'consequently').\n❌ Option D is a **conclusion marker** — inappropriate mid-essay.",
+      "options": [
+        "Because of this, it is clear that...",
+        "Admittedly, there are those who argue that...",
+        "As a result of this point...",
+        "In conclusion, we can see that..."
+      ],
+      "correct": 1
+    }
+  ]
+}

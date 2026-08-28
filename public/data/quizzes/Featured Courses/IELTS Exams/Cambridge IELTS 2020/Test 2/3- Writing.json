@@ -1,0 +1,236 @@
+{
+  "meta": {
+    "title": "3  Writing",
+    "id": "YHM3X7KV",
+    "createdAt": "2026-06-10 - 22:47",
+    "path": "quizzes/Featured Courses/IELTS Exams/Cambridge IELTS 2020/Test 2/3- Writing.json"
+  },
+  "stats": {
+    "questionCount": 20,
+    "questionTypes": [
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "```passage\nIELTS Writing Task 1: The plans show the site of Beechwood Farm in 1950 and the same site today. Summarise the information by selecting and reporting the main features, and make comparisons where relevant.\n```\nWhat is the minimum number of words required for this IELTS Writing Task 1 response?",
+      "explanation": "IELTS Writing Task 1 requires candidates to write at least 150 words.",
+      "options": [
+        "100 words",
+        "150 words",
+        "200 words",
+        "250 words"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\nThe plans below show the site of a farm in 1950 and the same site today.\n```\nWhat is the main purpose of this Task 1 question?",
+      "explanation": "The task requires candidates to compare Beechwood Farm in 1950 with the same site today.",
+      "options": [
+        "Describe a process",
+        "Compare two time periods",
+        "Discuss an opinion",
+        "Summarise a lecture"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct spelling of the word used to describe something common or representative. Pronunciation: /ˈtɪpɪkəl/",
+      "explanation": "The correct spelling is 'typical'. The candidate's version 'tipycal' is incorrect.",
+      "options": [
+        "tipycal",
+        "typical",
+        "tipical",
+        "typicl"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct expression: 'The farm has changed ___ time.'",
+      "explanation": "The natural collocation is 'over time'.",
+      "options": [
+        "along the time",
+        "over time",
+        "through the times",
+        "across time"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which sentence best serves as an overview for the farm plans?",
+      "explanation": "An overview should summarise the main changes without focusing on specific details.",
+      "options": [
+        "The farm contains fruit trees and vegetables.",
+        "The plans illustrate the updated facilities that have been added since 1950, including accommodation, power generation and other additions to appeal to visitors and holidaymakers.",
+        "There was a barn and a farmhouse in 1950.",
+        "The river surrounded part of the farm."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct plural form. Pronunciation: sheep /ʃiːp/",
+      "explanation": "The plural of 'sheep' is 'sheep'.",
+      "options": [
+        "sheeps",
+        "sheep",
+        "sheepes",
+        "sheepses"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which linking expression is written correctly?",
+      "explanation": "'Whereas' is written as one word and is commonly used to show contrast.",
+      "options": [
+        "Where as",
+        "Whereas",
+        "Where-as",
+        "Where as,"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the best collocation.",
+      "explanation": "'Spend valuable time' is a natural English collocation.",
+      "options": [
+        "spend valuable time",
+        "do valuable time",
+        "make valuable time",
+        "take valuable time"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "```passage\nIn many countries, primary and secondary schools close for two months or more in the summer holidays.\n```\nWhat is the first question candidates must address in Task 2?",
+      "explanation": "The essay asks candidates to discuss the value of long school holidays.",
+      "options": [
+        "Should schools close permanently?",
+        "What is the value of long school holidays?",
+        "How many holidays should schools have?",
+        "Should students travel abroad?"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "```passage\nIn many countries, primary and secondary schools close for two months or more in the summer holidays.\n```\nWhat is the minimum word count required for this IELTS Writing Task 2 response?",
+      "explanation": "IELTS Writing Task 2 requires at least 250 words.",
+      "options": [
+        "150 words",
+        "200 words",
+        "250 words",
+        "300 words"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Choose the correct phrase.",
+      "explanation": "'Fall behind in studies' is the correct and natural expression.",
+      "options": [
+        "falling back in studies",
+        "falling behind in studies",
+        "falling under in studies",
+        "falling through in studies"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which argument in favour of longer school holidays is mentioned in the sample essay?",
+      "explanation": "The essay states that longer holidays help children spend time with relatives and build stronger relationships.",
+      "options": [
+        "Students can earn money.",
+        "Children can spend valuable time with relatives and strengthen family bonds.",
+        "Schools save money.",
+        "Students learn more subjects."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which argument in favour of shorter school holidays is mentioned in the sample essay?",
+      "explanation": "The essay argues that shorter holidays help students maintain concentration and academic performance.",
+      "options": [
+        "They reduce travel costs.",
+        "They help children maintain concentration and avoid falling behind in studies.",
+        "They increase family bonding.",
+        "They eliminate homework."
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct preposition: 'Education is important ___ every child.'",
+      "explanation": "The correct phrase is 'important for every child'.",
+      "options": [
+        "to",
+        "for",
+        "at",
+        "with"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct expression.",
+      "explanation": "'On the other side' is the correct form. In argumentative writing, 'On the other hand' is often more appropriate.",
+      "options": [
+        "on the otherside",
+        "on the other side",
+        "in the other side",
+        "at the other side"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct phrase.",
+      "explanation": "The standard expression is 'on holiday'.",
+      "options": [
+        "in holiday",
+        "on holiday",
+        "at holiday",
+        "during holidaying"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Select the correct plural noun.",
+      "explanation": "When referring to positive and negative aspects, we say 'both positive and negative sides'.",
+      "options": [
+        "side",
+        "sides",
+        "sidees",
+        "sidez"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does the word 'sophisticated' mean in the sentence 'a new sophisticated and modern one'? Pronunciation: /səˈfɪstɪkeɪtɪd/",
+      "explanation": "'Sophisticated' means advanced, complex, or refined.",
+      "options": [
+        "Simple",
+        "Advanced and refined",
+        "Old-fashioned",
+        "Temporary"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Choose the correct spelling. Pronunciation: /ˈkɒtɪdʒɪz/",
+      "explanation": "The correct spelling is 'cottages'.",
+      "options": [
+        "cottoges",
+        "cottages",
+        "cotteges",
+        "cotages"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which feature is specifically mentioned in the model overview as a modern addition to the farm?",
+      "explanation": "The overview refers to power generation, represented by the solar panels.",
+      "options": [
+        "A castle",
+        "Power generation",
+        "A railway station",
+        "A factory"
+      ],
+      "correct": 1
+    }
+  ]
+}

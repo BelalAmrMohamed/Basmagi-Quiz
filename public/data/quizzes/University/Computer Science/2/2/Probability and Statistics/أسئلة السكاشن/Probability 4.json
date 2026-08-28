@@ -1,0 +1,308 @@
+{
+  "meta": {
+    "id": "PAOCFJV5",
+    "title": "Probability 4",
+    "createdAt": "4/1/2026, 3:21:22 PM",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 4.json"
+  },
+  "stats": {
+    "questionCount": 27,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "A network transmits 15 packets. Each packet has a 0.92 probability of successful delivery. What is the probability that **exactly 14 packets** are delivered successfully?\n\nUse: $P(X = x) = \\binom{n}{x} p^x (1-p)^{n-x}$",
+      "explanation": "Given $n = 15$, $p = 0.92$, $x = 14$:\n$$P(X = 14) = \\binom{15}{14}(0.92)^{14}(0.08)^1 = 15 \\times 0.3476 \\times 0.08 = 0.4173$$\nThe probability is approximately **41.73%**.",
+      "options": [
+        "$0.3476$",
+        "$0.4173$",
+        "$0.5120$",
+        "$0.2814$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A software testing team runs 20 test cases. Historical data shows 30% of test cases reveal bugs. What is the probability that **exactly 6** test cases reveal bugs?",
+      "explanation": "Given $n = 20$, $p = 0.30$, $x = 6$:\n$$P(X = 6) = \\binom{20}{6}(0.30)^6(0.70)^{14} = 38760 \\times 0.000729 \\times 0.00678 = 0.1916$$\nThe probability is **19.16%**.",
+      "options": [
+        "$0.1304$",
+        "$0.0716$",
+        "$0.1916$",
+        "$0.2500$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A software testing team runs 20 test cases where each has a 30% chance of revealing a bug. What is the probability that **at least 5** test cases reveal bugs?\n\nHint: $P(X \\geq 5) = 1 - P(X < 5)$",
+      "explanation": "Computing $P(X < 5) = P(X=0)+P(X=1)+P(X=2)+P(X=3)+P(X=4)$:\n\n| $x$ | $P(X=x)$ |\n|-----|----------|\n| 0 | 0.0008 |\n| 1 | 0.0068 |\n| 2 | 0.0278 |\n| 3 | 0.0716 |\n| 4 | 0.1304 |\n\n$P(X < 5) = 0.2374$, so $P(X \\geq 5) = 1 - 0.2374 = \\mathbf{0.7626}$.",
+      "options": [
+        "$0.2374$",
+        "$0.5000$",
+        "$0.6500$",
+        "$0.7626$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A cloud server has a 0.99 probability of being available during any given hour. Over a **24-hour period**, what is the probability that the server is available for **all 24 hours**?",
+      "explanation": "Given $n = 24$, $p = 0.99$, $x = 24$:\n$$P(X = 24) = \\binom{24}{24}(0.99)^{24}(0.01)^0 = (0.99)^{24} = 0.7857$$\nThe probability of 100% uptime is approximately **78.57%**.",
+      "options": [
+        "$0.7857$",
+        "$0.9900$",
+        "$0.9976$",
+        "$0.5000$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "An email spam filter correctly identifies spam with **95% accuracy**. If 12 spam emails arrive, what is the probability that the filter correctly identifies **at least 10** of them?",
+      "explanation": "$P(X \\geq 10) = P(X=10) + P(X=11) + P(X=12)$\n\n| $x$ | $P(X=x)$ |\n|-----|----------|\n| 10 | $\\binom{12}{10}(0.95)^{10}(0.05)^2 = 0.0988$ |\n| 11 | $\\binom{12}{11}(0.95)^{11}(0.05)^1 = 0.3413$ |\n| 12 | $\\binom{12}{12}(0.95)^{12}(0.05)^0 = 0.5404$ |\n\n$$P(X \\geq 10) = 0.0988 + 0.3413 + 0.5404 = \\mathbf{0.9805}$$",
+      "options": [
+        "$0.8816$",
+        "$0.9405$",
+        "$0.9805$",
+        "$0.5404$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A system allows 8 login attempts, each with a **0.15 probability** of being a brute-force attack. What is the probability that **exactly 2** attempts are attacks?",
+      "explanation": "Given $n = 8$, $p = 0.15$, $x = 2$:\n$$P(X = 2) = \\binom{8}{2}(0.15)^2(0.85)^6 = 28 \\times 0.0225 \\times 0.3771 = 0.2376$$\nThe probability is **23.76%**.",
+      "options": [
+        "$0.1572$",
+        "$0.2376$",
+        "$0.3085$",
+        "$0.0490$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A distributed database processes 50 queries, each with a **0.98 probability** of successful execution. What is the **expected number** of successful queries and the probability that **all 50 succeed**?\n\nSelect the option that correctly states both values.",
+      "explanation": "**Expected value:** $E(X) = np = 50 \\times 0.98 = 49$\n\n**All 50 succeed:**\n$$P(X = 50) = \\binom{50}{50}(0.98)^{50}(0.02)^0 = (0.98)^{50} = 0.3642$$\nSo the expected successes = **49** and $P(\\text{all succeed}) \\approx$ **36.42%**.",
+      "options": [
+        "Expected = 49; $P(X=50) = 0.3642$",
+        "Expected = 48; $P(X=50) = 0.3642$",
+        "Expected = 49; $P(X=50) = 0.9800$",
+        "Expected = 50; $P(X=50) = 0.9800$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A mobile device attempts to connect to Wi-Fi **10 times**, each with a **0.70 probability** of success. What is the probability of **fewer than 6** successful connections?\n\nHint: $P(X < 6) = P(X \\leq 5) = \\sum_{x=0}^{5} \\binom{10}{x}(0.70)^x(0.30)^{10-x}$",
+      "explanation": "Computing $P(X \\leq 5)$:\n\n| $x$ | $P(X=x)$ |\n|-----|----------|\n| 0 | $0.0000059$ |\n| 1 | $0.000138$ |\n| 2 | $0.00145$ |\n| 3 | $0.00900$ |\n| 4 | $0.03675$ |\n| 5 | $0.10292$ |\n\n$$P(X \\leq 5) = 0.15027 \\approx \\mathbf{0.1503}$$",
+      "options": [
+        "$0.3669$",
+        "$0.2503$",
+        "$0.0328$",
+        "$0.1503$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A mobile app makes **25 API calls**, each with a **0.96 probability** of success. What is the probability that **at most 2 calls fail** (i.e., at least 23 succeed)?",
+      "explanation": "$P(X \\geq 23) = P(X=23)+P(X=24)+P(X=25)$:\n\n| $x$ | Calculation | Result |\n|-----|-------------|--------|\n| 23 | $\\binom{25}{23}(0.96)^{23}(0.04)^2$ | $0.1808$ |\n| 24 | $\\binom{25}{24}(0.96)^{24}(0.04)^1$ | $0.3610$ |\n| 25 | $\\binom{25}{25}(0.96)^{25}(0.04)^0$ | $0.3465$ |\n\n$$P(X \\geq 23) = 0.1808 + 0.3610 + 0.3465 = \\mathbf{0.8883}$$",
+      "options": [
+        "$0.6405$",
+        "$0.7273$",
+        "$0.8883$",
+        "$0.9500$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A packet-switched network link has a capacity of **1 Mbps**. There are 35 users, each requiring **100 kbps** when active. Users are active only **10%** of the time. What is the probability that **more than 10 users** are simultaneously active (exceeding capacity)?",
+      "explanation": "Given $n = 35$, $p = 0.10$. Network capacity is exceeded when more than 10 users are active simultaneously.\n\n$$P(X > 10) = 1 - P(X \\leq 10)$$\n\nUsing the binomial CDF: $P(X \\leq 10) = 0.9996$\n\n$$P(X > 10) = 1 - 0.9996 = \\mathbf{0.0004}$$\n\nThis demonstrates that packet switching efficiently supports more users than circuit switching.",
+      "options": [
+        "$0.0004$",
+        "$0.0040$",
+        "$0.0400$",
+        "$0.4000$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A DevOps team deploys code to **18 microservices**, each with a **0.88 probability** of success. Which of the following correctly states the **mean** and **standard deviation** of successful deployments?\n\nUse: $\\mu = np$ and $\\sigma = \\sqrt{npq}$",
+      "explanation": "Given $n=18$, $p=0.88$, $q=0.12$:\n\n$$\\mu = np = 18 \\times 0.88 = 15.84$$\n\n$$\\sigma = \\sqrt{npq} = \\sqrt{18 \\times 0.88 \\times 0.12} = \\sqrt{1.901} = 1.379$$",
+      "options": [
+        "$\\mu = 15.84,\\ \\sigma = 1.901$",
+        "$\\mu = 15.84,\\ \\sigma = 1.379$",
+        "$\\mu = 16.00,\\ \\sigma = 1.379$",
+        "$\\mu = 15.84,\\ \\sigma = 1.095$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Continuing from the previous problem ($n=18$, $p=0.88$): What is the probability that **exactly 16 deployments** succeed?",
+      "explanation": "Given $n = 18$, $p = 0.88$, $x = 16$:\n$$P(X = 16) = \\binom{18}{16}(0.88)^{16}(0.12)^2 = 153 \\times 0.1615 \\times 0.0144 = \\mathbf{0.3559}$$\nThe probability is **35.59%**.",
+      "options": [
+        "$0.1615$",
+        "$0.2241$",
+        "$0.2800$",
+        "$0.3559$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A web server receives an average of **12 requests per second**. Assuming a Poisson distribution, what is the probability that **exactly 10 requests** arrive in a given second?\n\nUse: $P(X = x) = \\dfrac{\\lambda^x e^{-\\lambda}}{x!}$",
+      "explanation": "Given $\\lambda = 12$, $x = 10$:\n$$P(X = 10) = \\frac{12^{10} \\cdot e^{-12}}{10!} = \\frac{61917364224 \\times 0.000006144}{3628800} = \\mathbf{0.1048}$$\nThe probability is approximately **10.48%**.",
+      "options": [
+        "$0.1048$",
+        "$0.0948$",
+        "$0.1200$",
+        "$0.0833$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A data center experiences an average of **3 hardware failures per month**. What is the probability that **no failures** occur in a given month?",
+      "explanation": "Given $\\lambda = 3$, $x = 0$:\n$$P(X = 0) = \\frac{3^0 \\cdot e^{-3}}{0!} = e^{-3} = 0.04979 \\approx \\mathbf{0.0498}$$\nThe probability of zero failures is approximately **4.98%**.",
+      "options": [
+        "$0.1494$",
+        "$0.2240$",
+        "$0.0498$",
+        "$0.3333$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A data center experiences an average of **3 hardware failures per month**. What is the probability of **more than 5 failures** in a given month?\n\nHint: $P(X > 5) = 1 - P(X \\leq 5)$",
+      "explanation": "Computing $P(X \\leq 5)$ with $\\lambda = 3$:\n\n| $x$ | $P(X=x)$ |\n|-----|----------|\n| 0 | 0.0498 |\n| 1 | 0.1494 |\n| 2 | 0.2240 |\n| 3 | 0.2240 |\n| 4 | 0.1680 |\n| 5 | 0.1008 |\n\n$P(X \\leq 5) = 0.9160$\n$$P(X > 5) = 1 - 0.9160 = \\mathbf{0.0840}$$",
+      "options": [
+        "$0.0160$",
+        "$0.0840$",
+        "$0.1680$",
+        "$0.9160$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A cybersecurity system detects an average of **8 suspicious activities per hour**. What is the probability of detecting **exactly 5** suspicious activities in a given hour?",
+      "explanation": "Given $\\lambda = 8$, $x = 5$:\n$$P(X = 5) = \\frac{8^5 \\cdot e^{-8}}{5!} = \\frac{32768 \\times 0.000335}{120} = \\mathbf{0.0916}$$\nThe probability is **9.16%**.",
+      "options": [
+        "$0.1396$",
+        "$0.1221$",
+        "$0.0653$",
+        "$0.0916$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Connection requests arrive at a database pool at an average rate of **20 per minute**. What is the probability that **exactly 18 connection requests** arrive in a given minute?",
+      "explanation": "Given $\\lambda = 20$, $x = 18$:\n$$P(X = 18) = \\frac{20^{18} \\cdot e^{-20}}{18!} = \\frac{1.048576 \\times 10^{23} \\times 2.061 \\times 10^{-9}}{6.402 \\times 10^{15}} = \\mathbf{0.0844}$$\nThe probability is approximately **8.44%**.",
+      "options": [
+        "$0.0844$",
+        "$0.0500$",
+        "$0.1000$",
+        "$0.0444$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A corporate email server receives **150 emails per hour**. What is the **expected number of emails** in a **20-minute** window, and what is the probability of receiving **exactly 45 emails** in that window?\n\nSelect the option that correctly states both values.",
+      "explanation": "**Expected emails in 20 min:**\n$$\\lambda = 150 \\times \\frac{20}{60} = 50 \\text{ emails}$$\n\n**Probability of exactly 45 emails** (using logarithms for large $\\lambda$):\n$$\\ln P(X=45) = 45\\ln(50) - 50 - \\ln(45!)$$\n$$P(X = 45) = \\mathbf{0.0483}$$\nProbability ≈ **4.83%**.",
+      "options": [
+        "Expected = 45; $P(X=45) = 0.0600$",
+        "Expected = 50; $P(X=45) = 0.0600$",
+        "Expected = 50; $P(X=45) = 0.0483$",
+        "Expected = 45; $P(X=45) = 0.0483$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A software project receives an average of **4.5 bug reports per week**. What is the probability of receiving **exactly 6 bug reports** next week?",
+      "explanation": "Given $\\lambda = 4.5$, $x = 6$:\n$$P(X = 6) = \\frac{4.5^6 \\cdot e^{-4.5}}{6!} = \\frac{8303.77 \\times 0.01111}{720} = \\mathbf{0.1281}$$\nThe probability is **12.81%**.",
+      "options": [
+        "$0.1574$",
+        "$0.1281$",
+        "$0.0500$",
+        "$0.0111$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A software project receives an average of **4.5 bug reports per week**. What is the probability of **fewer than 3 bug reports**?\n\nHint: $P(X < 3) = P(X=0) + P(X=1) + P(X=2)$",
+      "explanation": "Given $\\lambda = 4.5$:\n\n| $x$ | $P(X=x)$ |\n|-----|----------|\n| 0 | $e^{-4.5} = 0.01111$ |\n| 1 | $\\frac{4.5 \\cdot e^{-4.5}}{1!} = 0.04999$ |\n| 2 | $\\frac{4.5^2 \\cdot e^{-4.5}}{2!} = 0.11248$ |\n\n$$P(X < 3) = 0.01111 + 0.04999 + 0.11248 = \\mathbf{0.1736}$$",
+      "options": [
+        "$0.1736$",
+        "$0.0611$",
+        "$0.2500$",
+        "$0.3000$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "An API endpoint averages **2.5 requests per minute** during off-peak hours. What is the probability of **zero requests** in a given minute?",
+      "explanation": "Given $\\lambda = 2.5$, $x = 0$:\n$$P(X = 0) = \\frac{2.5^0 \\cdot e^{-2.5}}{0!} = e^{-2.5} = \\mathbf{0.0821}$$\nThe probability of zero requests is **8.21%**.",
+      "options": [
+        "$0.1353$",
+        "$0.2500$",
+        "$0.0500$",
+        "$0.0821$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A storage system performs an average of **180 I/O operations per minute**. Using the **normal approximation**, what is the probability of **exactly 200 I/O operations** occurring in a minute?\n\nUse continuity correction: $P(X=200) \\approx P(199.5 < X < 200.5)$",
+      "explanation": "Given $\\lambda = 180$, using normal approximation:\n- $\\mu = 180$, $\\sigma = \\sqrt{180} = 13.416$\n\nWith continuity correction:\n$$z_1 = \\frac{199.5 - 180}{13.416} = 1.454, \\quad z_2 = \\frac{200.5 - 180}{13.416} = 1.528$$\n\n$$P(X=200) \\approx \\Phi(1.528) - \\Phi(1.454) \\approx \\mathbf{0.0166}$$",
+      "options": [
+        "$0.0500$",
+        "$0.0250$",
+        "$0.0166$",
+        "$0.0083$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A storage system performs **180 I/O operations per minute** on average. Using the normal approximation, what is the probability of **at least 190 operations**?\n\nUse continuity correction: $P(X \\geq 190) \\approx P\\left(Z > \\frac{189.5 - 180}{\\sqrt{180}}\\right)$",
+      "explanation": "Given $\\lambda = 180$, $\\sigma = \\sqrt{180} = 13.416$:\n\n$$z = \\frac{190 - 180}{13.416} = 0.745$$\n\nWith continuity correction at 189.5:\n$$z = \\frac{189.5 - 180}{13.416} = 0.708$$\n\n$$P(X \\geq 190) \\approx 1 - \\Phi(0.708) = 1 - 0.7605 = \\mathbf{0.2395}$$",
+      "options": [
+        "$0.7605$",
+        "$0.2395$",
+        "$0.5000$",
+        "$0.1587$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A network monitoring system detects an average of **6 anomalies per day**. What is the probability of detecting **exactly 4 anomalies** tomorrow?",
+      "explanation": "Given $\\lambda = 6$, $x = 4$:\n$$P(X = 4) = \\frac{6^4 \\cdot e^{-6}}{4!} = \\frac{1296 \\times 0.002479}{24} = \\mathbf{0.1339}$$\nThe probability is **13.39%**.",
+      "options": [
+        "$0.1339$",
+        "$0.1606$",
+        "$0.0892$",
+        "$0.2500$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "A network monitoring system detects an average of **6 anomalies per day**. Management sets an alert threshold at **8 or more** anomalies. What is the probability the alert is triggered on a given day?\n\nHint: $P(X \\geq 8) = 1 - P(X \\leq 7)$",
+      "explanation": "Given $\\lambda = 6$:\n$$P(X \\leq 7) = \\sum_{x=0}^{7} \\frac{6^x e^{-6}}{x!} = 0.7440$$\n\n$$P(X \\geq 8) = 1 - 0.7440 = \\mathbf{0.2560}$$\nThe alert is triggered with probability **25.60%**.",
+      "options": [
+        "$0.7440$",
+        "$0.1390$",
+        "$0.2560$",
+        "$0.3270$"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "A network monitoring system detects an average of **6 anomalies per day**, following a Poisson process. What is the **expected number of anomalies** over a **5-day period**?",
+      "explanation": "For a Poisson process, the rate scales linearly with time:\n$$\\lambda_{5\\text{ days}} = 6 \\times 5 = \\mathbf{30} \\text{ anomalies}$$\nThis follows directly from the additive property of the Poisson distribution: if $X_i \\sim \\text{Poisson}(\\lambda)$ independently, then $\\sum_{i=1}^{n} X_i \\sim \\text{Poisson}(n\\lambda)$.",
+      "options": [
+        "6",
+        "30",
+        "36",
+        "25"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "A web server receives **1000 queries per day** on average. The operations team wants **95% confidence** the server can meet demand. What minimum capacity (number of queries) should the server be designed to handle?\n\n*(Find $k$ such that $P(X \\leq k) \\geq 0.95$)*",
+      "explanation": "For a Poisson distribution with large $\\lambda$, the normal approximation can also be used:\n$$z_{0.95} = 1.645 \\Rightarrow k \\approx \\mu + z \\cdot \\sigma = 1000 + 1.645\\sqrt{1000} \\approx 1052$$\nBoth exact and approximate methods yield $k = 1052$, providing **52 queries of excess capacity** to ensure 95% reliability.",
+      "answer": "Using the Poisson cumulative distribution with $\\lambda = 1000$:\n\n$$P(X \\leq 1051) = 0.9483 < 0.95$$\n$$P(X \\leq 1052) = 0.9507 > 0.95$$\n\nTherefore $k = \\mathbf{1052}$ queries.\n\nExcess capacity needed: $1052 - 1000 = 52$ queries."
+    }
+  ]
+}

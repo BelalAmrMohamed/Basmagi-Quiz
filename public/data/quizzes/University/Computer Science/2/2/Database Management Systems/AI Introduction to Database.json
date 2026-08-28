@@ -1,0 +1,126 @@
+{
+  "meta": {
+    "title": "AI Introduction To Database",
+    "id": "HC4RZL7I",
+    "createdAt": "2026-03-01 - 20:37",
+    "path": "quizzes/University/Computer Science/2/2/Database Management Systems/AI Introduction to Database.json"
+  },
+  "stats": {
+    "questionCount": 12,
+    "questionTypes": [
+      "Essay",
+      "MCQ",
+      "True/False"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is a Database?",
+      "explanation": "Databases are designed to store and manage information efficiently.",
+      "options": [
+        "A type of computer mouse",
+        "A structured collection of data",
+        "A social media post",
+        "A computer screen"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Which language is used to 'talk' to most databases?",
+      "explanation": "SQL (Structured Query Language) is the standard for managing relational databases.",
+      "options": [
+        "Python",
+        "SQL",
+        "Java",
+        "HTML"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "In a database table, what do 'Rows' usually represent?",
+      "explanation": "Each row is an individual entry or 'record' in the database.",
+      "options": [
+        "Categories",
+        "A single record (like one student)",
+        "The name of the table",
+        "The color of the app"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is a 'Primary Key'?",
+      "explanation": "A Primary Key (like a National ID) ensures no two records are exactly the same.",
+      "options": [
+        "A password to the building",
+        "A unique identifier for a record",
+        "The 'Enter' key on the keyboard",
+        "A hidden file"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What does DBMS stand for?",
+      "explanation": "The DBMS is the software (like MySQL or Oracle) that runs the database.",
+      "options": [
+        "Data Book Management System",
+        "Database Management System",
+        "Digital Binary Math System",
+        "Direct Base Main Software"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: An Excel spreadsheet is exactly the same thing as a professional Database System.",
+      "explanation": "While they both store data, Databases are much more powerful for large-scale, multi-user apps.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "True or False: Databases allow you to search for specific information very quickly.",
+      "explanation": "Speed of retrieval is a major benefit of using a database.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: If you delete a database, the information is usually gone forever if you have no backup.",
+      "explanation": "Data permanence is a key concept; always keep backups!",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: 'Redundancy' in a database means having the same data repeated unnecessarily.",
+      "explanation": "Databases are designed to reduce redundancy to save space and avoid errors.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "True or False: Only big companies like Google use databases.",
+      "explanation": "Almost every app or website you use has a database behind it.",
+      "options": [
+        "True",
+        "False"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is one advantage of using a database over a paper filing system?",
+      "answer": "Databases are much faster to search, take up no physical space, and can be accessed by many people at once."
+    },
+    {
+      "q": "Explain what 'Structured Data' means.",
+      "answer": "Structured data is information organized into a fixed format, like tables with clearly defined columns and rows."
+    }
+  ]
+}

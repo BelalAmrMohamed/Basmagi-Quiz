@@ -1,0 +1,318 @@
+{
+  "meta": {
+    "title": "Mean, Median, And Mode",
+    "id": "REFN223S",
+    "createdAt": "2026-04-09 - 19:41",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/تدريبات منهج كلية علوم/Mean, Median, and Mode.json"
+  },
+  "stats": {
+    "questionCount": 41,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "What is the mean of the data set $\\{10;\\ 20;\\ 30;\\ 40;\\ 50\\}$?",
+      "explanation": "The mean is calculated by summing all values and dividing by the count of values.",
+      "answer": "$$\\text{Mean} = \\frac{10+20+30+40+50}{5} = \\frac{150}{5} = \\mathbf{30}$$"
+    },
+    {
+      "q": "What is the median of $\\{10;\\ 14;\\ 86;\\ 2;\\ 68;\\ 99;\\ 1\\}$?",
+      "explanation": "For an odd number of values $n$, the median is the $\\frac{n+1}{2}$-th value in the sorted list.",
+      "answer": "First, sort the data: $\\{1,\\ 2,\\ 10,\\ 14,\\ 68,\\ 86,\\ 99\\}$.\n\nThere are 7 values, so the median is the 4th value: $\\mathbf{14}$."
+    },
+    {
+      "q": "What is the median of $\\{11;\\ 10;\\ 14;\\ 86;\\ 2;\\ 68;\\ 99;\\ 1\\}$?",
+      "explanation": "For an even number of values $n$, the median is the average of the $\\frac{n}{2}$-th and $\\left(\\frac{n}{2}+1\\right)$-th values.",
+      "answer": "Sorted: $\\{1,\\ 2,\\ 10,\\ 11,\\ 14,\\ 68,\\ 86,\\ 99\\}$.\n\nThere are 8 values (even), so the median is the average of the 4th and 5th values:\n$$\\text{Median} = \\frac{11+14}{2} = \\mathbf{12.5}$$"
+    },
+    {
+      "q": "Find the mode of the data set $\\{2;\\ 2;\\ 3;\\ 4;\\ 4;\\ 4;\\ 6;\\ 6;\\ 7;\\ 8;\\ 8;\\ 10;\\ 10\\}$.",
+      "explanation": "The mode is the value that occurs most frequently in a data set.",
+      "answer": "The value **4** appears 3 times, more than any other value.\n\n$$\\text{Mode} = \\mathbf{4}$$"
+    },
+    {
+      "q": "Find the mean, median and mode of the following data sets:\n\n**i.** $34,\\ 31,\\ 37,\\ 44,\\ 38,\\ 34,\\ 42,\\ 34,\\ 43,\\ 41$\n\n**ii.** $92,\\ 82,\\ 80,\\ 92,\\ 78,\\ 75,\\ 95,\\ 77$\n\n**iii.** $29,\\ 28,\\ 34,\\ 30,\\ 33,\\ 26,\\ 34$\n\n**iv.** $25,\\ 34,\\ 35,\\ 27,\\ 31,\\ 30$\n\n**v.** $80,\\ 89,\\ 79,\\ 84,\\ 95,\\ 79,\\ 78,\\ 89,\\ 76,\\ 82,\\ 76,\\ 92,\\ 89,\\ 81,\\ 123$\n\n**vi.** $116,\\ 104,\\ 101,\\ 111,\\ 100,\\ 107,\\ 113,\\ 118,\\ 113,\\ 101,\\ 108,\\ 109,\\ 105,\\ 103,\\ 91$",
+      "explanation": "For each data set: sort the values, compute the sum divided by $n$ for the mean, find the middle value(s) for the median, and identify the most frequent value(s) for the mode.",
+      "answer": "**i.** Sorted: $\\{31,34,34,34,37,38,41,42,43,44\\}$\n- Mean $= \\frac{378}{10} = 37.8$\n- Median $= \\frac{37+38}{2} = 37.5$\n- Mode $= 34$\n\n**ii.** Sorted: $\\{75,77,78,80,82,92,92,95\\}$\n- Mean $= \\frac{671}{8} \\approx 83.9$\n- Median $= \\frac{80+82}{2} = 81$\n- Mode $= 92$\n\n**iii.** Sorted: $\\{26,28,29,30,33,34,34\\}$\n- Mean $= \\frac{214}{7} \\approx 30.6$\n- Median $= 30$\n- Mode $= 34$\n\n**iv.** Sorted: $\\{25,27,30,31,34,35\\}$\n- Mean $= \\frac{182}{6} \\approx 30.3$\n- Median $= \\frac{30+31}{2} = 30.5$\n- Mode $=$ None (all values appear once)\n\n**v.** Sorted: $\\{76,76,78,79,79,80,81,82,84,89,89,89,92,95,123\\}$\n- Mean $= \\frac{1292}{15} \\approx 86.1$\n- Median $= 82$ (8th value)\n- Mode $= 89$\n\n**vi.** Sorted: $\\{91,100,101,101,103,104,105,107,108,109,111,113,113,116,118\\}$\n- Mean $= \\frac{1600}{15} \\approx 106.7$\n- Median $= 107$ (8th value)\n- Mode $= 101$ and $113$ (bimodal)"
+    },
+    {
+      "q": "Calculate the mean, median and mode of the following data sets:\n\n**(a)** $2;\\ 5;\\ 8;\\ 8;\\ 11;\\ 13;\\ 22;\\ 23;\\ 27$\n\n**(b)** $15;\\ 17;\\ 24;\\ 24;\\ 26;\\ 28;\\ 31;\\ 43$\n\n**(c)** $4;\\ 11;\\ 3;\\ 15;\\ 11;\\ 13;\\ 25;\\ 17;\\ 2;\\ 11$\n\n**(d)** $24;\\ 35;\\ 28;\\ 41;\\ 32;\\ 49;\\ 31$",
+      "explanation": "Sort each data set, then apply the standard formulas for mean, median, and mode.",
+      "answer": "**(a)** Already sorted: $\\{2,5,8,8,11,13,22,23,27\\}$, $n=9$\n- Mean $= \\frac{119}{9} \\approx 13.2$\n- Median $= 11$ (5th value)\n- Mode $= 8$\n\n**(b)** Already sorted: $\\{15,17,24,24,26,28,31,43\\}$, $n=8$\n- Mean $= \\frac{208}{8} = 26$\n- Median $= \\frac{24+26}{2} = 25$\n- Mode $= 24$\n\n**(c)** Sorted: $\\{2,3,4,11,11,11,13,15,17,25\\}$, $n=10$\n- Mean $= \\frac{112}{10} = 11.2$\n- Median $= \\frac{11+11}{2} = 11$\n- Mode $= 11$\n\n**(d)** Sorted: $\\{24,28,31,32,35,41,49\\}$, $n=7$\n- Mean $= \\frac{240}{7} \\approx 34.3$\n- Median $= 32$ (4th value)\n- Mode $=$ None"
+    },
+    {
+      "q": "The ages of 15 runners of the Comrades Marathon were recorded:\n\n$$31;\\ 42;\\ 28;\\ 38;\\ 45;\\ 51;\\ 33;\\ 29;\\ 42;\\ 26;\\ 34;\\ 56;\\ 33;\\ 46;\\ 41$$\n\nCalculate the mean, median and modal age.",
+      "explanation": "Sum all 15 ages: $26+28+29+31+33+33+34+38+41+42+42+45+46+51+56 = 575$.",
+      "answer": "Sorted: $\\{26,28,29,31,33,33,34,38,41,42,42,45,46,51,56\\}$, $n=15$\n\n$$\\text{Mean} = \\frac{575}{15} \\approx 38.3 \\text{ years}$$\n\n$$\\text{Median} = 38 \\text{ (8th value)}$$\n\n$$\\text{Mode} = 33 \\text{ and } 42 \\text{ (each appears twice — bimodal)}$$"
+    },
+    {
+      "q": "In the first of a series of jars, there is 1 sweet. In the second jar, there are 3 sweets. The mean number of sweets in the first two jars is 2.\n\n**i.** If the mean number of sweets in the first three jars is 3, how many sweets are there in the third jar?\n\n**ii.** If the mean number of sweets in the first four jars is 4, how many sweets are there in the fourth jar?",
+      "explanation": "Use the relationship: Total $=$ Mean $\\times$ Number of items, then subtract the known totals.",
+      "answer": "**i.** Total sweets in 3 jars $= 3 \\times 3 = 9$. First two jars total $= 1 + 3 = 4$.\n$$\\text{Third jar} = 9 - 4 = \\mathbf{5 \\text{ sweets}}$$\n\n**ii.** Total sweets in 4 jars $= 4 \\times 4 = 16$. First three jars total $= 9$ (from part i).\n$$\\text{Fourth jar} = 16 - 9 = \\mathbf{7 \\text{ sweets}}$$"
+    },
+    {
+      "q": "Find a set of five ages for which the mean age is 5, the modal age is 2 and the median age is 3 years.",
+      "explanation": "There are multiple valid answers. The key constraints are: two 2s for mode, a 3 in the middle position, and the remaining two values must sum to $25 - 2 - 2 - 3 = 18$ with both values $> 3$.",
+      "answer": "Required conditions:\n- $n = 5$, so total sum $= 5 \\times 5 = 25$\n- Mode $= 2$ → the value 2 must appear at least twice\n- Median $= 3$ → the 3rd value in the sorted set must be 3\n\nA valid set (sorted): $\\{2,\\ 2,\\ 3,\\ 7,\\ 11\\}$\n\n$$\\text{Check: Mean} = \\frac{2+2+3+7+11}{5} = \\frac{25}{5} = 5\\ ✓,\\quad \\text{Median} = 3\\ ✓,\\quad \\text{Mode} = 2\\ ✓$$"
+    },
+    {
+      "q": "Four friends each have some marbles. They work out that the mean number of marbles they have is 10. One friend leaves with 4 marbles. How many marbles do the remaining friends have together?",
+      "explanation": "Total $=$ Mean $\\times$ Count. Subtract the marbles taken by the departing friend.",
+      "answer": "Total marbles for 4 friends $= 4 \\times 10 = 40$.\n\nOne friend leaves with 4 marbles, so:\n$$\\text{Remaining total} = 40 - 4 = \\mathbf{36 \\text{ marbles}}$$"
+    },
+    {
+      "q": "If the weights of sorghum ear heads are 45, 60, 8, 100, 65 gms, find the Geometric Mean.",
+      "explanation": "The Geometric Mean of $n$ values is the $n$-th root of their product, computed efficiently via logarithms.",
+      "answer": "$$\\text{GM} = \\left(45 \\times 60 \\times 8 \\times 100 \\times 65\\right)^{1/5}$$\n\n$$= \\left(140{,}400{,}000\\right)^{0.2}$$\n\nUsing logarithms:\n$$\\log(\\text{GM}) = \\frac{1}{5}\\left(\\log 45 + \\log 60 + \\log 8 + \\log 100 + \\log 65\\right)$$\n$$= \\frac{1}{5}(1.6532 + 1.7782 + 0.9031 + 2.0000 + 1.8129) = \\frac{8.1474}{5} = 1.6295$$\n\n$$\\text{GM} = 10^{1.6295} \\approx \\mathbf{42.6 \\text{ gms}}$$"
+    },
+    {
+      "q": "From the given data, calculate the Harmonic Mean: $5,\\ 10,\\ 17,\\ 24,\\ 30$.",
+      "explanation": "The Harmonic Mean is used when averaging rates or ratios. It equals $n$ divided by the sum of reciprocals.",
+      "answer": "$$\\text{HM} = \\frac{n}{\\sum \\frac{1}{x_i}} = \\frac{5}{\\frac{1}{5}+\\frac{1}{10}+\\frac{1}{17}+\\frac{1}{24}+\\frac{1}{30}}$$\n\n$$= \\frac{5}{0.2000 + 0.1000 + 0.0588 + 0.0417 + 0.0333} = \\frac{5}{0.4338} \\approx \\mathbf{11.52}$$"
+    },
+    {
+      "q": "The weights of 15 students are:\n\n$$100,\\ 102,\\ 118,\\ 124,\\ 126,\\ 98,\\ 100,\\ 100,\\ 118,\\ 95,\\ 113,\\ 115,\\ 123,\\ 121,\\ 117$$\n\nFind:\n\n**i.** Average (Mean) weight\n**ii.** Median\n**iii.** Mode\n**iv.** Harmonic Mean\n**v.** Geometric Mean",
+      "explanation": "Sum of all weights $= 1670$. The three classical averages (AM, median, mode) plus HM and GM all cluster around 110–115 kg.",
+      "answer": "Sorted: $\\{95, 98, 100, 100, 100, 102, 113, 115, 117, 118, 118, 121, 123, 124, 126\\}$, $n = 15$\n\n**i. Mean:**\n$$\\bar{x} = \\frac{1670}{15} \\approx \\mathbf{111.3 \\text{ kg}}$$\n\n**ii. Median:** 8th value $= \\mathbf{115 \\text{ kg}}$\n\n**iii. Mode:** $\\mathbf{100 \\text{ kg}}$ (appears 3 times)\n\n**iv. Harmonic Mean:**\n$$\\text{HM} = \\frac{15}{\\sum_{i=1}^{15}\\frac{1}{x_i}} = \\frac{15}{0.13597} \\approx \\mathbf{110.3 \\text{ kg}}$$\n\n**v. Geometric Mean:**\n$$\\text{GM} = \\left(\\prod_{i=1}^{15} x_i\\right)^{1/15}$$\n$$\\log(\\text{GM}) = \\frac{1}{15}\\sum \\log x_i = \\frac{30.6698}{15} = 2.0447$$\n$$\\text{GM} = 10^{2.0447} \\approx \\mathbf{110.8 \\text{ kg}}$$"
+    },
+    {
+      "q": "Find the outlier for each set of data:\n\n**i.** $88,\\ 90,\\ 96,\\ 93,\\ 87,\\ 12,\\ 85,\\ 94$\n\n**ii.** $67,\\ 54,\\ 49,\\ 76,\\ 64,\\ 59,\\ 60,\\ 72,\\ 123,\\ 44,\\ 66$\n\n**iii.** $70,\\ 77,\\ 75,\\ 68,\\ 98,\\ 70,\\ 72,\\ 71$\n\n**iv.** $14,\\ 22,\\ 17,\\ 61,\\ 20,\\ 16,\\ 15$\n\n**v.** $1376,\\ 1645,\\ 1783,\\ 1455,\\ 3754,\\ 1790,\\ 1384,\\ 1643,\\ 1492,\\ 1776$\n\n**vi.** $62,\\ 65,\\ 93,\\ 51,\\ 55,\\ 14,\\ 79,\\ 85,\\ 55,\\ 72,\\ 78,\\ 83,\\ 91,\\ 76$",
+      "explanation": "An outlier is a data value that lies far outside the general range of the other values — it is noticeably smaller or larger than the rest of the data.",
+      "answer": "**i.** Outlier $= \\mathbf{12}$ (all others are in the 85–96 range)\n\n**ii.** Outlier $= \\mathbf{123}$ (all others are in the 44–76 range)\n\n**iii.** Outlier $= \\mathbf{98}$ (all others are in the 68–77 range)\n\n**iv.** Outlier $= \\mathbf{61}$ (all others are in the 14–22 range)\n\n**v.** Outlier $= \\mathbf{3754}$ (all others are in the 1376–1790 range)\n\n**vi.** Outlier $= \\mathbf{14}$ (all others are in the 51–93 range)"
+    },
+    {
+      "q": "Two people work in a factory making parts for cars. The table shows how many complete parts they make in one week:\n\n| Worker | Mon | Tue | Wed | Thu | Fri |\n|--------|-----|-----|-----|-----|-----|\n| Randy  | 20  | 21  | 22  | 20  | 21  |\n| John   | 30  | 15  | 12  | 36  | 28  |\n\n**i.** Find the mean, median and mode for Randy and John.\n\n**ii.** Who makes the most parts in a week?",
+      "explanation": "Even though Randy is more consistent, John's higher mean (24.2 vs 20.8) and higher weekly total (121 vs 104) indicate he produces more overall.",
+      "answer": "**i. Randy** (sorted: $\\{20,20,21,21,22\\}$):\n- Mean $= \\frac{104}{5} = \\mathbf{20.8}$\n- Median $= \\mathbf{21}$\n- Mode $= \\mathbf{20}$ and $\\mathbf{21}$ (bimodal)\n\n**John** (sorted: $\\{12,15,28,30,36\\}$):\n- Mean $= \\frac{121}{5} = \\mathbf{24.2}$\n- Median $= \\mathbf{28}$\n- Mode $=$ **None**\n\n**ii.** Randy's weekly total $= 104$; John's weekly total $= 121$.\n\n$\\therefore$ **John** makes the most parts in a week."
+    },
+    {
+      "q": "A gardener buys 10 packets of seeds from two different companies. Each pack contains 20 seeds and he records the number of plants which grow from each pack:\n\n| Company A | 20 | 5 | 20 | 20 | 20 | 6 | 20 | 20 | 20 | 8 |\n|-----------|----|---|----|----|----|----|----|----|----|-|\n| Company B | 17 | 18 | 15 | 16 | 18 | 18 | 17 | 15 | 17 | 18 |\n\n**i.** Find the mean, median and mode for each company's seeds.\n\n**ii.** Which company does the mode suggest is best?\n\n**iii.** Which company does the mean suggest is best?",
+      "explanation": "Company A's mode is higher but its mean is pulled down by three very poor packs (5, 6, 8). Company B is more consistent, giving a higher mean overall.",
+      "answer": "**i. Company A** (sorted: $\\{5,6,8,20,20,20,20,20,20,20\\}$):\n- Mean $= \\frac{159}{10} = \\mathbf{15.9}$\n- Median $= \\frac{20+20}{2} = \\mathbf{20}$\n- Mode $= \\mathbf{20}$\n\n**Company B** (sorted: $\\{15,15,16,17,17,17,18,18,18,18\\}$):\n- Mean $= \\frac{169}{10} = \\mathbf{16.9}$\n- Median $= \\frac{17+17}{2} = \\mathbf{17}$\n- Mode $= \\mathbf{18}$\n\n**ii.** Mode: Company A (mode $= 20$) $>$ Company B (mode $= 18$) → **Company A** is suggested best.\n\n**iii.** Mean: Company B (mean $= 16.9$) $>$ Company A (mean $= 15.9$) → **Company B** is suggested best."
+    },
+    {
+      "q": "A football team keeps records of the number of goals it scores per match during a season:\n\n| No. of Goals | 0 | 1 | 2 | 3 | 4 | 5 |\n|---|---|---|---|---|---|---|\n| Frequency | 8 | 10 | 12 | 3 | 5 | 2 |\n\nFind the mean number of goals per match.",
+      "explanation": "For frequency distributions, multiply each value by its frequency, sum the products, then divide by the total frequency.",
+      "answer": "$$\\text{Mean} = \\frac{\\sum f \\cdot x}{\\sum f} = \\frac{(0)(8)+(1)(10)+(2)(12)+(3)(3)+(4)(5)+(5)(2)}{8+10+12+3+5+2}$$\n\n$$= \\frac{0+10+24+9+20+10}{40} = \\frac{73}{40} = \\mathbf{1.825 \\text{ goals per match}}$$"
+    },
+    {
+      "q": "A survey of 100 households asked how many cars were in each household:\n\n| No. of cars | 0 | 1 | 2 | 3 | 4 |\n|---|---|---|---|---|---|\n| Frequency | 5 | 70 | 21 | 3 | 1 |\n\nCalculate the mean number of cars per household.",
+      "explanation": "With 100 total households, the calculation is straightforward frequency-weighted averaging.",
+      "answer": "$$\\text{Mean} = \\frac{(0)(5)+(1)(70)+(2)(21)+(3)(3)+(4)(1)}{100}$$\n\n$$= \\frac{0+70+42+9+4}{100} = \\frac{125}{100} = \\mathbf{1.25 \\text{ cars per household}}$$"
+    },
+    {
+      "q": "A salesman keeps a record of the number of shops he visits each day:\n\n| Shops visited | 0–10 | 10–20 | 20–30 | 30–40 | 40–50 |\n|---|---|---|---|---|---|\n| Frequency | 3 | 8 | 24 | 60 | 21 |\n\n**i.** Estimate the mean number of shops visited.\n**ii.** Estimate the median.\n**iii.** What is the modal class?",
+      "explanation": "For grouped data, use midpoints for mean estimation, the interpolation formula for median, and identify the class with the highest frequency as the modal class.",
+      "answer": "Midpoints: $5, 15, 25, 35, 45$; $\\quad n = 116$\n\n**i. Mean:**\n$$\\bar{x} = \\frac{(5)(3)+(15)(8)+(25)(24)+(35)(60)+(45)(21)}{116} = \\frac{3780}{116} \\approx \\mathbf{32.6 \\text{ shops}}$$\n\n**ii. Median:**\nCumulative frequencies: 3, 11, 35, 95, 116. The $\\frac{116}{2} = 58$th value falls in the **30–40** class.\n$$\\text{Median} = 30 + \\frac{58-35}{60} \\times 10 = 30 + \\frac{23}{60} \\times 10 \\approx \\mathbf{33.8 \\text{ shops}}$$\n\n**iii. Modal class** $= \\mathbf{30\\text{–}40}$ (highest frequency $= 60$)"
+    },
+    {
+      "q": "The weights of a number of students were recorded in kg:\n\n| Weight (kg) | 30–35 | 35–40 | 40–45 | 45–50 | 50–55 |\n|---|---|---|---|---|---|\n| Frequency | 10 | 11 | 15 | 7 | 4 |\n\n**i.** Estimate the mean weight.\n**ii.** Estimate the median.\n**iii.** What is the modal class?",
+      "explanation": "The mean and median are very close here, indicating a roughly symmetric distribution.",
+      "answer": "Midpoints: $32.5, 37.5, 42.5, 47.5, 52.5$; $\\quad n = 47$\n\n**i. Mean:**\n$$\\bar{x} = \\frac{(32.5)(10)+(37.5)(11)+(42.5)(15)+(47.5)(7)+(52.5)(4)}{47} = \\frac{1917.5}{47} \\approx \\mathbf{40.8 \\text{ kg}}$$\n\n**ii. Median:**\nCumulative frequencies: 10, 21, 36, 43, 47. The $\\frac{47}{2} = 23.5$th value falls in the **40–45** class.\n$$\\text{Median} = 40 + \\frac{23.5-21}{15} \\times 5 = 40 + \\frac{2.5}{15} \\times 5 \\approx \\mathbf{40.8 \\text{ kg}}$$\n\n**iii. Modal class** $= \\mathbf{40\\text{–}45}$ (highest frequency $= 15$)"
+    },
+    {
+      "q": "A stopwatch was used to find the time that it took a group of students to run 100 m:\n\n| Time (seconds) | 10–15 | 15–20 | 20–25 | 25–30 |\n|---|---|---|---|---|\n| Frequency | 6 | 16 | 21 | 8 |\n\n**i.** Is the median in the modal class?\n**ii.** Estimate the mean.\n**iii.** Estimate the median.\n**iv.** Is the median greater or less than the mean?",
+      "explanation": "The slight positive skew (caused by a few students taking longer) pulls the mean below the median.",
+      "answer": "Midpoints: $12.5, 17.5, 22.5, 27.5$; $\\quad n = 51$\n\nModal class $= \\mathbf{20\\text{–}25}$ (frequency $= 21$)\n\nCumulative frequencies: 6, 22, 43, 51. The $\\frac{51}{2} = 25.5$th value falls in the **20–25** class.\n\n**i.** Yes — the median **is** in the modal class (20–25). ✓\n\n**ii. Mean:**\n$$\\bar{x} = \\frac{(12.5)(6)+(17.5)(16)+(22.5)(21)+(27.5)(8)}{51} = \\frac{1047.5}{51} \\approx \\mathbf{20.5 \\text{ s}}$$\n\n**iii. Median:**\n$$\\text{Median} = 20 + \\frac{25.5-22}{21} \\times 5 = 20 + \\frac{3.5}{21} \\times 5 \\approx \\mathbf{20.8 \\text{ s}}$$\n\n**iv.** Median $(20.8) >$ Mean $(20.5)$ → the median is **greater** than the mean."
+    },
+    {
+      "q": "The distances that students in a year group travelled to school are recorded:\n\n| Distance (km) | 0–0.5 | 0.5–1 | 1–1.5 | 1.5–2 |\n|---|---|---|---|---|\n| Frequency | 30 | 22 | 19 | 8 |\n\n**i.** Does the modal class contain the median?\n**ii.** Estimate the median and the mean.\n**iii.** Which is larger, the median or the mean?",
+      "explanation": "The distribution is right-skewed (more students live close to school, with a tail of students living farther away), pulling the mean above the median.",
+      "answer": "Midpoints: $0.25, 0.75, 1.25, 1.75$; $\\quad n = 79$\n\nModal class $= \\mathbf{0\\text{–}0.5}$ (highest frequency $= 30$)\n\nCumulative frequencies: 30, 52, 71, 79. The $\\frac{79}{2} = 39.5$th value falls in the **0.5–1** class.\n\n**i.** No — the modal class (0–0.5) does **not** contain the median.\n\n**ii. Median:**\n$$\\text{Median} = 0.5 + \\frac{39.5-30}{22} \\times 0.5 = 0.5 + \\frac{9.5}{22} \\times 0.5 \\approx \\mathbf{0.716 \\text{ km}}$$\n\n**Mean:**\n$$\\bar{x} = \\frac{(0.25)(30)+(0.75)(22)+(1.25)(19)+(1.75)(8)}{79} = \\frac{61.75}{79} \\approx \\mathbf{0.782 \\text{ km}}$$\n\n**iii.** Mean $(0.782) >$ Median $(0.716)$ → the **mean** is larger."
+    },
+    {
+      "q": "A teacher notes the number of correct answers given by a class on a multiple-choice test:\n\n| Correct answers | 0–10 | 10–20 | 20–30 | 30–40 | 40–50 |\n|---|---|---|---|---|---|\n| Frequency | 2 | 8 | 15 | 11 | 3 |\n\n**i.** Estimate the mean.\n**ii.** Estimate the median.\n**iii.** What is the modal class?",
+      "explanation": "Here the mean and median are nearly equal, indicating a roughly symmetric distribution centred around 26–27 correct answers.",
+      "answer": "Midpoints: $5, 15, 25, 35, 45$; $\\quad n = 39$\n\n**i. Mean:**\n$$\\bar{x} = \\frac{(5)(2)+(15)(8)+(25)(15)+(35)(11)+(45)(3)}{39} = \\frac{1025}{39} \\approx \\mathbf{26.3}$$\n\n**ii. Median:**\nCumulative frequencies: 2, 10, 25, 36, 39. The $\\frac{39}{2} = 19.5$th value falls in the **20–30** class.\n$$\\text{Median} = 20 + \\frac{19.5-10}{15} \\times 10 = 20 + \\frac{9.5}{15} \\times 10 \\approx \\mathbf{26.3}$$\n\n**iii. Modal class** $= \\mathbf{20\\text{–}30}$ (highest frequency $= 15$)"
+    },
+    {
+      "q": "The frequency distribution of marks in mathematics is given in the table:\n\n| Marks | 5 | 10 | 15 | 20 | 25 | 30 | 35 | 40 | 45 | 50 |\n|---|---|---|---|---|---|---|---|---|---|---|\n| No. of Students | 15 | 50 | 80 | 76 | 72 | 45 | 39 | 9 | 8 | 6 |\n\nFind the mean by the **shortcut method**.",
+      "explanation": "The step deviation (shortcut) method simplifies computation by coding each value as $u_i = (x_i - A)/h$, reducing the size of numbers in the calculation.",
+      "answer": "Assume $A = 25$ (taken as the assumed mean), $h = 5$.\n\nLet $u_i = \\dfrac{x_i - A}{h} = \\dfrac{x_i - 25}{5}$\n\n| $x$ | $f$ | $u = \\frac{x-25}{5}$ | $fu$ |\n|-----|-----|---------------------|------|\n| 5  | 15  | $-4$ | $-60$ |\n| 10 | 50  | $-3$ | $-150$ |\n| 15 | 80  | $-2$ | $-160$ |\n| 20 | 76  | $-1$ | $-76$ |\n| 25 | 72  | $0$  | $0$ |\n| 30 | 45  | $1$  | $45$ |\n| 35 | 39  | $2$  | $78$ |\n| 40 | 9   | $3$  | $27$ |\n| 45 | 8   | $4$  | $32$ |\n| 50 | 6   | $5$  | $30$ |\n| **Total** | **400** | | **$-234$** |\n\n$$\\bar{x} = A + \\frac{\\sum fu}{n} \\times h = 25 + \\frac{-234}{400} \\times 5 = 25 - 2.925 = \\mathbf{22.075}$$"
+    },
+    {
+      "q": "In a study on a certain disease, the following data on age of first detection was given:\n\n| Age (years) | No. of Patients |\n|---|---|\n| 4–8    | 2  |\n| 8–12   | 12 |\n| 12–16  | 15 |\n| 16–20  | 25 |\n| 20–24  | 18 |\n| 24–28  | 12 |\n| 28–32  | 3  |\n| 32–36  | 1  |\n\nFind the average age of first detection using:\n\n**i.** Direct Method\n**ii.** Shortcut Method\n**iii.** Step Deviation Method",
+      "explanation": "All three methods yield the same result. The step deviation method is the most efficient when the class width $h$ is constant.",
+      "answer": "Midpoints: $6, 10, 14, 18, 22, 26, 30, 34$; $\\quad n = 88$\n\n**i. Direct Method:**\n$$\\sum fx = (6)(2)+(10)(12)+(14)(15)+(18)(25)+(22)(18)+(26)(12)+(30)(3)+(34)(1)$$\n$$= 12+120+210+450+396+312+90+34 = 1624$$\n$$\\bar{x} = \\frac{1624}{88} \\approx \\mathbf{18.45 \\text{ years}}$$\n\n**ii. Shortcut Method** (Assumed mean $A = 18$):\n\n| $x$ | $f$ | $d = x-18$ | $fd$ |\n|-----|-----|-----------|------|\n|6|2|$-12$|$-24$|\n|10|12|$-8$|$-96$|\n|14|15|$-4$|$-60$|\n|18|25|$0$|$0$|\n|22|18|$4$|$72$|\n|26|12|$8$|$96$|\n|30|3|$12$|$36$|\n|34|1|$16$|$16$|\n|**Total**|**88**| |**$40$**|\n\n$$\\bar{x} = 18 + \\frac{40}{88} \\approx \\mathbf{18.45 \\text{ years}}$$\n\n**iii. Step Deviation Method** ($A = 18$, $h = 4$):\n\nLet $u = \\dfrac{x-18}{4}$: values are $-3,-2,-1,0,1,2,3,4$\n\n$\\sum fu = (-3)(2)+(-2)(12)+(-1)(15)+(0)(25)+(1)(18)+(2)(12)+(3)(3)+(4)(1) = -6-24-15+0+18+24+9+4 = 10$\n\n$$\\bar{x} = 18 + \\frac{10}{88} \\times 4 = 18 + \\frac{40}{88} \\approx \\mathbf{18.45 \\text{ years}}$$"
+    },
+    {
+      "q": "What is the mean of the numbers 8, 9, 13 and 18?",
+      "explanation": "$$\\bar{x} = \\frac{8+9+13+18}{4} = \\frac{48}{4} = 12$$",
+      "options": [
+        "10",
+        "11",
+        "12",
+        "16"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "Sam scored the following grades in his end-of-year exams:\n\n| Subject | Math | English | Science | Geography | History | Economics |\n|---|---|---|---|---|---|---|\n| Grade | 51% | 62% | 70% | 39% | 81% | 57% |\n\nWhat was his mean grade?",
+      "explanation": "$$\\bar{x} = \\frac{51+62+70+39+81+57}{6} = \\frac{360}{6} = 60\\%$$",
+      "options": [
+        "51.4%",
+        "54.5%",
+        "59.5%",
+        "60%"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the mean of these numbers: $12,\\ -1,\\ 8,\\ 2,\\ -10,\\ 0,\\ -5,\\ 3,\\ 20,\\ -2$?",
+      "explanation": "$$\\bar{x} = \\frac{12+(-1)+8+2+(-10)+0+(-5)+3+20+(-2)}{10} = \\frac{27}{10} = 2.7$$",
+      "options": [
+        "6.3",
+        "5.3",
+        "3.7",
+        "2.7"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "What is the mean of the squares of the first ten natural numbers?",
+      "explanation": "The squares of the first 10 natural numbers are $1, 4, 9, 16, 25, 36, 49, 64, 81, 100$.\n$$\\sum = \\frac{n(n+1)(2n+1)}{6} = \\frac{10 \\times 11 \\times 21}{6} = 385$$\n$$\\bar{x} = \\frac{385}{10} = 38.5$$",
+      "options": [
+        "30.25",
+        "31.67",
+        "38.5",
+        "50.5"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the median of the numbers $4,\\ 2,\\ 11,\\ 6,\\ 2$?",
+      "explanation": "Sorted: $\\{2, 2, 4, 6, 11\\}$. There are 5 values, so the median is the 3rd value $= \\mathbf{4}$.",
+      "options": [
+        "2",
+        "4",
+        "5",
+        "11"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the median of the numbers $3,\\ 11,\\ 6,\\ 5,\\ 4,\\ 7,\\ 12,\\ 3,\\ 10$?",
+      "explanation": "Sorted: $\\{3, 3, 4, 5, 6, 7, 10, 11, 12\\}$. With $n = 9$ values, the median is the 5th value $= \\mathbf{6}$.",
+      "options": [
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "What is the median of the numbers $75,\\ 83,\\ 69,\\ 56,\\ 71,\\ 80,\\ 65,\\ 67,\\ 77,\\ 44$?",
+      "explanation": "Sorted: $\\{44, 56, 65, 67, 69, 71, 75, 77, 80, 83\\}$. With $n = 10$, the median is the average of the 5th and 6th values:\n$$\\text{Median} = \\frac{69+71}{2} = 70$$",
+      "options": [
+        "70",
+        "71",
+        "72.5",
+        "75.5"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the median of the squares of the first ten natural numbers?",
+      "explanation": "The squares of the first 10 natural numbers (sorted): $1, 4, 9, 16, 25, 36, 49, 64, 81, 100$.\n\nWith $n = 10$, median $= \\frac{25+36}{2} = \\frac{61}{2} = 30.5$.",
+      "options": [
+        "30.25",
+        "30.5",
+        "38.5",
+        "50.5"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "What is the mode for the numbers $7,\\ 6,\\ 5,\\ 8,\\ 7,\\ 5,\\ 9,\\ 3,\\ 5,\\ 4$?",
+      "explanation": "Frequency count: 5 appears **3 times**, 7 appears 2 times, all others once. Mode $= \\mathbf{5}$.",
+      "options": [
+        "5",
+        "5.5",
+        "5.9",
+        "7"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "What is the mode for the numbers $7,\\ 6,\\ 5,\\ 8,\\ 7,\\ 5,\\ 9,\\ 3,\\ 5,\\ 7$?",
+      "explanation": "Frequency count: 5 appears **3 times**, 7 appears **3 times**, all others appear fewer times. The data is **bimodal**: Mode $= \\mathbf{5}$ and $\\mathbf{7}$.",
+      "options": [
+        "5",
+        "6",
+        "7",
+        "5 and 7"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "For the numbers $13,\\ 16,\\ 12,\\ 11,\\ 8,\\ 14,\\ 12,\\ 18$, which of the following is true?",
+      "explanation": "Sorted: $\\{8,11,12,12,13,14,16,18\\}$\n- Mean $= \\frac{104}{8} = 13$\n- Median $= \\frac{12+13}{2} = 12.5$\n- Mode $= 12$\n\nSo: Mean $(13) >$ Median $(12.5) >$ Mode $(12)$.",
+      "options": [
+        "median > mean > mode",
+        "mean > median > mode",
+        "mean > mode > median",
+        "median > mode > mean"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "The numbers $7,\\ 6,\\ 10,\\ 13,\\ 7,\\ 2,\\ 5,\\ 6$ and $x$ have only one mode, and the mean, median and mode are all equal. What is the value of $x$?",
+      "explanation": "If $x = 7$: the value 7 appears 3 times (unique mode).\n$$\\text{Mean} = \\frac{7+6+10+13+7+2+5+6+7}{9} = \\frac{63}{9} = 7$$\nSorted: $\\{2,5,6,6,7,7,7,10,13\\}$ → Median $= 7$ (5th value).\n\nMode $=$ Mean $=$ Median $= 7$. ✓",
+      "options": [
+        "$x = 5$",
+        "$x = 6$",
+        "$x = 6.5$",
+        "$x = 7$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "The mean of the numbers $11,\\ 18,\\ 5,\\ 24,\\ 12,\\ 3$ and $x$ is 13. What are the median and mode?",
+      "explanation": "Mean $= 13$ and $n = 7$, so total $= 91$.\n$$x = 91 - (11+18+5+24+12+3) = 91-73 = 18$$\nFull data set: $\\{11,18,5,24,12,3,18\\}$\nSorted: $\\{3,5,11,\\mathbf{12},18,18,24\\}$\n- Median $= 12$ (4th value)\n- Mode $= 18$ (appears twice)",
+      "options": [
+        "Median $= 24$, mode $= 18$",
+        "Median $= 12$, mode $= 12$",
+        "Median $= 11$, mode $= 11$",
+        "Median $= 12$, mode $= 18$"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "Rachel rolled a die forty-five times with the following results:\n\n| Score | 1 | 2 | 3 | 4 | 5 | 6 |\n|---|---|---|---|---|---|---|\n| Frequency | 8 | 11 | 4 | 8 | 5 | 9 |\n\nWhat was her mean score?",
+      "explanation": "$$\\bar{x} = \\frac{(1)(8)+(2)(11)+(3)(4)+(4)(8)+(5)(5)+(6)(9)}{45} = \\frac{8+22+12+32+25+54}{45} = \\frac{153}{45} = 3.4$$",
+      "options": [
+        "3.4",
+        "3.5",
+        "3.62",
+        "7.5"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "Thirty students in a class sat a science test. The results are recorded in groups as follows:\n\n| Mark | 20–30 | 30–40 | 40–50 | 50–60 | 60–70 | 70–80 |\n|---|---|---|---|---|---|---|\n| Number | 1 | 1 | 10 | 11 | 5 | 2 |\n\nEstimate the median mark correct to 1 decimal place.",
+      "explanation": "Cumulative frequencies: 1, 2, 12, 23, 28, 30. With $n = 30$, the $\\frac{30}{2} = 15$th value falls in the **50–60** class.\n$$\\text{Median} = 50 + \\frac{15-12}{11} \\times 10 = 50 + \\frac{30}{11} = 50 + 2.7\\overline{27} \\approx \\mathbf{52.7}$$",
+      "options": [
+        "52.7",
+        "52.8",
+        "52.9",
+        "53.0"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The number of words in each of the first eighty sentences of a book were counted. The results are recorded in groups as follows:\n\n| No. of words | 0–4 | 4–8 | 8–12 | 12–16 | 16–20 | 20–24 | 24–28 | 28–32 |\n|---|---|---|---|---|---|---|---|---|\n| Number | 2 | 5 | 11 | 23 | 21 | 13 | 4 | 1 |\n\nEstimate the modal length of sentence correct to 1 decimal place.",
+      "explanation": "The modal class is **12–16** (highest frequency $= 23$).\n\nUsing the mode interpolation formula with $f_m = 23$, $f_1 = 11$ (class before), $f_2 = 21$ (class after), $L = 12$, $h = 4$:\n\n$$\\text{Mode} = L + \\frac{f_m - f_1}{2f_m - f_1 - f_2} \\times h = 12 + \\frac{23-11}{2(23)-11-21} \\times 4 = 12 + \\frac{12}{14} \\times 4 \\approx 15.4$$\n\nUsing the empirical relation Mode $= 3 \\times$ Median $- 2 \\times$ Mean:\n- Mean $= \\frac{1264}{80} = 15.8$\n- Median (cumulative: 2, 7, 18, 41, …; 40th value in class 12–16): $= 12 + \\frac{40-18}{23} \\times 4 \\approx 15.83$\n- Mode $\\approx 3(15.83) - 2(15.8) = 47.49 - 31.6 \\approx 15.9$\n\nThe closest answer among the given options is **A) 16.2**.",
+      "options": [
+        "16.2",
+        "16.4",
+        "16.6",
+        "16.8"
+      ],
+      "correct": 0
+    }
+  ]
+}

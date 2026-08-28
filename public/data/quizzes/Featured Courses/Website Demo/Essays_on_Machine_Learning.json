@@ -1,0 +1,31 @@
+{
+  "meta": {
+    "id": "KOWL74KJ",
+    "path": "quizzes/University/Computer Science/2/2/Website Demo/Essays_on_Machine_Learning.json",
+    "title": "Essays on Machine Learning",
+    "createdAt": "5/7/2026, 6:24:29 AM"
+  },
+  "stats": {
+    "questionCount": 3,
+    "questionTypes": [
+      "Essay"
+    ]
+  },
+  "questions": [
+    {
+      "q": "For the following training set, assume the hypothesis function is: $$h_\\theta(x) = \\theta_0 + \\theta_1x$$\n\n| X | Y |\n|---|---|\n| 1 | 3 |\n| 2 | 5 |\n| 3 | 7 |\n| 4 | 9 |\n| 5 | 11 |\n\nGiven $\\theta_0 = 1$ and $\\theta_1 = 2$, answer the following:\n\n1- What is the value of $m$?\n\n2- Find $h_\\theta(3)$.\n\n3- Calculate $J(1, 2)$.",
+      "explanation": "1. $m$ represents the number of training examples, which is the number of rows in the table ($5$).\n2. Plugging $x=3$ into $h_\\theta(x) = 1 + 2x$ gives $1 + 6 = 7$.\n3. The cost function $J(\\theta_0, \\theta_1) = \\frac{1}{2m} \\sum_{i=1}^{m} (h_\\theta(x^{(i)}) - y^{(i)})^2$. Since $h_\\theta(x)$ perfectly predicts every $y$ value in this dataset ($h(1)=3, h(2)=5$, etc.), the error for every sample is $0$, resulting in a cost of $0$.",
+      "answer": "1. $m = 5$\n2. $h_\\theta(3) = 1 + 2(3) = 7$\n3. $J(1, 2) = 0$"
+    },
+    {
+      "q": "Given the hypothesis $h_\\theta(x) = 2 + 4x$ and the following dataset:\n\n| X | Y |\n|---|---|\n| 1 | 5 |\n| 2 | 8 |\n| 3 | 11 |\n| 4 | 14 |\n\nAnswer the following:\n\n1- Compute all predicted values $h(x)$.\n\n2- Find the squared error for each sample.\n\n3- Calculate the cost function $J(2, 4)$.\n",
+      "explanation": "1. Using $h(x) = 2 + 4x$:\n   - $h(1) = 2 + 4(1) = 6$\n   - $h(2) = 2 + 4(2) = 10$\n   - $h(3) = 2 + 4(3) = 14$\n   - $h(4) = 2 + 4(4) = 18$\n2. Squared errors $(h(x) - y)^2$:\n   - $(6-5)^2 = 1$\n   - $(10-8)^2 = 4$\n   - $(14-11)^2 = 9$\n   - $(18-14)^2 = 16$\n3. $J(2, 4) = \\frac{1}{2(4)} (1 + 4 + 9 + 16) = \\frac{30}{8} = 3.75$.",
+      "answer": "1. Predicted values: $h(1)=6, h(2)=10, h(3)=14, h(4)=18$\n2. Squared errors: $1, 4, 9, 16$\n3. $J(2, 4) = 3.75$"
+    },
+    {
+      "q": "Given the dataset:\n\n| X | Y |\n|---|---|\n| 2 | 6 |\n| 4 | 10 |\n| 6 | 14 |\n| 8 | 18 |\n\nAnd the hypothesis $h_\\theta(x) = 0 + 2x$, find:\n\n1- Number of training examples $m$.\n\n2- $h_\\theta(6)$.\n\n3- The value of the cost function $J(0, 2)$.\n",
+      "explanation": "1. There are $4$ data points in the table, so $m = 4$.\n2. $h_\\theta(6) = 0 + 2(6) = 12$.\n3. Calculate squared errors:\n   - $x=2: (4-6)^2 = 4$\n   - $x=4: (8-10)^2 = 4$\n   - $x=6: (12-14)^2 = 4$\n   - $x=8: (16-18)^2 = 4$\n   Sum of squared errors = $16$. \n   $J(0, 2) = \\frac{1}{2m} \\sum = \\frac{16}{2(4)} = \\frac{16}{8} = 2$.",
+      "answer": "1. $m = 4$\n2. $h_\\theta(6) = 12$\n3. $J(0, 2) = 2$"
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "meta": {
+    "id": "VM4VFIRA",
+    "title": "Probability 3",
+    "createdAt": "4/1/2026, 3:12:07 PM",
+    "path": "quizzes/University/Computer Science/2/2/Probability and Statistics/أسئلة السكاشن/Probability 3.json"
+  },
+  "stats": {
+    "questionCount": 29,
+    "questionTypes": [
+      "Essay",
+      "MCQ"
+    ]
+  },
+  "questions": [
+    {
+      "q": "If $A \\subset B$, then $P(A|B) =$",
+      "explanation": "Since $A \\subset B$, we have $A \\cap B = A$, so:\n$$P(A|B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{P(A)}{P(B)}$$\nThis is not among options (a)–(c) in general, so the correct answer is **None of them**: $P(A|B) = \\dfrac{P(A)}{P(B)}$.",
+      "options": [
+        "$P(B|A)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If the knowledge that an event $A$ has occurred implies that a second event $B$ cannot occur, the events $A$ and $B$ are said to be:",
+      "explanation": "If $A$ occurring means $B$ cannot occur, then $A \\cap B = \\emptyset$, which is the definition of **mutually exclusive** events.",
+      "options": [
+        "Independent",
+        "Mutually exclusive",
+        "$A \\subset B$",
+        "$B \\subset A$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If $A$ and $B$ are independent events in a sample space $S$, then which of the following statement(s) are true?",
+      "explanation": "If $A$ and $B$ are independent, then all pairs formed with their complements are also independent. For example:\n$$P(A \\cap B^c) = P(A) - P(A \\cap B) = P(A) - P(A)P(B) = P(A)(1 - P(B)) = P(A)P(B^c)$$\nSimilar proofs hold for $A^c$ & $B$, and $A^c$ & $B^c$.",
+      "options": [
+        "$A$ and $B^c$ are independent",
+        "$B$ and $A^c$ are independent",
+        "$A^c$ and $B^c$ are independent",
+        "All of the preceding"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "A code consists of a digit chosen from **0 to 6** followed by a letter of the alphabet. What is the probability the code is $6Z$?",
+      "explanation": "The digit is chosen from $\\{0,1,2,3,4,5,6\\}$ (7 digits) and the letter from 26 letters. Since choices are independent:\n$$P(6Z) = P(6) \\times P(Z) = \\frac{1}{7} \\times \\frac{1}{26} = \\frac{1}{182}$$",
+      "options": [
+        "$\\dfrac{1}{260}$",
+        "$\\dfrac{1}{156}$",
+        "$\\dfrac{1}{182}$",
+        "None of them"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If $A$ and $B$ are independent events, then $P(A|B) =$",
+      "explanation": "By definition of independence, $P(A \\cap B) = P(A) \\cdot P(B)$, so:\n$$P(A|B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{P(A) \\cdot P(B)}{P(B)} = P(A)$$",
+      "options": [
+        "$P(B|A)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If $B \\subset A$, then $P(B|A) =$",
+      "explanation": "Since $B \\subset A$, we have $A \\cap B = B$, so:\n$$P(B|A) = \\frac{P(A \\cap B)}{P(A)} = \\frac{P(B)}{P(A)}$$\nThis is not among options (a)–(c) in general, so the correct answer is **None of them**: $P(B|A) = \\dfrac{P(B)}{P(A)}$.",
+      "options": [
+        "$P(A|B)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If $A$ and $B$ are two events such that $P(A) = \\dfrac{1}{4}$, $P(B) = \\dfrac{1}{3}$ and $P(A \\cap B) = \\dfrac{1}{3}$, what will be $P(A|B)$?",
+      "explanation": "Using the conditional probability formula:\n$$P(A|B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{\\frac{1}{3}}{\\frac{1}{3}} = 1$$\nSince $P(A \\cap B) = P(B)$, event $B$ is a subset of $A$. The answer is $1$, which is **None of them**.",
+      "options": [
+        "$\\dfrac{1}{4}$",
+        "$\\dfrac{1}{2}$",
+        "$\\dfrac{1}{3}$",
+        "None of them"
+      ],
+      "correct": 3
+    },
+    {
+      "q": "If $A = B$, then $P(A|B) =$",
+      "explanation": "If $A = B$, then $A \\cap B = A = B$, so:\n$$P(A|B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{P(B)}{P(B)} = 1$$\nSimilarly, $P(B|A) = \\dfrac{P(A)}{P(A)} = 1$, so $P(A|B) = P(B|A) = 1$ always holds when $A = B$.",
+      "options": [
+        "$P(B|A)$",
+        "$P(A)$",
+        "$P(B)$",
+        "None of them"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "For a continuous random variable $X$ with probability density function\n$$f(x) = \\begin{cases} k(x^2 + 1) & 0 \\leq x \\leq 1 \\\\ 0 & \\text{otherwise} \\end{cases}$$\nthe value of $k$ is:",
+      "explanation": "Since $f(x)$ is a valid pdf, $\\int_{-\\infty}^{\\infty} f(x)\\,dx = 1$:\n$$\\int_0^1 k(x^2+1)\\,dx = k\\left[\\frac{x^3}{3} + x\\right]_0^1 = k\\left(\\frac{1}{3}+1\\right) = \\frac{4k}{3} = 1$$\n$$\\therefore k = \\frac{3}{4}$$",
+      "options": [
+        "$\\dfrac{3}{4}$",
+        "$\\dfrac{5}{4}$",
+        "$\\dfrac{4}{3}$",
+        "$\\dfrac{4}{5}$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "The value of $k$ when the probability mass function is given by\n$$P(x) = \\begin{cases} \\dfrac{2x}{k} & x = 1, 2, 3, 4 \\\\ 0 & \\text{otherwise} \\end{cases}$$\nis:",
+      "explanation": "Since $\\sum_{x} P(x) = 1$:\n$$\\frac{2(1)}{k} + \\frac{2(2)}{k} + \\frac{2(3)}{k} + \\frac{2(4)}{k} = \\frac{2+4+6+8}{k} = \\frac{20}{k} = 1$$\n$$\\therefore k = 20$$",
+      "options": [
+        "$10$",
+        "$20$",
+        "$\\dfrac{1}{10}$",
+        "$\\dfrac{1}{20}$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "If the variance of $X$ is $V(X) = 3$, then $V\\!\\left(\\dfrac{X}{3} - 5\\right) =$",
+      "explanation": "Using the variance property $V(aX + b) = a^2 V(X)$:\n$$V\\!\\left(\\frac{X}{3} - 5\\right) = \\left(\\frac{1}{3}\\right)^2 V(X) = \\frac{1}{9} \\times 3 = \\frac{1}{3}$$",
+      "options": [
+        "$\\dfrac{1}{3}$",
+        "$3$",
+        "$27$",
+        "$\\dfrac{1}{27}$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "$E(aX + b) =$",
+      "explanation": "By linearity of expectation:\n$$E(aX + b) = a\\,E(X) + b$$\nThe constant $b$ is shifted additively, not multiplied.",
+      "options": [
+        "$a^2\\, E(X + b)$",
+        "$a\\, E(X)$",
+        "$a\\, E(X) + b$",
+        "None of them"
+      ],
+      "correct": 2
+    },
+    {
+      "q": "If $f(x)$ is a probability density function (continuous) defined for $0 \\leq x \\leq 5$, then $P(X = 3) =$",
+      "explanation": "For any continuous random variable, the probability at a single point is zero:\n$$P(X = c) = \\int_c^c f(x)\\,dx = 0$$",
+      "options": [
+        "$0$",
+        "$3$",
+        "$2$",
+        "$0.2$"
+      ],
+      "correct": 0
+    },
+    {
+      "q": "100 students appeared for two examinations. 60 passed the first, 50 passed the second, and 30 passed both. The probability that a student selected at random passed **at least one** of the two examinations is:",
+      "explanation": "Let $A$ = passed first exam, $B$ = passed second exam. Then:\n$$P(A) = 0.6,\\quad P(B) = 0.5,\\quad P(A \\cap B) = 0.3$$\n$$P(A \\cup B) = P(A) + P(B) - P(A \\cap B) = 0.6 + 0.5 - 0.3 = 0.8$$",
+      "options": [
+        "$0.6$",
+        "$0.8$",
+        "$0.5$",
+        "$0.3$"
+      ],
+      "correct": 1
+    },
+    {
+      "q": "Given $P(A) = 0.3$, $P(B) = 0.2$, and $P(A \\cap B) = 0.1$, determine the following probabilities:\n\n| Expression | Value |\n|---|---|\n| $P(A^c)$ | ? |\n| $P(A \\cup B)$ | ? |\n| $P(A^c \\cap B)$ | ? |\n| $P(A \\cap B^c)$ | ? |\n| $P(A \\cup B)^c$ | ? |\n| $P(A^c \\cup B)$ | ? |",
+      "explanation": "These results follow directly from De Morgan's laws and the inclusion-exclusion principle. Note that $P(A^c \\cup B) = 1 - P(A \\cap B^c) = 1 - 0.2 = 0.8$ provides a useful shortcut.",
+      "answer": "Using set probability identities:\n\n| Expression | Solution | Value |\n|---|---|---|\n| $P(A^c)$ | $1 - P(A)$ | $0.7$ |\n| $P(A \\cup B)$ | $P(A)+P(B)-P(A\\cap B)$ | $0.4$ |\n| $P(A^c \\cap B)$ | $P(B)-P(A\\cap B)$ | $0.1$ |\n| $P(A \\cap B^c)$ | $P(A)-P(A\\cap B)$ | $0.2$ |\n| $P(A \\cup B)^c$ | $1 - P(A\\cup B)$ | $0.6$ |\n| $P(A^c \\cup B)$ | $P(A^c)+P(B)-P(A^c\\cap B)$ | $0.8$ |"
+    },
+    {
+      "q": "A bag contains 5 red marbles, 4 green marbles, and 1 blue marble. A marble is chosen at random and **not replaced**; then a second marble is chosen. What is the probability both marbles are green?",
+      "explanation": "For the first draw: 4 green out of 10 total → $P(G_1) = \\dfrac{4}{10}$. After removing one green marble, 3 green remain out of 9 total → $P(G_2 \\mid G_1) = \\dfrac{3}{9}$. Multiply for the joint probability.",
+      "answer": "$$P(\\text{both green}) = P(G_1) \\times P(G_2 \\mid G_1) = \\frac{4}{10} \\times \\frac{3}{9} = \\frac{2}{5} \\times \\frac{1}{3} = \\frac{2}{15}$$"
+    },
+    {
+      "q": "In Exton School, 60% of the boys play baseball and 24% of the boys play both baseball and football. What percent of those that play baseball also play football?",
+      "explanation": "This is a direct application of the conditional probability formula. Of the 60% who play baseball, 24 percentage points also play football, giving a conditional probability of 40%.",
+      "answer": "$$P(\\text{football} \\mid \\text{baseball}) = \\frac{P(\\text{football} \\cap \\text{baseball})}{P(\\text{baseball})} = \\frac{0.24}{0.60} = 0.40 = 40\\%$$"
+    },
+    {
+      "q": "A box contains 5 green pencils and 7 yellow pencils. Two pencils are chosen at random **without replacement**. What is the probability both pencils are yellow?",
+      "explanation": "Initially 12 pencils, 7 yellow. After drawing one yellow, 11 remain with 6 yellow. The multiplication rule for dependent events gives $P(A \\cap B) = \\dfrac{7}{22}$.",
+      "answer": "Let $A$: first pencil is yellow, $B$: second pencil is yellow.\n$$P(A) = \\frac{7}{12}, \\quad P(B|A) = \\frac{6}{11}$$\n$$P(A \\cap B) = P(A) \\times P(B|A) = \\frac{7}{12} \\times \\frac{6}{11} = \\frac{42}{132} = \\frac{7}{22}$$"
+    },
+    {
+      "q": "A code consists of a digit chosen from **0 to 9** followed by a letter of the alphabet. What is the probability the code is $9Z$?",
+      "explanation": "The digit is chosen from $\\{0,1,\\ldots,9\\}$ (10 digits) and the letter from 26 letters. Since selections are independent, multiply the individual probabilities.",
+      "answer": "$$P(9Z) = P(9) \\times P(Z) = \\frac{1}{10} \\times \\frac{1}{26} = \\frac{1}{260}$$"
+    },
+    {
+      "q": "Let $A$ and $B$ be independent events in a sample space $S$. Show that if $A$ and $B$ are independent, then so are:\n\n(a) $A$ and $B^c$\n\n(b) $A^c$ and $B$\n\n(c) $A^c$ and $B^c$",
+      "explanation": "In each case, we verify the independence condition $P(E \\cap F) = P(E) \\cdot P(F)$ by algebraic manipulation using the original independence of $A$ and $B$.",
+      "answer": "**(a) $A$ and $B^c$:**\n$$P(A \\cap B^c) = P(A) - P(A \\cap B) = P(A) - P(A)P(B) = P(A)(1 - P(B)) = P(A)P(B^c)$$\n\n**(b) $A^c$ and $B$:**\n$$P(A^c \\cap B) = P(B) - P(A \\cap B) = P(B) - P(A)P(B) = P(B)(1 - P(A)) = P(A^c)P(B)$$\n\n**(c) $A^c$ and $B^c$:**\n$$P(A^c \\cap B^c) = P(A \\cup B)^c = 1 - P(A \\cup B)$$\n$$= 1 - P(A) - P(B) + P(A)P(B) = (1-P(A))(1-P(B)) = P(A^c)P(B^c)$$"
+    },
+    {
+      "q": "If $A - B = \\emptyset$, then $P(A|B) = \\ldots$",
+      "explanation": "$A - B = \\emptyset$ means every element of $A$ is in $B$, so $A \\cap B = A$. Then $P(A|B) = \\dfrac{P(A \\cap B)}{P(B)} = \\dfrac{P(A)}{P(B)}$, which equals 1 when $A = B$.",
+      "answer": "If $A - B = \\emptyset$, then $A \\subseteq B$ (i.e., $A = B$ or $A \\subset B$).\n\n- If $A \\subset B$: $\\quad P(A|B) = \\dfrac{P(A)}{P(B)}$\n- If $A = B$: $\\quad P(A|B) = 1$"
+    },
+    {
+      "q": "If $P(A) = 0.5$, $P(B^c) = 0.5$ and $P(A \\cap B) = 0.25$, then $P(A|B) = \\ldots$",
+      "explanation": "The result $P(A|B) = P(A)$ confirms independence: knowing $B$ occurred gives no information about $A$.",
+      "answer": "Note that $P(B) = 1 - P(B^c) = 1 - 0.5 = 0.5$.\n$$P(A|B) = \\frac{P(A \\cap B)}{P(B)} = \\frac{0.25}{0.5} = 0.5 = P(A)$$\nSince $P(A|B) = P(A)$, events $A$ and $B$ are **independent**."
+    },
+    {
+      "q": "If $P(A) = 0.5$ and $P(B|A) = \\dfrac{1}{3}$, then $P(B^c|A) = \\ldots$",
+      "explanation": "Within the conditional universe (given $A$), the probabilities of $B$ and $B^c$ must sum to 1, so $P(B^c|A) = 1 - P(B|A)$.",
+      "answer": "$$P(B^c|A) = \\frac{P(A \\cap B^c)}{P(A)} = \\frac{P(A) - P(A \\cap B)}{P(A)} = 1 - P(B|A) = 1 - \\frac{1}{3} = \\frac{2}{3}$$"
+    },
+    {
+      "q": "If $A \\subset B$, then $P(A^c|B) = \\ldots$",
+      "explanation": "Since $A \\subset B$, we have $P(A|B) = \\dfrac{P(A)}{P(B)}$. The complement within the conditional space gives $P(A^c|B) = 1 - \\dfrac{P(A)}{P(B)}$.",
+      "answer": "$$P(A^c|B) = \\frac{P(B \\cap A^c)}{P(B)} = \\frac{P(B) - P(A \\cap B)}{P(B)} = 1 - P(A|B) = 1 - \\frac{P(A)}{P(B)}$$"
+    },
+    {
+      "q": "Given the probability mass function:\n\n| $x$ | $-2$ | $-1$ | $0$ | $1$ | $2$ |\n|---|---|---|---|---|---|\n| $p(x)$ | $0.2$ | $0.4$ | $k$ | $0.2$ | $0.1$ |\n\n(a) Find the value of $k$.\n\n(b) $P(X \\leq 2)$\n\n(c) $P(X > -2)$\n\n(d) $P(-1 \\leq X \\leq 1)$\n\n(e) $P(X \\leq -1 \\text{ or } X = 2)$",
+      "explanation": "A valid pmf must have all probabilities sum to 1. Once $k$ is found, each probability is computed by summing the relevant $p(x)$ values.",
+      "answer": "**(a)** Since $\\sum p(x) = 1$:\n$$0.2 + 0.4 + k + 0.2 + 0.1 = 1 \\Rightarrow k = 0.1$$\n\n**(b)** $P(X \\leq 2) = 0.2 + 0.4 + 0.1 + 0.2 + 0.1 = 1$\n\n**(c)** $P(X > -2) = 0.4 + 0.1 + 0.2 + 0.1 = 0.8$\n\n**(d)** $P(-1 \\leq X \\leq 1) = 0.4 + 0.1 + 0.2 = 0.7$\n\n**(e)** $P(X \\leq -1 \\text{ or } X = 2) = p(-2) + p(-1) + p(2) = 0.2 + 0.4 + 0.1 = 0.7$"
+    },
+    {
+      "q": "Given the probability density function:\n$$f(x) = \\begin{cases} kx & 0 \\leq x \\leq 2 \\\\ 0 & \\text{otherwise} \\end{cases}$$\n(a) Find $k$. \n(b) Find $P(1 \\leq X \\leq 1.5)$.\n(c) Find $P(1.5 \\leq X < 3)$.\n(d) Find $P(X = 1.5)$.",
+      "explanation": "The normalization condition forces $k = \\frac{1}{2}$. For a continuous distribution, $P(X = c) = 0$ always, and range probabilities are computed via integration.",
+      "answer": "**(a)** $\\displaystyle\\int_0^2 kx\\,dx = k\\left[\\frac{x^2}{2}\\right]_0^2 = 2k = 1 \\Rightarrow k = \\frac{1}{2}$\n\n**(b)** $\\displaystyle P(1 \\leq X \\leq 1.5) = \\frac{1}{2}\\int_1^{1.5} x\\,dx = \\frac{1}{4}\\left[x^2\\right]_1^{1.5} = \\frac{1}{4}(2.25 - 1) = 0.3125$\n\n**(c)** $\\displaystyle P(1.5 \\leq X < 3) = \\frac{1}{2}\\int_{1.5}^{2} x\\,dx = \\frac{1}{4}\\left[x^2\\right]_{1.5}^{2} = \\frac{1}{4}(4 - 2.25) = 0.4375$\n\n**(d)** $P(X = 1.5) = 0$ (single point has zero probability for continuous RVs)"
+    },
+    {
+      "q": "Given the probability density function:\n$$f(x) = \\begin{cases} kx^2 & 0 \\leq x < 3 \\\\ 0 & \\text{otherwise} \\end{cases}$$\n(a) Find $k$. \n(b) Find $P(0 \\leq X \\leq 1)$.\n(c) Find $P(X \\geq -1)$.",
+      "explanation": "The event $\\{X \\geq -1\\}$ covers the entire support of $f$, so its probability equals 1.",
+      "answer": "**(a)** $\\displaystyle\\int_0^3 kx^2\\,dx = k\\left[\\frac{x^3}{3}\\right]_0^3 = 9k = 1 \\Rightarrow k = \\frac{1}{9}$\n\n**(b)** $\\displaystyle P(0 \\leq X \\leq 1) = \\frac{1}{9}\\int_0^1 x^2\\,dx = \\frac{1}{27}\\left[x^3\\right]_0^1 = \\frac{1}{27}$\n\n**(c)** $\\displaystyle P(X \\geq -1) = \\int_{-1}^{\\infty} f(x)\\,dx = \\int_0^3 \\frac{x^2}{9}\\,dx = 1$\n\n(Since $f(x)=0$ for $x < 0$, the integral from $-1$ equals the integral over the full support $[0,3)$.)"
+    },
+    {
+      "q": "The number of e-mail messages received per hour has the following distribution:\n\n| $x$ | 10 | 11 | 12 | 13 | 14 | 15 |\n|---|---|---|---|---|---|---|\n| $p(x)$ | 0.08 | 0.15 | 0.30 | 0.20 | 0.20 | 0.07 |\n\nDetermine the **mean** $\\mu$ and **standard deviation** $\\sigma$ of the number of messages received per hour.",
+      "explanation": "The mean is the probability-weighted average of outcomes. Variance uses $V(X) = E(X^2) - [E(X)]^2$, and standard deviation is its square root.",
+      "answer": "$$\\mu = E(X) = \\sum x\\,p(x)$$\n\n| $x$ | $p(x)$ | $x\\,p(x)$ | $x^2 p(x)$ |\n|---|---|---|---|\n| 10 | 0.08 | 0.80 | 8.00 |\n| 11 | 0.15 | 1.65 | 18.15 |\n| 12 | 0.30 | 3.60 | 43.20 |\n| 13 | 0.20 | 2.60 | 33.80 |\n| 14 | 0.20 | 2.80 | 39.20 |\n| 15 | 0.07 | 1.05 | 15.75 |\n| **Total** | | **12.50** | **158.10** |\n\n$$\\mu = 12.5$$\n$$\\sigma^2 = V(X) = E(X^2) - [E(X)]^2 = 158.1 - (12.5)^2 = 158.1 - 156.25 = 1.85$$\n$$\\sigma = \\sqrt{1.85} \\approx 1.36$$"
+    },
+    {
+      "q": "A continuous random variable $X$ has the density function:\n$$f(x) = \\begin{cases} \\dfrac{1}{3}x^2 & -1 < x < 2 \\\\ 0 & \\text{otherwise} \\end{cases}$$\n\n(1) Find $E(X)$, $V(X)$, and $\\sigma$.\n\n(2) Find $E(3X + 5)$ and $V(5X - 2)$.",
+      "explanation": "Expectation is linear: $E(aX+b) = aE(X)+b$. Variance scales by the square of the constant: $V(aX+b) = a^2 V(X)$. Adding or subtracting a constant does not affect variance.",
+      "answer": "**(1)**\n$$E(X) = \\int_{-1}^{2} x \\cdot \\frac{x^2}{3}\\,dx = \\frac{1}{3}\\int_{-1}^{2} x^3\\,dx = \\frac{1}{12}\\left[x^4\\right]_{-1}^{2} = \\frac{1}{12}(16 - 1) = \\frac{15}{12} = 1.25$$\n\n$$E(X^2) = \\frac{1}{3}\\int_{-1}^{2} x^4\\,dx = \\frac{1}{15}\\left[x^5\\right]_{-1}^{2} = \\frac{1}{15}(32 - (-1)) = \\frac{33}{15} = 2.2$$\n\n$$V(X) = E(X^2) - [E(X)]^2 = 2.2 - (1.25)^2 = 2.2 - 1.5625 = 0.6375$$\n\n$$\\sigma = \\sqrt{0.6375} \\approx 0.7984$$\n\n**(2)**\n$$E(3X + 5) = 3E(X) + 5 = 3(1.25) + 5 = 3.75 + 5 = 8.75$$\n\n$$V(5X - 2) = 25\\,V(X) = 25(0.6375) = 15.9375$$"
+    }
+  ]
+}
