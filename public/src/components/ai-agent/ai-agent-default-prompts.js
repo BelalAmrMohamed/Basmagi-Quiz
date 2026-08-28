@@ -47,9 +47,14 @@ export function buildResultSystemPrompt(summary) {
   let questionsSection = "";
   if (Array.isArray(summary?.questions) && summary.questions.length) {
     const lines = summary.questions.map((q, i) => {
+      const optionsLine =
+        Array.isArray(q.options) && q.options.length
+          ? `الخيارات: ${q.options.map((opt, idx) => `${idx + 1}) ${opt}`).join(" | ")}`
+          : null;
       return [
         `### سؤال ${i + 1}`,
         `النص: ${q.question || "—"}`,
+        optionsLine,
         `إجابة المستخدم: ${q.userAnswer ?? "—"}`,
         `الإجابة الصحيحة: ${q.correctAnswer ?? "—"}`,
         q.explanation ? `الشرح: ${q.explanation}` : null,

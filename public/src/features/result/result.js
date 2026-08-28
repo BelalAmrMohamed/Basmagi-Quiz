@@ -567,18 +567,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   // need no discussion — to keep the system prompt from bloating past
   // reasonable token limits on quizzes with many questions.
   {
+    // Resolves a raw stored MCQ answer (a 0-based index, an array of
+    // indices for multi-correct questions, undefined/null if skipped) to
+    // the actual option text. The AI was previously handed the raw index
+    // (e.g. "1") instead of the option's text, which it has no way to
+    // interpret without the options list — this is what q.options below
+    // is for too. Returns "—" for a skipped/missing answer so it reads
+    // the same way as the header's placeholder rather than "undefined".
+    const answerToText = (value, options) => {
+      if (value === undefined || value === null) return "—";
+      if (Array.isArray(value)) {
+        if (!value.length) return "—";
+        const texts = value
+          .map((idx) => (Array.isArray(options) ? options[idx] : undefined))
+          .filter((t) => t !== undefined);
+        return texts.length ? texts.join("، ") : "—";
+      }
+      if (Array.isArray(options) && typeof value === "number") {
+        return options[value] ?? "—";
+      }
+      // Essay/free-text answers are already the text itself.
+      return String(value);
+    };
+
     const perQuestion = questions.map((q, i) => {
       const ua = result.userAnswers?.[i];
       const essay = isEssayQuestion(q);
+      const options = Array.isArray(q.options) ? q.options : null;
+      const userAnswer = essay ? (ua ?? "—") : answerToText(ua, options);
       const correctAnswer = essay
         ? q.answer
-        : (q.answer ?? (Array.isArray(q.options) ? q.options[q.correct] : undefined));
+        : answerToText(q.correct ?? q.answer, options);
       const wasCorrect = essay
         ? gradeEssay(ua, q.answer ?? "") >= 4 // treat a near-full essay grade as "correct" for filtering
         : isAnswerCorrect(ua, q.correct ?? q.answer);
       return {
         question: q.q || q.question,
-        userAnswer: ua,
+        options: essay ? null : options,
+        userAnswer,
         correctAnswer,
         wasCorrect,
         explanation: q.explanation || "",
