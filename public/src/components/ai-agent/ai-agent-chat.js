@@ -121,11 +121,28 @@ export function createChatPanel(options = {}) {
     newChatBtn.hidden = history.length === 0;
   }
 
-  // Suggestion chips — only meaningful before the conversation starts;
-  // removed from the DOM (not just hidden) once the first message is sent
-  // so they never come back for this panel instance.
+  // Suggestion chips — only meaningful before the conversation starts.
+  // renderSuggestions() (re)builds them; called once up front here, and
+  // again from startNewConversation() so a fresh chat gets its chips back
+  // — they were previously only ever built once per panel instance and
+  // permanently removed on first send, so pressing "new chat" left the
+  // fresh conversation without any, unlike actually reopening the AI
+  // Helper. removeSuggestions() is what runs on first send (and at the
+  // top of loadConversation) to clear them for an in-progress/loaded
+  // conversation.
   let suggestionsEl = null;
-  if (Array.isArray(suggestedPrompts) && suggestedPrompts.length) {
+
+  function removeSuggestions() {
+    if (suggestionsEl) {
+      suggestionsEl.remove();
+      suggestionsEl = null;
+    }
+  }
+
+  function renderSuggestions() {
+    removeSuggestions();
+    if (!Array.isArray(suggestedPrompts) || !suggestedPrompts.length) return;
+
     suggestionsEl = document.createElement("div");
     suggestionsEl.className = "ai-agent-suggestions";
     suggestedPrompts.forEach((prompt) => {
@@ -140,7 +157,12 @@ export function createChatPanel(options = {}) {
       });
       suggestionsEl.appendChild(chip);
     });
-    panel.appendChild(suggestionsEl);
+    // Always insert right before inputRow (declared further down, but this
+    // function is never called until after inputRow exists — see the
+    // initial renderSuggestions() call below it) so re-rendering the chips
+    // from startNewConversation() puts them back in the same spot rather
+    // than appending after the input row.
+    panel.insertBefore(suggestionsEl, inputRow);
   }
 
   // Pending-attachment chip — shown above the input row once a file is
@@ -294,6 +316,10 @@ export function createChatPanel(options = {}) {
   panel.appendChild(inputRow);
   if (fileInput) panel.appendChild(fileInput);
 
+  // inputRow exists now, so it's safe for renderSuggestions() to insert
+  // relative to it (see the function's own comment above).
+  renderSuggestions();
+
   function renderEmptyState() {
     messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
   }
@@ -397,8 +423,7 @@ export function createChatPanel(options = {}) {
     renderAttachmentChip();
 
     if (suggestionsEl) {
-      suggestionsEl.remove();
-      suggestionsEl = null;
+      removeSuggestions();
     }
 
     appendMessage("user", text, attachment?.name);
@@ -559,10 +584,7 @@ export function createChatPanel(options = {}) {
    * @param {import("./ai-agent-history-idb.js").Conversation} conversation
    */
   panel.loadConversation = function loadConversation(conversation) {
-    if (suggestionsEl) {
-      suggestionsEl.remove();
-      suggestionsEl = null;
-    }
+    removeSuggestions();
     pendingAttachment = null;
     renderAttachmentChip();
 
@@ -596,7 +618,10 @@ export function createChatPanel(options = {}) {
    * record rather than continuing the previous one. Wired to the floating
    * "new chat" icon button (see newChatBtn above) — that button hides
    * itself once the conversation is empty, so this never fires on an
-   * already-empty chat.
+   * already-empty chat. Also restores the suggestion chips (see
+   * renderSuggestions()) — a fresh conversation should look the same as
+   * one starting from freshly opening the AI Helper, chips included, not
+   * a chat stuck without them for the rest of the panel's lifetime.
    */
   panel.startNewConversation = function startNewConversation() {
     conversationId = crypto.randomUUID();
@@ -606,6 +631,7 @@ export function createChatPanel(options = {}) {
     renderAttachmentChip();
     messagesEl.innerHTML = "";
     renderEmptyState();
+    renderSuggestions();
     updateNewChatVisibility();
   };
 
