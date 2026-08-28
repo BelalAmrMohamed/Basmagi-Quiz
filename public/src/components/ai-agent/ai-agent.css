@@ -254,3 +254,73 @@
 
 .ai-agent-settings-status--saved { color: var(--color-success); }
 .ai-agent-settings-status--cleared { color: var(--color-text-tertiary); }
+
+/* ── Floating action button ──
+   Bottom-right, fixed. Sits above the bottom mobile nav bar (see
+   --bottom-nav-height, same token the shared .modal-overlay uses) and
+   above any content on desktop. Opens the modal below on click. */
+.ai-agent-fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
+  z-index: 1500;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gradient-accent);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-agent-fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.ai-agent-fab:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ── Modal ──
+   Reuses the shared .modal-overlay / .modal-card base rules (see
+   index.css and download-quiz-modal.css for the same pattern). This is
+   just the widget-specific sizing on top of that base. */
+.ai-agent-modal-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: min(640px, 88vh);
+}
+
+.ai-agent-modal-card .modal-header {
+  padding: 18px 20px 14px;
+  flex-shrink: 0;
+}
+
+.ai-agent-modal-card .ai-agent-widget {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  flex: 1;
+  min-height: 0;
+}
+
+.ai-agent-modal-card .ai-agent-panel {
+  min-height: 0;
+  max-height: none;
+}
+
+@media (max-width: 640px) {
+  .ai-agent-modal-card {
+    max-height: min(560px, 80vh);
+  }
+}

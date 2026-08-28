@@ -103,7 +103,10 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     } catch (err) {
       console.error("[ai-agent/chat] own-key provider error:", err);
-      return res.status(502).json({ error: "فشل الاتصال بمزوّد الذكاء الاصطناعي" });
+      return res.status(502).json({
+        error: "فشل الاتصال بمزوّد الذكاء الاصطناعي",
+        detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
+      });
     }
   }
 

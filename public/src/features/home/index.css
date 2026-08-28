@@ -2830,10 +2830,12 @@ Container
 
   /* BUG FIX: selection mode shows a checkbox absolutely positioned at the
      same top-left corner (see .user-quiz-select-checkbox below), which
-     visually overlapped the emoji. Hide the emoji while selection mode is
-     active so only the checkbox occupies that corner. */
+     visually overlapped the emoji. Use visibility:hidden (not display:none)
+     so the emoji's flex slot is preserved — display:none would collapse
+     its space and shift the title text sideways into the checkbox instead
+     of just leaving a gap, trading one overlap for a worse one. */
   .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji {
-    display: none !important;
+    visibility: hidden !important;
   }
 
   .start-btn.desktop-download-btn {
@@ -3761,14 +3763,6 @@ kbd {
 .user-quizzes-container .user-quiz-select-checkbox:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-/* AI Helper widget section, mounted after the quizzes list in
-   "إمتحاناتك" (see user-quizzes-view.js). Widget's own styles live in
-   src/components/ai-agent/ai-agent.css — this just spaces it from the
-   grid above it. */
-.user-quizzes-ai-agent-section {
-  margin-top: 24px;
 }
 
 /* ── Floating bulk action bar ── */

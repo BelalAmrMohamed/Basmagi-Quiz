@@ -106,14 +106,19 @@ export function createChatPanel(options = {}) {
       ? [{ role: "user", content: contextPrompt }, ...history]
       : history;
 
-    // Prefer platform-provided keys when the caller qualifies (verified
-    // admin, or a Level 10+ regular user) — falls back to the user's own
-    // key if they've saved one, and the server rejects with a clear error
-    // if neither applies (own key required).
-    const isAdmin = isAdminAuthenticated();
-    const adminToken = isAdmin ? getAdminToken() : null;
-    const userToken = isAdmin ? null : await getUserToken();
-    const authToken = adminToken || userToken;
+    // Prefer the user's own saved key when present — if they went to the
+    // trouble of saving one, that's an explicit signal to use it, and it
+    // also avoids a pointless /api/user-profile/identify round trip. Only
+    // fall back to platform access (admin token, or an auto-minted
+    // Level 10+ user token) when no own key is saved.
+    let authToken = null;
+    if (!hasOwnKey) {
+      const isAdmin = isAdminAuthenticated();
+      const adminToken = isAdmin ? getAdminToken() : null;
+      const userToken = isAdmin ? null : await getUserToken();
+      authToken = adminToken || userToken;
+    }
+    const useOwnKeyNow = hasOwnKey && !authToken;
 
     try {
       const headers = { "Content-Type": "application/json" };
@@ -125,8 +130,8 @@ export function createChatPanel(options = {}) {
         body: JSON.stringify({
           provider,
           messages: outgoingMessages,
-          useOwnKey: !authToken && hasOwnKey,
-          ownKey: !authToken && hasOwnKey ? ownKey : undefined,
+          useOwnKey: useOwnKeyNow,
+          ownKey: useOwnKeyNow ? ownKey : undefined,
         }),
       });
 
@@ -134,35 +139,14 @@ export function createChatPanel(options = {}) {
       typingEl.remove();
 
       if (!res.ok) {
-        if (res.status === 403 && hasOwnKey) {
-          // Platform access denied but the user has their own key saved —
-          // retry once using it instead of surfacing the 403 to them.
-          try {
-            const retryRes = await fetch("/api/ai-agent/chat", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                provider,
-                messages: outgoingMessages,
-                useOwnKey: true,
-                ownKey,
-              }),
-            });
-            const retryData = await retryRes.json().catch(() => ({}));
-            if (retryRes.ok) {
-              appendMessage("assistant", retryData.text || "");
-              history.push({ role: "assistant", content: retryData.text || "" });
-              return;
-            }
-            appendError(retryData.error || "حدث خطأ أثناء التواصل مع المساعد الذكي");
-            return;
-          } catch (retryErr) {
-            console.error("[ai-agent-chat] own-key retry failed:", retryErr);
-            appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
-            return;
-          }
-        }
-        appendError(data.error || "حدث خطأ أثناء التواصل مع المساعد الذكي");
+        console.error(
+          `[ai-agent-chat] /api/ai-agent/chat responded ${res.status}:`,
+          data,
+        );
+        const msg = data.detail
+          ? `${data.error || "خطأ"}: ${data.detail}`
+          : data.error || "حدث خطأ أثناء التواصل مع المساعد الذكي";
+        appendError(msg);
         return;
       }
 

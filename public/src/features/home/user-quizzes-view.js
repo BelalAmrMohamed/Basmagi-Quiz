@@ -26,7 +26,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { qz } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
-import { createAIAgentWidget } from "../../components/ai-agent/ai-agent.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -190,16 +190,17 @@ export function renderUserQuizzesView() {
 
     container.appendChild(quizzesContainer);
 
-    // ── AI Helper widget — modular component, reused as-is on result.html.
-    // See public/src/components/ai-agent/ai-agent.js.
-    const aiAgentSection = document.createElement("div");
-    aiAgentSection.className = "user-quizzes-ai-agent-section";
-    aiAgentSection.appendChild(
-      createAIAgentWidget({
+    // ── AI Helper — floating action button that opens the modal widget on
+    // click (see public/src/components/ai-agent/ai-agent.js). Mounted once
+    // per render; harmless to recreate since the old one is discarded with
+    // container.innerHTML = "" at the top of this function, and a FAB
+    // fixed-positioned outside the render flow doesn't need special
+    // placement here beyond being present in the DOM.
+    container.appendChild(
+      createAIAgentFab({
         placeholder: "اسأل عن امتحاناتك، أو اطلب شرحًا لأي موضوع...",
       }),
     );
-    container.appendChild(aiAgentSection);
 
     renderBulkActionBar();
   } catch (error) {

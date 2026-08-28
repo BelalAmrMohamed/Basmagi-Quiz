@@ -1,21 +1,25 @@
 // =============================================================================
 // public/src/components/ai-agent/ai-agent.js
-// Modular "AI Helper" widget — two tabs (Chat / Settings). Framework-free,
-// self-contained, and page-agnostic: pass everything it needs via the
-// `options` object rather than reaching for globals, so the same
-// createAIAgentWidget() call works from both the "إمتحاناتك" view
-// (user-quizzes-view.js) and result.html.
+// Modular "AI Helper" widget — two tabs (Chat / Settings), shown inside a
+// modal opened from a floating action button (FAB), rather than inlined
+// into the page's DOM. Framework-free, self-contained, and page-agnostic:
+// pass everything it needs via the `options` object rather than reaching
+// for globals, so the same createAIAgentFab() call works from both the
+// "إمتحاناتك" view (user-quizzes-view.js) and result.html.
 //
 // Usage:
-//   import { createAIAgentWidget } from "../../components/ai-agent/ai-agent.js";
-//   const widget = createAIAgentWidget({
+//   import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+//   const fab = createAIAgentFab({
 //     contextPrompt: "المستخدم يسأل عن نتيجة امتحان مادة الفيزياء...", // optional
 //     placeholder: "اسأل عن نتيجتك...", // optional
 //   });
-//   someContainer.appendChild(widget);
+//   someContainer.appendChild(fab);
 //
 // Requires the host page to link ai-agent.css (see download-quiz-modal.css
-// for the existing pattern of a static <link> tag per page).
+// for the existing pattern of a static <link> tag per page) and to already
+// have the shared .modal-overlay/.modal-card base rules (index.css) loaded
+// — every page in this app does, since download-quiz-modal relies on them
+// too.
 // =============================================================================
 
 import { createChatPanel } from "./ai-agent-chat.js";
@@ -23,15 +27,17 @@ import { createSettingsPanel } from "./ai-agent-settings.js";
 
 const CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
 
 /**
+ * Builds the tabbed widget content (Chat + Settings) — the part that lives
+ * inside the modal card. Kept separate from the FAB/modal chrome so it can
+ * still be embedded directly if a future page wants that instead.
  * @param {object} [options]
- * @param {string} [options.contextPrompt] - forwarded to the chat panel as
- *   extra context (e.g. quiz result summary) prepended to every request.
- * @param {string} [options.placeholder] - chat input placeholder text.
  * @returns {HTMLElement}
  */
-export function createAIAgentWidget(options = {}) {
+function buildWidgetContent(options = {}) {
   const widget = document.createElement("div");
   widget.className = "ai-agent-widget";
 
@@ -72,3 +78,67 @@ export function createAIAgentWidget(options = {}) {
 
   return widget;
 }
+
+function openAIAgentModal(options) {
+  const modal = document.createElement("div");
+  modal.className = "modal-overlay ai-agent-modal-overlay";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "aiAgentModalTitle");
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.remove();
+  });
+
+  const modalCard = document.createElement("div");
+  modalCard.className = "modal-card ai-agent-modal-card";
+
+  const header = document.createElement("div");
+  header.className = "modal-header";
+  header.innerHTML = `
+    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} المساعد الذكي</h2>
+    <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
+  `;
+
+  modalCard.appendChild(header);
+  modalCard.appendChild(buildWidgetContent(options));
+  modal.appendChild(modalCard);
+
+  modal.querySelector(".ai-agent-modal-close").onclick = () => modal.remove();
+
+  document.body.appendChild(modal);
+
+  // Escape-to-close, mirroring the pattern other modals in this app use.
+  const onKeydown = (e) => {
+    if (e.key === "Escape") {
+      modal.remove();
+      document.removeEventListener("keydown", onKeydown);
+    }
+  };
+  document.addEventListener("keydown", onKeydown);
+}
+
+/**
+ * Creates the floating action button that opens the AI Helper modal.
+ * Mount this once per page (e.g. appended to the view container) rather
+ * than inlining the widget itself into the page flow.
+ * @param {object} [options]
+ * @param {string} [options.contextPrompt]
+ * @param {string} [options.placeholder]
+ * @returns {HTMLElement} the FAB button element
+ */
+export function createAIAgentFab(options = {}) {
+  const fab = document.createElement("button");
+  fab.type = "button";
+  fab.className = "ai-agent-fab";
+  fab.setAttribute("aria-label", "افتح المساعد الذكي");
+  fab.title = "المساعد الذكي";
+  fab.innerHTML = SPARKLE_ICON_SVG;
+  fab.addEventListener("click", () => openAIAgentModal(options));
+  return fab;
+}
+
+// Kept for callers that genuinely want the tabbed widget embedded inline
+// rather than behind a FAB/modal (e.g. a future dedicated "AI Helper" page).
+export { buildWidgetContent as createAIAgentWidget };
+
