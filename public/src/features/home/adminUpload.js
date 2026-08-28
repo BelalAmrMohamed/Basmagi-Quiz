@@ -29,6 +29,7 @@ import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest } from "../../shared/quizManifest.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
+import { UPLOAD_ICON_SVG } from "./icons.js";
 
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
@@ -231,69 +232,6 @@ function injectStyles() {
     .adm-btn-primary { background:var(--gradient-accent); color:#fff; }
     .adm-btn-ghost   { background:var(--color-background-secondary); border:1.5px solid var(--color-border); color:var(--color-text); }
 
-    .upload-to-db-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 5px 10px;
-      background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      font-size: .75rem;
-      font-weight: 700;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(124, 58, 237, .2);
-      transition: all .2s cubic-bezier(.4, 0, .2, 1);
-      gap: 0;
-    }
-
-    .upload-to-db-btn svg {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
-    }
-
-    .upload-to-db-btn span {
-      max-width: 0;
-      overflow: hidden;
-      opacity: 0;
-      transition: all .2s cubic-bezier(.4, 0, .2, 1);
-    }
-
-    .upload-to-db-btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(124, 58, 237, .4);
-      gap: 5px;
-    }
-
-    .upload-to-db-btn:hover span {
-      max-width: 200px;
-      opacity: 1;
-    }
-
-    @media (max-width: 640px) {
-      .upload-to-db-btn {
-        width: auto;
-        margin: 0 auto;
-        padding: 5px 10px;
-        gap: 5px;
-        transition: none;
-      }
-
-      .upload-to-db-btn span {
-        max-width: none;
-        opacity: 1;
-      }
-
-      .upload-to-db-btn:hover,
-      .upload-to-db-btn:focus-visible {
-        transform: none;
-        box-shadow: 0 2px 6px rgba(124, 58, 237, .2);
-      }
-    }
     .adm-spinner { display:inline-block; width:15px; height:15px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:admSpin .7s linear infinite; margin-left:6px; }
     @keyframes admSpin { to{transform:rotate(360deg)} }
 
@@ -1065,20 +1003,18 @@ function closeModal() {
 }
 
 // ─── Public exports ───────────────────────────────────────────────────────────
+// Renders as a standard .exam-action-btn — same shape/size/DOM structure as
+// the other options in the card's ⋮ dropdown (Edit/Delete/Download), so it
+// no longer needs its own bespoke CSS. Lives inside the dropdown menu on
+// ALL screen sizes (see showUserQuizActionsOverlay in user-quiz-card.js) —
+// there is no separate top-left placement anymore.
 export function createUploadButton(quiz) {
   injectStyles();
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "upload-to-db-btn";
+  btn.className = "exam-action-btn";
   btn.setAttribute("aria-label", `رفع "${quiz.title}" إلى قاعدة البيانات`);
-  btn.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <polyline points="16 16 12 12 8 16"/>
-      <line x1="12" y1="12" x2="12" y2="21"/>
-      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-    </svg>
-    <span>رفع لقاعدة البيانات</span>`;
+  btn.innerHTML = `${UPLOAD_ICON_SVG}<span>رفع لقاعدة البيانات</span>`;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openModal(quiz); });
   return btn;
 }

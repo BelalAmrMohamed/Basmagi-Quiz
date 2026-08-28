@@ -41,6 +41,7 @@ export const CIRCLE_INFO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" wid
 // Three-dot "more actions" icon used on exam/user-quiz cards.
 export const MORE_DOTS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>`;
 
+
 // Download-to-line icon used on the "Download Source" button.
 export const DOWNLOAD_SOURCE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-down-to-line-icon lucide-arrow-down-to-line"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>`;
 

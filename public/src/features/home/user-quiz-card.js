@@ -212,17 +212,9 @@ export function createUserQuizCard(quiz, index) {
   card.appendChild(textWrap);
   card.appendChild(btnWrap);
 
-  // ── Admin Upload Button (visible only to authenticated admins) ──────────
-  // Desktop: absolutely positioned top-left (mirrors moreBtn at top-right).
-  // Mobile: hidden here via .mobile-only suppression — shown inside the
-  //         Action Overlay instead (added dynamically in showUserQuizActionsOverlay).
-  if (isAdminAuthenticated() || hasAdminSessionHint()) {
-    const uploadRow = document.createElement("div");
-    uploadRow.className = "admin-upload-btn";
-    const uploadBtn = createUploadButton(quiz);
-    uploadRow.appendChild(uploadBtn);
-    card.appendChild(uploadRow);
-  }
+  // Admin upload button now lives exclusively inside the ⋮ dropdown menu
+  // (see showUserQuizActionsOverlay below), on all screen sizes — no
+  // top-left card placement anymore.
 
   return card;
 }
@@ -278,17 +270,14 @@ export async function deleteUserQuiz(quizId) {
  */
 export function showUserQuizActionsOverlay(quiz, triggerBtn) {
   openExamDropdownMenu(triggerBtn, (menu, closeMenu, reposition) => {
-    // Admin upload — only rendered for authenticated admins, and only visible
-    // on mobile (mobile-only hides it at ≥641px where the card's top-left
-    // absolute .admin-upload-btn is already shown instead).
+    // Admin upload — only rendered for authenticated admins. Shown inside
+    // the dropdown on ALL screen sizes (desktop and mobile) now, styled
+    // identically to Edit/Delete via createUploadButton()'s own
+    // .exam-action-btn class — no wrapper div needed.
     if (isAdminAuthenticated() || hasAdminSessionHint()) {
-      const adminOpt = document.createElement("div");
-      adminOpt.className = "exam-action-btn mobile-only";
-      adminOpt.style.cursor = "default"; // it's a wrapper, not a button itself
       const uploadBtn = createUploadButton(quiz);
-      adminOpt.appendChild(uploadBtn);
-      adminOpt.addEventListener("click", (e) => e.stopPropagation());
-      menu.appendChild(adminOpt);
+      uploadBtn.addEventListener("click", () => closeMenu());
+      menu.appendChild(uploadBtn);
     }
 
     // ── Mobile-only Download button ───────────────────────────────────────

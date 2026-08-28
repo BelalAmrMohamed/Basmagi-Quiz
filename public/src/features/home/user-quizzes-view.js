@@ -26,6 +26,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { qz } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
+import { createAIAgentWidget } from "../../components/ai-agent/ai-agent.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -188,6 +189,17 @@ export function renderUserQuizzesView() {
     quizzesContainer.prepend(inlineCreateCard);
 
     container.appendChild(quizzesContainer);
+
+    // ── AI Helper widget — modular component, reused as-is on result.html.
+    // See public/src/components/ai-agent/ai-agent.js.
+    const aiAgentSection = document.createElement("div");
+    aiAgentSection.className = "user-quizzes-ai-agent-section";
+    aiAgentSection.appendChild(
+      createAIAgentWidget({
+        placeholder: "اسأل عن امتحاناتك، أو اطلب شرحًا لأي موضوع...",
+      }),
+    );
+    container.appendChild(aiAgentSection);
 
     renderBulkActionBar();
   } catch (error) {

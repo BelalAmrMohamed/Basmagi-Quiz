@@ -1,0 +1,256 @@
+/* =============================================================================
+   public/src/components/ai-agent/ai-agent.css
+   Scoped styles for the modular AI Helper widget. Reuses existing design
+   tokens (--color-*, --gradient-accent, --shadow-*) and mirrors the visual
+   language of .exam-action-btn / .adm-btn so the widget doesn't look bolted
+   on, whether it's mounted in "إمتحاناتك" or result.html.
+   ============================================================================= */
+
+.ai-agent-widget {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  direction: rtl;
+  font-family: inherit;
+  max-width: 100%;
+}
+
+/* ── Tabs ── */
+.ai-agent-tabs {
+  display: flex;
+  border-bottom: 1.5px solid var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.ai-agent-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+.ai-agent-tab-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-primary-light);
+}
+
+.ai-agent-tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.ai-agent-tab-btn svg {
+  flex-shrink: 0;
+}
+
+/* ── Panels ── */
+.ai-agent-panel {
+  display: none;
+  flex-direction: column;
+  min-height: 320px;
+  max-height: 480px;
+}
+
+.ai-agent-panel.active {
+  display: flex;
+}
+
+/* ── Chat tab ── */
+.ai-agent-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-agent-msg {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.ai-agent-msg--user {
+  align-self: flex-start;
+  background: var(--gradient-accent);
+  color: #fff;
+}
+
+.ai-agent-msg--assistant {
+  align-self: flex-end;
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+}
+
+.ai-agent-msg--error {
+  align-self: center;
+  background: var(--color-error-light);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  font-size: 0.82rem;
+}
+
+.ai-agent-msg--empty {
+  align-self: center;
+  color: var(--color-text-tertiary);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 24px 12px;
+}
+
+.ai-agent-typing {
+  align-self: flex-end;
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+}
+
+.ai-agent-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-text-tertiary);
+  animation: aiAgentTypingBounce 1s infinite ease-in-out;
+}
+
+.ai-agent-typing span:nth-child(2) { animation-delay: 0.15s; }
+.ai-agent-typing span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes aiAgentTypingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.ai-agent-chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1.5px solid var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.ai-agent-chat-input {
+  flex: 1;
+  resize: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  min-height: 40px;
+  max-height: 120px;
+}
+
+.ai-agent-chat-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.ai-agent-send-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--gradient-accent);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ai-agent-send-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.ai-agent-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Settings tab ── */
+.ai-agent-settings-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.ai-agent-settings-note {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  background: var(--color-background-secondary);
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+
+.ai-agent-field-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.ai-agent-provider-select,
+.ai-agent-key-input {
+  width: 100%;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  direction: ltr;
+  text-align: left;
+}
+
+.ai-agent-provider-select {
+  direction: rtl;
+  text-align: right;
+}
+
+.ai-agent-key-input:focus,
+.ai-agent-provider-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.ai-agent-settings-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-agent-settings-status {
+  font-size: 0.8rem;
+  min-height: 1.1em;
+}
+
+.ai-agent-settings-status--saved { color: var(--color-success); }
+.ai-agent-settings-status--cleared { color: var(--color-text-tertiary); }

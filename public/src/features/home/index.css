@@ -2618,21 +2618,6 @@ Container
   margin-bottom: 10px;
 }
 
-/*
- * Admin upload button — top-left absolute on desktop, mirroring the ⋮ moreBtn
- * which sits top-right. On mobile it's hidden here (mobile-only class controls
- * visibility — it appears inside the Action Overlay instead via mobile-only).
- */
-.admin-upload-btn {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 2;
-  margin-top: 0;
-  display: flex;
-  justify-content: flex-start;
-}
-
 .admin-log-in-btn {
   display: inline-flex;
   align-items: center;
@@ -2843,6 +2828,14 @@ Container
     justify-content: center;
   }
 
+  /* BUG FIX: selection mode shows a checkbox absolutely positioned at the
+     same top-left corner (see .user-quiz-select-checkbox below), which
+     visually overlapped the emoji. Hide the emoji while selection mode is
+     active so only the checkbox occupies that corner. */
+  .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji {
+    display: none !important;
+  }
+
   .start-btn.desktop-download-btn {
     display: none !important;
   }
@@ -2987,11 +2980,6 @@ Container
 
   /* Download button: hidden on mobile (same as normal exam cards) */
   .exam-card.user-quiz-card .start-btn.desktop-download-btn {
-    display: none !important;
-  }
-
-  /* Admin upload button: hidden from card on mobile — lives in overlay instead */
-  .exam-card.user-quiz-card .admin-upload-btn {
     display: none !important;
   }
 
@@ -3775,8 +3763,12 @@ kbd {
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.user-quizzes-container.selection-mode-active .admin-upload-btn {
-  display: none !important;
+/* AI Helper widget section, mounted after the quizzes list in
+   "إمتحاناتك" (see user-quizzes-view.js). Widget's own styles live in
+   src/components/ai-agent/ai-agent.css — this just spaces it from the
+   grid above it. */
+.user-quizzes-ai-agent-section {
+  margin-top: 24px;
 }
 
 /* ── Floating bulk action bar ── */
