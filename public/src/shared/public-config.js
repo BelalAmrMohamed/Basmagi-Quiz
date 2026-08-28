@@ -17,5 +17,5 @@
 // These are the exact same values previously served by GET /api/env.
 // =============================================================================
 
-export const SUPABASE_URL = "https://YOUR-PROJECT-REF.supabase.co";
-export const SUPABASE_ANON_KEY = "YOUR-SUPABASE-ANON-PUBLIC-KEY";
+export const SUPABASE_URL = "https://esdfdzhtavraczrhxnmp.supabase.co";
+export const SUPABASE_ANON_KEY = "sb_publishable_4D7EOElzLkqjjMyrmt15iQ_fyXTNDQD";
