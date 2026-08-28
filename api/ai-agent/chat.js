@@ -32,6 +32,21 @@ import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
 import jwt from "jsonwebtoken";
 
+// Upstream 429 ("too many requests") / 503 ("model overloaded") are
+// transient provider-side conditions, not something wrong with the key or
+// our code — surface them as a distinct, friendlier message + a real HTTP
+// status the frontend can use to suggest "try again" rather than reading
+// as a generic broken-integration error.
+function isTransientUpstreamStatus(status) {
+  return status === 429 || status === 503;
+}
+
+function transientMessageFor(status) {
+  return status === 429
+    ? "تم الوصول للحد الأقصى من الطلبات لدى مزوّد الذكاء الاصطناعي حاليًا. حاول مرة أخرى خلال قليل."
+    : "خوادم مزوّد الذكاء الاصطناعي مشغولة حاليًا (overloaded). حاول مرة أخرى خلال لحظات.";
+}
+
 // Very small in-memory per-IP limiter for the own-key proxy path, to keep
 // this endpoint from being used as an open relay. Resets on cold start —
 // acceptable for v1 given Vercel's function lifecycle; swap for an
@@ -103,6 +118,13 @@ export default async function handler(req, res) {
       return res.status(200).json(result);
     } catch (err) {
       console.error("[ai-agent/chat] own-key provider error:", err);
+      if (isTransientUpstreamStatus(err.upstreamStatus)) {
+        return res.status(err.upstreamStatus).json({
+          error: transientMessageFor(err.upstreamStatus),
+          detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
+          transient: true,
+        });
+      }
       return res.status(502).json({
         error: "فشل الاتصال بمزوّد الذكاء الاصطناعي",
         detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
@@ -145,6 +167,12 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error("[ai-agent/chat] platform-key provider error:", err);
+    if (isTransientUpstreamStatus(err.upstreamStatus)) {
+      return res.status(err.upstreamStatus).json({
+        error: transientMessageFor(err.upstreamStatus),
+        transient: true,
+      });
+    }
     return res.status(502).json({ error: "فشل الاتصال بمزوّد الذكاء الاصطناعي" });
   }
 }

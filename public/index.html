@@ -257,10 +257,14 @@
     <link rel="stylesheet" href="src/features/home/index.css">
     <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
     <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
     <link rel="stylesheet" href="src/styles/advanced-link-transition-animation.css">
     <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+    <!-- ai-agent.css loads after side-menu.css: the FAB's z-index is now
+         pinned to the shared --z-tooltip token so load order no longer
+         affects who wins a tie, but keeping it after nav-related
+         stylesheets avoids relying on that in the future. -->
+    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
     <link rel="stylesheet" href="src/features/home/search.css">
     <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">

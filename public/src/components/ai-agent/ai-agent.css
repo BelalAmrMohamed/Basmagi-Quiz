@@ -58,16 +58,22 @@
   flex-shrink: 0;
 }
 
-/* ── Panels ── */
+/* ── Panels ──
+   Defensive: both the base rule (hide) and the .active rule (show) are
+   scoped to the exact same specificity everywhere this class is used
+   (including nested under .ai-agent-modal-card below), so an inactive
+   panel can never be visible regardless of which container it renders
+   inside. If you still see both tabs' content stacked, you are looking
+   at a stale cached build of this file — hard-reload / bump cache. */
 .ai-agent-panel {
-  display: none;
+  display: none !important;
   flex-direction: column;
   min-height: 320px;
   max-height: 480px;
 }
 
 .ai-agent-panel.active {
-  display: flex;
+  display: flex !important;
 }
 
 /* ── Chat tab ── */
@@ -263,7 +269,15 @@
   position: fixed;
   right: 20px;
   bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
-  z-index: 1500;
+  /* BUG FIX: this app's --z-overlay token is 4000 (not the generic 500
+     fallback used elsewhere), and .sidebar/.bottom-nav sit at
+     --z-overlay/--z-overlay+1 (4000/4001). A flat 1500 here put the FAB
+     underneath the desktop sidebar and the mobile bottom nav. Anchor to
+     the same --z-tooltip layer (6000) the app's other "must always be
+     reachable, floats above everything" fixed elements use (see the
+     .exam-dropdown-menu fix note in index.css) so the FAB is never
+     covered by either nav surface. */
+  z-index: var(--z-tooltip, 6000);
   width: 56px;
   height: 56px;
   border: none;
@@ -292,13 +306,21 @@
    index.css and download-quiz-modal.css for the same pattern). This is
    just the widget-specific sizing on top of that base. */
 .ai-agent-modal-card {
-  width: 100%;
+  /* BUG FIX: the shared .modal-card base rule supplies its 90% width (=
+     the side "margins" on phones) via `width: 90%`, but this override was
+     replacing it with a flat `width: 100%` — 100% of the flex-centered
+     .modal-overlay, i.e. the full viewport width, with nothing left for
+     side gutters. Use the same 90% the rest of the app's modals rely on,
+     capped by max-width on larger screens, instead of re-deriving sizing
+     from scratch. */
+  width: 90%;
   max-width: 460px;
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   max-height: min(640px, 88vh);
+  box-sizing: border-box;
 }
 
 .ai-agent-modal-card .modal-header {

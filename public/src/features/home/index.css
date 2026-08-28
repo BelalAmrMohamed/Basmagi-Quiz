@@ -3768,7 +3768,14 @@ kbd {
 /* ── Floating bulk action bar ── */
 .bulk-action-bar {
   position: fixed;
-  bottom: 24px;
+  /* BUG FIX: was a flat `bottom: 24px` with z-index: 1000 — on phones
+     that sits underneath the fixed .bottom-nav (z-index ~4001, height
+     reserved via --bottom-nav-height) instead of above it, and at the
+     same bottom-center-ish height band as the AI Helper FAB
+     (bottom-right), so the two visually collided once both were on
+     screen at once. Push it up above the bottom nav's reserved height
+     and raise it to the same "always reachable" layer as the FAB. */
+  bottom: calc(24px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-surface);
@@ -3781,7 +3788,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 20px;
-  z-index: 1000;
+  z-index: var(--z-tooltip, 6000);
   animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -3877,7 +3884,10 @@ kbd {
 
 @media (max-width: 600px) {
   .bulk-action-bar {
-    width: 90%;
+    /* Keep it centered but narrower than full-width so it doesn't reach
+       under the FAB's right-anchored 56px+20px footprint. */
+    width: calc(90% - 76px);
+    max-width: 420px;
     flex-direction: column;
     gap: 10px;
     padding: 14px 16px;

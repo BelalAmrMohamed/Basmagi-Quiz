@@ -10,10 +10,8 @@
  */
 
 async function callGoogleAIStudio(apiKey, messages) {
-  // Model name per Google's deprecation notice (gemini-2.0-flash was
-  // retired). Kept as a named const so it's a one-line update if Google
-  // deprecates this one too.
-  const model = "gemini-flash-latest";
+  // We Must use the lightest available model
+  const model = "gemini-3.5-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = messages.map((m) => ({
@@ -29,7 +27,9 @@ async function callGoogleAIStudio(apiKey, messages) {
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
-    throw new Error(`Google AI Studio error (${res.status}): ${errBody}`);
+    const err = new Error(`Google AI Studio error (${res.status}): ${errBody}`);
+    err.upstreamStatus = res.status;
+    throw err;
   }
 
   const data = await res.json();
@@ -53,7 +53,9 @@ async function callDeepSeek(apiKey, messages) {
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
-    throw new Error(`DeepSeek error (${res.status}): ${errBody}`);
+    const err = new Error(`DeepSeek error (${res.status}): ${errBody}`);
+    err.upstreamStatus = res.status;
+    throw err;
   }
 
   const data = await res.json();
@@ -78,7 +80,9 @@ async function callClaude(apiKey, messages) {
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => "");
-    throw new Error(`Claude error (${res.status}): ${errBody}`);
+    const err = new Error(`Claude error (${res.status}): ${errBody}`);
+    err.upstreamStatus = res.status;
+    throw err;
   }
 
   const data = await res.json();
