@@ -265,6 +265,11 @@
          affects who wins a tie, but keeping it after nav-related
          stylesheets avoids relying on that in the future. -->
     <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
+    <!-- markdown.css supplies .text-rtl/.text-ltr direction classes used by
+         renderMarkdown()'s direction-detection engine (see markdown.js) —
+         needed here since the AI Helper on this page renders markdown via
+         the same engine result.html uses. -->
+    <link rel="stylesheet" href="src/styles/markdown.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
     <link rel="stylesheet" href="src/features/home/search.css">
     <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">

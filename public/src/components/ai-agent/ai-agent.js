@@ -61,7 +61,7 @@ function buildWidgetContent(options = {}) {
   const chatPanel = createChatPanel(options);
   chatPanel.classList.add("active");
 
-  const settingsPanel = createSettingsPanel();
+  const settingsPanel = createSettingsPanel(options);
 
   widget.appendChild(chatPanel);
   widget.appendChild(settingsPanel);
@@ -125,6 +125,11 @@ function openAIAgentModal(options) {
  * @param {object} [options]
  * @param {string} [options.contextPrompt]
  * @param {string} [options.placeholder]
+ * @param {"home"|"result"} [options.pageKey] - keys per-page system-prompt storage
+ * @param {string} [options.defaultSystemPrompt] - page-specific default system prompt
+ * @param {boolean} [options.enableTools] - whether the chat may call tools (e.g. create_quiz)
+ * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall]
+ * @param {Array<object>} [options.contextSummary]
  * @returns {HTMLElement} the FAB button element
  */
 export function createAIAgentFab(options = {}) {

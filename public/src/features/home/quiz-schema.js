@@ -4,6 +4,8 @@
 // schemas, normalizing legacy question shapes, and building new entries.
 // ============================================================================
 
+import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
+
 /** Read a field from either old or new schema */
 export function qz(quiz, field) {
   switch (field) {
@@ -95,4 +97,23 @@ export function formatQuestionTypesForDownload(questionTypes) {
   if (Array.isArray(questionTypes))
     return questionTypes.length ? questionTypes.join(" · ") : null;
   return String(questionTypes) || null;
+}
+
+/**
+ * Save a newly-created quiz into "user_quizzes" localStorage — the single
+ * source of truth for "create a new user quiz and persist it" used by both
+ * the manual paste-JSON modal (create-quiz-modal.js) and the AI Helper's
+ * create_quiz tool call (user-quizzes-view.js). Callers are responsible for
+ * validating `parsed.questions` is non-empty before calling this.
+ * @param {{questions: Array, meta?: object, stats?: object}} parsed
+ * @param {string} titleFallback
+ * @returns {{id: string, meta: object, stats: object, questions: Array}} the saved entry
+ */
+export function saveNewUserQuiz(parsed, titleFallback) {
+  const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const quizId = crypto.randomUUID();
+  const entry = buildUserQuizEntry(quizId, parsed, titleFallback);
+  quizzes.push(entry);
+  setInStorage("user_quizzes", JSON.stringify(quizzes));
+  return entry;
 }

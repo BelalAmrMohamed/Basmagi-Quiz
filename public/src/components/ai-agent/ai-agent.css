@@ -14,14 +14,19 @@
   border-radius: 16px;
   box-shadow: var(--shadow-md);
   overflow: hidden;
-  direction: rtl;
   font-family: inherit;
   max-width: 100%;
 }
 
-/* ── Tabs ── */
+/* ── Tabs ──
+   Structural chrome — always RTL to match the app's own UI language,
+   independent of whatever direction an individual chat message ends up
+   being. Chat/settings CONTENT below gets its direction purely from
+   per-element .text-rtl/.text-ltr classes (see markdown.js), not from a
+   blanket rule on .ai-agent-widget. */
 .ai-agent-tabs {
   display: flex;
+  direction: rtl;
   border-bottom: 1.5px solid var(--color-border);
   background: var(--color-background-secondary);
 }
@@ -76,7 +81,11 @@
   display: flex !important;
 }
 
-/* ── Chat tab ── */
+/* ── Chat tab ──
+   No blanket `direction` here — each .ai-agent-msg carries its own
+   .text-rtl/.text-ltr class from the per-message detection engine (see
+   ai-agent-chat.js::appendMessage / markdown.js::detectDirection), so
+   English and Arabic messages align independently in the same list. */
 .ai-agent-chat-messages {
   flex: 1;
   overflow-y: auto;
@@ -114,6 +123,15 @@
   color: var(--color-error);
   border: 1px solid var(--color-error);
   font-size: 0.82rem;
+}
+
+.ai-agent-msg--tool-result {
+  align-self: center;
+  background: var(--color-success-light, rgba(34, 197, 94, 0.12));
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+  font-weight: 700;
+  text-align: center;
 }
 
 .ai-agent-msg--empty {
@@ -198,9 +216,13 @@
   cursor: not-allowed;
 }
 
-/* ── Settings tab ── */
+/* ── Settings tab ──
+   Structural chrome (labels, notes, buttons) stays RTL to match the app's
+   UI language — this panel doesn't render arbitrary user/AI content, so a
+   blanket direction here is safe (unlike .ai-agent-chat-messages above). */
 .ai-agent-settings-panel {
   padding: 16px;
+  direction: rtl;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -260,6 +282,26 @@
 
 .ai-agent-settings-status--saved { color: var(--color-success); }
 .ai-agent-settings-status--cleared { color: var(--color-text-tertiary); }
+
+.ai-agent-system-prompt-input {
+  width: 100%;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  resize: vertical;
+  min-height: 100px;
+  box-sizing: border-box;
+}
+
+.ai-agent-system-prompt-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
 
 /* ── Floating action button ──
    Bottom-right, fixed. Sits above the bottom mobile nav bar (see

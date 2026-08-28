@@ -5,9 +5,11 @@
 //   provider: "google" | "deepseek" | "claude",
 //   messages: [{ role: "user"|"assistant", content: string }, ...],
 //   useOwnKey?: boolean,
-//   ownKey?: string            // required if useOwnKey is true
+//   ownKey?: string,           // required if useOwnKey is true
+//   systemPrompt?: string,     // optional system-role instructions
+//   enableTools?: boolean,     // if true, offers CREATE_QUIZ_TOOL (see _tools.js)
 // }
-// Success 200: { text: string }
+// Success 200: { text: string, toolCall?: { name: string, input: object } }
 // Failure 400/401/403/429/500: { error: string }
 //
 // AUTHORIZATION:
@@ -30,6 +32,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
+import { CREATE_QUIZ_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 
 // Upstream 429 ("too many requests") / 503 ("model overloaded") are
@@ -90,7 +93,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, messages, useOwnKey, ownKey } = req.body || {};
+  const { provider, messages, useOwnKey, ownKey, systemPrompt, enableTools } = req.body || {};
 
   if (!isSupportedProvider(provider)) {
     return res.status(400).json({ error: "مزوّد غير مدعوم" });
@@ -98,6 +101,8 @@ export default async function handler(req, res) {
   if (!Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: "الرسائل مطلوبة" });
   }
+
+  const tools = enableTools ? [CREATE_QUIZ_TOOL] : undefined;
 
   // ── Own-key path: bypass auth + platform pool entirely ───────────────────
   if (useOwnKey) {
@@ -114,7 +119,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const result = await callProvider(provider, ownKey, messages);
+      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools);
       return res.status(200).json(result);
     } catch (err) {
       console.error("[ai-agent/chat] own-key provider error:", err);
@@ -163,7 +168,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await callProvider(provider, picked.key, messages);
+    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools);
     return res.status(200).json(result);
   } catch (err) {
     console.error("[ai-agent/chat] platform-key provider error:", err);

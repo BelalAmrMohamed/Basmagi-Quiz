@@ -29,6 +29,10 @@ import {
 // scanDirections:           post-render direction scan for non-markdown elements
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 
+// AI Helper (result-page analysis mode — read-only, no quiz creation)
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { buildResultSystemPrompt } from "../../components/ai-agent/ai-agent-default-prompts.js";
+
 // Helpers
 const userName = localStorage.getItem("username") || "User";
 const result = JSON.parse(localStorage.getItem("last_quiz_result"));
@@ -555,6 +559,54 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Remove loading skeletons now that real content is rendered
   document.getElementById("scoreHeaderSkeleton")?.remove();
   document.getElementById("reviewSkeleton")?.remove();
+
+  // ── AI Helper — result analysis mode ────────────────────────────────────
+  // Build a compact structured summary (not the raw localStorage blob) of
+  // the quiz + user's answers + marks, sourced from data already in scope
+  // above. Cap to wrong/skipped questions only by default — right answers
+  // need no discussion — to keep the system prompt from bloating past
+  // reasonable token limits on quizzes with many questions.
+  {
+    const perQuestion = questions.map((q, i) => {
+      const ua = result.userAnswers?.[i];
+      const essay = isEssayQuestion(q);
+      const correctAnswer = essay
+        ? q.answer
+        : (q.answer ?? (Array.isArray(q.options) ? q.options[q.correct] : undefined));
+      const wasCorrect = essay
+        ? gradeEssay(ua, q.answer ?? "") >= 4 // treat a near-full essay grade as "correct" for filtering
+        : isAnswerCorrect(ua, q.correct ?? q.answer);
+      return {
+        question: q.q || q.question,
+        userAnswer: ua,
+        correctAnswer,
+        wasCorrect,
+        explanation: q.explanation || "",
+      };
+    });
+
+    const wrongOrSkipped = perQuestion.filter((q) => !q.wasCorrect);
+    const omittedCorrectCount = perQuestion.length - wrongOrSkipped.length;
+
+    const resultSummaryForAI = {
+      percentage: actualPercentage,
+      passed: actualPercentage >= 70,
+      mcq: { correct: mcqCorrect, wrong: mcqWrong, skipped: mcqSkipped, total: mcqTotal },
+      essay: essayCount > 0 ? { score: essayScoreTotal, max: essayMaxTotal } : null,
+      questions: wrongOrSkipped,
+      omittedCorrectCount,
+    };
+
+    document.body.appendChild(
+      createAIAgentFab({
+        pageKey: "result",
+        defaultSystemPrompt: buildResultSystemPrompt(resultSummaryForAI),
+        placeholder: "اسأل عن نتيجتك أو اطلب توصيات...",
+        // No enableTools/onToolCall here — analysis only, no quiz creation
+        // ability on this page (see IMPLEMENTATION_PLAN_v2.md Task 3C step 5).
+      }),
+    );
+  }
 
   // ── Perfect-Score Certificate ──────────────────────────────────────────────
   if (questions.length > 10 && actualPercentage === 100) {

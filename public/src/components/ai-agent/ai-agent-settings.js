@@ -10,6 +10,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 
 const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
+const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
 
 const PROVIDERS = [
   { value: "google", label: "Google AI Studio (Gemini)" },
@@ -44,9 +45,33 @@ function clearOwnKey(provider) {
 }
 
 /**
+ * @param {string} pageKey - "home" | "result"
+ * @param {string} defaultPrompt - the page's default system prompt
+ * @returns {string} the stored override, or defaultPrompt if unset/empty
+ */
+export function getSystemPrompt(pageKey, defaultPrompt) {
+  const stored = getFromStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, "");
+  return stored || defaultPrompt || "";
+}
+
+export function setSystemPrompt(pageKey, value) {
+  setInStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, value);
+}
+
+export function resetSystemPrompt(pageKey) {
+  setInStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, "");
+}
+
+/**
+ * @param {object} [options]
+ * @param {string} [options.pageKey] - "home" | "result"; used to key the
+ *   per-page system-prompt storage.
+ * @param {string} [options.defaultSystemPrompt] - the page's default prompt,
+ *   shown when no override has been saved.
  * @returns {HTMLElement} the settings panel root element
  */
-export function createSettingsPanel() {
+export function createSettingsPanel(options = {}) {
+  const { pageKey = "default", defaultSystemPrompt = "" } = options;
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-settings-panel";
 
@@ -141,6 +166,54 @@ export function createSettingsPanel() {
     keyInput.value = "";
     status.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
     status.textContent = "تم المسح";
+  });
+
+  // ── System prompt (editable, page-scoped) ──
+  const promptLabel = document.createElement("label");
+  promptLabel.className = "ai-agent-field-label";
+  promptLabel.textContent = "تعليمات النظام (System Prompt)";
+  panel.appendChild(promptLabel);
+
+  const promptTextarea = document.createElement("textarea");
+  promptTextarea.className = "ai-agent-system-prompt-input";
+  promptTextarea.rows = 6;
+  promptTextarea.value = getSystemPrompt(pageKey, defaultSystemPrompt);
+  panel.appendChild(promptTextarea);
+
+  const promptActions = document.createElement("div");
+  promptActions.className = "ai-agent-settings-actions";
+
+  const savePromptBtn = document.createElement("button");
+  savePromptBtn.type = "button";
+  savePromptBtn.className = "exam-action-btn exam-action-btn--primary";
+  savePromptBtn.style.width = "auto";
+  savePromptBtn.innerHTML = "<span>حفظ التعليمات</span>";
+
+  const resetPromptBtn = document.createElement("button");
+  resetPromptBtn.type = "button";
+  resetPromptBtn.className = "exam-action-btn exam-action-btn--danger";
+  resetPromptBtn.style.width = "auto";
+  resetPromptBtn.innerHTML = "<span>إعادة تعيين للافتراضي</span>";
+
+  promptActions.appendChild(savePromptBtn);
+  promptActions.appendChild(resetPromptBtn);
+  panel.appendChild(promptActions);
+
+  const promptStatus = document.createElement("div");
+  promptStatus.className = "ai-agent-settings-status";
+  panel.appendChild(promptStatus);
+
+  savePromptBtn.addEventListener("click", () => {
+    setSystemPrompt(pageKey, promptTextarea.value.trim());
+    promptStatus.className = "ai-agent-settings-status ai-agent-settings-status--saved";
+    promptStatus.textContent = "تم الحفظ ✓";
+  });
+
+  resetPromptBtn.addEventListener("click", () => {
+    resetSystemPrompt(pageKey);
+    promptTextarea.value = defaultSystemPrompt || "";
+    promptStatus.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
+    promptStatus.textContent = "تمت الإعادة للافتراضي";
   });
 
   return panel;

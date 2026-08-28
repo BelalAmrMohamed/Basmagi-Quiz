@@ -6,20 +6,36 @@
 // "إمتحاناتك" view or result.html with different contextual system prompts.
 // =============================================================================
 
-import { renderMarkdown } from "../../shared/markdown.js";
-import { getSelectedProvider, getOwnKey } from "./ai-agent-settings.js";
+import { renderMarkdown, detectDirection } from "../../shared/markdown.js";
+import { getSelectedProvider, getOwnKey, getSystemPrompt } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 
 /**
  * @param {object} options
- * @param {string} [options.contextPrompt] - optional system-style context
- *   prepended to the conversation (e.g. quiz result summary on result.html).
+ * @param {string} [options.contextPrompt] - optional context text prepended
+ *   as the first outgoing user-role message (e.g. a summary of the user's
+ *   quizzes on the home page). Distinct from the system prompt below.
  * @param {string} [options.placeholder] - input placeholder text.
+ * @param {"home"|"result"} [options.pageKey] - keys per-page system-prompt storage.
+ * @param {string} [options.defaultSystemPrompt] - page-specific default system prompt.
+ * @param {boolean} [options.enableTools] - whether the chat may call tools (e.g. create_quiz).
+ * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall] -
+ *   invoked when the assistant calls a tool; the actual localStorage write
+ *   happens here, supplied per-page. Never passed on pages with enableTools
+ *   unset, so this branch is unreachable there.
  * @returns {HTMLElement} the chat panel root element
  */
 export function createChatPanel(options = {}) {
-  const { contextPrompt = "", placeholder = "اسأل أي سؤال عن الامتحان..." } = options;
+  const {
+    contextPrompt = "",
+    placeholder = "اسأل أي سؤال عن الامتحان...",
+    pageKey = "default",
+    defaultSystemPrompt = "",
+    enableTools = false,
+    onToolCall = null,
+    contextSummary = null,
+  } = options;
 
   /** @type {Array<{role: "user"|"assistant", content: string}>} */
   const history = [];
@@ -38,6 +54,7 @@ export function createChatPanel(options = {}) {
   textarea.className = "ai-agent-chat-input";
   textarea.placeholder = placeholder;
   textarea.rows = 1;
+  textarea.dir = "ltr";
 
   const sendBtn = document.createElement("button");
   sendBtn.type = "button";
@@ -60,6 +77,7 @@ export function createChatPanel(options = {}) {
       el.innerHTML = renderMarkdown(content);
     } else {
       el.textContent = content;
+      el.classList.add(detectDirection(content) === "rtl" ? "text-rtl" : "text-ltr");
     }
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
@@ -67,6 +85,17 @@ export function createChatPanel(options = {}) {
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return el;
+  }
+
+  function appendToolResultMessage(text) {
+    const el = document.createElement("div");
+    el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
+    el.textContent = text;
+    if (messagesEl.querySelector(".ai-agent-msg--empty")) {
+      messagesEl.innerHTML = "";
+    }
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
   function appendError(message) {
@@ -102,8 +131,20 @@ export function createChatPanel(options = {}) {
 
     const typingEl = showTyping();
 
-    const outgoingMessages = contextPrompt
-      ? [{ role: "user", content: contextPrompt }, ...history]
+    // Fold contextSummary (a lightweight list of the user's quizzes, home
+    // page only) into the same one-off context message contextPrompt
+    // already uses, prepended before the real conversation history — not
+    // a fake system turn, just plain context text the model reads once.
+    const summaryText =
+      Array.isArray(contextSummary) && contextSummary.length
+        ? `امتحانات المستخدم الحالية:\n${contextSummary
+            .map((q) => `- ${q.title} (${q.questionCount} سؤال، ${q.types || "غير محدد"})`)
+            .join("\n")}`
+        : "";
+    const combinedContext = [contextPrompt, summaryText].filter(Boolean).join("\n\n");
+
+    const outgoingMessages = combinedContext
+      ? [{ role: "user", content: combinedContext }, ...history]
       : history;
 
     // Prefer the user's own saved key when present — if they went to the
@@ -132,6 +173,8 @@ export function createChatPanel(options = {}) {
           messages: outgoingMessages,
           useOwnKey: useOwnKeyNow,
           ownKey: useOwnKeyNow ? ownKey : undefined,
+          systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
+          enableTools,
         }),
       });
 
@@ -150,8 +193,20 @@ export function createChatPanel(options = {}) {
         return;
       }
 
-      appendMessage("assistant", data.text || "");
-      history.push({ role: "assistant", content: data.text || "" });
+      if (data.text) {
+        appendMessage("assistant", data.text);
+        history.push({ role: "assistant", content: data.text });
+      }
+
+      if (data.toolCall?.name === "create_quiz" && typeof onToolCall === "function") {
+        try {
+          const title = onToolCall(data.toolCall) || data.toolCall.input?.title || "";
+          appendToolResultMessage(`✅ تم إنشاء الإمتحان: ${title}`);
+        } catch (toolErr) {
+          console.error("[ai-agent-chat] onToolCall failed:", toolErr);
+          appendError("تعذر إنشاء الإمتحان. حاول مرة أخرى.");
+        }
+      }
     } catch (err) {
       typingEl.remove();
       console.error("[ai-agent-chat] request failed:", err);
@@ -171,6 +226,7 @@ export function createChatPanel(options = {}) {
   textarea.addEventListener("input", () => {
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    textarea.style.direction = detectDirection(textarea.value) === "rtl" ? "rtl" : "ltr";
   });
 
   return panel;

@@ -13,7 +13,6 @@
 // shared wireModalDismiss() helper (see modal-utils.js).
 // ============================================================================
 
-import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { parseQuizJson } from "../../shared/quiz-json.js";
 import { wireModalDismiss, fadeOutAndRemove } from "./modal-utils.js";
 import { UPLOAD_ICON_SVG } from "./icons.js";
@@ -22,7 +21,7 @@ import {
   English_Specializing_Prompt,
   Math_Specializing_Prompt,
 } from "./ai-prompts.js";
-import { buildUserQuizEntry } from "./quiz-schema.js";
+import { saveNewUserQuiz } from "./quiz-schema.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
 import {
@@ -403,12 +402,7 @@ function openInlineCreateQuizModal() {
       return;
     }
 
-    const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-    const quizId = crypto.randomUUID();
-
-    quizzes.push(buildUserQuizEntry(quizId, parsed, title || "Untitled Quiz"));
-
-    setInStorage("user_quizzes", JSON.stringify(quizzes));
+    saveNewUserQuiz(parsed, title || "Untitled Quiz");
     close();
     showNotification(
       "تم الإنشاء",

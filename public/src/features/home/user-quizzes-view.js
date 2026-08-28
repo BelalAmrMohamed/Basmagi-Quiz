@@ -23,10 +23,11 @@ import {
   getSelectedUserQuizzes,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
-import { qz } from "./quiz-schema.js";
+import { qz, saveNewUserQuiz } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -41,6 +42,46 @@ import {
   showNotification,
   _confirm,
 } from "../../components/notifications/notifications.js";
+
+/**
+ * Handles the AI Helper's `create_quiz` tool call: validates the payload,
+ * saves it via the same tested save path the manual paste-JSON modal uses
+ * (saveNewUserQuiz, in quiz-schema.js), notifies the user, and refreshes
+ * the grid. Returns the saved title so the caller can show it in the chat
+ * bubble.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} the saved quiz's title
+ */
+function handleCreateQuizToolCall(toolCall) {
+  const input = toolCall?.input || {};
+  const questions = Array.isArray(input.questions) ? input.questions : [];
+
+  if (!questions.length) {
+    showNotification(
+      "بيانات ناقصة",
+      "لم يتمكن المساعد الذكي من إنشاء الامتحان: لا توجد أسئلة صالحة.",
+      "warning",
+      10,
+    );
+    throw new Error("create_quiz tool call had no questions");
+  }
+
+  const title = input.title || "Untitled Quiz";
+  const parsed = {
+    questions,
+    meta: { title, description: input.description || "" },
+  };
+
+  saveNewUserQuiz(parsed, title);
+  showNotification(
+    "تم الإنشاء",
+    'تم إنشاء الإمتحان وإضافته إلى "إمتحاناتك"',
+    "success",
+  );
+  renderRootCategories();
+  renderUserQuizzesView();
+  return title;
+}
 
 /**
  * Render user-created quizzes VIEW (Folder Content)
@@ -196,9 +237,26 @@ export function renderUserQuizzesView() {
     // container.innerHTML = "" at the top of this function, and a FAB
     // fixed-positioned outside the render flow doesn't need special
     // placement here beyond being present in the DOM.
+    //
+    // contextSummary: a lightweight { title, questionCount, types } per
+    // quiz — NOT the full quiz JSON, which could blow the context window.
+    // Read access lets the assistant answer "what quizzes do I have"
+    // without a tool round-trip; create access (enableTools +
+    // onToolCall) lets it save a new quiz once the user confirms one.
+    const contextSummary = userQuizzes.map((quiz) => ({
+      title: qz(quiz, "title"),
+      questionCount: qz(quiz, "count"),
+      types: qz(quiz, "type"),
+    }));
+
     container.appendChild(
       createAIAgentFab({
         placeholder: "اسأل عن امتحاناتك، أو اطلب شرحًا لأي موضوع...",
+        pageKey: "home",
+        defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+        contextSummary,
+        enableTools: true,
+        onToolCall: handleCreateQuizToolCall,
       }),
     );
 
