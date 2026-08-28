@@ -32,6 +32,7 @@ import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 // AI Helper (result-page analysis mode — read-only, no quiz creation)
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { buildResultSystemPrompt } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { buildResultSuggestedPrompts } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 
 // Helpers
 const userName = localStorage.getItem("username") || "User";
@@ -615,6 +616,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const omittedCorrectCount = perQuestion.length - wrongOrSkipped.length;
 
     const resultSummaryForAI = {
+      quizTitle: result.examTitle || "",
       percentage: actualPercentage,
       passed: actualPercentage >= 70,
       mcq: { correct: mcqCorrect, wrong: mcqWrong, skipped: mcqSkipped, total: mcqTotal },
@@ -627,6 +629,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       createAIAgentFab({
         pageKey: "result",
         defaultSystemPrompt: buildResultSystemPrompt(resultSummaryForAI),
+        suggestedPrompts: buildResultSuggestedPrompts(resultSummaryForAI),
         placeholder: "اسأل عن نتيجتك أو اطلب توصيات...",
         // No enableTools/onToolCall here — analysis only, no quiz creation
         // ability on this page (see IMPLEMENTATION_PLAN_v2.md Task 3C step 5).

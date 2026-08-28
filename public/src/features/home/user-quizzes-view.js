@@ -23,11 +23,12 @@ import {
   getSelectedUserQuizzes,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
-import { qz, saveNewUserQuiz } from "./quiz-schema.js";
+import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -47,10 +48,9 @@ import {
  * Handles the AI Helper's `create_quiz` tool call: validates the payload,
  * saves it via the same tested save path the manual paste-JSON modal uses
  * (saveNewUserQuiz, in quiz-schema.js), notifies the user, and refreshes
- * the grid. Returns the saved title so the caller can show it in the chat
- * bubble.
+ * the grid. Returns the chat bubble text to show for this result.
  * @param {{name: string, input: object}} toolCall
- * @returns {string} the saved quiz's title
+ * @returns {string} text shown in the chat as the tool-result bubble
  */
 function handleCreateQuizToolCall(toolCall) {
   const input = toolCall?.input || {};
@@ -63,7 +63,9 @@ function handleCreateQuizToolCall(toolCall) {
       "warning",
       10,
     );
-    throw new Error("create_quiz tool call had no questions");
+    const err = new Error("create_quiz tool call had no questions");
+    err.userMessage = "تعذر إنشاء الإمتحان: لا توجد أسئلة صالحة.";
+    throw err;
   }
 
   const title = input.title || "Untitled Quiz";
@@ -80,7 +82,129 @@ function handleCreateQuizToolCall(toolCall) {
   );
   renderRootCategories();
   renderUserQuizzesView();
-  return title;
+  return `✅ تم إنشاء الإمتحان: ${title}`;
+}
+
+/**
+ * Handles the AI Helper's `edit_quiz` tool call. Finds the quiz by its
+ * exact current title (matched against user_quizzes, the same source the
+ * model was given via contextSummary), applies only the fields present in
+ * the tool input, and persists the merged entry through buildUserQuizEntry
+ * — the same normalization path saveNewUserQuiz uses — so edited quizzes
+ * keep the same shape as newly-created ones.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} text shown in the chat as the tool-result bubble
+ */
+function handleEditQuizToolCall(toolCall) {
+  const input = toolCall?.input || {};
+  const currentTitle = (input.currentTitle || "").trim();
+
+  if (!currentTitle) {
+    const err = new Error("edit_quiz tool call had no currentTitle");
+    err.userMessage = "تعذر تعديل الإمتحان: لم يتم تحديد الامتحان المطلوب تعديله.";
+    throw err;
+  }
+
+  const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const index = quizzes.findIndex((q) => qz(q, "title") === currentTitle);
+
+  if (index === -1) {
+    const err = new Error(`edit_quiz: no quiz titled "${currentTitle}" found`);
+    err.userMessage = `تعذر العثور على امتحان بعنوان "${currentTitle}".`;
+    throw err;
+  }
+
+  const existing = quizzes[index];
+  const newTitle = input.title || qz(existing, "title");
+  const parsed = {
+    // Only overwrite questions if the model actually sent a replacement
+    // list — omitting `questions` in the tool call means "keep as-is",
+    // per EDIT_QUIZ_TOOL's description (see api/ai-agent/_tools.js).
+    questions: Array.isArray(input.questions) && input.questions.length
+      ? input.questions
+      : existing.questions,
+    meta: {
+      ...existing.meta,
+      title: newTitle,
+      description: input.description ?? existing.meta?.description ?? "",
+    },
+  };
+
+  const entry = buildUserQuizEntry(qz(existing, "id") || existing.id, parsed, newTitle);
+  quizzes[index] = entry;
+  setInStorage("user_quizzes", JSON.stringify(quizzes));
+
+  showNotification("تم التعديل", `تم تعديل الإمتحان "${newTitle}"`, "success");
+  renderRootCategories();
+  renderUserQuizzesView();
+  return `✅ تم تعديل الإمتحان: ${newTitle}`;
+}
+
+/**
+ * Handles the AI Helper's `delete_quiz` tool call. The system prompt
+ * already instructs the model to only call this after the user explicitly
+ * confirmed the exact quiz name in chat (see HOME_PAGE_SYSTEM_PROMPT) — but
+ * since deletion is irreversible, this adds one more safety net on top: a
+ * native confirm() dialog right before the deletion actually happens, in
+ * case the model ever calls the tool without a genuine prior "yes". Create
+ * and edit don't need this extra step (recoverable/additive); delete does.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} text shown in the chat as the tool-result bubble
+ */
+function handleDeleteQuizToolCall(toolCall) {
+  const input = toolCall?.input || {};
+  const title = (input.title || "").trim();
+
+  if (!title) {
+    const err = new Error("delete_quiz tool call had no title");
+    err.userMessage = "تعذر حذف الإمتحان: لم يتم تحديد اسم الامتحان.";
+    throw err;
+  }
+
+  const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const match = quizzes.find((q) => qz(q, "title") === title);
+
+  if (!match) {
+    const err = new Error(`delete_quiz: no quiz titled "${title}" found`);
+    err.userMessage = `تعذر العثور على امتحان بعنوان "${title}".`;
+    throw err;
+  }
+
+  if (!window.confirm(`هل أنت متأكد إنك عايز تحذف "${title}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+    return `تم إلغاء حذف "${title}".`;
+  }
+
+  const remaining = quizzes.filter((q) => q !== match);
+  setInStorage("user_quizzes", JSON.stringify(remaining));
+
+  showNotification("تم الحذف", `تم حذف الإمتحان "${title}"`, "success");
+  renderRootCategories();
+  renderUserQuizzesView();
+  return `🗑️ تم حذف الإمتحان: ${title}`;
+}
+
+/**
+ * Single entry point passed as onToolCall to createAIAgentFab — dispatches
+ * to the right handler by tool name. Keeps ai-agent-chat.js generic (it
+ * just calls whatever onToolCall it was given) while each page decides
+ * which tool names it actually supports.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} text shown in the chat as the tool-result bubble
+ */
+function handleQuizToolCall(toolCall) {
+  switch (toolCall?.name) {
+    case "create_quiz":
+      return handleCreateQuizToolCall(toolCall);
+    case "edit_quiz":
+      return handleEditQuizToolCall(toolCall);
+    case "delete_quiz":
+      return handleDeleteQuizToolCall(toolCall);
+    default: {
+      const err = new Error(`Unknown tool call: ${toolCall?.name}`);
+      err.userMessage = "أداة غير معروفة.";
+      throw err;
+    }
+  }
 }
 
 /**
@@ -254,9 +378,10 @@ export function renderUserQuizzesView() {
         placeholder: "اسأل عن امتحاناتك، أو اطلب شرحًا لأي موضوع...",
         pageKey: "home",
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+        suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
         contextSummary,
         enableTools: true,
-        onToolCall: handleCreateQuizToolCall,
+        onToolCall: handleQuizToolCall,
       }),
     );
 

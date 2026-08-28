@@ -12,6 +12,25 @@ import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 
 /**
+ * Reads a File into a bare base64 string (no "data:...;base64," prefix —
+ * the backend/provider adapters expect raw base64, see api/ai-agent/chat.js).
+ * @param {File} file
+ * @returns {Promise<string>}
+ */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      const commaIndex = result.indexOf(",");
+      resolve(commaIndex === -1 ? result : result.slice(commaIndex + 1));
+    };
+    reader.onerror = () => reject(reader.error || new Error("FileReader failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
  * @param {object} options
  * @param {string} [options.contextPrompt] - optional context text prepended
  *   as the first outgoing user-role message (e.g. a summary of the user's
@@ -24,6 +43,13 @@ import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/ad
  *   invoked when the assistant calls a tool; the actual localStorage write
  *   happens here, supplied per-page. Never passed on pages with enableTools
  *   unset, so this branch is unreachable there.
+ * @param {string[]} [options.suggestedPrompts] - "quick prompt" chips shown
+ *   above the input before the first message is sent; tapping one fills +
+ *   sends it immediately.
+ * @param {boolean} [options.enableFileUpload] - shows an attach-file button
+ *   next to the input. One file at a time (v1) — see AI_HELPER_IMPROVEMENT_PLAN.md
+ *   Task 3. Supported today: images, PDF (sent natively to Google/Claude),
+ *   and .docx (text-extracted server-side, works with any provider).
  * @returns {HTMLElement} the chat panel root element
  */
 export function createChatPanel(options = {}) {
@@ -35,7 +61,17 @@ export function createChatPanel(options = {}) {
     enableTools = false,
     onToolCall = null,
     contextSummary = null,
+    suggestedPrompts = [],
+    enableFileUpload = false,
   } = options;
+
+  const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // keep in sync with api/ai-agent/chat.js
+  const ACCEPTED_ATTACHMENT_TYPES =
+    "image/jpeg,image/png,image/gif,image/webp,application/pdf,.docx," +
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+  /** @type {{mimeType: string, base64: string, name: string} | null} */
+  let pendingAttachment = null;
 
   /** @type {Array<{role: "user"|"assistant", content: string}>} */
   const history = [];
@@ -47,8 +83,102 @@ export function createChatPanel(options = {}) {
   messagesEl.className = "ai-agent-chat-messages";
   panel.appendChild(messagesEl);
 
+  // Suggestion chips — only meaningful before the conversation starts;
+  // removed from the DOM (not just hidden) once the first message is sent
+  // so they never come back for this panel instance.
+  let suggestionsEl = null;
+  if (Array.isArray(suggestedPrompts) && suggestedPrompts.length) {
+    suggestionsEl = document.createElement("div");
+    suggestionsEl.className = "ai-agent-suggestions";
+    suggestedPrompts.forEach((prompt) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "ai-agent-suggestion-chip";
+      chip.textContent = prompt;
+      chip.addEventListener("click", () => {
+        if (sendBtn.disabled) return;
+        textarea.value = prompt;
+        sendMessage();
+      });
+      suggestionsEl.appendChild(chip);
+    });
+    panel.appendChild(suggestionsEl);
+  }
+
+  // Pending-attachment chip — shown above the input row once a file is
+  // picked, until it's sent or removed. Built lazily since it's only ever
+  // needed on pages with enableFileUpload.
+  let attachmentChipEl = null;
+  function renderAttachmentChip() {
+    if (attachmentChipEl) {
+      attachmentChipEl.remove();
+      attachmentChipEl = null;
+    }
+    if (!pendingAttachment) return;
+
+    attachmentChipEl = document.createElement("div");
+    attachmentChipEl.className = "ai-agent-attachment-chip";
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "ai-agent-attachment-chip-name";
+    nameSpan.textContent = pendingAttachment.name;
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "ai-agent-attachment-chip-remove";
+    removeBtn.setAttribute("aria-label", "إزالة الملف");
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", () => {
+      pendingAttachment = null;
+      renderAttachmentChip();
+    });
+    attachmentChipEl.appendChild(nameSpan);
+    attachmentChipEl.appendChild(removeBtn);
+    panel.insertBefore(attachmentChipEl, inputRow);
+  }
+
   const inputRow = document.createElement("div");
   inputRow.className = "ai-agent-chat-input-row";
+
+  let fileInput = null;
+  let attachBtn = null;
+  if (enableFileUpload) {
+    fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ACCEPTED_ATTACHMENT_TYPES;
+    fileInput.hidden = true;
+
+    attachBtn = document.createElement("button");
+    attachBtn.type = "button";
+    attachBtn.className = "ai-agent-attach-btn";
+    attachBtn.setAttribute("aria-label", "إرفاق ملف");
+    attachBtn.title = "إرفاق ملف";
+    attachBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+
+    attachBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files?.[0];
+      fileInput.value = ""; // allow re-picking the same file later
+      if (!file) return;
+
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        appendError("حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).");
+        return;
+      }
+
+      try {
+        const base64 = await fileToBase64(file);
+        pendingAttachment = {
+          mimeType: file.type || "application/octet-stream",
+          base64,
+          name: file.name,
+        };
+        renderAttachmentChip();
+      } catch (err) {
+        console.error("[ai-agent-chat] failed to read file:", err);
+        appendError("تعذرت قراءة الملف. حاول مرة أخرى.");
+      }
+    });
+  }
 
   const textarea = document.createElement("textarea");
   textarea.className = "ai-agent-chat-input";
@@ -61,9 +191,11 @@ export function createChatPanel(options = {}) {
   sendBtn.className = "ai-agent-send-btn";
   sendBtn.textContent = "إرسال";
 
+  if (attachBtn) inputRow.appendChild(attachBtn);
   inputRow.appendChild(textarea);
   inputRow.appendChild(sendBtn);
   panel.appendChild(inputRow);
+  if (fileInput) panel.appendChild(fileInput);
 
   function renderEmptyState() {
     messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
@@ -117,7 +249,10 @@ export function createChatPanel(options = {}) {
 
   async function sendMessage() {
     const text = textarea.value.trim();
-    if (!text) return;
+    const attachment = pendingAttachment;
+    // A file with no accompanying text is a valid send (e.g. "just convert
+    // this exam") — only block on genuinely empty input.
+    if (!text && !attachment) return;
 
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
@@ -125,9 +260,18 @@ export function createChatPanel(options = {}) {
     textarea.value = "";
     textarea.style.height = "auto";
     sendBtn.disabled = true;
+    pendingAttachment = null;
+    renderAttachmentChip();
 
-    appendMessage("user", text);
-    history.push({ role: "user", content: text });
+    if (suggestionsEl) {
+      suggestionsEl.remove();
+      suggestionsEl = null;
+    }
+
+    appendMessage("user", text || `📎 ${attachment.name}`);
+    const outgoingUserMessage = { role: "user", content: text };
+    if (attachment) outgoingUserMessage.attachments = [attachment];
+    history.push(outgoingUserMessage);
 
     const typingEl = showTyping();
 
@@ -201,13 +345,13 @@ export function createChatPanel(options = {}) {
         history.push({ role: "assistant", content: data.text });
       }
 
-      if (data.toolCall?.name === "create_quiz" && typeof onToolCall === "function") {
+      if (data.toolCall?.name && typeof onToolCall === "function") {
         try {
-          const title = onToolCall(data.toolCall) || data.toolCall.input?.title || "";
-          appendToolResultMessage(`✅ تم إنشاء الإمتحان: ${title}`);
+          const resultText = onToolCall(data.toolCall);
+          if (resultText) appendToolResultMessage(resultText);
         } catch (toolErr) {
           console.error("[ai-agent-chat] onToolCall failed:", toolErr);
-          appendError("تعذر إنشاء الإمتحان. حاول مرة أخرى.");
+          appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
         }
       }
     } catch (err) {

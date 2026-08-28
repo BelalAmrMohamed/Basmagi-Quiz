@@ -6,7 +6,14 @@
 // =============================================================================
 
 /**
- * messages: [{ role: "user"|"assistant", content: string }, ...]
+ * messages: [{ role: "user"|"assistant", content: string, attachments?: [{mimeType, base64, name}] }, ...]
+ *
+ * `attachments` is only ever meaningful on user-role messages (a file the
+ * user just uploaded). Each provider adapter below either forwards it
+ * natively (Google, Claude) or ignores it (DeepSeek — see chat.js's
+ * extractAttachmentText, which folds a text-extracted version of the file
+ * into `content` itself before DeepSeek ever sees the message, so DeepSeek
+ * always just sees plain text and never needs to look at `attachments`).
  */
 
 async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
@@ -14,10 +21,17 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
   const model = "gemini-3.5-flash-lite";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const contents = messages.map((m) => ({
-    role: m.role === "assistant" ? "model" : "user",
-    parts: [{ text: m.content }],
-  }));
+  const contents = messages.map((m) => {
+    const parts = [{ text: m.content }];
+    if (Array.isArray(m.attachments)) {
+      m.attachments.forEach((att) => {
+        if (att?.base64 && att?.mimeType) {
+          parts.push({ inlineData: { mimeType: att.mimeType, data: att.base64 } });
+        }
+      });
+    }
+    return { role: m.role === "assistant" ? "model" : "user", parts };
+  });
 
   const body = { contents };
 
@@ -120,11 +134,45 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools) {
   return result;
 }
 
+// Claude's /v1/messages content blocks: "image" wants source.media_type in
+// {jpeg,png,gif,webp}; anything else (PDFs, mainly — the only other file
+// type Claude accepts natively) goes through the "document" block instead.
+const CLAUDE_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+
 async function callClaude(apiKey, messages, systemPrompt, tools) {
   const body = {
     model: "claude-sonnet-4-6",
     max_tokens: 1024,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => {
+      if (!Array.isArray(m.attachments) || !m.attachments.length) {
+        return { role: m.role, content: m.content };
+      }
+      const blocks = [{ type: "text", text: m.content }];
+      m.attachments.forEach((att) => {
+        if (!att?.base64 || !att?.mimeType) return;
+        if (CLAUDE_IMAGE_MIME_TYPES.has(att.mimeType)) {
+          blocks.push({
+            type: "image",
+            source: { type: "base64", media_type: att.mimeType, data: att.base64 },
+          });
+        } else if (att.mimeType === "application/pdf") {
+          blocks.push({
+            type: "document",
+            source: { type: "base64", media_type: att.mimeType, data: att.base64 },
+          });
+        }
+        // Other mime types (docx/pptx) are handled upstream in chat.js via
+        // extractAttachmentText, which turns them into plain text folded
+        // into `content` before this function is ever called — nothing
+        // left to attach here for those.
+      });
+      return { role: m.role, content: blocks };
+    }),
   };
 
   if (systemPrompt) {

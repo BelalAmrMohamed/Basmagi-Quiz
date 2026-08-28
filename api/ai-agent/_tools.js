@@ -42,3 +42,53 @@ export const CREATE_QUIZ_TOOL = {
     required: ["title", "questions"],
   },
 };
+
+// Same question-shape rules as CREATE_QUIZ_TOOL above. `currentTitle` is how
+// the model identifies which existing quiz to modify — it's read out of the
+// contextSummary list already given to it (see user-quizzes-view.js). Every
+// field besides currentTitle is optional so the model can send only what
+// actually changes (e.g. just `title` to rename, without resending all
+// questions).
+export const EDIT_QUIZ_TOOL = {
+  name: "edit_quiz",
+  description:
+    "Edit an existing quiz's title, description, or questions. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
+    "Identify the quiz using `currentTitle`, matched exactly against one of the titles already given to you. Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
+    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain, not just the changed ones.",
+  input_schema: {
+    type: "object",
+    properties: {
+      currentTitle: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            q: { type: "string" },
+            options: { type: "array", items: { type: "string" } },
+            correct: { type: "array", items: { type: "integer" } },
+            answer: { type: "string" },
+            explanation: { type: "string" },
+          },
+          required: ["q"],
+        },
+      },
+    },
+    required: ["currentTitle"],
+  },
+};
+
+export const DELETE_QUIZ_TOOL = {
+  name: "delete_quiz",
+  description:
+    "Permanently delete a quiz. Only call this when the user has explicitly confirmed deletion of this specific quiz by name (e.g. they asked to delete it and then replied yes/احذف/تمام to your confirmation). Never call this speculatively or as a suggestion — deletion cannot be undone.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+    },
+    required: ["title"],
+  },
+};

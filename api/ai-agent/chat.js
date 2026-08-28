@@ -3,12 +3,27 @@
 // POST /api/ai-agent/chat
 // Body: {
 //   provider: "google" | "deepseek" | "claude",
-//   messages: [{ role: "user"|"assistant", content: string }, ...],
+//   messages: [{
+//     role: "user"|"assistant",
+//     content: string,
+//     attachments?: [{ mimeType: string, base64: string, name?: string }],
+//   }, ...],
 //   useOwnKey?: boolean,
 //   ownKey?: string,           // required if useOwnKey is true
 //   systemPrompt?: string,     // optional system-role instructions
-//   enableTools?: boolean,     // if true, offers CREATE_QUIZ_TOOL (see _tools.js)
+//   enableTools?: boolean,     // if true, offers create/edit/delete quiz tools (see _tools.js)
 // }
+//
+// ATTACHMENTS: max 1 per message, 4MB decoded (see MAX_ATTACHMENT_BYTES —
+// Vercel's own request body cap is the real binding constraint here, not
+// any provider's own limit). Images/PDF are sent natively to Google/Claude;
+// everything else (currently just .docx) is text-extracted server-side via
+// processAttachments() and folded into `content` — this is also what makes
+// attachments work at all with DeepSeek, which has no file input in its API.
+// Files cost meaningfully more tokens/quota than plain text — routing
+// file-bearing requests through the user's own key (useOwnKey) rather than
+// the platform pool is recommended when possible; see OWN_KEY_ATTACHMENT_RATE_LIMIT
+// below for why the own-key path already treats them differently.
 // Success 200: { text: string, toolCall?: { name: string, input: object } }
 // Failure 400/401/403/429/500: { error: string }
 //
@@ -32,8 +47,122 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
+import mammoth from "mammoth";
+
+// ── File attachments (Task 3) ──────────────────────────────────────────────
+// Deliberately handled inside this single endpoint rather than a new
+// serverless function — the project is close to Vercel Hobby's 12-function
+// cap (see public-config.js's comment re: the removed /api/env route), so
+// every new capability here needs to fold into an existing route.
+//
+// Vercel's default request body limit (4.5MB on Hobby) is well below
+// Gemini's own ~20MB inline-file limit, so *that* is the real binding
+// constraint — enforce a conservative cap here so oversized uploads fail
+// with a clear message instead of an opaque 413 from the platform.
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // 4MB, base64-decoded size
+const MAX_ATTACHMENTS_PER_MESSAGE = 1; // v1: one file at a time, see plan
+
+// Gemini and Claude both take these natively (see _providerClients.js);
+// anything else goes through extractAttachmentText() below instead.
+const NATIVELY_SUPPORTED_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "application/pdf",
+]);
+
+const DOCX_MIME_TYPE =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function base64ByteLength(base64) {
+  // Cheap approximation good enough for a size guard: 4 base64 chars encode
+  // 3 raw bytes, minus up to 2 bytes for padding.
+  const padding = (base64.match(/=+$/) || [""])[0].length;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/**
+ * DeepSeek has no file/image input in its API at all (text-only), and
+ * neither Gemini nor Claude take .docx/.pptx natively. For any mime type
+ * outside NATIVELY_SUPPORTED_MIME_TYPES, extract plain text server-side and
+ * fold it into the message's `content` instead of sending it as a binary
+ * attachment — this is also what makes DeepSeek usable when a file is
+ * attached (see _providerClients.js's top comment).
+ *
+ * v1 supports .docx via mammoth. .pptx extraction is a larger lift (no
+ * lightweight library on hand) and is intentionally out of scope for now —
+ * unsupported types get a clear error back to the user rather than silently
+ * doing nothing.
+ * @param {{mimeType: string, base64: string, name?: string}} attachment
+ * @returns {Promise<string>} extracted plain text
+ */
+async function extractAttachmentText(attachment) {
+  if (attachment.mimeType === DOCX_MIME_TYPE) {
+    const buffer = Buffer.from(attachment.base64, "base64");
+    const { value } = await mammoth.extractRawText({ buffer });
+    return value || "";
+  }
+  const err = new Error(`Unsupported attachment type for extraction: ${attachment.mimeType}`);
+  err.userFacing = true;
+  throw err;
+}
+
+/**
+ * Validates and, where needed, converts each message's attachments in
+ * place — extracting text for non-natively-supported file types (folded
+ * into that message's `content`) and leaving natively-supported types
+ * (images/PDF) untouched for the provider adapter to send as binary parts.
+ * Mutates and returns the same messages array.
+ * @param {Array<object>} messages
+ * @returns {Promise<Array<object>>}
+ */
+async function processAttachments(messages) {
+  for (const message of messages) {
+    if (!Array.isArray(message.attachments) || !message.attachments.length) continue;
+
+    if (message.attachments.length > MAX_ATTACHMENTS_PER_MESSAGE) {
+      const err = new Error("Too many attachments on one message");
+      err.userFacing = true;
+      err.userMessage = "يمكن إرفاق ملف واحد فقط في كل رسالة حاليًا.";
+      throw err;
+    }
+
+    const remainingAttachments = [];
+    for (const att of message.attachments) {
+      if (!att?.base64 || !att?.mimeType) continue;
+
+      const byteLength = base64ByteLength(att.base64);
+      if (byteLength > MAX_ATTACHMENT_BYTES) {
+        const err = new Error(`Attachment too large: ${byteLength} bytes`);
+        err.userFacing = true;
+        err.userMessage = "حجم الملف كبير جدًا (الحد الأقصى 4 ميجابايت).";
+        throw err;
+      }
+
+      if (NATIVELY_SUPPORTED_MIME_TYPES.has(att.mimeType)) {
+        remainingAttachments.push(att);
+        continue;
+      }
+
+      try {
+        const extractedText = await extractAttachmentText(att);
+        const label = att.name ? `\n\n[محتوى الملف المرفق: ${att.name}]\n` : "\n\n[محتوى الملف المرفق]\n";
+        message.content = `${message.content || ""}${label}${extractedText}`;
+      } catch (extractErr) {
+        if (extractErr.userFacing) throw extractErr;
+        const err = new Error(`Attachment extraction failed: ${extractErr.message}`);
+        err.userFacing = true;
+        err.userMessage = "لا يمكن معالجة نوع هذا الملف حاليًا. الأنواع المدعومة: صور، PDF، Word (.docx).";
+        throw err;
+      }
+    }
+    message.attachments = remainingAttachments;
+  }
+  return messages;
+}
 
 // Upstream 429 ("too many requests") / 503 ("model overloaded") are
 // transient provider-side conditions, not something wrong with the key or
@@ -55,17 +184,18 @@ function transientMessageFor(status) {
 // acceptable for v1 given Vercel's function lifecycle; swap for an
 // edge-config/Redis counter if abuse becomes a real problem.
 const ownKeyRequestLog = new Map(); // ip -> [timestamps]
-const OWN_KEY_RATE_LIMIT = 20; // requests
+const OWN_KEY_RATE_LIMIT = 20; // requests per minute, plain text
+const OWN_KEY_ATTACHMENT_RATE_LIMIT = 6; // requests per minute, file-bearing
 const OWN_KEY_RATE_WINDOW_MS = 60_000; // per minute
 
-function isRateLimited(ip) {
+function isRateLimited(ip, limit = OWN_KEY_RATE_LIMIT) {
   const now = Date.now();
   const timestamps = (ownKeyRequestLog.get(ip) || []).filter(
     (t) => now - t < OWN_KEY_RATE_WINDOW_MS,
   );
   timestamps.push(now);
   ownKeyRequestLog.set(ip, timestamps);
-  return timestamps.length > OWN_KEY_RATE_LIMIT;
+  return timestamps.length > limit;
 }
 
 // Verifies a regular-user JWT minted by /api/user-profile/identify or
@@ -102,7 +232,21 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "الرسائل مطلوبة" });
   }
 
-  const tools = enableTools ? [CREATE_QUIZ_TOOL] : undefined;
+  const tools = enableTools ? [CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL] : undefined;
+
+  try {
+    await processAttachments(messages);
+  } catch (err) {
+    console.error("[ai-agent/chat] attachment processing error:", err);
+    return res.status(400).json({ error: err.userMessage || "تعذر معالجة الملف المرفق" });
+  }
+
+  // Attachments cost noticeably more per request (larger payload/context),
+  // so requests carrying a still-binary attachment (image/PDF headed to
+  // Google or Claude) get a tighter own-key rate limit than plain text.
+  const hasBinaryAttachment = messages.some(
+    (m) => Array.isArray(m.attachments) && m.attachments.length > 0,
+  );
 
   // ── Own-key path: bypass auth + platform pool entirely ───────────────────
   if (useOwnKey) {
@@ -114,7 +258,8 @@ export default async function handler(req, res) {
       req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
       req.socket?.remoteAddress ||
       "unknown";
-    if (isRateLimited(ip)) {
+    const limit = hasBinaryAttachment ? OWN_KEY_ATTACHMENT_RATE_LIMIT : OWN_KEY_RATE_LIMIT;
+    if (isRateLimited(ip, limit)) {
       return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
     }
 
