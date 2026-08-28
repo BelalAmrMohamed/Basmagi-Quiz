@@ -3,7 +3,7 @@
   "outputDirectory": "public",
   "framework": null,
   "functions": {
-    "api/admin-control.js": {},
+    "api/admin.js": {},
     "api/ai-agent/chat.js": {},
     "api/auth.js": {},
     "api/delete-quiz.js": {},
@@ -22,6 +22,14 @@
     {
       "source": "/q/:id",
       "destination": "/api/render-quiz?id=:id"
+    },
+    {
+      "source": "/api/admin-control",
+      "destination": "/api/admin"
+    },
+    {
+      "source": "/api/admin-stats",
+      "destination": "/api/admin"
     }
   ]
 }

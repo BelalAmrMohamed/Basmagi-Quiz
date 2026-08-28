@@ -1,18 +1,36 @@
 // =============================================================================
-// api/admin-stats.js
+// api/admin.js
+// Merged endpoint: admin-control (owner-only admin management) +
+// admin-stats (public/admin stats, leaderboard, uploads history, sync).
+//
+// Routing: admin-control's GET/POST always require an admin JWT and operate
+// on { admins, platformStats } / add_admin | remove_admin | update_scopes.
+// admin-stats is reachable via query params the control UI never sends
+// (?handle=, ?id=, ?leaderboard=true, ?uploads=true) or a POST body without
+// an `action` field (progress/avatar/profile sync).
+//
+// We distinguish the two by:
+//   - GET:  ?leaderboard=true | ?uploads=true | ?handle=... | ?id=...
+//           → stats. Otherwise (no query, admin JWT) → control.
+//   - POST: body has `action` (add_admin/remove_admin/update_scopes)
+//           → control. Otherwise → stats sync.
+//
+// Old paths /api/admin-control and /api/admin-stats are preserved via
+// rewrites in vercel.json, so no frontend call sites needed to change.
+//
+// NOTE: The "change_code" / access-code actions were removed in v6.1.
 // =============================================================================
-
+import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { createClient } from "@supabase/supabase-js";
-import { requireAdmin, handleAuthError } from "./_middleware.js";
 
-const supabase = createClient(
+// ── admin-stats clients ──────────────────────────────────────────────────────
+// Public GET/read paths stay on the anon key so RLS keeps governing what's
+// readable (same as render-profile.js). Service-role client is used only
+// for the authenticated write path in handleStatsSync.
+const supabaseAnon = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_ANON_KEY,
 );
-
-// Service-role client, used only for the authenticated write path below.
-// Never used for the public GET/read paths — those stay on the anon key
-// so RLS keeps governing what's readable, same as render-profile.js.
 const supabaseService = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY,
@@ -24,6 +42,137 @@ function getOwnerEmails() {
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 }
+
+// =============================================================================
+// admin-control handlers (owner-only admin management)
+// =============================================================================
+
+async function handleControlGet(req, res, payload, supabase) {
+  const { data: admins, error: adminsError } = await supabase
+    .from("admin_users")
+    .select("id, email, created_at, added_by, allowed_scopes")
+    .order("created_at", { ascending: false });
+
+  if (adminsError) {
+    return res.status(500).json({ error: "Failed to fetch data" });
+  }
+
+  // Platform stats — quiz & category counts from the quizzes table.
+  const { count: quizCount } = await supabase
+    .from("quizzes")
+    .select("id", { count: "exact", head: true });
+
+  const { data: catData } = await supabase.from("quizzes").select("category");
+
+  const uniqueCategories = new Set((catData || []).map((r) => r.category));
+
+  return res.status(200).json({
+    admins: admins || [],
+    platformStats: {
+      totalQuizzes: quizCount ?? 0,
+      totalCategories: uniqueCategories.size,
+      totalAdmins: (admins || []).length,
+      ownerEmail: payload.email,
+    },
+  });
+}
+
+async function handleControlPost(req, res, payload, supabase) {
+  const { action } = req.body;
+
+  if (action === "add_admin") {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const { data, error } = await supabase
+      .from("admin_users")
+      .insert([{ email: email.toLowerCase(), added_by: payload.email }])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        return res.status(400).json({ error: "Admin already exists" });
+      }
+      return res.status(500).json({ error: "Failed to add admin" });
+    }
+
+    return res.status(200).json({ admin: data });
+  }
+
+  if (action === "remove_admin") {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const { error } = await supabase
+      .from("admin_users")
+      .delete()
+      .eq("email", email.toLowerCase());
+
+    if (error) {
+      return res.status(500).json({ error: "Failed to remove admin" });
+    }
+
+    return res.status(200).json({ success: true });
+  }
+
+  if (action === "update_scopes") {
+    const { email, scopes } = req.body;
+    if (!email || !Array.isArray(scopes)) {
+      return res
+        .status(400)
+        .json({ error: "Email and valid scopes array are required" });
+    }
+
+    const { data, error } = await supabase
+      .from("admin_users")
+      .update({ allowed_scopes: scopes })
+      .eq("email", email.toLowerCase())
+      .select("allowed_scopes")
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: "Failed to update admin scopes" });
+    }
+
+    return res.status(200).json({ success: true, allowed_scopes: data.allowed_scopes });
+  }
+
+  return res.status(400).json({ error: "Invalid action" });
+}
+
+async function handleControl(req, res) {
+  applyCors(req, res);
+
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  let payload;
+  try {
+    payload = requireAdmin(req);
+  } catch (err) {
+    if (handleAuthError(err, res)) return;
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+  // Only owners can access this API.
+  if (!payload.isOwner) {
+    return res.status(403).json({ error: "You do not have owner privileges" });
+  }
+
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+  );
+
+  if (req.method === "GET") return handleControlGet(req, res, payload, supabase);
+  if (req.method === "POST") return handleControlPost(req, res, payload, supabase);
+
+  return res.status(405).json({ error: "Method not allowed" });
+}
+
+// =============================================================================
+// admin-stats handlers (public/admin stats, leaderboard, uploads, sync)
+// =============================================================================
 
 // ── POST: write path for the owner's own admin_users row ────────────────────
 // Two independent things can be synced here, either together or alone:
@@ -38,7 +187,7 @@ function getOwnerEmails() {
 //      to write to, so this only ever applies to authenticated admins.
 // Both are scoped to the caller's own JWT email — never trust an id/handle
 // from the request body, so one admin can't overwrite another's row.
-async function handleSync(req, res) {
+async function handleStatsSync(req, res) {
   let payload;
   try {
     payload = requireAdmin(req);
@@ -157,7 +306,7 @@ async function handleSync(req, res) {
     .maybeSingle();
 
   if (error) {
-    console.error("[admin-stats] sync write failed", error);
+    console.error("[admin] stats sync write failed", error);
     return res.status(500).json({ error: error.message });
   }
   if (!updated) {
@@ -167,15 +316,16 @@ async function handleSync(req, res) {
   return res.status(200).json({ synced: true });
 }
 
-export default async function handler(req, res) {
+async function handleStats(req, res) {
   if (req.method === "POST") {
-    return handleSync(req, res);
+    return handleStatsSync(req, res);
   }
 
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  const supabase = supabaseAnon;
   const handle = req.query.handle;
   const id = req.query.id;
 
@@ -222,7 +372,7 @@ export default async function handler(req, res) {
   let adminUser = null;
 
   if (id) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("admin_users")
       .select(
         "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
@@ -236,7 +386,7 @@ export default async function handler(req, res) {
       .trim()
       .toLowerCase()
       .replace(/[%_\\]/g, "\\$&");
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("admin_users")
       .select(
         "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
@@ -265,7 +415,7 @@ export default async function handler(req, res) {
             .trim()
             .toLowerCase()
             .replace(/[%_\\]/g, "\\$&");
-          const { data, error } = await supabase
+          const { data } = await supabase
             .from("admin_users")
             .select(
               "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
@@ -324,7 +474,7 @@ export default async function handler(req, res) {
   }
 
   // Count quizzes uploaded
-  const { count: quizzesCount, error: quizzesErr } = await supabase
+  const { count: quizzesCount } = await supabase
     .from("quizzes")
     .select("id", { count: "exact", head: true })
     .eq("uploaded_by", adminUser.id);
@@ -376,4 +526,43 @@ export default async function handler(req, res) {
     role,
     isOwner,
   });
+}
+
+// =============================================================================
+// Dispatcher
+// =============================================================================
+
+const CONTROL_ACTIONS = new Set(["add_admin", "remove_admin", "update_scopes"]);
+
+function isStatsGet(req) {
+  const q = req.query || {};
+  return (
+    q.leaderboard === "true" ||
+    q.uploads === "true" ||
+    typeof q.handle !== "undefined" ||
+    typeof q.id !== "undefined"
+  );
+}
+
+export default async function handler(req, res) {
+  // GET: route by query params — control has none of these.
+  if (req.method === "GET") {
+    if (isStatsGet(req)) return handleStats(req, res);
+    return handleControl(req, res);
+  }
+
+  // POST: route by body.action — control uses a fixed action set,
+  // everything else (progress/avatar/profile sync) goes to stats.
+  if (req.method === "POST") {
+    const action = req.body && req.body.action;
+    if (CONTROL_ACTIONS.has(action)) return handleControl(req, res);
+    return handleStats(req, res);
+  }
+
+  if (req.method === "OPTIONS") {
+    applyCors(req, res);
+    return res.status(200).end();
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
 }
