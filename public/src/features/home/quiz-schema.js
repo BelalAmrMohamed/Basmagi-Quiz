@@ -51,6 +51,16 @@ export function normalizeQuestions(questions) {
       const { options, correct, ...rest } = q;
       return { ...rest, answer: options[0] ?? "" };
     }
+    // The AI Helper's create_quiz tool (see api/ai-agent/_tools.js) always
+    // sends `correct` as an array of indices — Gemini's tool-schema proto
+    // rejects a JSON-Schema union type (integer | array), so we normalize
+    // on this side instead. Unwrap a single-element array back to a plain
+    // integer so isAnswerCorrect()/grading (which compares a lone selected
+    // index) keeps working unchanged for single-answer questions; leave
+    // multi-answer arrays (length > 1) as-is.
+    if (Array.isArray(q.correct) && q.correct.length === 1) {
+      return { ...q, correct: q.correct[0] };
+    }
     return q;
   });
 }

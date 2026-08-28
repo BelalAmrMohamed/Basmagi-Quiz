@@ -7,10 +7,29 @@
 // =============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
+import { isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { getCachedLevel } from "../../shared/userLevel.js";
 
 const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
 const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
+const LANGUAGE_STORAGE_PREFIX = "ai_agent_language__"; // + pageKey
+
+const LANGUAGES = [
+  { value: "auto", label: "تلقائي (بحسب لغتك)" },
+  { value: "ar", label: "العربية" },
+  { value: "en", label: "English" },
+];
+
+// Appended to the system prompt sent to the model — kept short and in
+// both languages so it reads correctly regardless of which the model
+// currently favors. "auto" adds nothing: the page's own default system
+// prompt already tells the model which language to default to, and lets
+// it otherwise mirror whatever language the user writes in.
+const LANGUAGE_DIRECTIVES = {
+  ar: "\n\nمهم: أجب دائمًا باللغة العربية فقط، بغض النظر عن لغة سؤال المستخدم.",
+  en: "\n\nImportant: Always respond in English only, regardless of the language the user writes in.",
+};
 
 const PROVIDERS = [
   { value: "google", label: "Google AI Studio (Gemini)" },
@@ -63,6 +82,33 @@ export function resetSystemPrompt(pageKey) {
 }
 
 /**
+ * @param {string} pageKey - "home" | "result"
+ * @returns {"auto"|"ar"|"en"}
+ */
+export function getResponseLanguage(pageKey) {
+  return getFromStorage(`${LANGUAGE_STORAGE_PREFIX}${pageKey}`, "auto");
+}
+
+export function setResponseLanguage(pageKey, value) {
+  setInStorage(`${LANGUAGE_STORAGE_PREFIX}${pageKey}`, value);
+}
+
+/**
+ * Appends the language directive (if any) for the currently-selected
+ * response language to a system prompt. Called from ai-agent-chat.js right
+ * before sending, so every request (including tool-enabled ones) respects
+ * the user's choice without each page needing to wire this up itself.
+ * @param {string} pageKey
+ * @param {string} systemPrompt
+ * @returns {string}
+ */
+export function applyResponseLanguage(pageKey, systemPrompt) {
+  const lang = getResponseLanguage(pageKey);
+  const directive = LANGUAGE_DIRECTIVES[lang];
+  return directive ? `${systemPrompt || ""}${directive}` : systemPrompt || "";
+}
+
+/**
  * @param {object} [options]
  * @param {string} [options.pageKey] - "home" | "result"; used to key the
  *   per-page system-prompt storage.
@@ -98,6 +144,30 @@ export function createSettingsPanel(options = {}) {
   providerSelect.value = getSelectedProvider();
   panel.appendChild(providerSelect);
 
+  // ── Response language select ──
+  // Scoped per-page (like the system prompt) since the quizzes on "home"
+  // and the result being analyzed on "result" can each be in either
+  // language independent of the other page.
+  const languageLabel = document.createElement("label");
+  languageLabel.className = "ai-agent-field-label";
+  languageLabel.textContent = "لغة ردود المساعد";
+  panel.appendChild(languageLabel);
+
+  const languageSelect = document.createElement("select");
+  languageSelect.className = "ai-agent-provider-select";
+  LANGUAGES.forEach(({ value, label }) => {
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = label;
+    languageSelect.appendChild(opt);
+  });
+  languageSelect.value = getResponseLanguage(pageKey);
+  panel.appendChild(languageSelect);
+
+  languageSelect.addEventListener("change", () => {
+    setResponseLanguage(pageKey, languageSelect.value);
+  });
+
   // ── Own key input ──
   const keyLabel = document.createElement("label");
   keyLabel.className = "ai-agent-field-label";
@@ -121,6 +191,7 @@ export function createSettingsPanel(options = {}) {
     setSelectedProvider(providerSelect.value);
     loadKeyForCurrentProvider();
     status.textContent = "";
+    refreshKeySourceIndicator();
   });
 
   // ── Save / clear actions ──
@@ -129,13 +200,13 @@ export function createSettingsPanel(options = {}) {
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
-  saveBtn.className = "exam-action-btn exam-action-btn--primary";
+  saveBtn.className = "ai-agent-btn ai-agent-btn--primary";
   saveBtn.style.width = "auto";
   saveBtn.innerHTML = "<span>حفظ المفتاح</span>";
 
   const clearBtn = document.createElement("button");
   clearBtn.type = "button";
-  clearBtn.className = "exam-action-btn exam-action-btn--danger";
+  clearBtn.className = "ai-agent-btn ai-agent-btn--danger";
   clearBtn.style.width = "auto";
   clearBtn.innerHTML = "<span>مسح المفتاح</span>";
 
@@ -146,6 +217,36 @@ export function createSettingsPanel(options = {}) {
   const status = document.createElement("div");
   status.className = "ai-agent-settings-status";
   panel.appendChild(status);
+
+  // ── Key-source indicator ──
+  // Mirrors the exact precedence ai-agent-chat.js::sendMessage uses (own
+  // key first if saved, otherwise the platform pool via admin/Level 10+
+  // auth) so what's shown here always matches what a message will actually
+  // use — without making a network call just to render this panel.
+  const keySourceIndicator = document.createElement("div");
+  keySourceIndicator.className = "ai-agent-key-source";
+  panel.appendChild(keySourceIndicator);
+
+  function refreshKeySourceIndicator() {
+    const { hasKey } = getOwnKey();
+    if (hasKey) {
+      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--own";
+      keySourceIndicator.textContent = "🔑 يتم استخدام مفتاحك الخاص حاليًا";
+      return;
+    }
+    const isAdmin = isAdminAuthenticated();
+    const level = getCachedLevel();
+    const eligible = isAdmin || (typeof level === "number" && level >= 10);
+    if (eligible) {
+      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
+      keySourceIndicator.textContent = "🌐 يتم استخدام مفتاح المنصة (لا يوجد مفتاح خاص محفوظ)";
+    } else {
+      keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--none";
+      keySourceIndicator.textContent =
+        "⚠️ لا يوجد مفتاح خاص محفوظ، ولا تملك صلاحية استخدام مفتاح المنصة (متاح للمشرفين أو مستخدمي المستوى 10+) — احفظ مفتاحك الخاص أعلاه لاستخدام المساعد.";
+    }
+  }
+  refreshKeySourceIndicator();
 
   saveBtn.addEventListener("click", () => {
     const provider = providerSelect.value;
@@ -158,6 +259,7 @@ export function createSettingsPanel(options = {}) {
     setOwnKey(provider, key);
     status.className = "ai-agent-settings-status ai-agent-settings-status--saved";
     status.textContent = "تم الحفظ ✓";
+    refreshKeySourceIndicator();
   });
 
   clearBtn.addEventListener("click", () => {
@@ -166,6 +268,7 @@ export function createSettingsPanel(options = {}) {
     keyInput.value = "";
     status.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
     status.textContent = "تم المسح";
+    refreshKeySourceIndicator();
   });
 
   // ── System prompt (editable, page-scoped) ──
@@ -185,13 +288,13 @@ export function createSettingsPanel(options = {}) {
 
   const savePromptBtn = document.createElement("button");
   savePromptBtn.type = "button";
-  savePromptBtn.className = "exam-action-btn exam-action-btn--primary";
+  savePromptBtn.className = "ai-agent-btn ai-agent-btn--primary";
   savePromptBtn.style.width = "auto";
   savePromptBtn.innerHTML = "<span>حفظ التعليمات</span>";
 
   const resetPromptBtn = document.createElement("button");
   resetPromptBtn.type = "button";
-  resetPromptBtn.className = "exam-action-btn exam-action-btn--danger";
+  resetPromptBtn.className = "ai-agent-btn ai-agent-btn--danger";
   resetPromptBtn.style.width = "auto";
   resetPromptBtn.innerHTML = "<span>إعادة تعيين للافتراضي</span>";
 

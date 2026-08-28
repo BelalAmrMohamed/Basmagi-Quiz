@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { renderMarkdown, detectDirection } from "../../shared/markdown.js";
-import { getSelectedProvider, getOwnKey, getSystemPrompt } from "./ai-agent-settings.js";
+import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 
@@ -173,7 +173,10 @@ export function createChatPanel(options = {}) {
           messages: outgoingMessages,
           useOwnKey: useOwnKeyNow,
           ownKey: useOwnKeyNow ? ownKey : undefined,
-          systemPrompt: getSystemPrompt(pageKey, defaultSystemPrompt),
+          systemPrompt: applyResponseLanguage(
+            pageKey,
+            getSystemPrompt(pageKey, defaultSystemPrompt),
+          ),
           enableTools,
         }),
       });
