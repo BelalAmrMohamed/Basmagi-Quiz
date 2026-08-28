@@ -13,7 +13,7 @@
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
-import { openSignInDialog } from "./sign-in.js";
+import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
 import {
   getSearchManager,

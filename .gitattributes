@@ -1,0 +1,5 @@
+# Run `git archive --format=zip --output=basmagi-quiz.zip HEAD` to export.
+.github/ export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+public/assets/ export-ignore

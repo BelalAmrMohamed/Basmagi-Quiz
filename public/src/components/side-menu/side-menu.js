@@ -4,6 +4,11 @@
 // Mobile (≤768px): bottom sheet with backdrop
 // ============================================================================
 
+import { mountSignInDialog, openSignInDialog } from "../log-in/sign-in.js";
+import "../contact-dev/contact-dev.js";
+
+mountSignInDialog();
+
 // ── PWA Install Prompt — captured globally so it works on every page ─────────
 (function () {
   let _deferredInstallPrompt = null;
@@ -653,13 +658,19 @@
 
 import { avatarEngine, syncNavAvatars } from "../../shared/avatarEngine.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
+function initNavAvatars() {
   syncNavAvatars();
 
   window.addEventListener("avatarUpdated", () => {
     syncNavAvatars();
   });
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initNavAvatars, { once: true });
+} else {
+  initNavAvatars();
+}
 
 // ============================================================================
 // PROFILE AVATAR DROPDOWN — desktop sidebar only
@@ -744,10 +755,22 @@ export function refreshAdminUI() {
 // safely even though it's declared later in the same DOMContentLoaded scope.
 let populateDropdownIfAvailable = () => {};
 
-document.addEventListener("DOMContentLoaded", () => {
+function initProfileDropdown() {
   const trigger = document.getElementById("sideMenuProfileTrigger");
   const popover = document.getElementById("sideMenuProfileDropdown");
   if (!trigger || !popover) return;
+
+  let signInRow = popover.querySelector("#sideMenuDropdownSignIn");
+  if (signInRow && signInRow.tagName !== "BUTTON") {
+    const signInButton = document.createElement("button");
+    signInButton.type = "button";
+    signInButton.id = signInRow.id;
+    signInButton.className = signInRow.className;
+    signInButton.setAttribute("role", "menuitem");
+    signInButton.innerHTML = "<span>دخول المشرفين</span>";
+    signInRow.replaceWith(signInButton);
+    signInRow = signInButton;
+  }
 
   const FOCUSABLE_SELECTOR =
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -782,7 +805,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const emailRow = popover.querySelector("#sideMenuDropdownEmailRow");
     const emailEl = popover.querySelector("#sideMenuDropdownEmail");
     const signOutRow = popover.querySelector("#sideMenuDropdownSignOut");
-    const signInRow = popover.querySelector("#sideMenuDropdownSignIn");
+    const currentSignInRow = popover.querySelector("#sideMenuDropdownSignIn");
     const avatarImg = popover.querySelector("#sideMenuDropdownAvatar");
     const avatarDefaultIcon = popover.querySelector(
       "#sideMenuProfileDropdown .side-menu-profile-dropdown-default-icon",
@@ -861,7 +884,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (signOutRow) signOutRow.style.display = isAdmin ? "flex" : "none";
-    if (signInRow) signInRow.style.display = "none"; // no sign-in entry point yet
+    if (currentSignInRow) currentSignInRow.style.display = isAdmin ? "none" : "flex";
   }
 
   // Wire up the module-level indirection so refreshAdminUI() (called from
@@ -967,7 +990,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-});
+
+  if (signInRow) {
+    signInRow.addEventListener("click", () => openSignInDialog());
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initProfileDropdown, { once: true });
+} else {
+  initProfileDropdown();
+}
 
 // ============================================================================
 // CONTACT OVERLAY

@@ -39,6 +39,11 @@
 
 html { scroll-behavior: smooth; }
 
+html,
+body {
+    background-color: var(--color-background, var(--bg));
+}
+
 body {
     background-color: var(--bg);
     color: var(--ink);
@@ -47,12 +52,106 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+html[data-theme="dark"] body,
+html[data-theme="dark-slate"] body {
+    --ink: var(--color-text-primary);
+    --ink-soft: var(--color-text-secondary);
+    --ink-muted: var(--color-text-tertiary);
+    --ink-faint: var(--color-text-tertiary);
+    --rule: var(--color-border);
+    --rule-heavy: var(--color-border-light, var(--color-border));
+    --bg: var(--color-background);
+    --bg-wash: var(--color-background-secondary);
+    --bg-tint: var(--color-surface);
+    --accent: var(--color-primary);
+    --accent-mid: var(--color-primary-hover);
+    --accent-sub: var(--color-accent);
+    --ft-bg: var(--color-surface);
+    --ft-rule: var(--color-border);
+}
+
 /* ─────────────────────────────────────────
     TOP ACCENT BAR
 ───────────────────────────────────────── */
 .top-bar {
     height: 3px;
     background: linear-gradient(to left, var(--accent) 0%, var(--accent-sub) 60%, var(--rule-heavy) 100%);
+}
+
+/* Documentation switcher: a quiet rail on wide screens, a bottom tab bar on phones. */
+.docs-switcher {
+    position: fixed;
+    z-index: var(--z-above, 10);
+    top: 50%;
+    right: calc(var(--sidebar-collapsed-width) + 28px);
+    width: 176px;
+    padding: 14px 10px 10px;
+    transform: translateY(-50%);
+    background: var(--bg);
+    border: 1px solid var(--rule-heavy);
+    border-right: 3px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(17, 24, 39, .08);
+}
+
+body.sidebar-expanded .docs-switcher {
+    right: calc(var(--sidebar-expanded-width) + 28px);
+}
+
+body.sidebar-expanded .sidebar:not(.expanded) ~ .docs-switcher {
+    right: calc(var(--sidebar-collapsed-width) + 28px);
+}
+
+.docs-switcher-heading {
+    padding: 0 8px 10px;
+    color: var(--ink-muted);
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+}
+
+.docs-switcher-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 38px;
+    padding: 7px 8px;
+    color: var(--ink-soft);
+    border-radius: var(--radius-sm);
+    font-size: .82rem;
+    line-height: 1.35;
+    text-decoration: none;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.docs-switcher-link:hover,
+.docs-switcher-link:focus-visible {
+    color: var(--accent);
+    background: var(--bg-tint);
+}
+
+.docs-switcher-link:focus-visible {
+    outline: 2px solid var(--accent-sub);
+    outline-offset: 2px;
+}
+
+.docs-switcher-link--active {
+    color: var(--bg);
+    background: var(--accent);
+    font-weight: 600;
+}
+
+.docs-switcher-link--active:hover,
+.docs-switcher-link--active:focus-visible {
+    color: var(--bg);
+    background: var(--accent-mid);
+}
+
+.docs-switcher-link--soon small {
+    color: var(--ink-faint);
+    font-size: .64rem;
+    white-space: nowrap;
 }
 
 /* ─────────────────────────────────────────
@@ -381,7 +480,7 @@ li strong {
     PRINT
 ───────────────────────────────────────── */
 @media print {
-    .top-bar, .site-footer { display: none; }
+    .top-bar, .docs-switcher, .site-footer { display: none; }
     body { color: #000; }
     .page-wrapper { padding: 20px; }
 }
@@ -399,7 +498,38 @@ html[data-motion="reduced"] *::after {
     MOBILE
 ───────────────────────────────────────── */
 @media (max-width: 680px) {
-    .page-wrapper { padding: 40px 18px 60px; }
+    .page-wrapper { padding: 40px 18px 84px; }
+
+    .docs-switcher {
+    top: auto;
+    right: 0;
+    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom));
+    width: 100%;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    transform: none;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    border-right: none;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    box-shadow: 0 -6px 20px rgba(17, 24, 39, .1);
+    overflow-x: auto;
+    z-index: calc(var(--z-overlay, 4000) - 1);
+}
+
+    .docs-switcher-heading { display: none; }
+
+    .docs-switcher-link {
+    flex: 1 0 auto;
+    min-height: 42px;
+    justify-content: center;
+    padding: 6px 9px;
+    font-size: .72rem;
+    white-space: nowrap;
+    }
+
+    .docs-switcher-link--soon small { display: none; }
 
     h1 { font-size: 1.65rem; }
 

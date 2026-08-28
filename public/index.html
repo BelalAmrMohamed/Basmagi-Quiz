@@ -1259,11 +1259,6 @@
     <script type="module" src="src/shared/flow-field.js"></script>
     <script type="module" src="src/shared/advanced-link-transition-animation.js"></script>
     <script type="module" src="src/features/home/index-entrypoint.js"></script>
-    <!-- Sign-in dialog bootstrap: wires event listeners after DOM is ready -->
-    <script type="module">
-        import { initSignInDialog } from "./src/features/home/sign-in.js";
-        document.addEventListener("DOMContentLoaded", () => initSignInDialog());
-    </script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
     <script type="module">
         import { initPWAWithBanner } from "./src/shared/pwa-manager.js";

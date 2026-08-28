@@ -4,6 +4,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    (function () {
+      try {
+        const theme = localStorage.getItem("quiz_theme_pref") || "light";
+        const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+        const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
+        document.documentElement.setAttribute("data-motion", reduced ? "reduced" : "normal");
+      } catch (_) { }
+    })();
+  </script>
   <meta name="description"
     content="باستخدامكم لموقعنا وخدماتنا، فإنكم توافقون على الالتزام بالشروط والأحكام التالية. يرجى قراءتها بعناية قبل المتابعة" />
   <meta name="keywords" content="بصمجي، شروط الخدمة، منصة إمتحانات، اختبارات إلكترونية" />
@@ -51,6 +63,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
     rel="stylesheet" />
+  <link rel="stylesheet" href="src/styles/themes.css">
+  <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
   <link rel="stylesheet" href="src/features/privacy-and-terms/privacy-and-terms.css">
 </head>
 
@@ -58,6 +72,20 @@
 
   <!-- Accent bar -->
   <div class="top-bar" role="presentation" aria-hidden="true"></div>
+
+  <nav class="docs-switcher" aria-label="مستندات المنصة">
+    <div class="docs-switcher-heading">مستندات المنصة</div>
+    <a class="docs-switcher-link" href="/about.html">عن المنصة</a>
+    <a class="docs-switcher-link" href="/privacy-policy.html">سياسة الخصوصية</a>
+    <a class="docs-switcher-link docs-switcher-link--active" href="/terms-of-service.html" aria-current="page">شروط
+      الخدمة</a>
+    <a class="docs-switcher-link docs-switcher-link--soon" href="/how-to-create-a-quiz.html">
+      <span>إنشاء اختبار</span><small>قريباً</small>
+    </a>
+    <a class="docs-switcher-link docs-switcher-link--soon" href="/how-to-upload-a-quiz.html">
+      <span>رفع اختبار</span><small>قريباً</small>
+    </a>
+  </nav>
 
   <!-- ── Main Content ── -->
   <main>
@@ -343,6 +371,7 @@
     }
   </script>
 
+  <script type="module" src="src/features/privacy-and-terms/documentation-shell.js"></script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
 

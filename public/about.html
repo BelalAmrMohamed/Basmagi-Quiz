@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        (function () {
+            try {
+                const theme = localStorage.getItem("quiz_theme_pref") || "light";
+                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-motion", reduced ? "reduced" : "normal");
+            } catch (_) { }
+        })();
+    </script>
+    <meta name="description" content="قصة منصة إمتحانات بصمجي، ولماذا صُنعت وكيف تساعد على بناء تجربة تعلم أوضح." />
+    <meta name="author" content="بلال عمرو محمد" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="عن المنصة | منصة إمتحانات بصمجي" />
+    <meta property="og:description" content="منصة عربية تجعل إنشاء الاختبارات ومراجعتها وحلها أكثر وضوحاً." />
+    <link rel="canonical" href="/about.html" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <title>عن المنصة | منصة إمتحانات بصمجي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/themes.css" />
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css" />
+    <link rel="stylesheet" href="src/features/privacy-and-terms/privacy-and-terms.css" />
+    <link rel="stylesheet" href="src/features/privacy-and-terms/about.css" />
+</head>
+
+<body class="about-page">
+    <div class="top-bar" role="presentation" aria-hidden="true"></div>
+
+    <nav class="docs-switcher" aria-label="مستندات المنصة">
+        <div class="docs-switcher-heading">مستندات المنصة</div>
+        <a class="docs-switcher-link docs-switcher-link--active" href="/about.html" aria-current="page">عن المنصة</a>
+        <a class="docs-switcher-link" href="/privacy-policy.html">سياسة الخصوصية</a>
+        <a class="docs-switcher-link" href="/terms-of-service.html">شروط الخدمة</a>
+        <a class="docs-switcher-link docs-switcher-link--soon" href="/how-to-create-a-quiz.html"><span>إنشاء
+                اختبار</span><small>قريباً</small></a>
+        <a class="docs-switcher-link docs-switcher-link--soon" href="/how-to-upload-a-quiz.html"><span>رفع
+                اختبار</span><small>قريباً</small></a>
+    </nav>
+
+    <main>
+        <div class="page-wrapper">
+            <header class="header" role="banner">
+                <div class="logo-lockup">
+                    <img src="/favicon.png" alt="شعار منصة بصمجي" class="logo-mark" width="48" height="48" />
+                    <div class="brand-name">منصة إمتحانات بصمجي</div>
+                </div>
+                <div class="hero-kicker">قصة المنصة</div>
+                <h1>المعرفة لا تحتاج إلى ضجيج كي تثبت نفسها.</h1>
+                <p class="hero-lede">بصمجي مساحة عربية للتعلّم بالمحاولة: اختبار واضح، إجابة صادقة، ومراجعة تعرف منها
+                    أين تقف والخطوة التالية التي تستحق وقتك.</p>
+            </header>
+
+            <section class="hero-grid" aria-label="فكرة المنصة">
+                <div>
+                    <p class="origin-copy-lede">صُنعت بصمجي من ملاحظة بسيطة: كثير من أدوات الاختبار تهتم بتشغيل الأسئلة،
+                        لكنها تترك تجربة التعلّم نفسها مبعثرة.</p>
+                    <p class="hero-lede">لذلك تجمع المنصة بين إنشاء الاختبارات، تنظيمها في مسارات، حلها، ثم العودة إلى
+                        النتيجة كخريطة للمراجعة لا كرقم نهائي فقط.</p>
+                </div>
+                <div class="hero-note"><strong>الاختبار نقطة بداية</strong><span>كل إجابة تمنح المتعلم إشارة صغيرة. قيمة
+                        المنصة في جمع هذه الإشارات وتحويلها إلى فهم يمكن البناء عليه.</span></div>
+            </section>
+
+            <section class="about-section" aria-labelledby="origin-heading">
+                <div class="about-section-heading">
+                    <h2 id="origin-heading">من المشكلة إلى المكان</h2>
+                    <p>بدأت الفكرة من الحاجة إلى تجربة عملية وهادئة، تخدم من يتعلم ومن يبني محتوى تعليمياً في الوقت
+                        نفسه.</p>
+                </div>
+                <div class="origin-copy">
+                    <p>المنصة ليست بنك أسئلة مغلقاً، ولا واجهة تستعرض الأرقام. هي طاولة عمل مشتركة: شخص يكتب اختباراً
+                        بعناية، وشخص آخر يستخدمه ليتأكد من فهمه.</p>
+                    <p>لهذا تُبنى بصمجي حول دورة كاملة. يُنشئ المستخدم اختباراً يدوياً أو يستعين بقوالب مساعدة، ثم يمكن
+                        تنظيم الاختبار ضمن مقررات ومسارات تعليمية. بعد الحل تظهر النتيجة بصورتها المفيدة: ما أُتقن، وما
+                        يحتاج إلى عودة، وكيف تبدو المحاولة التالية.</p>
+                </div>
+            </section>
+
+            <section class="about-section" aria-labelledby="values-heading">
+                <div class="about-section-heading">
+                    <h2 id="values-heading">ثلاثة أشياء لا نساوم عليها</h2>
+                    <p>هذه ليست شعارات تسويقية؛ إنها اختبارات صغيرة نراجع بها كل قرار في المنتج.</p>
+                </div>
+                <div class="principles">
+                    <article class="principle"><span class="principle-mark" aria-hidden="true"></span>
+                        <h3>الوضوح قبل الزينة</h3>
+                        <p>المتعلم يجب أن يعرف ماذا يفعل، ولماذا يرى هذه النتيجة، وما الذي يمكنه فعله بعدها.</p>
+                    </article>
+                    <article class="principle"><span class="principle-mark" aria-hidden="true"></span>
+                        <h3>المحتوى ملك أصحابه</h3>
+                        <p>أدوات إنشاء الاختبار موجودة لتمنح الكاتب تحكماً حقيقياً في أسئلته وطريقة عرضها.</p>
+                    </article>
+                    <article class="principle"><span class="principle-mark" aria-hidden="true"></span>
+                        <h3>المحاولة جزء من التعلم</h3>
+                        <p>الخطأ ليس نهاية الشاشة. هو معلومة تساعد على اختيار المراجعة التالية بذكاء.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="about-section" aria-labelledby="journey-heading">
+                <div class="about-section-heading">
+                    <h2 id="journey-heading">كيف تتحرك الفكرة؟</h2>
+                    <p>من أول سؤال إلى مراجعة أهدأ، صُممت التجربة لتبقى مفهومة في كل مرحلة.</p>
+                </div>
+                <div class="flow">
+                    <article class="flow-step"><b>01</b>
+                        <h3>أنشئ</h3>
+                        <p>اكتب اختبارك بالطريقة التي تناسبك، يدوياً أو بمساعدة القوالب.</p>
+                    </article>
+                    <article class="flow-step"><b>02</b>
+                        <h3>نظّم</h3>
+                        <p>ضع المحتوى في مسار تعليمي يمكن الرجوع إليه ومشاركته بوضوح.</p>
+                    </article>
+                    <article class="flow-step"><b>03</b>
+                        <h3>اختبر</h3>
+                        <p>حل في بيئة تركّز على السؤال، وتدعم أنماطاً متعددة من المحتوى.</p>
+                    </article>
+                    <article class="flow-step"><b>04</b>
+                        <h3>راجع</h3>
+                        <p>اقرأ النتيجة كإشارة للعمل القادم، لا كحكم على قدرتك.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="about-section creator" aria-labelledby="creator-heading">
+                <div class="creator-stamp"><span>صُنع بعناية</span><strong>بلال عمرو محمد</strong></div>
+                <div class="creator-copy">
+                    <h2 id="creator-heading">الشخص خلف بصمجي</h2>
+                    <p>بصمجي مشروع مستقل من تطوير بلال عمرو محمد. الفكرة والتصميم والبرمجة تنطلق من رغبة في بناء أدوات
+                        عربية عملية، لا تكتفي بترجمة الواجهات بل تفهم كيف يتعامل الناس مع المعرفة والأسئلة.</p>
+                    <p>كل صفحة في المنصة فرصة لتقليل احتكاك واحد: إنشاء أسهل، قراءة أسرع، ونتيجة تقول شيئاً يمكن
+                        استخدامه.</p>
+                    <div class="creator-links" aria-label="روابط المطور">
+                        <a href="https://portfolio-of-belal.vercel.app/" target="_blank"
+                            rel="noopener noreferrer">الموقع الشخصي</a>
+                        <a href="https://github.com/BelalAmrMohamed/" target="_blank"
+                            rel="noopener noreferrer">GitHub</a>
+                        <a href="https://mostaql.com/u/BelalAmrMohamed/portfolio" target="_blank"
+                            rel="noopener noreferrer">مستقل</a>
+                        <a href="https://www.upwork.com/freelancers/~0169eeff3e0d6045d8?mp_source=share" target="_blank"
+                            rel="noopener noreferrer">Upwork</a>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="about-footer"><span>منصة إمتحانات بصمجي</span><span>نبني مساحة تجعل المحاولة مفيدة.</span>
+            </footer>
+        </div>
+    </main>
+
+    <script type="module" src="src/features/privacy-and-terms/documentation-shell.js"></script>
+</body>
+
+</html>
