@@ -11,6 +11,59 @@
 // re-implementation of the same "fetch exam.path" step. Centralizing here so
 // copy-to-my-quizzes (and any future consumer) doesn't grow a fourth copy.
 // ============================================================================
+//
+// DB-hosted quizzes carry a `/api/quiz-data?path=...`-shaped `path` field
+// (see quizManifest.js) for backward compatibility with every other module
+// that treats `exam.path` as an opaque fetchable URL — but that serverless
+// function was removed to stay under Vercel Hobby's 12-function cap (see
+// CHANGELOG). Paths matching that shape are now served by querying Supabase
+// directly (public SELECT on `quizzes` is allowed by RLS) instead of an
+// actual network request to /api/quiz-data.
+
+import { parseCanonicalPath } from "../../shared/quizPath.js";
+import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+
+const DB_QUIZ_DATA_PREFIX = "/api/quiz-data?path=";
+
+/**
+ * Loads a DB-hosted quiz's full JSON directly from Supabase, given the
+ * same `/api/quiz-data?path=...`-shaped URL previously fetched over HTTP.
+ * @param {string} path
+ * @returns {Promise<object>} the quiz's `data` column (questions/meta/stats)
+ */
+async function loadDbQuizData(path) {
+  const rawPath = decodeURIComponent(path.slice(DB_QUIZ_DATA_PREFIX.length));
+  const normalised = rawPath
+    .replace(/\\/g, "/")
+    .replace(/^\/+/, "")
+    .replace(/\.\.+/g, "");
+
+  if (!normalised.startsWith("quizzes/") || !normalised.endsWith(".json")) {
+    throw new Error("مسار غير صالح");
+  }
+
+  const parsed = parseCanonicalPath(normalised);
+  if (!parsed) throw new Error("مسار غير صالح");
+
+  const lastSlash = parsed.dbPath.lastIndexOf("/");
+  const dbPath = parsed.dbPath.slice(0, lastSlash);
+  const filename = parsed.dbPath.slice(lastSlash + 1);
+
+  const supabase = await ensureSharedSupabaseClient();
+  if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات");
+
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select("data")
+    .eq("path", dbPath)
+    .eq("filename", filename)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) throw new Error("الاختبار غير موجود");
+
+  return data.data;
+}
 
 /**
  * Loads the raw quiz payload behind a manifest exam entry.
@@ -28,6 +81,16 @@ export async function loadFullQuizData(exam) {
   let questions = [];
   let rawMeta = null;
   let rawStats = null;
+
+  // DB-hosted quizzes: go straight to Supabase instead of a network fetch.
+  if (path.startsWith(DB_QUIZ_DATA_PREFIX)) {
+    const data = await loadDbQuizData(path);
+    return {
+      questions: data.questions || [],
+      meta: data.meta || null,
+      stats: data.stats || null,
+    };
+  }
 
   let fetchUrl;
   if (path.startsWith("/") || path.startsWith("http")) {

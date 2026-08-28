@@ -24,13 +24,11 @@ export async function ensureSharedSupabaseClient() {
   if (sharedSupabaseClient) return sharedSupabaseClient;
   if (typeof window !== "undefined" && window.supabase) {
     try {
-      const res = await fetch("/api/env");
-      if (!res.ok) throw new Error("Failed to fetch Supabase env");
-      const data = await res.json();
-      if (data.supabaseUrl && data.supabaseAnonKey) {
+      const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./public-config.js");
+      if (SUPABASE_URL && SUPABASE_ANON_KEY) {
         sharedSupabaseClient = window.supabase.createClient(
-          data.supabaseUrl,
-          data.supabaseAnonKey,
+          SUPABASE_URL,
+          SUPABASE_ANON_KEY,
         );
       }
     } catch (err) {

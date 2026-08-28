@@ -30,14 +30,14 @@
 // Call invalidateManifestCache() after an admin upload.
 // =============================================================================
 
-import { extractFolderSegmentsFromQuizPath } from "./quizPath.js";
+import { extractFolderSegmentsFromQuizPath, parseDbPath, buildCourseKey, buildSubjectManifestEntry } from "./quizPath.js";
+import { generateQuizId } from "./quizId.js";
+import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
 
 const LOCAL_MANIFEST_URL = new URL(
   "../../data/quiz-manifest.json",
   import.meta.url,
 ).href;
-
-const DB_MANIFEST_URL = "/api/quiz-manifest";
 
 let cached = null;
 
@@ -66,7 +66,7 @@ export function invalidateManifestCache() {
 async function fetchAndMerge() {
   const [localResult, dbResult] = await Promise.allSettled([
     fetchJson(LOCAL_MANIFEST_URL),
-    fetchJson(DB_MANIFEST_URL),
+    fetchDbManifest(),
   ]);
 
   const local =
@@ -88,6 +88,83 @@ async function fetchAndMerge() {
   const { categoryTree, examList } = buildCompatStructures(mergedSubjects);
 
   return { subjects: mergedSubjects, categoryTree, examList };
+}
+
+/**
+ * Client-side equivalent of the old /api/quiz-manifest Vercel function —
+ * queries Supabase directly (public SELECT is allowed by the `quizzes`
+ * table's RLS policy) and shapes the rows into the same
+ * { subjects: [...] } structure the local manifest uses. Kept in this
+ * module (rather than a shared helper) since it's the only caller.
+ * See CHANGELOG for why this moved off a serverless function (Vercel
+ * Hobby's 12-function cap).
+ */
+async function fetchDbManifest() {
+  const supabase = await ensureSharedSupabaseClient();
+  if (!supabase) throw new Error("Supabase client unavailable");
+
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select(
+      "path, filename, title, category, subject, subfolder, data, education_type, password",
+    )
+    .order("category", { ascending: true });
+
+  if (error) throw error;
+
+  const subjectsMap = new Map();
+
+  for (const row of data) {
+    let rawPath = row.path;
+    let parsed = parseDbPath(rawPath, row.filename);
+
+    if (!parsed) {
+      if (row.education_type === "University") {
+        rawPath = `University/${row.path}`;
+        parsed = parseDbPath(rawPath, row.filename);
+      }
+      if (!parsed) {
+        console.warn(`[quizManifest] Unrecognized path: ${row.path}`);
+        continue;
+      }
+    }
+
+    const education_type = row.education_type || parsed.education_type;
+    parsed.education_type = education_type;
+
+    const courseKey = buildCourseKey(parsed);
+
+    if (!subjectsMap.has(courseKey)) {
+      subjectsMap.set(courseKey, buildSubjectManifestEntry(parsed, []));
+    }
+
+    const subjectEntry = subjectsMap.get(courseKey);
+    const examRelPath = `quizzes/${row.path}/${row.filename}`;
+    const examFetchPath = `/api/quiz-data?path=${encodeURIComponent(examRelPath)}`;
+
+    const quizMeta = row.data?.meta || {};
+    const quizStats = row.data?.stats || {};
+
+    const quizEntry = {
+      id: quizMeta.id || (await generateQuizId(examRelPath)),
+      title: quizMeta.title || row.title,
+      path: examFetchPath,
+      questionCount: quizStats.questionCount ?? 0,
+      questionTypes: quizStats.questionTypes ?? [],
+      education_type,
+      dbSource: "db",
+    };
+
+    if (quizMeta.description) quizEntry.description = quizMeta.description;
+    if (quizMeta.author_id) quizEntry.author_id = quizMeta.author_id;
+    if (row.password) quizEntry.password = row.password;
+    if (quizMeta.source) quizEntry.source = quizMeta.source;
+    if (quizMeta.createdAt) quizEntry.createdAt = quizMeta.createdAt;
+
+    subjectEntry.quizzes.push(quizEntry);
+  }
+
+  return { subjects: Array.from(subjectsMap.values()) };
 }
 
 /**

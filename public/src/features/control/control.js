@@ -12,6 +12,7 @@ import {
 } from "../../shared/adminAuth.js";
 
 import { _alert } from "../../components/notifications/notifications.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../../shared/public-config.js";
 
 const API_URL = "/api/admin-control";
 
@@ -29,12 +30,10 @@ async function init() {
 
   // 2. Initialize Supabase client for session reconciliation + logout
   try {
-    const envRes = await fetch("/api/env");
-    const envData = await envRes.json();
-    if (envData.supabaseUrl && envData.supabaseAnonKey) {
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       _supabaseClient = window.supabase.createClient(
-        envData.supabaseUrl,
-        envData.supabaseAnonKey,
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
       );
 
       // 3. Reconcile: if Supabase session exists but our JWT was

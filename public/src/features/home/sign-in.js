@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { signInWithSupabase } from "../../shared/adminAuth.js";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../../shared/public-config.js";
 
 // ── Module state ──────────────────────────────────────────────────────────────
 
@@ -65,12 +66,10 @@ export async function openSignInDialog() {
 
 async function _initSupabase() {
   try {
-    const res = await fetch("/api/env");
-    const data = await res.json();
-    if (data.supabaseUrl && data.supabaseAnonKey) {
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       _supabaseClient = window.supabase.createClient(
-        data.supabaseUrl,
-        data.supabaseAnonKey
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
       );
     }
   } catch (err) {

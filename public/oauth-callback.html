@@ -9,7 +9,14 @@
     <!-- Supabase JS SDK — must load before inline script -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background: #0f0f1a;
@@ -21,6 +28,7 @@
             flex-direction: column;
             gap: 16px;
         }
+
         .spinner {
             width: 36px;
             height: 36px;
@@ -29,9 +37,23 @@
             border-radius: 50%;
             animation: spin 0.75s linear infinite;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        p { font-size: 0.95rem; color: #8A7A5A; }
-        .error { color: #E74C3C; font-size: 0.9rem; display: none; }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        p {
+            font-size: 0.95rem;
+            color: #8A7A5A;
+        }
+
+        .error {
+            color: #E74C3C;
+            font-size: 0.9rem;
+            display: none;
+        }
     </style>
 </head>
 
@@ -40,7 +62,9 @@
     <p>جارٍ استكمال تسجيل الدخول...</p>
     <p class="error" id="errorMsg"></p>
 
-    <script>
+    <script type="module">
+        import { SUPABASE_URL, SUPABASE_ANON_KEY } from './src/shared/public-config.js';
+
         (async function handleOAuthCallback() {
             // If opened without an opener (direct navigation), send user to the main page
             if (!window.opener || window.opener.closed) {
@@ -51,16 +75,13 @@
             const targetOrigin = window.location.origin;
 
             try {
-                // Fetch Supabase credentials from the API
-                const envRes = await fetch('/api/env');
-                const envData = await envRes.json();
-                if (!envData.supabaseUrl || !envData.supabaseAnonKey) {
+                if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
                     throw new Error('Missing Supabase configuration');
                 }
 
                 const supabaseClient = window.supabase.createClient(
-                    envData.supabaseUrl,
-                    envData.supabaseAnonKey,
+                    SUPABASE_URL,
+                    SUPABASE_ANON_KEY,
                     {
                         auth: {
                             // Let Supabase read the URL hash / code for us
@@ -99,14 +120,14 @@
                         { type: 'BQ_OAUTH_ERROR', error: err.message },
                         targetOrigin
                     );
-                } catch (_) {}
+                } catch (_) { }
 
                 const errEl = document.getElementById('errorMsg');
                 errEl.textContent = 'حدث خطأ: ' + (err.message || 'غير معروف');
                 errEl.style.display = 'block';
 
                 // Close after a short delay so user can see the error
-                setTimeout(() => { try { window.close(); } catch (_) {} }, 3000);
+                setTimeout(() => { try { window.close(); } catch (_) { } }, 3000);
             }
         })();
     </script>
