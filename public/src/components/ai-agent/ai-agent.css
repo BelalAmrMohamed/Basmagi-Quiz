@@ -267,7 +267,18 @@
    above any content on desktop. Opens the modal below on click. */
 .ai-agent-fab {
   position: fixed;
-  right: 20px;
+  /* BUG FIX: this is an RTL layout — the sidebar is anchored to the
+     *right* edge (see .sidebar { right: 0 } in side-menu.css) and reserves
+     --sidebar-collapsed-width (64px) or --sidebar-expanded-width (240px)
+     of horizontal space there. A flat `right: 20px` put the FAB's 56px
+     circle almost entirely underneath that reserved strip on desktop —
+     raising the z-index only decided who painted on top, it didn't move
+     the FAB out from behind the sidebar's footprint. Push it in from the
+     right by the sidebar's current width (plus its own margin) instead.
+     On phones the sidebar collapses to an off-canvas drawer (no reserved
+     width when closed), so this token is 0 there — see the media query
+     below restoring the plain 20px in that case. */
+  right: calc(20px + var(--sidebar-collapsed-width, 0px));
   bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
   /* BUG FIX: this app's --z-overlay token is 4000 (not the generic 500
      fallback used elsewhere), and .sidebar/.bottom-nav sit at
@@ -278,6 +289,7 @@
      .exam-dropdown-menu fix note in index.css) so the FAB is never
      covered by either nav surface. */
   z-index: var(--z-tooltip, 6000);
+  transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease;
   width: 56px;
   height: 56px;
   border: none;
@@ -299,6 +311,23 @@
 
 .ai-agent-fab:active {
   transform: translateY(0) scale(0.97);
+}
+
+/* Sidebar expanded (240px instead of 64px) — same body.sidebar-expanded
+   hook side-menu.css already uses for the page's own content padding, so
+   this stays in sync with it automatically. */
+body.sidebar-expanded .ai-agent-fab {
+  right: calc(20px + var(--sidebar-expanded-width, 0px));
+}
+
+/* Below 768px the sidebar goes off-canvas (slides in over content instead
+   of reserving space — see side-menu.css's own header comment), so there
+   is no permanent width to dodge and the FAB goes back to a plain offset. */
+@media (max-width: 768px) {
+  .ai-agent-fab,
+  body.sidebar-expanded .ai-agent-fab {
+    right: 20px;
+  }
 }
 
 /* ── Modal ──
