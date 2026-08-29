@@ -11,6 +11,7 @@ export const HOME_PAGE_SUGGESTED_PROMPTS = [
   "أنت تقدر تعمل إيه؟",
   "عايز اعرف امتحاناتي الحالية",
   "شوف آخر إمتحان عملته وراجع ورايا لو فيه أي أخطاء.",
+  "اعمل إمتحان جديد من الملف ده",
 ];
 
 // Create-quiz page ("إنشاء اختبار") — scoped to the single in-progress
