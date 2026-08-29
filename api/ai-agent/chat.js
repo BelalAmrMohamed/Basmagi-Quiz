@@ -9,7 +9,12 @@
 //                              // _providerClients.js's ALLOWED_MODELS) and
 //                              // falls back to that provider's own
 //                              // lightest/cheapest/latest default when
-//                              // omitted or unrecognized.
+//                              // omitted or unrecognized. ONLY honored on
+//                              // the useOwnKey path — on the platform-key
+//                              // path (shared free-tier keys) this is
+//                              // always ignored and the default is forced,
+//                              // so a Level 10+/admin user can't select a
+//                              // heavier model and drain shared quota.
 //   messages: [{
 //     role: "user"|"assistant",
 //     content: string,
@@ -366,8 +371,14 @@ export default async function handler(req, res) {
     return res.status(503).json({ error: "لا توجد مفاتيح منصة متاحة لهذا المزوّد حاليًا" });
   }
 
+  // Model selection is only meaningful when the caller supplies their own
+  // API key (own-key path above). On the platform-key path every request
+  // shares the same rotated Google AI Studio free-tier keys, so honoring a
+  // client-requested heavier model here would let any Level 10+/admin user
+  // drain the shared rate limit for everyone. Force the provider's
+  // lightest/cheapest/latest default regardless of what the client sent.
   try {
-    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, model);
+    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, undefined);
     return res.status(200).json(result);
   } catch (err) {
     console.error("[ai-agent/chat] platform-key provider error:", err);

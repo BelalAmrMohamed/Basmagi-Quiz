@@ -286,16 +286,11 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarRecentsList.className = "ai-agent-sidebar-recents";
   sidebar.appendChild(sidebarRecentsList);
 
-  const sidebarShowAllBtn = document.createElement("button");
-  sidebarShowAllBtn.type = "button";
-  sidebarShowAllBtn.className = "ai-agent-sidebar-btn ai-agent-sidebar-show-all";
-  sidebarShowAllBtn.innerHTML = `${HISTORY_ICON_SVG}<span>عرض كل السجل</span>`;
-  sidebarShowAllBtn.addEventListener("click", () => {
-    activateTab(historyTabBtn, historyPanel);
-    historyPanel.refresh();
-  });
-  sidebar.appendChild(sidebarShowAllBtn);
-
+  // The sidebar previously duplicated "show full history" as its own
+  // button (.ai-agent-sidebar-show-all) alongside the tab strip's own
+  // .ai-agent-tab-btn (السابقة) — same destination, so it was pure
+  // redundancy on desktop. Removed; the tab button is the one way in.
+  //
   // A short (5-item) recent-conversations list, independent of the full
   // History tab's own list — same underlying IDB store (ai-agent-history-idb.js),
   // just capped and re-rendered on a lighter cadence (only when something

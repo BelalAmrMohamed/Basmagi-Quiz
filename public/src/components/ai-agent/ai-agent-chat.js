@@ -148,18 +148,46 @@ export function createChatPanel(options = {}) {
 
   const modelBarSelect = document.createElement("select");
   modelBarSelect.className = "ai-agent-chat-model-select";
+  modelBarSelect.id = "ai-agent-chat-model-select";
+  modelBarSelect.name = "ai-agent-chat-model-select";
   modelBarSelect.setAttribute("aria-label", "اختر النموذج");
+
+  // Model selection only makes sense when the request will actually use
+  // it — i.e. the user has saved their own API key. On the platform-key
+  // path every request shares the same rotated Google AI Studio
+  // free-tier keys (see api/ai-agent/chat.js), which always forces the
+  // lightest default server-side regardless of what's sent — so letting
+  // the dropdown look interactive there is actively misleading, on top of
+  // inviting a client that could otherwise be tricked into requesting a
+  // heavier model. Disabled (not hidden) so it's still visible as a
+  // preview of what an own key would unlock.
+  function refreshModelBarAvailability() {
+    const { hasKey } = getOwnKey();
+    modelBarSelect.disabled = !hasKey;
+    modelBarSelect.title = hasKey
+      ? ""
+      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك";
+  }
 
   function refreshModelBarOptions() {
     const provider = getSelectedProvider();
     modelBarSelect.innerHTML = "";
-    getModelsForProvider(provider).forEach(({ value, label }) => {
+    const models = getModelsForProvider(provider);
+    models.forEach(({ value, label }) => {
       const opt = document.createElement("option");
       opt.value = value;
       opt.textContent = label;
       modelBarSelect.appendChild(opt);
     });
-    modelBarSelect.value = getSelectedModel();
+    // getSelectedModel() returns "" (meaning "use the provider's own
+    // default") whenever no model has been explicitly saved yet — but ""
+    // never matches any <option>'s value, which left the select rendering
+    // with nothing visibly chosen. Fall back to the first (lightest/
+    // default) model in the list so there's always a real, visible
+    // selection, exactly matching what the backend actually uses in that
+    // unset case.
+    modelBarSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
+    refreshModelBarAvailability();
   }
   refreshModelBarOptions();
 
@@ -479,6 +507,11 @@ export function createChatPanel(options = {}) {
   // text is appended after it (not overwriting anything the user already
   // typed), same as how a real dictation feature behaves.
   let baseTextBeforeDictation = "";
+  // Guards the one-shot silent retry in recognition.onerror below — reset
+  // per dictation session in startDictation() so a later, unrelated
+  // session still gets its own single retry rather than being permanently
+  // used up by an earlier session's transient failure.
+  let hasRetriedAfterNetworkError = false;
 
   const MIC_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
@@ -540,11 +573,15 @@ export function createChatPanel(options = {}) {
     setDictationUiState(false);
   }
 
-  function startDictation() {
+  function startDictation(isRetry = false) {
     if (!SpeechRecognitionCtor || isDictating) return;
 
     finalizedText = "";
     baseTextBeforeDictation = textarea.value;
+    // Fresh retry budget for every genuinely new dictation session (mic
+    // press) — only a call made FROM the retry path itself (onerror
+    // below) keeps the flag it already set just before calling.
+    if (!isRetry) hasRetriedAfterNetworkError = false;
 
     recognition = new SpeechRecognitionCtor();
     recognition.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
@@ -574,9 +611,34 @@ export function createChatPanel(options = {}) {
       // own Cancel click racing the browser's own stop event) — only
       // surface a visible error for something the user couldn't have
       // caused by simply pausing or stopping normally.
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        appendError("تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.");
+      if (event.error === "no-speech" || event.error === "aborted") {
+        setDictationUiState(false);
+        return;
       }
+      // Chrome/Brave's SpeechRecognition implementation proxies audio to
+      // Google's own speech servers rather than doing recognition
+      // on-device — "network" here means THAT round trip failed, not the
+      // page's own connection. It's the single most common failure mode
+      // in this browser family (blocked by an ad/tracker blocker, no
+      // route to Google's speech endpoint, a transient hiccup on their
+      // side) and is usually a one-off, so retry silently once before
+      // bothering the user with an error — a real, persistent connectivity
+      // problem still surfaces the message on the second failure.
+      if (event.error === "network" && !hasRetriedAfterNetworkError) {
+        hasRetriedAfterNetworkError = true;
+        setDictationUiState(false);
+        try {
+          startDictation(true);
+        } catch (err) {
+          console.error("[ai-agent-chat] SpeechRecognition retry failed:", err);
+        }
+        return;
+      }
+      const message =
+        event.error === "network"
+          ? "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك."
+          : "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.";
+      appendError(message);
       setDictationUiState(false);
     };
 
@@ -826,6 +888,11 @@ export function createChatPanel(options = {}) {
     const savedChildren = Array.from(el.childNodes);
     el.innerHTML = "";
     el.classList.add("ai-agent-msg--editing");
+    // Belt-and-suspenders alongside the CSS :has() selector above (see
+    // its own comment) — toggles the same widened-wrap behavior via a
+    // plain class for any environment where :has() support can't be
+    // assumed, rather than relying on :has() alone.
+    if (el.parentElement) el.parentElement.classList.add("ai-agent-msg-wrap--editing");
 
     const textarea = document.createElement("textarea");
     textarea.className = "ai-agent-msg-edit-input";
@@ -862,6 +929,7 @@ export function createChatPanel(options = {}) {
 
     function exitEditMode() {
       el.classList.remove("ai-agent-msg--editing");
+      if (el.parentElement) el.parentElement.classList.remove("ai-agent-msg-wrap--editing");
       el.innerHTML = "";
       savedChildren.forEach((child) => el.appendChild(child));
     }

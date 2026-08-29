@@ -345,8 +345,16 @@ export function createSettingsPanel(options = {}) {
       return;
     }
     if (isAiHelperAvailable()) {
+      // Distinguish WHY platform access is granted — admin vs. Level 10+
+      // — rather than a single unexplained line, since a user who lands
+      // here with no saved key otherwise has no way to know which of the
+      // two criteria (see isAiHelperAvailable's own doc) applies to them.
+      const isAdmin = isAdminAuthenticated();
+      const reason = isAdmin
+        ? "لأنك مسجّل الدخول كمشرف"
+        : `لأن مستواك الحالي ${typeof getCachedLevel() === "number" ? getCachedLevel() : "10+"} (10 أو أعلى)`;
       keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
-      keySourceIndicator.textContent = "🌐 يتم استخدام مفتاح المنصة (لا يوجد مفتاح خاص محفوظ)";
+      keySourceIndicator.textContent = `🌐 يتم استخدام مفتاح المنصة — مسموح لك باستخدامه ${reason} (لا يوجد مفتاح خاص محفوظ).`;
     } else {
       keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--none";
       keySourceIndicator.textContent =

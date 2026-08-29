@@ -360,6 +360,30 @@
    gradient/colored background in favor of a plain editable-field look,
    since the point here is "this is now a form", not "this is still a
    sent message". */
+/* ── Edit-in-place mode (Claude-style "edit and resubmit") ──
+   Swapped in by enterEditMode() in ai-agent-chat.js, replacing the
+   bubble's static text with a textarea + إرسال/إلغاء controls. Widens the
+   bubble to the same max-width other bubbles allow but drops the
+   gradient/colored background in favor of a plain editable-field look,
+   since the point here is "this is now a form", not "this is still a
+   sent message".
+   BUG FIX: max-width/width here were 92%, but the PARENT
+   .ai-agent-msg-wrap (a flex column with align-items: flex-end for user
+   messages) is itself capped at max-width: 85% and never stretches its
+   child past its own content width — so the "92%" only ever applied to
+   92% of that already-85%-capped, content-sized parent (in practice far
+   narrower still, since align-items: flex-end shrinks the wrap to fit
+   its widest child, and before editing that's just the short original
+   message bubble). The result was a barely-usable, near-collapsed
+   textarea. Widen the wrap itself while editing (via the parent
+   selector below) so the 92% here is 92% of the actual messages column,
+   matching what editing is meant to look like. */
+.ai-agent-msg-wrap:has(.ai-agent-msg--editing),
+.ai-agent-msg-wrap--editing {
+  max-width: 100%;
+  align-items: stretch;
+}
+
 .ai-agent-msg--editing {
   background: var(--color-surface);
   color: var(--color-text-primary);
@@ -367,6 +391,7 @@
   padding: 10px;
   max-width: 92%;
   width: 92%;
+  align-self: flex-end;
 }
 
 .ai-agent-msg-edit-input {
@@ -1079,6 +1104,20 @@ body.sidebar-expanded .ai-agent-fab {
    Reuses the shared .modal-overlay / .modal-card base rules (see
    index.css and download-quiz-modal.css for the same pattern). This is
    just the widget-specific sizing on top of that base. */
+
+/* BUG FIX: the shared .modal-overlay rule (index.css) sits at z-index:
+   2000, but the app's persistent desktop side-menu (.sidebar,
+   side-menu.css) sits at var(--z-overlay, 500) = 4000 — higher than the
+   modal. On medium/square desktop viewports (where the sidebar is
+   visible and the AI Agent modal is also wide enough to reach that side
+   of the screen) the sidebar rendered ON TOP of the modal's right edge
+   instead of the modal covering it like every other overlay in the app.
+   Scoped to this modal specifically (not a blanket .modal-overlay bump)
+   since other modals haven't been audited against the same conflict. */
+.ai-agent-modal-overlay {
+  z-index: 4001;
+}
+
 .ai-agent-modal-card {
   /* BUG FIX: the shared .modal-card base rule supplies its 90% width (=
      the side "margins" on phones) via `width: 90%`, but this override was
@@ -1238,13 +1277,6 @@ body.sidebar-expanded .ai-agent-fab {
   padding: 8px 10px;
   font-size: 0.78rem;
   color: var(--color-text-tertiary);
-}
-
-.ai-agent-sidebar-show-all {
-  margin-top: auto;
-  border-top: 1.5px solid var(--color-border);
-  border-radius: 0;
-  padding-top: 12px;
 }
 
 /* ── Desktop layout (Task 4) ──
