@@ -209,6 +209,13 @@
   background: var(--color-success-light, rgba(34, 197, 94, 0.12));
 }
 
+/* Make the buttons invisible at 768px when the side-menu appears */
+@media (max-width: 768px) {
+ .ai-agent-corner-btn{
+  display: none;
+ }
+}
+
 .ai-agent-new-chat-btn {
   inset-inline-end: 10px;
 }
