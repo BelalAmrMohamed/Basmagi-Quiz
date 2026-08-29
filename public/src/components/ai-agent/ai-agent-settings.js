@@ -49,7 +49,7 @@ const MODELS_BY_PROVIDER = {
 };
 
 const LANGUAGES = [
-  { value: "auto", label: "تلقائي (بحسب لغتك)" },
+  { value: "auto", label: "تلقائي" },
   { value: "ar", label: "العربية" },
   { value: "en", label: "English" },
 ];
