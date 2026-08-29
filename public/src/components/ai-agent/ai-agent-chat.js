@@ -139,7 +139,7 @@ export function createChatPanel(options = {}) {
   newChatBtn.type = "button";
   newChatBtn.className = "ai-agent-corner-btn ai-agent-new-chat-btn";
   newChatBtn.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>';
   newChatBtn.title = "بدء محادثة جديدة";
   newChatBtn.setAttribute("aria-label", "بدء محادثة جديدة");
   newChatBtn.hidden = true;
@@ -157,8 +157,7 @@ export function createChatPanel(options = {}) {
   exportChatBtn.type = "button";
   exportChatBtn.className = "ai-agent-corner-btn ai-agent-export-chat-btn";
   exportChatBtn.innerHTML =
-   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -960 960 960" fill="var(--color-text-secondary)"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>';
-// '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 16h6v6"/><path d="M20.05 20A9 9 0 1 0 3 12"/><path d="M8 8v4l3 3"/></svg>';
+   '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>';
   exportChatBtn.title = "نسخ المحادثة";
   exportChatBtn.setAttribute("aria-label", "نسخ المحادثة");
   exportChatBtn.hidden = true;

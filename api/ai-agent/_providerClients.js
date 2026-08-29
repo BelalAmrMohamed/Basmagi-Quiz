@@ -17,8 +17,8 @@
  */
 
 async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
-  // We Must use the lightest available model
-  const model = "gemini-3.5-flash-lite";
+  // We use the lightest, cheepest, & latest available model
+  const model = "gemini-flash-lite-latest";
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = messages.map((m) => {
