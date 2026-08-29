@@ -94,17 +94,20 @@
   position: relative;
 }
 
-/* "New chat" — a small floating icon-only button pinned to the corner of
-   the message list (see newChatBtn in ai-agent-chat.js). Hidden via the
-   `hidden` attribute whenever the current conversation has no messages
-   yet, so it never invites starting a new chat from one that's already
-   new/empty. Icon-only + subtle so it doesn't compete with the actual
-   conversation for attention, unlike the earlier full-width labeled
-   button this replaces. */
-.ai-agent-new-chat-btn {
+/* Shared shape for the small floating icon-only buttons pinned to the
+   corner of the message list — "New chat" and "Export chat" (see
+   newChatBtn/exportChatBtn in ai-agent-chat.js), grouped together since
+   both are chat-lifecycle actions on the current conversation. Hidden via
+   the `hidden` attribute whenever the current conversation has no
+   messages yet, so neither invites acting on a chat that's already new/
+   empty. Icon-only + subtle so they don't compete with the actual
+   conversation for attention. Positioned side by side: "New chat" in the
+   outer corner, "Export chat" just inside it (see the two position rules
+   below) so they read as one small button group rather than two
+   unrelated floating controls. */
+.ai-agent-corner-btn {
   position: absolute;
   top: 10px;
-  inset-inline-end: 10px;
   z-index: 2;
   display: inline-flex;
   align-items: center;
@@ -120,15 +123,30 @@
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
-.ai-agent-new-chat-btn:hover {
+.ai-agent-corner-btn:hover {
   border-color: var(--color-primary);
   color: var(--color-primary);
   background: var(--color-primary-light);
   transform: translateY(-1px);
 }
 
-.ai-agent-new-chat-btn[hidden] {
+.ai-agent-corner-btn[hidden] {
   display: none;
+}
+
+.ai-agent-corner-btn--copied,
+.ai-agent-corner-btn--copied:hover {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-light, rgba(34, 197, 94, 0.12));
+}
+
+.ai-agent-new-chat-btn {
+  inset-inline-end: 10px;
+}
+
+.ai-agent-export-chat-btn {
+  inset-inline-end: 48px;
 }
 
 .ai-agent-chat-messages {
@@ -158,6 +176,60 @@
   font-size: 0.88rem;
   line-height: 1.6;
   word-break: break-word;
+  position: relative;
+}
+
+/* Per-message copy button (see addCopyButton in ai-agent-chat.js) — sits
+   in the bubble's own bottom corner, out of the way of the attachment
+   chip (which lives at the top of the bubble) and any tool-result/error
+   styling (neither of which gets a copy button). Hidden until hover/focus
+   on desktop so it doesn't visually compete with the message text; always
+   shown on touch devices via the (hover: none) fallback below since
+   there's no hover state to reveal it there. */
+.ai-agent-msg-copy-btn {
+  position: absolute;
+  bottom: -6px;
+  inset-inline-end: 6px;
+  transform: translateY(100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.ai-agent-msg:hover .ai-agent-msg-copy-btn,
+.ai-agent-msg-copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.ai-agent-msg-copy-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.ai-agent-msg-copy-btn--copied,
+.ai-agent-msg-copy-btn--copied:hover {
+  opacity: 1;
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+@media (hover: none) {
+  .ai-agent-msg-copy-btn {
+    opacity: 1;
+  }
 }
 
 .ai-agent-msg--user {
@@ -223,6 +295,17 @@
   font-size: 0.85rem;
   text-align: center;
   padding: 24px 12px;
+}
+
+/* Shown instead of the normal friendly placeholder when the user has
+   neither a saved API key nor platform access (see isAiHelperAvailable()
+   in ai-agent-settings.js, used by renderEmptyState() in
+   ai-agent-chat.js). Slightly warmer/warning-toned than the plain empty
+   state so it reads as an actionable notice rather than just "nothing
+   here yet". */
+.ai-agent-msg--unavailable {
+  color: var(--color-warning, #f59e0b);
+  font-weight: 600;
 }
 
 .ai-agent-typing {
@@ -331,6 +414,11 @@
   border-color: var(--color-primary);
 }
 
+.ai-agent-attach-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .ai-agent-chat-input-row {
   display: flex;
   gap: 8px;
@@ -364,6 +452,11 @@
 .ai-agent-chat-input:focus {
   outline: none;
   border-color: var(--color-primary);
+}
+
+.ai-agent-chat-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .ai-agent-send-btn {

@@ -39,7 +39,7 @@ const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" hei
  * @param {object} [options]
  * @returns {HTMLElement}
  */
-function buildWidgetContent(options = {}) {
+function buildWidgetContent(options = {}, existingChatPanel = null) {
   const widget = document.createElement("div");
   widget.className = "ai-agent-widget";
 
@@ -66,7 +66,11 @@ function buildWidgetContent(options = {}) {
   tabs.appendChild(settingsTabBtn);
   widget.appendChild(tabs);
 
-  const chatPanel = createChatPanel(options);
+  // Reuse the same chat panel instance across modal open/close cycles when
+  // one is handed in (see the per-pageKey cache in openAIAgentModal below),
+  // so an in-progress conversation survives closing and reopening the FAB —
+  // rather than always constructing a brand-new, empty createChatPanel().
+  const chatPanel = existingChatPanel || createChatPanel(options);
   chatPanel.classList.add("active");
 
   // Selecting a past conversation: load it into the (single, reused) chat
@@ -81,7 +85,19 @@ function buildWidgetContent(options = {}) {
     },
   });
 
-  const settingsPanel = createSettingsPanel(options);
+  const settingsPanel = createSettingsPanel({
+    ...options,
+    // Lets the Chat tab's placeholder/input-disabled state react
+    // immediately when the user saves or clears their own API key here,
+    // rather than only updating on the next full modal open (see B7's
+    // panel-reuse cache in openAIAgentModal below, which is what makes
+    // "the same chatPanel instance" meaningful across tab switches).
+    onKeyChanged: () => {
+      if (typeof chatPanel.refreshAvailability === "function") {
+        chatPanel.refreshAvailability();
+      }
+    },
+  });
 
   widget.appendChild(chatPanel);
   widget.appendChild(historyPanel);
@@ -104,15 +120,48 @@ function buildWidgetContent(options = {}) {
   return widget;
 }
 
-function openAIAgentModal(options) {
+// Per-pageKey cache of the live chat panel instance, so the "current chat"
+// (in-progress or just-loaded-from-history conversation) survives closing
+// and reopening the AI Helper modal, as long as the user hasn't left the
+// page/site. Deliberately module-level (outside any single modal's DOM/
+// closures) rather than tied to the modal element itself, since the modal
+// is fully destroyed (`modal.remove()`) on every close — see
+// openAIAgentModal below. In-memory only (not sessionStorage): cleared on
+// an actual page reload, which matches the literal "didn't leave the
+// page" requirement without the extra complexity of serializing/restoring
+// chat DOM state across reloads.
+const chatPanelsByPageKey = new Map();
+
+function getOrCreateChatPanel(options) {
+  const key = options.pageKey || "default";
+  let chatPanel = chatPanelsByPageKey.get(key);
+  if (!chatPanel) {
+    chatPanel = createChatPanel(options);
+    chatPanelsByPageKey.set(key, chatPanel);
+  }
+  return chatPanel;
+}
+
+// Tracks whether a modal is currently open, per FAB instance, so a second
+// click on the FAB (or a stray listener firing twice) can't stack a second
+// overlay on top of the first — see createAIAgentFab below, which hides
+// the FAB itself for the same reason.
+function openAIAgentModal(options, fab) {
   const modal = document.createElement("div");
   modal.className = "modal-overlay ai-agent-modal-overlay";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "aiAgentModalTitle");
 
+  function closeModal() {
+    modal.remove();
+    document.removeEventListener("keydown", onKeydown);
+    // Restore the FAB now that there's no modal for it to duplicate.
+    if (fab) fab.style.display = "";
+  }
+
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.remove();
+    if (e.target === modal) closeModal();
   });
 
   const modalCard = document.createElement("div");
@@ -126,21 +175,25 @@ function openAIAgentModal(options) {
   `;
 
   modalCard.appendChild(header);
-  modalCard.appendChild(buildWidgetContent(options));
+  modalCard.appendChild(buildWidgetContent(options, getOrCreateChatPanel(options)));
   modal.appendChild(modalCard);
 
-  modal.querySelector(".ai-agent-modal-close").onclick = () => modal.remove();
+  modal.querySelector(".ai-agent-modal-close").onclick = closeModal;
 
   document.body.appendChild(modal);
 
   // Escape-to-close, mirroring the pattern other modals in this app use.
   const onKeydown = (e) => {
-    if (e.key === "Escape") {
-      modal.remove();
-      document.removeEventListener("keydown", onKeydown);
-    }
+    if (e.key === "Escape") closeModal();
   };
   document.addEventListener("keydown", onKeydown);
+
+  // Hide the FAB while its modal is open — clicking it again while a modal
+  // is already up previously opened a second, stacked modal on top of the
+  // first (no open-state check existed at all). Hiding is simpler than a
+  // toggle/focus-existing approach and avoids ever having two overlays in
+  // the DOM at once.
+  if (fab) fab.style.display = "none";
 }
 
 /**
@@ -169,7 +222,7 @@ export function createAIAgentFab(options = {}) {
   fab.setAttribute("aria-label", "افتح البشــمبصمج");
   fab.title = "البشــمبصمج";
   fab.innerHTML = SPARKLE_ICON_SVG;
-  fab.addEventListener("click", () => openAIAgentModal(options));
+  fab.addEventListener("click", () => openAIAgentModal(options, fab));
   return fab;
 }
 

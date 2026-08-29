@@ -32,6 +32,14 @@ let quizData = {
   questions: [],
 };
 
+// Internal-only marker used for a question's `answer` field so every
+// isEssay check (a truthy test on `question.answer`) reliably identifies
+// essay questions even while the actual model-answer text (`options[0]`)
+// is still blank. Never shown to the user or exported — buildQuizPayload/
+// exportQuiz derive the real exported `answer` from `options[0]` for any
+// question whose `options` array has exactly one entry.
+const ESSAY_MARKER = "__essay__";
+
 let questionIdCounter = 0;
 let autosaveTimeout = null;
 let bulkModeActive = false;
@@ -727,6 +735,9 @@ function renderQuestion(question, insertAtIndex = null) {
                        </button>`
                       : `<button class="add-option-btn" onclick="addOption(${question.id})">
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg> إضافة خيار
+                       </button>
+                       <button class="add-option-btn add-option-btn--convert" onclick="convertMcqToEssay(${question.id})">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg> تحويل إلى سؤال مقالي
                        </button>`
                   }
                 </div>
@@ -1346,7 +1357,11 @@ function renderOptions(question) {
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
           سؤال مقالي
         </div>
-        <div class="essay-answer-label">نموذج الإجابة <span class="essay-optional">(اختياري — لمرجعية المراجع فقط)</span></div>
+        <div class="essay-answer-label">نموذج الإجابة ${
+          question.options?.[0]?.trim()
+            ? `<span class="essay-answer-note">(يُستخدم لتصحيح إجابات الطلاب تلقائيًا وتقييمها من 5)</span>`
+            : `<span class="essay-answer-missing">(مطلوب — بدونه لن يمكن تصحيح إجابات الطلاب تلقائيًا)</span>`
+        }</div>
         <div class="essay-answer-editor">
           ${mdEditorHtml(optId, question.options[0], "اكتب نموذج إجابة هنا...", 5)}
         </div>
@@ -1437,7 +1452,17 @@ function rerenderOptions(questionId) {
   }
 
   // ── Keep card class, label, and button in sync with question type ──────────
-  const isEssay = question.answer === 1;
+  // Truthy check (not `=== 1`) to match renderQuestion()/renderOptions()/
+  // updateIncompleteState() — `answer` is a non-empty string for essay
+  // questions, so the old strict-equality check here always evaluated to
+  // false. That silently mis-rendered the "add option"/"convert" button for
+  // *every* essay question the moment anything triggered a rerenderOptions
+  // (toggling a correct answer, removing an option, etc.) — swapping in
+  // "إضافة خيار" (which calls addOption -> options.push("")) instead of the
+  // essay's actual "تحويل إلى اختيار متعدد" button, corrupting the
+  // single-slot essay `options` array instead of doing anything visible as
+  // "add a question".
+  const isEssay = Boolean(question.answer);
   const card = document.getElementById(`question-${questionId}`);
   if (card) {
     card.classList.toggle("question-card--essay", isEssay);
@@ -1461,6 +1486,9 @@ function rerenderOptions(questionId) {
     } else {
       btnDiv.innerHTML = `<button class="add-option-btn" onclick="addOption(${questionId})">
         <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> إضافة خيار
+      </button>
+      <button class="add-option-btn add-option-btn--convert" onclick="convertMcqToEssay(${questionId})">
+        <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg> تحويل إلى سؤال مقالي
       </button>`;
     }
   }
@@ -1499,10 +1527,55 @@ window.convertEssayToMcq = function (questionId) {
   // Keep the model-answer text as the first option
   while (question.options.length < 4) question.options.push("");
   question.correct = [0];
+  // Clear the essay marker/text — every isEssay check in this file is a
+  // truthy test on `answer`, so leaving it set (even to the old essay
+  // answer text) would keep this question rendering as an essay question
+  // everywhere except the one button this function itself just redrew,
+  // reverting back to the essay UI the next time the card re-renders
+  // (e.g. reopening the page, or any other rerenderOptions call).
+  question.answer = "";
   rerenderOptions(questionId);
   updateStatistics();
+  updateIncompleteState(questionId);
   autosave();
   showNotification("تم التحويل", "تم تحويل السؤال إلى اختيار متعدد", "success");
+};
+
+/**
+ * Convert a multiple-choice/true-false question into a single-option essay
+ * question. The counterpart to convertEssayToMcq above — previously
+ * missing entirely, which is why there was no way to go MCQ → Essay in the
+ * editor (only the reverse direction had a button).
+ *
+ * Destructive to the existing options list (a 4-option MCQ can't keep all
+ * 4 texts once collapsed to a single essay-answer slot), so this asks for
+ * confirmation first via the app's own _confirm() dialog — consistent with
+ * removeQuestion's use of the same helper elsewhere in this file — rather
+ * than silently discarding the user's option text.
+ */
+window.convertMcqToEssay = async function (questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+
+  if (!(await _confirm(
+    "تحويل هذا السؤال إلى سؤال مقالي سيحذف كل الخيارات الحالية باستثناء نص أول خيار (سيُستخدم كبداية لنموذج الإجابة). هل تريد المتابعة؟",
+  ))) {
+    return;
+  }
+
+  // Keep the first option's text as a starting draft for the model answer
+  // rather than discarding it outright — the user may already have typed
+  // the correct answer's wording into option 1.
+  const draftAnswer = question.options?.[0] || "";
+  question.options = [draftAnswer];
+  question.answer = draftAnswer || ESSAY_MARKER;
+  question.correct = [];
+
+  rerenderOptions(questionId);
+  updateStatistics();
+  updateIncompleteState(questionId);
+  autosave();
+  showNotification("تم التحويل", "تم تحويل السؤال إلى سؤال مقالي", "success");
 };
 
 /** Recompute the "incomplete" badge on a card (e.g. after toggling correct answers) */
@@ -1855,6 +1928,17 @@ window.addQuestionFromTemplate = function (templateType) {
     },
     essay: {
       q: "",
+      // Every isEssay check in this file (renderQuestion, renderOptions,
+      // rerenderOptions, updateIncompleteState) branches on `answer` being
+      // *truthy* — this template previously omitted the field entirely, so
+      // picking "essay" from the templates panel silently produced a
+      // single-empty-option MCQ instead of an essay question. `options[0]`
+      // (not this field) is what the essay-answer editor actually reads
+      // and writes as the user types, so this is only an internal marker
+      // — it must stay non-empty (unlike options[0], which starts blank)
+      // purely so the truthy checks correctly identify this as an essay
+      // question from the moment it's created.
+      answer: ESSAY_MARKER,
       options: [""],
       correct: [],
       image: "",
@@ -1978,9 +2062,14 @@ function updateAutosaveIndicator(status) {
  */
 function normalizeQuestionForEditor(q) {
   if (!Array.isArray(q.options)) {
-    // Essay: answer field present, no options array
+    // Essay: answer field present, no options array. `answer` here becomes
+    // the editor's isEssay marker (see ESSAY_MARKER) — it must stay
+    // non-empty even when the real answer text (q.answer) is blank, since
+    // every isEssay check in this file is a truthy test on `answer`, not a
+    // check for the field's mere presence.
     return {
       ...q,
+      answer: q.answer || ESSAY_MARKER,
       options: [q.answer ?? ""],
       correct: [],
     };

@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { renderMarkdown, _processByLine } from "../../shared/markdown.js";
-import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage } from "./ai-agent-settings.js";
+import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage, isAiHelperAvailable } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
@@ -137,7 +137,7 @@ export function createChatPanel(options = {}) {
   // loadConversation, startNewConversation) keeps this in sync.
   const newChatBtn = document.createElement("button");
   newChatBtn.type = "button";
-  newChatBtn.className = "ai-agent-new-chat-btn";
+  newChatBtn.className = "ai-agent-corner-btn ai-agent-new-chat-btn";
   newChatBtn.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   newChatBtn.title = "بدء محادثة جديدة";
@@ -146,8 +146,52 @@ export function createChatPanel(options = {}) {
   newChatBtn.addEventListener("click", () => panel.startNewConversation());
   panel.appendChild(newChatBtn);
 
+  // "Export chat" — grouped right next to "New chat" (same corner, same
+  // icon-button shape via the shared .ai-agent-corner-btn class) since
+  // both are chat-lifecycle actions on the current conversation. Copies a
+  // plain-text transcript (both user prompts and AI answers, including
+  // tool-result system lines — see history's `type: "tool-result"`
+  // entries) to the clipboard; same visibility rule as newChatBtn (hidden
+  // until there's at least one message to export).
+  const exportChatBtn = document.createElement("button");
+  exportChatBtn.type = "button";
+  exportChatBtn.className = "ai-agent-corner-btn ai-agent-export-chat-btn";
+  exportChatBtn.innerHTML =
+   '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 -960 960 960" fill="var(--color-text-secondary)"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/></svg>';
+// '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 16h6v6"/><path d="M20.05 20A9 9 0 1 0 3 12"/><path d="M8 8v4l3 3"/></svg>';
+  exportChatBtn.title = "نسخ المحادثة";
+  exportChatBtn.setAttribute("aria-label", "نسخ المحادثة");
+  exportChatBtn.hidden = true;
+  exportChatBtn.addEventListener("click", async () => {
+    // أنت: ... / البشمبصمج: ... transcript, one turn per line-group —
+    // tool-result entries get their own "🔧 النظام:" label so they read
+    // as distinct from a normal assistant reply, matching how they're
+    // visually distinguished (muted/system style) in the live chat and
+    // in the History tab's re-render (see loadConversation above).
+    const transcript = history
+      .map((m) => {
+        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "البشمبصمج";
+        return `${label}: ${m.content}`;
+      })
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(transcript);
+      const original = exportChatBtn.innerHTML;
+      exportChatBtn.innerHTML = CHECK_ICON_SVG;
+      exportChatBtn.classList.add("ai-agent-corner-btn--copied");
+      setTimeout(() => {
+        exportChatBtn.innerHTML = original;
+        exportChatBtn.classList.remove("ai-agent-corner-btn--copied");
+      }, 1500);
+    } catch (err) {
+      console.error("[ai-agent-chat] export-chat clipboard write failed:", err);
+    }
+  });
+  panel.appendChild(exportChatBtn);
+
   function updateNewChatVisibility() {
     newChatBtn.hidden = history.length === 0;
+    exportChatBtn.hidden = history.length === 0;
   }
 
   // Suggestion chips — only meaningful before the conversation starts.
@@ -339,9 +383,16 @@ export function createChatPanel(options = {}) {
   sendBtn.className = "ai-agent-send-btn";
   sendBtn.textContent = "إرسال";
 
-  if (attachBtn) inputRow.appendChild(attachBtn);
-  inputRow.appendChild(textarea);
+  // DOM order determines visual side here since the page is RTL
+  // (dir="rtl" on <html>, no direction override on .ai-agent-chat-input-row)
+  // and flexbox lays out the first child on the visual right in RTL — so
+  // sendBtn first means "send" renders on the right, matching where a
+  // right-handed/thumb-natural tap lands after typing in an RTL field,
+  // with attachBtn last (now the visual left, where it used to be on the
+  // right before this swap).
   inputRow.appendChild(sendBtn);
+  inputRow.appendChild(textarea);
+  if (attachBtn) inputRow.appendChild(attachBtn);
   panel.appendChild(inputRow);
   if (fileInput) panel.appendChild(fileInput);
 
@@ -350,9 +401,37 @@ export function createChatPanel(options = {}) {
   renderSuggestions();
 
   function renderEmptyState() {
-    messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
+    // Swap between the normal friendly placeholder and a clear
+    // "unavailable" message when the user has neither their own saved API
+    // key nor platform access (admin / Level 10+) — computed client-side
+    // via isAiHelperAvailable() (ai-agent-settings.js), so this renders
+    // correctly on first paint instead of only surfacing as a confusing
+    // backend error after the user tries to send a message.
+    if (isAiHelperAvailable()) {
+      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
+    } else {
+      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty ai-agent-msg--unavailable">البشــمبصمج غير متاح حاليًا — يلزم مستوى 10 أو الاشتراك، أو إضافة مفتاح API خاص بك من الإعدادات ⚙️</div>`;
+    }
+    updateAvailabilityGate();
   }
   renderEmptyState();
+
+  /**
+   * Disables the input/send button (rather than leaving them enabled to
+   * let the backend error surface as a fallback) whenever the AI Helper
+   * is unavailable — avoids a confusing round-trip failure for something
+   * already knowable client-side. Re-checked on every render of the empty
+   * state (i.e. whenever there are no messages yet) and again whenever
+   * the Settings tab changes the saved API key, so switching to Settings,
+   * adding a key, and coming back updates this live without needing to
+   * reopen the modal.
+   */
+  function updateAvailabilityGate() {
+    const available = isAiHelperAvailable();
+    textarea.disabled = !available;
+    sendBtn.disabled = !available;
+    if (attachBtn) attachBtn.disabled = !available;
+  }
 
   /**
    * @param {"user"|"assistant"} role
@@ -365,6 +444,48 @@ export function createChatPanel(options = {}) {
    *   including on reload from history). Assistant messages never carry
    *   one; only ever passed for role === "user".
    */
+  const COPY_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+  const CHECK_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  /**
+   * Adds a small per-message copy button to a rendered bubble, copying the
+   * raw source text (the same string appendMessage received — unrendered
+   * markdown for assistant messages, plain text for user messages) rather
+   * than the rendered HTML, so pasting elsewhere doesn't carry markdown/
+   * HTML artifacts the user didn't type. Swaps to a checkmark briefly
+   * instead of a separate toast — keeps the feedback right where the user
+   * is already looking, and doesn't need a shared notification helper
+   * this module doesn't otherwise depend on.
+   * @param {HTMLElement} el - the message bubble to attach the button to.
+   * @param {string} rawText - the exact text to copy.
+   */
+  function addCopyButton(el, rawText) {
+    if (!rawText) return;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ai-agent-msg-copy-btn";
+    btn.setAttribute("aria-label", "نسخ الرسالة");
+    btn.title = "نسخ";
+    btn.innerHTML = COPY_ICON_SVG;
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await navigator.clipboard.writeText(rawText);
+        btn.innerHTML = CHECK_ICON_SVG;
+        btn.classList.add("ai-agent-msg-copy-btn--copied");
+        setTimeout(() => {
+          btn.innerHTML = COPY_ICON_SVG;
+          btn.classList.remove("ai-agent-msg-copy-btn--copied");
+        }, 1500);
+      } catch (err) {
+        console.error("[ai-agent-chat] clipboard write failed:", err);
+      }
+    });
+    el.appendChild(btn);
+  }
+
   function appendMessage(role, content, attachmentName) {
     const el = document.createElement("div");
     el.className = `ai-agent-msg ai-agent-msg--${role}`;
@@ -398,6 +519,8 @@ export function createChatPanel(options = {}) {
       _processByLine(textEl);
       el.appendChild(textEl);
     }
+
+    if (content) addCopyButton(el, content);
 
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
@@ -567,9 +690,10 @@ export function createChatPanel(options = {}) {
           // IndexedDB fast). This is enough for a reopened "convert this
           // exam" conversation to still show which file was sent, even
           // though the file content itself isn't available anymore.
-          messages: history.map(({ role, content, attachments }) => ({
+          messages: history.map(({ role, content, attachments, type }) => ({
             role,
             content,
+            ...(type ? { type } : {}),
             ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
           })),
         });
@@ -590,7 +714,39 @@ export function createChatPanel(options = {}) {
           // is already async, so awaiting is free and lets tool handlers
           // use the same in-app confirm UI as the rest of the app.
           const resultText = await onToolCall(data.toolCall);
-          if (resultText) appendToolResultMessage(resultText);
+          if (resultText) {
+            appendToolResultMessage(resultText);
+            // Tool-result bubbles (e.g. "🗑️ تم مسح الصفحة بالكامل.") were
+            // previously DOM-only — appended to messagesEl above but never
+            // pushed into `history`, so the saveConversation call further
+            // up (which runs BEFORE onToolCall, from the plain text/turn
+            // data) never captured them, and they vanished the moment the
+            // conversation was reopened from the History tab. Recorded
+            // here as a distinct `type: "tool-result"` entry (not a
+            // regular "assistant" turn) so loadConversation/appendMessage
+            // below can tell it apart and re-render it with the same
+            // muted tool-result styling it has live, and re-saved so this
+            // turn's history record actually reflects what the user saw.
+            history.push({ role: "assistant", type: "tool-result", content: resultText });
+            try {
+              await saveConversation({
+                id: conversationId,
+                pageKey,
+                title: deriveConversationTitle(history),
+                createdAt: conversationCreatedAt,
+                updatedAt: Date.now(),
+                messages: history.map(({ role, content, attachments, type }) => ({
+                  role,
+                  content,
+                  ...(type ? { type } : {}),
+                  ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
+                })),
+              });
+              if (typeof onHistoryChanged === "function") onHistoryChanged();
+            } catch (histErr) {
+              console.error("[ai-agent-chat] failed to save conversation (tool result):", histErr);
+            }
+          }
         } catch (toolErr) {
           console.error("[ai-agent-chat] onToolCall failed:", toolErr);
           appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
@@ -601,7 +757,7 @@ export function createChatPanel(options = {}) {
       console.error("[ai-agent-chat] request failed:", err);
       appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     } finally {
-      sendBtn.disabled = false;
+      updateAvailabilityGate();
     }
   }
 
@@ -647,9 +803,10 @@ export function createChatPanel(options = {}) {
     // sendMessage) — no base64 data available after a reload, but the
     // filename is enough to redraw the same chip the user originally saw.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName }) => ({
+      ...conversation.messages.map(({ role, content, attachmentName, type }) => ({
         role,
         content,
+        ...(type ? { type } : {}),
         ...(attachmentName ? { attachments: [{ name: attachmentName }] } : {}),
       })),
     );
@@ -658,7 +815,13 @@ export function createChatPanel(options = {}) {
     if (!history.length) {
       renderEmptyState();
     } else {
-      history.forEach((m) => appendMessage(m.role, m.content, m.attachments?.[0]?.name));
+      history.forEach((m) => {
+        if (m.type === "tool-result") {
+          appendToolResultMessage(m.content);
+        } else {
+          appendMessage(m.role, m.content, m.attachments?.[0]?.name);
+        }
+      });
     }
     updateNewChatVisibility();
   };
@@ -687,6 +850,19 @@ export function createChatPanel(options = {}) {
   };
 
   updateNewChatVisibility();
+
+  /**
+   * Re-checks AI Helper eligibility and refreshes both the input's
+   * enabled/disabled state and — if the conversation is still empty — the
+   * placeholder label. Called by ai-agent.js when the Settings tab saves
+   * or clears an API key, so switching from Settings back to Chat (in the
+   * same modal-open session, thanks to B7's panel reuse) reflects the
+   * change immediately rather than needing a fresh page load.
+   */
+  panel.refreshAvailability = function refreshAvailability() {
+    updateAvailabilityGate();
+    if (history.length === 0) renderEmptyState();
+  };
 
   return panel;
 }

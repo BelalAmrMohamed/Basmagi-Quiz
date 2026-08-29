@@ -47,7 +47,7 @@ function openHistoryIDB() {
  * @property {string} title - derived from the first user message, truncated
  * @property {number} createdAt
  * @property {number} updatedAt
- * @property {Array<{role: "user"|"assistant", content: string}>} messages
+ * @property {Array<{role: "user"|"assistant", content: string, type?: "tool-result"}>} messages
  */
 
 /**

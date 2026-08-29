@@ -109,6 +109,26 @@ export function applyResponseLanguage(pageKey, systemPrompt) {
 }
 
 /**
+ * Whether the AI Helper can actually be used right now, without a network
+ * round-trip: either the user has saved their own API key (any provider),
+ * or they have platform access (admin, or a cached Level 10+ user level).
+ * Mirrors the exact precedence sendMessage() in ai-agent-chat.js uses when
+ * deciding which key to send — this is the same eligibility check
+ * refreshKeySourceIndicator() below already computes for the Settings
+ * tab's key-source line, factored out so the Chat tab (ai-agent-chat.js)
+ * can show an upfront "unavailable" placeholder instead of only surfacing
+ * this as a backend error after the user tries to send a message.
+ * @returns {boolean}
+ */
+export function isAiHelperAvailable() {
+  const { hasKey } = getOwnKey();
+  if (hasKey) return true;
+  const isAdmin = isAdminAuthenticated();
+  const level = getCachedLevel();
+  return isAdmin || (typeof level === "number" && level >= 10);
+}
+
+/**
  * @param {object} [options]
  * @param {string} [options.pageKey] - "home" | "result"; used to key the
  *   per-page system-prompt storage.
@@ -117,7 +137,7 @@ export function applyResponseLanguage(pageKey, systemPrompt) {
  * @returns {HTMLElement} the settings panel root element
  */
 export function createSettingsPanel(options = {}) {
-  const { pageKey = "default", defaultSystemPrompt = "" } = options;
+  const { pageKey = "default", defaultSystemPrompt = "", onKeyChanged = null } = options;
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-settings-panel";
 
@@ -234,10 +254,7 @@ export function createSettingsPanel(options = {}) {
       keySourceIndicator.textContent = "🔑 يتم استخدام مفتاحك الخاص حاليًا";
       return;
     }
-    const isAdmin = isAdminAuthenticated();
-    const level = getCachedLevel();
-    const eligible = isAdmin || (typeof level === "number" && level >= 10);
-    if (eligible) {
+    if (isAiHelperAvailable()) {
       keySourceIndicator.className = "ai-agent-key-source ai-agent-key-source--platform";
       keySourceIndicator.textContent = "🌐 يتم استخدام مفتاح المنصة (لا يوجد مفتاح خاص محفوظ)";
     } else {
@@ -260,6 +277,7 @@ export function createSettingsPanel(options = {}) {
     status.className = "ai-agent-settings-status ai-agent-settings-status--saved";
     status.textContent = "تم الحفظ ✓";
     refreshKeySourceIndicator();
+    if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
   clearBtn.addEventListener("click", () => {
@@ -269,6 +287,7 @@ export function createSettingsPanel(options = {}) {
     status.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
     status.textContent = "تم المسح";
     refreshKeySourceIndicator();
+    if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
   // ── System prompt (editable, page-scoped) ──
