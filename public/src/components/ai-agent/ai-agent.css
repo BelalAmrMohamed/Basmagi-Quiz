@@ -22,10 +22,29 @@
    settings) below the tab strip. On mobile this is just a plain block —
    the sidebar is display:none there (see .ai-agent-sidebar below) so
    .ai-agent-body ends up being nothing more than a passthrough container
-   around the same tabbed panels that existed before this wrapper. On
-   desktop (see .ai-agent-desktop-layout below) it becomes the flex row
-   that lays the sidebar and the active panel out side by side. */
+   around the same tabbed panels that existed before this wrapper. */
 .ai-agent-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Row wrapper around sidebar + .ai-agent-body (see ai-agent.js — `row` is
+   the actual parent of both, sibling of `tabs` under .ai-agent-widget).
+   BUG FIX: a previous version tried to lay the sidebar and body out side
+   by side by making .ai-agent-body itself `flex-direction: row-reverse`
+   on desktop — but the sidebar was never a CHILD of .ai-agent-body (it's
+   a sibling, both children of .ai-agent-widget), so that rule had no
+   sidebar to lay out next to and did nothing. Sidebar and body ended up
+   stacking vertically like ordinary column children of the
+   always-column .ai-agent-widget, leaving a large empty gap below a
+   short, fixed-max-height panel inside a much taller desktop modal. This
+   wrapper is the actual node that becomes a flex row on desktop (see
+   .ai-agent-desktop-layout .ai-agent-row below). On mobile it's a plain
+   block — same "just a passthrough" role .ai-agent-body used to describe
+   on its own. */
+.ai-agent-row {
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -108,10 +127,14 @@
   position: relative;
 }
 
-/* Desktop-only model selector bar (Task 4) — see the modelBar block in
-   ai-agent-chat.js. display:none by default (mobile keeps the Settings
-   tab as the only place to change models); shown only once the modal is
-   in desktop layout (see the >=901px block near the end of this file). */
+/* Model selector bar (see modelBar in createChatPanel, ai-agent-chat.js).
+   Rendered here in its DEFAULT position — directly in the chat panel,
+   above the messages — for any embedding that doesn't relocate it (see
+   panel.modelBarEl). display:none by default; ai-agent.js's desktop
+   sidebar moves this exact node into .ai-agent-sidebar-model-slot below
+   instead of leaving it here, so in practice this position is mobile/
+   non-sidebar-only, and mobile never shows it (Settings tab remains the
+   only place to change models there). */
 .ai-agent-chat-model-bar {
   display: none;
   padding: 8px 10px;
@@ -224,38 +247,76 @@
   position: relative;
 }
 
-/* Extra bottom padding whenever a message carries the copy button (see
-   addCopyButton() in ai-agent-chat.js, which only ever calls
-   .ai-agent-msg-copy-btn's constructor for messages with actual text) —
-   reserves room inside the bubble so the button's own box never sits
-   directly on top of the last line of text. */
-.ai-agent-msg:has(.ai-agent-msg-copy-btn) {
-  padding-bottom: 30px;
+/* Wraps a bubble + its controls row (copy/edit) as one column, so the
+   controls sit BELOW the bubble as a normal sibling instead of layered
+   inside/on top of the message text. Shares the bubble's own alignment
+   (flex-start/right for user, flex-end/left for assistant) so the
+   controls land under the correct edge — see .ai-agent-msg--user/
+   --assistant below for the actual align-self values these mirror. */
+.ai-agent-msg-wrap {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
 }
 
-/* Per-message copy button (see addCopyButton in ai-agent-chat.js) — pinned
-   INSIDE the bubble's own bottom-right corner (not floated below it), out
-   of the way of the attachment chip (which lives at the top of the
-   bubble) and any tool-result/error styling (neither of which gets a copy
-   button).
-   BUG FIX: this used to sit at `bottom: -6px; transform: translateY(100%)`
-   — i.e. floated entirely BELOW the bubble's own box, in the gap between
-   messages. With only ~10px of gap between bubbles (see
-   .ai-agent-chat-messages's `gap: 10px` above) that floated button
-   routinely rendered underneath the *next* message's bubble instead of
-   in the empty gap, and fixing it by only growing the gap would waste
-   vertical space on every single message pair just to make room for a
-   control that's hidden until hover anyway. Positioning it inside the
-   bubble's own padding box instead (bottom-right corner, layered over the
-   message text within the bubble) fixes the overlap without touching
-   .ai-agent-chat-messages's spacing at all. Hidden until hover/focus on
-   desktop so it doesn't visually compete with the message text; always
-   shown on touch devices via the (hover: none) fallback below since
-   there's no hover state to reveal it there. */
-.ai-agent-msg-copy-btn {
-  position: absolute;
-  bottom: 6px;
-  inset-inline-end: 6px;
+.ai-agent-msg-wrap--user {
+  align-self: flex-start;
+  align-items: flex-end;
+}
+
+.ai-agent-msg-wrap--assistant {
+  align-self: flex-end;
+  align-items: flex-start;
+}
+
+/* The wrapped bubble itself no longer needs its own max-width/alignment —
+   .ai-agent-msg-wrap now owns both — but keeps them as a safe fallback
+   for the two message types that render straight into .ai-agent-chat-messages
+   without a wrapper (tool-result, error; see appendToolResultMessage/
+   appendError in ai-agent-chat.js). */
+.ai-agent-msg-wrap .ai-agent-msg {
+  max-width: 100%;
+}
+
+/* Controls row (copy, + edit for user messages) — a small row of icon
+   buttons below the bubble, right-aligned under a user bubble (right
+   side) and left-aligned under an assistant bubble (left side), matching
+   the request to mirror each bubble's own edge rather than centering or
+   always sticking to one side. Hidden until hover/focus on desktop so it
+   doesn't compete with the message list at rest; always shown on touch
+   devices (no hover state to reveal it there) via the (hover: none)
+   fallback below. */
+.ai-agent-msg-controls {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.ai-agent-msg-wrap:hover .ai-agent-msg-controls,
+.ai-agent-msg-controls:focus-within {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .ai-agent-msg-controls {
+    opacity: 1;
+  }
+}
+
+/* DOM order is copy-then-edit (see appendMessage/addCopyButton/
+   addEditButton in ai-agent-chat.js), but a user bubble's controls read
+   right-to-left visually (row-reverse) so Edit ends up closer to the
+   bubble's own right edge and Copy further out — same left/right
+   grouping the assistant side gets for free from normal (non-reversed)
+   flex order on its own left-aligned edge. */
+.ai-agent-msg-controls--user {
+  flex-direction: row-reverse;
+}
+
+.ai-agent-msg-copy-btn,
+.ai-agent-msg-edit-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,85 +328,22 @@
   background: var(--color-surface);
   color: var(--color-text-tertiary);
   cursor: pointer;
-  opacity: 0;
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
   transition:
-    opacity 0.15s,
     color 0.15s,
     border-color 0.15s;
 }
 
-.ai-agent-msg:hover .ai-agent-msg-copy-btn,
-.ai-agent-msg-copy-btn:focus-visible {
-  opacity: 1;
-}
-
-.ai-agent-msg-copy-btn:hover {
+.ai-agent-msg-copy-btn:hover,
+.ai-agent-msg-edit-btn:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
 .ai-agent-msg-copy-btn--copied,
 .ai-agent-msg-copy-btn--copied:hover {
-  opacity: 1;
   color: var(--color-success);
   border-color: var(--color-success);
-}
-
-@media (hover: none) {
-  .ai-agent-msg-copy-btn {
-    opacity: 1;
-  }
-}
-
-/* Pen-icon Edit button (see addEditButton in ai-agent-chat.js) — grouped
-   right next to the Copy button, same bottom-right corner, positioned
-   just inside it so the two read as one small control cluster rather
-   than two unrelated floating buttons. User messages only. */
-.ai-agent-msg-edit-btn {
-  position: absolute;
-  bottom: 6px;
-  inset-inline-end: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  opacity: 0;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
-  transition:
-    opacity 0.15s,
-    color 0.15s,
-    border-color 0.15s;
-}
-
-.ai-agent-msg:hover .ai-agent-msg-edit-btn,
-.ai-agent-msg-edit-btn:focus-visible {
-  opacity: 1;
-}
-
-.ai-agent-msg-edit-btn:hover {
-  color: var(--color-primary);
-  border-color: var(--color-primary);
-}
-
-@media (hover: none) {
-  .ai-agent-msg-edit-btn {
-    opacity: 1;
-  }
-}
-
-/* A message bubble with BOTH the copy and edit buttons needs a little
-   more reserved bottom padding than one with just the copy button, so
-   neither control's box lands on the last line of text. */
-.ai-agent-msg:has(.ai-agent-msg-edit-btn) {
-  padding-bottom: 30px;
 }
 
 /* ── Edit-in-place mode (Claude-style "edit and resubmit") ──
@@ -677,6 +675,87 @@
 .ai-agent-send-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Voice dictation (Task 5) ── */
+.ai-agent-mic-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.ai-agent-mic-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Shown together, replacing the mic button, while dictation is active
+   (see setDictationUiState() in ai-agent-chat.js). Flex so both buttons
+   share the space the single mic button normally occupies without
+   widening the input row. */
+.ai-agent-dictation-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.ai-agent-dictation-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ai-agent-dictation-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* "Submit" mirrors the send button's own accent styling — it performs
+   the same action (send), just from the dictation state. */
+.ai-agent-dictation-btn--submit {
+  background: var(--gradient-accent);
+  color: #fff;
+}
+
+/* "Stop Dictation" is a neutral action (no send), so it gets a quieter
+   outline treatment instead of the accent fill. */
+.ai-agent-dictation-btn--stop {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1.5px solid var(--color-border);
+}
+
+/* A subtle live-recording cue on the input field itself while dictating,
+   distinct from the mic button (which is hidden during dictation — see
+   setDictationUiState()) so there's still a visible "you're being heard"
+   signal near the text being filled in live. */
+.ai-agent-chat-input--dictating {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.ai-agent-firefox-warning {
+  margin: 0 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-warning, #d97706) 12%, transparent);
+  color: var(--color-warning, #b45309);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 /* ── History tab ── */
@@ -1087,6 +1166,27 @@ body.sidebar-expanded .ai-agent-fab {
   background: var(--color-success-light, rgba(34, 197, 94, 0.12));
 }
 
+/* Holds the chat panel's own model-selector bar once ai-agent.js moves it
+   here from its default spot above the input row (see relocateModelBar()
+   / panel.modelBarEl) — a compact control that fits the sidebar's own
+   220px width, not a full-panel-width bar. Sits right under the New
+   Chat/Copy Conversation buttons, before the recent-conversations list,
+   so "which model" reads as part of the sidebar's own settings cluster
+   rather than floating disconnected above the chat transcript. */
+.ai-agent-sidebar-model-slot .ai-agent-chat-model-bar {
+  display: block;
+  padding: 4px 0 10px;
+  margin-bottom: 6px;
+  border-bottom: 1.5px solid var(--color-border);
+  background: transparent;
+}
+
+.ai-agent-sidebar-model-slot .ai-agent-chat-model-select {
+  width: 100%;
+  font-size: 0.78rem;
+  padding: 7px 9px;
+}
+
 .ai-agent-sidebar-label {
   margin-top: 10px;
   padding: 0 10px;
@@ -1158,8 +1258,16 @@ body.sidebar-expanded .ai-agent-fab {
     max-height: min(760px, 90vh);
   }
 
-  .ai-agent-desktop-layout .ai-agent-body {
+  .ai-agent-desktop-layout .ai-agent-row {
     flex-direction: row-reverse; /* RTL: sidebar visually on the LEFT, panels on the right */
+    min-height: 0;
+    flex: 1;
+  }
+
+  .ai-agent-desktop-layout .ai-agent-body {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
   }
 
   .ai-agent-desktop-layout .ai-agent-sidebar {
@@ -1168,25 +1276,32 @@ body.sidebar-expanded .ai-agent-fab {
     flex-shrink: 0;
   }
 
+  /* BUG FIX: .ai-agent-panel's base rule caps height at 480px (a sane
+     limit for the mobile modal's own ~560-640px max-height) — left
+     unchanged here, the wide 760px-tall desktop modal would show that
+     short, fixed-height panel with a large empty gap below/beside it
+     inside the now-much-taller .ai-agent-body. Desktop needs the panel to
+     actually fill the row's available height instead. */
   .ai-agent-desktop-layout .ai-agent-panel {
     flex: 1;
     min-width: 0;
+    min-height: 0;
+    max-height: none;
   }
 
-  .ai-agent-desktop-layout .ai-agent-chat-model-bar {
-    display: block;
-  }
+  /* The model bar (see relocateModelBar() in ai-agent.js) now lives
+     inside the sidebar's own slot instead of above the chat panel's
+     input row — see .ai-agent-sidebar-model-slot below for its styling.
+     No panel-level display override needed here anymore. */
 
-  /* The mobile-only tab strip's Chat/History/Settings buttons stay
-     functional on desktop too (still the only way to reach Settings, and
-     still switches the active panel shown beside the sidebar) — only the
-     "السابقة" (History) tab button is redundant with the sidebar's own
-     "عرض كل السجل" entry point, so it's hidden here rather than offering
-     two controls that do the same thing. Chat/Settings remain visible:
-     the sidebar's New Chat button covers one Chat-tab use case but not
-     "switch back to Chat from Settings", and there's no sidebar
-     equivalent for Settings at all. */
-  .ai-agent-desktop-layout .ai-agent-tabs .ai-agent-tab-btn:nth-child(2) {
-    display: none;
-  }
+  /* The tab strip's Chat/History/Settings buttons all stay visible and
+     functional on desktop too. The sidebar's own "عرض كل السجل" button is
+     a shortcut to the same History tab (see sidebarShowAllBtn in
+     ai-agent.js) — a PREVIOUS version hid this tab button on desktop on
+     the assumption the sidebar shortcut made it redundant, but the top
+     tab strip is the first place someone looks for History/Settings, so
+     hiding it read as "the history tab disappeared" rather than "there's
+     a shortcut for it now". Both entry points doing the same thing is
+     harmless; hiding the more discoverable one wasn't worth the
+     de-duplication. */
 }

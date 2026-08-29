@@ -169,6 +169,15 @@ export function createChatPanel(options = {}) {
 
   modelBar.appendChild(modelBarSelect);
   panel.appendChild(modelBar);
+  // Exposed so ai-agent.js can relocate this node into the desktop
+  // sidebar (see the "Sidebar Integration" requirement — the model bar
+  // used to render above the input row instead, full chat-panel width,
+  // which read as an oversized dropdown sitting in the wrong place
+  // entirely). Left appended to `panel` above as the DEFAULT position
+  // (mobile, or any embedding that doesn't move it) — ai-agent.js moving
+  // it elsewhere is an explicit opt-in, not a requirement for this
+  // module to work standalone.
+  panel.modelBarEl = modelBar;
 
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
@@ -457,9 +466,6 @@ export function createChatPanel(options = {}) {
   const isFirefox = /firefox/i.test(navigator.userAgent || "");
 
   let micBtn = null;
-  let dictationActions = null;
-  let stopDictationBtn = null;
-  let submitDictationBtn = null;
   let firefoxWarningEl = null;
   let recognition = null;
   let isDictating = false;
@@ -474,6 +480,15 @@ export function createChatPanel(options = {}) {
   // typed), same as how a real dictation feature behaves.
   let baseTextBeforeDictation = "";
 
+  const MIC_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
+  // "Cancel" glyph the mic button swaps to while dictating — a plain X,
+  // distinct from the mic icon at a glance, communicating "stop/cancel
+  // this" rather than reusing a stop-square or another mic variant that
+  // could read as "still recording".
+  const CANCEL_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
   function composeDictationValue(interim) {
     const finalPart = finalizedText.trim();
     const interimPart = (interim || "").trim();
@@ -482,17 +497,36 @@ export function createChatPanel(options = {}) {
     return [base, dictated].filter(Boolean).join(base ? " " : "");
   }
 
+  /**
+   * Single state machine for the whole input row's dictation mode — NOT
+   * two separate labeled buttons swapped in for the mic (a previous
+   * version's "إيقاف الإملاء" / "إرسال" pair, since removed per the
+   * request to cut labeled-button clutter). Instead, the SAME mic button
+   * element transforms in place: its icon/label/handler swap between
+   * "start" (mic) and "cancel" (X) depending on `dictating`, and
+   * everything else in the row (attach button, suggestions row) hides —
+   * except the existing send icon button, which stays visible/active on
+   * the far right the whole time, since Send is still how a dictated
+   * message actually gets sent (see submitBtn wiring below).
+   */
   function setDictationUiState(dictating) {
     isDictating = dictating;
-    if (micBtn) micBtn.hidden = dictating;
-    if (dictationActions) dictationActions.hidden = !dictating;
+    if (micBtn) {
+      micBtn.innerHTML = dictating ? CANCEL_ICON_SVG : MIC_ICON_SVG;
+      micBtn.setAttribute("aria-label", dictating ? "إلغاء الإملاء الصوتي" : "بدء الإملاء الصوتي");
+      micBtn.title = dictating ? "إلغاء الإملاء" : "إملاء صوتي";
+      micBtn.classList.toggle("ai-agent-mic-btn--active", dictating);
+    }
+    if (attachBtn) attachBtn.hidden = dictating;
+    if (suggestionsEl) suggestionsEl.hidden = dictating;
     textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
+    inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
   }
 
   /**
    * Halts the microphone. Does NOT touch the textarea's current value —
-   * callers decide separately whether to leave it for review (Stop
-   * Dictation) or immediately submit it (Submit), matching the two
+   * callers decide separately whether to leave it for review (mic/cancel
+   * button) or immediately submit it (send button), matching the two
    * distinct actions in the spec.
    */
   function stopRecognition() {
@@ -537,7 +571,7 @@ export function createChatPanel(options = {}) {
     recognition.onerror = (event) => {
       console.error("[ai-agent-chat] SpeechRecognition error:", event.error);
       // "no-speech"/"aborted" are routine (silence timeout, or the user's
-      // own Stop click racing the browser's own stop event) — only
+      // own Cancel click racing the browser's own stop event) — only
       // surface a visible error for something the user couldn't have
       // caused by simply pausing or stopping normally.
       if (event.error !== "no-speech" && event.error !== "aborted") {
@@ -548,10 +582,10 @@ export function createChatPanel(options = {}) {
 
     recognition.onend = () => {
       // The browser can end the session on its own (silence timeout)
-      // without either explicit control being clicked — make sure the UI
-      // still falls back to the idle mic-button state either way, so the
-      // user is never left staring at Stop/Submit buttons that no longer
-      // do anything.
+      // without the user clicking anything — make sure the UI still
+      // falls back to the idle mic-icon state either way, so the mic
+      // button is never stuck showing "cancel" for a session that's
+      // already over.
       if (isDictating) setDictationUiState(false);
     };
 
@@ -564,49 +598,31 @@ export function createChatPanel(options = {}) {
     }
   }
 
+  /**
+   * Click handler for the mic/cancel button — a single element, dispatches
+   * by current state rather than being two different buttons (see
+   * setDictationUiState's own comment on why). Cancel simply halts the
+   * mic and leaves the transcribed text for manual review/edit/send; it
+   * does not submit anything itself (Send, on the far right, is the only
+   * button that ever submits — see sendBtn's own wiring below).
+   */
+  function onMicBtnClick() {
+    if (isDictating) {
+      stopRecognition();
+      textarea.focus();
+    } else {
+      startDictation();
+    }
+  }
+
   if (SpeechRecognitionCtor) {
     micBtn = document.createElement("button");
     micBtn.type = "button";
     micBtn.className = "ai-agent-mic-btn";
     micBtn.setAttribute("aria-label", "بدء الإملاء الصوتي");
     micBtn.title = "إملاء صوتي";
-    micBtn.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
-    micBtn.addEventListener("click", startDictation);
-
-    // "Stop Dictation" + "Submit" — shown together while dictating,
-    // replacing the mic button (see setDictationUiState above).
-    dictationActions = document.createElement("div");
-    dictationActions.className = "ai-agent-dictation-actions";
-    dictationActions.hidden = true;
-
-    stopDictationBtn = document.createElement("button");
-    stopDictationBtn.type = "button";
-    stopDictationBtn.className = "ai-agent-dictation-btn ai-agent-dictation-btn--stop";
-    stopDictationBtn.textContent = "إيقاف الإملاء";
-    stopDictationBtn.title = "إيقاف الإملاء الصوتي";
-    // Halts the mic and leaves the transcribed text in the input for the
-    // user to review/edit manually — no submission.
-    stopDictationBtn.addEventListener("click", () => {
-      stopRecognition();
-      textarea.focus();
-    });
-
-    submitDictationBtn = document.createElement("button");
-    submitDictationBtn.type = "button";
-    submitDictationBtn.className = "ai-agent-dictation-btn ai-agent-dictation-btn--submit";
-    submitDictationBtn.textContent = "إرسال";
-    submitDictationBtn.title = "إيقاف الإملاء وإرسال الرسالة";
-    // Halts the mic, finalizes whatever's in the field right now, and
-    // immediately sends it — same as pressing إرسال on the main input,
-    // just without a manual review step first.
-    submitDictationBtn.addEventListener("click", () => {
-      stopRecognition();
-      sendMessage();
-    });
-
-    dictationActions.appendChild(submitDictationBtn);
-    dictationActions.appendChild(stopDictationBtn);
+    micBtn.innerHTML = MIC_ICON_SVG;
+    micBtn.addEventListener("click", onMicBtnClick);
   }
 
   // Firefox accuracy warning (Task 5.6) — user-agent sniffing is
@@ -625,6 +641,34 @@ export function createChatPanel(options = {}) {
     firefoxWarningEl.textContent =
       "⚠️ الإملاء الصوتي قد يكون غير دقيق على متصفح Firefox — يُفضّل استخدام متصفح آخر (مثل Chrome) لنتائج أفضل.";
   }
+
+  const sendBtn = document.createElement("button");
+  sendBtn.type = "button";
+  sendBtn.className = "ai-agent-send-btn";
+  sendBtn.setAttribute("aria-label", "إرسال");
+  sendBtn.title = "إرسال";
+  sendBtn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>';
+
+  // Assemble the input row now that every optional piece (attach button,
+  // mic/cancel button) has been conditionally built above. DOM order:
+  // attach, textarea, mic/cancel, send — send is deliberately the LAST
+  // child so it's the far-right control in this RTL row (first child
+  // sits visually on the right in RTL flex; see .ai-agent-chat-input-row's
+  // own comment in the CSS), matching "Send Button Position: move the
+  // remaining send-btn to the far-right end" from the request. Only the
+  // send button (never attach/mic) stays visible during dictation — see
+  // setDictationUiState, which hides attachBtn but never touches sendBtn.
+  if (attachBtn) inputRow.appendChild(attachBtn);
+  inputRow.appendChild(textarea);
+  if (micBtn) inputRow.appendChild(micBtn);
+  inputRow.appendChild(sendBtn);
+  if (fileInput) inputRow.appendChild(fileInput);
+
+  // Firefox warning sits above the input row, once, not inside it — it's
+  // informational context for the row rather than a control within it.
+  if (firefoxWarningEl) panel.appendChild(firefoxWarningEl);
+  panel.appendChild(inputRow);
 
   // inputRow exists now, so it's safe for renderSuggestions() to insert
   // relative to it (see the function's own comment above).
@@ -690,10 +734,11 @@ export function createChatPanel(options = {}) {
    * instead of a separate toast — keeps the feedback right where the user
    * is already looking, and doesn't need a shared notification helper
    * this module doesn't otherwise depend on.
-   * @param {HTMLElement} el - the message bubble to attach the button to.
+   * @param {HTMLElement} controlsEl - the controls row (below the bubble)
+   *   to attach the button to — see appendMessage's `wrap`/`controls`.
    * @param {string} rawText - the exact text to copy.
    */
-  function addCopyButton(el, rawText) {
+  function addCopyButton(controlsEl, rawText) {
     if (!rawText) return;
     const btn = document.createElement("button");
     btn.type = "button";
@@ -715,7 +760,7 @@ export function createChatPanel(options = {}) {
         console.error("[ai-agent-chat] clipboard write failed:", err);
       }
     });
-    el.appendChild(btn);
+    controlsEl.appendChild(btn);
   }
 
   /**
@@ -737,12 +782,16 @@ export function createChatPanel(options = {}) {
    * genuinely new chat panel/session from that branch — mirroring how
    * Claude's own "edit and resubmit" leaves the original thread intact
    * and continues in a new one.
-   * @param {HTMLElement} el - the rendered user-message bubble.
+   * @param {HTMLElement} controlsEl - the controls row (below the bubble)
+   *   to attach the button to — see appendMessage's `wrap`/`controls`.
+   * @param {HTMLElement} bubbleEl - the rendered user-message bubble
+   *   itself, passed through to enterEditMode() since that's what
+   *   actually gets transformed into the edit textarea.
    * @param {number} historyIndex - this message's index into `history`,
    *   captured at render time so the branch can be built even after later
    *   turns have been appended (history.length has grown since).
    */
-  function addEditButton(el, historyIndex) {
+  function addEditButton(controlsEl, bubbleEl, historyIndex) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "ai-agent-msg-edit-btn";
@@ -751,9 +800,9 @@ export function createChatPanel(options = {}) {
     btn.innerHTML = EDIT_ICON_SVG;
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      enterEditMode(el, historyIndex);
+      enterEditMode(bubbleEl, historyIndex);
     });
-    el.appendChild(btn);
+    controlsEl.appendChild(btn);
   }
 
   /**
@@ -845,6 +894,18 @@ export function createChatPanel(options = {}) {
   }
 
   function appendMessage(role, content, attachmentName, historyIndex) {
+    // Wrapper around the bubble itself — copy/edit controls live in this
+    // wrapper, BELOW the bubble, rather than inside/on top of it (an
+    // earlier version pinned them absolutely inside the bubble's own
+    // bottom-right corner, which visually sat "on" the message text; see
+    // the request that reverted this). The wrapper shares the bubble's
+    // own alignment (flex-start for user/right, flex-end for
+    // assistant/left, per .ai-agent-msg--user/--assistant) so the
+    // controls end up under the correct edge of the bubble, not
+    // full-width under the whole message column.
+    const wrap = document.createElement("div");
+    wrap.className = `ai-agent-msg-wrap ai-agent-msg-wrap--${role}`;
+
     const el = document.createElement("div");
     el.className = `ai-agent-msg ai-agent-msg--${role}`;
 
@@ -878,20 +939,38 @@ export function createChatPanel(options = {}) {
       el.appendChild(textEl);
     }
 
-    if (content) addCopyButton(el, content);
+    wrap.appendChild(el);
+
+    // Controls row — copy (+ edit, for user messages) — sits BELOW the
+    // bubble as a sibling inside `wrap`, not layered inside/on top of the
+    // bubble itself. Only created when there's at least one control to
+    // show, so a bubble with neither (e.g. an assistant message that
+    // somehow has no copy-able content) doesn't reserve empty space for
+    // nothing.
+    let controls = null;
+    function ensureControls() {
+      if (!controls) {
+        controls = document.createElement("div");
+        controls.className = `ai-agent-msg-controls ai-agent-msg-controls--${role}`;
+        wrap.appendChild(controls);
+      }
+      return controls;
+    }
+
+    if (content) addCopyButton(ensureControls(), content);
     // Edit is only offered for user prompts with real text and a known
     // position in `history` (loadConversation's re-render also supplies
     // this — see below), and only when the caller actually wants
     // branching (onBranchConversation supplied) — otherwise the button
     // would be dead UI on pages that don't opt in.
     if (role === "user" && content && typeof historyIndex === "number" && onBranchConversation) {
-      addEditButton(el, historyIndex);
+      addEditButton(ensureControls(), el, historyIndex);
     }
 
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
     }
-    messagesEl.appendChild(el);
+    messagesEl.appendChild(wrap);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return el;
   }
@@ -1126,6 +1205,14 @@ export function createChatPanel(options = {}) {
    * turn (see its own doc comment above).
    */
   async function sendMessage() {
+    // If dictation is currently active, Send finalizes it — halts the
+    // mic and reverts the row to its default state — using whatever text
+    // is in the field at this exact moment (the last live-transcribed
+    // value), then falls through to the normal send flow below. This is
+    // what makes the send button double as the dictation flow's "Submit"
+    // action per the spec, without a second dedicated button for it.
+    if (isDictating) stopRecognition();
+
     const text = textarea.value.trim();
     const attachment = pendingAttachment;
     // A file with no accompanying text is a valid send (e.g. "just convert

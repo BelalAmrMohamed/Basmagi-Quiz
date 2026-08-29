@@ -57,7 +57,7 @@ const DESKTOP_BREAKPOINT_QUERY = "(min-width: 901px)";
  * @param {object} [options]
  * @returns {HTMLElement}
  */
-function buildWidgetContent(options = {}, existingChatPanel = null) {
+function buildWidgetContent(options = {}, existingChatPanel = null, branchHandlerRef = null) {
   const widget = document.createElement("div");
   widget.className = "ai-agent-widget";
 
@@ -87,12 +87,28 @@ function buildWidgetContent(options = {}, existingChatPanel = null) {
   tabs.appendChild(settingsTabBtn);
   widget.appendChild(tabs);
 
-  // ── Body wrapper: sidebar (desktop only) + the three panels ──
+  // ── Row wrapper: sidebar (desktop only) + .ai-agent-body ──
   // A separate flex row from `tabs` above so the desktop sidebar can sit
-  // beside the panels without needing to also stretch the tab strip.
+  // beside the panels without the tab strip also being pulled into that
+  // row. BUG FIX: previously `sidebar` was inserted as a sibling of
+  // `body` directly under `.ai-agent-widget` (itself always
+  // flex-direction:column), and the row-reverse rule meant to lay them
+  // out side by side was mistakenly applied to `.ai-agent-body` — which
+  // only wraps the three PANELS, not the sidebar, so it had no sidebar to
+  // lay out next to and did nothing. Sidebar and body ended up stacking
+  // vertically like any other column children, with the panels' own
+  // fixed max-height leaving a large gap below the sidebar in a much
+  // taller desktop modal. `row` (this new wrapper) is the actual node
+  // that becomes a flex row on desktop (see .ai-agent-desktop-layout
+  // .ai-agent-row in ai-agent.css) — sidebar and body are its only two
+  // children, so reversing IT lays them out side by side correctly.
+  const row = document.createElement("div");
+  row.className = "ai-agent-row";
+  widget.appendChild(row);
+
   const body = document.createElement("div");
   body.className = "ai-agent-body";
-  widget.appendChild(body);
+  row.appendChild(body);
 
   // `chatPanelSlot` is a one-element indirection layer so branching (see
   // handleBranch below, wired to the Edit-user-prompt flow in
@@ -183,8 +199,19 @@ function buildWidgetContent(options = {}, existingChatPanel = null) {
     setChatPanelForPageKey(pageKey, newPanel);
     newPanel.loadBranch(branch);
     activateTab(chatTabBtn, newPanel);
+    relocateModelBar();
     refreshSidebarRecents();
   }
+
+  // See buildWidgetContent's own onBranchConversation doc above: if this
+  // widget was built around an `existingChatPanel` reused from
+  // getOrCreateChatPanel(), that panel's onBranchConversation was set to
+  // a forwarding proxy (branchHandlerRef) at creation time, since the
+  // real handleBranch() couldn't exist yet back then. Point that proxy
+  // at the real thing now that it does — this only matters for the very
+  // first panel of a pageKey; every panel created after this point (via
+  // handleBranch itself) already gets the real function directly.
+  if (branchHandlerRef) branchHandlerRef.current = handleBranch;
 
   // ── Desktop sidebar ──
   // Hidden entirely on mobile via CSS (see .ai-agent-sidebar's display:none
@@ -228,6 +255,27 @@ function buildWidgetContent(options = {}, existingChatPanel = null) {
 
   sidebar.appendChild(sidebarNewChatBtn);
   sidebar.appendChild(sidebarCopyBtn);
+
+  // ── Model selector slot ──
+  // Holds whichever chat panel's own `.modelBarEl` (see createChatPanel
+  // in ai-agent-chat.js) is currently active, moved here from its default
+  // spot above the chat panel's input row — see the "Sidebar Integration"
+  // requirement: the bar used to render full-panel-width above the input
+  // row, which read as an oversized dropdown in the wrong place. A slot
+  // (rather than reparenting once) because branching (handleBranch below)
+  // swaps in a brand NEW panel with its OWN new modelBarEl each time —
+  // relocateModelBar() re-does the move whenever the active panel changes.
+  const modelBarSlot = document.createElement("div");
+  modelBarSlot.className = "ai-agent-sidebar-model-slot";
+  sidebar.appendChild(modelBarSlot);
+
+  function relocateModelBar() {
+    const bar = chatPanelSlot.current?.modelBarEl;
+    if (bar && bar.parentElement !== modelBarSlot) {
+      modelBarSlot.appendChild(bar);
+    }
+  }
+  relocateModelBar();
 
   const sidebarRecentsLabel = document.createElement("div");
   sidebarRecentsLabel.className = "ai-agent-sidebar-label";
@@ -284,7 +332,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null) {
   }
   refreshSidebarRecents();
 
-  widget.insertBefore(sidebar, body);
+  row.insertBefore(sidebar, body);
 
   return widget;
 }
@@ -301,14 +349,59 @@ function buildWidgetContent(options = {}, existingChatPanel = null) {
 // chat DOM state across reloads.
 const chatPanelsByPageKey = new Map();
 
+// One forwarding ref per pageKey, created together with that pageKey's
+// first chat panel and reused for the panel's entire lifetime (including
+// across modal close+reopen) — see getOrCreateChatPanel's own comment.
+// Deliberately a SEPARATE map from chatPanelsByPageKey (rather than e.g.
+// bundling {panel, ref} into one entry) so existing reads of
+// chatPanelsByPageKey.get(key) elsewhere don't need to change shape.
+const branchHandlerRefsByPageKey = new Map();
+
 function getOrCreateChatPanel(options) {
   const key = options.pageKey || "default";
   let chatPanel = chatPanelsByPageKey.get(key);
   if (!chatPanel) {
-    chatPanel = createChatPanel(options);
+    // BUG FIX: this used to call createChatPanel(options) with no
+    // onBranchConversation at all, so the very FIRST panel ever created
+    // for a pageKey (i.e. what every fresh modal open — mobile or
+    // desktop — actually renders) never got the Edit-user-prompt
+    // callback, and appendMessage()'s addEditButton is only invoked when
+    // onBranchConversation is truthy (see ai-agent-chat.js) — so the pen
+    // icon silently never appeared until AFTER a branch had already
+    // happened once (branch panels are built via handleBranch, which did
+    // pass it directly). The real handleBranch() closure doesn't exist
+    // yet at panel-creation time (it's defined inside buildWidgetContent,
+    // which runs once per modal OPEN, well after this) — worse, it's
+    // rebuilt fresh on every single reopen (new `body`/`chatTabBtn`
+    // closure vars each time), while this panel instance is cached and
+    // reused across reopens. So onBranchConversation forwards through a
+    // ref keyed by pageKey (not a fresh one per call) — buildWidgetContent
+    // repoints ref.current at its own freshly-built handleBranch on every
+    // open (see its own comment), and this panel's closure always calls
+    // whatever the current ref.current is, so it never ends up calling a
+    // handleBranch left over from an already-closed modal instance.
+    let ref = branchHandlerRefsByPageKey.get(key);
+    if (!ref) {
+      ref = { current: null };
+      branchHandlerRefsByPageKey.set(key, ref);
+    }
+    chatPanel = createChatPanel({
+      ...options,
+      onBranchConversation: (branch) => ref.current?.(branch),
+    });
     chatPanelsByPageKey.set(key, chatPanel);
   }
   return chatPanel;
+}
+
+function getBranchHandlerRef(pageKey) {
+  const key = pageKey || "default";
+  let ref = branchHandlerRefsByPageKey.get(key);
+  if (!ref) {
+    ref = { current: null };
+    branchHandlerRefsByPageKey.set(key, ref);
+  }
+  return ref;
 }
 
 // Lets handleBranch() (see buildWidgetContent above) swap the cached panel
@@ -359,8 +452,18 @@ function openAIAgentModal(options, fab) {
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
+  // See getOrCreateChatPanel's own doc comment: this ref (one per
+  // pageKey, persisted across modal close+reopen) lets the cached chat
+  // panel forward Edit-user-prompt submissions to the CURRENT modal
+  // instance's handleBranch() closure — buildWidgetContent repoints
+  // ref.current at its own freshly-built handleBranch below, every time
+  // this function runs.
+  const branchHandlerRef = getBranchHandlerRef(options.pageKey);
+
   modalCard.appendChild(header);
-  modalCard.appendChild(buildWidgetContent(options, getOrCreateChatPanel(options)));
+  modalCard.appendChild(
+    buildWidgetContent(options, getOrCreateChatPanel(options), branchHandlerRef)
+  );
   modal.appendChild(modalCard);
 
   modal.querySelector(".ai-agent-modal-close").onclick = closeModal;
