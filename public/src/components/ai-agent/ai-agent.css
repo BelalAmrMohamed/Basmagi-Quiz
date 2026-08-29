@@ -187,7 +187,7 @@
   background: var(--color-surface);
   color: var(--color-text-secondary);
   cursor: pointer;
-  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
+  box-shadow: var(--shadow-sm, 0 1px 3px Black);
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
 
@@ -206,11 +206,11 @@
 .ai-agent-corner-btn--copied:hover {
   border-color: var(--color-success);
   color: var(--color-success);
-  background: var(--color-success-light, rgba(34, 197, 94, 0.12));
+  background: var(--color-success-light, rgba(34, 197, 94));
 }
 
 /* Make the buttons invisible at 768px when the side-menu appears */
-@media (max-width: 768px) {
+@media (min-width: 768px) {
  .ai-agent-corner-btn{
   display: none;
  }
