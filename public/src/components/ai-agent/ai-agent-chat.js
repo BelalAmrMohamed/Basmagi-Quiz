@@ -684,7 +684,7 @@ export function createChatPanel(options = {}) {
     if (isAiHelperAvailable()) {
       messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty">اسأل البشــمبصمج عن أي سؤال متعلق بامتحاناتك 👋</div>`;
     } else {
-      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty ai-agent-msg--unavailable">البشــمبصمج غير متاح حاليًا — يلزم مستوى 10 أو الاشتراك، أو إضافة مفتاح API خاص بك من الإعدادات ⚙️</div>`;
+      messagesEl.innerHTML = `<div class="ai-agent-msg ai-agent-msg--empty ai-agent-msg--unavailable">البشــمبصمج غير متاح حاليًا — يلزم مستوى 10 أو أن تكون مشرفاً. يمكنك استخدامه عن طريق إضافة مفتاح API خاص بك من الإعدادات ⚙️</div>`;
     }
     updateAvailabilityGate();
   }
