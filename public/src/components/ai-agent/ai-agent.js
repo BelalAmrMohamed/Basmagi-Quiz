@@ -75,7 +75,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   const historyTabBtn = document.createElement("button");
   historyTabBtn.type = "button";
   historyTabBtn.className = "ai-agent-tab-btn";
-  historyTabBtn.innerHTML = `${HISTORY_ICON_SVG}<span>السابقة</span>`;
+  historyTabBtn.innerHTML = `${HISTORY_ICON_SVG}<span>السجل</span>`;
 
   const settingsTabBtn = document.createElement("button");
   settingsTabBtn.type = "button";
