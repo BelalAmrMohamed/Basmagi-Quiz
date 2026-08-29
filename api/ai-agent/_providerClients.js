@@ -42,11 +42,22 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
   if (Array.isArray(tools) && tools.length) {
     body.tools = [
       {
-        functionDeclarations: tools.map((t) => ({
-          name: t.name,
-          description: t.description,
-          parameters: t.input_schema,
-        })),
+        functionDeclarations: tools.map((t) => {
+          const decl = { name: t.name, description: t.description };
+          // Only attach `parameters` when there's at least one declared
+          // property. Gemini's proto-based schema is known to be picky
+          // about JSON-Schema shapes it doesn't expect (see the union-type
+          // note on CREATE_QUIZ_TOOL's `correct` field in _tools.js) —
+          // rather than assume an empty `{type:"object", properties:{}}`
+          // round-trips cleanly through every SDK version, just omit
+          // `parameters` altogether for schemas with nothing to declare
+          // (e.g. RESET_QUIZ_PAGE_TOOL). A function with no parameters is
+          // valid without a `parameters` field at all.
+          if (t.input_schema?.properties && Object.keys(t.input_schema.properties).length) {
+            decl.parameters = t.input_schema;
+          }
+          return decl;
+        }),
       },
     ];
   }

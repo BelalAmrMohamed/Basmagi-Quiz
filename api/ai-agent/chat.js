@@ -13,10 +13,13 @@
 //   systemPrompt?: string,     // optional system-role instructions
 //   enableTools?: boolean,     // if true, offers quiz tools (see _tools.js)
 //   toolNames?: string[],      // which tools to offer when enableTools is true —
-//                              // subset of ["create_quiz","edit_quiz","delete_quiz",
-//                              // "reset_quiz_page"]. Defaults to the original
-//                              // three (create/edit/delete) when omitted, so
-//                              // existing callers need no changes.
+//                              // subset of ["create_quiz","edit_quiz","edit_current_quiz",
+//                              // "delete_quiz","reset_quiz_page"] (see TOOLS_BY_NAME
+//                              // below — "edit_quiz" and "edit_current_quiz" are two
+//                              // different SCHEMAS for the same action, pick one not
+//                              // both). Defaults to the original three (create/edit/
+//                              // delete) when omitted, so existing callers need no
+//                              // changes.
 // }
 //
 // ATTACHMENTS: max 1 per message, 4MB decoded (see MAX_ATTACHMENT_BYTES —
@@ -52,7 +55,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -223,13 +226,25 @@ function isLevel10PlusUser(req) {
   }
 }
 
-// All tools ever offered, keyed by name — callers select a subset via
-// `toolNames` (see below) rather than this endpoint hardcoding one fixed
-// set. Add a new tool here once, then any page can opt in by name without
-// touching this file again.
+// All tools ever offered, keyed by a REQUEST-level name — callers select a
+// subset via `toolNames` (see below) rather than this endpoint hardcoding
+// one fixed set. Add a new tool here once, then any page can opt in by
+// name without touching this file again.
+//
+// NOTE: "edit_quiz" and "edit_current_quiz" both produce a tool whose own
+// `.name` field is "edit_quiz" (that's what the model's function-call
+// response and the frontend's onToolCall dispatch both key on) — they're
+// two different SCHEMAS for the same underlying action, picked per-page.
+// EDIT_QUIZ_TOOL requires a `currentTitle` to disambiguate one quiz among
+// many (home page's quiz list); EDIT_CURRENT_QUIZ_TOOL drops that field
+// entirely for pages with exactly one quiz in scope (create-quiz editor) —
+// its schema-level presence, even as merely optional, invited the model to
+// fill in a currentTitle that page's tool handler would ignore anyway. Only
+// one of the two should ever appear in a single request's `toolNames`.
 const TOOLS_BY_NAME = {
   create_quiz: CREATE_QUIZ_TOOL,
   edit_quiz: EDIT_QUIZ_TOOL,
+  edit_current_quiz: EDIT_CURRENT_QUIZ_TOOL,
   delete_quiz: DELETE_QUIZ_TOOL,
   reset_quiz_page: RESET_QUIZ_PAGE_TOOL,
 };

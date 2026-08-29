@@ -143,11 +143,15 @@ function handleEditQuizToolCall(toolCall) {
 /**
  * Handles the AI Helper's `delete_quiz` tool call. The system prompt
  * already instructs the model to only call this after the user explicitly
- * confirmed the exact quiz name in chat (see HOME_PAGE_SYSTEM_PROMPT) — but
- * since deletion is irreversible, this adds one more safety net on top: a
- * native confirm() dialog right before the deletion actually happens, in
- * case the model ever calls the tool without a genuine prior "yes". Create
- * and edit don't need this extra step (recoverable/additive); delete does.
+ * confirmed the exact quiz name in chat (see HOME_PAGE_SYSTEM_PROMPT) —
+ * that confirmation, already given once in the conversation, is the single
+ * source of truth. This intentionally does NOT add a second native/in-app
+ * confirmation dialog on top: a prior version did, and the result was the
+ * user confirming once in chat only to be asked again by a popup — a
+ * redundant, confusing second gate on the exact same decision. create_quiz
+ * and edit_quiz never had this second gate either; delete_quiz shouldn't
+ * be the odd one out just because it's destructive — the chat confirmation
+ * already carries that weight.
  * @param {{name: string, input: object}} toolCall
  * @returns {string} text shown in the chat as the tool-result bubble
  */
@@ -168,10 +172,6 @@ function handleDeleteQuizToolCall(toolCall) {
     const err = new Error(`delete_quiz: no quiz titled "${title}" found`);
     err.userMessage = `تعذر العثور على امتحان بعنوان "${title}".`;
     throw err;
-  }
-
-  if (!window.confirm(`هل أنت متأكد إنك عايز تحذف "${title}"؟ لا يمكن التراجع عن هذا الإجراء.`)) {
-    return `تم إلغاء حذف "${title}".`;
   }
 
   const remaining = quizzes.filter((q) => q !== match);

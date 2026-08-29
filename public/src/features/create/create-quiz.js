@@ -2869,18 +2869,35 @@ window.resetPage = async function () {
 // here the way they do on the home page's quiz list.
 
 /**
- * Lightweight snapshot of the in-progress quiz, sent as contextSummary so
- * the assistant knows what's already on the page without a tool
- * round-trip — mirrors the home page's per-quiz contextSummary shape
- * (title/questionCount/types) in user-quizzes-view.js, just for the one
- * quiz this page has instead of a list.
- * @returns {{title: string, questionCount: number}}
+ * Lightweight text snapshot of the in-progress quiz, sent as a live
+ * contextPrompt (not contextSummary — that option's rendering in
+ * ai-agent-chat.js is hardcoded to the home page's "list of saved
+ * quizzes" shape/wording, e.g. "امتحانات المستخدم الحالية" and a
+ * title/questionCount/types-per-item format; this page has exactly one
+ * quiz and needs its own wording, e.g. explicitly saying when it's empty)
+ * so the assistant knows what's already on the page without a tool
+ * round-trip.
+ *
+ * BUG FIX: a prior version passed this through `contextSummary` as a bare
+ * object instead of an array — ai-agent-chat.js's Array.isArray() check on
+ * that option was therefore always false, so the create-quiz page's
+ * summary was silently never sent to the model at all, at any point. This
+ * is now passed as `contextPrompt` (see mountAIHelper() below), which
+ * ai-agent-chat.js accepts as either a plain string or a function; passing
+ * a function specifically means it's re-read on every single message sent
+ * (not just once when the panel first mounted), so the assistant always
+ * sees the page's current title/question count — including after the
+ * user resets the page, after the AI itself edits the quiz, or in a brand
+ * new chat opened later in the same session.
+ * @returns {string}
  */
-function buildCurrentQuizSummaryForAI() {
-  return {
-    title: quizData.title || "(بدون عنوان)",
-    questionCount: quizData.questions.length,
-  };
+function buildCurrentQuizContextForAI() {
+  const count = quizData.questions.length;
+  if (count === 0) {
+    return "حالة الصفحة الآن: الصفحة فارغة تمامًا — لا يوجد عنوان ولا أي أسئلة بعد.";
+  }
+  const title = quizData.title?.trim() || "(بدون عنوان)";
+  return `حالة الصفحة الآن: يوجد امتحان قيد الإعداد بعنوان "${title}" ويحتوي على ${count} سؤال.`;
 }
 
 /**
@@ -2958,26 +2975,20 @@ function handleAiEditQuizToolCall(toolCall) {
 }
 
 /**
- * Applies a reset_quiz_page tool call. Uses a synchronous window.confirm()
- * — NOT the app's async _confirm() modal — because ai-agent-chat.js reads
- * onToolCall's return value synchronously right after calling it (see its
- * own comment near the fetch handler); an awaited confirmation here would
- * let the chat show a "done" bubble before the user answered the dialog.
- * This mirrors the same constraint and the same fix already applied to
- * the home page's delete_quiz handler (see handleDeleteQuizToolCall in
- * user-quizzes-view.js).
+ * Applies a reset_quiz_page tool call. No second confirmation dialog here
+ * — the system prompt (CREATE_QUIZ_PAGE_SYSTEM_PROMPT) already requires
+ * the model to warn the user this is irreversible and get an explicit
+ * "yes" in chat before ever calling this tool. A prior version added a
+ * native window.confirm() on top of that, which produced a confusing
+ * double confirmation (once in chat, once in a popup) for the exact same
+ * decision, and — being a blocking native dialog — was also a plain
+ * window.confirm() rather than the app's own in-app notification UI. The
+ * chat confirmation is the single source of truth, matching how
+ * handleAiEditQuizToolCall below has no extra gate either.
  * @param {{name: string, input: object}} toolCall
  * @returns {string} chat bubble text
  */
 function handleAiResetPageToolCall(toolCall) {
-  if (
-    !window.confirm(
-      "هل أنت متأكد إنك عايز تمسح كل حاجة في الصفحة دي (العنوان، الوصف، وكل الأسئلة)؟ لا يمكن التراجع عن هذا الإجراء.",
-    )
-  ) {
-    return "تم إلغاء إعادة الضبط.";
-  }
-
   resetPageData();
   showNotification("تم إعادة الضبط", "تم مسح جميع البيانات", "success");
   return "🗑️ تم مسح الصفحة بالكامل.";
@@ -3006,8 +3017,9 @@ function handleCreateQuizPageToolCall(toolCall) {
 /**
  * Mounts the AI Helper FAB onto the page. Called once from
  * DOMContentLoaded, after the initial quiz (draft or ?edit=) has already
- * been loaded/rendered, so the first contextSummary sent to the model
- * reflects whatever's actually on the page at that point.
+ * been loaded/rendered — though since buildCurrentQuizContextForAI is
+ * passed as a function (not called once here), it stays accurate for the
+ * whole lifetime of the page anyway, not just at this initial mount.
  */
 function mountAIHelper() {
   const container = document.querySelector(".container");
@@ -3020,8 +3032,8 @@ function mountAIHelper() {
       suggestedPrompts: CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS,
       enableFileUpload: true,
       enableTools: true,
-      toolNames: ["edit_quiz", "reset_quiz_page"],
-      contextSummary: buildCurrentQuizSummaryForAI(),
+      toolNames: ["edit_current_quiz", "reset_quiz_page"],
+      contextPrompt: buildCurrentQuizContextForAI,
       onToolCall: handleCreateQuizPageToolCall,
     }),
   );

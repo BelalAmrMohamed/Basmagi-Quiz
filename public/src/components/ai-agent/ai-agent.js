@@ -156,7 +156,9 @@ function openAIAgentModal(options) {
  * @param {string[]} [options.toolNames] - which tool names to offer when
  *   enableTools is true (see ai-agent-chat.js's toolNames doc); omit for
  *   the original create/edit/delete default
- * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall]
+ * @param {(toolCall: {name: string, input: object}) => (string|Promise<string>)} [options.onToolCall] -
+ *   may be async (see ai-agent-chat.js's fuller doc) — awaited before its
+ *   return value is shown as the tool-result chat bubble.
  * @param {Array<object>} [options.contextSummary]
  * @returns {HTMLElement} the FAB button element
  */

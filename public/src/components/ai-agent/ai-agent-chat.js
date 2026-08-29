@@ -33,9 +33,28 @@ function fileToBase64(file) {
 
 /**
  * @param {object} options
- * @param {string} [options.contextPrompt] - optional context text prepended
- *   as the first outgoing user-role message (e.g. a summary of the user's
- *   quizzes on the home page). Distinct from the system prompt below.
+ * @param {string|(() => string)} [options.contextPrompt] - optional context
+ *   text prepended as the first outgoing user-role message (e.g. the
+ *   create-quiz page's live "here's what's currently on this page" blurb).
+ *   Distinct from the system prompt below. Pass a function, not a static
+ *   string, whenever the underlying state can change during the panel's
+ *   lifetime — resolved fresh on every send (see sendMessage below), same
+ *   rationale as contextSummary's function form just below.
+ * @param {Array<object>|(() => Array<object>)} [options.contextSummary] -
+ *   lightweight per-item summaries (e.g. {title, questionCount, types}) —
+ *   ONLY for the home page's specific "list of saved quizzes" rendering
+ *   (see the hardcoded amتحانات-المستخدم-الحالية template in sendMessage
+ *   below); a page with a single/different-shaped state to describe should
+ *   use contextPrompt (a plain string) instead, not force its data into
+ *   this array-of-objects shape. Folded into the same one-off context
+ *   message as contextPrompt, read fresh before EVERY send — pass a
+ *   function here, not a static array, whenever the underlying data can
+ *   change during the panel's lifetime (edits, a reset, a tool call
+ *   mutating it, or simply time passing since the page loaded). A plain
+ *   array is only safe for data that's genuinely fixed for the panel's
+ *   whole lifetime. Static-array support is kept for backward
+ *   compatibility with existing callers; new callers whose summary can go
+ *   stale should pass a function.
  * @param {string} [options.placeholder] - input placeholder text.
  * @param {"home"|"result"} [options.pageKey] - keys per-page system-prompt storage.
  * @param {string} [options.defaultSystemPrompt] - page-specific default system prompt.
@@ -46,10 +65,13 @@ function fileToBase64(file) {
  *   (create_quiz, edit_quiz, delete_quiz) — pages offering a different
  *   set (e.g. the create-quiz editor's edit_quiz + reset_quiz_page) must
  *   pass this explicitly.
- * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall] -
- *   invoked when the assistant calls a tool; the actual localStorage write
- *   happens here, supplied per-page. Never passed on pages with enableTools
- *   unset, so this branch is unreachable there.
+ * @param {(toolCall: {name: string, input: object}) => (string|Promise<string>)} [options.onToolCall] -
+ *   invoked (and awaited) when the assistant calls a tool; the actual
+ *   localStorage write happens here, supplied per-page. May be async —
+ *   e.g. to show the app's own confirmation dialog (_confirm() in
+ *   notifications.js) for a destructive action before proceeding, rather
+ *   than a blocking native window.confirm(). Never passed on pages with
+ *   enableTools unset, so this branch is unreachable there.
  * @param {string[]} [options.suggestedPrompts] - "quick prompt" chips shown
  *   above the input before the first message is sent; tapping one fills +
  *   sends it immediately.
@@ -441,17 +463,31 @@ export function createChatPanel(options = {}) {
 
     const typingEl = showTyping();
 
-    // Fold contextSummary (a lightweight list of the user's quizzes, home
-    // page only) into the same one-off context message contextPrompt
-    // already uses, prepended before the real conversation history — not
-    // a fake system turn, just plain context text the model reads once.
+    // Fold contextPrompt / contextSummary into the same one-off context
+    // message, prepended before the real conversation history — not a
+    // fake system turn, just plain context text the model reads once per
+    // send.
+    //
+    // Both are resolved fresh HERE, on every send, rather than once when
+    // the panel was created — each may be a function precisely so this
+    // stays live (see their JSDoc above). Without this, a page whose
+    // context legitimately changes mid-session (quiz edited, page reset,
+    // a tool call mutating state) would keep sending the assistant a
+    // snapshot from whenever the panel was first mounted, on every later
+    // message — including the first message of a brand new chat opened
+    // afterward, since a static value captured at panel-creation time
+    // never updates.
+    const resolvedContextPrompt =
+      typeof contextPrompt === "function" ? contextPrompt() : contextPrompt;
+    const resolvedContextSummary =
+      typeof contextSummary === "function" ? contextSummary() : contextSummary;
     const summaryText =
-      Array.isArray(contextSummary) && contextSummary.length
-        ? `امتحانات المستخدم الحالية:\n${contextSummary
+      Array.isArray(resolvedContextSummary) && resolvedContextSummary.length
+        ? `امتحانات المستخدم الحالية:\n${resolvedContextSummary
             .map((q) => `- ${q.title} (${q.questionCount} سؤال، ${q.types || "غير محدد"})`)
             .join("\n")}`
         : "";
-    const combinedContext = [contextPrompt, summaryText].filter(Boolean).join("\n\n");
+    const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
     const outgoingMessages = combinedContext
       ? [{ role: "user", content: combinedContext }, ...history]
@@ -546,7 +582,14 @@ export function createChatPanel(options = {}) {
 
       if (data.toolCall?.name && typeof onToolCall === "function") {
         try {
-          const resultText = onToolCall(data.toolCall);
+          // Awaited (not fire-and-forget) — onToolCall may need to show
+          // the app's own async confirmation dialog (_confirm() in
+          // notifications.js) for destructive actions, rather than a
+          // blocking native window.confirm(). There is nothing here that
+          // actually requires a synchronous return; this whole function
+          // is already async, so awaiting is free and lets tool handlers
+          // use the same in-app confirm UI as the rest of the app.
+          const resultText = await onToolCall(data.toolCall);
           if (resultText) appendToolResultMessage(resultText);
         } catch (toolErr) {
           console.error("[ai-agent-chat] onToolCall failed:", toolErr);

@@ -94,6 +94,45 @@ export const DELETE_QUIZ_TOOL = {
 };
 
 // Create-quiz page only (see chat.js's TOOLS_BY_NAME / toolNames request
+// field). Same edit semantics/question-shape as EDIT_QUIZ_TOOL above, but
+// deliberately has NO currentTitle field at all — that page has exactly
+// one quiz in scope (the one currently in the editor form), so there's
+// nothing to disambiguate. A previous version reused EDIT_QUIZ_TOOL as-is
+// on this page, but its schema-level `required: ["currentTitle"]` meant
+// providers could still push the model to supply *something* there even
+// though the page's own tool handler (create-quiz.js::handleAiEditQuizToolCall)
+// always ignores it — removing the field entirely is cleaner than leaving
+// it present-but-unused.
+export const EDIT_CURRENT_QUIZ_TOOL = {
+  name: "edit_quiz",
+  description:
+    "Edit the single quiz currently open in this page's editor — its title, description, and/or questions. There is only one quiz in scope on this page, so no identifier is needed. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
+    "Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
+    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain (not just new/changed ones) — this is also how you fully replace the current quiz with a different one in a single call, without a separate reset step.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      description: { type: "string" },
+      questions: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            q: { type: "string" },
+            options: { type: "array", items: { type: "string" } },
+            correct: { type: "array", items: { type: "integer" } },
+            answer: { type: "string" },
+            explanation: { type: "string" },
+          },
+          required: ["q"],
+        },
+      },
+    },
+  },
+};
+
+// Create-quiz page only (see chat.js's TOOLS_BY_NAME / toolNames request
 // field). Unlike delete_quiz (which removes a saved quiz from the user's
 // library by title), this clears the single in-progress draft the editor
 // page is currently showing — there's no title to disambiguate since
@@ -102,7 +141,7 @@ export const DELETE_QUIZ_TOOL = {
 export const RESET_QUIZ_PAGE_TOOL = {
   name: "reset_quiz_page",
   description:
-    "Clear the quiz currently being edited on this page — its title, description, and every question. Only call this when the user has explicitly confirmed they want to start over from a blank quiz (e.g. after you've warned them this deletes everything currently on the page and they replied yes/امسح/ابدأ من جديد/تمام). This cannot be undone.",
+    "Clear the quiz currently being edited on this page — its title, description, and every question. Only call this when the user has explicitly confirmed they want to start over from a blank quiz (e.g. after you've warned them this deletes everything currently on the page and they replied yes/امسح/ابدأ من جديد/تمام). This cannot be undone. Do NOT use this tool if the user wants to replace the current quiz with a different one — use edit_quiz for that instead (see its own description), since this page only supports one tool call per turn and a reset-then-create plan would silently only execute the reset.",
   input_schema: {
     type: "object",
     properties: {},
