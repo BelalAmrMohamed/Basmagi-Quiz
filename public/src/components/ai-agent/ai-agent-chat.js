@@ -40,6 +40,12 @@ function fileToBase64(file) {
  * @param {"home"|"result"} [options.pageKey] - keys per-page system-prompt storage.
  * @param {string} [options.defaultSystemPrompt] - page-specific default system prompt.
  * @param {boolean} [options.enableTools] - whether the chat may call tools (e.g. create_quiz).
+ * @param {string[]} [options.toolNames] - which tool names to request from
+ *   the backend when enableTools is true (see api/ai-agent/_tools.js /
+ *   chat.js's TOOLS_BY_NAME). Omit to get the original default set
+ *   (create_quiz, edit_quiz, delete_quiz) — pages offering a different
+ *   set (e.g. the create-quiz editor's edit_quiz + reset_quiz_page) must
+ *   pass this explicitly.
  * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall] -
  *   invoked when the assistant calls a tool; the actual localStorage write
  *   happens here, supplied per-page. Never passed on pages with enableTools
@@ -65,6 +71,7 @@ export function createChatPanel(options = {}) {
     pageKey = "default",
     defaultSystemPrompt = "",
     enableTools = false,
+    toolNames = null,
     onToolCall = null,
     contextSummary = null,
     suggestedPrompts = [],
@@ -481,6 +488,7 @@ export function createChatPanel(options = {}) {
             getSystemPrompt(pageKey, defaultSystemPrompt),
           ),
           enableTools,
+          toolNames: toolNames || undefined,
         }),
       });
 

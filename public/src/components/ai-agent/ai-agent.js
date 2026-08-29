@@ -150,9 +150,12 @@ function openAIAgentModal(options) {
  * @param {object} [options]
  * @param {string} [options.contextPrompt]
  * @param {string} [options.placeholder]
- * @param {"home"|"result"} [options.pageKey] - keys per-page system-prompt storage
+ * @param {"home"|"result"|"create"} [options.pageKey] - keys per-page system-prompt storage
  * @param {string} [options.defaultSystemPrompt] - page-specific default system prompt
  * @param {boolean} [options.enableTools] - whether the chat may call tools (e.g. create_quiz)
+ * @param {string[]} [options.toolNames] - which tool names to offer when
+ *   enableTools is true (see ai-agent-chat.js's toolNames doc); omit for
+ *   the original create/edit/delete default
  * @param {(toolCall: {name: string, input: object}) => void} [options.onToolCall]
  * @param {Array<object>} [options.contextSummary]
  * @returns {HTMLElement} the FAB button element

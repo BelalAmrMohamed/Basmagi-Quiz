@@ -92,3 +92,19 @@ export const DELETE_QUIZ_TOOL = {
     required: ["title"],
   },
 };
+
+// Create-quiz page only (see chat.js's TOOLS_BY_NAME / toolNames request
+// field). Unlike delete_quiz (which removes a saved quiz from the user's
+// library by title), this clears the single in-progress draft the editor
+// page is currently showing — there's no title to disambiguate since
+// there's only ever one quiz on that page. Input is intentionally empty:
+// nothing to configure, it's an unconditional wipe.
+export const RESET_QUIZ_PAGE_TOOL = {
+  name: "reset_quiz_page",
+  description:
+    "Clear the quiz currently being edited on this page — its title, description, and every question. Only call this when the user has explicitly confirmed they want to start over from a blank quiz (e.g. after you've warned them this deletes everything currently on the page and they replied yes/امسح/ابدأ من جديد/تمام). This cannot be undone.",
+  input_schema: {
+    type: "object",
+    properties: {},
+  },
+};

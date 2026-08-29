@@ -17,6 +17,9 @@ import { showDownloadModal } from "../../components/download-quiz-modal/download
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
+import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -348,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupKeyboardShortcuts();
   updateProgress();
   updateStatistics();
+  mountAIHelper();
 });
 
 function setupEventListeners() {
@@ -2792,15 +2796,27 @@ window.processImport = async function () {
 // RESET PAGE
 // ============================================================================
 
-window.resetPage = async function () {
-  if (
-    !(await _confirm(
-      "هل أنت متأكد من إعادة ضبط الصفحة؟ سيتم حذف جميع البيانات!",
-    ))
-  ) {
-    return;
-  }
-
+/**
+ * Actually performs the reset — no confirmation dialog here, since the two
+ * callers need different confirmation strategies:
+ *   - window.resetPage (the manual "إعادة ضبط" button) uses the app's own
+ *     async _confirm() modal.
+ *   - the AI Helper's reset_quiz_page tool handler (see
+ *     handleAiResetPageToolCall below) must use a synchronous
+ *     window.confirm() instead — onToolCall's return value is read
+ *     synchronously right after it's called (see ai-agent-chat.js), so an
+ *     awaited confirmation there would let the "done" chat bubble render
+ *     before the user had even answered the dialog.
+ *
+ * BUG FIX: previously (inline in window.resetPage) this never cleared
+ * editingQuizId. Opening the page via ?edit=<id> and then resetting left
+ * editingQuizId pointing at that quiz — the next manual "Save" would
+ * silently overwrite it with the now-empty draft instead of creating a
+ * fresh, unlinked quiz. Also updates the page header back to "New quiz"
+ * mode for the same reason (it was previously set to "تعديل الاختبار" by
+ * loadQuizFromLocalStorage() and never reverted).
+ */
+function resetPageData() {
   localStorage.removeItem("quiz_draft");
 
   quizData = {
@@ -2811,6 +2827,11 @@ window.resetPage = async function () {
   };
 
   questionIdCounter = 0;
+  editingQuizId = null;
+
+  const headerTitle = document.querySelector(".header h1");
+  if (headerTitle) headerTitle.textContent = "إنشاء اختبار جديد";
+  document.title = "إنشاء اختبار - منصة بصمجي";
 
   document.getElementById("quizTitle").value = "";
   document.getElementById("quizSource").value = "";
@@ -2822,9 +2843,189 @@ window.resetPage = async function () {
   updateEmptyState();
   updateProgress();
   updateStatistics();
+}
 
+window.resetPage = async function () {
+  if (
+    !(await _confirm(
+      "هل أنت متأكد من إعادة ضبط الصفحة؟ سيتم حذف جميع البيانات!",
+    ))
+  ) {
+    return;
+  }
+
+  resetPageData();
   showNotification("تم إعادة الضبط", "تم مسح جميع البيانات", "success");
 };
+
+// ============================================================================
+// AI HELPER INTEGRATION
+// ============================================================================
+// Mounted once from DOMContentLoaded (see bottom of setupEventListeners'
+// caller below). Offers exactly two tools — edit_quiz and reset_quiz_page
+// (see api/ai-agent/_tools.js) — deliberately NOT create_quiz/delete_quiz:
+// there is exactly one quiz in scope on this page (the one currently in
+// the form), so "create another" or "delete a different one" don't apply
+// here the way they do on the home page's quiz list.
+
+/**
+ * Lightweight snapshot of the in-progress quiz, sent as contextSummary so
+ * the assistant knows what's already on the page without a tool
+ * round-trip — mirrors the home page's per-quiz contextSummary shape
+ * (title/questionCount/types) in user-quizzes-view.js, just for the one
+ * quiz this page has instead of a list.
+ * @returns {{title: string, questionCount: number}}
+ */
+function buildCurrentQuizSummaryForAI() {
+  return {
+    title: quizData.title || "(بدون عنوان)",
+    questionCount: quizData.questions.length,
+  };
+}
+
+/**
+ * Applies an edit_quiz tool call to the live in-progress quiz. currentTitle
+ * is ignored on purpose — see CREATE_QUIZ_PAGE_SYSTEM_PROMPT's note that
+ * this page has only one quiz in scope, so there's nothing to disambiguate.
+ *
+ * Title/description are applied directly to quizData AND their visible
+ * <input>/<textarea> elements — the same four-line pattern
+ * processImport() already uses after a paste/file import, reused verbatim
+ * so AI edits and manual imports keep the form in sync identically.
+ *
+ * If `questions` is present, it REPLACES the whole list (per
+ * EDIT_QUIZ_TOOL's contract — the system prompt explicitly warns the model
+ * to resend unchanged questions too, not just new/changed ones). The
+ * replacement is rendered via the exact same clear-container-then-
+ * renderQuestion-per-item loop loadQuizFromLocalStorage() already uses for
+ * "load a full quiz for editing" — proven at whatever size a saved quiz
+ * can already reach, so this is not a new, untested rendering path.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} chat bubble text
+ */
+function handleAiEditQuizToolCall(toolCall) {
+  const input = toolCall?.input || {};
+  const hasTitle = typeof input.title === "string" && input.title.trim() !== "";
+  const hasDescription = typeof input.description === "string";
+  const hasQuestions = Array.isArray(input.questions) && input.questions.length > 0;
+
+  if (!hasTitle && !hasDescription && !hasQuestions) {
+    const err = new Error("edit_quiz tool call had no usable fields");
+    err.userMessage = "تعذر تنفيذ التعديل: لم يتم إرسال أي بيانات صالحة.";
+    throw err;
+  }
+
+  if (hasTitle) {
+    quizData.title = input.title.trim();
+    const titleEl = document.getElementById("quizTitle");
+    if (titleEl) {
+      titleEl.value = quizData.title;
+      updateCharCount("titleCharCount", quizData.title.length, 100);
+    }
+  }
+
+  if (hasDescription) {
+    quizData.description = input.description;
+    const descEl = document.getElementById("quizDescription");
+    if (descEl) {
+      descEl.value = quizData.description;
+      updateCharCount("descCharCount", quizData.description.length, 500);
+    }
+  }
+
+  if (hasQuestions) {
+    const { questions, maxId } = normalizeQuestionsWithIds(input.questions);
+    quizData.questions = questions;
+    questionIdCounter = maxId;
+
+    const container = document.getElementById("questionsContainer");
+    if (container) container.innerHTML = "";
+    quizData.questions.forEach((question) => renderQuestion(question));
+  }
+
+  updateEmptyState();
+  updateProgress();
+  updateStatistics();
+  autosave();
+
+  const parts = [];
+  if (hasTitle) parts.push("العنوان");
+  if (hasDescription) parts.push("الوصف");
+  if (hasQuestions) parts.push(`${quizData.questions.length} سؤال`);
+
+  showNotification("تم التعديل", `تم تحديث: ${parts.join("، ")}`, "success");
+  return `✅ تم تعديل الامتحان (${parts.join("، ")})`;
+}
+
+/**
+ * Applies a reset_quiz_page tool call. Uses a synchronous window.confirm()
+ * — NOT the app's async _confirm() modal — because ai-agent-chat.js reads
+ * onToolCall's return value synchronously right after calling it (see its
+ * own comment near the fetch handler); an awaited confirmation here would
+ * let the chat show a "done" bubble before the user answered the dialog.
+ * This mirrors the same constraint and the same fix already applied to
+ * the home page's delete_quiz handler (see handleDeleteQuizToolCall in
+ * user-quizzes-view.js).
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} chat bubble text
+ */
+function handleAiResetPageToolCall(toolCall) {
+  if (
+    !window.confirm(
+      "هل أنت متأكد إنك عايز تمسح كل حاجة في الصفحة دي (العنوان، الوصف، وكل الأسئلة)؟ لا يمكن التراجع عن هذا الإجراء.",
+    )
+  ) {
+    return "تم إلغاء إعادة الضبط.";
+  }
+
+  resetPageData();
+  showNotification("تم إعادة الضبط", "تم مسح جميع البيانات", "success");
+  return "🗑️ تم مسح الصفحة بالكامل.";
+}
+
+/**
+ * Single entry point passed as onToolCall to createAIAgentFab — dispatches
+ * by tool name, same pattern as handleQuizToolCall in user-quizzes-view.js.
+ * @param {{name: string, input: object}} toolCall
+ * @returns {string} chat bubble text
+ */
+function handleCreateQuizPageToolCall(toolCall) {
+  switch (toolCall?.name) {
+    case "edit_quiz":
+      return handleAiEditQuizToolCall(toolCall);
+    case "reset_quiz_page":
+      return handleAiResetPageToolCall(toolCall);
+    default: {
+      const err = new Error(`Unknown tool call: ${toolCall?.name}`);
+      err.userMessage = "أداة غير معروفة.";
+      throw err;
+    }
+  }
+}
+
+/**
+ * Mounts the AI Helper FAB onto the page. Called once from
+ * DOMContentLoaded, after the initial quiz (draft or ?edit=) has already
+ * been loaded/rendered, so the first contextSummary sent to the model
+ * reflects whatever's actually on the page at that point.
+ */
+function mountAIHelper() {
+  const container = document.querySelector(".container");
+  if (!container) return;
+  container.appendChild(
+    createAIAgentFab({
+      placeholder: "اطلب تعديل الامتحان، أو ارفع ملفًا لتحويله لأسئلة...",
+      pageKey: "create",
+      defaultSystemPrompt: CREATE_QUIZ_PAGE_SYSTEM_PROMPT,
+      suggestedPrompts: CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS,
+      enableFileUpload: true,
+      enableTools: true,
+      toolNames: ["edit_quiz", "reset_quiz_page"],
+      contextSummary: buildCurrentQuizSummaryForAI(),
+      onToolCall: handleCreateQuizPageToolCall,
+    }),
+  );
+}
 
 // ============================================================================
 // UTILITY FUNCTIONS

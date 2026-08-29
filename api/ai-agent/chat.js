@@ -11,7 +11,12 @@
 //   useOwnKey?: boolean,
 //   ownKey?: string,           // required if useOwnKey is true
 //   systemPrompt?: string,     // optional system-role instructions
-//   enableTools?: boolean,     // if true, offers create/edit/delete quiz tools (see _tools.js)
+//   enableTools?: boolean,     // if true, offers quiz tools (see _tools.js)
+//   toolNames?: string[],      // which tools to offer when enableTools is true —
+//                              // subset of ["create_quiz","edit_quiz","delete_quiz",
+//                              // "reset_quiz_page"]. Defaults to the original
+//                              // three (create/edit/delete) when omitted, so
+//                              // existing callers need no changes.
 // }
 //
 // ATTACHMENTS: max 1 per message, 4MB decoded (see MAX_ATTACHMENT_BYTES —
@@ -47,7 +52,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -218,12 +223,29 @@ function isLevel10PlusUser(req) {
   }
 }
 
+// All tools ever offered, keyed by name — callers select a subset via
+// `toolNames` (see below) rather than this endpoint hardcoding one fixed
+// set. Add a new tool here once, then any page can opt in by name without
+// touching this file again.
+const TOOLS_BY_NAME = {
+  create_quiz: CREATE_QUIZ_TOOL,
+  edit_quiz: EDIT_QUIZ_TOOL,
+  delete_quiz: DELETE_QUIZ_TOOL,
+  reset_quiz_page: RESET_QUIZ_PAGE_TOOL,
+};
+
+// Historical default — the home page's original three tools — kept so
+// existing callers that pass `enableTools: true` without `toolNames` (i.e.
+// every caller before this field existed) keep working unchanged.
+const DEFAULT_TOOL_NAMES = ["create_quiz", "edit_quiz", "delete_quiz"];
+
 export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, messages, useOwnKey, ownKey, systemPrompt, enableTools } = req.body || {};
+  const { provider, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
+    req.body || {};
 
   if (!isSupportedProvider(provider)) {
     return res.status(400).json({ error: "مزوّد غير مدعوم" });
@@ -232,7 +254,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "الرسائل مطلوبة" });
   }
 
-  const tools = enableTools ? [CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, DELETE_QUIZ_TOOL] : undefined;
+  // `toolNames` lets each page offer only the tools that make sense for it
+  // (e.g. the create-quiz editor offers edit/reset but not create/delete —
+  // there's no "other quiz" to create or delete from inside the editor of
+  // one). Unknown names are silently dropped rather than erroring, so a
+  // typo degrades to "fewer tools" instead of a hard failure.
+  const requestedNames = Array.isArray(toolNames) && toolNames.length
+    ? toolNames
+    : DEFAULT_TOOL_NAMES;
+  const tools = enableTools
+    ? requestedNames.map((name) => TOOLS_BY_NAME[name]).filter(Boolean)
+    : undefined;
 
   try {
     await processAttachments(messages);

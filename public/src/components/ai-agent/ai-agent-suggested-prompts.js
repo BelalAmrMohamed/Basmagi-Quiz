@@ -13,6 +13,15 @@ export const HOME_PAGE_SUGGESTED_PROMPTS = [
   "شوف آخر إمتحان عملته وراجع ورايا لو فيه أي أخطاء.",
 ];
 
+// Create-quiz page ("إنشاء اختبار") — scoped to the single in-progress
+// quiz on that page, unlike HOME_PAGE_SUGGESTED_PROMPTS above which talks
+// about "your quizzes" (plural, picked from a list).
+export const CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS = [
+  "راجع الأسئلة الحالية وقولي لو فيه أي غلط",
+  "أضف سؤال جديد عن نفس الموضوع",
+  "حوّل هذا الملف لأسئلة اختيار من متعدد",
+];
+
 /**
  * @param {object} summary - same shape as resultSummaryForAI in result.js
  * @returns {string[]}
