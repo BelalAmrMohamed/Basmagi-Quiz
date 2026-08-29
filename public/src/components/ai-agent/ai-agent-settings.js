@@ -234,16 +234,37 @@ export function createSettingsPanel(options = {}) {
   modelSelect.className = "ai-agent-provider-select";
   panel.appendChild(modelSelect);
 
+  // Same rationale as the chat tab's model bar (ai-agent-chat.js): model
+  // selection only has any effect once the request uses the user's own
+  // key — the platform-key path always forces the default server-side
+  // (see api/ai-agent/chat.js) — so disable this select whenever no own
+  // key is saved, rather than letting it look interactive but do nothing.
+  function refreshModelSelectAvailability() {
+    const { hasKey } = getOwnKey();
+    modelSelect.disabled = !hasKey;
+    modelSelect.title = hasKey
+      ? ""
+      : "اختيار النموذج متاح فقط عند استخدام مفتاح API الخاص بك";
+  }
+
   function loadModelsForCurrentProvider() {
     const provider = providerSelect.value;
     modelSelect.innerHTML = "";
-    getModelsForProvider(provider).forEach(({ value, label }) => {
+    const models = getModelsForProvider(provider);
+    models.forEach(({ value, label }) => {
       const opt = document.createElement("option");
       opt.value = value;
       opt.textContent = label;
       modelSelect.appendChild(opt);
     });
-    modelSelect.value = getSelectedModel();
+    // BUG FIX: getSelectedModel() returns "" (meaning "use the provider's
+    // own default") whenever no model has been explicitly saved yet, but
+    // "" never matches any <option>'s value — the select rendered with
+    // nothing visibly chosen. Fall back to the first (lightest/default)
+    // model in the list, same fix already applied to the chat tab's own
+    // model bar (see ai-agent-chat.js's refreshModelBarOptions).
+    modelSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
+    refreshModelSelectAvailability();
   }
   loadModelsForCurrentProvider();
 
@@ -375,6 +396,7 @@ export function createSettingsPanel(options = {}) {
     status.className = "ai-agent-settings-status ai-agent-settings-status--saved";
     status.textContent = "تم الحفظ ✓";
     refreshKeySourceIndicator();
+    refreshModelSelectAvailability();
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
@@ -385,6 +407,7 @@ export function createSettingsPanel(options = {}) {
     status.className = "ai-agent-settings-status ai-agent-settings-status--cleared";
     status.textContent = "تم المسح";
     refreshKeySourceIndicator();
+    refreshModelSelectAvailability();
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 

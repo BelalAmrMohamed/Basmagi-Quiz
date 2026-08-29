@@ -1037,27 +1037,8 @@
    above any content on desktop. Opens the modal below on click. */
 .ai-agent-fab {
   position: fixed;
-  /* BUG FIX: this is an RTL layout — the sidebar is anchored to the
-     *right* edge (see .sidebar { right: 0 } in side-menu.css) and reserves
-     --sidebar-collapsed-width (64px) or --sidebar-expanded-width (240px)
-     of horizontal space there. A flat `right: 20px` put the FAB's 56px
-     circle almost entirely underneath that reserved strip on desktop —
-     raising the z-index only decided who painted on top, it didn't move
-     the FAB out from behind the sidebar's footprint. Push it in from the
-     right by the sidebar's current width (plus its own margin) instead.
-     On phones the sidebar collapses to an off-canvas drawer (no reserved
-     width when closed), so this token is 0 there — see the media query
-     below restoring the plain 20px in that case. */
   right: calc(20px + var(--sidebar-collapsed-width, 0px));
   bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
-  /* BUG FIX: this app's --z-overlay token is 4000 (not the generic 500
-     fallback used elsewhere), and .sidebar/.bottom-nav sit at
-     --z-overlay/--z-overlay+1 (4000/4001). A flat 1500 here put the FAB
-     underneath the desktop sidebar and the mobile bottom nav. Anchor to
-     the same --z-tooltip layer (6000) the app's other "must always be
-     reachable, floats above everything" fixed elements use (see the
-     .exam-dropdown-menu fix note in index.css) so the FAB is never
-     covered by either nav surface. */
   z-index: var(--z-tooltip, 6000);
   transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease;
   width: 56px;
