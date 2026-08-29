@@ -493,6 +493,26 @@ export function createChatPanel(options = {}) {
   // is "if Firefox, warn", not "if the API is missing, warn silently".
   const isFirefox = /firefox/i.test(navigator.userAgent || "");
 
+  // Brave ships webkitSpeechRecognition (it's Chromium-based) but its
+  // own "Google Services" privacy shield blocks the network request the
+  // API makes to Google's speech servers by default — this is a
+  // deliberate, permanent Brave setting, not a transient network hiccup,
+  // so a "network" error here should skip the auto-retry (below) and go
+  // straight to a Brave-specific explanation instead of a generic one.
+  // navigator.brave.isBrave() is the official, Brave-exposed feature
+  // detect (see brave.com/docs) — resolved once up front since it's
+  // async and dictation errors need the answer synchronously by the time
+  // they happen.
+  let isBraveBrowser = false;
+  if (navigator.brave && typeof navigator.brave.isBrave === "function") {
+    navigator.brave
+      .isBrave()
+      .then((result) => {
+        isBraveBrowser = !!result;
+      })
+      .catch(() => {});
+  }
+
   let micBtn = null;
   let firefoxWarningEl = null;
   let recognition = null;
@@ -618,13 +638,14 @@ export function createChatPanel(options = {}) {
       // Chrome/Brave's SpeechRecognition implementation proxies audio to
       // Google's own speech servers rather than doing recognition
       // on-device — "network" here means THAT round trip failed, not the
-      // page's own connection. It's the single most common failure mode
-      // in this browser family (blocked by an ad/tracker blocker, no
-      // route to Google's speech endpoint, a transient hiccup on their
-      // side) and is usually a one-off, so retry silently once before
-      // bothering the user with an error — a real, persistent connectivity
-      // problem still surfaces the message on the second failure.
-      if (event.error === "network" && !hasRetriedAfterNetworkError) {
+      // page's own connection. On most Chromium browsers this is usually
+      // a one-off transient hiccup, so retry silently once before
+      // bothering the user with an error. On Brave specifically, though,
+      // this is Brave's own "Google Services" privacy shield deliberately
+      // blocking that request every time — a permanent setting, not a
+      // hiccup — so retrying there would just fail identically and delay
+      // a message that could instead point straight at the actual cause.
+      if (event.error === "network" && !hasRetriedAfterNetworkError && !isBraveBrowser) {
         hasRetriedAfterNetworkError = true;
         setDictationUiState(false);
         try {
@@ -634,10 +655,12 @@ export function createChatPanel(options = {}) {
         }
         return;
       }
-      const message =
-        event.error === "network"
-          ? "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك."
-          : "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.";
+      let message = "تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.";
+      if (event.error === "network") {
+        message = isBraveBrowser
+          ? "الإملاء الصوتي لا يعمل على متصفح Brave افتراضيًا لأن إعداد \"خدمات جوجل\" فيه يحجب الاتصال بخدمة التعرف الصوتي. جرّب متصفحًا آخر (مثل Edge أو Chrome)، أو اكتب رسالتك يدويًا."
+          : "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك.";
+      }
       appendError(message);
       setDictationUiState(false);
     };
