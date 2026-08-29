@@ -279,7 +279,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
 
   const sidebarRecentsLabel = document.createElement("div");
   sidebarRecentsLabel.className = "ai-agent-sidebar-label";
-  sidebarRecentsLabel.textContent = "محادثات حديثة";
+  sidebarRecentsLabel.textContent = "محادثات سابقة";
   sidebar.appendChild(sidebarRecentsLabel);
 
   const sidebarRecentsList = document.createElement("div");
