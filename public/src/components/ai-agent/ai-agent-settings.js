@@ -33,21 +33,18 @@ const MODEL_STORAGE_PREFIX = "ai_agent_model__"; // + provider
 // this list is kept in sync with.
 const MODELS_BY_PROVIDER = {
   google: [
-    { value: "", label: "الأخف والأحدث تلقائيًا (gemini-flash-lite-latest)" },
-    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite (الأخف)" },
+    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite" },
     { value: "gemini-flash-latest", label: "Gemini Flash" },
-    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (الأقوى)" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro" },
   ],
   deepseek: [
-    { value: "", label: "الأخف والأحدث تلقائيًا (deepseek-chat)" },
-    { value: "deepseek-chat", label: "DeepSeek Chat (الأخف)" },
-    { value: "deepseek-reasoner", label: "DeepSeek Reasoner (الأقوى)" },
+    { value: "deepseek-chat", label: "DeepSeek Chat" },
+    { value: "deepseek-reasoner", label: "DeepSeek Reasoner" },
   ],
   claude: [
-    { value: "", label: "الأخف والأحدث تلقائيًا (claude-haiku-4-5)" },
-    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (الأخف)" },
+    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5" },
     { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
-    { value: "claude-opus-4-6", label: "Claude Opus 4.6 (الأقوى)" },
+    { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
   ],
 };
 
