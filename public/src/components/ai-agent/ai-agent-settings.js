@@ -14,6 +14,42 @@ const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
 const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
 const LANGUAGE_STORAGE_PREFIX = "ai_agent_language__"; // + pageKey
+const MODEL_STORAGE_PREFIX = "ai_agent_model__"; // + provider
+
+// Per-provider model catalog. The FIRST entry in each list is always the
+// "default" — deliberately the lightest/cheapest/latest model the provider
+// offers, mirroring api/ai-agent/_providerClients.js's own hardcoded
+// choice, so a user who never opens this dropdown still gets the same
+// default behavior as before this feature existed. `value: ""` means
+// "let the backend decide" (i.e. use its own default pointer) rather than
+// pinning a specific model string from the client — this is the initial/
+// unset state and is what an empty/never-saved selection resolves to.
+//
+// Google uses a dynamic "-latest" pointer (gemini-flash-lite-latest) that
+// the provider itself keeps pointed at its current lightest model, so no
+// version number ever goes stale here. DeepSeek and Claude don't publish
+// that kind of alias, so their entries are the latest hardcoded snapshot
+// versions available at time of writing — see _providerClients.js, which
+// this list is kept in sync with.
+const MODELS_BY_PROVIDER = {
+  google: [
+    { value: "", label: "الأخف والأحدث تلقائيًا (gemini-flash-lite-latest)" },
+    { value: "gemini-flash-lite-latest", label: "Gemini Flash-Lite (الأخف)" },
+    { value: "gemini-flash-latest", label: "Gemini Flash" },
+    { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro (الأقوى)" },
+  ],
+  deepseek: [
+    { value: "", label: "الأخف والأحدث تلقائيًا (deepseek-chat)" },
+    { value: "deepseek-chat", label: "DeepSeek Chat (الأخف)" },
+    { value: "deepseek-reasoner", label: "DeepSeek Reasoner (الأقوى)" },
+  ],
+  claude: [
+    { value: "", label: "الأخف والأحدث تلقائيًا (claude-haiku-4-5)" },
+    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (الأخف)" },
+    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+    { value: "claude-opus-4-6", label: "Claude Opus 4.6 (الأقوى)" },
+  ],
+};
 
 const LANGUAGES = [
   { value: "auto", label: "تلقائي (بحسب لغتك)" },
@@ -61,6 +97,30 @@ function setOwnKey(provider, key) {
 
 function clearOwnKey(provider) {
   setInStorage(`${KEY_STORAGE_PREFIX}${provider}`, "");
+}
+
+/**
+ * @returns {Array<{value: string, label: string}>} the model catalog for
+ *   the given provider, falling back to google's list shape for an
+ *   unrecognized provider so callers never get `undefined`.
+ */
+export function getModelsForProvider(provider) {
+  return MODELS_BY_PROVIDER[provider] || MODELS_BY_PROVIDER.google;
+}
+
+/**
+ * @returns {string} the currently-selected model for the currently-selected
+ *   provider, or "" (meaning "use the provider's own default") if unset.
+ *   Cleared automatically per-provider — switching providers never leaks
+ *   one provider's model id into another's request.
+ */
+export function getSelectedModel() {
+  const provider = getSelectedProvider();
+  return getFromStorage(`${MODEL_STORAGE_PREFIX}${provider}`, "");
+}
+
+export function setSelectedModel(provider, model) {
+  setInStorage(`${MODEL_STORAGE_PREFIX}${provider}`, model || "");
 }
 
 /**
@@ -164,6 +224,37 @@ export function createSettingsPanel(options = {}) {
   providerSelect.value = getSelectedProvider();
   panel.appendChild(providerSelect);
 
+  // ── Model select ──
+  // Scoped per-provider (not per-page) — a user's model preference for
+  // "Google" should follow them from the home page's chat to the result
+  // page's chat, same as the provider and own-key choices already do.
+  const modelLabel = document.createElement("label");
+  modelLabel.className = "ai-agent-field-label";
+  modelLabel.textContent = "النموذج (Model)";
+  panel.appendChild(modelLabel);
+
+  const modelSelect = document.createElement("select");
+  modelSelect.className = "ai-agent-provider-select";
+  panel.appendChild(modelSelect);
+
+  function loadModelsForCurrentProvider() {
+    const provider = providerSelect.value;
+    modelSelect.innerHTML = "";
+    getModelsForProvider(provider).forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      modelSelect.appendChild(opt);
+    });
+    modelSelect.value = getSelectedModel();
+  }
+  loadModelsForCurrentProvider();
+
+  modelSelect.addEventListener("change", () => {
+    setSelectedModel(providerSelect.value, modelSelect.value);
+    if (typeof onKeyChanged === "function") onKeyChanged();
+  });
+
   // ── Response language select ──
   // Scoped per-page (like the system prompt) since the quizzes on "home"
   // and the result being analyzed on "result" can each be in either
@@ -210,8 +301,10 @@ export function createSettingsPanel(options = {}) {
   providerSelect.addEventListener("change", () => {
     setSelectedProvider(providerSelect.value);
     loadKeyForCurrentProvider();
+    loadModelsForCurrentProvider();
     status.textContent = "";
     refreshKeySourceIndicator();
+    if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
   // ── Save / clear actions ──

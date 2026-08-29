@@ -16,9 +16,44 @@
  * always just sees plain text and never needs to look at `attachments`).
  */
 
-async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
-  // We use the lightest, cheepest, & latest available model
-  const model = "gemini-flash-lite-latest";
+// Per-provider allowlists for the optional client-supplied `model`
+// override (see chat.js's handler + ai-agent-settings.js's
+// MODELS_BY_PROVIDER, which this list mirrors). Validated server-side
+// rather than trusting the client string outright, since it's interpolated
+// directly into the Google request URL below — an unchecked value there
+// would be an open redirect/SSRF-shaped bug, not just a "wrong model"
+// bug. An unrecognized/omitted value always falls back to the provider's
+// own lightest/cheapest/latest default, exactly as if this feature didn't
+// exist.
+const ALLOWED_MODELS = {
+  google: new Set(["gemini-flash-lite-latest", "gemini-flash-latest", "gemini-2.5-pro"]),
+  deepseek: new Set(["deepseek-chat", "deepseek-reasoner"]),
+  claude: new Set(["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-6"]),
+};
+
+const DEFAULT_MODELS = {
+  google: "gemini-flash-lite-latest", // dynamic "-latest" pointer — always the provider's current lightest model
+  deepseek: "deepseek-chat",
+  claude: "claude-haiku-4-5-20251001",
+};
+
+/**
+ * @param {"google"|"deepseek"|"claude"} provider
+ * @param {string} [requestedModel] - client-supplied override, if any
+ * @returns {string} a validated model id, safe to interpolate/send as-is
+ */
+function resolveModel(provider, requestedModel) {
+  if (requestedModel && ALLOWED_MODELS[provider]?.has(requestedModel)) {
+    return requestedModel;
+  }
+  return DEFAULT_MODELS[provider];
+}
+
+async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, requestedModel) {
+  // Defaults to the lightest, cheapest, latest available model — see
+  // resolveModel()/DEFAULT_MODELS above — but honors a validated
+  // client-supplied override (Settings tab's model picker).
+  const model = resolveModel("google", requestedModel);
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const contents = messages.map((m) => {
@@ -89,14 +124,14 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools) {
   return result;
 }
 
-async function callDeepSeek(apiKey, messages, systemPrompt, tools) {
+async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedModel) {
   const chatMessages = messages.map((m) => ({ role: m.role, content: m.content }));
   if (systemPrompt) {
     chatMessages.unshift({ role: "system", content: systemPrompt });
   }
 
   const body = {
-    model: "deepseek-chat",
+    model: resolveModel("deepseek", requestedModel),
     messages: chatMessages,
   };
 
@@ -155,9 +190,9 @@ const CLAUDE_IMAGE_MIME_TYPES = new Set([
   "image/webp",
 ]);
 
-async function callClaude(apiKey, messages, systemPrompt, tools) {
+async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel) {
   const body = {
-    model: "claude-sonnet-4-6",
+    model: resolveModel("claude", requestedModel),
     max_tokens: 1024,
     messages: messages.map((m) => {
       if (!Array.isArray(m.attachments) || !m.attachments.length) {
@@ -237,12 +272,16 @@ const PROVIDERS = {
  * @param {Array<{role:string, content:string}>} messages
  * @param {string} [systemPrompt]
  * @param {Array<object>} [tools]
+ * @param {string} [model] - optional client-requested model id (Settings
+ *   tab's model picker); validated against ALLOWED_MODELS above and
+ *   silently falls back to the provider's own lightest/cheapest/latest
+ *   default (DEFAULT_MODELS) when omitted or not recognized.
  * @returns {Promise<{ text: string, toolCall?: {name: string, input: object} }>}
  */
-export async function callProvider(provider, apiKey, messages, systemPrompt, tools) {
+export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model) {
   const fn = PROVIDERS[provider];
   if (!fn) throw new Error(`Unsupported provider: ${provider}`);
-  return fn(apiKey, messages, systemPrompt, tools);
+  return fn(apiKey, messages, systemPrompt, tools, model);
 }
 
 export function isSupportedProvider(provider) {

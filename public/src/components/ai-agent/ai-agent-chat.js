@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { renderMarkdown, _processByLine } from "../../shared/markdown.js";
-import { getSelectedProvider, getOwnKey, getSystemPrompt, applyResponseLanguage, isAiHelperAvailable } from "./ai-agent-settings.js";
+import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, applyResponseLanguage, isAiHelperAvailable } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
@@ -82,6 +82,17 @@ function fileToBase64(file) {
  * @param {() => void} [options.onHistoryChanged] - called after a
  *   conversation is saved, so the History tab (if open/rendered already)
  *   can refresh its list without polling.
+ * @param {(branch: {messages: Array<object>, createdAt: number}) => void} [options.onBranchConversation] -
+ *   called when the user edits-and-resubmits a past user prompt (see the
+ *   pen-icon Edit button next to a user message's Copy button below).
+ *   Receives the conversation history truncated up to and including the
+ *   edited prompt (with its content replaced by the edited text) — the
+ *   caller (ai-agent.js) is responsible for actually starting a brand new
+ *   chat panel/session from that branch, since this panel intentionally
+ *   never mutates its own conversationId/history for an edit: the
+ *   original conversation must stay exactly as it was in the user's
+ *   history (see the Edit button's own inline comment for the full
+ *   rationale).
  * @returns {HTMLElement} the chat panel root element — also carries a
  *   `.loadConversation(conversation)` method (see bottom of this function)
  *   that the History tab calls when the user picks a past conversation.
@@ -99,6 +110,7 @@ export function createChatPanel(options = {}) {
     suggestedPrompts = [],
     enableFileUpload = false,
     onHistoryChanged = null,
+    onBranchConversation = null,
   } = options;
 
   // Identifies this conversation in IndexedDB across its whole lifetime —
@@ -122,6 +134,41 @@ export function createChatPanel(options = {}) {
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
+
+  // Desktop-only model selector (Task 4: "Include the Model Selector
+  // setting on desktops on the chat tab"). Hidden entirely on mobile via
+  // CSS (see .ai-agent-chat-model-bar's display:none below >=901px in
+  // ai-agent.css) — the Settings tab remains the only place to change the
+  // model there, same as before this feature existed. Reads/writes the
+  // exact same storage as the Settings tab's own model select (see
+  // ai-agent-settings.js), so a change made from either place is
+  // reflected in both without extra plumbing between them.
+  const modelBar = document.createElement("div");
+  modelBar.className = "ai-agent-chat-model-bar";
+
+  const modelBarSelect = document.createElement("select");
+  modelBarSelect.className = "ai-agent-chat-model-select";
+  modelBarSelect.setAttribute("aria-label", "اختر النموذج");
+
+  function refreshModelBarOptions() {
+    const provider = getSelectedProvider();
+    modelBarSelect.innerHTML = "";
+    getModelsForProvider(provider).forEach(({ value, label }) => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      modelBarSelect.appendChild(opt);
+    });
+    modelBarSelect.value = getSelectedModel();
+  }
+  refreshModelBarOptions();
+
+  modelBarSelect.addEventListener("change", () => {
+    setSelectedModel(getSelectedProvider(), modelBarSelect.value);
+  });
+
+  modelBar.appendChild(modelBarSelect);
+  panel.appendChild(modelBar);
 
   const messagesEl = document.createElement("div");
   messagesEl.className = "ai-agent-chat-messages";
@@ -153,6 +200,37 @@ export function createChatPanel(options = {}) {
   // tool-result system lines — see history's `type: "tool-result"`
   // entries) to the clipboard; same visibility rule as newChatBtn (hidden
   // until there's at least one message to export).
+  /**
+   * Builds the plain-text "أنت: ... / البشمبصمج: ..." transcript and
+   * copies it to the clipboard — shared by the in-panel corner export
+   * button (exportChatBtn below) and the desktop sidebar's "نسخ المحادثة"
+   * button (see ai-agent.js, which calls panel.exportConversation()
+   * directly rather than needing to reach into this panel's DOM to click
+   * the corner button programmatically).
+   * @returns {Promise<boolean>} whether the copy succeeded
+   */
+  async function exportTranscript() {
+    if (!history.length) return false;
+    // تول-result entries get their own "🔧 النظام:" label so they read as
+    // distinct from a normal assistant reply, matching how they're
+    // visually distinguished (muted/system style) in the live chat and in
+    // the History tab's re-render (see loadConversation above).
+    const transcript = history
+      .map((m) => {
+        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "البشمبصمج";
+        return `${label}: ${m.content}`;
+      })
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(transcript);
+      return true;
+    } catch (err) {
+      console.error("[ai-agent-chat] export-chat clipboard write failed:", err);
+      return false;
+    }
+  }
+  panel.exportConversation = exportTranscript;
+
   const exportChatBtn = document.createElement("button");
   exportChatBtn.type = "button";
   exportChatBtn.className = "ai-agent-corner-btn ai-agent-export-chat-btn";
@@ -162,29 +240,15 @@ export function createChatPanel(options = {}) {
   exportChatBtn.setAttribute("aria-label", "نسخ المحادثة");
   exportChatBtn.hidden = true;
   exportChatBtn.addEventListener("click", async () => {
-    // أنت: ... / البشمبصمج: ... transcript, one turn per line-group —
-    // tool-result entries get their own "🔧 النظام:" label so they read
-    // as distinct from a normal assistant reply, matching how they're
-    // visually distinguished (muted/system style) in the live chat and
-    // in the History tab's re-render (see loadConversation above).
-    const transcript = history
-      .map((m) => {
-        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "البشمبصمج";
-        return `${label}: ${m.content}`;
-      })
-      .join("\n\n");
-    try {
-      await navigator.clipboard.writeText(transcript);
-      const original = exportChatBtn.innerHTML;
-      exportChatBtn.innerHTML = CHECK_ICON_SVG;
-      exportChatBtn.classList.add("ai-agent-corner-btn--copied");
-      setTimeout(() => {
-        exportChatBtn.innerHTML = original;
-        exportChatBtn.classList.remove("ai-agent-corner-btn--copied");
-      }, 1500);
-    } catch (err) {
-      console.error("[ai-agent-chat] export-chat clipboard write failed:", err);
-    }
+    const ok = await exportTranscript();
+    if (!ok) return;
+    const original = exportChatBtn.innerHTML;
+    exportChatBtn.innerHTML = CHECK_ICON_SVG;
+    exportChatBtn.classList.add("ai-agent-corner-btn--copied");
+    setTimeout(() => {
+      exportChatBtn.innerHTML = original;
+      exportChatBtn.classList.remove("ai-agent-corner-btn--copied");
+    }, 1500);
   });
   panel.appendChild(exportChatBtn);
 
@@ -192,6 +256,7 @@ export function createChatPanel(options = {}) {
     newChatBtn.hidden = history.length === 0;
     exportChatBtn.hidden = history.length === 0;
   }
+
 
   // Suggestion chips — only meaningful before the conversation starts.
   // renderSuggestions() (re)builds them; called once up front here, and
@@ -377,23 +442,189 @@ export function createChatPanel(options = {}) {
   // LTR even for an Arabic-only message.
   textarea.dir = "auto";
 
-  const sendBtn = document.createElement("button");
-  sendBtn.type = "button";
-  sendBtn.className = "ai-agent-send-btn";
-  sendBtn.textContent = "إرسال";
+  // ── Voice dictation (Task 5, Web Speech API) ──
+  // Framework-free, native SpeechRecognition — no external library. Built
+  // unconditionally (not gated behind enableFileUpload or any other
+  // option) since it's a general chat-input affordance every page using
+  // this panel should get, same as the textarea itself.
+  const SpeechRecognitionCtor =
+    window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
-  // DOM order determines visual side here since the page is RTL
-  // (dir="rtl" on <html>, no direction override on .ai-agent-chat-input-row)
-  // and flexbox lays out the first child on the visual right in RTL — so
-  // sendBtn first means "send" renders on the right, matching where a
-  // right-handed/thumb-natural tap lands after typing in an RTL field,
-  // with attachBtn last (now the visual left, where it used to be on the
-  // right before this swap).
-  inputRow.appendChild(sendBtn);
-  inputRow.appendChild(textarea);
-  if (attachBtn) inputRow.appendChild(attachBtn);
-  panel.appendChild(inputRow);
-  if (fileInput) panel.appendChild(fileInput);
+  // Firefox has no SpeechRecognition support in its stable channel at
+  // all, but on the off chance a future/flagged build exposes the
+  // constructor, this still surfaces the accuracy warning — the request
+  // is "if Firefox, warn", not "if the API is missing, warn silently".
+  const isFirefox = /firefox/i.test(navigator.userAgent || "");
+
+  let micBtn = null;
+  let dictationActions = null;
+  let stopDictationBtn = null;
+  let submitDictationBtn = null;
+  let firefoxWarningEl = null;
+  let recognition = null;
+  let isDictating = false;
+  // Accumulates finalized speech segments across multiple onresult events
+  // within one dictation session — SpeechRecognition delivers results
+  // incrementally, some marked `isFinal` and some not (interim/in-flight
+  // guesses that may still change), so the textarea needs to show
+  // finalizedText + the current interim guess, not just the latest event.
+  let finalizedText = "";
+  // The textarea's own content at the moment dictation started — dictated
+  // text is appended after it (not overwriting anything the user already
+  // typed), same as how a real dictation feature behaves.
+  let baseTextBeforeDictation = "";
+
+  function composeDictationValue(interim) {
+    const finalPart = finalizedText.trim();
+    const interimPart = (interim || "").trim();
+    const dictated = [finalPart, interimPart].filter(Boolean).join(" ");
+    const base = baseTextBeforeDictation.trim();
+    return [base, dictated].filter(Boolean).join(base ? " " : "");
+  }
+
+  function setDictationUiState(dictating) {
+    isDictating = dictating;
+    if (micBtn) micBtn.hidden = dictating;
+    if (dictationActions) dictationActions.hidden = !dictating;
+    textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
+  }
+
+  /**
+   * Halts the microphone. Does NOT touch the textarea's current value —
+   * callers decide separately whether to leave it for review (Stop
+   * Dictation) or immediately submit it (Submit), matching the two
+   * distinct actions in the spec.
+   */
+  function stopRecognition() {
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch (err) {
+        console.error("[ai-agent-chat] SpeechRecognition stop failed:", err);
+      }
+    }
+    setDictationUiState(false);
+  }
+
+  function startDictation() {
+    if (!SpeechRecognitionCtor || isDictating) return;
+
+    finalizedText = "";
+    baseTextBeforeDictation = textarea.value;
+
+    recognition = new SpeechRecognitionCtor();
+    recognition.lang = document.documentElement?.lang === "en" ? "en-US" : "ar-EG";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          finalizedText = `${finalizedText} ${result[0].transcript}`.trim();
+        } else {
+          interim += result[0].transcript;
+        }
+      }
+      // Live transcription directly into the chat input field, per the
+      // spec — not a separate preview area.
+      textarea.value = composeDictationValue(interim);
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    };
+
+    recognition.onerror = (event) => {
+      console.error("[ai-agent-chat] SpeechRecognition error:", event.error);
+      // "no-speech"/"aborted" are routine (silence timeout, or the user's
+      // own Stop click racing the browser's own stop event) — only
+      // surface a visible error for something the user couldn't have
+      // caused by simply pausing or stopping normally.
+      if (event.error !== "no-speech" && event.error !== "aborted") {
+        appendError("تعذر استخدام الإملاء الصوتي. حاول مرة أخرى.");
+      }
+      setDictationUiState(false);
+    };
+
+    recognition.onend = () => {
+      // The browser can end the session on its own (silence timeout)
+      // without either explicit control being clicked — make sure the UI
+      // still falls back to the idle mic-button state either way, so the
+      // user is never left staring at Stop/Submit buttons that no longer
+      // do anything.
+      if (isDictating) setDictationUiState(false);
+    };
+
+    try {
+      recognition.start();
+      setDictationUiState(true);
+    } catch (err) {
+      console.error("[ai-agent-chat] SpeechRecognition start failed:", err);
+      appendError("تعذر بدء الإملاء الصوتي.");
+    }
+  }
+
+  if (SpeechRecognitionCtor) {
+    micBtn = document.createElement("button");
+    micBtn.type = "button";
+    micBtn.className = "ai-agent-mic-btn";
+    micBtn.setAttribute("aria-label", "بدء الإملاء الصوتي");
+    micBtn.title = "إملاء صوتي";
+    micBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>';
+    micBtn.addEventListener("click", startDictation);
+
+    // "Stop Dictation" + "Submit" — shown together while dictating,
+    // replacing the mic button (see setDictationUiState above).
+    dictationActions = document.createElement("div");
+    dictationActions.className = "ai-agent-dictation-actions";
+    dictationActions.hidden = true;
+
+    stopDictationBtn = document.createElement("button");
+    stopDictationBtn.type = "button";
+    stopDictationBtn.className = "ai-agent-dictation-btn ai-agent-dictation-btn--stop";
+    stopDictationBtn.textContent = "إيقاف الإملاء";
+    stopDictationBtn.title = "إيقاف الإملاء الصوتي";
+    // Halts the mic and leaves the transcribed text in the input for the
+    // user to review/edit manually — no submission.
+    stopDictationBtn.addEventListener("click", () => {
+      stopRecognition();
+      textarea.focus();
+    });
+
+    submitDictationBtn = document.createElement("button");
+    submitDictationBtn.type = "button";
+    submitDictationBtn.className = "ai-agent-dictation-btn ai-agent-dictation-btn--submit";
+    submitDictationBtn.textContent = "إرسال";
+    submitDictationBtn.title = "إيقاف الإملاء وإرسال الرسالة";
+    // Halts the mic, finalizes whatever's in the field right now, and
+    // immediately sends it — same as pressing إرسال on the main input,
+    // just without a manual review step first.
+    submitDictationBtn.addEventListener("click", () => {
+      stopRecognition();
+      sendMessage();
+    });
+
+    dictationActions.appendChild(submitDictationBtn);
+    dictationActions.appendChild(stopDictationBtn);
+  }
+
+  // Firefox accuracy warning (Task 5.6) — user-agent sniffing is
+  // otherwise something to avoid, but there's no capability-based way to
+  // detect "dictation exists but is inaccurate on this engine specifically"
+  // — that's a qualitative claim about Firefox's speech-recognition
+  // backend, not a missing API surface. Shown once, inline, near the
+  // input — not a toast/alert, since it's informational rather than
+  // blocking. Rendered on load; not tied to SpeechRecognitionCtor being
+  // present, in case a Firefox build exposes the constructor while still
+  // having the accuracy issue this warns about (see SpeechRecognitionCtor's
+  // own comment above).
+  if (isFirefox) {
+    firefoxWarningEl = document.createElement("div");
+    firefoxWarningEl.className = "ai-agent-firefox-warning";
+    firefoxWarningEl.textContent =
+      "⚠️ الإملاء الصوتي قد يكون غير دقيق على متصفح Firefox — يُفضّل استخدام متصفح آخر (مثل Chrome) لنتائج أفضل.";
+  }
 
   // inputRow exists now, so it's safe for renderSuggestions() to insert
   // relative to it (see the function's own comment above).
@@ -447,6 +678,8 @@ export function createChatPanel(options = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
   const CHECK_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  const EDIT_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
 
   /**
    * Adds a small per-message copy button to a rendered bubble, copying the
@@ -485,7 +718,133 @@ export function createChatPanel(options = {}) {
     el.appendChild(btn);
   }
 
-  function appendMessage(role, content, attachmentName) {
+  /**
+   * Adds the pen-icon Edit button (Claude-style) to a rendered USER
+   * message bubble only — assistant/tool-result messages never get one,
+   * since "editing" only makes sense for a prompt the user themselves
+   * wrote. Clicking it swaps the bubble's static text for an editable
+   * textarea plus إرسال/إلغاء (Submit/Cancel) beneath it.
+   *
+   * BRANCHING, not in-place editing: this app persists conversations to
+   * IndexedDB by a stable `conversationId` (see saveConversation calls in
+   * sendMessage), and the History tab lists/reopens past conversations by
+   * that same id. Rewriting `history` and `conversationId` in place here
+   * would silently mutate — and on the next send, overwrite — the
+   * ORIGINAL saved conversation the user might still want to go back to.
+   * Instead, on إرسال this fires `onBranchConversation` with the history
+   * truncated up to and including the edited prompt (content replaced),
+   * and the caller (ai-agent.js) is responsible for spinning up a
+   * genuinely new chat panel/session from that branch — mirroring how
+   * Claude's own "edit and resubmit" leaves the original thread intact
+   * and continues in a new one.
+   * @param {HTMLElement} el - the rendered user-message bubble.
+   * @param {number} historyIndex - this message's index into `history`,
+   *   captured at render time so the branch can be built even after later
+   *   turns have been appended (history.length has grown since).
+   */
+  function addEditButton(el, historyIndex) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ai-agent-msg-edit-btn";
+    btn.setAttribute("aria-label", "تعديل الرسالة");
+    btn.title = "تعديل";
+    btn.innerHTML = EDIT_ICON_SVG;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      enterEditMode(el, historyIndex);
+    });
+    el.appendChild(btn);
+  }
+
+  /**
+   * Transforms a rendered user-message bubble into an editable textarea +
+   * إرسال (Submit) / إلغاء (Cancel) controls, per the pen-icon Edit button
+   * above. إرسال starts disabled and only enables once the text actually
+   * differs from the original — resubmitting an unedited prompt would
+   * just create a pointless duplicate branch of the exact same
+   * conversation. إلغاء restores the original static bubble unchanged.
+   * @param {HTMLElement} el - the message bubble (already in the DOM).
+   * @param {number} historyIndex
+   */
+  function enterEditMode(el, historyIndex) {
+    const original = history[historyIndex];
+    if (!original) return;
+    const originalText = original.content || "";
+
+    // Preserve the bubble's original children (text + copy/edit buttons)
+    // so إلغاء can restore them exactly rather than re-rendering from
+    // scratch and potentially losing e.g. the attachment chip's markup.
+    const savedChildren = Array.from(el.childNodes);
+    el.innerHTML = "";
+    el.classList.add("ai-agent-msg--editing");
+
+    const textarea = document.createElement("textarea");
+    textarea.className = "ai-agent-msg-edit-input";
+    textarea.value = originalText;
+    textarea.dir = "auto";
+    textarea.rows = Math.min(8, Math.max(2, originalText.split("\n").length));
+    el.appendChild(textarea);
+
+    const actions = document.createElement("div");
+    actions.className = "ai-agent-msg-edit-actions";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.className = "ai-agent-msg-edit-cancel";
+    cancelBtn.textContent = "إلغاء";
+
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "button";
+    submitBtn.className = "ai-agent-msg-edit-submit";
+    submitBtn.textContent = "إرسال";
+    submitBtn.disabled = true; // enabled only once the text is actually changed
+
+    // DOM order (not CSS) decides visual left/right here, same rationale
+    // as sendBtn/textarea in the main input row further down — RTL flex
+    // puts the first child on the visual right, so إرسال appears first/
+    // on the right (primary action) and إلغاء second/on the left.
+    actions.appendChild(submitBtn);
+    actions.appendChild(cancelBtn);
+    el.appendChild(actions);
+
+    textarea.addEventListener("input", () => {
+      submitBtn.disabled = textarea.value.trim() === originalText.trim();
+    });
+
+    function exitEditMode() {
+      el.classList.remove("ai-agent-msg--editing");
+      el.innerHTML = "";
+      savedChildren.forEach((child) => el.appendChild(child));
+    }
+
+    cancelBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      exitEditMode();
+    });
+
+    submitBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const editedText = textarea.value.trim();
+      if (!editedText || editedText === originalText.trim()) return;
+      if (typeof onBranchConversation !== "function") return;
+
+      // Truncate up to AND INCLUDING the edited prompt, with its content
+      // replaced — everything the user sent/received after it in this
+      // conversation is deliberately dropped from the branch, matching
+      // "edit and resubmit" semantics (the point is to redo the
+      // conversation from this prompt onward, not append a duplicate).
+      const branchMessages = history
+        .slice(0, historyIndex)
+        .concat([{ ...original, content: editedText }]);
+
+      onBranchConversation({ messages: branchMessages, createdAt: Date.now() });
+    });
+
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+  }
+
+  function appendMessage(role, content, attachmentName, historyIndex) {
     const el = document.createElement("div");
     el.className = `ai-agent-msg ai-agent-msg--${role}`;
 
@@ -520,6 +879,14 @@ export function createChatPanel(options = {}) {
     }
 
     if (content) addCopyButton(el, content);
+    // Edit is only offered for user prompts with real text and a known
+    // position in `history` (loadConversation's re-render also supplies
+    // this — see below), and only when the caller actually wants
+    // branching (onBranchConversation supplied) — otherwise the button
+    // would be dead UI on pages that don't opt in.
+    if (role === "user" && content && typeof historyIndex === "number" && onBranchConversation) {
+      addEditButton(el, historyIndex);
+    }
 
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
@@ -557,33 +924,23 @@ export function createChatPanel(options = {}) {
     return el;
   }
 
-  async function sendMessage() {
-    const text = textarea.value.trim();
-    const attachment = pendingAttachment;
-    // A file with no accompanying text is a valid send (e.g. "just convert
-    // this exam") — only block on genuinely empty input.
-    if (!text && !attachment) return;
-
+  /**
+   * Shared tail end of both a normal send and a branch's replay: sends
+   * `history` (already fully up to date — the new user turn is already
+   * pushed and rendered by the caller) to the backend, renders the
+   * assistant's reply, persists the conversation, and handles any tool
+   * call. Factored out of sendMessage() so panel.loadBranch() above can
+   * reuse the exact same request/response/persistence logic for a
+   * branched conversation's first turn, rather than re-sending through
+   * the DOM (which would re-append a duplicate user bubble that's already
+   * rendered).
+   */
+  async function resendLastUserTurn() {
+    sendBtn.disabled = true;
+    const typingEl = showTyping();
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
-
-    textarea.value = "";
-    textarea.style.height = "auto";
-    sendBtn.disabled = true;
-    pendingAttachment = null;
-    renderAttachmentChip();
-
-    if (suggestionsEl) {
-      removeSuggestions();
-    }
-
-    appendMessage("user", text, attachment?.name);
-    const outgoingUserMessage = { role: "user", content: text };
-    if (attachment) outgoingUserMessage.attachments = [attachment];
-    history.push(outgoingUserMessage);
-    updateNewChatVisibility();
-
-    const typingEl = showTyping();
+    const model = getSelectedModel();
 
     // Fold contextPrompt / contextSummary into the same one-off context
     // message, prepended before the real conversation history — not a
@@ -638,6 +995,7 @@ export function createChatPanel(options = {}) {
         headers,
         body: JSON.stringify({
           provider,
+          model: model || undefined,
           messages: outgoingMessages,
           useOwnKey: useOwnKeyNow,
           ownKey: useOwnKeyNow ? ownKey : undefined,
@@ -760,6 +1118,42 @@ export function createChatPanel(options = {}) {
     }
   }
 
+  /**
+   * Handles a normal user-typed send: validates input, appends the user's
+   * own bubble + pushes it into `history`, then hands off to
+   * resendLastUserTurn() for the actual network round trip — the same
+   * tail end panel.loadBranch() uses for a branched conversation's first
+   * turn (see its own doc comment above).
+   */
+  async function sendMessage() {
+    const text = textarea.value.trim();
+    const attachment = pendingAttachment;
+    // A file with no accompanying text is a valid send (e.g. "just convert
+    // this exam") — only block on genuinely empty input.
+    if (!text && !attachment) return;
+
+    textarea.value = "";
+    textarea.style.height = "auto";
+    sendBtn.disabled = true;
+    pendingAttachment = null;
+    renderAttachmentChip();
+
+    if (suggestionsEl) {
+      removeSuggestions();
+    }
+
+    const outgoingUserMessage = { role: "user", content: text };
+    if (attachment) outgoingUserMessage.attachments = [attachment];
+    // Push BEFORE rendering so the new message's own index (history.length
+    // - 1) is known for addEditButton's historyIndex — appendMessage
+    // reads history[] by index, not by object identity.
+    history.push(outgoingUserMessage);
+    appendMessage("user", text, attachment?.name, history.length - 1);
+    updateNewChatVisibility();
+
+    await resendLastUserTurn();
+  }
+
   sendBtn.addEventListener("click", sendMessage);
   textarea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -814,11 +1208,11 @@ export function createChatPanel(options = {}) {
     if (!history.length) {
       renderEmptyState();
     } else {
-      history.forEach((m) => {
+      history.forEach((m, i) => {
         if (m.type === "tool-result") {
           appendToolResultMessage(m.content);
         } else {
-          appendMessage(m.role, m.content, m.attachments?.[0]?.name);
+          appendMessage(m.role, m.content, m.attachments?.[0]?.name, i);
         }
       });
     }
@@ -851,6 +1245,47 @@ export function createChatPanel(options = {}) {
   updateNewChatVisibility();
 
   /**
+   * Seeds this (freshly-created, empty) panel with a branched history from
+   * another panel's edited-prompt Submit action (see onBranchConversation/
+   * enterEditMode above) and immediately sends it — mirrors how a real new
+   * turn is sent, just with pre-existing prior messages instead of a
+   * blank slate. Always mints a brand new conversationId (never reuses
+   * the source panel's), so this becomes its own separate IDB record,
+   * leaving the original conversation the user branched from completely
+   * untouched in their history. Must only be called on a panel that has
+   * never sent anything yet (a new panel instance, per ai-agent.js's
+   * branching flow) — calling it on a panel with existing history would
+   * silently discard that history via the `history.length = 0` below.
+   * @param {{messages: Array<object>, createdAt?: number}} branch
+   */
+  panel.loadBranch = function loadBranch(branch) {
+    const branchMessages = Array.isArray(branch?.messages) ? branch.messages : [];
+    if (!branchMessages.length) return;
+
+    removeSuggestions();
+    conversationId = crypto.randomUUID();
+    conversationCreatedAt = branch.createdAt || Date.now();
+    history.length = 0;
+    history.push(...branchMessages);
+
+    messagesEl.innerHTML = "";
+    history.forEach((m, i) => {
+      if (m.type === "tool-result") {
+        appendToolResultMessage(m.content);
+      } else {
+        appendMessage(m.role, m.content, m.attachments?.[0]?.name, i);
+      }
+    });
+    updateNewChatVisibility();
+
+    // Re-send the last (edited) prompt to actually get a fresh AI reply
+    // for it — resendLastUserTurn() below does the network round trip
+    // using the same code path sendMessage() uses, just skipping the
+    // "append a new user bubble" step since it's already rendered above.
+    resendLastUserTurn();
+  };
+
+  /**
    * Re-checks AI Helper eligibility and refreshes both the input's
    * enabled/disabled state and — if the conversation is still empty — the
    * placeholder label. Called by ai-agent.js when the Settings tab saves
@@ -860,6 +1295,7 @@ export function createChatPanel(options = {}) {
    */
   panel.refreshAvailability = function refreshAvailability() {
     updateAvailabilityGate();
+    refreshModelBarOptions();
     if (history.length === 0) renderEmptyState();
   };
 

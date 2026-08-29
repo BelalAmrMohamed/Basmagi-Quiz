@@ -3,6 +3,13 @@
 // POST /api/ai-agent/chat
 // Body: {
 //   provider: "google" | "deepseek" | "claude",
+//   model?: string,            // optional model override (Settings tab's model
+//                              // picker); validated server-side against a
+//                              // per-provider allowlist (see
+//                              // _providerClients.js's ALLOWED_MODELS) and
+//                              // falls back to that provider's own
+//                              // lightest/cheapest/latest default when
+//                              // omitted or unrecognized.
 //   messages: [{
 //     role: "user"|"assistant",
 //     content: string,
@@ -259,7 +266,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const { provider, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
+  const { provider, model, messages, useOwnKey, ownKey, systemPrompt, enableTools, toolNames } =
     req.body || {};
 
   if (!isSupportedProvider(provider)) {
@@ -311,7 +318,7 @@ export default async function handler(req, res) {
     }
 
     try {
-      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools);
+      const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model);
       return res.status(200).json(result);
     } catch (err) {
       console.error("[ai-agent/chat] own-key provider error:", err);
@@ -360,7 +367,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools);
+    const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, model);
     return res.status(200).json(result);
   } catch (err) {
     console.error("[ai-agent/chat] platform-key provider error:", err);
