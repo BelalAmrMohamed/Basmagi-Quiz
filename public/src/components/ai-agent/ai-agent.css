@@ -1038,7 +1038,7 @@
 .ai-agent-fab {
   position: fixed;
   right: calc(20px + var(--sidebar-collapsed-width, 0px));
-  bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
+  bottom: 20px;
   z-index: var(--z-tooltip, 6000);
   transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease;
   width: 56px;
@@ -1078,6 +1078,7 @@ body.sidebar-expanded .ai-agent-fab {
   .ai-agent-fab,
   body.sidebar-expanded .ai-agent-fab {
     right: 20px;
+    bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
   }
 }
 
