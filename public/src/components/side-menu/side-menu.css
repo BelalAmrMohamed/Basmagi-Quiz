@@ -547,7 +547,9 @@ body.sidebar-expanded {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  width: 96%;
+  margin-left: 2%;
+  margin-right: 2%;
   padding: 9px 8px;
   border: none;
   background: none;
