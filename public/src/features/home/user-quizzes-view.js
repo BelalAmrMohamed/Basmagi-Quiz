@@ -14,7 +14,6 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { _prompt } from "../../components/notifications/notifications.js";
-import { getSearchManager } from "./search-integration.js";
 import { 
   currentFolderId, 
   getChildren, 
@@ -36,6 +35,7 @@ import {
   isRestoring,
   getIndexSupabaseClient,
   getSelectedUserQuizzes,
+  getSearchManager,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";

@@ -505,6 +505,10 @@ export function createChatPanel(options = {}) {
   const dictationWaveEl = document.createElement("button");
   dictationWaveEl.type = "button";
   dictationWaveEl.className = "ai-agent-dictation-wave";
+  // Hidden until dictation actually starts (toggled alongside the
+  // textarea in setDictationUiState below) — otherwise this would sit
+  // visible in the input row on every page load.
+  dictationWaveEl.hidden = true;
   dictationWaveEl.setAttribute("aria-label", "جارِ الاستماع — اضغط للإلغاء");
   dictationWaveEl.title = "جارِ الاستماع — اضغط للإلغاء";
   dictationWaveEl.innerHTML = `
@@ -517,6 +521,84 @@ export function createChatPanel(options = {}) {
     stopRecognition();
     textarea.focus();
   });
+  waveBarEls.push(
+    ...dictationWaveEl.querySelectorAll(".ai-agent-dictation-wave-bars span"),
+  );
+
+  /**
+   * Opens a mic stream purely for volume metering (independent of, and
+   * in parallel with, the SpeechRecognition session — the two APIs don't
+   * share access to each other's audio data). Best-effort: if getUserMedia
+   * is denied/unavailable, the bars just keep their CSS fallback animation
+   * (see @keyframes ai-agent-wave-bounce) instead of breaking dictation.
+   */
+  async function startMicMetering() {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextCtor();
+      const source = audioCtx.createMediaStreamSource(micStream);
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 64;
+      analyserNode.smoothingTimeConstant = 0.6;
+      source.connect(analyserNode);
+
+      const data = new Uint8Array(analyserNode.frequencyBinCount);
+      // Once real volume data is flowing, hand the bars off to it —
+      // removing the CSS keyframe loop so the two animation sources
+      // never fight over `transform`.
+      dictationWaveEl.classList.add("ai-agent-dictation-wave--live");
+
+      const tick = () => {
+        if (!analyserNode) return;
+        analyserNode.getByteTimeDomainData(data);
+        // Per-bar RMS over a distinct slice of the buffer (rather than one
+        // global level applied to all five) so the bars move somewhat
+        // independently, still reading as one reactive waveform.
+        const sliceSize = Math.floor(data.length / waveBarEls.length);
+        waveBarEls.forEach((bar, i) => {
+          let sum = 0;
+          const start = i * sliceSize;
+          const end = start + sliceSize;
+          for (let j = start; j < end; j++) {
+            const centered = (data[j] - 128) / 128;
+            sum += centered * centered;
+          }
+          const rms = Math.sqrt(sum / sliceSize);
+          // 0.15 floor keeps a faint idle bar visible in silence; 3.2 gain
+          // and the 1 cap tune how "loud" a normal speaking voice reads.
+          const level = Math.min(1, 0.15 + rms * 3.2);
+          bar.style.transform = `scaleY(${level.toFixed(3)})`;
+        });
+        meterRafId = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (err) {
+      console.error("[ai-agent-chat] Mic metering unavailable:", err);
+      audioCtx = null;
+      analyserNode = null;
+      micStream = null;
+    }
+  }
+
+  function stopMicMetering() {
+    if (meterRafId) cancelAnimationFrame(meterRafId);
+    meterRafId = null;
+    analyserNode = null;
+    if (micStream) {
+      micStream.getTracks().forEach((track) => track.stop());
+      micStream = null;
+    }
+    if (audioCtx) {
+      audioCtx.close().catch(() => {});
+      audioCtx = null;
+    }
+    dictationWaveEl.classList.remove("ai-agent-dictation-wave--live");
+    waveBarEls.forEach((bar) => {
+      bar.style.transform = "";
+    });
+  }
 
   // ── Voice dictation (Task 5, Web Speech API) ──
   // Framework-free, native SpeechRecognition — no external library. Built
@@ -556,6 +638,18 @@ export function createChatPanel(options = {}) {
   let firefoxWarningEl = null;
   let recognition = null;
   let isDictating = false;
+  // Live mic-volume metering for the wave bars (separate from
+  // SpeechRecognition, which exposes no amplitude data of its own) — a
+  // short-lived AudioContext/AnalyserNode pair opened alongside each
+  // dictation session so the bars reflect actual voice level instead of
+  // looping a fixed CSS animation regardless of whether the user is
+  // speaking. Torn down in stopMicMetering() so no mic stream/AudioContext
+  // is left open once dictation ends.
+  let audioCtx = null;
+  let analyserNode = null;
+  let micStream = null;
+  let meterRafId = null;
+  const waveBarEls = [];
   // Accumulates finalized speech segments across multiple onresult events
   // within one dictation session — SpeechRecognition delivers results
   // incrementally, some marked `isFinal` and some not (interim/in-flight
@@ -618,6 +712,7 @@ export function createChatPanel(options = {}) {
     // moment dictation stops the transcribed text is already sitting in
     // the field ready to review/edit/send with no extra sync step.
     textarea.hidden = dictating;
+    dictationWaveEl.hidden = !dictating;
     textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
     inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
     // Send stays visible unconditionally WHILE dictating (see this
@@ -642,6 +737,7 @@ export function createChatPanel(options = {}) {
         console.error("[ai-agent-chat] SpeechRecognition stop failed:", err);
       }
     }
+    stopMicMetering();
     setDictationUiState(false);
   }
 
@@ -684,6 +780,7 @@ export function createChatPanel(options = {}) {
       // surface a visible error for something the user couldn't have
       // caused by simply pausing or stopping normally.
       if (event.error === "no-speech" || event.error === "aborted") {
+        stopMicMetering();
         setDictationUiState(false);
         return;
       }
@@ -699,6 +796,7 @@ export function createChatPanel(options = {}) {
       // a message that could instead point straight at the actual cause.
       if (event.error === "network" && !hasRetriedAfterNetworkError && !isBraveBrowser) {
         hasRetriedAfterNetworkError = true;
+        stopMicMetering();
         setDictationUiState(false);
         try {
           startDictation(true);
@@ -714,6 +812,7 @@ export function createChatPanel(options = {}) {
           : "تعذر الوصول إلى خدمة التعرف الصوتي (قد يكون بسبب مانع إعلانات أو مشكلة في الاتصال). حاول مرة أخرى أو اكتب رسالتك.";
       }
       appendError(message);
+      stopMicMetering();
       setDictationUiState(false);
     };
 
@@ -723,12 +822,16 @@ export function createChatPanel(options = {}) {
       // falls back to the idle mic-icon state either way, so the mic
       // button is never stuck showing "cancel" for a session that's
       // already over.
-      if (isDictating) setDictationUiState(false);
+      if (isDictating) {
+        stopMicMetering();
+        setDictationUiState(false);
+      }
     };
 
     try {
       recognition.start();
       setDictationUiState(true);
+      startMicMetering();
     } catch (err) {
       console.error("[ai-agent-chat] SpeechRecognition start failed:", err);
       appendError("تعذر بدء الإملاء الصوتي.");

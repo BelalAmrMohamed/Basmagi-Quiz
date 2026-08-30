@@ -1,7 +1,8 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { _prompt, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
-import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
+import { getSelectedUserQuizzes } from "./app-state.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -186,18 +187,18 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     }
   }
 
-  contextMenuEl.style.left = \`\${e.pageX}px\`;
-  contextMenuEl.style.top = \`\${e.pageY}px\`;
+  contextMenuEl.style.left = `${e.pageX}px`;
+  contextMenuEl.style.top = `${e.pageY}px`;
   contextMenuEl.style.display = "flex";
 }
 
 function createMenuItem(label, onClick) {
   const item = document.createElement("div");
   item.textContent = label;
-  item.style.cssText = \`
+  item.style.cssText = `
     padding: 10px 15px; cursor: pointer; color: var(--color-text-primary);
     font-size: 0.9rem; transition: background 0.2s;
-  \`;
+  `;
   item.onmouseover = () => item.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))";
   item.onmouseout = () => item.style.background = "transparent";
   item.onclick = (e) => {
@@ -244,9 +245,12 @@ export function createFolderOrCourseCard(item) {
   const icon = item.meta?.type === "course" ? "📚" : "📁";
   const itemId = item.id || item.meta?.id;
 
+  const selectedUserQuizzes = getSelectedUserQuizzes();
+  const isChecked = selectedUserQuizzes.has(itemId);
+
   card.innerHTML = `
     <div class="user-quiz-card-overlay">
-      <input type="checkbox" class="user-quiz-select-checkbox" data-quiz-id="${itemId}" aria-label="تحديد" onclick="event.stopPropagation()">
+      <input type="checkbox" class="user-quiz-select-checkbox" data-quiz-id="${itemId}" aria-label="تحديد" ${isChecked ? "checked" : ""}>
     </div>
     <div class="category-icon" aria-hidden="true">${icon}</div>
     <div class="category-info">
@@ -282,13 +286,18 @@ export function createFolderOrCourseCard(item) {
     showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
   };
 
-  // Sync checkbox state
+  // Sync checkbox state with the shared selection set
   const checkbox = card.querySelector(".user-quiz-select-checkbox");
   if (checkbox) {
-    checkbox.addEventListener("change", (e) => {
-      const { selectedUserQuizzes } = require("./user-quizzes-view.js"); // We'll just dispatch an event or rely on global?
-      // Wait, user-quizzes-view.js adds listeners to checkboxes. I'll just use the same logic or export selectedUserQuizzes.
-    });
+    checkbox.onclick = (e) => {
+      e.stopPropagation();
+      if (checkbox.checked) {
+        selectedUserQuizzes.add(itemId);
+      } else {
+        selectedUserQuizzes.delete(itemId);
+      }
+      updateBulkActionBar();
+    };
   }
 
   return card;
