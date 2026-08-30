@@ -748,6 +748,13 @@ export function refreshAdminUI() {
     // recovery mid-session shows up without the user having to close/reopen.
     populateDropdownIfAvailable();
   }
+  
+  const mobileAdminBtn = document.getElementById("sideMenuMobileAdminSignIn");
+  if (mobileAdminBtn) {
+    const roleInfo = getAdminRoleInfo();
+    const label = mobileAdminBtn.querySelector(".menu-label");
+    if (label) label.textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
+  }
 }
 
 // populateDropdown() is defined further down (only when the dropdown markup
@@ -1103,3 +1110,33 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
     _alert("حدث خطأ أثناء تغيير الاسم. حاول مرة أخرى.");
   }
 };
+
+document.addEventListener("DOMContentLoaded", () => {
+  const changeUsernameBtn = document.querySelector(".mobile-only-menu-item[onclick*='changeUsername']");
+  if (changeUsernameBtn && changeUsernameBtn.parentNode) {
+    const mobileAdminBtn = document.createElement("button");
+    mobileAdminBtn.type = "button";
+    mobileAdminBtn.className = "menu-item mobile-only-menu-item";
+    mobileAdminBtn.id = "sideMenuMobileAdminSignIn";
+    mobileAdminBtn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" height="22" width="22" fill="currentColor">
+        <path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm0-80h480v-400H240v400Zm296.5-143.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80ZM240-160v-400 400Z"/>
+      </svg>
+      <span class="menu-label">دخول المشرفين</span>
+    `;
+    changeUsernameBtn.parentNode.insertBefore(mobileAdminBtn, changeUsernameBtn);
+    
+    mobileAdminBtn.addEventListener("click", () => {
+      const roleInfo = getAdminRoleInfo();
+      if (!roleInfo) {
+        openSignInDialog();
+      } else {
+        fullSignOut(getIndexSupabaseClient()).then(() => window.location.reload());
+      }
+    });
+
+    // Initial state setup
+    const roleInfo = getAdminRoleInfo();
+    mobileAdminBtn.querySelector(".menu-label").textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
+  }
+});

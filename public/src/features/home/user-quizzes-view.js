@@ -13,10 +13,25 @@
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
+import { _prompt } from "../../components/notifications/notifications.js";
+import { getSearchManager } from "./search-integration.js";
+import { 
+  currentFolderId, 
+  getChildren, 
+  getCurrentFolderPathStack, 
+  navigateToFolder, 
+  showContextMenu, 
+  handleDragStart, 
+  handleDragEnd, 
+  handleDragOver, 
+  handleDragLeave, 
+  handleDrop,
+  createNewFolderOrCourse,
+  createFolderOrCourseCard
+} from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
 import {
-  getSearchManager,
   getNavigationStack,
   isRestoring,
   getIndexSupabaseClient,
@@ -254,35 +269,22 @@ export function renderUserQuizzesView() {
     const actionsBar = document.createElement("div");
     actionsBar.className = "user-quiz-search-actions";
 
-    if (isAdminAuthenticated()) {
-      const adminSignOutBtn = document.createElement("button");
-      adminSignOutBtn.type = "button";
-      adminSignOutBtn.innerHTML = `<span>تسجيل الخروج</span> ${ADMIN_SIGN_OUT_ICON_SVG}`;
-      adminSignOutBtn.className = "btn admin-log-out-btn";
-      adminSignOutBtn.setAttribute("aria-label", "تسجيل خروج المشرف");
-      adminSignOutBtn.onclick = async () => {
-        adminSignOutBtn.disabled = true;
-        await fullSignOut(getIndexSupabaseClient());
-        window.location.reload();
-      };
-      actionsBar.appendChild(adminSignOutBtn);
-    } else {
-      const adminSignInBtn = document.createElement("button");
-      adminSignInBtn.type = "button";
-      adminSignInBtn.innerHTML = `<span>دخول المشرفين</span> ${ADMIN_SIGN_IN_ICON_SVG}`;
-      adminSignInBtn.className = "btn admin-log-in-btn";
-      adminSignInBtn.setAttribute("aria-label", "لوحة دخول المشرفين");
-      // Opens the sign-in dialog directly — no full-page navigation.
-      adminSignInBtn.onclick = () => openSignInDialog();
-      actionsBar.appendChild(adminSignInBtn);
-    }
+    const createFolderBtn = document.createElement("button");
+    createFolderBtn.type = "button";
+    createFolderBtn.innerHTML = `<span>مجلد جديد</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+    createFolderBtn.className = "btn create-folder-btn mobile-only-flex";
+    createFolderBtn.setAttribute("aria-label", "إنشاء مجلد جديد");
+    createFolderBtn.onclick = () => {
+      createNewFolderOrCourse("folder");
+    };
+    actionsBar.appendChild(createFolderBtn);
 
     // Selection mode only makes sense when there's actually something to
     // select — hide the toggle entirely for an empty quiz list.
     if (userQuizzes.length > 0) {
       const toggleSelectionBtn = document.createElement("button");
       toggleSelectionBtn.type = "button";
-      toggleSelectionBtn.className = "btn selection-toggle-btn";
+      toggleSelectionBtn.className = "btn selection-toggle-btn mobile-only-flex";
       toggleSelectionBtn.innerHTML = `<span>تحديد الامتحانات</span> ${CHECK_SQUARE_ICON_SVG}`;
       toggleSelectionBtn.onclick = () => {
         const qzContainer = container.querySelector(".user-quizzes-container");
@@ -322,8 +324,51 @@ export function renderUserQuizzesView() {
     const quizzesContainer = document.createElement("div");
     quizzesContainer.className = "user-quizzes-container";
 
+    // Render Breadcrumbs if inside a folder
+    const pathStack = getCurrentFolderPathStack();
+    if (pathStack.length > 0) {
+      const breadcrumbs = document.createElement("div");
+      breadcrumbs.style.cssText = "grid-column: 1 / -1; display: flex; gap: 8px; margin-bottom: 10px; align-items: center;";
+      
+      const homeLink = document.createElement("a");
+      homeLink.href = "javascript:void(0)";
+      homeLink.textContent = "إمتحاناتك";
+      homeLink.onclick = () => navigateToFolder(null, null);
+      breadcrumbs.appendChild(homeLink);
+
+      pathStack.forEach((f, idx) => {
+        breadcrumbs.appendChild(document.createTextNode(" / "));
+        if (idx === pathStack.length - 1) {
+          const span = document.createElement("span");
+          span.textContent = f.title;
+          breadcrumbs.appendChild(span);
+        } else {
+          const a = document.createElement("a");
+          a.href = "javascript:void(0)";
+          a.textContent = f.title;
+          a.onclick = () => navigateToFolder(f.id, f.title);
+          breadcrumbs.appendChild(a);
+        }
+      });
+      quizzesContainer.appendChild(breadcrumbs);
+    }
+
+    // Attach Context Menu & Drop events to the container
+    quizzesContainer.addEventListener("contextmenu", (e) => {
+      if (e.target === quizzesContainer || e.target.closest(".user-quizzes-drop-zone")) {
+        showContextMenu(e, "background", null, null);
+      }
+    });
+
+    quizzesContainer.addEventListener("dragover", handleDragOver);
+    quizzesContainer.addEventListener("dragleave", handleDragLeave);
+    quizzesContainer.addEventListener("drop", (e) => handleDrop(e, currentFolderId));
+
+    // Filter userQuizzes based on current folder
+    const currentChildren = getChildren(userQuizzes, currentFolderId);
+
     // 3. Quiz cards (or empty state) go into quizzesContainer, not container
-    if (userQuizzes.length === 0) {
+    if (currentChildren.length === 0) {
       // Empty state
       const emptyState = document.createElement("div");
       emptyState.setAttribute("role", "status");
@@ -338,14 +383,27 @@ export function renderUserQuizzesView() {
       `;
       emptyState.innerHTML = `
         <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;" aria-hidden="true">📝</div>
-        <h3 style="margin-bottom: 10px;">لم تقم بإنشاء أي اختبارات حتى الآن</h3>
+        <h3 style="margin-bottom: 10px;">${currentFolderId ? "هذا المجلد فارغ" : "لم تقم بإنشاء أي اختبارات أو مجلدات حتى الآن"}</h3>
         <p style="color: var(--color-text-secondary);">انقر على الزر الذي في الأعلى للبدء</p>
       `;
       quizzesContainer.appendChild(emptyState);
     } else {
-      userQuizzes.forEach((quiz, index) => {
-        const quizCard = createUserQuizCard(quiz, index);
-        quizzesContainer.appendChild(quizCard);
+      currentChildren.forEach((item, index) => {
+        if (item.meta?.type === "folder" || item.meta?.type === "course") {
+          const folderCard = createFolderOrCourseCard(item);
+          quizzesContainer.appendChild(folderCard);
+        } else {
+          const quizCard = createUserQuizCard(item, index);
+          // Attach drag and context menu to quiz card
+          quizCard.draggable = true;
+          quizCard.addEventListener("dragstart", (e) => handleDragStart(e, item.id || item.meta?.id));
+          quizCard.addEventListener("dragend", handleDragEnd);
+          quizCard.addEventListener("contextmenu", (e) => {
+            e.stopPropagation();
+            showContextMenu(e, "item", item.id || item.meta?.id, item.meta?.title);
+          });
+          quizzesContainer.appendChild(quizCard);
+        }
       });
     }
 

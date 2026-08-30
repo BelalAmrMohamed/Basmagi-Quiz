@@ -302,6 +302,23 @@
                 <span class="menu-label">مشاركة السؤال</span>
             </button>
 
+            <button id="shortcutsBtn" class="menu-item action-btn desktop-only" onclick="window.toggleShortcutModal()"
+                data-tooltip="اختصارات لوحة المفاتيح">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M10 8h.01" />
+                    <path d="M12 12h.01" />
+                    <path d="M14 8h.01" />
+                    <path d="M16 12h.01" />
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <path d="M6 8h.01" />
+                    <path d="M8 12h.01" />
+                    <path d="M8 16h8" />
+                </svg>
+                <span class="menu-label">الإختصارات</span>
+            </button>
+
             <div class="menu-divider"></div>
 
             <!-- Theme controls — collapsible/accordion so it can be tucked
@@ -562,8 +579,9 @@
 
     <script type="module" src="./src/features/quiz/quiz.js"></script>
     <script type="module">
-        import { getShortcutModalHTML } from './src/features/quiz/keyboard-nav.js';
+        import { getShortcutModalHTML, toggleShortcutModal } from './src/features/quiz/keyboard-nav.js';
         document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
+        window.toggleShortcutModal = toggleShortcutModal;
     </script>
     <script type="module">
         import { initPWA } from "./src/shared/pwa-manager.js";

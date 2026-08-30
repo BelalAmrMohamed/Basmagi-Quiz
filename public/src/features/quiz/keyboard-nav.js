@@ -152,7 +152,7 @@ function moveOptionFocus(direction) {
  * Also keeps `style.display` in sync so inline flex styles render correctly
  * regardless of UA-stylesheet specificity for `[hidden]`.
  */
-function toggleShortcutModal() {
+export function toggleShortcutModal() {
   const modal = document.getElementById("shortcutModal");
   if (!modal) return;
 

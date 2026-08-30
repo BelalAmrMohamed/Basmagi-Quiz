@@ -505,7 +505,6 @@ export function createChatPanel(options = {}) {
   const dictationWaveEl = document.createElement("button");
   dictationWaveEl.type = "button";
   dictationWaveEl.className = "ai-agent-dictation-wave";
-  dictationWaveEl.hidden = true;
   dictationWaveEl.setAttribute("aria-label", "جارِ الاستماع — اضغط للإلغاء");
   dictationWaveEl.title = "جارِ الاستماع — اضغط للإلغاء";
   dictationWaveEl.innerHTML = `
@@ -619,7 +618,6 @@ export function createChatPanel(options = {}) {
     // moment dictation stops the transcribed text is already sitting in
     // the field ready to review/edit/send with no extra sync step.
     textarea.hidden = dictating;
-    dictationWaveEl.hidden = !dictating;
     textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
     inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
     // Send stays visible unconditionally WHILE dictating (see this

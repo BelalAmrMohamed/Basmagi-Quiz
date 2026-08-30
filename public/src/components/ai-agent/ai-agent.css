@@ -818,7 +818,6 @@
    passive status label: clicking it cancels dictation, same as the
    mic/cancel button. */
 .ai-agent-dictation-wave {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
