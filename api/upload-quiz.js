@@ -78,7 +78,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: e.message });
   }
 
-  if (quiz && quiz.meta) {
+  // validateQuizPayload requires meta.id to already be a valid 8-char
+  // base32 string, but the client (adminUpload.js's normalizeQuizSchema)
+  // never sends one — the real ID can only be computed once we know the
+  // final storage path (below), which depends on fields validated here.
+  // A placeholder that satisfies the format check is filled in first; the
+  // real, path-derived ID overwrites it further down before anything is
+  // persisted, so this value is never actually stored or returned.
+  if (quiz && quiz.meta && typeof quiz.meta.id !== "string") {
     quiz.meta.id = "AAAAAAAA";
   }
 

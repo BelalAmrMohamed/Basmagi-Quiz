@@ -23,6 +23,7 @@ import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
+import { loadFullQuizData } from "../home/quiz-data-loader.js";
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
 // import block and wrapped in try/catch. It previously ran as a bare
@@ -985,34 +986,59 @@ async function loadExamModule(config) {
     return examModuleCache.get(config.id);
   }
 
-  // Resolve the fetch URL.
-  // Paths starting with "/" are origin-relative (e.g. "/data/quizzes/...")
-  // Paths starting with "http" are already absolute (supabase DB quizzes).
-  // Legacy relative paths are resolved against import.meta.url.
   console.log(`[Quiz] Loading exam: ${config.id}`);
-  let quizUrl;
-  if (config.path.startsWith("/") || config.path.startsWith("http")) {
-    quizUrl = new URL("" + config.path, window.location.origin);
-  } else {
-    quizUrl = new URL(config.path, new URL(import.meta.url));
-  }
+
+  // Bug fix — DB-hosted quizzes crashed the quiz page immediately on load.
+  // quizManifest.js gives DB-uploaded quizzes a `path` shaped like
+  // "/api/quiz-data?path=...", a leftover URL contract from a serverless
+  // function that was removed to stay under Vercel Hobby's function cap
+  // (see quiz-data-loader.js and CHANGELOG). That path starts with "/" but
+  // does NOT end in ".json" (it ends in a query string), so it used to fall
+  // into the `else` branch below and get passed to a dynamic `import()`.
+  // Importing that URL as a JS module fails immediately (the endpoint no
+  // longer exists / returns HTML, not valid JS), throwing a module-parse
+  // error the instant the quiz page loads — with nothing useful logged
+  // server-side, since the browser never even completes a real request.
+  //
+  // Fix: reuse the same loader the homepage already uses for DB quizzes
+  // (home/quiz-data-loader.js), which detects this exact path shape and
+  // queries Supabase directly instead of trying to fetch/import it.
   let module;
-  if (config.path.toLowerCase().endsWith(".json")) {
-    const res = await fetch(quizUrl.href);
-    if (!res.ok) throw new Error(`Failed to load quiz: ${res.status}`);
-    const data = await res.json();
+  if (config.path.startsWith("/api/quiz-data?path=")) {
+    const data = await loadFullQuizData(config);
     module = {
       questions: data.questions || [],
       meta: data.meta || {},
       stats: data.stats || {},
     };
   } else {
-    const loaded = await import(quizUrl.href);
-    module = {
-      questions: loaded.questions || [],
-      meta: loaded.meta || {},
-      stats: loaded.stats || {},
-    };
+    // Resolve the fetch URL.
+    // Paths starting with "/" are origin-relative (e.g. "/data/quizzes/...")
+    // Paths starting with "http" are already absolute (supabase DB quizzes).
+    // Legacy relative paths are resolved against import.meta.url.
+    let quizUrl;
+    if (config.path.startsWith("/") || config.path.startsWith("http")) {
+      quizUrl = new URL("" + config.path, window.location.origin);
+    } else {
+      quizUrl = new URL(config.path, new URL(import.meta.url));
+    }
+    if (config.path.toLowerCase().endsWith(".json")) {
+      const res = await fetch(quizUrl.href);
+      if (!res.ok) throw new Error(`Failed to load quiz: ${res.status}`);
+      const data = await res.json();
+      module = {
+        questions: data.questions || [],
+        meta: data.meta || {},
+        stats: data.stats || {},
+      };
+    } else {
+      const loaded = await import(quizUrl.href);
+      module = {
+        questions: loaded.questions || [],
+        meta: loaded.meta || {},
+        stats: loaded.stats || {},
+      };
+    }
   }
 
   // Cache it
