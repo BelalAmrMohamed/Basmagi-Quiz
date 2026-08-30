@@ -31,10 +31,17 @@ function formatRelativeTime(timestamp) {
  *   called when the user picks a conversation to reopen; the caller (see
  *   ai-agent.js) is responsible for switching to the Chat tab and calling
  *   chatPanel.loadConversation(conversation).
+ * @param {() => string} [options.getActiveConversationId] - returns the
+ *   currently-open chat panel's conversationId (see
+ *   ai-agent-chat.js's panel.getConversationId), so the matching entry
+ *   in this list can be marked with an "active" style. Read fresh on
+ *   every refresh() rather than passed once, since the active
+ *   conversation can change (new chat, branch, reopen) without this
+ *   panel itself re-rendering on its own.
  * @returns {HTMLElement & {refresh: () => Promise<void>}}
  */
 export function createHistoryPanel(options = {}) {
-  const { pageKey = "default", onSelect } = options;
+  const { pageKey = "default", onSelect, getActiveConversationId } = options;
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-history-panel";
@@ -59,11 +66,22 @@ export function createHistoryPanel(options = {}) {
       return;
     }
 
+    const activeId =
+      typeof getActiveConversationId === "function" ? getActiveConversationId() : null;
+
     list.innerHTML = "";
     conversations.forEach((conv) => {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "ai-agent-history-item";
+      // Highlights whichever saved conversation the Chat tab currently
+      // has open, so switching to السجل shows at a glance which thread
+      // is live — mirrors how the desktop sidebar's recents list does
+      // the same (see ai-agent.js's refreshSidebarRecents).
+      if (activeId && conv.id === activeId) {
+        item.classList.add("ai-agent-history-item--active");
+        item.setAttribute("aria-current", "true");
+      }
 
       const textCol = document.createElement("div");
       textCol.className = "ai-agent-history-item-text";

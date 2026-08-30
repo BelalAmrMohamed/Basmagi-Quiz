@@ -504,6 +504,28 @@
   color: var(--color-error);
   border: 1px solid var(--color-error);
   font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-agent-msg-error-text {
+  flex: 1;
+}
+
+/* Repeat-count badge appended to an error bubble instead of stacking a
+   duplicate bubble for the same error message (see appendError's dedup
+   in ai-agent-chat.js) — e.g. mashing the dictation button on a browser
+   that blocks it shows one bubble with a growing "×N" rather than the
+   same Arabic error text flooding the chat on every click. */
+.ai-agent-msg-error-count {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-error);
+  color: var(--color-surface, #fff);
 }
 
 .ai-agent-msg--tool-result {
@@ -699,6 +721,15 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* The .ai-agent-send-btn `display: inline-flex` above wins over the
+   browser's default `[hidden] { display: none }` UA rule (same
+   specificity, later in the cascade) — without this override, setting
+   sendBtn.hidden = true from updateSendBtnVisibility() (ai-agent-chat.js)
+   would have no visible effect at all. */
+.ai-agent-send-btn[hidden] {
+  display: none;
+}
+
 .ai-agent-send-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
@@ -780,6 +811,93 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
+/* Replaces the textarea + attach button in place while dictating (see
+   setDictationUiState / dictationWaveEl in ai-agent-chat.js) — takes
+   over the textarea's flex:1 slot in the row so the layout doesn't
+   jump, and reads as an actively-listening control rather than a
+   passive status label: clicking it cancels dictation, same as the
+   mic/cancel button. */
+.ai-agent-dictation-wave {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 40px;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-agent-dictation-wave:hover {
+  background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+}
+
+.ai-agent-dictation-wave-bars {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.ai-agent-dictation-wave-bars span {
+  display: block;
+  width: 3px;
+  height: 100%;
+  border-radius: 3px;
+  background: currentColor;
+  animation: ai-agent-wave-bounce 1s ease-in-out infinite;
+}
+
+/* Staggered delays + slightly different durations per bar so the five
+   bars don't move in perfect unison — reads as an actual live audio
+   waveform reacting to sound rather than a single mechanical pulse. */
+.ai-agent-dictation-wave-bars span:nth-child(1) {
+  animation-delay: -0.9s;
+  animation-duration: 1.1s;
+}
+.ai-agent-dictation-wave-bars span:nth-child(2) {
+  animation-delay: -0.6s;
+  animation-duration: 0.9s;
+}
+.ai-agent-dictation-wave-bars span:nth-child(3) {
+  animation-delay: -0.3s;
+  animation-duration: 1.2s;
+}
+.ai-agent-dictation-wave-bars span:nth-child(4) {
+  animation-delay: -0.75s;
+  animation-duration: 0.95s;
+}
+.ai-agent-dictation-wave-bars span:nth-child(5) {
+  animation-delay: -0.45s;
+  animation-duration: 1.05s;
+}
+
+@keyframes ai-agent-wave-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-agent-dictation-wave-bars span {
+    animation: none;
+    transform: scaleY(0.7);
+  }
+}
+
 .ai-agent-firefox-warning {
   margin: 0 10px;
   padding: 6px 10px;
@@ -830,6 +948,20 @@
 .ai-agent-history-item:hover {
   border-color: var(--color-primary);
   background: var(--color-background-secondary);
+}
+
+/* Marks the entry matching the Chat tab's currently-open conversation
+   (see ai-agent-history.js's getActiveConversationId / ai-agent.js's
+   refreshHistoryHighlights). A solid border (not just the hover tint,
+   which would be ambiguous with actual :hover) so it reads at a glance
+   even without the pointer over it. */
+.ai-agent-history-item--active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.ai-agent-history-item--active:hover {
+  background: var(--color-primary-light);
 }
 
 .ai-agent-history-item-text {
@@ -1253,6 +1385,19 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-sidebar-recent-item:hover {
   background: var(--color-background);
   color: var(--color-text-primary);
+}
+
+/* Same active-conversation marker as .ai-agent-history-item--active,
+   scaled down for this compact sidebar list. */
+.ai-agent-sidebar-recent-item--active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.ai-agent-sidebar-recent-item--active:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .ai-agent-sidebar-recents-empty {

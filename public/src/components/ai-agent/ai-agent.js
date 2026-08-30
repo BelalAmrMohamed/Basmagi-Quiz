@@ -121,9 +121,23 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // reference, since that reference itself changes on a branch.
   const chatPanelSlot = {
     current:
-      existingChatPanel || createChatPanel({ ...options, onBranchConversation: handleBranch }),
+      existingChatPanel ||
+      createChatPanel({
+        ...options,
+        onBranchConversation: handleBranch,
+        onHistoryChanged: refreshHistoryHighlights,
+      }),
   };
   chatPanelSlot.current.classList.add("active");
+
+  // See getOrCreateChatPanel's own onBranchConversation-forwarding
+  // comment below: a REUSED existingChatPanel was built on some earlier
+  // modal open, whose onHistoryChanged (if any) closes over that open's
+  // now-stale historyPanel/refreshSidebarRecents. Point the same
+  // per-pageKey ref this widget forwards onBranchConversation through at
+  // THIS open's refreshHistoryHighlights too, so a save from a reused
+  // panel still reaches the currently-open modal's history/sidebar.
+  if (branchHandlerRef) branchHandlerRef.onHistoryChanged = refreshHistoryHighlights;
 
   const historyPanel = createHistoryPanel({
     pageKey,
@@ -135,6 +149,13 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       chatPanelSlot.current.loadConversation(conversation);
       activateTab(chatTabBtn, chatPanelSlot.current);
     },
+    // Always reads chatPanelSlot.current (not a fixed panel reference)
+    // so this stays correct across handleBranch swapping in a new panel
+    // instance — see the chatPanelSlot doc comment above.
+    getActiveConversationId: () =>
+      typeof chatPanelSlot.current.getConversationId === "function"
+        ? chatPanelSlot.current.getConversationId()
+        : null,
   });
 
   const settingsPanel = createSettingsPanel({
@@ -157,6 +178,21 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   body.appendChild(historyPanel);
   body.appendChild(settingsPanel);
 
+  // Re-renders both places a saved conversation can show up (the full
+  // History tab list and the desktop sidebar's short recents list) so
+  // their "currently active" highlight (see ai-agent-history.js's
+  // getActiveConversationId / refreshSidebarRecents below) follows
+  // whatever the Chat tab has open right now. Passed as chat panels'
+  // onHistoryChanged — fired after every save, new-chat, and
+  // loadConversation (see ai-agent-chat.js) — rather than only on tab
+  // clicks, so the highlight in an already-open History tab (desktop
+  // layout keeps the sidebar visible alongside it) doesn't go stale
+  // mid-conversation.
+  function refreshHistoryHighlights() {
+    historyPanel.refresh();
+    refreshSidebarRecents();
+  }
+
   function activateTab(tabBtn, panel) {
     [chatTabBtn, historyTabBtn, settingsTabBtn].forEach((b) => b.classList.remove("active"));
     [chatPanelSlot.current, historyPanel, settingsPanel].forEach((p) => {
@@ -173,8 +209,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   chatTabBtn.addEventListener("click", () => activateTab(chatTabBtn, chatPanelSlot.current));
   historyTabBtn.addEventListener("click", () => {
     activateTab(historyTabBtn, historyPanel);
-    historyPanel.refresh();
-    refreshSidebarRecents();
+    refreshHistoryHighlights();
   });
   settingsTabBtn.addEventListener("click", () => activateTab(settingsTabBtn, settingsPanel));
 
@@ -192,7 +227,11 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
    * @param {{messages: Array<object>, createdAt: number}} branch
    */
   function handleBranch(branch) {
-    const newPanel = createChatPanel({ ...options, onBranchConversation: handleBranch });
+    const newPanel = createChatPanel({
+      ...options,
+      onBranchConversation: handleBranch,
+      onHistoryChanged: refreshHistoryHighlights,
+    });
     body.replaceChild(newPanel, chatPanelSlot.current);
     chatPanelSlot.current = newPanel;
     chatPanelSlot.current.classList.add("active");
@@ -200,7 +239,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     newPanel.loadBranch(branch);
     activateTab(chatTabBtn, newPanel);
     relocateModelBar();
-    refreshSidebarRecents();
+    refreshHistoryHighlights();
   }
 
   // See buildWidgetContent's own onBranchConversation doc above: if this
@@ -305,11 +344,23 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       sidebarRecentsList.innerHTML = "";
       return;
     }
+    const activeId =
+      typeof chatPanelSlot.current.getConversationId === "function"
+        ? chatPanelSlot.current.getConversationId()
+        : null;
+
     sidebarRecentsList.innerHTML = "";
     conversations.slice(0, 5).forEach((conv) => {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "ai-agent-sidebar-recent-item";
+      // Mirrors the History tab's own active highlight (see
+      // ai-agent-history.js) — same underlying data, so both lists
+      // should agree on which conversation is currently open.
+      if (activeId && conv.id === activeId) {
+        item.classList.add("ai-agent-sidebar-recent-item--active");
+        item.setAttribute("aria-current", "true");
+      }
       item.textContent = conv.title;
       item.title = conv.title;
       item.addEventListener("click", () => {
@@ -383,6 +434,13 @@ function getOrCreateChatPanel(options) {
     chatPanel = createChatPanel({
       ...options,
       onBranchConversation: (branch) => ref.current?.(branch),
+      // Same forwarding trick as onBranchConversation just above, for the
+      // History tab/sidebar active-highlight refresh (see
+      // buildWidgetContent's own comment on branchHandlerRef.onHistoryChanged):
+      // this panel is cached and can outlive the modal instance that
+      // created it, so it must always call whichever modal is CURRENTLY
+      // open's refresh function, not one captured at creation time.
+      onHistoryChanged: () => ref.onHistoryChanged?.(),
     });
     chatPanelsByPageKey.set(key, chatPanel);
   }

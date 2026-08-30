@@ -348,7 +348,15 @@ export function createChatPanel(options = {}) {
       attachmentChipEl.remove();
       attachmentChipEl = null;
     }
-    if (!pendingAttachment) return;
+    if (!pendingAttachment) {
+      // Clearing the attachment can drop the last reason Send was
+      // visible (an attachment alone, with no typed text, is still
+      // something to send — see updateSendBtnVisibility's own
+      // pendingAttachment check) — re-sync so removing it can hide Send
+      // again when the text field is also empty.
+      if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
+      return;
+    }
 
     attachmentChipEl = document.createElement("div");
     attachmentChipEl.className = "ai-agent-attachment-chip";
@@ -367,6 +375,13 @@ export function createChatPanel(options = {}) {
     attachmentChipEl.appendChild(nameSpan);
     attachmentChipEl.appendChild(removeBtn);
     panel.insertBefore(attachmentChipEl, inputRow);
+    // Guarded: this module's first renderAttachmentChip() call happens
+    // during initial panel construction, before updateSendBtnVisibility
+    // is defined further down. Both are hoisted function declarations
+    // (order-independent by the time either actually runs in response
+    // to a user action), but the guard keeps this call site correct even
+    // for that very first call.
+    if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
   }
 
   const inputRow = document.createElement("div");
@@ -479,6 +494,31 @@ export function createChatPanel(options = {}) {
   // LTR even for an Arabic-only message.
   textarea.dir = "auto";
 
+  // Replaces the textarea + attach button (both hidden while dictating —
+  // see setDictationUiState) with a live wave/mic animation, so the row
+  // reads as "actively listening" rather than a text field that happens
+  // to be auto-filling itself. Clicking it behaves exactly like the
+  // mic/cancel button (see onMicBtnClick below) — stops dictation and
+  // leaves the transcribed text for review — so there are two equally
+  // reachable ways to cancel (this element, and the still-visible
+  // cancel-shaped mic button) rather than only the small icon button.
+  const dictationWaveEl = document.createElement("button");
+  dictationWaveEl.type = "button";
+  dictationWaveEl.className = "ai-agent-dictation-wave";
+  dictationWaveEl.hidden = true;
+  dictationWaveEl.setAttribute("aria-label", "جارِ الاستماع — اضغط للإلغاء");
+  dictationWaveEl.title = "جارِ الاستماع — اضغط للإلغاء";
+  dictationWaveEl.innerHTML = `
+    <span class="ai-agent-dictation-wave-bars" aria-hidden="true">
+      <span></span><span></span><span></span><span></span><span></span>
+    </span>
+    <span class="ai-agent-dictation-wave-label">جارِ الاستماع...</span>
+  `;
+  dictationWaveEl.addEventListener("click", () => {
+    stopRecognition();
+    textarea.focus();
+  });
+
   // ── Voice dictation (Task 5, Web Speech API) ──
   // Framework-free, native SpeechRecognition — no external library. Built
   // unconditionally (not gated behind enableFileUpload or any other
@@ -572,8 +612,22 @@ export function createChatPanel(options = {}) {
     }
     if (attachBtn) attachBtn.hidden = dictating;
     if (suggestionsEl) suggestionsEl.hidden = dictating;
+    // The textarea itself is replaced (not just styled) by the wave
+    // animation while dictating — it stays in the DOM and keeps
+    // receiving the live-transcribed value under the hood (see
+    // recognition.onresult below), just visually swapped out, so the
+    // moment dictation stops the transcribed text is already sitting in
+    // the field ready to review/edit/send with no extra sync step.
+    textarea.hidden = dictating;
+    dictationWaveEl.hidden = !dictating;
     textarea.classList.toggle("ai-agent-chat-input--dictating", dictating);
     inputRow.classList.toggle("ai-agent-chat-input-row--dictating", dictating);
+    // Send stays visible unconditionally WHILE dictating (see this
+    // function's own doc comment above), but the moment dictation ends
+    // the normal empty-input rule should apply again — re-check here
+    // rather than relying on some later `input` event that may never
+    // fire if dictation produced no text at all.
+    if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
   }
 
   /**
@@ -736,16 +790,21 @@ export function createChatPanel(options = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>';
 
   // Assemble the input row now that every optional piece (attach button,
-  // mic/cancel button) has been conditionally built above. DOM order:
-  // attach, textarea, mic/cancel, send — send is deliberately the LAST
-  // child so it's the far-right control in this RTL row (first child
-  // sits visually on the right in RTL flex; see .ai-agent-chat-input-row's
-  // own comment in the CSS), matching "Send Button Position: move the
-  // remaining send-btn to the far-right end" from the request. Only the
-  // send button (never attach/mic) stays visible during dictation — see
-  // setDictationUiState, which hides attachBtn but never touches sendBtn.
+  // mic/cancel button, dictation wave) has been conditionally built
+  // above. DOM order: attach, textarea, wave, mic/cancel, send — send is
+  // deliberately the LAST child so it's the far-right control in this
+  // RTL row (first child sits visually on the right in RTL flex; see
+  // .ai-agent-chat-input-row's own comment in the CSS), matching "Send
+  // Button Position: move the remaining send-btn to the far-right end"
+  // from the request. The wave sits in the textarea's flex slot (see
+  // .ai-agent-dictation-wave's flex:1 in the CSS) so it visually replaces
+  // it in place rather than appearing as an extra element squeezed in.
+  // Only the send button (never attach/mic/textarea) stays visible during
+  // dictation — see setDictationUiState, which hides attachBtn/textarea
+  // but never touches sendBtn.
   if (attachBtn) inputRow.appendChild(attachBtn);
   inputRow.appendChild(textarea);
+  inputRow.appendChild(dictationWaveEl);
   if (micBtn) inputRow.appendChild(micBtn);
   inputRow.appendChild(sendBtn);
   if (fileInput) inputRow.appendChild(fileInput);
@@ -790,6 +849,7 @@ export function createChatPanel(options = {}) {
     textarea.disabled = !available;
     sendBtn.disabled = !available;
     if (attachBtn) attachBtn.disabled = !available;
+    if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
   }
 
   /**
@@ -1063,7 +1123,68 @@ export function createChatPanel(options = {}) {
     }
     messagesEl.appendChild(wrap);
     messagesEl.scrollTop = messagesEl.scrollHeight;
+    resetErrorDedup();
     return el;
+  }
+
+  // Tracks the most recently appended error bubble and its exact message,
+  // so a repeat of the SAME error (e.g. mashing the dictation button on a
+  // browser that blocks it — see the Brave "network" error above) updates
+  // a small "×N" counter on that one bubble instead of stacking a fresh
+  // identical bubble into the chat every time. Reset whenever a
+  // DIFFERENT error (or any non-error message) interrupts the run, so the
+  // counter only ever reflects a truly unbroken repeat, not "this error
+  // happened N times total across the whole conversation".
+  let lastErrorEl = null;
+  let lastErrorMessage = null;
+  let lastErrorCount = 0;
+
+  function appendError(message) {
+    if (lastErrorEl && lastErrorMessage === message && lastErrorEl.isConnected) {
+      lastErrorCount += 1;
+      renderErrorCount();
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return;
+    }
+    const el = document.createElement("div");
+    el.className = "ai-agent-msg ai-agent-msg--error";
+    const textEl = document.createElement("span");
+    textEl.className = "ai-agent-msg-error-text";
+    textEl.textContent = message;
+    el.appendChild(textEl);
+    messagesEl.appendChild(el);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    lastErrorEl = el;
+    lastErrorMessage = message;
+    lastErrorCount = 1;
+  }
+
+  function renderErrorCount() {
+    if (!lastErrorEl) return;
+    let countEl = lastErrorEl.querySelector(".ai-agent-msg-error-count");
+    if (!countEl) {
+      countEl = document.createElement("span");
+      countEl.className = "ai-agent-msg-error-count";
+      lastErrorEl.appendChild(countEl);
+    }
+    // "×N" rather than "happened N times" — short enough to sit inline
+    // next to the message without pushing it onto its own line, and the
+    // multiplication sign reads unambiguously as a repeat count in both
+    // Arabic and English UI conventions.
+    countEl.textContent = `×${lastErrorCount}`;
+  }
+
+  // Any OTHER kind of message breaks the "same error repeated back to
+  // back" streak that appendError's dedup relies on — the next call to
+  // appendError should start a fresh bubble/count, not silently merge
+  // into a now-stale one several turns back. appendMessage and
+  // appendToolResultMessage both funnel through here so nothing has to
+  // remember to call this explicitly at each call site.
+  function resetErrorDedup() {
+    lastErrorEl = null;
+    lastErrorMessage = null;
+    lastErrorCount = 0;
   }
 
   function appendToolResultMessage(text) {
@@ -1075,14 +1196,7 @@ export function createChatPanel(options = {}) {
     }
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function appendError(message) {
-    const el = document.createElement("div");
-    el.className = "ai-agent-msg ai-agent-msg--error";
-    el.textContent = message;
-    messagesEl.appendChild(el);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    resetErrorDedup();
   }
 
   function showTyping() {
@@ -1339,9 +1453,32 @@ export function createChatPanel(options = {}) {
       sendMessage();
     }
   });
+
+  /**
+   * Hides the Send button whenever the input is empty (nothing to send)
+   * and shows it again the moment there's text — except while dictating,
+   * where it must stay visible/available even before any speech has
+   * produced text yet (see setDictationUiState's own comment: Send is
+   * still how a dictated message gets submitted, so hiding it the
+   * instant the mic opens on an empty field would remove the only way to
+   * send once something IS dictated). Also skipped while the whole input
+   * is disabled (see updateAvailabilityGate) — that state already
+   * communicates "can't send" on its own; layering a hidden Send button
+   * on top of a disabled textarea would just look broken rather than
+   * intentional.
+   */
+  function updateSendBtnVisibility() {
+    if (isDictating || textarea.disabled) {
+      sendBtn.hidden = false;
+      return;
+    }
+    sendBtn.hidden = textarea.value.trim().length === 0 && !pendingAttachment;
+  }
+
   textarea.addEventListener("input", () => {
     textarea.style.height = "auto";
     textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    updateSendBtnVisibility();
     // No manual textarea.style.direction here on purpose. Setting one
     // direction for the *whole field* based on the first strong character
     // is exactly the bug being fixed — a line of Arabic followed by a line
@@ -1352,6 +1489,7 @@ export function createChatPanel(options = {}) {
     // correctly since we're not fighting it with JS (see the same
     // rationale already documented for INPUT/TEXTAREA in markdown.js).
   });
+  updateSendBtnVisibility();
 
   /**
    * Loads a past conversation (from ai-agent-history-idb.js) into this
@@ -1361,6 +1499,20 @@ export function createChatPanel(options = {}) {
    * (ai-agent-history.js) when the user picks a saved conversation.
    * @param {import("./ai-agent-history-idb.js").Conversation} conversation
    */
+  /**
+   * Exposes the panel's current conversationId so callers (the History
+   * tab and the desktop sidebar's recents list — see ai-agent.js and
+   * ai-agent-history.js) can tell which saved conversation, if any, this
+   * panel is currently showing and highlight that entry as active.
+   * Always current: reads the same `conversationId` binding that
+   * loadConversation/startNewConversation/loadBranch reassign in place,
+   * rather than a value captured once at panel-creation time.
+   * @returns {string}
+   */
+  panel.getConversationId = function getConversationId() {
+    return conversationId;
+  };
+
   panel.loadConversation = function loadConversation(conversation) {
     removeSuggestions();
     pendingAttachment = null;
@@ -1395,6 +1547,10 @@ export function createChatPanel(options = {}) {
       });
     }
     updateNewChatVisibility();
+    // Tells the History tab / sidebar recents which entry is now active
+    // (see getConversationId above) so they can re-render their
+    // highlight to follow the freshly-loaded conversation.
+    if (typeof onHistoryChanged === "function") onHistoryChanged();
   };
 
   /**
@@ -1418,6 +1574,9 @@ export function createChatPanel(options = {}) {
     renderEmptyState();
     renderSuggestions();
     updateNewChatVisibility();
+    // A new (unsaved) conversationId means no history entry should show
+    // as active anymore — refresh the highlight to reflect that.
+    if (typeof onHistoryChanged === "function") onHistoryChanged();
   };
 
   updateNewChatVisibility();
