@@ -95,6 +95,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
+    <!-- Supabase JS SDK — required so quiz.js (getManifest()/loadExamModule(),
+         via ensureSharedSupabaseClient()) can look up DB-hosted quizzes.
+         Without this, window.supabase is undefined, ensureSharedSupabaseClient()
+         resolves to null, fetchDbManifest() throws, and every DB-hosted quiz
+         silently vanishes from the manifest — "Exam not found!" for any /q/:id
+         that lives only in Supabase, even though the quiz genuinely exists.
+         Must load before quiz.js. Mirrors index.html's same script tag. -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <!-- Theme Controller - Load once as module -->
     <script type="module" src="src/shared/theme-controller.js"></script>
 
@@ -553,7 +562,7 @@
 
     <script type="module" src="./src/features/quiz/quiz.js"></script>
     <script type="module">
-        import { getShortcutModalHTML } from './src/features/quiz/quiz.js';
+        import { getShortcutModalHTML } from './src/features/quiz/keyboard-nav.js';
         document.body.insertAdjacentHTML('beforeend', getShortcutModalHTML());
     </script>
     <script type="module">
