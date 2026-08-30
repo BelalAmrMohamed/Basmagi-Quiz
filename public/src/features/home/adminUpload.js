@@ -778,7 +778,6 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
         term:      TRACKS_WITH_YEARTERM.has(educationType) ? term    || undefined : undefined,
         subject,
         subfolder: subfolder || undefined,
-        author:    author    || undefined,
         quiz: item.quiz,
       });
       setItemState(item, "done");
