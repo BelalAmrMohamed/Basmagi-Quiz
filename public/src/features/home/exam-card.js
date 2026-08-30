@@ -141,7 +141,7 @@ export function createExamCard(exam) {
       questionCount: exam.questionCount || null,
     };
 
-    // Same shared "اختر صيغة التحميل" modal used on the homepage's "My
+    // Same shared download quiz modal used on the homepage's "My
     // Quizzes" popup and the create-quiz page (see showDownloadModal() in
     // components/download-quiz-modal/download-quiz-modal.js) — identical
     // markup/styling/behavior across all three download entry points.

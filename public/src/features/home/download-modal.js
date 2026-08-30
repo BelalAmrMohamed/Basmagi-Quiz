@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/download-modal.js
-// DOWNLOAD MODAL — the "اختر صيغة التحميل" format-picker popup for
+// DOWNLOAD MODAL — the format-picker popup for
 // user-made quizzes. The manifest-exam equivalent lives as a closure
 // inside createExamCard() (exam-card.js) since it captures per-card state.
 //

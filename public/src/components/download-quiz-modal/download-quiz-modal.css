@@ -1,6 +1,6 @@
 /* ============================================================================
    public/src/components/download-quiz-modal/download-quiz-modal.css
-   Shared styles for the "اختر صيغة التحميل" (Download Quiz) format-picker
+   Shared styles for the Download Quiz format-picker
    popup across all pages. Styles the markup built by showDownloadModal() in
    download-quiz-modal.js. Relies on the page's own generic .modal-overlay /
    .modal-card / .modal-header / .close-btn primitives for the outer shell.
@@ -20,14 +20,6 @@
 .dl-modal-card .modal-header {
   padding: 20px 24px 16px;
   border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.dl-subtitle {
-  padding: 0 24px;
-  margin: 12px 0 4px;
-  color: var(--color-text-secondary);
-  font-size: 0.88rem;
   flex-shrink: 0;
 }
 
@@ -209,9 +201,5 @@
 
   .dl-modal-card .modal-header {
     padding: 16px 16px 12px;
-  }
-
-  .dl-subtitle {
-    padding: 0 16px;
   }
 }

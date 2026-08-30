@@ -1,9 +1,8 @@
 // ============================================================================
 // public/src/components/download-quiz-modal/download-quiz-modal.js
-// DOWNLOAD QUIZ MODAL — the shared "اختر صيغة التحميل" format-picker popup.
+// DOWNLOAD QUIZ MODAL — the shared Download Quiz format-picker popup.
 // ============================================================================
-// Extracted out of features/home/export-helpers.js so the same modal can be
-// used from more than the two original call sites (create-quiz page, and
+// can be used from more than the two original call sites (create-quiz page, and
 // the home page's "My Quizzes" / manifest-exam download buttons) without
 // duplicating markup/styling. See quiz-info-modal/ for the sibling
 // component this mirrors the structure of.
@@ -249,7 +248,7 @@ export async function withDownloadLoading(buttonEl, asyncFn) {
 }
 
 // ============================================================================
-// SHARED DOWNLOAD MODAL — the "اختر صيغة التحميل" format-picker popup.
+// SHARED DOWNLOAD MODAL — the format-picker popup.
 // ============================================================================
 
 const DOWNLOAD_FORMAT_OPTIONS = [
@@ -409,10 +408,6 @@ export function showDownloadModal({
     <button type="button" class="close-btn dl-close" aria-label="إغلاق"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
   `;
 
-  const subtitle = document.createElement("p");
-  subtitle.className = "dl-subtitle";
-  subtitle.textContent = "اختر صيغة التحميل";
-
   const grid = document.createElement("div");
   grid.className = "mode-grid";
   grid.setAttribute("role", "group");
@@ -475,7 +470,6 @@ export function showDownloadModal({
   }
 
   modalCard.appendChild(header);
-  modalCard.appendChild(subtitle);
   modalCard.appendChild(grid);
   modal.appendChild(modalCard);
 
