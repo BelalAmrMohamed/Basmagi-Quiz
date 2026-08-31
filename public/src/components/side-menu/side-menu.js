@@ -1074,7 +1074,10 @@ import { validateUsername } from "../../shared/user-name-validation.js";
 
 window.changeUsername = async function (message = "أدخل الإسم الجديد") {
   try {
-    if (typeof window.__closeMobileSidebar === "function") {
+    if (
+      window.innerWidth <= 768 &&
+      typeof window.__closeMobileSidebar === "function"
+    ) {
       window.__closeMobileSidebar();
     }
     if (typeof window.__closeProfileDropdown === "function") {
@@ -1169,7 +1172,11 @@ document.addEventListener("DOMContentLoaded", () => {
     changeUsernameBtn.parentNode.insertBefore(mobileReportsLink, changeUsernameBtn);
 
     mobileAdminBtn.addEventListener("click", () => {
-      if (typeof window.__closeMobileSidebar === "function") {
+      // Same as changeUsername: only force-close on mobile bottom-sheet mode.
+      if (
+        window.innerWidth <= 768 &&
+        typeof window.__closeMobileSidebar === "function"
+      ) {
         window.__closeMobileSidebar();
       }
       const roleInfo = getAdminRoleInfo();
