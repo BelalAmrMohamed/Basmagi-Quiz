@@ -2380,7 +2380,8 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .bookmark-btn,
-.flag-btn {
+.flag-btn,
+.report-question-btn {
   background: none;
   border: 2px solid var(--color-border);
   font-size: 1.5rem;
@@ -2395,8 +2396,22 @@ body.is-resizing-media .media-container.resizable-media {
 }
 
 .bookmark-btn:hover,
-.flag-btn:hover {
+.flag-btn:hover,
+.report-question-btn:hover {
   transform: scale(1.1);
+}
+
+.report-question-btn {
+  color: var(--color-text-muted, #888);
+}
+.report-question-btn:hover {
+  color: #e07a1f;
+  border-color: #e07a1f;
+}
+.report-question-btn.active {
+  color: #e07a1f;
+  border-color: #e07a1f;
+  background: rgba(224, 122, 31, 0.1);
 }
 
 /* ─── 9. Free Text & Essay Workspace ────────────────────────────────────── */

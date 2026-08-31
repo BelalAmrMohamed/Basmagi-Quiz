@@ -163,9 +163,12 @@ export default async function handler(req, res) {
 
   // ── 3. Inject quiz ID meta island (always — quiz.js reads this) ───────────
   // Inserted right before </head> so it is available synchronously.
+  const dbIdMeta = meta?.dbId
+    ? `  <meta name="quiz:db_id" content="${escapeHtml(meta.dbId)}">\n`
+    : "";
   html = html.replace(
     "</head>",
-    `  <meta name="quiz:id" content="${escapeHtml(quizId)}">\n</head>`,
+    `  <meta name="quiz:id" content="${escapeHtml(quizId)}">\n${dbIdMeta}</head>`,
   );
 
   // ── 4. Inject OG / title tags if we have metadata ────────────────────────
@@ -241,8 +244,8 @@ async function fetchQuizMeta(quizId) {
   // The quiz ID is stored inside the JSONB column: data->meta->>'id'
   const { data, error } = await supabase
     .from("quizzes")
-    .select("data, title")
-    .filter("data->meta->>id", "eq", quizId)
+    .select("id, data, title")
+    .filter("data->meta->>'id'", "eq", quizId)
     .limit(1)
     .maybeSingle();
 
@@ -257,6 +260,7 @@ async function fetchQuizMeta(quizId) {
   const quizStats = data.data?.stats || {};
 
   return {
+    dbId: data.id || null, // Supabase row UUID — used by quiz.js to gate report button
     title: quizMeta.title || data.title || quizId,
     description: quizMeta.description || null,
     questionCount: quizStats.questionCount != null ? quizStats.questionCount : null,

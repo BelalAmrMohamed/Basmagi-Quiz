@@ -24,6 +24,7 @@ import {
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
+import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
 // import block and wrapped in try/catch. It previously ran as a bare
@@ -63,6 +64,9 @@ let viewMode = "grid";
 let autoSubmitTimeout = null;
 let quizStyle = "pagination"; // "pagination" | "vertical"
 let quizBaseUrl = null; // directory URL of the loaded quiz JSON file
+// Supabase row UUID — only set for DB-backed quizzes (via quiz:db_id meta tag).
+// null for local/manifest-only quizzes. Report button is gated on this.
+let quizDbId = null;
 
 // === Performance: Debounce helpers ===
 let renderNavDebounce = null;
@@ -1083,6 +1087,11 @@ async function init() {
   }
   examId = rawId !== null ? decodeURIComponent(rawId) : null;
 
+  // Read the Supabase row UUID injected by render-quiz.js for DB-backed quizzes.
+  // This is null for local/manifest-only quizzes — report button is gated on it.
+  const dbIdMeta = document.querySelector('meta[name="quiz:db_id"]');
+  quizDbId = dbIdMeta ? dbIdMeta.getAttribute("content") : null;
+
   // ── Quiz Mode ────────────────────────────────────────────────────────────
   // Mode is intentionally NOT in the URL (links stay mode-agnostic).
   // Each device/user gets its own mode from their profile / localStorage.
@@ -1417,6 +1426,24 @@ async function init() {
       if (idx === currentIdx) {
         renderQuestion();
       }
+    };
+
+    window.reportQuestion = (idx) => {
+      if (!quizDbId) return; // Should never be called without a DB quiz
+      const q = questions[idx];
+      openReportModal({
+        quizId: quizDbId,
+        questionIndex: idx,
+        questionText: q?.question || q?.text || `سؤال رقم ${idx + 1}`,
+        onSuccess: () => {
+          // Re-render to update button state (active class)
+          if (quizStyle === "vertical") {
+            renderAllQuestionsVertical();
+          } else {
+            renderQuestion();
+          }
+        },
+      });
     };
 
     window.shareQuestion = async () => {
@@ -1857,10 +1884,16 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     }
   }
 
+  const alreadyReported = quizDbId ? isQuestionReported(quizDbId, idx) : false;
+  const reportBtnHtml = quizDbId
+    ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>`
+    : "";
+
   const actionBtns = `
     <div class="question-actions">
       <button class="bookmark-btn ${isBookmarked ? "active" : ""}" onclick="window.toggleQuestionBookmark(${idx})" title="${isBookmarked ? "إزالة السؤال من الأسئلة المحفوظة" : "حفظ السؤال في الملف الشخصي (profile)"}">${isBookmarked ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-off-icon lucide-star-off"><path d="m10.344 4.688 1.181-2.393a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.237 3.152"/><path d="m17.945 17.945.43 2.505a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a8 8 0 0 0 .4-.099"/><path d="m2 2 20 20"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-icon lucide-star"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg>`}</button>
       <button class="flag-btn ${isFlagged ? "active" : ""}" onclick="window.toggleQuestionFlag(${idx})" title="${isFlagged ? "إزالة العلامة" : "إضافة علامة للمراجعة"}">${isFlagged ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>`}</button>
+      ${reportBtnHtml}
     </div>
   `;
 
@@ -2182,6 +2215,7 @@ function buildQuestionBodyHTML(q, idx) {
               title="${isFlagged ? "إزالة العلامة" : "إضافة علامة للمراجعة"}">
         ${isFlagged ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>`}
       </button>
+      ${quizDbId ? `<button class="report-question-btn ${isQuestionReported(quizDbId, idx) ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${isQuestionReported(quizDbId, idx) ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>` : ""}
     </div>
   `;
 
