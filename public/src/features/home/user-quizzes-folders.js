@@ -114,7 +114,7 @@ export async function renameItem(itemId, currentTitle) {
 }
 
 export async function deleteFolder(folderId) {
-  if (await !_confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟")) return;
+  if (!(await _confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟"))) return;
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const idsToDelete = new Set([folderId]);
   
