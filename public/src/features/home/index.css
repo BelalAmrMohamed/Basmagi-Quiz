@@ -4053,6 +4053,9 @@ kbd {
   font-weight: 600;
   font-size: var(--font-size-sm, 0.875rem);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition:
     background var(--transition-fast, 0.15s ease),
     box-shadow var(--transition-fast, 0.15s ease),
@@ -4070,6 +4073,7 @@ kbd {
 .bulk-action-bar .bulk-delete-btn {
   background: var(--color-error-light, #fed7d7);
   color: var(--color-error, #e53e3e);
+  padding: 8px 12px;
 }
 
 .bulk-action-bar .bulk-delete-btn:hover {
@@ -4080,7 +4084,12 @@ kbd {
   transform: translateY(-1px);
 }
 
-.bulk-action-bar .bulk-extract-btn,
+.bulk-action-bar .bulk-extract-btn {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 8px 12px;
+}
+
 .bulk-action-bar .bulk-upload-btn {
   background: var(--color-primary-light);
   color: var(--color-primary);

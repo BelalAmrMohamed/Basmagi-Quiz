@@ -55,6 +55,8 @@ import {
   ADMIN_SIGN_OUT_ICON_SVG,
   ADMIN_SIGN_IN_ICON_SVG,
   CHECK_SQUARE_ICON_SVG,
+  TRASH_ICON_SVG,
+  DOWNLOAD_ICON_SVG,
 } from "./icons.js";
 import {
   showNotification,
@@ -562,9 +564,9 @@ function renderBulkActionBar() {
       <div class="bulk-count">لم يتم تحديد أي شيء</div>
       <div class="bulk-actions">
         <button class="btn bulk-select-all-btn">تحديد الكل</button>
+        <button class="btn bulk-extract-btn" style="display:none" title="استخراج" aria-label="استخراج">${DOWNLOAD_ICON_SVG}</button>
+        <button class="btn bulk-delete-btn" style="display:none" title="حذف" aria-label="حذف">${TRASH_ICON_SVG}</button>
         <button class="btn bulk-clear-btn" title="إلغاء التحديد" aria-label="إلغاء التحديد">✕</button>
-        <button class="btn bulk-delete-btn" style="display:none">حذف</button>
-        <button class="btn bulk-extract-btn" style="display:none">استخراج</button>
         ${uploadBtnHtml}
       </div>
     `;
