@@ -281,6 +281,22 @@ export function renderUserQuizzesView() {
           breadcrumbEl.setAttribute("aria-label", `الرجوع إلى ${parentFolder.title} ←`);
         }
       }
+
+      // MOVE OUT OF FOLDER — make the back-breadcrumb itself a valid drop
+      // target. Previously the only background drop target was
+      // quizzesContainer, which resolves to `currentFolderId` — a no-op
+      // when you're already inside a folder, since it just re-parents the
+      // item to the folder it's already in. Dropping on the "الرجوع إلى
+      // ..." breadcrumb instead moves the item to the parent one level up,
+      // which is the actual "move out" gesture this view was missing.
+      const targetParentId = pathStack.length === 1 ? null : pathStack[pathStack.length - 2].id;
+      breadcrumbEl.ondragover = handleDragOver;
+      breadcrumbEl.ondragleave = handleDragLeave;
+      breadcrumbEl.ondrop = (e) => handleDrop(e, targetParentId);
+    } else if (breadcrumbEl) {
+      breadcrumbEl.ondragover = null;
+      breadcrumbEl.ondragleave = null;
+      breadcrumbEl.ondrop = null;
     }
 
     // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
@@ -293,11 +309,15 @@ export function renderUserQuizzesView() {
         userQuizzes = [];
       }
 
+      // dropTargetId is carried separately from onClick: every ancestor
+      // crumb (including the current/last one, which has no onClick) is a
+      // valid "move item here" drop target, not just the clickable ones.
       const bcItems = [
         {
           label: "إمتحاناتك",
           icon: "📁",
           onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined,
+          dropTargetId: null,
         },
         ...pathStack.map((f, idx) => {
           const item = userQuizzes.find((q) => (q.id || q.meta?.id) === f.id);
@@ -310,10 +330,35 @@ export function renderUserQuizzesView() {
               idx < pathStack.length - 1
                 ? () => navigateToFolder(f.id, f.title)
                 : undefined, // last = current, non-clickable
+            dropTargetId: f.id,
           };
         }),
       ];
       renderTitleBreadcrumb(title, bcItems);
+
+      // MOVE INTO ANY ANCESTOR — wire drag/drop onto the rendered crumb
+      // elements too (renderTitleBreadcrumb doesn't take drop handlers
+      // itself), so dropping a quiz/folder on ANY ancestor in the path —
+      // not just the immediate parent — moves it there directly, including
+      // the current (non-clickable) crumb which represents "stay here".
+      // Matched by index since renderTitleBreadcrumb renders one
+      // .title-breadcrumb-item per bcItems entry, in the same order
+      // (it may collapse the middle into a "…" dropdown, but the first and
+      // last items — the ones most useful as drop targets — always render).
+      requestAnimationFrame(() => {
+        const crumbEls = title.querySelectorAll(".title-breadcrumb-item");
+        crumbEls.forEach((el) => {
+          const label = el.getAttribute("title");
+          const match = bcItems.find((it) => it.label === label);
+          if (!match) return;
+          el.ondragover = handleDragOver;
+          el.ondragleave = handleDragLeave;
+          el.ondrop = (e) => {
+            e.stopPropagation();
+            handleDrop(e, match.dropTargetId);
+          };
+        });
+      });
     }
 
     if (!container) return;
@@ -334,13 +379,45 @@ export function renderUserQuizzesView() {
     const actionsBar = document.createElement("div");
     actionsBar.className = "user-quiz-search-actions";
 
+    // Mobile "مجلد جديد" button — a dropdown with both "مجلد جديد" and
+    // "مادة جديدة" (previously hardcoded to always create a folder, so
+    // phone users had no way to create a course at all — that was only
+    // reachable via the desktop right-click context menu). Course creation
+    // stays root-only, matching the same rule the desktop context menu
+    // already enforces (see showContextMenu in user-quizzes-folders.js).
     const createFolderBtn = document.createElement("button");
     createFolderBtn.type = "button";
     createFolderBtn.innerHTML = `<span>مجلد جديد</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
     createFolderBtn.className = "btn create-folder-btn mobile-only-flex";
-    createFolderBtn.setAttribute("aria-label", "إنشاء مجلد جديد");
-    createFolderBtn.onclick = () => {
-      createNewFolderOrCourse("folder");
+    createFolderBtn.setAttribute("aria-label", "إنشاء مجلد أو مادة جديدة");
+    createFolderBtn.setAttribute("aria-haspopup", "menu");
+    createFolderBtn.onclick = (e) => {
+      e.stopPropagation();
+      openExamDropdownMenu(createFolderBtn, (menu) => {
+        const folderOpt = document.createElement("button");
+        folderOpt.type = "button";
+        folderOpt.className = "exam-action-btn";
+        folderOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg><span>مجلد جديد</span>`;
+        folderOpt.onclick = () => createNewFolderOrCourse("folder");
+        menu.appendChild(folderOpt);
+
+        const courseOpt = document.createElement("button");
+        courseOpt.type = "button";
+        courseOpt.className = "exam-action-btn";
+        courseOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>مادة جديدة</span>`;
+        if (currentFolderId === null) {
+          courseOpt.onclick = () => createNewFolderOrCourse("course");
+        } else {
+          // Shown-disabled with an explanation, rather than hidden — a
+          // silently-missing option here would look like a bug, the same
+          // inconsistency Part 3 flags for the desktop context menu.
+          courseOpt.disabled = true;
+          courseOpt.title = "يمكن إنشاء المواد في الصفحة الرئيسية لـ«إمتحاناتك» فقط";
+          courseOpt.style.opacity = "0.5";
+          courseOpt.style.cursor = "not-allowed";
+        }
+        menu.appendChild(courseOpt);
+      });
     };
     actionsBar.appendChild(createFolderBtn);
 

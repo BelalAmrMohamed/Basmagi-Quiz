@@ -31,6 +31,7 @@ import {
   renderUserQuizzesView,
   updateBulkActionBar,
 } from "./user-quizzes-view.js";
+import { openMoveToDialog } from "./user-quizzes-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
@@ -38,6 +39,7 @@ import {
   EDIT_ICON_SVG,
   TRASH_ICON_SVG,
   MORE_DOTS_ICON_SVG,
+  MOVE_TO_ICON_SVG,
 } from "./icons.js";
 import {
   showNotification,
@@ -339,6 +341,19 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
       reposition,
     );
     menu.appendChild(infoSubmenu);
+
+    // ── Move to / out of a folder — the touch-friendly fallback for the
+    // drag-and-drop move gesture, since mobile has no usable drag here.
+    const moveOpt = document.createElement("button");
+    moveOpt.type = "button";
+    moveOpt.className = "exam-action-btn";
+    moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل إلى</span>`;
+    moveOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      openMoveToDialog([quiz.id || quiz.meta?.id]);
+    };
+    menu.appendChild(moveOpt);
 
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";

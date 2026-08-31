@@ -1,9 +1,12 @@
+// public/src/features/home/user-quizzes-folders.js
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { _prompt, _confirm, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
+import { buildUserQuizEntry } from "./quiz-schema.js";
+import { getSubjectIcon } from "./subject-icons.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -15,6 +18,13 @@ export function getChildren(userQuizzes, parentId) {
 
 export function getCurrentFolderPathStack() {
   return folderPathStack;
+}
+
+/** The id one level up from currentFolderId (null = root), based on
+ * folderPathStack. Used by the "نقل إلى الخارج" (move out) shortcut. */
+function pathStackParentId() {
+  if (folderPathStack.length <= 1) return null;
+  return folderPathStack[folderPathStack.length - 2].id;
 }
 
 export function navigateToFolder(folderId, folderTitle) {
@@ -192,6 +202,149 @@ function isDescendant(quizzes, parentId, checkId) {
   return false;
 }
 
+/**
+ * Re-parent one or more items to `targetFolderId` (null = root), with the
+ * same self/descendant guard handleDrop uses. Shared by the single-item
+ * "نقل إلى" menu action and the bulk-move action bar button — the only
+ * difference between them is how many ids get passed in.
+ * @param {string[]} itemIds
+ * @param {string|null} targetFolderId
+ * @returns {{moved: number, blocked: number}}
+ */
+export function moveItemsToFolder(itemIds, targetFolderId) {
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  let moved = 0;
+  let blocked = 0;
+
+  itemIds.forEach((itemId) => {
+    if (itemId === targetFolderId) return;
+    if (isDescendant(userQuizzes, itemId, targetFolderId)) {
+      blocked++;
+      return;
+    }
+    const item = userQuizzes.find((q) => q.id === itemId || q.meta?.id === itemId);
+    if (!item) return;
+    if (!item.meta) item.meta = {};
+    if ((item.meta.parentId || null) === (targetFolderId || null)) return; // already there
+    item.meta.parentId = targetFolderId;
+    moved++;
+  });
+
+  if (moved > 0) setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  return { moved, blocked };
+}
+
+/**
+ * Non-drag fallback for moving an item (used by the right-click context
+ * menu and the card ⋮ overlay) — opens a small folder-tree picker modal so
+ * touch/mobile users, who have no usable drag gesture, can still move items
+ * in and out of folders/courses. `itemIds` supports both the single-item
+ * case and the bulk-selection case with one shared implementation.
+ * @param {string[]} itemIds
+ */
+export async function openMoveToDialog(itemIds) {
+  if (!itemIds || itemIds.length === 0) return;
+
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const folders = userQuizzes.filter(
+    (q) => q.meta?.type === "folder" || q.meta?.type === "course",
+  );
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay move-to-dialog-overlay";
+
+  const card = document.createElement("div");
+  card.className = "modal-card move-to-dialog-card";
+  card.style.textAlign = "right";
+  card.style.maxHeight = "80vh";
+  card.style.display = "flex";
+  card.style.flexDirection = "column";
+
+  const closeDialog = () => overlay.remove();
+
+  card.innerHTML = `
+    <div class="modal-header">
+      <h3 style="margin:0;font-size:1.05rem;">نقل ${itemIds.length > 1 ? `(${itemIds.length} عناصر)` : "إلى"}</h3>
+      <button type="button" class="move-to-dialog-close" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="move-to-dialog-list" role="listbox" aria-label="اختر وجهة النقل"></div>
+  `;
+
+  const listEl = card.querySelector(".move-to-dialog-list");
+  listEl.style.overflowY = "auto";
+  listEl.style.padding = "8px";
+
+  function addOption(label, id, icon) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "move-to-dialog-option";
+    btn.setAttribute("role", "option");
+    btn.style.cssText = `
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 10px 12px; text-align: right; background: transparent;
+      border: none; border-radius: 8px; cursor: pointer; font-size: 0.92rem;
+      color: var(--color-text-primary);
+    `;
+    btn.innerHTML = `<span aria-hidden="true">${icon}</span><span>${label}</span>`;
+    btn.onmouseover = () => (btn.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))");
+    btn.onmouseout = () => (btn.style.background = "transparent");
+    btn.onclick = () => {
+      const { moved, blocked } = moveItemsToFolder(itemIds, id);
+      closeDialog();
+      if (moved > 0) {
+        showNotification(
+          "تم النقل",
+          moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
+          "success",
+        );
+      }
+      if (blocked > 0) {
+        showNotification(
+          "تعذر نقل بعض العناصر",
+          "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.",
+          "warning",
+        );
+      }
+      renderUserQuizzesView();
+    };
+    listEl.appendChild(btn);
+  }
+
+  addOption("إمتحاناتك (الرئيسية)", null, "📁");
+
+  // Build a simple indented flat list of every folder/course so the picker
+  // stays a single scrollable list rather than a nested tree widget —
+  // enough for typical folder depths, and far simpler to build/maintain.
+  function appendChildren(parentId, depth) {
+    folders
+      .filter((f) => (f.meta?.parentId || null) === parentId)
+      .forEach((f) => {
+        const fid = f.id || f.meta?.id;
+        const icon = f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁");
+        addOption(`${"　".repeat(depth)}${f.meta?.title || ""}`, fid, icon);
+        appendChildren(fid, depth + 1);
+      });
+  }
+  appendChildren(null, 1);
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  card.querySelector(".move-to-dialog-close").onclick = closeDialog;
+  overlay.onclick = (e) => {
+    if (e.target === overlay) closeDialog();
+  };
+  document.addEventListener(
+    "keydown",
+    function onEsc(e) {
+      if (e.key === "Escape") {
+        closeDialog();
+        document.removeEventListener("keydown", onEsc);
+      }
+    },
+  );
+}
+
 // Context Menu Logic
 let contextMenuEl = null;
 // Track whether the last contextmenu event opened our custom menu.
@@ -208,6 +361,7 @@ const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" he
 const SELECT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
 const RENAME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+const MOVE_TO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5c0-1.1.9-2 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/></svg>`;
 
 export function initContextMenu() {
   if (contextMenuEl) return;
@@ -246,6 +400,23 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
     contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
     contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
+    // Non-drag fallback for moving items — essential on touch devices,
+    // which have no usable drag gesture for this grid, and a faster path
+    // than drag-and-drop even on desktop for deeply nested moves.
+    contextMenuEl.appendChild(createMenuItem(MOVE_TO_SVG, "نقل إلى", () => openMoveToDialog([targetId])));
+    // "Move out" is only meaningful when the item is actually inside
+    // something — one click straight to the immediate parent, instead of
+    // making every out-of-folder move go through the full picker dialog.
+    if (currentFolderId !== null) {
+      const parentId = pathStackParentId();
+      contextMenuEl.appendChild(
+        createMenuItem(MOVE_TO_SVG, "نقل إلى الخارج", () => {
+          const { moved } = moveItemsToFolder([targetId], parentId);
+          if (moved > 0) showNotification("تم النقل", "تم نقل العنصر خارج المجلد الحالي.", "success");
+          renderUserQuizzesView();
+        }),
+      );
+    }
     if (targetType === "folder" || targetType === "course") {
       contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
     }
@@ -288,19 +459,190 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false) {
   return item;
 }
 
+/**
+ * "رفع مجلد" (admin folder upload) — lets an admin pick a whole
+ * folder/Course on their machine (via the native directory picker) and
+ * imports it in one shot: every subdirectory becomes a folder/course record
+ * (preserving nesting) and every .json file becomes a quiz inside the right
+ * folder, instead of flattening everything into the current folder the way
+ * a plain multi-file JSON import would.
+ *
+ * Uses each File's `webkitRelativePath` (e.g. "Physics/Unit1/quiz1.json"),
+ * which browsers populate automatically for `webkitdirectory` pickers, to
+ * reconstruct the directory tree client-side — no server involvement, since
+ * user_quizzes is a local/localStorage collection like the rest of this
+ * feature.
+ */
 function uploadFolderForAdmins() {
-  const input = document.createElement('input');
-  input.type = 'file';
+  const input = document.createElement("input");
+  input.type = "file";
   input.webkitdirectory = true;
   input.directory = true;
   input.multiple = true;
   input.onchange = async (e) => {
-    const files = Array.from(e.target.files).filter(f => f.name.endsWith('.json'));
-    if (files.length === 0) return;
-    const { importJsonQuizFiles } = await import("./quiz-file-import.js");
-    importJsonQuizFiles(files);
+    const allFiles = Array.from(e.target.files);
+    const jsonFiles = allFiles.filter((f) => f.name.endsWith(".json"));
+    const skippedCount = allFiles.length - jsonFiles.length;
+
+    if (jsonFiles.length === 0) {
+      showNotification(
+        "لا توجد ملفات",
+        "لم يتم العثور على أي ملفات .json داخل المجلد المحدد.",
+        "warning",
+      );
+      return;
+    }
+
+    await importFolderTree(jsonFiles, skippedCount);
   };
   input.click();
+}
+
+/**
+ * Parses a batch of File objects (already filtered to .json) that came from
+ * a directory picker, rebuilds the folder tree from their
+ * `webkitRelativePath`s, and — after the admin confirms a summary — writes
+ * one new folder/course/quiz set into user_quizzes under `currentFolderId`,
+ * in a single storage write.
+ * @param {File[]} jsonFiles
+ * @param {number} skippedCount - non-.json files that were silently ignored
+ */
+async function importFolderTree(jsonFiles, skippedCount = 0) {
+  // 1. Read + parse every file first (so we can report bad JSON up front,
+  //    before touching storage at all).
+  const parsedFiles = [];
+  const failedFiles = [];
+  for (const file of jsonFiles) {
+    const relPath = file.webkitRelativePath || file.name;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+        failedFiles.push(relPath);
+        continue;
+      }
+      parsedFiles.push({ relPath, parsed });
+    } catch (err) {
+      failedFiles.push(relPath);
+    }
+  }
+
+  if (parsedFiles.length === 0) {
+    showNotification(
+      "تعذر الرفع",
+      "لم يتمكن أي من الملفات من الانضمام — تأكد أنها ملفات اختبار صالحة.",
+      "warning",
+    );
+    return;
+  }
+
+  // 2. Build the directory tree from relative paths. Each node is keyed by
+  //    its full path-so-far (so same-named folders under different parents
+  //    don't collide), and carries its own quiz files + child dir keys.
+  //    Root-level directory names become "course" type (matching the
+  //    manual create-course affordance, which is also root-only); anything
+  //    nested becomes a plain "folder".
+  const dirNodes = new Map(); // pathKey -> { name, depth, parentKey, quizFiles: [], childKeys: Set }
+  const rootDirKeys = new Set();
+
+  for (const { relPath, parsed } of parsedFiles) {
+    const segments = relPath.split("/").filter(Boolean);
+    // Drop the filename — everything before it is the directory chain.
+    const dirSegments = segments.slice(0, -1);
+
+    if (dirSegments.length === 0) {
+      // A .json file sitting directly at the picked folder's root (no
+      // subdirectory) — treat the picked folder's own name as a single
+      // top-level course. webkitRelativePath always includes the picked
+      // folder itself as the first segment normally; this branch only
+      // hits for malformed/edge-case paths, so fall back gracefully.
+      continue;
+    }
+
+    let parentKey = null;
+    let pathSoFar = "";
+    dirSegments.forEach((seg, depth) => {
+      pathSoFar = pathSoFar ? `${pathSoFar}/${seg}` : seg;
+      if (!dirNodes.has(pathSoFar)) {
+        dirNodes.set(pathSoFar, {
+          name: seg,
+          depth,
+          parentKey,
+          quizFiles: [],
+          childKeys: new Set(),
+        });
+        if (depth === 0) rootDirKeys.add(pathSoFar);
+        if (parentKey) dirNodes.get(parentKey).childKeys.add(pathSoFar);
+      }
+      parentKey = pathSoFar;
+    });
+
+    // Attach this quiz file to its immediate parent directory.
+    dirNodes.get(pathSoFar).quizFiles.push(parsed);
+  }
+
+  const folderCount = dirNodes.size;
+  const quizCount = parsedFiles.length;
+
+  // 3. Confirm before writing anything — this is a bulk, hard-to-undo
+  //    admin action, and the parsed tree can differ from what the admin
+  //    expected (e.g. unexpected nesting depth).
+  const summaryParts = [
+    `سيتم إنشاء ${folderCount} مجلد/مادة`,
+    `ورفع ${quizCount} امتحان`,
+  ];
+  if (failedFiles.length) {
+    summaryParts.push(`(تم تجاهل ${failedFiles.length} ملف غير صالح)`);
+  }
+  if (skippedCount) {
+    summaryParts.push(`(تم تجاهل ${skippedCount} ملف غير json)`);
+  }
+  const confirmed = await _confirm(`${summaryParts.join(" ")}. متابعة؟`);
+  if (!confirmed) return;
+
+  // 4. Materialize folder/course records + quiz entries, then write once.
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const keyToId = new Map();
+
+  function ensureFolderRecord(pathKey) {
+    if (keyToId.has(pathKey)) return keyToId.get(pathKey);
+    const node = dirNodes.get(pathKey);
+    const parentId = node.parentKey ? ensureFolderRecord(node.parentKey) : currentFolderId;
+    const isRootLevel = node.depth === 0;
+    const id = crypto.randomUUID();
+    userQuizzes.push({
+      id,
+      meta: {
+        type: isRootLevel ? "course" : "folder",
+        title: node.name,
+        parentId,
+        icon: isRootLevel ? getSubjectIcon(node.name, false) : undefined,
+        createdAt: new Date().toLocaleString("en-US"),
+      },
+      stats: { questionCount: 0, questionTypes: [] },
+      questions: [],
+    });
+    keyToId.set(pathKey, id);
+    return id;
+  }
+
+  for (const [pathKey, node] of dirNodes.entries()) {
+    const folderId = ensureFolderRecord(pathKey);
+    node.quizFiles.forEach((parsed) => {
+      const quizId = crypto.randomUUID();
+      const entry = buildUserQuizEntry(quizId, parsed, parsed.meta?.title);
+      entry.meta.parentId = folderId;
+      userQuizzes.push(entry);
+    });
+  }
+
+  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  showNotification(
+    "تم الرفع",
+    `تم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان بنجاح.`,
+    "success",
+  );
+  renderUserQuizzesView();
 }
 
 export function selectItem(itemId) {

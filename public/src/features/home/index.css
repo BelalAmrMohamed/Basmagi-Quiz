@@ -1555,6 +1555,30 @@ Container
   box-shadow: 0 0 0 1px var(--color-primary-light);
 }
 
+/* ============================================================================
+ * .drag-over — generic drag-over affordance, toggled by
+ * handleDragOver/handleDragLeave (user-quizzes-folders.js) on ANY valid
+ * drop target: folder/course cards, the back-breadcrumb (#breadcrumb), and
+ * the title-breadcrumb ancestor items. Previously this class was applied by
+ * JS but had no matching CSS rule at all, so drop targets gave zero visual
+ * feedback while dragging over them.
+ * ============================================================================ */
+.drag-over {
+  outline: 2px dashed var(--color-primary) !important;
+  outline-offset: 2px;
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-radius: 10px;
+}
+
+#breadcrumb.drag-over,
+.title-breadcrumb-item.drag-over {
+  outline: 2px dashed var(--color-primary) !important;
+  outline-offset: 3px;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 6px;
+  color: var(--color-primary);
+}
+
 .create-quiz-inline-modal {
   position: relative;
   transition:
@@ -2199,6 +2223,43 @@ Container
 
 .modal-card p {
   direction: rtl;
+}
+
+/* ============================================================================
+ * MOVE-TO DIALOG — folder-tree picker opened from "نقل إلى" (context menu
+ * and card ⋮ overlay). A single scrollable, indented list of folders/
+ * courses rather than a full tree widget — simple, and sufficient for the
+ * folder depths this feature realistically has.
+ * ============================================================================ */
+.move-to-dialog-card {
+  padding: 0;
+  max-width: 380px;
+}
+
+.move-to-dialog-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.move-to-dialog-close:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+  color: var(--color-text-primary);
+}
+
+.move-to-dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.move-to-dialog-option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 /* ============================================================================
