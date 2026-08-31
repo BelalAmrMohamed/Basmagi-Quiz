@@ -19,7 +19,7 @@ body.has-offline-banner {
 #offlineBanner {
   /* ── Position ──────────────────────────────────────────────────────────── */
   position: fixed;
-  bottom: 0;                       /* anchored to viewport bottom */
+  bottom: 0;                       /* anchored to viewport bottom (desktop) */
   inset-inline: 0;                 /* stretches full width, RTL-aware */
   z-index: var(--z-notification, 9999); /* above toasts/overlays */
 
@@ -168,6 +168,18 @@ body.has-offline-banner {
 #offlineBanner .banner-dismiss:focus-visible {
   outline: 2px solid var(--color-text-primary, #f8fafc);
   outline-offset: 2px;
+}
+
+/* ── Mobile: .bottom-nav becomes a fixed bar at this breakpoint (see
+   side-menu.css, z-index ~4001), so push the banner up above its
+   reserved height instead of letting the two fixed-bottom elements
+   overlap. Matches the same pattern used for .bulk-action-bar. ────────── */
+@media (max-width: 768px) {
+  #offlineBanner {
+    bottom: calc(
+      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
+    );
+  }
 }
 
 /* ── Reduced-motion: skip the slide animation, just fade ──────────────────── */

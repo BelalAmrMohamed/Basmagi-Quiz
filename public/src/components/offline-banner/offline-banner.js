@@ -29,7 +29,8 @@ let probeUrl = "";
 const PROBE_TIMEOUT_MS = 4000;
 let wasOfflineDuringSession = false;
 let bannerResizeObserver = null; // keeps reserved page space in sync with banner height
-let dismissedForThisState = false; // true after the user cancels; reset whenever setOffline/setOnline run again
+let dismissedForThisState = false; // true after the user cancels; reset only when the connectivity state actually changes
+let currentConnectivityState = null; // "offline" | "online" | null (unknown/not yet checked) — lets us tell a real transition from a repeat poll of the same state
 
 // Accessible label for the dismiss button (Arabic, do not translate)
 const DISMISS_LABEL = "إغلاق";
@@ -142,6 +143,8 @@ function hideBanner() {
 
 /** Switches the banner to the offline (amber) state and shows it. */
 function setOffline() {
+  const isNewState = currentConnectivityState !== "offline";
+  currentConnectivityState = "offline";
   wasOfflineDuringSession = true;
 
   // Cancel any pending auto-hide from a previous "back online" flash
@@ -150,7 +153,10 @@ function setOffline() {
     onlineFlashTimer = null;
   }
 
-  dismissedForThisState = false; // a fresh offline state overrides any earlier cancel
+  // Only a genuine transition into offline overrides an earlier cancel.
+  // Re-running setOffline() while already offline (e.g. the 30s poll)
+  // must NOT re-arm the banner, or dismissing it would have no lasting effect.
+  if (isNewState) dismissedForThisState = false;
   bannerContent.innerHTML = `<span class="banner-icon" aria-hidden="true">📡</span>${OFFLINE_TEXT}`;
 
   // Glass tint is driven by CSS classes now (see offline-banner.css), not an
@@ -166,13 +172,17 @@ function setOffline() {
  * for ONLINE_FLASH_DURATION ms, then slides it away.
  */
 function setOnline() {
+  const isNewState = currentConnectivityState !== "online";
+  currentConnectivityState = "online";
+
   // Cancel any pending auto-hide that may still be running
   if (onlineFlashTimer !== null) {
     clearTimeout(onlineFlashTimer);
     onlineFlashTimer = null;
   }
 
-  dismissedForThisState = false; // a fresh "back online" flash overrides any earlier cancel
+  // Only a genuine transition into online overrides an earlier cancel.
+  if (isNewState) dismissedForThisState = false;
   bannerContent.innerHTML = `<span class="banner-icon" aria-hidden="true">✓</span>${ONLINE_TEXT}`;
 
   // Glass tint is driven by CSS classes now (see offline-banner.css), not an
