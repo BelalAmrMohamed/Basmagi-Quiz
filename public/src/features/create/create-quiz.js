@@ -2084,6 +2084,21 @@ function normalizeQuestionForEditor(q) {
   if (q.options.length === 0) {
     return { ...q, options: [""], correct: [] };
   }
+  // MCQ/True-False question with a real options array. Every isEssay check
+  // in this file (renderQuestion, rerenderOptions, updateIncompleteState,
+  // etc.) is a plain truthy test on `question.answer` — it assumes `answer`
+  // is only ever present on essay questions. The AI tool schema documents
+  // that contract too (_tools.js: "Omit `correct` (and `options`) entirely
+  // for essay/free-text questions and use `answer` instead"), but models
+  // don't always honor it — some providers still tack on a redundant
+  // `answer` field to an MCQ question (e.g. restating "the answer is B").
+  // Left in place, that stray field flips every isEssay check to true and
+  // the question silently loses its options/correct entirely. Since
+  // `options` is the authoritative signal for "this is MCQ" here, drop any
+  // `answer` field whenever real options are present, so the rest of the
+  // editor sees an unambiguous MCQ/TF question.
+  const { answer, ...withoutAnswer } = q;
+  q = withoutAnswer;
   // Normalize a legacy single-index `correct` (old saved quizzes) into an
   // array so every render/export path downstream can assume an array.
   if (!Array.isArray(q.correct)) {

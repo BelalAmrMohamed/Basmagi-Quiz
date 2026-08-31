@@ -13,7 +13,7 @@ export const themeManager = {
 
   init() {
     // Load saved preferences or use defaults
-    const savedTheme = localStorage.getItem(THEME_KEY) || "dark";
+    const savedTheme = localStorage.getItem(THEME_KEY) || "light";
     const reducedMotionPref = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -57,7 +57,7 @@ export const themeManager = {
   applyTheme(theme) {
     // Validate theme
     if (!this.themes[theme]) {
-      theme = "dark";
+      theme = "light";
     }
 
     document.documentElement.setAttribute("data-theme", theme);
@@ -166,7 +166,7 @@ export const themeManager = {
       };
 
       document.body.style.backgroundColor =
-        themeBackgrounds[currentTheme] || themeBackgrounds.dark;
+        themeBackgrounds[currentTheme] || themeBackgrounds.light;
     } else {
       // Let canvas handle the background
       document.body.style.backgroundColor = "";
@@ -174,7 +174,7 @@ export const themeManager = {
   },
 
   getCurrentTheme() {
-    return document.documentElement.getAttribute("data-theme") || "dark";
+    return document.documentElement.getAttribute("data-theme") || "light";
   },
 
   getAnimationsEnabled() {
