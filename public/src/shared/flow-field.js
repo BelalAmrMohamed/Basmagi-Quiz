@@ -1,3 +1,4 @@
+// public/src/shared/flow-field.js
 // Lightweight canvas flow-field background animation.
 
 (function (global) {
@@ -45,9 +46,12 @@
     if (!container) throw new Error("FlowField.mount: container element is required");
     injectStyles();
 
-    let theme = options.theme || "dark";
+    let theme =
+      options.theme ||
+      document.documentElement.getAttribute("data-theme") ||
+      "light";
     let density = options.density || (global.innerWidth <= 768 ? "sparse" : "medium");
-    let config = THEMES[theme] || THEMES.dark;
+    let config = THEMES[theme] || THEMES.light;
     let count = PARTICLE_COUNTS[density] || PARTICLE_COUNTS.medium;
     const root = document.createElement("div");
     root.className = "flow-field-root";
@@ -141,7 +145,9 @@ function initFlowField() {
     const container = document.createElement("div");
     container.id = "flow-field-bg";
     document.body.insertBefore(container, document.body.firstChild);
-    flowFieldInstance = FlowField.mount(container);
+    const currentTheme =
+      document.documentElement.getAttribute("data-theme") || "light";
+    flowFieldInstance = FlowField.mount(container, { theme: currentTheme });
   } else if (!enabled && flowFieldInstance) {
     flowFieldInstance.destroy();
     document.getElementById("flow-field-bg")?.remove();
