@@ -604,17 +604,39 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const keyToId = new Map();
 
+  // Unlike createNewFolderOrCourse (which rejects a duplicate name outright
+  // via a warning), a bulk folder upload appends a "(2)", "(3)", ... suffix
+  // instead — rejecting here would mean aborting or silently dropping an
+  // entire subtree mid-batch just because one sibling folder name already
+  // exists locally, which is a worse outcome than a renamed folder.
+  function uniqueNameAtLevel(name, parentId) {
+    const takenLower = new Set(
+      userQuizzes
+        .filter((q) => (q.meta?.parentId || null) === parentId)
+        .map((q) => (q.meta?.title || "").trim().toLowerCase()),
+    );
+    if (!takenLower.has(name.trim().toLowerCase())) return name;
+    let n = 2;
+    let candidate = `${name} (${n})`;
+    while (takenLower.has(candidate.toLowerCase())) {
+      n += 1;
+      candidate = `${name} (${n})`;
+    }
+    return candidate;
+  }
+
   function ensureFolderRecord(pathKey) {
     if (keyToId.has(pathKey)) return keyToId.get(pathKey);
     const node = dirNodes.get(pathKey);
     const parentId = node.parentKey ? ensureFolderRecord(node.parentKey) : currentFolderId;
     const isRootLevel = node.depth === 0;
     const id = crypto.randomUUID();
+    const title = uniqueNameAtLevel(node.name, parentId);
     userQuizzes.push({
       id,
       meta: {
         type: isRootLevel ? "course" : "folder",
-        title: node.name,
+        title,
         parentId,
         icon: isRootLevel ? getSubjectIcon(node.name, false) : undefined,
         createdAt: new Date().toLocaleString("en-US"),
