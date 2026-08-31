@@ -10,8 +10,9 @@
 
 .header-search-btn {
   position: absolute;
-  bottom: 16px;
+  top: 16px;
   right: 16px;
+  bottom: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -439,10 +440,11 @@
 
 @media (max-width: 768px) {
   .header-search-btn {
-    width: 30px;
-    height: 30px;
-    bottom: 8px;
-    right: 8px;
+    width: 32px;
+    height: 32px;
+    top: 12px;
+    right: 12px;
+    bottom: auto;
   }
 
   .header-search-icon {

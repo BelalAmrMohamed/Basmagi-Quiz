@@ -1,4 +1,4 @@
-﻿// ============================================================================
+// ============================================================================
 // public/src/features/home/title-breadcrumb.js
 // TITLE BREADCRUMB — smart, collapsible inline breadcrumb rendered inside
 // the #Subjects-text element (or any container element passed to it).
@@ -64,9 +64,12 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
     }
   }
 
-  function buildItem(label, onClick, isCurrent = false) {
+  function buildItem(label, onClick, isCurrent = false, isRoot = false) {
     const el = document.createElement(isCurrent ? "span" : "a");
-    el.className = "title-breadcrumb-item" + (isCurrent ? " title-breadcrumb-item--current" : "");
+    el.className =
+      "title-breadcrumb-item" +
+      (isCurrent ? " title-breadcrumb-item--current" : "") +
+      (isRoot ? " title-breadcrumb-item--root" : "");
     el.textContent = label;
     el.title = label;
     if (!isCurrent && onClick) {
@@ -91,7 +94,7 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
     const last = items[items.length - 1];
     const middle = items.slice(1, items.length - 1);
 
-    wrapper.appendChild(buildItem(first.label, first.onClick));
+    wrapper.appendChild(buildItem(first.label, first.onClick, false, true));
 
     if (collapsed && middle.length > 0) {
       wrapper.appendChild(buildSep());
@@ -129,8 +132,17 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
         });
 
         const rect = ellipsisBtn.getBoundingClientRect();
+        const dropdownWidth = Math.min(260, window.innerWidth - 32);
         dropdown.style.top = `${rect.bottom + window.scrollY + 6}px`;
-        dropdown.style.left = `${rect.left + window.scrollX}px`;
+
+        let leftPos = rect.right - dropdownWidth + window.scrollX;
+        if (leftPos < 16) leftPos = 16;
+        if (leftPos + dropdownWidth > window.innerWidth - 16) {
+          leftPos = window.innerWidth - dropdownWidth - 16;
+        }
+        dropdown.style.left = `${leftPos}px`;
+        dropdown.style.maxWidth = `${dropdownWidth}px`;
+
         document.body.appendChild(dropdown);
         activeDropdown = dropdown;
         ellipsisBtn.setAttribute("aria-expanded", "true");
@@ -155,9 +167,18 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
 
   function evaluate() {
     render(false);
-    const overflows = wrapper.scrollWidth > wrapper.clientWidth + 2;
-    const tooMany = items.length > maxItems;
-    if ((overflows || tooMany) && items.length > 2) {
+
+    // On compact screens (or narrow containers), collapse intermediate items when >2 items
+    const isCompact = window.innerWidth <= 640 || (titleEl.parentElement && titleEl.parentElement.clientWidth < 450);
+    const effectiveMaxItems = isCompact ? 2 : maxItems;
+
+    const itemsEl = Array.from(wrapper.querySelectorAll(".title-breadcrumb-item"));
+    const hasTruncatedItem = itemsEl.some((el) => el.scrollWidth > el.clientWidth + 1);
+    const isOverflowing = wrapper.scrollWidth > wrapper.clientWidth + 2;
+
+    const shouldCollapse = (items.length > effectiveMaxItems || isOverflowing || (isCompact && hasTruncatedItem)) && items.length > 2;
+
+    if (shouldCollapse) {
       render(true);
     }
   }

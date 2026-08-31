@@ -1063,9 +1063,16 @@ ANIMATIONS
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 480px) {
   #Subjects-text {
-    font-size: 0.875rem;
-    padding: 8px 18px 8px 14px;
-    margin-top: 22px;
+    font-size: 0.8125rem;
+    padding: 6px 14px 6px 10px;
+    margin-top: 18px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  #Subjects-text:has(.title-breadcrumb) {
+    padding: 6px 14px 6px 10px;
+    max-width: 100%;
   }
 }
 
@@ -1074,10 +1081,12 @@ ANIMATIONS
    to fill available space (not shrink to content) so the ResizeObserver
    can correctly detect overflow and trigger collapse.                     */
 #Subjects-text:has(.title-breadcrumb) {
-  max-width: min(680px, 92vw);
+  max-width: min(640px, 100%);
   width: max-content;
+  box-sizing: border-box;
   /* Prevent the ::after emoji from pushing the path off-screen */
   gap: 0;
+  padding: 7px 16px 7px 12px;
 }
 
 /* ============================================================================
@@ -1101,17 +1110,23 @@ ANIMATIONS
 /* ── Path items (<a> links + <span> for current) ─────────────────────────── */
 .title-breadcrumb-item {
   display: inline-block;
-  max-width: 160px;
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   flex-shrink: 1;
+  min-width: 0;
   color: var(--color-primary);
   text-decoration: none;
   font-weight: 600;
   font-size: inherit;
   cursor: pointer;
   transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.title-breadcrumb-item--root {
+  flex-shrink: 0;
+  max-width: 130px;
 }
 
 .title-breadcrumb-item:hover {
@@ -1124,18 +1139,32 @@ ANIMATIONS
   cursor: default;
   font-weight: 700;
   pointer-events: none;
-  max-width: 200px;
+  max-width: 280px;
+  flex-shrink: 1;
 }
 
 .title-breadcrumb-item--current:hover {
   opacity: 1;
 }
 
+@media (max-width: 480px) {
+  .title-breadcrumb-item {
+    max-width: 150px;
+    font-size: 0.8125rem;
+  }
+  .title-breadcrumb-item--root {
+    max-width: 90px;
+  }
+  .title-breadcrumb-item--current {
+    max-width: 180px;
+  }
+}
+
 /* ── Separator ───────────────────────────────────────────────────────────── */
 .title-breadcrumb-sep {
   display: inline-flex;
   align-items: center;
-  padding: 0 5px;
+  padding: 0 4px;
   color: var(--color-text-tertiary, rgba(0,0,0,0.35));
   font-size: 0.8em;
   flex-shrink: 0;
