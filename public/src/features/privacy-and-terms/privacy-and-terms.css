@@ -78,82 +78,6 @@ html[data-theme="dark-slate"] body {
     background: linear-gradient(to left, var(--accent) 0%, var(--accent-sub) 60%, var(--rule-heavy) 100%);
 }
 
-/* Documentation switcher: a quiet rail on wide screens, a bottom tab bar on phones. */
-.docs-switcher {
-    position: fixed;
-    z-index: var(--z-above, 10);
-    top: 50%;
-    right: calc(var(--sidebar-collapsed-width) + 28px);
-    width: 176px;
-    padding: 14px 10px 10px;
-    transform: translateY(-50%);
-    background: var(--bg);
-    border: 1px solid var(--rule-heavy);
-    border-right: 3px solid var(--accent);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(17, 24, 39, .08);
-}
-
-body.sidebar-expanded .docs-switcher {
-    right: calc(var(--sidebar-expanded-width) + 28px);
-}
-
-body.sidebar-expanded .sidebar:not(.expanded) ~ .docs-switcher {
-    right: calc(var(--sidebar-collapsed-width) + 28px);
-}
-
-.docs-switcher-heading {
-    padding: 0 8px 10px;
-    color: var(--ink-muted);
-    font-size: .68rem;
-    font-weight: 600;
-    letter-spacing: .08em;
-}
-
-.docs-switcher-link {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 38px;
-    padding: 7px 8px;
-    color: var(--ink-soft);
-    border-radius: var(--radius-sm);
-    font-size: .82rem;
-    line-height: 1.35;
-    text-decoration: none;
-    transition: background-color .15s ease, color .15s ease;
-}
-
-.docs-switcher-link:hover,
-.docs-switcher-link:focus-visible {
-    color: var(--accent);
-    background: var(--bg-tint);
-}
-
-.docs-switcher-link:focus-visible {
-    outline: 2px solid var(--accent-sub);
-    outline-offset: 2px;
-}
-
-.docs-switcher-link--active {
-    color: var(--bg);
-    background: var(--accent);
-    font-weight: 600;
-}
-
-.docs-switcher-link--active:hover,
-.docs-switcher-link--active:focus-visible {
-    color: var(--bg);
-    background: var(--accent-mid);
-}
-
-.docs-switcher-link--soon small {
-    color: var(--ink-faint);
-    font-size: .64rem;
-    white-space: nowrap;
-}
-
 /* ─────────────────────────────────────────
     PAGE WRAPPER
 ───────────────────────────────────────── */
@@ -480,7 +404,7 @@ li strong {
     PRINT
 ───────────────────────────────────────── */
 @media print {
-    .top-bar, .docs-switcher, .site-footer { display: none; }
+    .top-bar, .site-footer { display: none; }
     body { color: #000; }
     .page-wrapper { padding: 20px; }
 }
@@ -499,37 +423,6 @@ html[data-motion="reduced"] *::after {
 ───────────────────────────────────────── */
 @media (max-width: 680px) {
     .page-wrapper { padding: 40px 18px 84px; }
-
-    .docs-switcher {
-    top: auto;
-    right: 0;
-    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom));
-    width: 100%;
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
-    transform: none;
-    display: flex;
-    align-items: stretch;
-    gap: 4px;
-    border-right: none;
-    border-bottom: none;
-    border-radius: 10px 10px 0 0;
-    box-shadow: 0 -6px 20px rgba(17, 24, 39, .1);
-    overflow-x: auto;
-    z-index: calc(var(--z-overlay, 4000) - 1);
-}
-
-    .docs-switcher-heading { display: none; }
-
-    .docs-switcher-link {
-    flex: 1 0 auto;
-    min-height: 42px;
-    justify-content: center;
-    padding: 6px 9px;
-    font-size: .72rem;
-    white-space: nowrap;
-    }
-
-    .docs-switcher-link--soon small { display: none; }
 
     h1 { font-size: 1.65rem; }
 
@@ -558,4 +451,116 @@ html[data-motion="reduced"] *::after {
     align-items: flex-start;
     padding: 20px;
     }
+}
+
+/* ─────────────────────────────────────────
+    STICKY TABLE OF CONTENTS (doc-toc.js)
+    Sits in the same rail the old docs-switcher used to occupy on desktop
+    (opposite side from the app sidebar), collapses to a floating toggle +
+    slide-up panel on phones.
+───────────────────────────────────────── */
+.doc-toc {
+    position: fixed;
+    z-index: var(--z-above, 10);
+    top: 50%;
+    left: 28px;
+    width: 200px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 14px 10px;
+    transform: translateY(-50%);
+    background: var(--bg);
+    border: 1px solid var(--rule-heavy);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.doc-toc-heading {
+    padding: 0 8px 10px;
+    color: var(--ink-muted);
+    font-size: .68rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+}
+
+.doc-toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.doc-toc-link {
+    display: block;
+    padding: 7px 8px;
+    color: var(--ink-soft);
+    border-radius: var(--radius-sm);
+    font-size: .82rem;
+    line-height: 1.35;
+    text-decoration: none;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.doc-toc-link:hover,
+.doc-toc-link:focus-visible {
+    color: var(--accent);
+    background: var(--bg-tint);
+}
+
+.doc-toc-link--active {
+    color: var(--bg);
+    background: var(--accent);
+    font-weight: 600;
+}
+
+.doc-toc-toggle {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    position: fixed;
+    z-index: var(--z-overlay, 4000);
+    bottom: calc(var(--bottom-nav-height, 54px) + 16px + env(safe-area-inset-bottom));
+    left: 16px;
+    padding: 9px 14px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 600;
+    box-shadow: 0 6px 18px rgba(17, 24, 39, .2);
+    cursor: pointer;
+}
+
+/* ─────────────────────────────────────────
+    MOBILE — ToC becomes a floating toggle + slide-up panel
+───────────────────────────────────────── */
+@media (max-width: 900px) {
+    .doc-toc {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 60vh;
+    transform: translateY(100%);
+    border-left: none;
+    border-top: 3px solid var(--accent);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -6px 20px rgba(17, 24, 39, .15);
+    transition: transform .2s ease;
+    z-index: calc(var(--z-overlay, 4000) - 1);
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+    .doc-toc.doc-toc-open {
+    transform: translateY(0);
+}
+
+    .doc-toc-toggle {
+    display: inline-flex;
+}
 }

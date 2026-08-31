@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        (function () {
+            try {
+                const theme = localStorage.getItem("quiz_theme_pref") || "light";
+                const animations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+                const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                document.documentElement.setAttribute("data-theme", theme);
+                document.documentElement.setAttribute("data-animations", animations && !reduced ? "enabled" : "disabled");
+                document.documentElement.setAttribute("data-motion", reduced ? "reduced" : "normal");
+            } catch (_) { }
+        })();
+    </script>
+    <meta name="description"
+        content="دليل استخدام البشــمبصمج، مساعد الذكاء الاصطناعي داخل منصة إمتحانات بصمجي: كيفية فتحه، وما يمكنه فعله، وكيف يحافظ على بياناتك." />
+    <meta name="author" content="بلال عمرو محمد" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="كيفية استخدام البشــمبصمج | منصة إمتحانات بصمجي" />
+    <meta property="og:description"
+        content="دليل مساعد الذكاء الاصطناعي داخل المنصة: المحادثة، السجل، الإعدادات، وأدوات إنشاء وتعديل وحذف الاختبارات." />
+    <link rel="canonical" href="/how-to-use-ai-agent.html" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <title>كيفية استخدام البشــمبصمج | منصة إمتحانات بصمجي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="src/styles/themes.css">
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
+    <link rel="stylesheet" href="src/features/privacy-and-terms/privacy-and-terms.css">
+</head>
+
+<body>
+    <div class="top-bar" role="presentation" aria-hidden="true"></div>
+
+    <main>
+        <div class="page-wrapper">
+            <header class="header" role="banner">
+                <div class="logo-lockup">
+                    <img src="/favicon.png" alt="شعار منصة بصمجي" class="logo-mark" width="48" height="48" />
+                    <div class="brand-name">منصة إمتحانات بصمجي</div>
+                </div>
+                <h1>كيفية استخدام البشــمبصمج</h1>
+                <div class="doc-meta"><span>دليل الميزات</span><span>يحدَّث دورياً</span></div>
+            </header>
+
+            <p class="intro"><strong>البشــمبصمج</strong> هو مساعد الذكاء الاصطناعي المدمج داخل المنصة. يمكنه الإجابة
+                عن أسئلتك حول اختباراتك، ومساعدتك في تحليل نتائجك، بل وإنشاء أو تعديل أو حذف اختبار كامل نيابة عنك بعد
+                تأكيدك — كل ذلك من نافذة محادثة واحدة.</p>
+
+            <section class="section" aria-labelledby="s1">
+                <h2 id="s1">
+                    ١. أين تجده وكيف تفتحه
+                    <span class="section-badge">البداية</span>
+                </h2>
+                <p>يظهر البشــمبصمج كزر عائم (FAB) في الزاوية على صفحة "إمتحاناتك" الرئيسية، وأيضاً على صفحة نتيجة
+                    الاختبار بعد حلّه. الضغط عليه يفتح نافذة المحادثة فوق الصفحة الحالية دون مغادرتها.</p>
+                <ul>
+                    <li><strong>على صفحة إمتحاناتك:</strong> يمكنه الاطّلاع على قائمة اختباراتك (العناوين وعدد
+                        الأسئلة وأنواعها فقط، وليس محتوى الأسئلة نفسها) للإجابة عن أسئلة مثل "كم اختباراً لدي في مادة
+                        الفيزياء؟"، بالإضافة إلى إنشاء أو تعديل أو حذف اختبار بأمر منك.</li>
+                    <li><strong>على صفحة النتيجة:</strong> يطّلع فقط على ملخص أدائك في الاختبار الذي أنهيته للتو
+                        (النسبة، الأسئلة الخاطئة أو المتروكة) لتقديم تحليل وتوصيات — بلا أي صلاحية لإنشاء أو تعديل أو
+                        حذف اختبارات من هذه الصفحة.</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s2">
+                <h2 id="s2">
+                    ٢. التبويبات الثلاثة
+                    <span class="section-badge">الواجهة</span>
+                </h2>
+                <p>تحتوي نافذة المساعد على ثلاثة تبويبات في الأعلى:</p>
+                <ul>
+                    <li><strong>محادثة:</strong> التبويب الافتراضي، حيث تكتب سؤالك أو طلبك وتصلك الردود.</li>
+                    <li><strong>السجل:</strong> قائمة بمحادثاتك السابقة مع المساعد على هذه الصفحة، يمكنك فتح أي منها
+                        للمتابعة من حيث توقفت.</li>
+                    <li><strong>الإعدادات:</strong> لضبط مزوّد النموذج، لغة الردود، وتخصيصات أخرى (تفصيل كامل في القسم
+                        الخامس أدناه).</li>
+                </ul>
+                <p>على الشاشات الكبيرة تظهر أيضاً قائمة جانبية إضافية بجوار التبويبات، تتيح بدء محادثة جديدة، نسخ
+                    المحادثة الحالية كنص، والوصول السريع لآخر محادثاتك دون فتح تبويب السجل كاملاً. على الهاتف، هذه
+                    القائمة الجانبية مخفية والتنقل يتم فقط عبر التبويبات الثلاثة.</p>
+            </section>
+
+            <section class="section" aria-labelledby="s3">
+                <h2 id="s3">
+                    ٣. ماذا يمكنه أن يفعل باختباراتك؟
+                    <span class="section-badge">الصلاحيات</span>
+                </h2>
+                <p>على صفحة "إمتحاناتك"، وبعد إذن صريح منك في المحادثة، يستطيع المساعد:</p>
+                <ul>
+                    <li><strong>إنشاء اختبار جديد</strong> — يُنشئ الأسئلة بناءً على وصفك أو الملف الذي ترفعه له، ثم
+                        يحفظه ضمن اختباراتك مباشرة.</li>
+                    <li><strong>تعديل اختبار موجود</strong> — يبحث عن الاختبار بعنوانه ويعدّل الحقول التي تطلب تغييرها
+                        فقط، دون المساس بالباقي.</li>
+                    <li><strong>حذف اختبار</strong> — يحذف اختباراً بعد أن تذكر اسمه بوضوح وتؤكد الحذف داخل المحادثة
+                        نفسها.</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s4">
+                <h2 id="s4">
+                    ٤. لماذا يمكنك الوثوق بخطوة الحذف
+                    <span class="section-badge">الأمان</span>
+                </h2>
+                <p>الحذف عملية لا يمكن التراجع عنها، لذلك يعمل المساعد بقاعدة واضحة: <strong>لا يحذف أي اختبار إلا بعد
+                        أن تكتب اسمه بدقة وتؤكد رغبتك في حذفه ضمن نفس المحادثة.</strong> هذا التأكيد المكتوب هو المرجع
+                    الوحيد الذي يعتمد عليه — لا تظهر بعده أي نافذة تأكيد إضافية منفصلة، لتفادي أن يُطلب منك التأكيد
+                    مرتين على نفس القرار. إنشاء وتعديل الاختبارات يتبعان المنطق نفسه: لا تُنفَّذ أي عملية إلا بعد أن
+                    توافق عليها بوضوح في نص المحادثة.</p>
+            </section>
+
+            <section class="section" aria-labelledby="s5">
+                <h2 id="s5">
+                    ٥. رفع الملفات
+                    <span class="section-badge">إنشاء من ملف</span>
+                </h2>
+                <p>يمكنك إرفاق ملف مع رسالتك ليستعين به المساعد — مفيد مثلاً عند رفع محاضرة أو ملخص لإنشاء اختبار
+                    منه مباشرة. الأنواع المدعومة حالياً:</p>
+                <ul>
+                    <li><strong>الصور</strong> (JPEG، PNG، GIF، WebP).</li>
+                    <li><strong>ملفات PDF.</strong></li>
+                    <li><strong>مستندات Word (.docx)</strong> — يُستخرج النص منها قبل إرسالها للمساعد.</li>
+                </ul>
+            </section>
+
+            <section class="section" aria-labelledby="s6">
+                <h2 id="s6">
+                    ٦. تبويب الإعدادات
+                    <span class="section-badge">التخصيص</span>
+                </h2>
+                <p>يتيح لك تبويب الإعدادات:</p>
+                <ul>
+                    <li><strong>اختيار مزوّد النموذج</strong> — Google AI Studio (Gemini)، DeepSeek، أو Claude.</li>
+                    <li><strong>حفظ مفتاح API خاص بك (اختياري)</strong> — يُحفظ على جهازك فقط ولا يُرسل إلى خوادم
+                        المنصة، ويُستخدم مباشرة عند إرسال رسائلك لمزوّد النموذج الذي اخترته. حفظ مفتاحك الخاص يتيح لك
+                        أيضاً اختيار نموذج محدد من ذلك المزوّد بدلاً من النموذج الافتراضي.</li>
+                    <li><strong>لغة ردود المساعد</strong> — تلقائي، العربية، أو الإنجليزية.</li>
+                    <li><strong>تخصيص التوجيه الأساسي (System Prompt)</strong> — نص قابل للتعديل يوجّه أسلوب المساعد
+                        على هذه الصفحة تحديداً، مع زر لإعادته إلى الإعداد الافتراضي في أي وقت.</li>
+                </ul>
+                <p>بدون مفتاح خاص، تُستخدم إمكانية المنصة العامة إن كانت متاحة لحسابك (مخصصة حالياً للمشرفين ولمستخدمي
+                    المستوى العاشر فأعلى)؛ خلاف ذلك يمكنك حفظ مفتاحك الخاص أعلاه لاستخدام المساعد بدون قيود.</p>
+            </section>
+        </div>
+    </main>
+</body>
+
+<script type="module" src="src/features/privacy-and-terms/documentation-shell.js"></script>
+<script type="module" src="src/features/privacy-and-terms/doc-toc.js"></script>
+
+</html>

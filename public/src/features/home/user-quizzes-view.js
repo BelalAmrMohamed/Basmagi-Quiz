@@ -14,6 +14,7 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { _prompt } from "../../components/notifications/notifications.js";
+import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { 
   currentFolderId, 
   getChildren, 
@@ -28,6 +29,7 @@ import {
   createNewFolderOrCourse,
   createFolderOrCourseCard,
   buildFolderHash,
+  openMoveToDialog,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -58,6 +60,7 @@ import {
   CHECK_SQUARE_ICON_SVG,
   TRASH_ICON_SVG,
   DOWNLOAD_ICON_SVG,
+  MOVE_TO_ICON_SVG,
 } from "./icons.js";
 import {
   showNotification,
@@ -632,7 +635,7 @@ export function updateBulkActionBar(forceActive) {
   // when zero items are selected).
   const hasSelection = count > 0;
   bar
-    .querySelectorAll(".bulk-delete-btn, .bulk-extract-btn, .bulk-upload-btn")
+    .querySelectorAll(".bulk-delete-btn, .bulk-extract-btn, .bulk-upload-btn, .bulk-move-btn")
     .forEach((btn) => {
       btn.style.display = hasSelection ? "" : "none";
     });
@@ -668,6 +671,7 @@ function renderBulkActionBar() {
       <div class="bulk-count">لم يتم تحديد أي شيء</div>
       <div class="bulk-actions">
         <button class="btn bulk-select-all-btn">تحديد الكل</button>
+        <button class="btn bulk-move-btn" style="display:none" title="نقل إلى" aria-label="نقل إلى">${MOVE_TO_ICON_SVG}</button>
         <button class="btn bulk-extract-btn" style="display:none" title="استخراج" aria-label="استخراج">${DOWNLOAD_ICON_SVG}</button>
         <button class="btn bulk-delete-btn" style="display:none" title="حذف" aria-label="حذف">${TRASH_ICON_SVG}</button>
         ${uploadBtnHtml}
@@ -716,6 +720,22 @@ function renderBulkActionBar() {
         selectedUserQuizzes.clear();
         renderUserQuizzesView();
       }
+    };
+
+    // ── Bulk move — the folder-tree picker (openMoveToDialog) already
+    // accepts an array of ids and moves all of them in one storage write
+    // (see moveItemsToFolder in user-quizzes-folders.js), so the only work
+    // here is collecting the current selection and handing it off. One
+    // gap: openMoveToDialog doesn't clear the shared selectedUserQuizzes
+    // Set itself (it's also used by the single-item "نقل إلى" menu action,
+    // which never touches that Set at all), so without clearing it here the
+    // moved ids would stay marked "selected" — stale entries that would
+    // silently resurface the next time the bulk bar is used. Delete already
+    // clears the same Set for the same reason; move needs to as well.
+    bar.querySelector(".bulk-move-btn").onclick = () => {
+      if (selectedUserQuizzes.size === 0) return;
+      openMoveToDialog([...selectedUserQuizzes]);
+      selectedUserQuizzes.clear();
     };
 
     bar.querySelector(".bulk-extract-btn").onclick = async () => {

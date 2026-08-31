@@ -791,6 +791,61 @@ body.sidebar-expanded {
   flex-shrink: 0;
 }
 
+/* ── Docs ("المستندات") section — added via documentation-shell.js only,
+   so it only ever renders on the doc pages, never on the main app pages. */
+.docs-menu-heading {
+  padding: 4px 12px 6px;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.docs-menu-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.docs-menu-soon-badge {
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--color-text-secondary, #6b7280);
+  white-space: nowrap;
+}
+
+.docs-menu-search-wrap {
+  padding: 0 12px 8px;
+}
+
+.docs-menu-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--color-text-primary, #111827);
+  background: var(--color-background-secondary, #f5f5f5);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+}
+
+.docs-menu-search:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.docs-menu-search::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.docs-menu-empty {
+  margin: 4px 12px;
+  padding: 6px 0;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.78rem;
+}
+
 /* ── Section header labels: must NOT stretch (flex:1 is for menu-items only) */
 .theme-section-header .menu-label {
   flex: none;

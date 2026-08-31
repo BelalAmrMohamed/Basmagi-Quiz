@@ -71,6 +71,88 @@ if (sidebarNav) {
     sidebar.insertAdjacentHTML("beforeend", `<div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية"><button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل" data-tooltip="تواصل مع المطور"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /><path d="M8 12h.01M12 12h.01M16 12h.01" /></svg><span class="menu-label">تواصل مع المطور</span></button><button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span class="menu-label">تثبيت التطبيق</span></button></div>`);
 }
 
+// ── "المستندات" (Docs) links ────────────────────────────────────────────
+// This shell (documentation-shell.js) is only loaded on the doc pages
+// themselves (about/privacy/terms/how-to-*), not the main app pages, so
+// this section only ever renders there — the main app sidebar (rendered by
+// side-menu.js alone, without this shell) is intentionally left untouched.
+// A flat list (rather than a collapsible submenu) is used since there's no
+// existing collapsible-group pattern in side-menu.js to reuse, and six
+// links don't really need one.
+const DOCS_LINKS = [
+  { href: "/about.html", label: "عن المنصة" },
+  { href: "/privacy-policy.html", label: "سياسة الخصوصية" },
+  { href: "/terms-of-service.html", label: "شروط الخدمة" },
+  { href: "/how-to-create-a-quiz.html", label: "إنشاء اختبار" },
+  // Still marked "قريباً" (Coming Soon) here, same soft-launch signal the
+  // old per-page docs-switcher used to show for this doc specifically.
+  { href: "/how-to-upload-a-quiz.html", label: "رفع اختبار", soon: true },
+  { href: "/how-to-use-ai-agent.html", label: "البشــمبصمج" },
+];
+
+if (sidebarNav) {
+  const docsLinksHtml = DOCS_LINKS.map(
+    ({ href, label, soon }) =>
+      `<a href="${href}" class="menu-item docs-menu-link" title="${label}" data-tooltip="${label}" data-docs-label="${label}">` +
+      `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" /></svg>` +
+      `<span class="menu-label">${label}${soon ? ' <small class="docs-menu-soon-badge">قريباً</small>' : ""}</span>` +
+      `</a>`,
+  ).join("");
+
+  sidebarNav.insertAdjacentHTML(
+    "beforeend",
+    `<div class="menu-divider" role="separator" aria-hidden="true"></div>` +
+      `<div class="docs-menu-heading sidebar-expanded-only" aria-hidden="true">المستندات</div>` +
+      // Search only makes sense once the sidebar is wide enough to show an
+      // input + labels — hidden on the collapsed icon-rail via
+      // sidebar-expanded-only, same convention every other text control in
+      // this sidebar already follows (see the theme controls section
+      // above). With only six links this is a small convenience, not a
+      // necessity, but it's cheap and scales naturally if more docs are
+      // added later.
+      `<div class="docs-menu-search-wrap sidebar-expanded-only">` +
+      `<input type="search" id="docsMenuSearch" class="docs-menu-search" placeholder="بحث في المستندات" aria-label="بحث في المستندات" autocomplete="off">` +
+      `</div>` +
+      `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}` +
+      `<p class="docs-menu-empty" hidden>لا توجد نتائج</p>` +
+      `</div>`,
+  );
+
+  // Mark the current page's link active via location.pathname, generically,
+  // instead of the old per-file hardcoded docs-switcher-link--active class.
+  const currentPath = window.location.pathname.split("/").pop() || "index.html";
+  sidebarNav.querySelectorAll(".docs-menu-section .menu-item[href]").forEach((link) => {
+    const linkPath = link.getAttribute("href").replace(/^\//, "");
+    const isActive = linkPath === currentPath;
+    link.classList.toggle("active", isActive);
+    if (isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
+
+  // ── Filter-as-you-type ──────────────────────────────────────────────────
+  // Client-side only: filters the six links already in the DOM by their
+  // Arabic label, no fetch/index needed at this scale. Collapsing the
+  // sidebar back to icon-only (mobile, or a manual collapse) clears the
+  // filter so a stale search doesn't leave links hidden with no visible way
+  // to search again.
+  const searchInput = document.getElementById("docsMenuSearch");
+  const docsSection = sidebarNav.querySelector(".docs-menu-section");
+  const emptyState = docsSection?.querySelector(".docs-menu-empty");
+  if (searchInput && docsSection) {
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+      let anyVisible = false;
+      docsSection.querySelectorAll(".docs-menu-link").forEach((link) => {
+        const label = (link.dataset.docsLabel || "").toLowerCase();
+        const matches = !query || label.includes(query);
+        link.hidden = !matches;
+        if (matches) anyVisible = true;
+      });
+      if (emptyState) emptyState.hidden = anyVisible;
+    });
+  }
+}
+
 const mobileProfile = document.querySelector('.bottom-nav-item-profile .bottom-nav-icon');
 if (mobileProfile) mobileProfile.innerHTML = `<svg class="bottom-nav-default-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg><img class="bottom-nav-avatar" id="navBottomAvatar" src="" alt="" style="display:none;">`;
 await import("../../shared/theme-controller.js");
