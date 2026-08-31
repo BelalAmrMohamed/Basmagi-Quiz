@@ -99,9 +99,10 @@ function injectModalHtml() {
  * @param {string} params.quizId Supabase Quiz ID
  * @param {number} params.questionIndex 0-based question index
  * @param {string} params.questionText Text of the question to display
+ * @param {string} [params.quizTitle] Title of the quiz
  * @param {Function} [params.onSuccess] Callback when successfully reported
  */
-export function openReportModal({ quizId, questionIndex, questionText, onSuccess }) {
+export function openReportModal({ quizId, questionIndex, questionText, quizTitle, onSuccess }) {
   injectModalHtml();
 
   if (isQuestionReported(quizId, questionIndex)) {
@@ -170,12 +171,34 @@ export function openReportModal({ quizId, questionIndex, questionText, onSuccess
       }
 
       reportedQuestions.add(`${quizId}-${questionIndex}`);
+
+      // Save report in user's localStorage history
+      try {
+        const STORAGE_KEY = "user_reported_questions";
+        const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        const reportRecord = {
+          id: data.report?.id || crypto.randomUUID?.() || Date.now().toString(),
+          quiz_id: quizId,
+          quiz_title: quizTitle || document.title.replace(" | منصة إمتحانات بصمجي", "").trim() || "اختبار",
+          question_index: questionIndex,
+          question_text: questionText || `سؤال رقم ${questionIndex + 1}`,
+          reason: finalReason,
+          status: "pending",
+          created_at: data.report?.created_at || new Date().toISOString()
+        };
+        const filtered = Array.isArray(existing) ? existing.filter(r => r.id !== reportRecord.id) : [];
+        filtered.unshift(reportRecord);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered.slice(0, 100)));
+      } catch (storageErr) {
+        console.error("Failed to save report in local storage:", storageErr);
+      }
+
       showNotification("تم إرسال البلاغ بنجاح. شكراً لك!");
       
       overlay.classList.remove("show");
       
       if (typeof onSuccess === 'function') {
-        onSuccess();
+        onSuccess(data.report);
       }
     } catch (err) {
       showNotification(err.message, true);

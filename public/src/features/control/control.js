@@ -12,20 +12,11 @@ import {
 import { syncAdminSession } from "../../shared/adminBadgeSync.js";
 
 import { _alert } from "../../components/notifications/notifications.js";
-import {
-  initReportsView,
-  fetchPendingReportsCount,
-} from "./reports-view.js";
 
 const API_URL = "/api/admin-control";
 
 // Module-scoped Supabase client — set once in init() via the shared
-// registry (see supabaseClientRegistry.js), used in logout(). Previously
-// this called window.supabase.createClient() directly, which created a
-// second GoTrueClient instance racing the home page's client against the
-// same "sb-...-auth-token" localStorage key — the source of the "Multiple
-// GoTrueClient instances" warning and the intermittent 503s from Supabase
-// (concurrent session refresh calls stepping on each other).
+// registry (see supabaseClientRegistry.js), used in logout().
 let _supabaseClient = null;
 let _token = getToken();
 
@@ -37,10 +28,7 @@ async function init() {
     return;
   }
 
-  // 2. Reconcile local admin state with the live Supabase session, reusing
-  //    the shared client (ensureSharedSupabaseClient() inside
-  //    syncAdminSession — memoized, so this is a no-op if a client already
-  //    exists) instead of creating a second one here.
+  // 2. Reconcile local admin state with the live Supabase session
   try {
     _supabaseClient = await syncAdminSession({
       onSignedOut: () => {
@@ -99,45 +87,9 @@ function renderPlatformStats(stats) {
     ownerEmailDisplay.textContent = stats.ownerEmail ?? "—";
 }
 
-// ── View Switching & Reports Badge ────────────────────────────────────────────
-async function refreshReportsBadge() {
-  const count = await fetchPendingReportsCount(getHeaders);
-  const badge = document.getElementById("reportsBadge");
-  if (badge) {
-    badge.textContent = count;
-    badge.style.display = count > 0 ? "inline-block" : "none";
-  }
-}
-
-let currentView = "overview";
-function switchView(viewName) {
-  currentView = viewName;
-  const tabOverview = document.getElementById("tabOverview");
-  const tabReports = document.getElementById("tabReports");
-  const overviewView = document.getElementById("overviewView");
-  const reportsView = document.getElementById("reportsView");
-
-  if (viewName === "reports") {
-    tabOverview?.classList.remove("active");
-    tabReports?.classList.add("active");
-    if (overviewView) overviewView.style.display = "none";
-    if (reportsView) {
-      reportsView.style.display = "block";
-      initReportsView(reportsView, getHeaders, showMessage, refreshReportsBadge);
-    }
-  } else {
-    tabReports?.classList.remove("active");
-    tabOverview?.classList.add("active");
-    if (reportsView) reportsView.style.display = "none";
-    if (overviewView) overviewView.style.display = "block";
-  }
-}
-window.switchView = switchView;
-
 // ── Data loading ───────────────────────────────────────────────────────────────
 async function loadData() {
   try {
-    refreshReportsBadge();
     const res = await fetch(API_URL, { headers: getHeaders() });
     const data = await res.json();
 

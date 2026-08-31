@@ -67,14 +67,8 @@
             <img src="/favicon.png" alt="Logo" width="28" height="28">
             منصة إمتحانات بصمجي
         </div>
-        <div class="topnav-nav-tabs">
-            <button class="nav-tab active" id="tabOverview" onclick="switchView('overview')">لوحة التحكم</button>
-            <button class="nav-tab" id="tabReports" onclick="switchView('reports')">
-                البلاغات
-                <span class="badge-pending" id="reportsBadge" style="display: none;">0</span>
-            </button>
-        </div>
         <div class="topnav-actions">
+            <button class="btn-nav" onclick="window.location.href='/reports.html'">البلاغات</button>
             <button class="btn-nav" onclick="window.location.href='/'">عودة للرئيسية</button>
             <button class="btn-nav danger" onclick="logout()">تسجيل الخروج</button>
         </div>
@@ -157,9 +151,6 @@
 
         </div>
     </div>
-
-    <!-- REPORTS VIEW -->
-    <div id="reportsView" class="reports-container" style="display: none;"></div>
 
 
     <!-- CONFIRM MODAL (generic — reused for admin removal) -->
