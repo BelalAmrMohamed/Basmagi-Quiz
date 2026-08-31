@@ -92,108 +92,6 @@ body.sidebar-expanded {
   align-items: center;
 }
 
-/* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
-.sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-background-secondary, #f5f5f5);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  position: absolute;
-  top: 22px;
-  left: -14px; /* straddles the LEFT edge of the right-anchored sidebar */
-  right: auto;
-  z-index: 10;
-  color: var(--color-text);
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.12));
-}
-
-.sidebar-toggle:hover {
-  background: var(--color-primary-light, #e8f0fe);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-}
-
-.sidebar-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* The SVG path M15 18l-6-6 6-6 is a left-pointing chevron (‹).
-   Collapsed → points LEFT (‹) meaning "expand"
-   Expanded  → rotate 180° → points RIGHT (›) meaning "collapse" */
-.toggle-chevron {
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.expanded .toggle-chevron {
-  transform: rotate(180deg);
-}
-
-/* ============================================================================
-   BOTTOM NAVIGATION BAR — Play Store style (mobile only, ≤768px)
-   Hidden entirely on desktop; desktop sidebar is untouched.
-   ============================================================================ */
-.bottom-nav {
-  display: none;
-}
-
-[data-theme="dark-slate"] #breadcrumb,
-[data-theme="dark"] #breadcrumb {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-}
-
-/* Solution for showing the side bar at the right, and the rest normally rtl */
-.side-menu nav {
-  direction: ltr;
-}
-
-.side-menu nav > * {
-  direction: rtl;
-}
-
-/* Side menu scrollbar */
-.side-menu nav::-webkit-scrollbar {
-  width: 6px;
-}
-
-.side-menu nav::-webkit-scrollbar-track {
-  background: var(--color-background-secondary);
-}
-
-.side-menu nav::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-.side-menu nav::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-tertiary);
-}
-
-/* ── Backdrop (mobile overlay) ───────────────────────────────────────────── */
-.side-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: calc(var(--z-overlay, 500) - 1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.side-menu-backdrop.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 /* ── Nav Scroll Container ────────────────────────────────────────────────── */
 .sidebar nav {
   flex: 1;
@@ -207,13 +105,7 @@ body.sidebar-expanded {
    *            can paint outside the block edge. Supported in all modern browsers.
    */
   overflow-x: clip;
-  /*
-   * 64px top padding clears the absolutely-positioned .sidebar-toggle button
-   * (top: 22px + height: 28px ≈ 50px) and gives breathing room above the
-   * first icon.  When the new .sidebar-header HTML is present, the header
-   * occupies the top 56px in flow; the sibling rule below reduces this to 8px.
-   */
-  padding: 64px 8px 24px;
+  padding: 8px 8px 24px;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
@@ -228,21 +120,6 @@ body.sidebar-expanded {
   direction: ltr;
 }
 
-/* New HTML: .sidebar-header is in-flow before nav, so its 56px height already
-   provides top clearance — restore compact padding. */
-.sidebar-header ~ nav {
-  padding-top: 8px;
-}
-
-/* Collapsed rail: .sidebar-favicon is now always in-flow just above <nav>
-   (see Persistent Minimized Logo below), so it already provides the top
-   clearance the 64px padding used to exist for. Cut nav's own top padding
-   down to a small breathing gap instead of double-spacing above the first
-   icon. */
-.sidebar:not(.expanded) nav {
-  padding-top: 12px;
-}
-
 .sidebar nav::-webkit-scrollbar {
   width: 4px;
 }
@@ -254,94 +131,159 @@ body.sidebar-expanded {
   border-radius: 4px;
 }
 
-/* ── Sidebar Header ──────────────────────────────────────────────────────── */
-/*
- * A real in-flow header at the top of the sidebar (not absolute).
- * Desktop collapsed (64px): shows only the favicon pill.
- * Desktop expanded (240px): shows the full logo wordmark.
- * Mobile bottom-sheet: shows a drag-handle pill above the logo row.
- */
+/* ── Sidebar Header (Expanded Mode) ──────────────────────────────────────── */
 .sidebar-header {
-  display: flex;
+  display: none;
   align-items: center;
-  justify-content: center;
-  height: 56px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-background);
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  overflow: hidden;
-  padding: 0 12px;
-}
-
-/* Sidebar Logo Thumbnail — the <a> wrapping both the collapsed favicon and
-   expanded wordmark is made a full-width flex container so the collapsed
-   favicon can center itself horizontally in the 64px rail. The expanded
-   wordmark keeps its own original left-aligned flex behavior (unaffected
-   here) since .sidebar-logo sets its own display/align rules below. */
-.sidebar > a:has(.sidebar-logo) {
-  display: flex;
-  flex-shrink: 0;
-}
-
-/* Favicon-only pill shown in collapsed state. In the actual markup this is
-   a direct flex child of .sidebar itself (a sibling of the <a> that wraps
-   the expanded wordmark, NOT nested inside it) — so the .sidebar > a:has(...)
-   centering rule above never applies to it. .sidebar has no align-items
-   override (defaults to stretch), and stretch is a no-op on a cross-axis
-   item with a fixed width, so the pill was left flush to the cross-axis
-   start instead of centered in the 64px rail. width: 100% turns
-   .sidebar-favicon into a full-width centering wrapper (its own
-   justify-content: center below then centers the fixed 36px pill inside
-   it) without changing the pill's own size/shape. */
-.sidebar-favicon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 8px 10px 8px 14px;
+  min-height: 52px;
   width: 100%;
+  box-sizing: border-box;
   flex-shrink: 0;
-  margin-top: 9px;
-  margin-bottom: 7px;
-  transition: opacity 200ms ease;
 }
 
-.sidebar-favicon img {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  overflow: hidden;
-  object-fit: contain;
+.sidebar.expanded .sidebar-header {
+  display: flex;
 }
 
-.sidebar.expanded nav {
-  padding-top: 15px;
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
 }
 
-/* Collapsed: show favicon, hide wordmark */
-.sidebar:not(.expanded) .sidebar-favicon {
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* In-header collapse button when sidebar is expanded */
+.sidebar-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-md, 8px);
+  cursor: pointer;
+  position: relative;
+  color: var(--color-text-secondary, #94a3b8);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sidebar-collapse-btn:hover,
+.sidebar-collapse-btn:focus-visible {
+  background: var(--color-background-secondary, rgba(255, 255, 255, 0.08));
+  color: var(--color-primary, #6366f1);
+  outline: none;
+}
+
+.sidebar-collapse-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapse-btn .icon-default {
   opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar-collapse-btn .icon-hover {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.85);
+  pointer-events: none;
+}
+
+.sidebar-collapse-btn:hover .icon-default,
+.sidebar-collapse-btn:focus-visible .icon-default {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.sidebar-collapse-btn:hover .icon-hover,
+.sidebar-collapse-btn:focus-visible .icon-hover {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Sidebar Favicon (Collapsed Rail Mode) ────────────────────────────────── */
+.sidebar-favicon {
+  display: none;
+}
+
+.sidebar:not(.expanded) .sidebar-favicon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 10px auto 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  color: var(--color-text);
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.sidebar:not(.expanded) .sidebar-favicon:hover,
+.sidebar:not(.expanded) .sidebar-favicon:focus-visible {
+  background: var(--color-background-secondary, rgba(255, 255, 255, 0.08));
+  outline: none;
+}
+
+.sidebar-favicon .sidebar-favicon-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar-favicon .sidebar-expand-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary, #6366f1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+}
+
+.sidebar-favicon:hover .sidebar-favicon-img,
+.sidebar-favicon:focus-visible .sidebar-favicon-img {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.sidebar-favicon:hover .sidebar-expand-icon,
+.sidebar-favicon:focus-visible .sidebar-expand-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar.expanded .sidebar-favicon {
+  display: none !important;
 }
 
 .sidebar:not(.expanded) .sidebar-logo {
   display: none;
-}
-
-/* Expanded: hide favicon, show wordmark */
-.sidebar.expanded .sidebar-favicon {
-  display: none;
-}
-
-.sidebar.expanded .sidebar-logo {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0px;
-}
-
-/* Side bar logo (now in-flow, inside .sidebar-header) */
-.sidebar-logo {
-  pointer-events: none;
 }
 
 /**/
@@ -1413,9 +1355,16 @@ body.sidebar-expanded {
     align-items: center;
   }
 
-  /* Favicon hidden on mobile — full logo always shows */
-  .sidebar .sidebar-favicon {
+  /* Favicon and collapse button hidden on mobile — full logo always shows */
+  .sidebar .sidebar-favicon,
+  .sidebar-collapse-btn {
     display: none !important;
+  }
+
+  .sidebar .sidebar-header {
+    display: flex !important;
+    justify-content: center;
+    padding: 0 12px;
   }
 
   /* No body padding shift on mobile — sidebar is an overlay.
@@ -1454,10 +1403,6 @@ body.sidebar-expanded {
   .theme-section-header {
     justify-content: center !important;
     padding: 8px 14px !important;
-  }
-
-  .sidebar-toggle {
-    display: none;
   }
 
   /* Nav: no extra top padding — logo lives in .sidebar-header now.
@@ -1705,8 +1650,11 @@ html[data-motion="reduced"] .side-menu-backdrop,
 html[data-motion="reduced"] .menu-item,
 html[data-motion="reduced"] .menu-item svg,
 html[data-motion="reduced"] .theme-selector-btn,
-html[data-motion="reduced"] .sidebar-toggle,
-html[data-motion="reduced"] .toggle-chevron,
+html[data-motion="reduced"] .sidebar-collapse-btn,
+html[data-motion="reduced"] .sidebar-favicon,
+html[data-motion="reduced"] .sidebar-favicon img,
+html[data-motion="reduced"] .sidebar-favicon svg,
+html[data-motion="reduced"] .sidebar-collapse-btn svg,
 html[data-motion="reduced"] .menu-label,
 html[data-motion="reduced"] .sidebar-expanded-only,
 html[data-motion="reduced"] body {

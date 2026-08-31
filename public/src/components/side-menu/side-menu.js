@@ -93,7 +93,8 @@ mountSignInDialog();
   const sidebar = document.getElementById("sidebar");
   const backdrop = document.getElementById("sideMenuBackdrop");
   const closeBtn = document.getElementById("closeMenuBtn"); // mobile-only
-  const toggleBtn = document.getElementById("sidebarToggle"); // desktop-only
+  const expandBtn = document.getElementById("sidebarExpandBtn"); // desktop expand trigger (collapsed rail favicon)
+  const collapseBtn = document.getElementById("sidebarCollapseBtn"); // desktop collapse button (expanded header)
   const animationToggle = document.getElementById("animationToggle");
   const highPerformanceToggle = document.getElementById(
     "highPerformanceToggle",
@@ -331,14 +332,22 @@ mountSignInDialog();
     setupHoverTooltips();
   }
 
-  // ── Desktop Toggle ──────────────────────────────────────────────────────────
+  // ── Desktop Expand/Collapse Toggles ────────────────────────────────────────
 
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", () => {
-      const willExpand = !sidebar.classList.contains("expanded");
-      applyDesktopState(willExpand);
+  if (expandBtn) {
+    expandBtn.addEventListener("click", () => {
+      applyDesktopState(true);
       try {
-        localStorage.setItem(STORAGE_KEY, String(willExpand));
+        localStorage.setItem(STORAGE_KEY, "true");
+      } catch (_) {}
+    });
+  }
+
+  if (collapseBtn) {
+    collapseBtn.addEventListener("click", () => {
+      applyDesktopState(false);
+      try {
+        localStorage.setItem(STORAGE_KEY, "false");
       } catch (_) {}
     });
   }

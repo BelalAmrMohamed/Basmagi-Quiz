@@ -180,83 +180,6 @@ body.sidebar-expanded {
   display: none;
 }
 
-/* ── Desktop Expand/Collapse Toggle ──────────────────────────────────────── */
-.sidebar-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-background-secondary, #f5f5f5);
-  border: 1px solid var(--color-border);
-  cursor: pointer;
-  position: absolute;
-  top: 22px;
-  left: -14px;
-  right: auto;
-  z-index: 10;
-  color: var(--color-text);
-  transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-  box-shadow: var(--shadow-sm, 0 1px 4px rgba(0, 0, 0, 0.12));
-}
-
-.sidebar-toggle:hover {
-  background: var(--color-primary-light, #e8f0fe);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-}
-
-.sidebar-toggle:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
-
-/* Collapsed → points LEFT (‹) meaning "expand"
-   Expanded  → rotate 180° → points RIGHT (›) meaning "collapse" */
-.toggle-chevron {
-  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.expanded .toggle-chevron {
-  transform: rotate(180deg);
-}
-
-[data-theme="light"] .hamburger-icon {
-  color: var(--color-text-primary);
-}
-
-[data-theme="dark-slate"] .hamburger-icon,
-[data-theme="dark"] .hamburger-icon {
-  color: var(--color-text-primary);
-}
-
-.hamburger-icon .bar {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 0.25s ease,
-    opacity 0.2s ease;
-}
-
-/* ── Backdrop (mobile overlay) ───────────────────────────────────────────── */
-.side-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-  z-index: calc(var(--z-overlay, 500) - 1);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.side-menu-backdrop.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 /* ── Nav Scroll Container ────────────────────────────────────────────────── */
 .sidebar nav {
   flex: 1;
@@ -268,14 +191,9 @@ body.sidebar-expanded {
    *            theme-selector-btn:active translateY(-2px) to be clipped at top.
    *   clip   → clips visually without creating a BFC, so children's transforms
    *            can paint outside the block edge. Supported in all modern browsers.
-   *
-   * Note this also clips a plain [data-tooltip]::after bubble positioned
-   * outside nav's edge — that's why tooltips use a JS-positioned
-   * `.sidebar-hover-tooltip` (position: fixed) instead; see its rule below
-   * and setupHoverTooltips() in quiz.js.
    */
   overflow-x: clip;
-  padding: 64px 8px 24px; /* .sidebar-logo is in-flow above nav, so no extra top clearance needed */
+  padding: 8px 8px 24px;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
@@ -296,79 +214,158 @@ body.sidebar-expanded {
   border-radius: 4px;
 }
 
-/* ── Sidebar Logo ─────────────────────────────────────────────────────────── */
-.sidebar.expanded nav {
-  padding-top: 15px;
-}
-
-/* Bug 4 Fix — Collapsed favicon spacing: nav's base rule (`padding: 64px 8px
-   24px`, further up in this file) reserves 64px of top padding to clear an
-   absolutely-positioned toggle button in a different layout. That 64px only
-   ever got overridden for the *expanded* state above — nothing brought it
-   back down for the collapsed 64px rail, so the favicon (which already
-   provides its own top clearance via .sidebar-favicon's margin-top/bottom)
-   was left floating with ~64px of dead space beneath it before the first
-   nav icon. Matches the reference side-menu.css's
-   `.sidebar:not(.expanded) nav { padding-top: 12px; }` exactly. */
-.sidebar:not(.expanded) nav {
-  padding-top: 12px;
-}
-
-.sidebar:not(.expanded) .sidebar-logo {
+/* ── Sidebar Header (Expanded Mode) ──────────────────────────────────────── */
+.sidebar-header {
   display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 8px 14px;
+  min-height: 52px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
-.sidebar.expanded .sidebar-logo {
+.sidebar.expanded .sidebar-header {
+  display: flex;
+}
+
+.sidebar-brand-link {
   display: flex;
   align-items: center;
-  margin-top: 10px;
-  margin-bottom: 0px;
+  text-decoration: none;
+  color: inherit;
+  min-width: 0;
 }
 
 .sidebar-logo {
+  display: flex;
+  align-items: center;
   pointer-events: none;
 }
 
-/* ── Sidebar Favicon (collapsed rail only) ───────────────────────────────────
-   Icon-only pill shown in the collapsed 64px rail in place of the full
-   wordmark logo. It's a direct flex child of .sidebar (a sibling of
-   .sidebar-logo, positioned before <nav> in the markup), so .sidebar's
-   default align-items: stretch would otherwise leave it flush to the
-   cross-axis start instead of centered in the rail. width: 100% turns
-   .sidebar-favicon into a full-width centering wrapper — its own
-   justify-content: center then centers the fixed 36px pill inside it —
-   without changing the pill's own size/shape.
-   Note: unlike the main side-menu, this is NOT wrapped in a link on the
-   Quiz page — the logo is intentionally not clickable here, so no
-   pointer/anchor styling is applied. */
-.sidebar-favicon {
-  display: none;
+/* In-header collapse button when sidebar is expanded */
+.sidebar-collapse-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: var(--border-radius-md, 8px);
+  cursor: pointer;
+  position: relative;
+  color: var(--color-text-secondary, #94a3b8);
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
   flex-shrink: 0;
-  margin-top: 9px;
-  margin-bottom: 7px;
-  transition: opacity 200ms ease;
+}
+
+.sidebar-collapse-btn:hover,
+.sidebar-collapse-btn:focus-visible {
+  background: var(--color-background-secondary, rgba(255, 255, 255, 0.08));
+  color: var(--color-primary, #6366f1);
+  outline: none;
+}
+
+.sidebar-collapse-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapse-btn .icon-default {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar-collapse-btn .icon-hover {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.85);
   pointer-events: none;
 }
 
-.sidebar-favicon img {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  overflow: hidden;
-  object-fit: contain;
+.sidebar-collapse-btn:hover .icon-default,
+.sidebar-collapse-btn:focus-visible .icon-default {
+  opacity: 0;
+  transform: scale(0.85);
 }
 
-/* Collapsed: show favicon (centered), hide wordmark */
+.sidebar-collapse-btn:hover .icon-hover,
+.sidebar-collapse-btn:focus-visible .icon-hover {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Sidebar Favicon (Collapsed Rail Mode) ────────────────────────────────── */
+.sidebar-favicon {
+  display: none;
+}
+
 .sidebar:not(.expanded) .sidebar-favicon {
   display: flex;
-  opacity: 1;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: 10px auto 4px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  color: var(--color-text);
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
 }
 
-/* Expanded: hide favicon, show wordmark (handled above by .sidebar-logo) */
+.sidebar:not(.expanded) .sidebar-favicon:hover,
+.sidebar:not(.expanded) .sidebar-favicon:focus-visible {
+  background: var(--color-background-secondary, rgba(255, 255, 255, 0.08));
+  outline: none;
+}
+
+.sidebar-favicon .sidebar-favicon-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: contain;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.sidebar-favicon .sidebar-expand-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary, #6366f1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+}
+
+.sidebar-favicon:hover .sidebar-favicon-img,
+.sidebar-favicon:focus-visible .sidebar-favicon-img {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.sidebar-favicon:hover .sidebar-expand-icon,
+.sidebar-favicon:focus-visible .sidebar-expand-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .sidebar.expanded .sidebar-favicon {
+  display: none !important;
+}
+
+.sidebar:not(.expanded) .sidebar-logo {
   display: none;
 }
 
@@ -1209,8 +1206,15 @@ body.sidebar-expanded {
     align-items: center;
   }
 
-  .sidebar .sidebar-favicon {
+  .sidebar .sidebar-favicon,
+  .sidebar-collapse-btn {
     display: none !important;
+  }
+
+  .sidebar .sidebar-header {
+    display: flex !important;
+    justify-content: center;
+    padding: 0 12px;
   }
 
   /* Full labels always visible on mobile */
@@ -1240,10 +1244,6 @@ body.sidebar-expanded {
     padding: 8px 14px !important;
   }
 
-  .sidebar-toggle {
-    display: none;
-  }
-
   /* Nav: logo lives above nav in-flow (sticky), so nav itself just scrolls */
   .sidebar nav {
     padding-top: 8px;
@@ -1267,8 +1267,11 @@ html[data-motion="reduced"] {
   .menu-item,
   .menu-item svg,
   .theme-selector-btn,
-  .sidebar-toggle,
-  .toggle-chevron,
+  .sidebar-collapse-btn,
+  .sidebar-favicon,
+  .sidebar-favicon img,
+  .sidebar-favicon svg,
+  .sidebar-collapse-btn svg,
   .menu-label,
   .sidebar-expanded-only,
   body {
