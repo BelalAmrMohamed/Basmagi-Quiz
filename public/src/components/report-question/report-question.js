@@ -19,25 +19,25 @@ function injectModalHtml() {
       <div class="report-modal-card">
         <div class="report-modal-header">
           <h3>الإبلاغ عن سؤال</h3>
-          <button type="button" class="report-close-btn" id="reportCloseBtn">&times;</button>
+          <button type="button" class="report-close-btn" id="reportCloseBtn" aria-label="إغلاق">&times;</button>
         </div>
         <div class="report-question-preview" id="reportQuestionText"></div>
         <form id="reportQuestionForm" class="report-reasons-form">
           <label class="report-reason-label">
             <input type="radio" name="reportReason" value="إجابة خاطئة" required>
-            إجابة خاطئة
+            <span>إجابة خاطئة</span>
           </label>
           <label class="report-reason-label">
             <input type="radio" name="reportReason" value="السؤال غير واضح">
-            السؤال غير واضح
+            <span>السؤال غير واضح</span>
           </label>
           <label class="report-reason-label">
             <input type="radio" name="reportReason" value="خطأ إملائي/لغوي">
-            خطأ إملائي/لغوي
+            <span>خطأ إملائي/لغوي</span>
           </label>
           <label class="report-reason-label">
             <input type="radio" name="reportReason" value="أخرى">
-            أخرى
+            <span>أخرى</span>
           </label>
           <textarea 
             id="reportReasonOther" 
@@ -46,7 +46,6 @@ function injectModalHtml() {
           ></textarea>
           
           <div class="report-modal-actions">
-            <button type="button" class="report-btn-cancel" id="reportCancelBtn">إلغاء</button>
             <button type="submit" class="report-btn-submit" id="reportSubmitBtn">إرسال البلاغ</button>
           </div>
         </form>
@@ -89,7 +88,6 @@ function injectModalHtml() {
   };
 
   document.getElementById("reportCloseBtn").addEventListener("click", closeOverlay);
-  document.getElementById("reportCancelBtn").addEventListener("click", closeOverlay);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeOverlay();
   });

@@ -8,15 +8,18 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: var(--glass-blur, blur(8px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(8px));
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: var(--z-modal-top, 11000);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transition-base, 0.2s ease);
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .report-modal-overlay.show {
@@ -25,84 +28,135 @@
 }
 
 .report-modal-card {
-  background: var(--card-bg, #fff);
-  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl, 16px);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   padding: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transform: translateY(20px);
-  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-xl);
+  transform: translateY(16px) scale(0.98);
+  transition: transform var(--transition-base, 0.2s ease), opacity var(--transition-base, 0.2s ease);
   display: flex;
   flex-direction: column;
   gap: 16px;
+  direction: rtl;
+  box-sizing: border-box;
 }
 
 .report-modal-overlay.show .report-modal-card {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .report-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color, #eee);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 12px;
-  margin-bottom: 8px;
 }
 
 .report-modal-header h3 {
   margin: 0;
-  font-size: 18px;
-  color: var(--text-color, #333);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 .report-close-btn {
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 20px;
+  font-size: 1.5rem;
+  line-height: 1;
   cursor: pointer;
-  color: var(--text-muted, #777);
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-md, 8px);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-fast, 0.15s ease), color var(--transition-fast, 0.15s ease);
+}
+
+.report-close-btn:hover {
+  background: var(--color-hover-overlay, rgba(255, 255, 255, 0.08));
+  color: var(--color-text-primary);
 }
 
 .report-question-preview {
-  font-size: 14px;
-  color: var(--text-muted, #666);
-  background: var(--bg-hover, #f9f9f9);
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color, #eee);
-  margin-bottom: 8px;
-  max-height: 80px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  background: var(--color-background-secondary);
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--color-border);
+  max-height: 90px;
   overflow-y: auto;
+  word-break: break-word;
 }
 
 .report-reasons-form {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .report-reason-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
-  font-size: 14px;
-  color: var(--text-color, #333);
+  font-size: 0.925rem;
+  color: var(--color-text-primary);
+  padding: 10px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  transition: background-color var(--transition-fast, 0.15s ease), border-color var(--transition-fast, 0.15s ease), box-shadow var(--transition-fast, 0.15s ease);
+}
+
+.report-reason-label:hover {
+  background: var(--color-hover-overlay, rgba(99, 102, 241, 0.08));
+  border-color: var(--color-primary);
+}
+
+.report-reason-label:has(input[type="radio"]:checked) {
+  background: var(--color-selected-bg, rgba(99, 102, 241, 0.15));
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
+.report-reason-label input[type="radio"] {
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  margin: 0;
 }
 
 .report-reason-other-input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid var(--border-color, #ccc);
-  border-radius: 6px;
-  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  margin-top: 4px;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.9rem;
   display: none;
   resize: vertical;
-  min-height: 60px;
+  min-height: 70px;
+  box-sizing: border-box;
+}
+
+.report-reason-other-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .report-reason-other-input.show {
@@ -111,30 +165,37 @@
 
 .report-modal-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.report-btn-cancel {
-  background: transparent;
-  border: 1px solid var(--border-color, #ccc);
-  color: var(--text-color, #333);
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
+  justify-content: stretch;
+  margin-top: 6px;
 }
 
 .report-btn-submit {
-  background: var(--primary-color, #007bff);
-  color: #fff;
+  width: 100%;
+  background: var(--color-primary);
+  color: #ffffff;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md, 8px);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color var(--transition-fast, 0.15s ease), transform var(--transition-fast, 0.15s ease);
+}
+
+.report-btn-submit:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.report-btn-submit:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .report-btn-submit:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }

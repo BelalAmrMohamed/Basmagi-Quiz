@@ -1004,7 +1004,7 @@ function renderReview(container, questions, userAnswers) {
     const userAns = userAnswers[index];
     const alreadyReported = quizDbId ? isQuestionReported(quizDbId, index) : false;
     const reportBtnHtml = quizDbId
-      ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportReviewQuestion(${index})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>`
+      ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportReviewQuestion(${index})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>`
       : "";
 
     if (isEssay) {

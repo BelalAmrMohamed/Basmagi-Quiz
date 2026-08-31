@@ -1890,7 +1890,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
 
   const alreadyReported = quizDbId ? isQuestionReported(quizDbId, idx) : false;
   const reportBtnHtml = quizDbId
-    ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>`
+    ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>`
     : "";
 
   const actionBtns = `
@@ -2219,7 +2219,7 @@ function buildQuestionBodyHTML(q, idx) {
               title="${isFlagged ? "إزالة العلامة" : "إضافة علامة للمراجعة"}">
         ${isFlagged ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>` : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>`}
       </button>
-      ${quizDbId ? `<button class="report-question-btn ${isQuestionReported(quizDbId, idx) ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${isQuestionReported(quizDbId, idx) ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>` : ""}
+      ${quizDbId ? `<button class="report-question-btn ${isQuestionReported(quizDbId, idx) ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${isQuestionReported(quizDbId, idx) ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>` : ""}
     </div>
   `;
 
