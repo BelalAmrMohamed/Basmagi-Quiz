@@ -284,6 +284,8 @@
                 </div>
             </div>
 
+            <div class="menu-divider desktop-only-divider" role="separator"></div>
+
             <a href="settings.html" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
@@ -291,6 +293,126 @@
                 </svg>
                 <span class="menu-label">الإعدادات</span>
             </a>
+
+            <button onclick="changeUsername()" class="menu-item mobile-only-menu-item" title="تغيير الإسم" data-tooltip="تغيير الإسم">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span class="menu-label">تغيير الإسم: <span class="change-username" id="userNameDisplay"></span></span>
+            </button>
+
+            <div class="menu-divider" role="separator" aria-hidden="true"></div>
+
+            <!-- Theme controls section -->
+            <div class="theme-controls-section">
+                <button type="button" class="theme-controls-toggle sidebar-expanded-only" id="themeControlsToggle" aria-expanded="true" aria-controls="themeControlsPanel">
+                    <span class="theme-controls-toggle-label">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
+                            <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                            <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                            <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                            <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                        </svg>
+                        <span class="menu-label">المظهر والأداء</span>
+                    </span>
+                    <svg class="theme-controls-toggle-chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M6 9l6 6 6-6" />
+                    </svg>
+                </button>
+
+                <button type="button" class="theme-section-header sidebar-collapsed-only" data-tooltip="الخلفية" title="المظهر والأداء" aria-label="فتح إعدادات المظهر والأداء">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z" />
+                        <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                        <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                        <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                        <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                    </svg>
+                </button>
+
+                <div class="theme-controls-panel" id="themeControlsPanel">
+                    <div class="theme-selector-grid sidebar-expanded-only" role="group" aria-label="اختيار الخلفية">
+                        <button class="theme-selector-btn" title="الخلفية السوداء" data-theme="dark" aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">السوداء</span>
+                        </button>
+                        <button class="theme-selector-btn" title="الخلفية الزرقاء" data-theme="dark-slate" aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">الزرقاء</span>
+                        </button>
+                        <button class="theme-selector-btn" title="الخلفية البيضاء" data-theme="light" aria-pressed="false">
+                            <span class="theme-btn-preview" aria-hidden="true">
+                                <span class="theme-btn-preview-header"></span>
+                                <span class="theme-btn-preview-list">
+                                    <span class="theme-btn-preview-row"></span>
+                                    <span class="theme-btn-preview-row"></span>
+                                </span>
+                            </span>
+                            <span class="theme-btn-check" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                            </span>
+                            <span class="theme-btn-label">البيضاء</span>
+                        </button>
+                    </div>
+
+                    <label class="animation-toggle-container sidebar-expanded-only" title="تفعيل و تعطيل الرسوم المتحركة في الخلفية (عطّل الرسوم لتحسين الأداء)">
+                        <span class="animation-toggle-label">رسوم الخلفية</span>
+                        <input type="checkbox" id="animationToggle" class="toggle-input" data-control="animations" checked aria-label="رسوم الخلفية المتحركة">
+                        <span class="toggle-switch" aria-hidden="true"></span>
+                    </label>
+
+                    <label class="animation-toggle-container high-performance-toggle-container sidebar-expanded-only" title="إيقاف كل الرسوم المتحركة والانتقالات في الموقع بالكامل لأفضل أداء ممكن">
+                        <span class="animation-toggle-label">الأداء الفائق</span>
+                        <input type="checkbox" id="highPerformanceToggle" class="toggle-input" data-control="high-performance" aria-label="تفعيل الأداء الفائق (إيقاف كل الحركات)">
+                        <span class="toggle-switch" aria-hidden="true"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Pinned bottom actions -->
+            <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
+                <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل" data-tooltip="تواصل مع المطور">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
+                        <path d="M8 12h.01M12 12h.01M16 12h.01" />
+                    </svg>
+                    <span class="menu-label">تواصل مع المطور</span>
+                </button>
+
+                <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+                        <path d="M12 18h.01" />
+                    </svg>
+                    <span class="menu-label">تثبيت التطبيق</span>
+                </button>
+            </div>
         </nav>
     </aside>
 

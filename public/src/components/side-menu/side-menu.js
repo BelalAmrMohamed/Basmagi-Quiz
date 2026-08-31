@@ -151,6 +151,7 @@ mountSignInDialog();
     document.body.style.overflow = "";
     if (moreBtn) moreBtn.focus();
   }
+  window.__closeMobileSidebar = closeMobileSidebar;
 
   /**
    * Keep the bottom nav's active tab in sync with the current page.
@@ -1008,8 +1009,13 @@ function initProfileDropdown() {
   }
 
   if (signInRow) {
-    signInRow.addEventListener("click", () => openSignInDialog());
+    signInRow.addEventListener("click", () => {
+      closeDropdown();
+      openSignInDialog();
+    });
   }
+
+  window.__closeProfileDropdown = closeDropdown;
 }
 
 if (document.readyState === "loading") {
@@ -1068,6 +1074,13 @@ import { validateUsername } from "../../shared/user-name-validation.js";
 
 window.changeUsername = async function (message = "أدخل الإسم الجديد") {
   try {
+    if (typeof window.__closeMobileSidebar === "function") {
+      window.__closeMobileSidebar();
+    }
+    if (typeof window.__closeProfileDropdown === "function") {
+      window.__closeProfileDropdown();
+    }
+
     const currentName = getFromStorage("username", "User");
     const newName = await _prompt(message, currentName);
 
@@ -1133,9 +1146,32 @@ document.addEventListener("DOMContentLoaded", () => {
       </svg>
       <span class="menu-label">دخول المشرفين</span>
     `;
+
+    const mobileReportsLink = document.createElement("a");
+    mobileReportsLink.href = "reports.html";
+    mobileReportsLink.className = "menu-item mobile-only-menu-item";
+    mobileReportsLink.id = "sideMenuMobileReportsLink";
+    const isReportsPage =
+      window.location.pathname.endsWith("/reports.html") ||
+      window.location.pathname.endsWith("/reports");
+    if (isReportsPage) {
+      mobileReportsLink.classList.add("active");
+    }
+    mobileReportsLink.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+        <line x1="4" y1="22" x2="4" y2="15" />
+      </svg>
+      <span class="menu-label">البلاغات</span>
+    `;
+
     changeUsernameBtn.parentNode.insertBefore(mobileAdminBtn, changeUsernameBtn);
-    
+    changeUsernameBtn.parentNode.insertBefore(mobileReportsLink, changeUsernameBtn);
+
     mobileAdminBtn.addEventListener("click", () => {
+      if (typeof window.__closeMobileSidebar === "function") {
+        window.__closeMobileSidebar();
+      }
       const roleInfo = getAdminRoleInfo();
       if (!roleInfo) {
         openSignInDialog();
@@ -1146,6 +1182,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initial state setup
     const roleInfo = getAdminRoleInfo();
-    mobileAdminBtn.querySelector(".menu-label").textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
+    const label = mobileAdminBtn.querySelector(".menu-label");
+    if (label) {
+      label.textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
+    }
   }
 });

@@ -452,7 +452,7 @@ export function renderUserQuizzesView() {
 
     container.appendChild(
       createAIAgentFab({
-        placeholder: "اسأل عن امتحاناتك، أو اطلب شرحًا لأي موضوع...",
+        placeholder: "اسأل البشــمبصمج",
         pageKey: "home",
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
         suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,

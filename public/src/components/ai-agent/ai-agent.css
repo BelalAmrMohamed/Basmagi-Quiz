@@ -1236,6 +1236,10 @@ body.sidebar-expanded .ai-agent-fab {
     right: 20px;
     bottom: calc(20px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
   }
+  .ai-agent-fab{
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* ── Modal ──
