@@ -1206,15 +1206,26 @@ body.sidebar-expanded {
     align-items: center;
   }
 
+  /* Favicon and collapse button hidden on mobile — full logo always shows */
   .sidebar .sidebar-favicon,
   .sidebar-collapse-btn {
     display: none !important;
   }
 
-  .sidebar .sidebar-header {
+  /* Sidebar header on mobile: sits above the nav, full-width, sticky with separator */
+  .sidebar .sidebar-header,
+  .sidebar-header {
     display: flex !important;
     justify-content: center;
-    padding: 0 12px;
+    border-top: none;
+    height: auto;
+    padding: 6px 16px 10px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-background);
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    flex-shrink: 0;
   }
 
   /* Full labels always visible on mobile */
