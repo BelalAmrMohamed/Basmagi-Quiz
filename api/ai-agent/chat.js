@@ -199,24 +199,15 @@ function transientMessageFor(status) {
     : "خوادم مزوّد الذكاء الاصطناعي مشغولة حاليًا (overloaded). حاول مرة أخرى خلال لحظات.";
 }
 
+import { isRateLimited } from "../_rateLimit.js";
+
 // Very small in-memory per-IP limiter for the own-key proxy path, to keep
 // this endpoint from being used as an open relay. Resets on cold start —
 // acceptable for v1 given Vercel's function lifecycle; swap for an
 // edge-config/Redis counter if abuse becomes a real problem.
-const ownKeyRequestLog = new Map(); // ip -> [timestamps]
+export const ownKeyRequestLog = new Map(); // ip -> [timestamps]
 const OWN_KEY_RATE_LIMIT = 20; // requests per minute, plain text
 const OWN_KEY_ATTACHMENT_RATE_LIMIT = 6; // requests per minute, file-bearing
-const OWN_KEY_RATE_WINDOW_MS = 60_000; // per minute
-
-function isRateLimited(ip, limit = OWN_KEY_RATE_LIMIT) {
-  const now = Date.now();
-  const timestamps = (ownKeyRequestLog.get(ip) || []).filter(
-    (t) => now - t < OWN_KEY_RATE_WINDOW_MS,
-  );
-  timestamps.push(now);
-  ownKeyRequestLog.set(ip, timestamps);
-  return timestamps.length > limit;
-}
 
 // Verifies a regular-user JWT minted by /api/user-profile/identify or
 // /api/user-profile/sync-progress. `current_level` in the token is
@@ -318,7 +309,7 @@ export default async function handler(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
     const limit = hasBinaryAttachment ? OWN_KEY_ATTACHMENT_RATE_LIMIT : OWN_KEY_RATE_LIMIT;
-    if (isRateLimited(ip, limit)) {
+    if (isRateLimited(ip, limit, ownKeyRequestLog)) {
       return res.status(429).json({ error: "طلبات كثيرة جدًا، حاول لاحقًا" });
     }
 

@@ -1,0 +1,140 @@
+/* ==========================================================================
+   public/src/components/report-question/report-question.css
+   ========================================================================== */
+
+.report-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  padding: 20px;
+}
+
+.report-modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.report-modal-card {
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(20px);
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.report-modal-overlay.show .report-modal-card {
+  transform: translateY(0);
+}
+
+.report-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color, #eee);
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+}
+
+.report-modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-color, #333);
+}
+
+.report-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-muted, #777);
+}
+
+.report-question-preview {
+  font-size: 14px;
+  color: var(--text-muted, #666);
+  background: var(--bg-hover, #f9f9f9);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #eee);
+  margin-bottom: 8px;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.report-reasons-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-reason-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color, #333);
+}
+
+.report-reason-other-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  margin-top: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  display: none;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.report-reason-other-input.show {
+  display: block;
+}
+
+.report-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.report-btn-cancel {
+  background: transparent;
+  border: 1px solid var(--border-color, #ccc);
+  color: var(--text-color, #333);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.report-btn-submit {
+  background: var(--primary-color, #007bff);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.report-btn-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
