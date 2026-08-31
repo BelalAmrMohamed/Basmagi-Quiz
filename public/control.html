@@ -67,6 +67,13 @@
             <img src="/favicon.png" alt="Logo" width="28" height="28">
             منصة إمتحانات بصمجي
         </div>
+        <div class="topnav-nav-tabs">
+            <button class="nav-tab active" id="tabOverview" onclick="switchView('overview')">لوحة التحكم</button>
+            <button class="nav-tab" id="tabReports" onclick="switchView('reports')">
+                البلاغات
+                <span class="badge-pending" id="reportsBadge" style="display: none;">0</span>
+            </button>
+        </div>
         <div class="topnav-actions">
             <button class="btn-nav" onclick="window.location.href='/'">عودة للرئيسية</button>
             <button class="btn-nav danger" onclick="logout()">تسجيل الخروج</button>
@@ -76,77 +83,83 @@
     <!-- TOAST -->
     <div id="statusMessage" class="toast"></div>
 
-    <!-- MAIN GRID -->
-    <div class="main-grid">
+    <!-- OVERVIEW VIEW -->
+    <div id="overviewView">
+        <!-- MAIN GRID -->
+        <div class="main-grid">
 
-        <!-- LEFT: ADMINS -->
-        <div class="panel">
-            <div class="panel-header">
-                <div class="panel-title">إدارة المشرفين</div>
-            </div>
-            <div class="panel-body">
-                <div class="search-row">
-                    <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد">
-                    <button class="btn-primary" onclick="submitAddAdmin()">إضافة</button>
+            <!-- LEFT: ADMINS -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">إدارة المشرفين</div>
                 </div>
-                <div class="admin-list" id="adminsTableBody">
-                    <div class="admin-empty">جاري التحميل...</div>
+                <div class="panel-body">
+                    <div class="search-row">
+                        <input type="email" id="newAdminEmail" placeholder="البريد الإلكتروني للمشرف الجديد">
+                        <button class="btn-primary" onclick="submitAddAdmin()">إضافة</button>
+                    </div>
+                    <div class="admin-list" id="adminsTableBody">
+                        <div class="admin-empty">جاري التحميل...</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- RIGHT: PLATFORM STATS & OWNER INFO -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">إحصائيات المنصة</div>
+                </div>
+                <div class="panel-body">
+                    <!-- Stats Grid -->
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📋</div>
+                            <div class="stat-value" id="statQuizzes">—</div>
+                            <div class="stat-label">إجمالي الامتحانات</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">📚</div>
+                            <div class="stat-value" id="statCategories">—</div>
+                            <div class="stat-label">المواد والتصنيفات</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value" id="statAdmins">—</div>
+                            <div class="stat-label">المشرفون النشطون</div>
+                        </div>
+                    </div>
+
+                    <!-- Owner Info -->
+                    <div class="owner-info-box" id="ownerInfoBox">
+                        <div class="owner-info-header">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            </svg>
+                            معلومات المالك
+                        </div>
+                        <div class="owner-info-row">
+                            <span class="owner-info-label">الحساب المسجّل:</span>
+                            <span class="owner-info-value" id="ownerEmailDisplay">جاري التحميل...</span>
+                        </div>
+                        <div class="owner-info-row">
+                            <span class="owner-info-label">مستوى الصلاحية:</span>
+                            <span class="owner-badge">Owner ✓</span>
+                        </div>
+                        <div class="owner-info-row">
+                            <span class="owner-info-label">نظام المصادقة:</span>
+                            <span class="owner-info-value">Email / OAuth فقط</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <!-- RIGHT: PLATFORM STATS & OWNER INFO -->
-        <div class="panel">
-            <div class="panel-header">
-                <div class="panel-title">إحصائيات المنصة</div>
-            </div>
-            <div class="panel-body">
-                <!-- Stats Grid -->
-                <div class="stats-grid" id="statsGrid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📋</div>
-                        <div class="stat-value" id="statQuizzes">—</div>
-                        <div class="stat-label">إجمالي الامتحانات</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">📚</div>
-                        <div class="stat-value" id="statCategories">—</div>
-                        <div class="stat-label">المواد والتصنيفات</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">👥</div>
-                        <div class="stat-value" id="statAdmins">—</div>
-                        <div class="stat-label">المشرفون النشطون</div>
-                    </div>
-                </div>
-
-                <!-- Owner Info -->
-                <div class="owner-info-box" id="ownerInfoBox">
-                    <div class="owner-info-header">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            aria-hidden="true">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                        </svg>
-                        معلومات المالك
-                    </div>
-                    <div class="owner-info-row">
-                        <span class="owner-info-label">الحساب المسجّل:</span>
-                        <span class="owner-info-value" id="ownerEmailDisplay">جاري التحميل...</span>
-                    </div>
-                    <div class="owner-info-row">
-                        <span class="owner-info-label">مستوى الصلاحية:</span>
-                        <span class="owner-badge">Owner ✓</span>
-                    </div>
-                    <div class="owner-info-row">
-                        <span class="owner-info-label">نظام المصادقة:</span>
-                        <span class="owner-info-value">Email / OAuth فقط</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     </div>
+
+    <!-- REPORTS VIEW -->
+    <div id="reportsView" class="reports-container" style="display: none;"></div>
 
 
     <!-- CONFIRM MODAL (generic — reused for admin removal) -->

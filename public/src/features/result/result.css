@@ -573,6 +573,33 @@ body {
   height: 22px;
 }
 
+.report-question-btn {
+  background: none;
+  border: 1.5px solid var(--color-border, #e2e8f0);
+  color: var(--color-text-muted, #94a3b8);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.report-question-btn:hover {
+  transform: scale(1.08);
+  color: #e07a1f;
+  border-color: #e07a1f;
+}
+
+.report-question-btn.active {
+  color: #e07a1f;
+  border-color: #e07a1f;
+  background: rgba(224, 122, 31, 0.1);
+}
+
 .status-correct i,
 .status-correct svg {
   color: var(--color-success, #10b981);

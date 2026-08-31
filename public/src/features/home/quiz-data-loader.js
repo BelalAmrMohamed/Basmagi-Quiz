@@ -54,7 +54,7 @@ async function loadDbQuizData(path) {
 
   const { data, error } = await supabase
     .from("quizzes")
-    .select("data")
+    .select("id, data")
     .eq("path", dbPath)
     .eq("filename", filename)
     .maybeSingle();
@@ -62,7 +62,10 @@ async function loadDbQuizData(path) {
   if (error) throw error;
   if (!data) throw new Error("الاختبار غير موجود");
 
-  return data.data;
+  return {
+    ...(data.data || {}),
+    dbId: data.id || null,
+  };
 }
 
 /**
@@ -71,7 +74,7 @@ async function loadDbQuizData(path) {
  * static and DB manifests can both produce.
  *
  * @param {object} exam - manifest exam entry (must have `path`)
- * @returns {Promise<{ questions: Array, meta: object|null, stats: object|null }>}
+ * @returns {Promise<{ dbId?: string|null, questions: Array, meta: object|null, stats: object|null }>}
  * @throws if the quiz file can't be loaded by any strategy
  */
 export async function loadFullQuizData(exam) {
@@ -86,6 +89,7 @@ export async function loadFullQuizData(exam) {
   if (path.startsWith(DB_QUIZ_DATA_PREFIX)) {
     const data = await loadDbQuizData(path);
     return {
+      dbId: data.dbId || exam.dbId || null,
       questions: data.questions || [],
       meta: data.meta || null,
       stats: data.stats || null,

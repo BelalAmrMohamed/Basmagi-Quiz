@@ -1011,6 +1011,7 @@ async function loadExamModule(config) {
   if (config.path.startsWith("/api/quiz-data?path=")) {
     const data = await loadFullQuizData(config);
     module = {
+      dbId: data.dbId || config.dbId || null,
       questions: data.questions || [],
       meta: data.meta || {},
       stats: data.stats || {},
@@ -1234,6 +1235,9 @@ async function init() {
       // Use optimized loader with caching
       const module = await loadExamModule(config);
       questions = module.questions;
+      if (!quizDbId) {
+        quizDbId = module.dbId || config.dbId || null;
+      }
       quizBaseUrl = new URL("./", new URL(config.path, window.location.origin))
         .href;
 
@@ -2553,6 +2557,7 @@ async function finish(skipconfirmationNotification) {
 
   const rawResult = {
     examId,
+    quizDbId,
     examTitle: metaData.title,
     source: metaData.source || null,
     description: metaData.description || null,

@@ -106,7 +106,7 @@ async function fetchDbManifest() {
   const { data, error } = await supabase
     .from("quizzes")
     .select(
-      "path, filename, title, category, subject, subfolder, data, education_type, password",
+      "id, path, filename, title, category, subject, subfolder, data, education_type, password",
     )
     .order("category", { ascending: true });
 
@@ -147,6 +147,7 @@ async function fetchDbManifest() {
 
     const quizEntry = {
       id: quizMeta.id || (await generateQuizId(examRelPath)),
+      dbId: row.id,
       title: quizMeta.title || row.title,
       path: examFetchPath,
       questionCount: quizStats.questionCount ?? 0,

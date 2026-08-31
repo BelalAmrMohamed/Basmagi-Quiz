@@ -53,7 +53,7 @@ export default async function handler(req, res) {
     // List reports with quiz info joined
     const { data, error } = await supabase
       .from("reports")
-      .select("*, quizzes ( title, path )")
+      .select("*, quizzes ( title, path, data )")
       .eq("status", status)
       .order("created_at", { ascending: false });
 

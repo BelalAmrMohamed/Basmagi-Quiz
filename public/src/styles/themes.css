@@ -113,6 +113,11 @@ html[data-theme="dark"] {
   --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
+  /* Admin Colors (Golden Theme) */
+  --color-admin: #eab308;
+  --color-admin-hover: #ca8a04;
+  --color-admin-light: rgba(234, 179, 8, 0.2);
+
   --color-code: #e2e8f0;
 
   /* Gradients */
@@ -216,6 +221,11 @@ html[data-theme="dark-slate"] {
   --color-error-hover: #dc2626;
   --color-error-light: rgba(239, 68, 68, 0.2);
 
+  /* Admin Colors (Golden Theme) */
+  --color-admin: #eab308;
+  --color-admin-hover: #ca8a04;
+  --color-admin-light: rgba(234, 179, 8, 0.2);
+
   /* Gradients */
   --gradient-accent: linear-gradient(
     135deg,
@@ -315,6 +325,11 @@ html[data-theme="light"] {
   --color-error: #ef4444;
   --color-error-hover: #dc2626;
   --color-error-light: #fee2e2;
+
+  /* Admin Colors (Golden Theme) */
+  --color-admin: #eab308;
+  --color-admin-hover: #ca8a04;
+  --color-admin-light: #fef3c7;
 
   /* Gradients */
   --gradient-accent: linear-gradient(

@@ -29,6 +29,12 @@ import {
 // scanDirections:           post-render direction scan for non-markdown elements
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 
+// Report Question Modal
+import {
+  openReportModal,
+  isQuestionReported,
+} from "../../components/report-question/report-question.js";
+
 // AI Helper (result-page analysis mode — read-only, no quiz creation)
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { buildResultSystemPrompt } from "../../components/ai-agent/ai-agent-default-prompts.js";
@@ -38,6 +44,8 @@ import { buildResultSuggestedPrompts } from "../../components/ai-agent/ai-agent-
 const userName = localStorage.getItem("username") || "User";
 const result = JSON.parse(localStorage.getItem("last_quiz_result"));
 if (!result) window.location.href = "/";
+
+let resolvedQuizDbId = result?.quizDbId || null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const getEssayAnswer = (q) => q.answer ?? "";
@@ -294,6 +302,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const manifestEntry = examList.find((e) => e.id === result.examId);
+  if (!resolvedQuizDbId && manifestEntry?.dbId) {
+    resolvedQuizDbId = manifestEntry.dbId;
+  }
   const resultMeta = result.meta || {};
 
   const config = {
@@ -986,10 +997,15 @@ function renderHeader(
 function renderReview(container, questions, userAnswers) {
   if (!container) return;
   let html = "";
+  const quizDbId = resolvedQuizDbId;
 
   questions.forEach((q, index) => {
     const isEssay = isEssayQuestion(q);
     const userAns = userAnswers[index];
+    const alreadyReported = quizDbId ? isQuestionReported(quizDbId, index) : false;
+    const reportBtnHtml = quizDbId
+      ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportReviewQuestion(${index})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg></button>`
+      : "";
 
     if (isEssay) {
       const score = gradeEssay(userAns, getEssayAnswer(q));
@@ -1031,6 +1047,7 @@ function renderReview(container, questions, userAnswers) {
             <div class="review-header-right">
               <span class="essay-badge" title="Your score is (${score}/5)"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-scroll-text-icon lucide-scroll-text"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg> Essay</span>
               <span class="essay-score-badge ${scoreLabelClass}" title="Your score is (${score}/5)">${stars} ${scoreLabel} (${score}/5)</span>
+              ${reportBtnHtml}
             </div>
           </div>
           ${renderReadingPassage(q.passage)}
@@ -1128,7 +1145,10 @@ function renderReview(container, questions, userAnswers) {
         <div class="review-card ${statusClass}">
           <div class="review-header">
             <span class="q-num">#${index + 1}</span>
-            <span class="status-icon status-${statusClass}" title="This question is ${statusClass}">${statusIcon}</span>
+            <div class="review-header-right">
+              <span class="status-icon status-${statusClass}" title="This question is ${statusClass}">${statusIcon}</span>
+              ${reportBtnHtml}
+            </div>
           </div>
           ${renderReadingPassage(q.passage)}
           <div class="q-text">${renderMarkdown(q.q)}</div>
@@ -1151,6 +1171,24 @@ function renderReview(container, questions, userAnswers) {
 
   container.innerHTML = html;
 }
+
+window.reportReviewQuestion = (index) => {
+  const quizDbId = resolvedQuizDbId;
+  if (!quizDbId) return;
+  const questions = result?.questions || [];
+  const q = questions[index];
+  openReportModal({
+    quizId: quizDbId,
+    questionIndex: index,
+    questionText: q?.q || q?.question || q?.text || `سؤال رقم ${index + 1}`,
+    onSuccess: () => {
+      const container = document.getElementById("reviewContainer");
+      if (container) {
+        renderReview(container, questions, result.userAnswers);
+      }
+    },
+  });
+};
 
 // ─── Confetti Burst ────────────────────────────────────────────────────────────
 function launchConfetti() {
