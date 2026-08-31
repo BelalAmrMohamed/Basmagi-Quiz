@@ -26,7 +26,8 @@ import {
   handleDragLeave, 
   handleDrop,
   createNewFolderOrCourse,
-  createFolderOrCourseCard
+  createFolderOrCourseCard,
+  buildFolderHash,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -243,14 +244,58 @@ export function renderUserQuizzesView() {
     }
     updateBreadcrumb();
 
+    // Build the correct URL hash for the current folder depth
+    const folderHash = buildFolderHash();
     if (!isRestoring()) {
-      history.pushState({ view: "my-quizzes" }, "", "#my-quizzes");
+      history.pushState({ view: "my-quizzes" }, "", folderHash);
     } else {
-      history.replaceState({ view: "my-quizzes" }, "", "#my-quizzes");
+      history.replaceState({ view: "my-quizzes" }, "", folderHash);
     }
 
-    // Update Title & Clear Container
-    if (title) title.textContent = "إمتحاناتك";
+    // Update Title & breadcrumbs in #Subjects-text
+    const pathStack = getCurrentFolderPathStack();
+    if (title) {
+      // Clear the title element to rebuild it
+      title.innerHTML = "";
+      if (pathStack.length === 0) {
+        // At root: just show the section name
+        title.textContent = "إمتحاناتك";
+      } else {
+        // Show interactive breadcrumb path: إمتحاناتك / Math / Algebra
+        title.style.display = "flex";
+        title.style.alignItems = "center";
+        title.style.gap = "6px";
+        title.style.flexWrap = "wrap";
+
+        const homeLink = document.createElement("a");
+        homeLink.href = "javascript:void(0)";
+        homeLink.textContent = "إمتحاناتك";
+        homeLink.style.cssText = "color: var(--color-primary); text-decoration: none; cursor: pointer;";
+        homeLink.onclick = () => navigateToFolder(null, null);
+        title.appendChild(homeLink);
+
+        pathStack.forEach((f, idx) => {
+          const sep = document.createElement("span");
+          sep.textContent = "/";
+          sep.style.opacity = "0.5";
+          title.appendChild(sep);
+
+          if (idx === pathStack.length - 1) {
+            // Last segment: current folder (not a link)
+            const span = document.createElement("span");
+            span.textContent = f.title;
+            title.appendChild(span);
+          } else {
+            const a = document.createElement("a");
+            a.href = "javascript:void(0)";
+            a.textContent = f.title;
+            a.style.cssText = "color: var(--color-primary); text-decoration: none; cursor: pointer;";
+            a.onclick = () => navigateToFolder(f.id, f.title);
+            title.appendChild(a);
+          }
+        });
+      }
+    }
     if (!container) return;
 
     container.innerHTML = "";
@@ -324,34 +369,7 @@ export function renderUserQuizzesView() {
     const quizzesContainer = document.createElement("div");
     quizzesContainer.className = "user-quizzes-container";
 
-    // Render Breadcrumbs if inside a folder
-    const pathStack = getCurrentFolderPathStack();
-    if (pathStack.length > 0) {
-      const breadcrumbs = document.createElement("div");
-      breadcrumbs.style.cssText = "grid-column: 1 / -1; display: flex; gap: 8px; margin-bottom: 10px; align-items: center;";
-      
-      const homeLink = document.createElement("a");
-      homeLink.href = "javascript:void(0)";
-      homeLink.textContent = "إمتحاناتك";
-      homeLink.onclick = () => navigateToFolder(null, null);
-      breadcrumbs.appendChild(homeLink);
-
-      pathStack.forEach((f, idx) => {
-        breadcrumbs.appendChild(document.createTextNode(" / "));
-        if (idx === pathStack.length - 1) {
-          const span = document.createElement("span");
-          span.textContent = f.title;
-          breadcrumbs.appendChild(span);
-        } else {
-          const a = document.createElement("a");
-          a.href = "javascript:void(0)";
-          a.textContent = f.title;
-          a.onclick = () => navigateToFolder(f.id, f.title);
-          breadcrumbs.appendChild(a);
-        }
-      });
-      quizzesContainer.appendChild(breadcrumbs);
-    }
+    // (Breadcrumbs are now shown in the #Subjects-text header above, not here)
 
     // Attach Context Menu & Drop events to the container
     quizzesContainer.addEventListener("contextmenu", (e) => {
@@ -504,12 +522,14 @@ export function updateBulkActionBar(forceActive) {
   bar.querySelector(".bulk-count").textContent =
     count > 0 ? `تم تحديد ${count}` : "لم يتم تحديد أي شيء";
 
-  // Disable the destructive/export actions until something is selected.
+  // Hide the destructive/export actions when nothing is selected (not just
+  // disabled — fully hidden so the bar looks clean with only count + select-all
+  // when zero items are selected).
   const hasSelection = count > 0;
   bar
     .querySelectorAll(".bulk-delete-btn, .bulk-extract-btn, .bulk-upload-btn")
     .forEach((btn) => {
-      btn.disabled = !hasSelection;
+      btn.style.display = hasSelection ? "" : "none";
     });
 
   // Keep the "تحديد الكل" button in sync with whether everything visible
@@ -536,20 +556,30 @@ function renderBulkActionBar() {
 
     let uploadBtnHtml = "";
     if (isAdminAuthenticated()) {
-      uploadBtnHtml = `<button class="btn bulk-upload-btn">رفع المحدد ☁️</button>`;
+      uploadBtnHtml = `<button class="btn bulk-upload-btn" style="display:none">رفع المحدد ☁️</button>`;
     }
 
     bar.innerHTML = `
       <div class="bulk-count">لم يتم تحديد أي شيء</div>
       <div class="bulk-actions">
         <button class="btn bulk-select-all-btn">تحديد الكل</button>
-        <button class="btn bulk-delete-btn">حذف</button>
-        <button class="btn bulk-extract-btn">استخراج</button>
+        <button class="btn bulk-clear-btn" title="إلغاء التحديد" aria-label="إلغاء التحديد">✕</button>
+        <button class="btn bulk-delete-btn" style="display:none">حذف</button>
+        <button class="btn bulk-extract-btn" style="display:none">استخراج</button>
         ${uploadBtnHtml}
       </div>
     `;
     document.body.appendChild(bar);
 
+    bar.querySelector(".bulk-clear-btn").onclick = () => {
+      selectedUserQuizzes.clear();
+      const qzContainer = document.querySelector(".user-quizzes-container");
+      if (qzContainer) qzContainer.classList.remove("selection-mode-active");
+      const toggleBtn = document.querySelector(".selection-toggle-btn");
+      if (toggleBtn) toggleBtn.classList.remove("active");
+      document.querySelectorAll(".user-quiz-select-checkbox").forEach((cb) => (cb.checked = false));
+      bar.style.display = "none";
+    };
     bar.querySelector(".bulk-select-all-btn").onclick = () => {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const allIds = userQuizzes.map((q) => qz(q, "id") || q.id);

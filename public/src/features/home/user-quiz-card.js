@@ -66,6 +66,7 @@ export function createUserQuizCard(quiz, index) {
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
   checkbox.className = "user-quiz-select-checkbox";
+  checkbox.setAttribute("data-quiz-id", quizId);
   const selectedUserQuizzes = getSelectedUserQuizzes();
   checkbox.checked = selectedUserQuizzes.has(quizId);
   checkbox.onclick = (e) => {

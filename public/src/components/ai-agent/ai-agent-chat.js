@@ -494,6 +494,21 @@ export function createChatPanel(options = {}) {
   // LTR even for an Arabic-only message.
   textarea.dir = "auto";
 
+  // Live mic-volume metering for the wave bars (separate from
+  // SpeechRecognition, which exposes no amplitude data of its own) — a
+  // short-lived AudioContext/AnalyserNode pair opened alongside each
+  // dictation session so the bars reflect actual voice level instead of
+  // looping a fixed CSS animation regardless of whether the user is
+  // speaking. Torn down in stopMicMetering() so no mic stream/AudioContext
+  // is left open once dictation ends.
+  // IMPORTANT: Declared here (before dictationWaveEl) so waveBarEls.push()
+  // called during dictationWaveEl construction does not trigger a TDZ error.
+  let audioCtx = null;
+  let analyserNode = null;
+  let micStream = null;
+  let meterRafId = null;
+  const waveBarEls = [];
+
   // Replaces the textarea + attach button (both hidden while dictating —
   // see setDictationUiState) with a live wave/mic animation, so the row
   // reads as "actively listening" rather than a text field that happens
@@ -638,18 +653,9 @@ export function createChatPanel(options = {}) {
   let firefoxWarningEl = null;
   let recognition = null;
   let isDictating = false;
-  // Live mic-volume metering for the wave bars (separate from
-  // SpeechRecognition, which exposes no amplitude data of its own) — a
-  // short-lived AudioContext/AnalyserNode pair opened alongside each
-  // dictation session so the bars reflect actual voice level instead of
-  // looping a fixed CSS animation regardless of whether the user is
-  // speaking. Torn down in stopMicMetering() so no mic stream/AudioContext
-  // is left open once dictation ends.
-  let audioCtx = null;
-  let analyserNode = null;
-  let micStream = null;
-  let meterRafId = null;
-  const waveBarEls = [];
+  // (audioCtx, analyserNode, micStream, meterRafId, waveBarEls are declared
+  //  above, before dictationWaveEl, to avoid a TDZ ReferenceError on
+  //  waveBarEls.push() during element construction.)
   // Accumulates finalized speech segments across multiple onresult events
   // within one dictation session — SpeechRecognition delivers results
   // incrementally, some marked `isFinal` and some not (interim/in-flight

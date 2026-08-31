@@ -35,7 +35,9 @@ import { renderRootCategories } from "./root-view.js";
 import { renderCategory } from "./category-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
 import { renderLandingScreen } from "./landing-screen.js";
-import { toSlug } from "./slug-utils.js";
+import { toSlug, fromSlug } from "./slug-utils.js";
+import { setFolderState } from "./user-quizzes-folders.js";
+import { getFromStorage } from "../../shared/storage-helpers.js";
 
 // ============================================================================
 // findCategoryAncestors — original lines 1321-1343
@@ -91,6 +93,51 @@ export function restoreViewFromURL() {
   // ── User-quizzes folder ────────────────────────────────────────────────────
   if (hash === "my-quizzes") {
     setNavigationStack([]); // reset so renderUserQuizzesView can push cleanly
+    setFolderState([], null); // reset to root
+    renderUserQuizzesView();
+    return;
+  }
+
+  // ── Nested user-quiz folder: #my-quizzes/slug1/slug2/... ─────────────────
+  if (hash.startsWith("my-quizzes/")) {
+    const segments = hash
+      .slice("my-quizzes/".length)
+      .split("/")
+      .filter(Boolean)
+      .map((s) => {
+        try { return decodeURIComponent(s); } catch { return s; }
+      });
+
+    if (segments.length > 0) {
+      // Sequentially match each slug against the stored user_quizzes
+      const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const stack = [];
+      let parentId = null;
+      let resolved = true;
+
+      for (const slug of segments) {
+        const match = userQuizzes.find(
+          (q) =>
+            (q.meta?.parentId || null) === parentId &&
+            (q.meta?.type === "folder" || q.meta?.type === "course") &&
+            toSlug(q.meta?.title || "") === slug
+        );
+        if (!match) { resolved = false; break; }
+        const itemId = match.id || match.meta?.id;
+        stack.push({ id: itemId, title: match.meta?.title });
+        parentId = itemId;
+      }
+
+      if (resolved && stack.length > 0) {
+        setNavigationStack([]);
+        setFolderState(stack, stack[stack.length - 1].id);
+        renderUserQuizzesView();
+        return;
+      }
+    }
+    // Slug didn't resolve — fall back to root my-quizzes view
+    setNavigationStack([]);
+    setFolderState([], null);
     renderUserQuizzesView();
     return;
   }
