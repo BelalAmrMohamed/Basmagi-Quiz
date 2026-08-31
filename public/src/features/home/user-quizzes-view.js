@@ -40,6 +40,7 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
+import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
@@ -285,14 +286,32 @@ export function renderUserQuizzesView() {
     // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
     // Build items from folderPathStack: root = "إمتحاناتك", then each folder.
     if (title) {
+      let userQuizzes = [];
+      try {
+        userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      } catch (e) {
+        userQuizzes = [];
+      }
+
       const bcItems = [
-        { label: "إمتحاناتك", onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined },
-        ...pathStack.map((f, idx) => ({
-          label: f.title,
-          onClick: idx < pathStack.length - 1
-            ? () => navigateToFolder(f.id, f.title)
-            : undefined, // last = current, non-clickable
-        })),
+        {
+          label: "إمتحاناتك",
+          icon: "📁",
+          onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined,
+        },
+        ...pathStack.map((f, idx) => {
+          const item = userQuizzes.find((q) => (q.id || q.meta?.id) === f.id);
+          const isCourse = item?.meta?.type === "course" || (!item?.meta?.type && idx === 0);
+          const icon = item?.meta?.icon || (isCourse ? getSubjectIcon(f.title, false) : "📁");
+          return {
+            label: f.title,
+            icon: icon,
+            onClick:
+              idx < pathStack.length - 1
+                ? () => navigateToFolder(f.id, f.title)
+                : undefined, // last = current, non-clickable
+          };
+        }),
       ];
       renderTitleBreadcrumb(title, bcItems);
     }

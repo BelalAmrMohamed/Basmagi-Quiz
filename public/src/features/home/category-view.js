@@ -100,6 +100,7 @@ export function renderCategory(category) {
         // Root item — always first
         {
           label: "الرئيسية",
+          icon: "🏠",
           onClick: () => {
             // Lazy import to avoid circular dependency (root-view imports category-view)
             import("./root-view.js").then((m) => m.renderRootCategories());
@@ -108,6 +109,7 @@ export function renderCategory(category) {
         // Intermediate + current items from the stack
         ...stackSnapshot.map((cat, idx) => ({
           label: cat.name,
+          icon: cat.icon || getSubjectIcon(cat.name, idx > 0),
           onClick:
             idx < stackSnapshot.length - 1
               ? () => {

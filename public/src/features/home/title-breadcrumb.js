@@ -122,7 +122,20 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
           btn.type = "button";
           btn.className = "title-breadcrumb-dropdown-item";
           btn.setAttribute("role", "menuitem");
-          btn.textContent = item.label;
+
+          if (item.icon) {
+            const iconSpan = document.createElement("span");
+            iconSpan.className = "title-breadcrumb-dropdown-icon";
+            iconSpan.textContent = item.icon;
+            iconSpan.setAttribute("aria-hidden", "true");
+            btn.appendChild(iconSpan);
+          }
+
+          const labelSpan = document.createElement("span");
+          labelSpan.className = "title-breadcrumb-dropdown-label";
+          labelSpan.textContent = item.label;
+          btn.appendChild(labelSpan);
+
           btn.title = item.label;
           if (item.onClick) {
             btn.addEventListener("click", () => { closeDropdown(); item.onClick(); });
@@ -131,20 +144,30 @@ export function renderTitleBreadcrumb(titleEl, items, options = {}) {
           dropdown.appendChild(li);
         });
 
-        const rect = ellipsisBtn.getBoundingClientRect();
-        const dropdownWidth = Math.min(260, window.innerWidth - 32);
-        dropdown.style.top = `${rect.bottom + window.scrollY + 6}px`;
-
-        let leftPos = rect.right - dropdownWidth + window.scrollX;
-        if (leftPos < 16) leftPos = 16;
-        if (leftPos + dropdownWidth > window.innerWidth - 16) {
-          leftPos = window.innerWidth - dropdownWidth - 16;
-        }
-        dropdown.style.left = `${leftPos}px`;
-        dropdown.style.maxWidth = `${dropdownWidth}px`;
-
+        // Append first with visibility hidden to measure natural rendered width
+        dropdown.style.visibility = "hidden";
+        dropdown.style.display = "block";
+        dropdown.style.top = "0px";
+        dropdown.style.left = "0px";
         document.body.appendChild(dropdown);
         activeDropdown = dropdown;
+
+        const rect = ellipsisBtn.getBoundingClientRect();
+        const dropdownWidth = dropdown.offsetWidth || 180;
+
+        // Horizontally center the dropdown directly underneath the ellipsis button
+        const btnCenter = rect.left + (rect.width / 2) + window.scrollX;
+        let leftPos = btnCenter - (dropdownWidth / 2);
+
+        // Clamp within viewport margins
+        const minLeft = 12 + window.scrollX;
+        const maxLeft = window.innerWidth - dropdownWidth - 12 + window.scrollX;
+        if (leftPos < minLeft) leftPos = minLeft;
+        if (leftPos > maxLeft) leftPos = maxLeft;
+
+        dropdown.style.top = `${rect.bottom + window.scrollY + 6}px`;
+        dropdown.style.left = `${leftPos}px`;
+        dropdown.style.visibility = "";
         ellipsisBtn.setAttribute("aria-expanded", "true");
 
         const firstItem = dropdown.querySelector(".title-breadcrumb-dropdown-item");

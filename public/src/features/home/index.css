@@ -1226,9 +1226,11 @@ ANIMATIONS
 
 /* ── Dropdown items ──────────────────────────────────────────────────────── */
 .title-breadcrumb-dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 9px 16px;
+  padding: 8px 14px;
   background: none;
   border: none;
   text-align: right;
@@ -1238,9 +1240,25 @@ ANIMATIONS
   color: var(--color-text-primary);
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+  box-sizing: border-box;
+}
+
+.title-breadcrumb-dropdown-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-breadcrumb-dropdown-label {
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: background 0.12s ease;
+  white-space: nowrap;
+  flex: 1;
+  text-align: right;
 }
 
 .title-breadcrumb-dropdown-item:hover {
