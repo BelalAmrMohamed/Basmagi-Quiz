@@ -1,5 +1,5 @@
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { _prompt, showNotification } from "../../components/notifications/notifications.js";
+import { _prompt, _confirm, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
@@ -32,8 +32,8 @@ export function navigateToFolder(folderId, folderTitle) {
   renderUserQuizzesView();
 }
 
-export function createNewFolderOrCourse(type = "folder") {
-  const name = prompt(`أدخل اسم ال${type === "course" ? "مادة" : "مجلد"}:`);
+export async function createNewFolderOrCourse(type = "folder") {
+  const name = await _prompt(`أدخل اسم ال${type === "course" ? "مادة" : "مجلد"}:`);
   if (!name || !name.trim()) return;
 
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
@@ -53,8 +53,8 @@ export function createNewFolderOrCourse(type = "folder") {
   renderUserQuizzesView();
 }
 
-export function renameItem(itemId, currentTitle) {
-  const newName = prompt("أدخل الاسم الجديد:", currentTitle);
+export async function renameItem(itemId, currentTitle) {
+  const newName = await _prompt("أدخل الاسم الجديد:", currentTitle);
   if (!newName || !newName.trim()) return;
   
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
@@ -66,8 +66,8 @@ export function renameItem(itemId, currentTitle) {
   }
 }
 
-export function deleteFolder(folderId) {
-  if (!confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟")) return;
+export async function deleteFolder(folderId) {
+  if (await !_confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟")) return;
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const idsToDelete = new Set([folderId]);
   
