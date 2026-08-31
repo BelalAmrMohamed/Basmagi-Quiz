@@ -1354,6 +1354,25 @@ body.sidebar-expanded .ai-agent-fab {
   background: var(--color-success-light, rgba(34, 197, 94, 0.12));
 }
 
+/* New/empty chat has nothing to copy yet — see refreshCopyButtonState()
+   in ai-agent.js, which toggles both this class and the native `disabled`
+   attribute together (the attribute stops the click, the class carries
+   the dimmed look since the button's own base styles set a full-opacity
+   color/border on hover that a bare :disabled selector would still need
+   to fight with !important otherwise). */
+.ai-agent-sidebar-btn:disabled,
+.ai-agent-sidebar-btn--disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ai-agent-sidebar-btn:disabled:hover,
+.ai-agent-sidebar-btn--disabled:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+
 /* Holds the chat panel's own model-selector bar once ai-agent.js moves it
    here from its default spot above the input row (see relocateModelBar()
    / panel.modelBarEl) — a compact control that fits the sidebar's own

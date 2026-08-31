@@ -1620,6 +1620,19 @@ export function createChatPanel(options = {}) {
     return conversationId;
   };
 
+  /**
+   * Whether this panel currently has any messages at all — mirrors the
+   * same history.length check updateNewChatVisibility() already uses to
+   * show/hide the corner "new chat"/"export chat" icon buttons. Exposed
+   * so the desktop sidebar's own "نسخ المحادثة" button (see ai-agent.js)
+   * can disable itself on an empty/new chat, where there's nothing to
+   * copy — same signal, just readable from outside the panel's closure.
+   * @returns {boolean}
+   */
+  panel.hasMessages = function hasMessages() {
+    return history.length > 0;
+  };
+
   panel.loadConversation = function loadConversation(conversation) {
     removeSuggestions();
     pendingAttachment = null;

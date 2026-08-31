@@ -191,6 +191,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   function refreshHistoryHighlights() {
     historyPanel.refresh();
     refreshSidebarRecents();
+    refreshCopyButtonState();
   }
 
   function activateTab(tabBtn, panel) {
@@ -229,7 +230,27 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   function handleBranch(branch) {
     const newPanel = createChatPanel({
       ...options,
-      onBranchConversation: handleBranch,
+      // BUG FIX: this used to pass `handleBranch` directly, which bakes a
+      // closure over THIS modal-open's `body`/`chatPanelSlot` straight
+      // into the panel's DOM-attached listener. That's fine for the rest
+      // of this same modal session, but this panel is also cached via
+      // setChatPanelForPageKey below and can be reused as `existingChatPanel`
+      // on a LATER modal reopen — at which point `body` here has already
+      // been removed (closeModal()'s modal.remove()) and a brand new one
+      // exists in the new buildWidgetContent() call. Editing a message a
+      // second time then ran the STALE handleBranch against the old,
+      // detached `body`, throwing "the node to be replaced is not a child
+      // of this node" from replaceChild, while the new modal's own sidebar
+      // — never told about the branch — kept its original modelBarEl in
+      // place, leaving two `.ai-agent-chat-model-select` bars on screen.
+      // Routing through the same per-pageKey forwarding proxy every other
+      // cached panel uses (see getOrCreateChatPanel) fixes both: the proxy
+      // always calls whichever handleBranch the CURRENTLY open modal most
+      // recently registered (see the branchHandlerRef.current assignment
+      // right after this function), never a stale one.
+      onBranchConversation: branchHandlerRef
+        ? (b) => branchHandlerRef.current?.(b)
+        : handleBranch,
       onHistoryChanged: refreshHistoryHighlights,
     });
     body.replaceChild(newPanel, chatPanelSlot.current);
@@ -268,6 +289,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarNewChatBtn.addEventListener("click", () => {
     chatPanelSlot.current.startNewConversation();
     activateTab(chatTabBtn, chatPanelSlot.current);
+    refreshCopyButtonState();
   });
 
   const sidebarCopyBtn = document.createElement("button");
@@ -279,6 +301,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     // re-implementing transcript-building here — see `.exportConversation`
     // exposed by createChatPanel() in ai-agent-chat.js, which is the same
     // routine the corner "export chat" icon button uses.
+    if (sidebarCopyBtn.disabled) return;
     if (typeof chatPanelSlot.current.exportConversation !== "function") return;
     const ok = await chatPanelSlot.current.exportConversation();
     if (ok) {
@@ -291,6 +314,25 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       }, 1500);
     }
   });
+
+  // Disables (visually + functionally) the "نسخ المحادثة" button whenever
+  // the active panel has no messages yet — a brand new/empty chat has
+  // nothing to copy. Reuses panel.hasMessages() (ai-agent-chat.js), the
+  // same history.length signal that already drives the corner "new
+  // chat"/"export chat" icon buttons' own visibility, so this stays in
+  // sync with them for free. Called from refreshHistoryHighlights (fired
+  // after every send/new-chat/loadConversation/branch — see that
+  // function's own doc comment) plus once below at initial mount, rather
+  // than needing a dedicated push callback threaded through every panel.
+  function refreshCopyButtonState() {
+    const hasMessages =
+      typeof chatPanelSlot.current.hasMessages === "function"
+        ? chatPanelSlot.current.hasMessages()
+        : true;
+    sidebarCopyBtn.disabled = !hasMessages;
+    sidebarCopyBtn.classList.toggle("ai-agent-sidebar-btn--disabled", !hasMessages);
+  }
+  refreshCopyButtonState();
 
   sidebar.appendChild(sidebarNewChatBtn);
   sidebar.appendChild(sidebarCopyBtn);
