@@ -23,7 +23,9 @@ import {
   getCategoryTree,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
+import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
+import { setFolderState } from "./user-quizzes-folders.js";
 import { getCourseItemCount } from "./course-count.js";
 import { attachCourseInfoTooltip } from "./course-info-tooltip.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
@@ -60,26 +62,18 @@ export async function renderRootCategories() {
     if (!title || !container) return;
 
     const subscribedIds = userProfile.getSubscribedCourseIds();
-
-    // Get subscribed courses
     const categoryTree = getCategoryTree();
     const subscribedCourses = getSubscribedCourses(categoryTree, subscribedIds);
-
-    // Title based on subscription status
     const profile = userProfile.getProfile();
-    if (subscribedCourses.length > 0) {
-      title.textContent = "المواد خاصتي";
-      title.setAttribute(
-        "title",
-        `${profile.faculty} faculty · Year ${profile.year} · Term ${profile.term}`,
-      );
-    } else {
-      title.textContent = "جميع المواد";
-      title.setAttribute(
-        "title",
-        `${"All Faculties · All Years · Both Terms"}`,
-      );
-    }
+
+    // Title: use the smart breadcrumb component (single item = just the label,
+    // no path links shown — we're at the root).
+    const rootLabel = subscribedCourses.length > 0 ? "المواد خاصتي" : "جميع المواد";
+    renderTitleBreadcrumb(title, [{ label: rootLabel }]);
+    const tooltipText = subscribedCourses.length > 0
+      ? `${profile.faculty} faculty · Year ${profile.year} · Term ${profile.term}`
+      : "All Faculties · All Years · Both Terms";
+    title.title = tooltipText;
 
     container.innerHTML = "";
     container.className = "grid-container";
@@ -99,7 +93,12 @@ export async function renderRootCategories() {
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";
 
-      quizzesCard.onclick = () => renderUserQuizzesView();
+      quizzesCard.onclick = () => {
+        // Always reset to the root of user-quizzes, regardless of where the
+        // user last navigated inside the folder tree.
+        setFolderState([], null);
+        renderUserQuizzesView();
+      };
       fragment.appendChild(quizzesCard);
     } catch (e) {
       console.error("Error creating User Quizzes card", e);

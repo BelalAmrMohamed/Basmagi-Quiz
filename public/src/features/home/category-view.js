@@ -11,6 +11,7 @@ import { toSlug } from "./slug-utils.js";
 import { container, title } from "./dom-refs.js";
 import {
   getNavigationStack,
+  setNavigationStack,
   isRestoring,
   getSearchManager,
   getCategoryTree,
@@ -18,6 +19,7 @@ import {
   setCategoriesCache,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
+import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getCourseItemCount } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
@@ -88,7 +90,38 @@ export function renderCategory(category) {
       searchManager.updateContextVisibility();
     }
 
-    title.textContent = category.name;
+    // Update the #Subjects-text pill with a smart collapsible breadcrumb.
+    // Build the items array from the navigationStack (which already includes
+    // the just-pushed category at the end).
+    if (title) {
+      // Snapshot the stack at this moment
+      const stackSnapshot = [...navigationStack];
+      const items = [
+        // Root item — always first
+        {
+          label: "الرئيسية",
+          onClick: () => {
+            // Lazy import to avoid circular dependency (root-view imports category-view)
+            import("./root-view.js").then((m) => m.renderRootCategories());
+          },
+        },
+        // Intermediate + current items from the stack
+        ...stackSnapshot.map((cat, idx) => ({
+          label: cat.name,
+          onClick:
+            idx < stackSnapshot.length - 1
+              ? () => {
+                  // Navigate to this ancestor: reset the stack to the items
+                  // above it, then renderCategory (which pushes it again).
+                  setNavigationStack(stackSnapshot.slice(0, idx));
+                  renderCategory(stackSnapshot[idx]);
+                }
+              : undefined, // last = current page, non-clickable
+        })),
+      ];
+      renderTitleBreadcrumb(title, items);
+    }
+
     container.innerHTML = "";
     container.className = "grid-container";
 

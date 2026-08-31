@@ -1069,6 +1069,186 @@ ANIMATIONS
   }
 }
 
+/* ── #Subjects-text when it holds a breadcrumb nav ────────────────────────
+   When renderTitleBreadcrumb() injects a <nav>, the pill needs to stretch
+   to fill available space (not shrink to content) so the ResizeObserver
+   can correctly detect overflow and trigger collapse.                     */
+#Subjects-text:has(.title-breadcrumb) {
+  max-width: min(680px, 92vw);
+  width: max-content;
+  /* Prevent the ::after emoji from pushing the path off-screen */
+  gap: 0;
+}
+
+/* ============================================================================
+   TITLE BREADCRUMB — smart collapsible inline breadcrumb
+   Rendered by renderTitleBreadcrumb() (title-breadcrumb.js) inside
+   #Subjects-text (and possibly other title elements).
+   ============================================================================ */
+
+/* ── Wrapper <nav> ───────────────────────────────────────────────────────── */
+.title-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  /* RTL: items flow right-to-left inside the pill */
+  direction: rtl;
+  flex: 1;
+}
+
+/* ── Path items (<a> links + <span> for current) ─────────────────────────── */
+.title-breadcrumb-item {
+  display: inline-block;
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 1;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: inherit;
+  cursor: pointer;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.title-breadcrumb-item:hover {
+  opacity: 0.75;
+}
+
+/* Current (last) item — not a link, dimmed */
+.title-breadcrumb-item--current {
+  color: var(--color-text-primary);
+  cursor: default;
+  font-weight: 700;
+  pointer-events: none;
+  max-width: 200px;
+}
+
+.title-breadcrumb-item--current:hover {
+  opacity: 1;
+}
+
+/* ── Separator ───────────────────────────────────────────────────────────── */
+.title-breadcrumb-sep {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  color: var(--color-text-tertiary, rgba(0,0,0,0.35));
+  font-size: 0.8em;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.title-breadcrumb-sep::before {
+  content: "/";
+}
+
+/* ── Ellipsis "…" toggle button ─────────────────────────────────────────── */
+.title-breadcrumb-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font-size: 0.95em;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.title-breadcrumb-ellipsis:hover,
+.title-breadcrumb-ellipsis[aria-expanded="true"] {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* ── Floating dropdown ───────────────────────────────────────────────────── */
+.title-breadcrumb-dropdown {
+  position: absolute;
+  z-index: var(--z-tooltip, 6000);
+  list-style: none;
+  margin: 0;
+  padding: 5px 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.18),
+    0 2px 8px -2px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  max-width: 260px;
+  direction: rtl;
+  animation: titleBcDropIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes titleBcDropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Dropdown items ──────────────────────────────────────────────────────── */
+.title-breadcrumb-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: none;
+  text-align: right;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.12s ease;
+}
+
+.title-breadcrumb-dropdown-item:hover {
+  background: var(--color-background-secondary, rgba(0,0,0,0.05));
+  color: var(--color-primary);
+}
+
+.title-breadcrumb-dropdown-item:focus-visible {
+  outline: none;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* ── Dark theme overrides ────────────────────────────────────────────────── */
+[data-theme="dark"] .title-breadcrumb-sep,
+[data-theme="dark-slate"] .title-breadcrumb-sep {
+  color: rgba(255,255,255,0.3);
+}
+
+[data-theme="dark"] .title-breadcrumb-ellipsis,
+[data-theme="dark-slate"] .title-breadcrumb-ellipsis {
+  background: rgba(255,255,255,0.07);
+}
+
+[data-theme="dark"] .title-breadcrumb-dropdown,
+[data-theme="dark-slate"] .title-breadcrumb-dropdown {
+  box-shadow:
+    0 8px 32px -4px rgba(0, 0, 0, 0.5),
+    0 2px 8px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────── */
+[data-animations="disabled"] .title-breadcrumb-dropdown {
+  animation: none;
+}
+
+
 /* ============================================================================
 Container
 ============================================================================ */

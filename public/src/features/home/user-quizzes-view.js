@@ -39,6 +39,7 @@ import {
   getSearchManager,
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
+import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
 import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
@@ -252,50 +253,48 @@ export function renderUserQuizzesView() {
       history.replaceState({ view: "my-quizzes" }, "", folderHash);
     }
 
-    // Update Title & breadcrumbs in #Subjects-text
+    // Fix the #breadcrumb back-button for nested user-quiz folders.
+    // updateBreadcrumb() only knows about the navigationStack which holds
+    // a single "إمتحاناتك" entry — it always renders "الرجوع إلى المواد ←"
+    // regardless of how deep we are in the folder tree. Override it directly
+    // based on the real folderPathStack.
     const pathStack = getCurrentFolderPathStack();
-    if (title) {
-      // Clear the title element to rebuild it
-      title.innerHTML = "";
-      if (pathStack.length === 0) {
-        // At root: just show the section name
-        title.textContent = "إمتحاناتك";
-      } else {
-        // Show interactive breadcrumb path: إمتحاناتك / Math / Algebra
-        title.style.display = "flex";
-        title.style.alignItems = "center";
-        title.style.gap = "6px";
-        title.style.flexWrap = "wrap";
-
-        const homeLink = document.createElement("a");
-        homeLink.href = "javascript:void(0)";
-        homeLink.textContent = "إمتحاناتك";
-        homeLink.style.cssText = "color: var(--color-primary); text-decoration: none; cursor: pointer;";
-        homeLink.onclick = () => navigateToFolder(null, null);
-        title.appendChild(homeLink);
-
-        pathStack.forEach((f, idx) => {
-          const sep = document.createElement("span");
-          sep.textContent = "/";
-          sep.style.opacity = "0.5";
-          title.appendChild(sep);
-
-          if (idx === pathStack.length - 1) {
-            // Last segment: current folder (not a link)
-            const span = document.createElement("span");
-            span.textContent = f.title;
-            title.appendChild(span);
-          } else {
-            const a = document.createElement("a");
-            a.href = "javascript:void(0)";
-            a.textContent = f.title;
-            a.style.cssText = "color: var(--color-primary); text-decoration: none; cursor: pointer;";
-            a.onclick = () => navigateToFolder(f.id, f.title);
-            title.appendChild(a);
-          }
-        });
+    const breadcrumbEl = document.getElementById("breadcrumb");
+    if (breadcrumbEl && pathStack.length > 0) {
+      breadcrumbEl.classList.add("show");
+      breadcrumbEl.setAttribute("aria-hidden", "false");
+      const breadcrumbText = breadcrumbEl.querySelector(".breadcrumb-text");
+      if (breadcrumbText) {
+        if (pathStack.length === 1) {
+          // Parent is the root of user-quizzes
+          breadcrumbText.textContent = "الرجوع إلى إمتحاناتك ←";
+          breadcrumbEl.onclick = () => navigateToFolder(null, null);
+          breadcrumbEl.setAttribute("aria-label", "الرجوع إلى إمتحاناتك ←");
+        } else {
+          // Parent is the previous folder in the path stack
+          const parentFolder = pathStack[pathStack.length - 2];
+          breadcrumbText.textContent = `الرجوع إلى ${parentFolder.title} ←`;
+          breadcrumbEl.onclick = () => navigateToFolder(parentFolder.id, parentFolder.title);
+          breadcrumbEl.setAttribute("aria-label", `الرجوع إلى ${parentFolder.title} ←`);
+        }
       }
     }
+
+    // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
+    // Build items from folderPathStack: root = "إمتحاناتك", then each folder.
+    if (title) {
+      const bcItems = [
+        { label: "إمتحاناتك", onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined },
+        ...pathStack.map((f, idx) => ({
+          label: f.title,
+          onClick: idx < pathStack.length - 1
+            ? () => navigateToFolder(f.id, f.title)
+            : undefined, // last = current, non-clickable
+        })),
+      ];
+      renderTitleBreadcrumb(title, bcItems);
+    }
+
     if (!container) return;
 
     container.innerHTML = "";
