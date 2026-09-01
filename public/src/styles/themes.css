@@ -66,6 +66,31 @@
   --bottom-nav-height: 54px;
 }
 
+/* ── html background (canvas-level, sits behind everything) ─────────────
+   Only `html` gets an explicit background-color, not `body` — pages using
+   the animated flow-field canvas (flow-field.js) rely on `body` staying
+   transparent so that canvas, itself `position:fixed` at `z-index:-1`,
+   remains visible through it; giving `body` an opaque background here too
+   would permanently paint over that animation once it starts rendering.
+   `html`'s background paints on the document canvas itself (the lowest
+   possible paint layer, before any positioned/z-indexed descendant), so it
+   still shows correctly on pages that don't use the flow-field at all.
+
+   This closes a real first-paint flash: pages using flow-field.js (a
+   deferred `type="module"` script that only paints its own themed
+   background after the DOM is parsed) previously had NO background at all
+   until that script ran. In that gap, `color-scheme: dark` /
+   `color-scheme: dark-slate` (set below, and already active by then since
+   the early inline theme script sets data-theme before this stylesheet is
+   even requested) makes the browser fall back to its own default dark
+   canvas color — a black flash — instead of the page's real background.
+   Setting the real value here on `html` means the correct color is there
+   from the very first paint, with nothing left for the browser to guess
+   at, while leaving `body` free for the canvas to show through. */
+html {
+  background-color: var(--color-background);
+}
+
 /* ==================== LIGHT THEME (DEFAULT) ==================== */
 :root,
 html[data-theme="light"] {

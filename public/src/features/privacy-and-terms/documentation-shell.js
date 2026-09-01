@@ -143,26 +143,135 @@ if (sidebarNav) {
     else link.removeAttribute("aria-current");
   });
 
-  // ── Filter-as-you-type ──────────────────────────────────────────────────
-  // Client-side only: filters the six links already in the DOM by their
-  // Arabic label, no fetch/index needed at this scale. Collapsing the
-  // sidebar back to icon-only (mobile, or a manual collapse) clears the
-  // filter so a stale search doesn't leave links hidden with no visible way
-  // to search again.
+  // ── Search-as-you-type ──────────────────────────────────────────────────
+  // Searches each doc's actual page content, not just its six-word sidebar
+  // label — a label-only filter technically works as a "filter" but reads
+  // as broken "search" the moment someone types a word that's clearly IN
+  // one of the docs (e.g. a policy term) and gets no match because that
+  // word never appears in the nav label itself.
+  //
+  // Each doc page is fetched once (lazily, only once the user actually
+  // searches) and reduced to lowercased plain text, cached in-memory for
+  // the rest of this page's lifetime AND in sessionStorage so navigating
+  // between doc pages within the same browsing session doesn't re-fetch
+  // and re-parse every doc from scratch on every page load. These are
+  // static, same-origin files — no auth/cache-busting concerns — so a
+  // plain fetch + DOMParser text extraction is enough; no server-side
+  // search index is warranted at six documents.
   const searchInput = document.getElementById("docsMenuSearch");
   const docsSection = sidebarNav.querySelector(".docs-menu-section");
   const emptyState = docsSection?.querySelector(".docs-menu-empty");
   if (searchInput && docsSection) {
-    searchInput.addEventListener("input", () => {
-      const query = searchInput.value.trim().toLowerCase();
+    const CONTENT_CACHE_KEY = "docs_search_content_cache_v1";
+    let contentCache = null; // href -> lowercased plain text, lazily loaded
+    function loadContentCache() {
+      if (contentCache) return contentCache;
+      try {
+        contentCache = JSON.parse(sessionStorage.getItem(CONTENT_CACHE_KEY) || "{}");
+      } catch (_) {
+        contentCache = {};
+      }
+      return contentCache;
+    }
+    function saveContentCache() {
+      try {
+        sessionStorage.setItem(CONTENT_CACHE_KEY, JSON.stringify(contentCache || {}));
+      } catch (_) {
+        /* sessionStorage full/unavailable — search still works without the cache */
+      }
+    }
+
+    async function getDocText(href) {
+      const cache = loadContentCache();
+      if (typeof cache[href] === "string") return cache[href];
+      try {
+        const res = await fetch(href);
+        if (!res.ok) throw new Error(`fetch ${href} failed: ${res.status}`);
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        // Only the readable body copy — strip nav/sidebar/scripts/styles so
+        // a match doesn't fire on boilerplate every doc page shares (the
+        // shell's own sidebar markup, footers, etc.), which would make
+        // every query match every doc.
+        doc.querySelectorAll("script, style, nav, .sidebar, .bottom-nav, .site-footer, .about-footer").forEach((el) => el.remove());
+        const text = (doc.body?.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+        cache[href] = text;
+        saveContentCache();
+        return text;
+      } catch (_) {
+        cache[href] = ""; // don't retry a failed fetch on every keystroke
+        return "";
+      }
+    }
+
+    // Build a short "…matched text…" snippet around the first hit, shown
+    // under the link only when the match came from content rather than the
+    // already-visible label — otherwise showing a snippet identical to the
+    // label the user can already see would be visual noise.
+    function buildSnippet(text, query) {
+      const idx = text.indexOf(query);
+      if (idx === -1) return "";
+      const radius = 28;
+      const start = Math.max(0, idx - radius);
+      const end = Math.min(text.length, idx + query.length + radius);
+      const prefix = start > 0 ? "…" : "";
+      const suffix = end < text.length ? "…" : "";
+      return prefix + text.slice(start, end).trim() + suffix;
+    }
+
+    let searchToken = 0; // guards against a slow fetch resolving after a newer query was typed
+    async function runSearch(query) {
+      const token = ++searchToken;
+      const links = Array.from(docsSection.querySelectorAll(".docs-menu-link"));
       let anyVisible = false;
-      docsSection.querySelectorAll(".docs-menu-link").forEach((link) => {
-        const label = (link.dataset.docsLabel || "").toLowerCase();
-        const matches = !query || label.includes(query);
-        link.hidden = !matches;
-        if (matches) anyVisible = true;
+
+      if (!query) {
+        links.forEach((link) => {
+          link.hidden = false;
+          const snippet = link.querySelector(".docs-menu-link-snippet");
+          if (snippet) snippet.remove();
+        });
+        if (emptyState) emptyState.hidden = true;
+        return;
+      }
+
+      const results = await Promise.all(
+        links.map(async (link) => {
+          const label = (link.dataset.docsLabel || "").toLowerCase();
+          if (label.includes(query)) return { link, matched: true, snippet: "" };
+          const href = link.getAttribute("href");
+          const text = await getDocText(href);
+          const matched = text.includes(query);
+          return { link, matched, snippet: matched ? buildSnippet(text, query) : "" };
+        }),
+      );
+
+      if (token !== searchToken) return; // a newer keystroke superseded this search
+
+      results.forEach(({ link, matched, snippet }) => {
+        link.hidden = !matched;
+        if (matched) anyVisible = true;
+        const existingSnippet = link.querySelector(".docs-menu-link-snippet");
+        if (existingSnippet) existingSnippet.remove();
+        if (matched && snippet) {
+          const snippetEl = document.createElement("small");
+          snippetEl.className = "docs-menu-link-snippet";
+          snippetEl.textContent = snippet;
+          link.querySelector(".menu-label")?.appendChild(document.createElement("br"));
+          link.querySelector(".menu-label")?.appendChild(snippetEl);
+        }
       });
       if (emptyState) emptyState.hidden = anyVisible;
+    }
+
+    let debounceHandle = null;
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim().toLowerCase();
+      clearTimeout(debounceHandle);
+      // Instant for the common "just filtering by label" case; debounced
+      // only for the network-touching content search path, so typing
+      // doesn't fire a fetch per keystroke.
+      debounceHandle = setTimeout(() => runSearch(query), query ? 200 : 0);
     });
   }
 }

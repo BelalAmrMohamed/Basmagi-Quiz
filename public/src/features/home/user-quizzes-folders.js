@@ -16,6 +16,36 @@ export function getChildren(userQuizzes, parentId) {
   return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
 }
 
+/**
+ * Courses are always top-level — they never live inside another folder or
+ * course, and nothing may be moved/dropped/dragged into a course except
+ * directly from the root. This is the single guard every move/drop/create
+ * path below funnels through, so the rule can't drift out of sync between
+ * drag-and-drop, the move-to dialog, the context menu, and the breadcrumb
+ * drop targets the way separate ad-hoc checks would.
+ * @param {object[]} userQuizzes
+ * @param {string} itemId - the item being placed somewhere
+ * @param {string|null} targetFolderId - where it would be placed (null = root)
+ * @returns {{allowed: boolean, reason?: string}}
+ */
+export function canPlaceItem(userQuizzes, itemId, targetFolderId) {
+  const item = userQuizzes.find((q) => (q.id || q.meta?.id) === itemId);
+  const isCourse = item?.meta?.type === "course";
+
+  // A course may only ever sit at the root — moving it anywhere else
+  // (including into another course) is never allowed.
+  if (isCourse && targetFolderId !== null) {
+    return { allowed: false, reason: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها داخل مجلد أو مادة أخرى." };
+  }
+
+  // Nothing may be placed *inside* a course except directly (a course can
+  // hold folders/quizzes as children — that's normal); this only blocks
+  // placing a course inside a course, already covered above, and moving
+  // an item into itself/its own descendant (checked by the caller via
+  // isDescendant since that needs the full ancestry walk).
+  return { allowed: true };
+}
+
 export function getCurrentFolderPathStack() {
   return folderPathStack;
 }
@@ -183,6 +213,13 @@ export function handleDrop(e, targetFolderId) {
     return;
   }
 
+  // Courses are top-level only — see canPlaceItem's doc comment.
+  const placement = canPlaceItem(userQuizzes, itemId, targetFolderId);
+  if (!placement.allowed) {
+    showNotification("لا يمكن النقل", placement.reason, "warning");
+    return;
+  }
+
   const itemIndex = userQuizzes.findIndex((q) => q.id === itemId || q.meta?.id === itemId);
   if (itemIndex !== -1) {
     if (!userQuizzes[itemIndex].meta) userQuizzes[itemIndex].meta = {};
@@ -222,6 +259,11 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
       blocked++;
       return;
     }
+    // Courses are top-level only — see canPlaceItem's doc comment.
+    if (!canPlaceItem(userQuizzes, itemId, targetFolderId).allowed) {
+      blocked++;
+      return;
+    }
     const item = userQuizzes.find((q) => q.id === itemId || q.meta?.id === itemId);
     if (!item) return;
     if (!item.meta) item.meta = {};
@@ -250,94 +292,158 @@ export async function openMoveToDialog(itemIds) {
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
 
+  // Moving a single course means there is nowhere valid to move it to at
+  // all (courses are top-level only — see canPlaceItem) — the picker
+  // would open with every option disabled, which is a worse experience
+  // than not opening it. showContextMenu already omits "نقل إلى" for a
+  // lone course for this reason; this guard covers any other caller
+  // (e.g. a future bulk-select that includes a course) with the same
+  // message instead of an empty-looking dialog.
+  const movingCourseIds = itemIds.filter((id) => {
+    const item = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
+    return item?.meta?.type === "course";
+  });
+  if (movingCourseIds.length && itemIds.length === movingCourseIds.length) {
+    showNotification(
+      "لا يمكن النقل",
+      "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها.",
+      "warning",
+    );
+    return;
+  }
+
+  // Current location of the item(s) being moved, so it can be excluded/
+  // marked as "current" rather than offered as a no-op destination.
+  const firstItem = userQuizzes.find((q) => (q.id || q.meta?.id) === itemIds[0]);
+  const currentParentId = firstItem?.meta?.parentId || null;
+
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay move-to-dialog-overlay";
 
   const card = document.createElement("div");
   card.className = "modal-card move-to-dialog-card";
-  card.style.textAlign = "right";
-  card.style.maxHeight = "80vh";
-  card.style.display = "flex";
-  card.style.flexDirection = "column";
 
   const closeDialog = () => overlay.remove();
 
+  const itemLabel =
+    itemIds.length > 1
+      ? `${itemIds.length} عناصر`
+      : firstItem?.meta?.title
+        ? `"${firstItem.meta.title}"`
+        : "العنصر";
+
   card.innerHTML = `
-    <div class="modal-header">
-      <h3 style="margin:0;font-size:1.05rem;">نقل ${itemIds.length > 1 ? `(${itemIds.length} عناصر)` : "إلى"}</h3>
-      <button type="button" class="move-to-dialog-close" aria-label="إغلاق">✕</button>
+    <div class="move-to-dialog-header">
+      <div class="move-to-dialog-header-text">
+        <h3 class="move-to-dialog-title">نقل إلى</h3>
+        <p class="move-to-dialog-subtitle">اختر الوجهة لنقل ${itemLabel}</p>
+      </div>
+      <button type="button" class="move-to-dialog-close" aria-label="إغلاق">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
     </div>
-    <div class="move-to-dialog-list" role="listbox" aria-label="اختر وجهة النقل"></div>
+    <div class="move-to-dialog-tree" role="tree" aria-label="اختر وجهة النقل"></div>
   `;
 
-  const listEl = card.querySelector(".move-to-dialog-list");
-  listEl.style.overflowY = "auto";
-  listEl.style.padding = "8px";
+  const treeEl = card.querySelector(".move-to-dialog-tree");
 
-  function addOption(label, id, icon, depth = 0) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "move-to-dialog-option";
-    btn.setAttribute("role", "option");
-    btn.dataset.depth = String(depth);
-    btn.style.cssText = `
-      display: flex; align-items: center; gap: 8px; width: 100%;
-      padding: 10px 12px; text-align: right; background: transparent;
-      border: none; border-radius: 8px; cursor: pointer; font-size: 0.92rem;
-      color: var(--color-text-primary);
-    `;
-    // Ancestry indicator: one guide segment per level of nesting, rendered
-    // as small connector marks before the icon/label rather than leading
-    // whitespace — whitespace-only indent (the old "　".repeat(depth)
-    // approach) collapses visually once several siblings are at the same
-    // depth, so there's no way to tell "these three are siblings under the
-    // same parent" from "this is one level deeper". A visible connector per
-    // level keeps that relationship legible regardless of depth.
-    const guide = depth > 0
-      ? `<span class="move-to-dialog-guide" aria-hidden="true" style="padding-inline-start:${(depth - 1) * 18}px">${"┃".repeat(Math.max(depth - 1, 0))}┗</span>`
-      : "";
-    btn.innerHTML = `${guide}<span aria-hidden="true">${icon}</span><span>${label}</span>`;
-    btn.onmouseover = () => (btn.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))");
-    btn.onmouseout = () => (btn.style.background = "transparent");
-    btn.onclick = () => {
-      const { moved, blocked } = moveItemsToFolder(itemIds, id);
-      closeDialog();
-      if (moved > 0) {
-        showNotification(
-          "تم النقل",
-          moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
-          "success",
-        );
-      }
-      if (blocked > 0) {
-        showNotification(
-          "تعذر نقل بعض العناصر",
-          "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.",
-          "warning",
-        );
-      }
-      renderUserQuizzesView();
-    };
-    listEl.appendChild(btn);
+  /**
+   * One row = one button styled as a real tree node: an icon, a label, and
+   * (for nested rows) a vertical rail + elbow drawn with CSS borders on a
+   * dedicated element per ancestor level — not ASCII box-drawing characters
+   * baked into text content, which don't align pixel-for-pixel with the
+   * row's own height/line-box and read as a decorative afterthought rather
+   * than an actual structural line.
+   */
+  function addNode(label, id, icon, depth, { isCurrent = false, disabledReason = null } = {}) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "move-to-dialog-node";
+    row.setAttribute("role", "treeitem");
+    row.dataset.depth = String(depth);
+    if (isCurrent) row.classList.add("move-to-dialog-node--current");
+    if (disabledReason) {
+      row.classList.add("move-to-dialog-node--disabled");
+      row.disabled = true;
+      row.title = disabledReason;
+    }
+
+    let rails = "";
+    for (let i = 0; i < depth; i++) {
+      const isLast = i === depth - 1;
+      rails += `<span class="move-to-dialog-rail${isLast ? " move-to-dialog-rail--elbow" : ""}" aria-hidden="true"></span>`;
+    }
+
+    row.innerHTML =
+      `${rails}` +
+      `<span class="move-to-dialog-node-icon" aria-hidden="true">${icon}</span>` +
+      `<span class="move-to-dialog-node-label">${label}</span>` +
+      (isCurrent ? `<span class="move-to-dialog-node-badge">الموقع الحالي</span>` : "");
+
+    if (!disabledReason) {
+      row.onclick = () => {
+        const { moved, blocked } = moveItemsToFolder(itemIds, id);
+        closeDialog();
+        if (moved > 0) {
+          showNotification(
+            "تم النقل",
+            moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
+            "success",
+          );
+        }
+        if (blocked > 0) {
+          showNotification(
+            "تعذر نقل بعض العناصر",
+            "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية، ولا يمكن نقل مادة إلى داخل مجلد آخر.",
+            "warning",
+          );
+        }
+        renderUserQuizzesView();
+      };
+    }
+    treeEl.appendChild(row);
   }
 
-  addOption("إمتحاناتك (الرئيسية)", null, "📁", 0);
+  // Root option. Marked "current location" (not disabled — re-confirming
+  // "stay at root" is harmless) when the item(s) are already there.
+  addNode("إمتحاناتك (الرئيسية)", null, "🏠", 0, {
+    isCurrent: currentParentId === null,
+  });
 
-  // Build a simple indented flat list of every folder/course so the picker
-  // stays a single scrollable list rather than a nested tree widget —
-  // enough for typical folder depths, and far simpler to build/maintain.
-  // Ancestry is made explicit visually (a vertical guide line + per-level
-  // indent step on each option, rather than relying on full-width space
-  // characters alone) so users can tell at a glance which folder is nested
-  // under which before picking a destination.
+  // Recursively render the real folder/course tree — actual nesting via
+  // depth-indexed rails, not a flat list dressed up to look nested. Each
+  // node is individually validity-checked against every item being moved:
+  // - a descendant of any moving item (would create a cycle)
+  // - a course itself, when the payload includes a course (nowhere for a
+  //   course to go but root — see canPlaceItem)
+  // - the item's current parent (a no-op, shown but marked/disabled rather
+  //   than hidden, so the tree's shape stays predictable)
   function appendChildren(parentId, depth) {
     folders
       .filter((f) => (f.meta?.parentId || null) === parentId)
       .forEach((f) => {
         const fid = f.id || f.meta?.id;
         const icon = f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁");
-        addOption(f.meta?.title || "", fid, icon, depth);
-        appendChildren(fid, depth + 1);
+        const isCurrent = fid === currentParentId;
+
+        let disabledReason = null;
+        if (itemIds.includes(fid)) {
+          disabledReason = "لا يمكن نقل عنصر إلى نفسه.";
+        } else if (itemIds.some((id) => isDescendant(userQuizzes, id, fid))) {
+          disabledReason = "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.";
+        } else if (movingCourseIds.length) {
+          disabledReason = "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
+        }
+
+        addNode(f.meta?.title || "", fid, icon, depth, { isCurrent, disabledReason });
+
+        // Still descend into disabled branches (a disabled ancestor doesn't
+        // imply its children are also invalid destinations for a *different*
+        // moving item in a multi-select) unless this exact subtree is a
+        // descendant of every moving item, in which case nothing under it
+        // could ever be valid either and descending would just be noise.
+        const allBlocked = itemIds.every((id) => isDescendant(userQuizzes, id, fid) || id === fid);
+        if (!allBlocked) appendChildren(fid, depth + 1);
       });
   }
   appendChildren(null, 1);
@@ -418,11 +524,16 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     // Non-drag fallback for moving items — essential on touch devices,
     // which have no usable drag gesture for this grid, and a faster path
     // than drag-and-drop even on desktop for deeply nested moves.
-    contextMenuEl.appendChild(createMenuItem(MOVE_TO_SVG, "نقل إلى", () => openMoveToDialog([targetId])));
+    // Courses are top-level only (see canPlaceItem) — there is nowhere
+    // else a course could move to, so the option is omitted entirely
+    // instead of opening a dialog with no valid destination.
+    if (targetType !== "course") {
+      contextMenuEl.appendChild(createMenuItem(MOVE_TO_SVG, "نقل إلى", () => openMoveToDialog([targetId])));
+    }
     // "Move out" is only meaningful when the item is actually inside
     // something — one click straight to the immediate parent, instead of
     // making every out-of-folder move go through the full picker dialog.
-    if (currentFolderId !== null) {
+    if (targetType !== "course" && currentFolderId !== null) {
       const parentId = pathStackParentId();
       contextMenuEl.appendChild(
         createMenuItem(MOVE_TO_SVG, "نقل إلى الخارج", () => {
@@ -706,9 +817,13 @@ export function createFolderOrCourseCard(item) {
   const card = document.createElement("div");
   card.className = "category-card user-quiz-card";
   card.style.cursor = "pointer";
-  card.draggable = true;
+  const isCourse = item.meta?.type === "course";
+  // Courses are always top-level (see canPlaceItem) — there is no valid
+  // drop target for one, so it isn't made draggable at all rather than
+  // being draggable-but-rejected-on-drop everywhere.
+  card.draggable = !isCourse;
 
-  const icon = item.meta?.type === "course" ? "📚" : "📁";
+  const icon = isCourse ? "📚" : "📁";
   const itemId = item.id || item.meta?.id;
 
   const selectedUserQuizzes = getSelectedUserQuizzes();
@@ -735,9 +850,11 @@ export function createFolderOrCourseCard(item) {
     navigateToFolder(itemId, item.meta?.title);
   };
 
-  card.ondragstart = (e) => handleDragStart(e, itemId);
-  card.ondragend = handleDragEnd;
-  
+  if (!isCourse) {
+    card.ondragstart = (e) => handleDragStart(e, itemId);
+    card.ondragend = handleDragEnd;
+  }
+
   if (item.meta?.type === "folder" || item.meta?.type === "course") {
     card.ondragover = handleDragOver;
     card.ondragleave = handleDragLeave;

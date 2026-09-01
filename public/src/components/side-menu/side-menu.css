@@ -846,6 +846,29 @@ body.sidebar-expanded {
   font-size: 0.78rem;
 }
 
+/* A matched doc-search result carries a snippet of the actual matching
+   text underneath its label (see documentation-shell.js's runSearch) —
+   .menu-item is normally a rigid single-line row (white-space: nowrap,
+   align-items: center), which would clip or misalign a second line, so a
+   link that currently holds a snippet opts into a two-line layout locally
+   rather than changing the shared .menu-item rule every other sidebar
+   entry also uses. */
+.docs-menu-link:has(.docs-menu-link-snippet) {
+  align-items: flex-start;
+  white-space: normal;
+  padding-block: 8px;
+}
+
+.docs-menu-link-snippet {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-secondary, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+}
+
 /* ── Section header labels: must NOT stretch (flex:1 is for menu-items only) */
 .theme-section-header .menu-label {
   flex: none;
