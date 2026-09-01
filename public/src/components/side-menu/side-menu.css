@@ -1598,13 +1598,6 @@ body.sidebar-expanded {
       var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
-  .bottom-nav-icon svg {
-    width: 21px;
-    height: 21px;
-    stroke-width: 2;
-    transition: stroke-width 0.18s ease;
-  }
-
   .bottom-nav-label {
     font-size: 0.64rem;
     font-weight: 600;
@@ -1618,10 +1611,6 @@ body.sidebar-expanded {
   /* Active / inactive states */
   .bottom-nav-item.active {
     color: var(--color-primary);
-  }
-
-  .bottom-nav-item.active .bottom-nav-icon svg {
-    stroke-width: 2.4;
   }
 
   .bottom-nav-item.active .bottom-nav-icon {
@@ -1655,38 +1644,13 @@ body.sidebar-expanded {
     background: var(--color-accent);
   }
 
-  /* "الحساب" (Profile) — was previously raised above the bar (Play-Store
-     style, margin-top: -14px) which is what kept the bar's overall height
-     taller than necessary. Realigned flush with the other icons: same
-     size class, no negative margin, so the bar can be shortened without
-     the profile icon poking out past its top edge. Keeps a filled pill
-     background + gradient so it still reads as the primary action, just
-     without sitting proud of the row.
-
-     FIXED: this pill is 30x30 vs every other .bottom-nav-icon's 24x24.
-     .bottom-nav-item is a column flexbox (icon, 2px gap, label) with
-     align-items: center — growing the icon's box height by 6px shifts
-     the whole icon+label column, but because only the icon (not the
-     label) grew, the label ends up sitting ~3px lower than every other
-     tab's label instead of sharing their baseline. A negative margin
-     equal to half that delta pulls the pill back up so it occupies the
-     same 24px vertical footprint as a regular icon (extending 3px above
-     and 3px below it) without touching layout for the other tabs. */
   .bottom-nav-icon-profile {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     margin-top: -3px;
     margin-bottom: -3px;
     border-radius: var(--radius-full, 9999px);
-    background: var(--gradient-accent);
-    color: #fff;
     box-shadow: var(--shadow-md);
-  }
-
-  .bottom-nav-icon-profile svg {
-    width: 18px;
-    height: 18px;
-    stroke: #fff;
   }
 
   .bottom-nav-item-profile.active {
@@ -1788,8 +1752,8 @@ html[data-motion="reduced"] .menu-item:active svg {
 }
 
 .bottom-nav-avatar {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;

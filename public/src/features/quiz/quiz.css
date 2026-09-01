@@ -3151,11 +3151,11 @@ body.is-resizing-media .media-container.resizable-media {
   text-align: left;
 }
 
-/* This was supposed to ensure child blockquotes or paragraphs inherit the injected parent wrapper direction, but it broke the labels like "Explanation" by making it inherit the text-alignment of its parent, when it waas supposed to be cenetered. */
-/* .feedback-body *,
-.formal-answer-text * {
-  text-align: inherit;
-} */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none;
+  }
+}
 
 /* ─── 17. Quiz Page — Mobile Hamburger & Sidebar Overrides ─────────────────
    Scoped strictly to phone viewports so desktop layout is never touched.
