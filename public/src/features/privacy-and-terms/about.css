@@ -50,12 +50,20 @@ html[data-theme="dark-slate"] .about-page {
 
 .about-page .top-bar {
   /* Keep the same shared accent-gradient treatment every other doc page
-     uses (see .top-bar in privacy-and-terms.css) instead of flattening it
-     to a solid color — the flat override here previously replaced the
+     uses (see .top-bar-fill in privacy-and-terms.css) instead of flattening
+     it to a solid color — a flat override here previously replaced the
      gradient outright due to selector specificity, so the "accent bar" a
      visitor sees on every other doc page quietly disappeared specifically
      on about.html. Recolored with this page's own ink/sub tones so it
-     still fits the page's palette while keeping the intended effect. */
+     still fits the page's palette while keeping the intended effect. The
+     gradient now lives on the .top-bar-fill child (whose width tracks
+     reading progress) rather than on .top-bar itself — .top-bar only
+     supplies the plain "unread track" background.
+  */
+  background: var(--about-line);
+}
+
+.about-page .top-bar-fill {
   background: linear-gradient(to left, var(--about-ink) 0%, var(--about-sage) 60%, var(--about-line) 100%);
 }
 

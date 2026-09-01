@@ -27,8 +27,6 @@ body {
   color: var(--color-text-primary, #e0e0e0);
   padding-top: 32px;
   padding-bottom: 80px;
-  padding-left: 24px;
-  padding-right: 24px;
   position: relative;
   overflow-x: clip;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -37,6 +35,20 @@ body {
 .reports-page-container {
   max-width: 1200px;
   margin: 0 auto;
+  /* Left/right breathing room lives here instead of on `body` — `body`'s
+     own right-side padding is already owned by side-menu.css, which grows
+     it dynamically with the sidebar's collapsed/expanded width (see
+     `body { padding-right: calc(...) }` and `.sidebar-expanded`) so page
+     content never sits under the sidebar. This file previously set a flat
+     `padding-right: 24px` directly on `body` too — same selector, loaded
+     after side-menu.css in reports.html, so it silently won the cascade
+     and permanently pinned the offset at 24px regardless of the sidebar's
+     actual width, which is exactly what let the expanded sidebar overlap
+     the page content. Applying the padding to this inner container instead
+     keeps the visual spacing intact without fighting side-menu.css for
+     ownership of `body`. */
+  padding-left: 24px;
+  padding-right: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -645,6 +657,9 @@ body {
   body {
     padding-top: 16px;
     padding-bottom: 90px;
+  }
+
+  .reports-page-container {
     padding-left: 14px;
     padding-right: 14px;
   }

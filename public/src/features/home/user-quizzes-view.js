@@ -30,6 +30,9 @@ import {
   createFolderOrCourseCard,
   buildFolderHash,
   openMoveToDialog,
+  createFolderOrCourseNamed,
+  findFolderByName,
+  moveItemsToFolder,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -207,6 +210,144 @@ function handleDeleteQuizToolCall(toolCall) {
 }
 
 /**
+ * "إمتحاناتك الرئيسية" (root) is how the folder-tree context prompt and
+ * move_item's destinationFolder both refer to the top level — resolve that
+ * literal label the same way for both create_folder's parentFolder and
+ * move_item's destinationFolder so the model can use the exact string it
+ * was given back in context, instead of having to know to omit the field
+ * (which it won't reliably infer purely from the schema description).
+ */
+function resolveFolderTitleToId(folderTitle) {
+  if (!folderTitle || folderTitle === "إمتحاناتك الرئيسية" || folderTitle === "الرئيسية") {
+    return { ok: true, id: null };
+  }
+  const found = findFolderByName(folderTitle);
+  if (!found) {
+    return { ok: false, reason: `لم يتم العثور على "${folderTitle}".` };
+  }
+  return { ok: true, id: found.id };
+}
+
+function handleCreateFolderToolCall(toolCall) {
+  const { name, parentFolder } = toolCall?.input || {};
+  if (!name || !name.trim()) {
+    const err = new Error("create_folder called without a name");
+    err.userMessage = "اسم المجلد مطلوب.";
+    throw err;
+  }
+
+  const parentResolution = resolveFolderTitleToId(parentFolder);
+  if (!parentResolution.ok) {
+    const err = new Error(parentResolution.reason);
+    err.userMessage = parentResolution.reason;
+    throw err;
+  }
+
+  const result = createFolderOrCourseNamed("folder", name.trim(), parentResolution.id);
+  if (!result.ok) {
+    const err = new Error(result.reason);
+    err.userMessage = result.reason;
+    throw err;
+  }
+
+  renderUserQuizzesView();
+  return `📁 تم إنشاء المجلد: ${name.trim()}`;
+}
+
+function handleCreateCourseToolCall(toolCall) {
+  const { name } = toolCall?.input || {};
+  if (!name || !name.trim()) {
+    const err = new Error("create_course called without a name");
+    err.userMessage = "اسم المادة مطلوب.";
+    throw err;
+  }
+
+  // Courses are always top-level — see createFolderOrCourseNamed's own
+  // guard, which this relies on rather than duplicating the check here.
+  const result = createFolderOrCourseNamed("course", name.trim(), null);
+  if (!result.ok) {
+    const err = new Error(result.reason);
+    err.userMessage = result.reason;
+    throw err;
+  }
+
+  renderUserQuizzesView();
+  return `📚 تم إنشاء المادة: ${name.trim()}`;
+}
+
+function handleMoveItemToolCall(toolCall) {
+  const { itemName, destinationFolder } = toolCall?.input || {};
+  if (!itemName || !itemName.trim()) {
+    const err = new Error("move_item called without an itemName");
+    err.userMessage = "اسم العنصر المراد نقله مطلوب.";
+    throw err;
+  }
+
+  // The item being moved can be a quiz, a folder, or a course — quizzes
+  // aren't findable via findFolderByName (folders/courses only), so quiz
+  // titles are matched directly against user_quizzes here.
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const normalize = (s) => (s || "").trim().toLowerCase();
+  const item = userQuizzes.find((q) => normalize(q.meta?.title) === normalize(itemName));
+  if (!item) {
+    const err = new Error(`Item not found: ${itemName}`);
+    err.userMessage = `لم يتم العثور على "${itemName}".`;
+    throw err;
+  }
+  const itemId = item.id || item.meta?.id;
+
+  const destResolution = resolveFolderTitleToId(destinationFolder);
+  if (!destResolution.ok) {
+    const err = new Error(destResolution.reason);
+    err.userMessage = destResolution.reason;
+    throw err;
+  }
+
+  const { moved, blocked } = moveItemsToFolder([itemId], destResolution.id);
+  renderUserQuizzesView();
+
+  if (moved > 0) {
+    return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "إمتحاناتك الرئيسية"}.`;
+  }
+  const err = new Error(`Move blocked/no-op for ${itemName}`);
+  err.userMessage = blocked > 0
+    ? "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية، ولا يمكن نقل مادة إلى داخل مجلد آخر."
+    : `"${itemName}" موجود بالفعل في هذا الموقع.`;
+  throw err;
+}
+
+/**
+ * Renders the user's folder/course tree as an indented plain-text list by
+ * title (root "إمتحاناتك الرئيسية" first, then each folder/course nested
+ * under its parent) for the AI agent's system-context — this is the only
+ * way the model can resolve create_folder's parentFolder or move_item's
+ * itemName/destinationFolder to a real location, since (like every other
+ * tool on this page) it only ever sees titles, never internal ids.
+ * @param {object[]} userQuizzes
+ * @returns {string}
+ */
+function buildFolderTreeContextPrompt(userQuizzes) {
+  const nodes = userQuizzes.filter(
+    (q) => q.meta?.type === "folder" || q.meta?.type === "course",
+  );
+  const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- إمتحاناتك الرئيسية (المستوى الرئيسي)"];
+
+  function appendChildren(parentId, depth) {
+    nodes
+      .filter((n) => (n.meta?.parentId || null) === parentId)
+      .forEach((n) => {
+        const nid = n.id || n.meta?.id;
+        const kind = n.meta?.type === "course" ? "مادة" : "مجلد";
+        lines.push(`${"  ".repeat(depth)}- ${n.meta?.title || ""} (${kind})`);
+        appendChildren(nid, depth + 1);
+      });
+  }
+  appendChildren(null, 1);
+
+  return lines.join("\n");
+}
+
+/**
  * Single entry point passed as onToolCall to createAIAgentFab — dispatches
  * to the right handler by tool name. Keeps ai-agent-chat.js generic (it
  * just calls whatever onToolCall it was given) while each page decides
@@ -222,6 +363,12 @@ function handleQuizToolCall(toolCall) {
       return handleEditQuizToolCall(toolCall);
     case "delete_quiz":
       return handleDeleteQuizToolCall(toolCall);
+    case "create_folder":
+      return handleCreateFolderToolCall(toolCall);
+    case "create_course":
+      return handleCreateCourseToolCall(toolCall);
+    case "move_item":
+      return handleMoveItemToolCall(toolCall);
     default: {
       const err = new Error(`Unknown tool call: ${toolCall?.name}`);
       err.userMessage = "أداة غير معروفة.";
@@ -557,6 +704,13 @@ export function renderUserQuizzesView() {
       types: qz(quiz, "type"),
     }));
 
+    // A readable folder-tree listing (by title, indented per depth) so the
+    // model can resolve create_folder's parentFolder and move_item's
+    // itemName/destinationFolder against real names instead of guessing —
+    // it never sees internal ids, only titles, exactly like contextSummary
+    // above only ever exposes quiz titles.
+    const folderTreePrompt = buildFolderTreeContextPrompt(userQuizzes);
+
     container.appendChild(
       createAIAgentFab({
         placeholder: "اسأل البشــمبصمج",
@@ -565,7 +719,9 @@ export function renderUserQuizzesView() {
         suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
         enableFileUpload: true,
         contextSummary,
+        contextPrompt: folderTreePrompt,
         enableTools: true,
+        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item"],
         onToolCall: handleQuizToolCall,
       }),
     );

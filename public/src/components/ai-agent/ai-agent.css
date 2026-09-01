@@ -1027,7 +1027,7 @@
    blanket direction here is safe (unlike .ai-agent-chat-messages above). */
 .ai-agent-settings-panel {
   padding: 16px;
-  direction: rtl;
+  direction: ltr;
   display: flex;
   flex-direction: column;
   gap: 14px;

@@ -2227,55 +2227,212 @@ Container
 
 /* ============================================================================
  * MOVE-TO DIALOG — folder-tree picker opened from "نقل إلى" (context menu
- * and card ⋮ overlay). A single scrollable, indented list of folders/
- * courses rather than a full tree widget — simple, and sufficient for the
- * folder depths this feature realistically has.
+ * and card ⋮ overlay). Renders an actual indented tree (see
+ * user-quizzes-folders.js's addNode/appendChildren): a header with title +
+ * subtitle + close button, then one .move-to-dialog-node button per
+ * folder/course with per-depth .move-to-dialog-rail connector elements
+ * drawn via CSS borders (not monospace box-drawing characters), a "current
+ * location" badge, and a disabled state (with a title= tooltip explaining
+ * why) for invalid destinations instead of hiding them outright.
  * ============================================================================ */
 .move-to-dialog-card {
   padding: 0;
-  max-width: 380px;
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: min(560px, 80vh);
+  overflow: hidden;
 }
 
-.move-to-dialog-close {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  color: var(--color-text-secondary);
-  padding: 4px 8px;
-  border-radius: 6px;
+.move-to-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
-.move-to-dialog-close:hover {
-  background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+.move-to-dialog-header-text {
+  min-width: 0;
+}
+
+.move-to-dialog-title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--color-text-primary);
 }
 
-.move-to-dialog-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.move-to-dialog-subtitle {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.move-to-dialog-option:focus-visible {
+.move-to-dialog-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.move-to-dialog-close:hover,
+.move-to-dialog-close:focus-visible {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-text-primary);
+}
+
+.move-to-dialog-close:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.move-to-dialog-tree {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.move-to-dialog-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.88rem;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.move-to-dialog-node:hover:not(.move-to-dialog-node--disabled) {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+}
+
+.move-to-dialog-node:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: -2px;
 }
 
-/* Ancestry guide marks — makes the parent/child relationship between
- * folder-picker rows explicit instead of relying on indent-only spacing,
- * which reads ambiguously once multiple folders share the same depth. */
-.move-to-dialog-guide {
-  display: inline-flex;
-  color: var(--color-text-secondary, rgba(0, 0, 0, 0.4));
-  font-family: monospace;
-  font-size: 0.85em;
-  line-height: 1;
-  flex-shrink: 0;
+/* Root row (depth 0, "إمتحاناتك الرئيسية") reads as a distinct, permanent
+   top-level destination rather than just another tree row. */
+.move-to-dialog-node[data-depth="0"] {
+  font-weight: 600;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 8px 8px 0 0;
 }
 
-.move-to-dialog-option[data-depth="0"] {
+.move-to-dialog-node-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.move-to-dialog-node-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.move-to-dialog-node-badge {
+  flex-shrink: 0;
+  font-size: 0.68rem;
   font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-soft, rgba(99, 102, 241, 0.12));
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.move-to-dialog-node--current {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.move-to-dialog-node--disabled {
+  cursor: not-allowed;
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  opacity: 0.55;
+}
+
+.move-to-dialog-node--disabled .move-to-dialog-node-icon {
+  opacity: 0.7;
+}
+
+/* Ancestry rail connectors — one .move-to-dialog-rail per depth level,
+   drawn with a right/left border (depending on writing direction) rather
+   than monospace box-drawing glyphs, so the line always aligns pixel-
+   perfectly with the row's own height regardless of font/zoom. The last
+   rail before a node additionally gets an "elbow" (a short horizontal
+   stub connecting the vertical rail to the node itself), matching the
+   familiar file-tree look. */
+.move-to-dialog-rail {
+  flex-shrink: 0;
+  position: relative;
+  width: 18px;
+  align-self: stretch;
+}
+
+.move-to-dialog-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8px;
+  width: 1px;
+  background: var(--color-border);
+}
+
+html[dir="ltr"] .move-to-dialog-rail::before {
+  right: auto;
+  left: 8px;
+}
+
+.move-to-dialog-rail--elbow::before {
+  bottom: 50%;
+}
+
+.move-to-dialog-rail--elbow::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 10px;
+  height: 1px;
+  background: var(--color-border);
+}
+
+html[dir="ltr"] .move-to-dialog-rail--elbow::after {
+  right: auto;
+  left: 8px;
 }
 
 /* ============================================================================

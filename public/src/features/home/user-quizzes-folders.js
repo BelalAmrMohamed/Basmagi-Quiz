@@ -96,26 +96,54 @@ export function setFolderState(stack, folderId) {
 export async function createNewFolderOrCourse(type = "folder") {
   const name = await _prompt(`أدخل اسم ال${type === "course" ? "مادة" : "مجلد"}:`);
   if (!name || !name.trim()) return;
+  const result = createFolderOrCourseNamed(type, name.trim(), currentFolderId);
+  if (!result.ok) {
+    showNotification("تعذر الإنشاء", result.reason, "warning");
+    return;
+  }
+  renderUserQuizzesView();
+}
+
+/**
+ * Non-interactive counterpart to createNewFolderOrCourse — takes the name
+ * and parent directly instead of prompting, so callers that already have
+ * structured input (the AI agent's create_folder/create_course tools; a
+ * future bulk-import path, etc.) don't need to fake a prompt() response.
+ * Shares the exact same duplicate-name guard and record shape as the
+ * interactive path so both stay in sync.
+ * @param {"folder"|"course"} type
+ * @param {string} name
+ * @param {string|null} parentId
+ * @returns {{ok: boolean, id?: string, reason?: string}}
+ */
+export function createFolderOrCourseNamed(type, name, parentId) {
+  const trimmedName = (name || "").trim();
+  if (!trimmedName) return { ok: false, reason: "الاسم مطلوب." };
+
+  // Courses are top-level only (see canPlaceItem) — reject up front with a
+  // clear reason rather than silently creating it at root regardless of
+  // what parentId was requested, which would surprise a caller that
+  // expected the folder they asked for.
+  if (type === "course" && parentId !== null) {
+    return { ok: false, reason: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن إنشاؤها داخل مجلد." };
+  }
 
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
 
-  // Prevent duplicate names at the same level
-  const trimmedName = name.trim();
   const duplicate = userQuizzes.find(
-    (q) => (q.meta?.parentId || null) === currentFolderId &&
+    (q) => (q.meta?.parentId || null) === (parentId || null) &&
             (q.meta?.title || "").trim().toLowerCase() === trimmedName.toLowerCase()
   );
   if (duplicate) {
-    showNotification("الاسم مستخدم", "يوجد عنصر بنفس الاسم في هذا المستوى. اختر اسماً مختلفاً.", "warning");
-    return;
+    return { ok: false, reason: "يوجد عنصر بنفس الاسم في هذا المستوى بالفعل." };
   }
 
   const newFolder = {
     id: crypto.randomUUID(),
     meta: {
-      type: type,
+      type,
       title: trimmedName,
-      parentId: currentFolderId,
+      parentId: parentId || null,
       createdAt: new Date().toLocaleString("en-US"),
     },
     stats: { questionCount: 0, questionTypes: [] },
@@ -123,7 +151,45 @@ export async function createNewFolderOrCourse(type = "folder") {
   };
   userQuizzes.push(newFolder);
   setInStorage("user_quizzes", JSON.stringify(userQuizzes));
-  renderUserQuizzesView();
+  return { ok: true, id: newFolder.id };
+}
+
+/**
+ * Resolves a folder/course by title (case-insensitive) rather than id, so
+ * callers working from human-readable names (the AI agent only ever sees
+ * titles, never internal UUIDs — see the folder-tree contextPrompt built
+ * in user-quizzes-view.js) can find the right target without the caller
+ * needing to already know the id. When `parentTitle` is omitted, matches
+ * anywhere in the tree; multiple same-named folders at different depths is
+ * an accepted ambiguity here (returns the first match) since duplicate
+ * names are only prevented within a single parent, not tree-wide.
+ * @param {string} title
+ * @param {string|null} [parentTitle] - restrict the match to children of
+ *   the folder/course with this title (also resolved by name)
+ * @returns {{id: string, type: string}|null}
+ */
+export function findFolderByName(title, parentTitle = null) {
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const normalize = (s) => (s || "").trim().toLowerCase();
+
+  let parentId = null;
+  if (parentTitle) {
+    const parent = userQuizzes.find(
+      (q) => (q.meta?.type === "folder" || q.meta?.type === "course") &&
+              normalize(q.meta?.title) === normalize(parentTitle),
+    );
+    if (!parent) return null;
+    parentId = parent.id || parent.meta?.id;
+  }
+
+  const match = userQuizzes.find((q) => {
+    if (q.meta?.type !== "folder" && q.meta?.type !== "course") return false;
+    if (normalize(q.meta?.title) !== normalize(title)) return false;
+    if (parentTitle && (q.meta?.parentId || null) !== parentId) return false;
+    return true;
+  });
+  if (!match) return null;
+  return { id: match.id || match.meta?.id, type: match.meta.type };
 }
 
 export async function renameItem(itemId, currentTitle) {
@@ -565,6 +631,51 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   contextMenuEl.style.top = `${e.pageY}px`;
   contextMenuEl.style.display = "flex";
   customMenuJustOpened = true;
+  positionContextMenu(e);
+}
+
+/**
+ * Keeps the context menu fully inside the viewport instead of letting it
+ * render off-screen near an edge. The menu's real size is only known once
+ * its final content is in the DOM and visible (its item count varies with
+ * targetType/permissions), so this runs *after* `display: flex` is applied
+ * above rather than trying to precompute a size.
+ *
+ * Behavior: normally the menu opens below-and-right of the cursor (this
+ * page's RTL default). If there isn't enough room below, it flips to open
+ * above the cursor instead; if there isn't enough room to the right (or
+ * left, in an RTL context where the menu naturally grows leftward from the
+ * click point), it flips to the other horizontal side too. Each axis is
+ * judged independently, so a click near a corner can flip both ways at
+ * once rather than only handling one edge at a time.
+ */
+function positionContextMenu(e) {
+  const menuRect = contextMenuEl.getBoundingClientRect();
+  const margin = 8; // keep a small gap from the viewport edge, not flush against it
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = document.documentElement.clientHeight;
+
+  // e.clientX/Y (viewport-relative) is what actually needs to fit on
+  // screen; pageX/Y (document-relative, used for the initial placement
+  // above) only matches clientX/Y when the page isn't scrolled, so the
+  // edge checks below are done in viewport space and converted back.
+  let left = e.clientX;
+  let top = e.clientY;
+
+  const overflowsRight = left + menuRect.width > viewportWidth - margin;
+  const overflowsBottom = top + menuRect.height > viewportHeight - margin;
+
+  if (overflowsRight) left = e.clientX - menuRect.width;
+  if (overflowsBottom) top = e.clientY - menuRect.height;
+
+  // Clamp as a final safety net (e.g. a menu taller/wider than the whole
+  // viewport on a very small screen) so it's never partially off either
+  // opposite edge after flipping.
+  left = Math.min(Math.max(left, margin), viewportWidth - menuRect.width - margin);
+  top = Math.min(Math.max(top, margin), viewportHeight - menuRect.height - margin);
+
+  contextMenuEl.style.left = `${left + window.scrollX}px`;
+  contextMenuEl.style.top = `${top + window.scrollY}px`;
 }
 
 function createMenuItem(iconSvg, label, onClick, isDanger = false) {

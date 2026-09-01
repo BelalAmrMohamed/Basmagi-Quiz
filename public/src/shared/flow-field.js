@@ -140,8 +140,15 @@
 
 let flowFieldInstance = null;
 function initFlowField() {
+  // Any stray leftover node from a previous mount/destroy cycle (e.g. this
+  // ran once already this page load) must be cleared before re-mounting,
+  // otherwise a second canvas gets appended alongside a still-referenced
+  // stale one. `document.getElementById` also matters here because
+  // `flowFieldInstance` is only an in-memory reference — the DOM node it
+  // points at may already have been detached by something else.
   const enabled = document.documentElement.getAttribute("data-animations") !== "disabled";
   if (enabled && !flowFieldInstance) {
+    document.getElementById("flow-field-bg")?.remove();
     const container = document.createElement("div");
     container.id = "flow-field-bg";
     document.body.insertBefore(container, document.body.firstChild);
@@ -155,14 +162,31 @@ function initFlowField() {
   }
 }
 
+// Reacting to [data-animations]/[data-theme] purely through a
+// MutationObserver is asynchronous by spec (it batches into a microtask
+// and can coalesce several rapid attribute writes — e.g. quickly toggling
+// the switch off/on/off — into a single callback that only sees the FINAL
+// value, silently swallowing intermediate transitions). That made rapid or
+// repeated toggling appear to "do nothing" until a full reload re-ran the
+// synchronous boot call below. Reacting to the toggle directly via a
+// custom event (dispatched synchronously, same tick, right after the
+// attribute is set) makes every single toggle apply immediately and
+// deterministically; the MutationObserver stays only as a fallback for any
+// other code path that flips the attribute without dispatching the event
+// (e.g. a future integration, or manual devtools edits).
+function reactToAnimationsChange() {
+  if (flowFieldInstance && document.documentElement.getAttribute("data-theme")) {
+    flowFieldInstance.setTheme(document.documentElement.getAttribute("data-theme"));
+  }
+  initFlowField();
+}
+
 function bootFlowField() {
   initFlowField();
+  document.addEventListener("quiz:animations-changed", reactToAnimationsChange);
   new MutationObserver((mutations) => {
     if (mutations.some((mutation) => mutation.attributeName === "data-animations" || mutation.attributeName === "data-theme")) {
-      if (flowFieldInstance && document.documentElement.getAttribute("data-theme")) {
-        flowFieldInstance.setTheme(document.documentElement.getAttribute("data-theme"));
-      }
-      initFlowField();
+      reactToAnimationsChange();
     }
   }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-animations", "data-theme"] });
 }

@@ -71,13 +71,31 @@ export const themeManager = {
   },
 
   applyAnimations(enabled, { persist = true } = {}) {
-    const flowField = document.getElementById("flow-field-bg");
-    if (flowField) flowField.style.display = enabled ? "" : "none";
-
+    // NOTE: ownership of the actual #flow-field-bg canvas/instance lives
+    // entirely in flow-field.js (it mounts/destroys the canvas via its own
+    // MutationObserver on this same [data-animations] attribute). This
+    // method used to *also* reach in and toggle `flowField.style.display`
+    // directly — a second, redundant owner of the same element that raced
+    // against flow-field.js's mount/destroy cycle: toggling off would hide
+    // the canvas via inline style while flow-field.js separately destroyed
+    // and removed the node entirely; toggling back on then found no element
+    // to un-hide (querying a node flow-field.js had already removed) and
+    // relied solely on the MutationObserver firing correctly afterward.
+    // Any hiccup in that observer timing (attribute already at the target
+    // value from a previous toggle in the same tick, browsers coalescing
+    // rapid mutations, etc.) left the animation permanently off until a
+    // full reload re-ran flow-field.js's synchronous initFlowField() call.
+    // Setting the attribute here and letting flow-field.js be the single
+    // reactor to it removes that race entirely.
     document.documentElement.setAttribute(
       "data-animations",
       enabled ? "enabled" : "disabled",
     );
+    // Dispatched synchronously (same tick) rather than relying solely on
+    // flow-field.js's MutationObserver, which batches rapid attribute
+    // writes and can silently drop an intermediate toggle. flow-field.js
+    // listens for this and mounts/destroys its canvas immediately.
+    document.dispatchEvent(new CustomEvent("quiz:animations-changed"));
     if (persist) {
       localStorage.setItem(ANIMATIONS_KEY, enabled ? "enabled" : "disabled");
     }

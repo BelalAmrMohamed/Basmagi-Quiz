@@ -71,11 +71,36 @@ html[data-theme="dark-slate"] body {
 }
 
 /* ─────────────────────────────────────────
-    TOP ACCENT BAR
+    TOP ACCENT BAR / READING PROGRESS
 ───────────────────────────────────────── */
 .top-bar {
+    position: relative;
     height: 3px;
+    background: var(--rule-heavy);
+    overflow: hidden;
+}
+
+/* The decorative gradient now lives on a fill bar whose width (via
+   transform: scaleX) is driven by scroll progress (see
+   documentation-shell.js) instead of the bar itself, so it starts empty at
+   the top of a doc and fills in as the reader scrolls through the content,
+   reaching full width once they've reached the end. */
+.top-bar-fill {
+    display: block;
+    height: 100%;
+    width: 100%;
     background: linear-gradient(to left, var(--accent) 0%, var(--accent-sub) 60%, var(--rule-heavy) 100%);
+    transform-origin: right center;
+    transform: scaleX(0);
+    transition: transform 0.1s linear;
+}
+
+html[dir="ltr"] .top-bar-fill {
+    transform-origin: left center;
+}
+
+html[data-motion="reduced"] .top-bar-fill {
+    transition: none;
 }
 
 /* ─────────────────────────────────────────
