@@ -1,3 +1,4 @@
+// public/src/features/privacy-and-terms/documentation-shell.js
 const sidebarMarkup = `
   <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
   <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true" tabindex="-1">
@@ -69,6 +70,18 @@ if (sidebarNav) {
     check.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>`;
     button.insertBefore(check, button.querySelector(".theme-btn-label"));
   });
+  // side-menu.js locates ".mobile-only-menu-item[onclick*='changeUsername']"
+  // to know where to inject the mobile admin-sign-in button and the mobile
+  // reports link (see its DOMContentLoaded handler) — that element only
+  // existed in the full app sidebar (index.html), not in this shell's
+  // trimmed-down copy, so those two nav items silently never appeared on
+  // doc pages even though the shared script runs here too. Adding the same
+  // anchor element restores parity without duplicating side-menu.js's
+  // injection logic a second time.
+  sidebarNav.insertAdjacentHTML(
+    "beforeend",
+    `<button onclick="changeUsername()" class="menu-item mobile-only-menu-item" title="تغيير الإسم" data-tooltip="تغيير الإسم"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span class="menu-label">تغيير الإسم: <span class="change-username" id="userNameDisplay"></span></span></button>`,
+  );
     sidebar.insertAdjacentHTML("beforeend", `<div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية"><button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل" data-tooltip="تواصل مع المطور"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /><path d="M8 12h.01M12 12h.01M16 12h.01" /></svg><span class="menu-label">تواصل مع المطور</span></button><button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span class="menu-label">تثبيت التطبيق</span></button></div>`);
 }
 

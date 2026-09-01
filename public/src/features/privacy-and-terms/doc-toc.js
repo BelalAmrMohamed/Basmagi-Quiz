@@ -102,17 +102,49 @@ function buildToc() {
   });
 
   // Highlight whichever section is currently most in view.
+  //
+  // Toggling `--active` directly off `entry.isIntersecting` (the old
+  // approach) can leave zero links active — e.g. scrolling fast between two
+  // headings' rootMargin bands, or the last heading's remaining content
+  // being shorter than the bottom margin — which read as the highlight
+  // "flickering" off with no section marked current. Instead, track
+  // intersection state per heading and always resolve to a single active
+  // link: the *last* (lowest, i.e. most recently reached) heading that is
+  // either currently intersecting or has already been scrolled past, so
+  // there is never a moment with no active item.
+  const intersecting = new Set();
+  function updateActiveLink() {
+    let activeId = null;
+    for (const h2 of headings) {
+      if (intersecting.has(h2.id)) activeId = h2.id;
+    }
+    if (!activeId) {
+      // Nothing currently intersecting (e.g. fast scroll jumped past the
+      // band): fall back to the last heading whose top has already
+      // scrolled above the viewport, so an item stays active instead of
+      // none at all.
+      for (const h2 of headings) {
+        if (h2.getBoundingClientRect().top <= 0) activeId = h2.id;
+      }
+      if (!activeId) activeId = headings[0].id;
+    }
+    linkByHeadingId.forEach((link, id) => {
+      link.classList.toggle("doc-toc-link--active", id === activeId);
+    });
+  }
+
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        const link = linkByHeadingId.get(entry.target.id);
-        if (!link) return;
-        link.classList.toggle("doc-toc-link--active", entry.isIntersecting);
+        if (entry.isIntersecting) intersecting.add(entry.target.id);
+        else intersecting.delete(entry.target.id);
       });
+      updateActiveLink();
     },
     { rootMargin: "-15% 0px -70% 0px" },
   );
   headings.forEach((h2) => observer.observe(h2));
+  updateActiveLink();
 }
 
 buildToc();

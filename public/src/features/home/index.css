@@ -2262,6 +2262,22 @@ Container
   outline-offset: -2px;
 }
 
+/* Ancestry guide marks — makes the parent/child relationship between
+ * folder-picker rows explicit instead of relying on indent-only spacing,
+ * which reads ambiguously once multiple folders share the same depth. */
+.move-to-dialog-guide {
+  display: inline-flex;
+  color: var(--color-text-secondary, rgba(0, 0, 0, 0.4));
+  font-family: monospace;
+  font-size: 0.85em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.move-to-dialog-option[data-depth="0"] {
+  font-weight: 600;
+}
+
 /* ============================================================================
    LUCIDE ICON NORMALIZATION — ported from create-quiz.css. Was missing here
    entirely, which is why inline <svg class="page-data-lucide"> icons (e.g.

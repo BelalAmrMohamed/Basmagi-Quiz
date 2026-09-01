@@ -687,13 +687,7 @@
   color: var(--color-text-primary);
   min-height: 40px;
   max-height: 120px;
-  /* Per-line direction detection, native to the browser: each visual line
-     resolves its own RTL/LTR base direction instead of the whole field
-     following whichever direction the first character happened to be.
-     Mirrors the same technique already used for form controls in
-     markdown.js (see _processElement's INPUT/TEXTAREA skip comment) —
-     deliberately NOT driven by JS here since that would fight the
-     browser's native caret placement while typing. */
+  direction: rtl;
   unicode-bidi: plaintext;
 }
 

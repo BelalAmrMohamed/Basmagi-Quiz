@@ -543,7 +543,13 @@ html[data-motion="reduced"] *::after {
     top: auto;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* Sits just above the bottom nav (same offset the toggle button already
+     * uses) instead of bottom: 0 — flush-to-bottom put the panel's own
+     * content, including its last list item, underneath/behind the fixed
+     * bottom-nav bar since both are fixed-position with the panel painted
+     * first. Anchoring here means the whole scrollable list — including the
+     * final entry — stays above the nav instead of sliding behind it. */
+    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom));
     width: 100%;
     max-height: 60vh;
     transform: translateY(100%);
@@ -553,7 +559,7 @@ html[data-motion="reduced"] *::after {
     box-shadow: 0 -6px 20px rgba(17, 24, 39, .15);
     transition: transform .2s ease;
     z-index: calc(var(--z-overlay, 4000) - 1);
-    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    padding-bottom: 14px;
 }
 
     .doc-toc.doc-toc-open {

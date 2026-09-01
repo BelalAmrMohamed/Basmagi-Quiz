@@ -274,18 +274,29 @@ export async function openMoveToDialog(itemIds) {
   listEl.style.overflowY = "auto";
   listEl.style.padding = "8px";
 
-  function addOption(label, id, icon) {
+  function addOption(label, id, icon, depth = 0) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "move-to-dialog-option";
     btn.setAttribute("role", "option");
+    btn.dataset.depth = String(depth);
     btn.style.cssText = `
       display: flex; align-items: center; gap: 8px; width: 100%;
       padding: 10px 12px; text-align: right; background: transparent;
       border: none; border-radius: 8px; cursor: pointer; font-size: 0.92rem;
       color: var(--color-text-primary);
     `;
-    btn.innerHTML = `<span aria-hidden="true">${icon}</span><span>${label}</span>`;
+    // Ancestry indicator: one guide segment per level of nesting, rendered
+    // as small connector marks before the icon/label rather than leading
+    // whitespace — whitespace-only indent (the old "　".repeat(depth)
+    // approach) collapses visually once several siblings are at the same
+    // depth, so there's no way to tell "these three are siblings under the
+    // same parent" from "this is one level deeper". A visible connector per
+    // level keeps that relationship legible regardless of depth.
+    const guide = depth > 0
+      ? `<span class="move-to-dialog-guide" aria-hidden="true" style="padding-inline-start:${(depth - 1) * 18}px">${"┃".repeat(Math.max(depth - 1, 0))}┗</span>`
+      : "";
+    btn.innerHTML = `${guide}<span aria-hidden="true">${icon}</span><span>${label}</span>`;
     btn.onmouseover = () => (btn.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))");
     btn.onmouseout = () => (btn.style.background = "transparent");
     btn.onclick = () => {
@@ -310,18 +321,22 @@ export async function openMoveToDialog(itemIds) {
     listEl.appendChild(btn);
   }
 
-  addOption("إمتحاناتك (الرئيسية)", null, "📁");
+  addOption("إمتحاناتك (الرئيسية)", null, "📁", 0);
 
   // Build a simple indented flat list of every folder/course so the picker
   // stays a single scrollable list rather than a nested tree widget —
   // enough for typical folder depths, and far simpler to build/maintain.
+  // Ancestry is made explicit visually (a vertical guide line + per-level
+  // indent step on each option, rather than relying on full-width space
+  // characters alone) so users can tell at a glance which folder is nested
+  // under which before picking a destination.
   function appendChildren(parentId, depth) {
     folders
       .filter((f) => (f.meta?.parentId || null) === parentId)
       .forEach((f) => {
         const fid = f.id || f.meta?.id;
         const icon = f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁");
-        addOption(`${"　".repeat(depth)}${f.meta?.title || ""}`, fid, icon);
+        addOption(f.meta?.title || "", fid, icon, depth);
         appendChildren(fid, depth + 1);
       });
   }
