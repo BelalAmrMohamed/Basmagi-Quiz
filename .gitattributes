@@ -2,4 +2,9 @@
 .github/ export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
-public/assets/ export-ignore
+
+# Large Files
+public/assets/profile-featured/ export-ignore
+public/assets/quiz-media/ export-ignore
+public/assets/quiz-sources/ export-ignore
+public/assets/videos/ export-ignore

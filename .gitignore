@@ -6,24 +6,21 @@
 !CHANGELOG.MD
 
 # Local FilesStudio files
+.git/
 .cursor/
 .vscode/
+.claude/
 .vercel/
+.vercel
 node_modules/
-docs/
 .env*
 .env*.local
 .env.local
 
+# Local Documents
+# docs/
+
 # Service Worker cache
 sw-cache/
-
-
-# Git files
-.git/
-
-.vercel
-
-.claude/
 
 basmagi-quiz.zip
