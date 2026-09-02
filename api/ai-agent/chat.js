@@ -26,12 +26,18 @@
 //   enableTools?: boolean,     // if true, offers quiz tools (see _tools.js)
 //   toolNames?: string[],      // which tools to offer when enableTools is true —
 //                              // subset of ["create_quiz","edit_quiz","edit_current_quiz",
-//                              // "delete_quiz","reset_quiz_page"] (see TOOLS_BY_NAME
+//                              // "delete_quiz","reset_quiz_page","create_folder",
+//                              // "create_course","move_item"] (see TOOLS_BY_NAME
 //                              // below — "edit_quiz" and "edit_current_quiz" are two
 //                              // different SCHEMAS for the same action, pick one not
 //                              // both). Defaults to the original three (create/edit/
 //                              // delete) when omitted, so existing callers need no
-//                              // changes.
+//                              // changes. The three folder/course tools only make
+//                              // sense on a page whose system prompt also includes a
+//                              // folder-tree listing (see buildFolderTreeContextPrompt
+//                              // in user-quizzes-view.js) — without it the model has
+//                              // no titles to reference and every call would fail
+//                              // resolution.
 // }
 //
 // ATTACHMENTS: max 1 per message, 4MB decoded (see MAX_ATTACHMENT_BYTES —
@@ -67,7 +73,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -250,6 +256,9 @@ const TOOLS_BY_NAME = {
   edit_current_quiz: EDIT_CURRENT_QUIZ_TOOL,
   delete_quiz: DELETE_QUIZ_TOOL,
   reset_quiz_page: RESET_QUIZ_PAGE_TOOL,
+  create_folder: CREATE_FOLDER_TOOL,
+  create_course: CREATE_COURSE_TOOL,
+  move_item: MOVE_ITEM_TOOL,
 };
 
 // Historical default — the home page's original three tools — kept so

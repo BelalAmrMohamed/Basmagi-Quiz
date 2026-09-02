@@ -35,31 +35,12 @@ html[data-theme="dark-slate"] .about-page {
   --about-sage: var(--color-primary);
   --about-coral: var(--color-accent);
   --about-line: var(--color-border);
-  /* The highlight card keeps its own dark-chip-on-light-text identity in
-     every theme — it's a deliberate accent against the page, not a
-     reflection of the page's own (now-inverted) ink/paper meaning, so it
-     is NOT redefined here. --color-background is already dark in these
-     themes, so a literal dark chip would blend into the page instead of
-     standing out; --color-surface reliably stays a step lighter than
-     --color-background across both dark themes, which keeps the card
-     visibly distinct the way it is in light mode. */
   --about-highlight-bg: var(--color-surface);
   --about-highlight-ink: var(--color-text-primary);
   --about-highlight-muted: var(--color-text-secondary);
 }
 
 .about-page .top-bar {
-  /* Keep the same shared accent-gradient treatment every other doc page
-     uses (see .top-bar-fill in privacy-and-terms.css) instead of flattening
-     it to a solid color — a flat override here previously replaced the
-     gradient outright due to selector specificity, so the "accent bar" a
-     visitor sees on every other doc page quietly disappeared specifically
-     on about.html. Recolored with this page's own ink/sub tones so it
-     still fits the page's palette while keeping the intended effect. The
-     gradient now lives on the .top-bar-fill child (whose width tracks
-     reading progress) rather than on .top-bar itself — .top-bar only
-     supplies the plain "unread track" background.
-  */
   background: var(--about-line);
 }
 

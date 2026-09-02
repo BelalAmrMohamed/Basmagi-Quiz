@@ -7,37 +7,45 @@
     TOKENS
 ───────────────────────────────────────── */
 :root {
-    --ink:        #111827;
-    --ink-soft:   #374151;
-    --ink-muted:  #6b7280;
-    --ink-faint:  #9ca3af;
-    --rule:       #e5e7eb;
+    --ink: #111827;
+    --ink-soft: #374151;
+    --ink-muted: #6b7280;
+    --ink-faint: #9ca3af;
+    --rule: #e5e7eb;
     --rule-heavy: #d1d5db;
-    --bg:         #ffffff;
-    --bg-wash:    #f9fafb;
-    --bg-tint:    #f3f4f6;
-    --accent:     #1a1a2e;
+    --bg: #ffffff;
+    --bg-wash: #f9fafb;
+    --bg-tint: #f3f4f6;
+    --accent: #1a1a2e;
     --accent-mid: #2d2f4a;
     --accent-sub: #4b4e6d;
 
     /* footer */
-    --ft-bg:      #1e1e1e;
-    --ft-text:    #d1d5db;
-    --ft-muted:   #6b7280;
-    --ft-hover:   #ffffff;
-    --ft-rule:    #2a2a2a;
+    --ft-bg: #1e1e1e;
+    --ft-text: #d1d5db;
+    --ft-muted: #6b7280;
+    --ft-hover: #ffffff;
+    --ft-rule: #2a2a2a;
 
-    --radius:    6px;
+    --radius: 6px;
     --radius-sm: 4px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
 }
 
 /* ─────────────────────────────────────────
     RESET & BASE
 ───────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-html { scroll-behavior: smooth; }
+html {
+    scroll-behavior: smooth;
+}
 
 html,
 body {
@@ -270,7 +278,9 @@ p {
     line-height: 1.9;
 }
 
-p:last-child { margin-bottom: 0; }
+p:last-child {
+    margin-bottom: 0;
+}
 
 ul {
     margin-right: 4px;
@@ -318,6 +328,7 @@ body.sidebar-expanded .site-footer {
 }
 
 @media (max-width: 768px) {
+
     .site-footer,
     body.sidebar-expanded .site-footer {
         /* side-menu.css collapses to a flat 16px padding-right !important
@@ -371,8 +382,15 @@ body.sidebar-expanded .site-footer {
     gap: 2px;
 }
 
-.footer-links li { margin: 0; padding: 0; }
-.footer-links li::marker { display: none; content: ""; }
+.footer-links li {
+    margin: 0;
+    padding: 0;
+}
+
+.footer-links li::marker {
+    display: none;
+    content: "";
+}
 
 .footer-links a {
     display: flex;
@@ -453,9 +471,19 @@ body.sidebar-expanded .site-footer {
     PRINT
 ───────────────────────────────────────── */
 @media print {
-    .top-bar, .site-footer { display: none; }
-    body { color: #000; }
-    .page-wrapper { padding: 20px; }
+
+    .top-bar,
+    .site-footer {
+        display: none;
+    }
+
+    body {
+        color: #000;
+    }
+
+    .page-wrapper {
+        padding: 20px;
+    }
 }
 
 /* ─────────────────────────────────────────
@@ -471,34 +499,40 @@ html[data-motion="reduced"] *::after {
     MOBILE
 ───────────────────────────────────────── */
 @media (max-width: 680px) {
-    .page-wrapper { padding: 40px 18px 84px; }
+    .page-wrapper {
+        padding: 40px 18px 84px;
+    }
 
-    h1 { font-size: 1.65rem; }
+    h1 {
+        font-size: 1.65rem;
+    }
 
     .footer-grid {
-    grid-template-columns: 1fr;
-    gap: 36px;
-    padding-bottom: 36px;
+        grid-template-columns: 1fr;
+        gap: 36px;
+        padding-bottom: 36px;
     }
 
     .footer-col {
-    padding: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--ft-rule);
-    padding-bottom: 28px;
+        padding: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--ft-rule);
+        padding-bottom: 28px;
     }
 
     .footer-col:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
+        border-bottom: none;
+        padding-bottom: 0;
     }
 
-    .footer-inner { padding: 40px 20px 0; }
+    .footer-inner {
+        padding: 40px 20px 0;
+    }
 
     .footer-bottom {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 20px;
     }
 }
 
@@ -587,35 +621,35 @@ html[data-motion="reduced"] *::after {
 /* ─────────────────────────────────────────
     MOBILE — ToC becomes a floating toggle + slide-up panel
 ───────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .doc-toc {
-    top: auto;
-    left: 0;
-    right: 0;
-    /* Sits just above the bottom nav (same offset the toggle button already
+        top: auto;
+        left: 0;
+        right: 0;
+        /* Sits just above the bottom nav (same offset the toggle button already
      * uses) instead of bottom: 0 — flush-to-bottom put the panel's own
      * content, including its last list item, underneath/behind the fixed
      * bottom-nav bar since both are fixed-position with the panel painted
      * first. Anchoring here means the whole scrollable list — including the
      * final entry — stays above the nav instead of sliding behind it. */
-    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom));
-    width: 100%;
-    max-height: 60vh;
-    transform: translateY(100%);
-    border-left: none;
-    border-top: 3px solid var(--accent);
-    border-radius: 14px 14px 0 0;
-    box-shadow: 0 -6px 20px rgba(17, 24, 39, .15);
-    transition: transform .2s ease;
-    z-index: calc(var(--z-overlay, 4000) - 1);
-    padding-bottom: 14px;
-}
+        bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom));
+        width: 100%;
+        max-height: 60vh;
+        transform: translateY(100%);
+        border-left: none;
+        border-top: 3px solid var(--accent);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -6px 20px rgba(17, 24, 39, .15);
+        transition: transform .2s ease;
+        z-index: calc(var(--z-overlay, 4000) - 1);
+        padding-bottom: 14px;
+    }
 
     .doc-toc.doc-toc-open {
-    transform: translateY(0);
-}
+        transform: translateY(0);
+    }
 
     .doc-toc-toggle {
-    display: inline-flex;
-}
+        display: inline-flex;
+    }
 }

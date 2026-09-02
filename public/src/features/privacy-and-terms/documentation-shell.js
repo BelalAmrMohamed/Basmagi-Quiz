@@ -101,7 +101,7 @@ const DOCS_LINKS = [
   // Still marked "قريباً" (Coming Soon) here, same soft-launch signal the
   // old per-page docs-switcher used to show for this doc specifically.
   { href: "/how-to-upload-a-quiz.html", label: "رفع اختبار", soon: true },
-  { href: "/how-to-use-ai-agent.html", label: "البشــمبصمج" },
+  { href: "/how-to-use-ai-agent.html", label: "الباشــمبصمج" },
 ];
 
 if (sidebarNav) {
@@ -298,11 +298,6 @@ await import("../../shared/theme-controller.js");
 await import("../../components/side-menu/side-menu.js");
 
 // ── .top-bar reading progress ───────────────────────────────────────────
-// Turns the previously-decorative gradient strip at the top of every doc
-// page into a real reading-progress indicator: a child .top-bar-fill whose
-// width reflects how far down the page's actual content the reader has
-// scrolled (0% at the top of the content, 100% once its bottom has been
-// reached), rather than sitting permanently "full" regardless of position.
 (function initTopBarProgress() {
   const topBar = document.querySelector(".top-bar");
   if (!topBar) return; // pages without a doc-style top-bar (none currently) simply skip this
@@ -312,10 +307,6 @@ await import("../../components/side-menu/side-menu.js");
   fill.setAttribute("aria-hidden", "true");
   topBar.appendChild(fill);
 
-  // The readable content area differs per doc-page layout (reference-style
-  // docs use .page-wrapper, about.html uses its own section wrapper) — walk
-  // up from the top-bar's own document to find whichever is present rather
-  // than hardcoding one.
   const content =
     document.querySelector(".page-wrapper") ||
     document.querySelector(".about-page") ||
@@ -326,11 +317,6 @@ await import("../../components/side-menu/side-menu.js");
     const contentTop = rect.top + window.scrollY;
     const contentHeight = content.scrollHeight;
     const viewport = window.innerHeight;
-    // Progress = how far the *bottom* of the viewport has moved through the
-    // content block, normalized 0..1. Using the viewport's bottom edge
-    // (not just scrollY) means the bar reaches 100% right as the reader
-    // scrolls the last bit of content into view, instead of stopping short
-    // by one viewport-height's worth of unreachable "progress".
     const scrolled = window.scrollY + viewport - contentTop;
     const total = Math.max(contentHeight, 1);
     const ratio = Math.min(1, Math.max(0, scrolled / total));

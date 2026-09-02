@@ -543,7 +543,7 @@ function openAIAgentModal(options, fab) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} البشــمبصمج</h2>
+    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} الباشــمبصمج</h2>
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
@@ -618,8 +618,8 @@ export function createAIAgentFab(options = {}) {
   const fab = document.createElement("button");
   fab.type = "button";
   fab.className = "ai-agent-fab";
-  fab.setAttribute("aria-label", "افتح البشــمبصمج");
-  fab.title = "البشــمبصمج";
+  fab.setAttribute("aria-label", "افتح الباشــمبصمج");
+  fab.title = "الباشــمبصمج";
   fab.innerHTML = SPARKLE_ICON_SVG;
   fab.addEventListener("click", () => openAIAgentModal(options, fab));
   return fab;

@@ -101,7 +101,13 @@ export const themeManager = {
     }
 
     this.updateAnimationsUI(enabled);
-    if (!enabled) this.restoreBodyBackground();
+    // Both directions need this, not just disabling: re-enabling must clear
+    // the opaque inline background-color a previous disable left on body
+    // (see restoreBodyBackground below), otherwise that solid color keeps
+    // painting over the newly-remounted canvas — which sits at z-index:-1 —
+    // making "turn animations back on" silently do nothing until a full
+    // reload (which never had that stale inline style to begin with).
+    this.restoreBodyBackground();
   },
 
   /**

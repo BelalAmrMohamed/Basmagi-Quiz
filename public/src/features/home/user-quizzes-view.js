@@ -85,7 +85,7 @@ function handleCreateQuizToolCall(toolCall) {
   if (!questions.length) {
     showNotification(
       "بيانات ناقصة",
-      "لم يتمكن البشــمبصمج من إنشاء الامتحان: لا توجد أسئلة صالحة.",
+      "لم يتمكن الباشــمبصمج من إنشاء الامتحان: لا توجد أسئلة صالحة.",
       "warning",
       10,
     );
@@ -713,7 +713,7 @@ export function renderUserQuizzesView() {
 
     container.appendChild(
       createAIAgentFab({
-        placeholder: "اسأل البشــمبصمج",
+        placeholder: "اسأل الباشــمبصمج",
         pageKey: "home",
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
         suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
@@ -756,6 +756,50 @@ function downloadQuizAsJson(quiz) {
 }
 
 /**
+ * Lazily creates and wires the admin-only upload button inside an existing
+ * bulk action bar if it's missing and the admin is (now) authenticated.
+ *
+ * This exists because renderBulkActionBar() below only builds the bar's
+ * DOM once per page load and caches it — the upload button's presence was
+ * previously decided a single time, at first-build, from whatever
+ * isAdminAuthenticated() returned in that instant. If the bar happened to
+ * get built before an admin signed in (the totally normal case of
+ * browsing anonymously, then logging in as admin mid-session via the
+ * sidebar — session-sync.js's onRecovered path — without a full reload),
+ * the button was simply never created, and nothing afterward ever
+ * re-checked: it stayed permanently absent for the rest of the session.
+ * Calling this from updateBulkActionBar() (already invoked on every
+ * selection/auth-relevant UI refresh) means the button appears as soon as
+ * the admin session is recognized, without needing a reload.
+ */
+function ensureBulkUploadButton(bar, selectedUserQuizzes) {
+  if (bar.querySelector(".bulk-upload-btn") || !isAdminAuthenticated()) return;
+
+  const btn = document.createElement("button");
+  btn.className = "btn bulk-upload-btn";
+  btn.title = "رفع الإمتحان (للمشرفين)";
+  btn.style.display = "none";
+  btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`;
+
+  // Placed right before the "clear selection" (✕) button, matching where
+  // it's positioned when built inline at bar-creation time.
+  const clearBtn = bar.querySelector(".bulk-clear-btn");
+  if (clearBtn) clearBtn.before(btn);
+  else bar.querySelector(".bulk-actions")?.appendChild(btn);
+
+  btn.onclick = () => {
+    if (selectedUserQuizzes.size === 0) return;
+    const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const selected = userQuizzes.filter((q) =>
+      selectedUserQuizzes.has(q.id || q.meta?.id),
+    );
+    import("./adminUpload.js").then((mod) => {
+      mod.openAdminUploadModal(selected);
+    });
+  };
+}
+
+/**
  * Refresh the bulk action bar's visibility, selected-count label, and the
  * "select all" button's state.
  *
@@ -768,6 +812,8 @@ export function updateBulkActionBar(forceActive) {
   const selectedUserQuizzes = getSelectedUserQuizzes();
   const bar = document.getElementById("bulk-action-bar");
   if (!bar) return;
+
+  ensureBulkUploadButton(bar, selectedUserQuizzes);
 
   const qzContainer = document.querySelector(".user-quizzes-container");
   const selectionModeActive =

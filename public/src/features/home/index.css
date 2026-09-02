@@ -2393,7 +2393,11 @@ Container
    perfectly with the row's own height regardless of font/zoom. The last
    rail before a node additionally gets an "elbow" (a short horizontal
    stub connecting the vertical rail to the node itself), matching the
-   familiar file-tree look. */
+   familiar file-tree look.
+   Uses a slightly stronger, dedicated tone (--color-border on its own
+   read as too faint/decorative at 1px to register as "structure" rather
+   than noise) and a bit more weight so the tree's shape reads clearly at
+   a glance instead of being easy to miss. */
 .move-to-dialog-rail {
   flex-shrink: 0;
   position: relative;
@@ -2407,8 +2411,10 @@ Container
   top: 0;
   bottom: 0;
   right: 8px;
-  width: 1px;
-  background: var(--color-border);
+  width: 1.5px;
+  background: var(--color-text-tertiary, var(--color-border));
+  opacity: 0.55;
+  border-radius: 1px;
 }
 
 html[dir="ltr"] .move-to-dialog-rail::before {
@@ -2426,8 +2432,10 @@ html[dir="ltr"] .move-to-dialog-rail::before {
   top: 50%;
   right: 8px;
   width: 10px;
-  height: 1px;
-  background: var(--color-border);
+  height: 1.5px;
+  background: var(--color-text-tertiary, var(--color-border));
+  opacity: 0.55;
+  border-radius: 1px;
 }
 
 html[dir="ltr"] .move-to-dialog-rail--elbow::after {

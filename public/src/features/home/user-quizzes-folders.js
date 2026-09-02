@@ -420,8 +420,22 @@ export async function openMoveToDialog(itemIds) {
    * baked into text content, which don't align pixel-for-pixel with the
    * row's own height/line-box and read as a decorative afterthought rather
    * than an actual structural line.
+   *
+   * `railContinues` is an array with one boolean per ancestor level (length
+   * === depth): railContinues[i] says whether the vertical line at that
+   * level should run the row's full height (there's a later sibling still
+   * to come at that level, so the trunk must keep going down to reach it)
+   * or stop halfway with an elbow (this row is the last child at that
+   * level, so the line has nowhere left to go). Every level except the
+   * last one in the array is always a straight pass-through rail for an
+   * *ancestor* level — only the final entry (this row's own level) is ever
+   * an elbow, and only when this row itself has no more siblings below it.
+   * Without this per-level "does the line keep going" info, every row drew
+   * an elbow at its own depth unconditionally, so a middle sibling's rail
+   * broke mid-row instead of continuing down to connect to the sibling
+   * right below it — the "rails aren't connected together" bug.
    */
-  function addNode(label, id, icon, depth, { isCurrent = false, disabledReason = null } = {}) {
+  function addNode(label, id, icon, depth, { isCurrent = false, disabledReason = null, railContinues = [] } = {}) {
     const row = document.createElement("button");
     row.type = "button";
     row.className = "move-to-dialog-node";
@@ -436,8 +450,16 @@ export async function openMoveToDialog(itemIds) {
 
     let rails = "";
     for (let i = 0; i < depth; i++) {
-      const isLast = i === depth - 1;
-      rails += `<span class="move-to-dialog-rail${isLast ? " move-to-dialog-rail--elbow" : ""}" aria-hidden="true"></span>`;
+      const isOwnLevel = i === depth - 1;
+      // A pass-through ancestor rail (not this row's own level) is only
+      // ever a straight full-height line — it belongs to an ancestor that
+      // still has further descendants coming after this row, so it must
+      // keep running regardless of this row's own position among its
+      // siblings. Only this row's own level can be an elbow, and only when
+      // there is no later sibling at that level (railContinues[i] is
+      // false).
+      const isElbow = isOwnLevel && !railContinues[i];
+      rails += `<span class="move-to-dialog-rail${isElbow ? " move-to-dialog-rail--elbow" : ""}" aria-hidden="true"></span>`;
     }
 
     row.innerHTML =
@@ -484,13 +506,13 @@ export async function openMoveToDialog(itemIds) {
   //   course to go but root — see canPlaceItem)
   // - the item's current parent (a no-op, shown but marked/disabled rather
   //   than hidden, so the tree's shape stays predictable)
-  function appendChildren(parentId, depth) {
-    folders
-      .filter((f) => (f.meta?.parentId || null) === parentId)
-      .forEach((f) => {
+  function appendChildren(parentId, depth, ancestorRailContinues) {
+    const siblings = folders.filter((f) => (f.meta?.parentId || null) === parentId);
+    siblings.forEach((f, index) => {
         const fid = f.id || f.meta?.id;
         const icon = f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁");
         const isCurrent = fid === currentParentId;
+        const isLastSibling = index === siblings.length - 1;
 
         let disabledReason = null;
         if (itemIds.includes(fid)) {
@@ -501,7 +523,13 @@ export async function openMoveToDialog(itemIds) {
           disabledReason = "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
         }
 
-        addNode(f.meta?.title || "", fid, icon, depth, { isCurrent, disabledReason });
+        // This row's own level continues (full rail, no elbow) unless it's
+        // the last sibling in its own list; every ancestor level above it
+        // simply inherits whatever was already decided for it further up
+        // the recursion.
+        const railContinues = [...ancestorRailContinues, !isLastSibling];
+
+        addNode(f.meta?.title || "", fid, icon, depth, { isCurrent, disabledReason, railContinues });
 
         // Still descend into disabled branches (a disabled ancestor doesn't
         // imply its children are also invalid destinations for a *different*
@@ -509,10 +537,10 @@ export async function openMoveToDialog(itemIds) {
         // descendant of every moving item, in which case nothing under it
         // could ever be valid either and descending would just be noise.
         const allBlocked = itemIds.every((id) => isDescendant(userQuizzes, id, fid) || id === fid);
-        if (!allBlocked) appendChildren(fid, depth + 1);
+        if (!allBlocked) appendChildren(fid, depth + 1, railContinues);
       });
   }
-  appendChildren(null, 1);
+  appendChildren(null, 1, []);
 
   overlay.appendChild(card);
   document.body.appendChild(overlay);

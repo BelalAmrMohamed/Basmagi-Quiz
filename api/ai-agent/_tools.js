@@ -138,6 +138,62 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
 // page is currently showing — there's no title to disambiguate since
 // there's only ever one quiz on that page. Input is intentionally empty:
 // nothing to configure, it's an unconditional wipe.
+// Home page only (see chat.js's TOOLS_BY_NAME / toolNames request field).
+// Courses and folders are both plain organizational containers backed by
+// the same user_quizzes records as quizzes themselves (see
+// createFolderOrCourseNamed in user-quizzes-folders.js) — the model never
+// sees or produces an internal id for either; every reference here is a
+// title, resolved against the folder-tree text listing already included
+// in this page's system prompt (buildFolderTreeContextPrompt in
+// user-quizzes-view.js). That listing is the ONLY way the model can know
+// what folders/courses currently exist and how they nest, so it must
+// always be present in context whenever these tools are offered.
+export const CREATE_FOLDER_TOOL = {
+  name: "create_folder",
+  description:
+    "Create a new folder to organize the user's quizzes. Only call this when the user has explicitly confirmed the folder name and location (e.g. after you've restated what will be created and they said yes/أنشئ/تمام). " +
+    "`parentFolder` is the exact title of an existing folder or course to nest the new folder inside, matched against the folder tree listing already given to you — omit it (or pass null) to create the new folder at the top level, alongside courses. " +
+    "Unlike courses, folders CAN be nested inside other folders (or inside a course) to any depth.",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+      parentFolder: { type: "string" },
+    },
+    required: ["name"],
+  },
+};
+
+export const CREATE_COURSE_TOOL = {
+  name: "create_course",
+  description:
+    "Create a new course — a top-level subject grouping for quizzes (e.g. \"تشريح\", \"فسيولوجيا\"). Only call this when the user has explicitly confirmed the course name (e.g. after you've restated it and they said yes/أنشئ/تمام). " +
+    "Courses always live at the top level and can never be nested inside a folder or another course — there is no parent to specify, unlike create_folder.",
+  input_schema: {
+    type: "object",
+    properties: {
+      name: { type: "string" },
+    },
+    required: ["name"],
+  },
+};
+
+export const MOVE_ITEM_TOOL = {
+  name: "move_item",
+  description:
+    "Move an existing quiz, folder, or course to a different location in the user's folder tree. Only call this when the user has explicitly confirmed the specific move (e.g. after you've restated what will move where and they said yes/انقل/تمام). " +
+    "`itemName` is the exact title of the quiz/folder/course to move, matched against the folder tree listing and quiz titles already given to you. `destinationFolder` is the exact title of the folder or course to move it into, matched the same way — omit it (or pass null) to move the item to the top level. " +
+    "A course can never be moved into a folder (courses only exist at the top level) and nothing can be moved into itself or one of its own descendants — if the user asks for either, tell them it isn't possible instead of calling this tool.",
+  input_schema: {
+    type: "object",
+    properties: {
+      itemName: { type: "string" },
+      destinationFolder: { type: "string" },
+    },
+    required: ["itemName"],
+  },
+};
+
 export const RESET_QUIZ_PAGE_TOOL = {
   name: "reset_quiz_page",
   description:

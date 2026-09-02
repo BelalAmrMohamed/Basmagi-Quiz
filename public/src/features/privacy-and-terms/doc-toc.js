@@ -168,12 +168,33 @@ function buildToc() {
     return activeId;
   }
 
+  // While a click-triggered smooth scroll is still animating toward its
+  // target, the scroll listener below keeps firing on every intermediate
+  // frame and recomputing "closest heading to the reference line" against
+  // geometry that hasn't settled yet — which very often names the heading
+  // one-above the clicked link as active mid-flight, stomping the class
+  // `setActive` just applied. The listener's *next* fire after the scroll
+  // finally lands recomputes correctly, but by then the visible symptom is
+  // "the right section only highlights after a second click." Locking the
+  // active id to the clicked target for the duration of that scroll (instead
+  // of letting geometry recompute override it) removes the race outright.
+  let lockedId = null;
+  let unlockTimer = null;
+
+  function clearLock() {
+    lockedId = null;
+    if (unlockTimer) {
+      clearTimeout(unlockTimer);
+      unlockTimer = null;
+    }
+  }
+
   let ticking = false;
   function scheduleUpdate() {
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(() => {
-      setActive(computeActiveId());
+      if (!lockedId) setActive(computeActiveId());
       ticking = false;
     });
   }
@@ -185,13 +206,24 @@ function buildToc() {
   // no need to intercept it — but recompute right away too (rather than
   // waiting for the scroll event, which can lag a frame or two behind a
   // smooth-scroll's start) so the correct link highlights the instant the
-  // click happens, not a moment later.
+  // click happens, not a moment later. The lock keeps it stuck through the
+  // ensuing smooth-scroll animation; a manual scroll/resize after that
+  // (or a 1s safety timeout, in case the browser's smooth-scroll never
+  // reports "settled") releases it back to normal geometry tracking.
   list.addEventListener("click", (e) => {
     const link = e.target.closest("a");
     if (!link) return;
     const id = link.getAttribute("href").slice(1);
+    lockedId = id;
     setActive(id);
+    clearTimeout(unlockTimer);
+    unlockTimer = setTimeout(clearLock, 1000);
   });
+
+  // Any scroll/resize the user initiates themselves after the lock should
+  // resume normal tracking rather than staying pinned to a stale click.
+  window.addEventListener("wheel", clearLock, { passive: true });
+  window.addEventListener("touchmove", clearLock, { passive: true });
 
   scheduleUpdate();
 }
