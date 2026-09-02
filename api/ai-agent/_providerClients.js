@@ -2,7 +2,10 @@
 // api/ai-agent/_providerClients.js
 // Thin adapters that normalize { provider, apiKey, messages } into each
 // LLM provider's own request shape, and normalize their responses back to
-// a single { text, toolCall? } shape for the frontend to render.
+// a single { text, toolCalls? } shape for the frontend to render.
+// `toolCalls` is always an array (possibly empty/absent) — a model turn
+// can legitimately request more than one tool call at once, and every
+// adapter below must surface all of them, not just the first.
 // =============================================================================
 
 /**
@@ -116,10 +119,10 @@ async function callGoogleAIStudio(apiKey, messages, systemPrompt, tools, request
     .filter((p) => p.text)
     .map((p) => p.text)
     .join("");
-  const funcCall = parts.find((p) => p.functionCall)?.functionCall;
+  const funcCalls = parts.filter((p) => p.functionCall).map((p) => p.functionCall);
   const result = { text };
-  if (funcCall) {
-    result.toolCall = { name: funcCall.name, input: funcCall.args || {} };
+  if (funcCalls.length) {
+    result.toolCalls = funcCalls.map((fc) => ({ name: fc.name, input: fc.args || {} }));
   }
   return result;
 }
@@ -167,15 +170,20 @@ async function callDeepSeek(apiKey, messages, systemPrompt, tools, requestedMode
   const message = data?.choices?.[0]?.message;
   const text = message?.content || "";
   const result = { text };
-  const toolCall = message?.tool_calls?.[0];
-  if (toolCall?.function) {
-    let input = {};
-    try {
-      input = JSON.parse(toolCall.function.arguments || "{}");
-    } catch {
-      input = {};
-    }
-    result.toolCall = { name: toolCall.function.name, input };
+  const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+  const parsedCalls = toolCalls
+    .filter((tc) => tc?.function)
+    .map((tc) => {
+      let input = {};
+      try {
+        input = JSON.parse(tc.function.arguments || "{}");
+      } catch {
+        input = {};
+      }
+      return { name: tc.function.name, input };
+    });
+  if (parsedCalls.length) {
+    result.toolCalls = parsedCalls;
   }
   return result;
 }
@@ -253,9 +261,9 @@ async function callClaude(apiKey, messages, systemPrompt, tools, requestedModel)
     .map((b) => b.text)
     .join("");
   const result = { text };
-  const toolUse = blocks.find((b) => b.type === "tool_use");
-  if (toolUse) {
-    result.toolCall = { name: toolUse.name, input: toolUse.input || {} };
+  const toolUses = blocks.filter((b) => b.type === "tool_use");
+  if (toolUses.length) {
+    result.toolCalls = toolUses.map((tu) => ({ name: tu.name, input: tu.input || {} }));
   }
   return result;
 }
@@ -276,7 +284,7 @@ const PROVIDERS = {
  *   tab's model picker); validated against ALLOWED_MODELS above and
  *   silently falls back to the provider's own lightest/cheapest/latest
  *   default (DEFAULT_MODELS) when omitted or not recognized.
- * @returns {Promise<{ text: string, toolCall?: {name: string, input: object} }>}
+ * @returns {Promise<{ text: string, toolCalls?: Array<{name: string, input: object}> }>}
  */
 export async function callProvider(provider, apiKey, messages, systemPrompt, tools, model) {
   const fn = PROVIDERS[provider];

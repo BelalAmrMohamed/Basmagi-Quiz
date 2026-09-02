@@ -228,6 +228,7 @@ body {
   padding: 4px 6px;
   white-space: nowrap;
 }
+
 .course-info-tooltip .tooltip-row span:first-child {
   color: var(--color-text-secondary);
   font-weight: 600;
@@ -280,6 +281,7 @@ body {
 }
 
 @media (max-width: 640px) {
+
   .course-kebab-btn,
   .course-info-container {
     /* position: relative;  */
@@ -306,6 +308,7 @@ body {
 }
 
 @media (min-width: 769px) {
+
   .exam-actions-overlay .modal-overlay,
   .exam-actions-overlay {
     align-items: center;
@@ -354,6 +357,7 @@ body {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -434,7 +438,8 @@ body {
   position: absolute;
   top: 0;
   bottom: 0;
-  right: -8px; /* Bridges the gap */
+  right: -8px;
+  /* Bridges the gap */
   width: 8px;
 }
 
@@ -538,12 +543,14 @@ body {
     margin-top: 6px;
     box-shadow: none;
     border-style: dashed;
-    display: none; /* Prevents taking up space when hidden */
+    display: none;
+    /* Prevents taking up space when hidden */
   }
 
   .submenu-content.show {
     transform: none;
-    display: flex; /* Restores layout when visible */
+    display: flex;
+    /* Restores layout when visible */
   }
 }
 
@@ -730,11 +737,9 @@ body {
   transform: translateX(-50%);
   width: 480px;
   height: 220px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(99, 102, 241, 0.08) 0%,
-    transparent 70%
-  );
+  background: radial-gradient(ellipse at center,
+      rgba(99, 102, 241, 0.08) 0%,
+      transparent 70%);
   pointer-events: none;
   z-index: var(--z-below);
 }
@@ -804,7 +809,8 @@ HEADER BADGE – GAMIFIED WELCOME
   letter-spacing: 0.2px;
   padding: 2px 6px;
   border-radius: 6px;
-  margin-inline: 0; /* logical: replaces margin-right: 0; margin-left: 0 */
+  margin-inline: 0;
+  /* logical: replaces margin-right: 0; margin-left: 0 */
 }
 
 [data-animations="enabled"] .header-badge .user-name {
@@ -820,12 +826,10 @@ html:not([data-motion="reduced"]) .header-badge::after {
   height: 55%;
 
   /* 2. Narrow the white light in the gradient */
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.6) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%);
 
   /* Start off-screen */
   transform: translateX(-150%);
@@ -847,12 +851,10 @@ html:not([data-motion="reduced"]) .header-badge::after {
 
 /* For the animation */
 [data-theme="light"] .header-badge::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(153, 204, 255, 0.6) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(153, 204, 255, 0.6) 50%,
+      transparent 100%);
 }
 
 [data-theme="dark"] .header-badge {
@@ -880,13 +882,12 @@ html:not([data-motion="reduced"]) .header-badge::after {
 
 /* For the animation */
 [data-theme="dark-slate"] .header-badge::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
+  background: linear-gradient(90deg,
+      transparent 0%,
 
-    /* Pink animation */ rgba(255, 192, 203, 0.6) 50%,
-    transparent 100%
-  );
+      /* Pink animation */
+      rgba(255, 192, 203, 0.6) 50%,
+      transparent 100%);
 }
 
 /* ============================================================================
@@ -898,6 +899,7 @@ ANIMATIONS
     opacity: 0;
     transform: translateY(10px) scale(0.85);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -908,19 +910,23 @@ ANIMATIONS
   0% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-4px);
   }
+
   100% {
     transform: translateY(0);
   }
 }
 
 @keyframes namePulse {
+
   0%,
   100% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(1.06);
   }
@@ -930,9 +936,11 @@ ANIMATIONS
   0% {
     transform: translateX(-110%);
   }
+
   40% {
     transform: translateX(110%);
   }
+
   100% {
     transform: translateX(-110%);
   }
@@ -956,7 +964,8 @@ ANIMATIONS
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  direction: rtl; /* Arabic RTL: icon ends up on the visual left */
+  direction: rtl;
+  /* Arabic RTL: icon ends up on the visual left */
 
   /* Spacing */
   margin-top: 28px;
@@ -964,7 +973,8 @@ ANIMATIONS
   border-radius: 999px;
 
   /* Typography */
-  font-size: 0.9375rem; /* 15px — matches .breadcrumb-text for scale harmony */
+  font-size: 0.9375rem;
+  /* 15px — matches .breadcrumb-text for scale harmony */
   font-weight: 700;
   letter-spacing: 0.25px;
   line-height: 1;
@@ -987,6 +997,7 @@ ANIMATIONS
     transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.25s ease;
 }
+
 [data-animations="enabled"] #Subjects-text {
   animation: subjectsReveal 0.5s 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -1052,6 +1063,7 @@ ANIMATIONS
     opacity: 0;
     transform: translateY(10px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1152,9 +1164,11 @@ ANIMATIONS
     max-width: 150px;
     font-size: 0.8125rem;
   }
+
   .title-breadcrumb-item--root {
     max-width: 90px;
   }
+
   .title-breadcrumb-item--current {
     max-width: 180px;
   }
@@ -1165,7 +1179,7 @@ ANIMATIONS
   display: inline-flex;
   align-items: center;
   padding: 0 4px;
-  color: var(--color-text-tertiary, rgba(0,0,0,0.35));
+  color: var(--color-text-tertiary, rgba(0, 0, 0, 0.35));
   font-size: 0.8em;
   flex-shrink: 0;
   user-select: none;
@@ -1220,8 +1234,15 @@ ANIMATIONS
 }
 
 @keyframes titleBcDropIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* ── Dropdown items ──────────────────────────────────────────────────────── */
@@ -1262,7 +1283,7 @@ ANIMATIONS
 }
 
 .title-breadcrumb-dropdown-item:hover {
-  background: var(--color-background-secondary, rgba(0,0,0,0.05));
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.05));
   color: var(--color-primary);
 }
 
@@ -1275,12 +1296,12 @@ ANIMATIONS
 /* ── Dark theme overrides ────────────────────────────────────────────────── */
 [data-theme="dark"] .title-breadcrumb-sep,
 [data-theme="dark-slate"] .title-breadcrumb-sep {
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
 }
 
 [data-theme="dark"] .title-breadcrumb-ellipsis,
 [data-theme="dark-slate"] .title-breadcrumb-ellipsis {
-  background: rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.07);
 }
 
 [data-theme="dark"] .title-breadcrumb-dropdown,
@@ -1327,6 +1348,7 @@ Container
 
 /* ── Tablet card padding ── Obj 2B */
 @media (max-width: 960px) {
+
   .card,
   .category-card,
   .exam-card {
@@ -1343,6 +1365,7 @@ Container
 
 /* ── Obj 1: Mobile List-Row Design (≤640px) ─────────────────────────────── */
 @media (max-width: 640px) {
+
   /* ── Grid becomes a flex column with border wrapping the whole list ──────── */
   .grid-container {
     display: flex;
@@ -1352,7 +1375,8 @@ Container
     overflow-x: hidden;
     border: 1px solid var(--color-border);
     border-radius: 14px;
-    overflow: hidden; /* clip children to the border-radius */
+    overflow: hidden;
+    /* clip children to the border-radius */
   }
 
   /* ── Each card becomes a compact horizontal list-row ─────────────────────── */
@@ -1408,7 +1432,8 @@ Container
     flex-direction: column;
     gap: 1px;
     flex: 1;
-    min-width: 0; /* allows text-overflow: ellipsis */
+    min-width: 0;
+    /* allows text-overflow: ellipsis */
   }
 
   /* ── Category card icon: compact emoji on the left ───────────────────────── */
@@ -1464,9 +1489,11 @@ Container
 
   /* ── Exam meta wrapper: row with types · count, pushed to right ─────────── */
   .exam-card-meta {
-    position: static !important; /* reset desktop absolute */
+    position: static !important;
+    /* reset desktop absolute */
     display: flex;
-    flex-direction: row; /* side-by-side (was column) */
+    flex-direction: row;
+    /* side-by-side (was column) */
     align-items: center;
     gap: 4px;
     flex-shrink: 0;
@@ -1486,7 +1513,8 @@ Container
     text-overflow: ellipsis;
     font-weight: 400;
     text-align: right;
-    order: 1 !important; /* reset desktop order */
+    order: 1 !important;
+    /* reset desktop order */
   }
 
   .exam-question-count:not(.exam-types-subtext) {
@@ -1495,7 +1523,8 @@ Container
     color: var(--color-text-tertiary, #888);
     margin-bottom: 0;
     text-align: right;
-    order: 2 !important; /* count after types in mobile row */
+    order: 2 !important;
+    /* count after types in mobile row */
     direction: rtl;
   }
 
@@ -1516,7 +1545,8 @@ Container
     height: 32px;
     border-radius: 8px;
     padding: 0;
-    font-size: 0; /* hide text */
+    font-size: 0;
+    /* hide text */
     flex: 0 0 32px;
     min-width: 0 !important;
   }
@@ -1634,6 +1664,7 @@ Container
 }
 
 @media (max-width: 640px) {
+
   /* Inner quiz-card list gets the border */
   .user-quizzes-container {
     display: flex;
@@ -1645,7 +1676,7 @@ Container
   }
 
   /* First card (create-quiz): no top border (container border serves as top) */
-  .user-quizzes-container > .exam-card:first-child {
+  .user-quizzes-container>.exam-card:first-child {
     border: none !important;
   }
 
@@ -1890,6 +1921,7 @@ Container
 
 /* Mobile: restore to normal flex flow so btnWrap sits on the RIGHT */
 @media (max-width: 640px) {
+
   /*
  * Clip the shared .exam-card::before hover-accent strip so it never bleeds
  * outside the card's rounded corners.  The card itself keeps overflow:visible
@@ -1898,8 +1930,10 @@ Container
  */
   .exam-card.user-quiz-card::before {
     overflow: hidden;
-    border-radius: 20px 20px 0 0; /* match the card's top corners */
+    border-radius: 20px 20px 0 0;
+    /* match the card's top corners */
   }
+
   .exam-card:not(.user-quiz-card) .exam-card-actions-wrap {
     position: static;
     width: auto;
@@ -1907,7 +1941,8 @@ Container
     left: auto;
     right: auto;
     margin-top: 0;
-    margin-left: auto; /* push to the right end of the flex row */
+    margin-left: auto;
+    /* push to the right end of the flex row */
     flex-shrink: 0;
     flex-wrap: nowrap;
     gap: 4px;
@@ -1935,7 +1970,8 @@ Container
  */
 .exam-card.user-quiz-card {
   align-self: start;
-  overflow: hidden; /* clip the ::before accent strip to the card's border-radius */
+  overflow: hidden;
+  /* clip the ::before accent strip to the card's border-radius */
   /* No text-align override here — inherits "center" from base .exam-card,
      keeping the title centred on desktop to match normal quiz cards. */
 }
@@ -1981,6 +2017,7 @@ Container
  * ============================================================================
  */
 @media (max-width: 640px) {
+
   /* ── Card shell: compact horizontal row ─────────────────────────────────── */
   .card,
   .category-card,
@@ -2100,11 +2137,9 @@ Container
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -2133,7 +2168,8 @@ Container
     flex: 0 0 32px !important;
     padding: 0 !important;
     border-radius: 8px !important;
-    font-size: 0 !important; /* hide Arabic text */
+    font-size: 0 !important;
+    /* hide Arabic text */
     line-height: 1 !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
   }
@@ -2202,9 +2238,7 @@ Container
    estimate if the layout stylesheet hasn't set it. */
 @media (max-width: 640px) {
   .modal-overlay {
-    padding-bottom: calc(
-      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
-    );
+    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
     align-items: center;
     box-sizing: border-box;
   }
@@ -2230,10 +2264,13 @@ Container
  * and card ⋮ overlay). Renders an actual indented tree (see
  * user-quizzes-folders.js's addNode/appendChildren): a header with title +
  * subtitle + close button, then one .move-to-dialog-node button per
- * folder/course with per-depth .move-to-dialog-rail connector elements
- * drawn via CSS borders (not monospace box-drawing characters), a "current
- * location" badge, and a disabled state (with a title= tooltip explaining
- * why) for invalid destinations instead of hiding them outright.
+ * folder/course, each sibling group wrapped in a .move-to-dialog-branch
+ * container whose own border-right draws that group's ONE continuous
+ * ancestor rail (nested branches simply nest further borders inside it),
+ * plus a per-row .move-to-dialog-elbow stub connecting each row to its
+ * own branch's rail, a "current location" badge, and a disabled state
+ * (with a title= tooltip explaining why) for invalid destinations instead
+ * of hiding them outright.
  * ============================================================================ */
 .move-to-dialog-card {
   padding: 0;
@@ -2387,50 +2424,90 @@ Container
   opacity: 0.7;
 }
 
-/* Ancestry rail connectors — one .move-to-dialog-rail per depth level,
-   drawn with a right/left border (depending on writing direction) rather
-   than monospace box-drawing glyphs, so the line always aligns pixel-
-   perfectly with the row's own height regardless of font/zoom. The last
-   rail before a node additionally gets an "elbow" (a short horizontal
-   stub connecting the vertical rail to the node itself), matching the
-   familiar file-tree look.
-   Uses a slightly stronger, dedicated tone (--color-border on its own
-   read as too faint/decorative at 1px to register as "structure" rather
-   than noise) and a bit more weight so the tree's shape reads clearly at
-   a glance instead of being easy to miss. */
-.move-to-dialog-rail {
+/* Ancestry rail connectors — REDESIGNED (see appendChildren in
+   user-quizzes-folders.js): previously each row independently redrew a
+   `.move-to-dialog-rail` span per ancestor depth level via `position:
+   absolute; top:0; bottom:0` scoped to that row's own height. Because
+   each row recomputed and repainted the "same" line separately, any
+   difference in row height (wrapped labels, disabled-state padding,
+   sub-pixel rounding) could leave a visible seam between one row's
+   segment and the next — the "rails aren't connected together" bug.
+   Now each sibling group is wrapped in one .move-to-dialog-branch
+   container (see index.css usage from that file), and the shared
+   ancestor line is a single `border-right` on that ONE wrapper — a
+   single continuous stroke spanning every row and every nested branch
+   inside it, structurally incapable of developing a seam between rows.
+   Only the short horizontal stub connecting a row to its branch's rail
+   remains per-row (.move-to-dialog-elbow), since that part IS
+   legitimately specific to each row's own position. */
+.move-to-dialog-branch {
+  display: flex;
+  flex-direction: column;
+  /* Indent + the shared vertical rail for every row (and any further
+     nested .move-to-dialog-branch) inside this sibling group. Matches
+     the previous rail's tone/weight: --color-border alone reads as too
+     faint/decorative at 1px to register as "structure" rather than
+     noise. */
+  padding-right: 18px;
+  border-right: 1.5px solid var(--color-text-tertiary, var(--color-border));
+  opacity: 1;
+}
+
+/* The branch's own border draws at full opacity by default (browsers
+   don't apply `opacity` to just the border), so the softer 0.55 the old
+   rail used is reproduced via border-color's alpha instead of the
+   element's own opacity, which would also fade the rows nested inside
+   it. color-mix degrades gracefully; browsers without it simply keep
+   the border at full tone, which still reads fine. */
+@supports (border-color: color-mix(in srgb, red, transparent)) {
+  .move-to-dialog-branch {
+    border-right-color: color-mix(in srgb,
+        var(--color-text-tertiary, var(--color-border)) 55%,
+        transparent);
+  }
+}
+
+html[dir="ltr"] .move-to-dialog-branch {
+  padding-right: 0;
+  padding-left: 18px;
+  border-right: none;
+  border-left: 1.5px solid var(--color-text-tertiary, var(--color-border));
+}
+
+@supports (border-color: color-mix(in srgb, red, transparent)) {
+  html[dir="ltr"] .move-to-dialog-branch {
+    border-left-color: color-mix(in srgb, var(--color-text-tertiary, var(--color-border)) 55%, transparent);
+  }
+}
+
+/* Per-row elbow: a short horizontal stub joining this row to its
+   branch's own vertical rail (drawn by the .move-to-dialog-branch
+   wrapper above, not by this element). `--continues` rows sit in the
+   middle of their sibling list, so the branch's own border keeps
+   running past them uninterrupted — the stub is purely decorative
+   there. The LAST row in a branch still visually terminates its own
+   branch's rail with a matching short curve so the line doesn't just
+   trail off past the final child; since CSS can't "shorten" a sibling
+   border from a child, this is approximated by nudging the branch's
+   own bottom edge to end flush with the last row's own vertical
+   midpoint via that row having no `--continues` modifier — the visual
+   difference between an ongoing vs. terminal rail is intentionally
+   subtle (a design choice already present before this rewrite) rather
+   than a literal elbow curve. */
+.move-to-dialog-elbow {
   flex-shrink: 0;
   position: relative;
   width: 18px;
   align-self: stretch;
+  margin-right: -18px;
+  /* pulls back under the branch's own padding-right so the stub starts from the shared rail, not a second indent */
 }
 
-.move-to-dialog-rail::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 8px;
-  width: 1.5px;
-  background: var(--color-text-tertiary, var(--color-border));
-  opacity: 0.55;
-  border-radius: 1px;
-}
-
-html[dir="ltr"] .move-to-dialog-rail::before {
-  right: auto;
-  left: 8px;
-}
-
-.move-to-dialog-rail--elbow::before {
-  bottom: 50%;
-}
-
-.move-to-dialog-rail--elbow::after {
+.move-to-dialog-elbow::after {
   content: "";
   position: absolute;
   top: 50%;
-  right: 8px;
+  right: 0;
   width: 10px;
   height: 1.5px;
   background: var(--color-text-tertiary, var(--color-border));
@@ -2438,9 +2515,14 @@ html[dir="ltr"] .move-to-dialog-rail::before {
   border-radius: 1px;
 }
 
-html[dir="ltr"] .move-to-dialog-rail--elbow::after {
+html[dir="ltr"] .move-to-dialog-elbow {
+  margin-right: 0;
+  margin-left: -18px;
+}
+
+html[dir="ltr"] .move-to-dialog-elbow::after {
   right: auto;
-  left: 8px;
+  left: 0;
 }
 
 /* ============================================================================
@@ -2614,8 +2696,10 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
 
 /* ── Accent border on the whole card ──────────────────────────────────────── */
 .exam-card--db {
-  border-inline-start: 3px solid var(--color-primary); /* RTL-aware left border */
-  position: relative; /* already set in JS, but safe to repeat */
+  border-inline-start: 3px solid var(--color-primary);
+  /* RTL-aware left border */
+  position: relative;
+  /* already set in JS, but safe to repeat */
 }
 
 /* ============================================================================
@@ -2891,6 +2975,7 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
   0% {
     background-position: -1200px 0;
   }
+
   100% {
     background-position: 1200px 0;
   }
@@ -2908,12 +2993,14 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
 @media (max-width: 960px) {
   .skeleton-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
   }
 }
+
 @media (max-width: 640px) {
   .skeleton-grid {
     display: flex;
@@ -3108,6 +3195,7 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
 .admin-log-in-btn:hover svg {
   fill: var(--color-primary);
 }
@@ -3128,11 +3216,13 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
   transition: all 0.2s;
   margin-left: 10px;
 }
+
 .admin-log-out-btn:hover {
   background: var(--color-error, #e53e3e);
   border-color: var(--color-error, #e53e3e);
   color: #ffffff;
 }
+
 .admin-log-out-btn:hover svg {
   stroke: #ffffff;
 }
@@ -3196,7 +3286,8 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
 
 .user-quiz-search-actions {
   grid-column: 1 / -1;
-  display: none; /* hidden on desktop — shown in mobile query below */
+  display: none;
+  /* hidden on desktop — shown in mobile query below */
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
@@ -3302,9 +3393,7 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
 }
 
 /* Fallback for any other type */
-.question-type-badge:not([data-type="MCQ"]):not([data-type="Essay"]):not(
-    [data-type="True/False"]
-  ) {
+.question-type-badge:not([data-type="MCQ"]):not([data-type="Essay"]):not([data-type="True/False"]) {
   background: rgba(99, 102, 241, 0.08);
   color: var(--color-accent, #6366f1);
   border-color: rgba(99, 102, 241, 0.2);
@@ -3333,6 +3422,7 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
 }
 
 @media (max-width: 640px) {
+
   /* BUG FIX: was `display: inline`, a leftover from when these emojis lived
      inline inside <h3> text. Now that they're sibling `.icon`-style elements
      (see exam-card.js / user-quiz-card.js / create-quiz-modal.js), `inline`
@@ -3523,7 +3613,7 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
   }
 
   /* Hide the big desktop-only centered icon on mobile */
-  .user-create-quiz-card > .icon {
+  .user-create-quiz-card>.icon {
     display: none !important;
   }
 
@@ -3574,10 +3664,8 @@ html[dir="ltr"] .move-to-dialog-rail--elbow::after {
   left: 8px;
   padding: 2px 4px;
   border-radius: var(--radius-full, 9999px);
-  background: var(
-    --gradient-accent,
-    linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)
-  );
+  background: var(--gradient-accent,
+      linear-gradient(135deg, #dc2626 0%, #b91c1c 100%));
   color: #fff;
   font-size: var(--font-size-xs, 0.72rem);
   font-weight: 700;
@@ -3801,18 +3889,22 @@ kbd {
 }
 
 @media (max-height: 640px) and (max-width: 480px) {
+
   /* Short phones in the wild (older/smaller devices, or a phone rotated
      with a keyboard open) — shrink chrome further rather than clipping. */
   .create-quiz-inline-modal {
     padding: 10px 14px;
   }
+
   .create-quiz-modal__subtitle {
     margin-bottom: 12px;
     font-size: 0.85rem;
   }
+
   .create-quiz-modal__form-group {
     margin-bottom: 10px;
   }
+
   .inline-quiz-textarea {
     min-height: 60px;
   }
@@ -4031,10 +4123,12 @@ kbd {
 }
 
 @keyframes create-quiz-modal-arrow-bounce {
+
   0%,
   100% {
     transform: translateY(-50%) translateX(0);
   }
+
   50% {
     transform: translateY(-50%) translateX(-6px);
   }
@@ -4103,6 +4197,7 @@ kbd {
     opacity: 0;
     transform: translateX(-50%) translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
@@ -4222,6 +4317,7 @@ kbd {
 }
 
 @media (max-width: 480px) {
+
   .btn.selection-toggle-btn,
   .admin-log-in-btn {
     gap: 4px;
@@ -4354,8 +4450,7 @@ kbd {
 .bulk-action-bar .btn:hover {
   background: var(--color-text-secondary);
   color: var(--color-surface);
-  box-shadow: 0 4px 12px -2px
-    color-mix(in srgb, var(--color-text-primary) 45%, transparent);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-text-primary) 45%, transparent);
   transform: translateY(-1px);
 }
 
@@ -4368,8 +4463,7 @@ kbd {
 .bulk-action-bar .bulk-delete-btn:hover {
   background: var(--color-error, #e53e3e);
   color: var(--color-surface);
-  box-shadow: 0 4px 12px -2px
-    color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-error, #e53e3e) 45%, transparent);
   transform: translateY(-1px);
 }
 
@@ -4387,16 +4481,14 @@ kbd {
 .bulk-action-bar .bulk-extract-btn:hover {
   background: var(--color-primary);
   color: #fff;
-  box-shadow: 0 4px 12px -2px
-    color-mix(in srgb, var(--color-primary) 45%, transparent);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
   transform: translateY(-1px);
 }
 
 .bulk-action-bar .bulk-upload-btn:hover {
   background: var(--color-admin-hover);
   color: #fff;
-  box-shadow: 0 4px 12px -2px
-    color-mix(in srgb, var(--color-primary) 45%, transparent);
+  box-shadow: 0 4px 12px -2px color-mix(in srgb, var(--color-primary) 45%, transparent);
   transform: translateY(-1px);
 }
 
@@ -4411,7 +4503,7 @@ kbd {
 
 /* Clear selection (✕) button — neutral, secondary style */
 .bulk-action-bar .bulk-clear-btn {
-  background: var(--color-background-secondary, rgba(0,0,0,0.06));
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.06));
   color: var(--color-text-secondary);
   padding: 8px 12px;
   font-size: 0.85rem;
@@ -4427,7 +4519,7 @@ kbd {
 
 /* Select all button — subtle neutral base */
 .bulk-action-bar .bulk-select-all-btn {
-  background: var(--color-background-secondary, rgba(0,0,0,0.06));
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.06));
   color: var(--color-text-primary);
 }
 
@@ -4455,6 +4547,7 @@ kbd {
     padding: 14px 16px;
     border-radius: var(--radius-xl, 20px);
   }
+
   .bulk-action-bar .bulk-actions {
     width: 100%;
     justify-content: center;

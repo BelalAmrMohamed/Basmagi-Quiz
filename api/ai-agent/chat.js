@@ -50,7 +50,7 @@
 // file-bearing requests through the user's own key (useOwnKey) rather than
 // the platform pool is recommended when possible; see OWN_KEY_ATTACHMENT_RATE_LIMIT
 // below for why the own-key path already treats them differently.
-// Success 200: { text: string, toolCall?: { name: string, input: object } }
+// Success 200: { text: string, toolCalls?: Array<{ name: string, input: object }> }
 // Failure 400/401/403/429/500: { error: string }
 //
 // AUTHORIZATION:

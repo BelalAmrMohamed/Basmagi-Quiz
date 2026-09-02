@@ -320,11 +320,20 @@ li strong {
        right edge and the sidebar instead of the footer's dark background
        reaching it, exactly like the app's other sidebar-aware pages do. */
     margin-right: calc(-1 * (var(--sidebar-collapsed-width, 64px) + 16px));
-    transition: margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    /* The negative margin above only re-extends the footer's background
+       under the sidebar's reserved rail — without pushing the content back
+       in by the same amount, the footer's own content (links, columns)
+       would be the thing sitting under the fixed sidebar, not just the
+       background. This padding restores the content's right boundary to
+       the sidebar's edge while the background still bleeds under it. */
+    padding-right: calc(var(--sidebar-collapsed-width, 64px) + 16px);
+    transition: margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1),
+        padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.sidebar-expanded .site-footer {
     margin-right: calc(-1 * (var(--sidebar-expanded-width, 240px) + 16px));
+    padding-right: calc(var(--sidebar-expanded-width, 240px) + 16px);
 }
 
 @media (max-width: 768px) {
@@ -335,6 +344,7 @@ body.sidebar-expanded .site-footer {
            on mobile regardless of expanded state, so the compensation
            must match that flat value instead of the desktop rail width. */
         margin-right: -16px;
+        padding-right: 16px;
     }
 }
 

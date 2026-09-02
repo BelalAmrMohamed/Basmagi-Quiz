@@ -26,6 +26,30 @@
   min-width: 0;
 }
 
+/* Bold markdown (**text**) previously relied entirely on the browser's
+   default "bolder" font-weight step relative to the surrounding text,
+   with no deliberate weight/color treatment — on top of body text that
+   may already be semi-bold, or at small quiz/result font sizes, that step
+   barely reads as emphasis. Set an explicit weight + primary-text color so
+   bold content clearly stands out in both light and dark themes. */
+.md-content strong,
+.md-content b,
+.question-text strong,
+.question-text b,
+.option-label strong,
+.option-label b,
+.feedback strong,
+.feedback b,
+.explanation-body strong,
+.explanation-body b,
+.formal-answer strong,
+.formal-answer b,
+.formal-answer-text strong,
+.formal-answer-text b {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════════
    HEADINGS
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -40,25 +64,31 @@
   color: var(--color-text-primary);
   line-height: 1.3;
 }
+
 .md-h1 {
   font-size: 1.6em;
   border-bottom: 2px solid var(--color-border);
   padding-bottom: 4px;
 }
+
 .md-h2 {
   font-size: 1.35em;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 3px;
 }
+
 .md-h3 {
   font-size: 1.15em;
 }
+
 .md-h4 {
   font-size: 1.05em;
 }
+
 .md-h5 {
   font-size: 0.95em;
 }
+
 .md-h6 {
   font-size: 0.9em;
   opacity: 0.85;
@@ -99,9 +129,11 @@
   line-height: 1.6;
   color: var(--color-text-primary);
 }
+
 .md-p:first-child {
   margin-top: 0;
 }
+
 .md-p:last-child {
   margin-bottom: 0;
 }
@@ -121,6 +153,7 @@
   padding: 0;
   color: var(--color-text-primary);
 }
+
 .md-list li {
   margin-bottom: 4px;
   line-height: 1.6;
@@ -138,12 +171,12 @@
 }
 
 /* Level 2 unordered: open circle */
-ul.md-list > li > ul.md-list {
+ul.md-list>li>ul.md-list {
   list-style-type: circle;
 }
 
 /* Level 3+ unordered: filled square */
-ul.md-list > li > ul.md-list > li > ul.md-list {
+ul.md-list>li>ul.md-list>li>ul.md-list {
   list-style-type: square;
 }
 
@@ -156,6 +189,7 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
 .md-img {
   max-width: 100%;
   height: auto;
@@ -178,9 +212,11 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   font-size: 1.05em;
   max-width: 100%;
 }
+
 .math-inline {
   display: inline;
 }
+
 .math-raw {
   font-family: "Courier New", Courier, monospace;
   font-size: 0.92em;
@@ -251,7 +287,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 
 /* Language Badge */
 .code-lang-label {
-  grid-column: 1; /* Locked to the left-most column box */
+  grid-column: 1;
+  /* Locked to the left-most column box */
   grid-row: 1;
   z-index: 2;
   align-self: center;
@@ -273,7 +310,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 
 /* Copy Button — Refined Editor Utility */
 .copy-code-btn {
-  grid-column: 3; /* Locked to the right-most column box */
+  grid-column: 3;
+  /* Locked to the right-most column box */
   grid-row: 1;
   z-index: 2;
   align-self: center;
@@ -345,13 +383,16 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   width: 8px;
   height: 8px;
 }
+
 .code-block::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .code-block::-webkit-scrollbar-thumb {
   background: #2d2d34;
   border-radius: 4px;
 }
+
 .code-block::-webkit-scrollbar-thumb:hover {
   background: #3a3a44;
 }
@@ -365,18 +406,56 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 /* ── Custom High-Performance Token Highlighting (Dark Theme) ── */
-.sh-comment   { color: #636370; font-style: italic; }
-.sh-keyword   { color: #ff79c6; font-weight: 600; }
-.sh-string    { color: #50fa7b; }
-.sh-number    { color: #bd93f9; }
-.sh-type      { color: #8be9fd; }
-.sh-function  { color: #ffb86c; }
-.sh-property  { color: #f1fa8c; }
-.sh-builtin   { color: #8be9fd; font-style: italic; }
-.sh-operator  { color: #ff79c6; }
-.sh-variable  { color: #f8f8f2; }
-.sh-tag       { color: #ff79c6; }
-.sh-attr      { color: #50fa7b; }
+.sh-comment {
+  color: #636370;
+  font-style: italic;
+}
+
+.sh-keyword {
+  color: #ff79c6;
+  font-weight: 600;
+}
+
+.sh-string {
+  color: #50fa7b;
+}
+
+.sh-number {
+  color: #bd93f9;
+}
+
+.sh-type {
+  color: #8be9fd;
+}
+
+.sh-function {
+  color: #ffb86c;
+}
+
+.sh-property {
+  color: #f1fa8c;
+}
+
+.sh-builtin {
+  color: #8be9fd;
+  font-style: italic;
+}
+
+.sh-operator {
+  color: #ff79c6;
+}
+
+.sh-variable {
+  color: #f8f8f2;
+}
+
+.sh-tag {
+  color: #ff79c6;
+}
+
+.sh-attr {
+  color: #50fa7b;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════════
    GFM TABLES
@@ -409,11 +488,9 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   background-image:
     linear-gradient(to left, rgba(255, 255, 255, 0.06) 20%, transparent),
     linear-gradient(to right, rgba(255, 255, 255, 0.06) 20%, transparent),
-    radial-gradient(
-      farthest-side at 100% 50%,
+    radial-gradient(farthest-side at 100% 50%,
       rgba(0, 0, 0, 0.12),
-      transparent
-    ),
+      transparent),
     radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.12), transparent);
   background-size:
     40px 100%,
@@ -427,7 +504,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 .md-table {
-  min-width: max-content; /* lets the table grow naturally; wrapper scrolls */
+  min-width: max-content;
+  /* lets the table grow naturally; wrapper scrolls */
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
@@ -438,7 +516,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 
 /* Header row — frosted accent layer */
 .md-table thead tr {
-  background: rgba(99, 102, 241, 0.1); /* primary tint */
+  background: rgba(99, 102, 241, 0.1);
+  /* primary tint */
   border-bottom: 2px solid rgba(99, 102, 241, 0.22);
 }
 
@@ -446,7 +525,8 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   padding: 11px 16px;
   font-weight: 700;
   color: var(--color-text-primary);
-  white-space: nowrap; /* keep headers on one line */
+  white-space: nowrap;
+  /* keep headers on one line */
   letter-spacing: 0.01em;
   /* Subtle inset highlight on each header cell top edge */
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -473,6 +553,7 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
     background 0.14s ease,
     box-shadow 0.14s ease;
 }
+
 .md-table tbody tr:hover {
   background: rgba(99, 102, 241, 0.07);
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.12);
@@ -490,11 +571,9 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   background-image:
     linear-gradient(to left, rgba(0, 0, 0, 0.02) 20%, transparent),
     linear-gradient(to right, rgba(0, 0, 0, 0.02) 20%, transparent),
-    radial-gradient(
-      farthest-side at 100% 50%,
+    radial-gradient(farthest-side at 100% 50%,
       rgba(0, 0, 0, 0.08),
-      transparent
-    ),
+      transparent),
     radial-gradient(farthest-side at 0% 50%, rgba(0, 0, 0, 0.08), transparent);
   background-size:
     40px 100%,
@@ -555,18 +634,12 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   background:
     linear-gradient(to left, var(--color-background) 20%, transparent) right,
     linear-gradient(to right, var(--color-background) 20%, transparent) left,
-    radial-gradient(
-        farthest-side at 100% 50%,
-        rgba(255, 255, 255, 0.07),
-        transparent
-      )
-      right,
-    radial-gradient(
-        farthest-side at 0% 50%,
-        rgba(255, 255, 255, 0.07),
-        transparent
-      )
-      left;
+    radial-gradient(farthest-side at 100% 50%,
+      rgba(255, 255, 255, 0.07),
+      transparent) right,
+    radial-gradient(farthest-side at 0% 50%,
+      rgba(255, 255, 255, 0.07),
+      transparent) left;
   background-color: var(--color-background);
   background-repeat: no-repeat;
   background-size:
@@ -660,117 +733,143 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
    ─────────────────────────────────────────────────────────────────────────── */
 
 .code-block .sh-keyword {
-  color: #c792ea; /* soft violet — kept, it harmonizes with the purple-tinted bg */
+  color: #c792ea;
+  /* soft violet — kept, it harmonizes with the purple-tinted bg */
   font-weight: 600;
 }
 
 .code-block .sh-string {
-  color: #a8d8a8; /* sage green — replaces neon lime, warm and readable */
+  color: #a8d8a8;
+  /* sage green — replaces neon lime, warm and readable */
 }
 
 .code-block .sh-number {
-  color: #f78c6c; /* soft coral — replaces bubblegum pink, mature accent */
+  color: #f78c6c;
+  /* soft coral — replaces bubblegum pink, mature accent */
 }
 
 .code-block .sh-comment {
-  color: #4e5a6a; /* deeper blue-grey — recedes cleanly on this near-black bg */
+  color: #4e5a6a;
+  /* deeper blue-grey — recedes cleanly on this near-black bg */
   font-style: italic;
 }
 
 .code-block .sh-function {
-  color: #82aaff; /* periwinkle blue — softer than sky, less clinical */
+  color: #82aaff;
+  /* periwinkle blue — softer than sky, less clinical */
 }
 
 .code-block .sh-type {
-  color: #ffcb6b; /* warm gold — amber was close, this is richer and less harsh */
+  color: #ffcb6b;
+  /* warm gold — amber was close, this is richer and less harsh */
 }
 
 .code-block .sh-builtin {
-  color: #f78c6c; /* same coral as numbers — related category, consistent family */
+  color: #f78c6c;
+  /* same coral as numbers — related category, consistent family */
 }
 
 .code-block .sh-operator {
-  color: #7986a8; /* muted blue-slate — visible but not competing */
+  color: #7986a8;
+  /* muted blue-slate — visible but not competing */
 }
 
 .code-block .sh-attr,
 .code-block .sh-property {
-  color: #89ddff; /* cool sky — distinct from functions, feels like metadata */
+  color: #89ddff;
+  /* cool sky — distinct from functions, feels like metadata */
 }
 
 .code-block .sh-tag {
-  color: #f07178; /* muted rose-red — replaces hot pink, same role but calmer */
+  color: #f07178;
+  /* muted rose-red — replaces hot pink, same role but calmer */
 }
 
 .code-block .sh-variable {
-  color: #c792ea; /* same violet as keywords — CSS vars share the keyword family */
+  color: #c792ea;
+  /* same violet as keywords — CSS vars share the keyword family */
 }
 
 .code-block .sh-interp {
-  color: #f78c6c; /* coral — consistent with numbers/builtins, signals injection */
+  color: #f78c6c;
+  /* coral — consistent with numbers/builtins, signals injection */
   font-weight: 700;
 }
 
 .code-block .sh-interp-body {
-  color: #cdd5e0; /* soft blue-white — cooler than near-white, fits the tinted bg */
+  color: #cdd5e0;
+  /* soft blue-white — cooler than near-white, fits the tinted bg */
 }
 
 /* ── Light-theme overrides ───────────────────────────────────────────────────── */
 
 [data-theme="light"] .code-block .sh-keyword {
-  color: #569cd6; /* cool blue — classic keyword blue */
+  color: #569cd6;
+  /* cool blue — classic keyword blue */
   font-weight: 600;
 }
 
 [data-theme="light"] .code-block .sh-string {
-  color: #ce9178; /* warm terracotta — easy on dark bg */
+  color: #ce9178;
+  /* warm terracotta — easy on dark bg */
 }
 
 [data-theme="light"] .code-block .sh-number {
-  color: #b5cea8; /* soft sage green */
+  color: #b5cea8;
+  /* soft sage green */
 }
 
 [data-theme="light"] .code-block .sh-comment {
-  color: #6a9955; /* muted green — readable but recedes */
+  color: #6a9955;
+  /* muted green — readable but recedes */
   font-style: italic;
 }
 
 [data-theme="light"] .code-block .sh-function {
-  color: #dcdcaa; /* warm yellow — functions stand out */
+  color: #dcdcaa;
+  /* warm yellow — functions stand out */
 }
 
 [data-theme="light"] .code-block .sh-type {
-  color: #4ec9b0; /* teal — types feel structural */
+  color: #4ec9b0;
+  /* teal — types feel structural */
 }
 
 [data-theme="light"] .code-block .sh-builtin {
-  color: #4ec9b0; /* same teal family as types */
+  color: #4ec9b0;
+  /* same teal family as types */
 }
 
 [data-theme="light"] .code-block .sh-operator {
-  color: #d4d4d4; /* near-white — punctuation stays neutral */
+  color: #d4d4d4;
+  /* near-white — punctuation stays neutral */
 }
 
 [data-theme="light"] .code-block .sh-attr,
 [data-theme="light"] .code-block .sh-property {
-  color: #9cdcfe; /* light sky blue — properties feel accessible */
+  color: #9cdcfe;
+  /* light sky blue — properties feel accessible */
 }
 
 [data-theme="light"] .code-block .sh-tag {
-  color: #569cd6; /* same blue as keywords — HTML tags fit */
+  color: #569cd6;
+  /* same blue as keywords — HTML tags fit */
 }
 
 [data-theme="light"] .code-block .sh-variable {
-  color: #9cdcfe; /* sky blue — consistent with properties */
+  color: #9cdcfe;
+  /* sky blue — consistent with properties */
 }
 
 [data-theme="light"] .code-block .sh-interp {
-  color: #c586c0; /* soft violet — interpolation markers pop */
+  color: #c586c0;
+  /* soft violet — interpolation markers pop */
   font-weight: 700;
 }
 
 [data-theme="light"] .code-block .sh-interp-body {
-  color: #d4d4d4; /* same neutral as operators */
+  color: #d4d4d4;
+  /* same neutral as operators */
 }
 
 /* ── Dark-slate theme ────────────────────────────────────────────────────────
@@ -779,59 +878,72 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
    ─────────────────────────────────────────────────────────────────────────── */
 
 [data-theme="dark-slate"] .code-block .sh-keyword {
-  color: #82aaff; /* periwinkle blue — softer than purple, fits navy context */
+  color: #82aaff;
+  /* periwinkle blue — softer than purple, fits navy context */
   font-weight: 600;
 }
 
 [data-theme="dark-slate"] .code-block .sh-string {
-  color: #c3e88d; /* muted lime-green — warm but not neon */
+  color: #c3e88d;
+  /* muted lime-green — warm but not neon */
 }
 
 [data-theme="dark-slate"] .code-block .sh-number {
-  color: #f78c6c; /* soft coral — replaces bubblegum pink, feels mature */
+  color: #f78c6c;
+  /* soft coral — replaces bubblegum pink, feels mature */
 }
 
 [data-theme="dark-slate"] .code-block .sh-comment {
-  color: #546e7a; /* blue-grey — recedes into the slate without disappearing */
+  color: #546e7a;
+  /* blue-grey — recedes into the slate without disappearing */
   font-style: italic;
 }
 
 [data-theme="dark-slate"] .code-block .sh-function {
-  color: #82aaff; /* same family as keywords — cohesive, not competing */
+  color: #82aaff;
+  /* same family as keywords — cohesive, not competing */
 }
 
 [data-theme="dark-slate"] .code-block .sh-type {
-  color: #ffcb6b; /* warm gold — structural types deserve warmth */
+  color: #ffcb6b;
+  /* warm gold — structural types deserve warmth */
 }
 
 [data-theme="dark-slate"] .code-block .sh-builtin {
-  color: #89ddff; /* cool sky — distinct from types, fits the slate palette */
+  color: #89ddff;
+  /* cool sky — distinct from types, fits the slate palette */
 }
 
 [data-theme="dark-slate"] .code-block .sh-operator {
-  color: #89ddff; /* same sky — operators stay light and neutral */
+  color: #89ddff;
+  /* same sky — operators stay light and neutral */
 }
 
 [data-theme="dark-slate"] .code-block .sh-attr,
 [data-theme="dark-slate"] .code-block .sh-property {
-  color: #b2ccd6; /* desaturated steel blue — calm and readable */
+  color: #b2ccd6;
+  /* desaturated steel blue — calm and readable */
 }
 
 [data-theme="dark-slate"] .code-block .sh-tag {
-  color: #f07178; /* muted rose-red — replaces bubblegum, still distinct */
+  color: #f07178;
+  /* muted rose-red — replaces bubblegum, still distinct */
 }
 
 [data-theme="dark-slate"] .code-block .sh-variable {
-  color: #eeffff; /* near-white with a cool tint — variables are plain text */
+  color: #eeffff;
+  /* near-white with a cool tint — variables are plain text */
 }
 
 [data-theme="dark-slate"] .code-block .sh-interp {
-  color: #f78c6c; /* coral — matches numbers, signals interpolation clearly */
+  color: #f78c6c;
+  /* coral — matches numbers, signals interpolation clearly */
   font-weight: 700;
 }
 
 [data-theme="dark-slate"] .code-block .sh-interp-body {
-  color: #b2ccd6; /* matches properties — calm body text */
+  color: #b2ccd6;
+  /* matches properties — calm body text */
 }
 
 /* Dynamic Direction Utilities */

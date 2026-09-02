@@ -1306,13 +1306,65 @@ export function createChatPanel(options = {}) {
     resetErrorDedup();
   }
 
-  function showTyping() {
+  // Human-readable Arabic label per tool name, shown in the typing
+  // indicator while that tool is actively running (see the tool loop in
+  // resendLastUserTurn below). Mirrors the tool names defined server-side
+  // in api/ai-agent/_tools.js — kept as a small local lookup rather than
+  // importing that module, since this is presentation-only and the two
+  // are already independently versioned across the network boundary.
+  const TOOL_DISPLAY_NAMES = {
+    create_quiz: "إنشاء اختبار",
+    edit_quiz: "تعديل الاختبار",
+    delete_quiz: "حذف الاختبار",
+    create_folder: "إنشاء مجلد",
+    create_course: "إنشاء مادة",
+    move_item: "نقل عنصر",
+    reset_quiz_page: "إعادة تعيين الصفحة",
+  };
+
+  function describeToolCall(toolCall) {
+    return TOOL_DISPLAY_NAMES[toolCall?.name] || toolCall?.name || "أداة";
+  }
+
+  /**
+   * Renders the "assistant is working" indicator. Beyond the animated
+   * dots (still always shown, so "something is happening" reads at a
+   * glance even before any label resolves), an optional `label` renders
+   * as a small text line so the indicator can say *what* the assistant is
+   * currently doing — plain generation vs. running a specific tool —
+   * instead of being purely decorative. Returns an object exposing
+   * `.setLabel(text)` to update that text in place (used once a tool call
+   * starts, see resendLastUserTurn's tool loop) and `.remove()` to tear
+   * the whole indicator down. `.remove()` is idempotent — calling it more
+   * than once (or after the element was already removed) is a no-op,
+   * which matters once removal is called from a `finally` block that
+   * must run regardless of which path got there.
+   */
+  function showTyping(label = "جارِ التفكير…") {
     const el = document.createElement("div");
     el.className = "ai-agent-typing";
-    el.innerHTML = "<span></span><span></span><span></span>";
+    const labelEl = document.createElement("div");
+    labelEl.className = "ai-agent-typing-label";
+    labelEl.textContent = label;
+    const dotsEl = document.createElement("div");
+    dotsEl.className = "ai-agent-typing-dots";
+    dotsEl.innerHTML = "<span></span><span></span><span></span>";
+    el.append(labelEl, dotsEl);
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
-    return el;
+    let removed = false;
+    return {
+      el,
+      setLabel(text) {
+        if (removed) return;
+        labelEl.textContent = text;
+      },
+      remove() {
+        if (removed) return;
+        removed = true;
+        el.remove();
+      },
+    };
   }
 
   /**
@@ -1328,7 +1380,7 @@ export function createChatPanel(options = {}) {
    */
   async function resendLastUserTurn() {
     sendBtn.disabled = true;
-    const typingEl = showTyping();
+    let typingEl = showTyping();
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
     const model = getSelectedModel();
@@ -1400,7 +1452,6 @@ export function createChatPanel(options = {}) {
       });
 
       const data = await res.json().catch(() => ({}));
-      typingEl.remove();
 
       if (!res.ok) {
         console.error(
@@ -1452,59 +1503,104 @@ export function createChatPanel(options = {}) {
         console.error("[ai-agent-chat] failed to save conversation:", histErr);
       }
 
-      if (data.toolCall?.name && typeof onToolCall === "function") {
-        try {
-          // Awaited (not fire-and-forget) — onToolCall may need to show
-          // the app's own async confirmation dialog (_confirm() in
-          // notifications.js) for destructive actions, rather than a
-          // blocking native window.confirm(). There is nothing here that
-          // actually requires a synchronous return; this whole function
-          // is already async, so awaiting is free and lets tool handlers
-          // use the same in-app confirm UI as the rest of the app.
-          const resultText = await onToolCall(data.toolCall);
-          if (resultText) {
-            appendToolResultMessage(resultText);
-            // Tool-result bubbles (e.g. "🗑️ تم مسح الصفحة بالكامل.") were
-            // previously DOM-only — appended to messagesEl above but never
-            // pushed into `history`, so the saveConversation call further
-            // up (which runs BEFORE onToolCall, from the plain text/turn
-            // data) never captured them, and they vanished the moment the
-            // conversation was reopened from the History tab. Recorded
-            // here as a distinct `type: "tool-result"` entry (not a
-            // regular "assistant" turn) so loadConversation/appendMessage
-            // below can tell it apart and re-render it with the same
-            // muted tool-result styling it has live, and re-saved so this
-            // turn's history record actually reflects what the user saw.
-            history.push({ role: "assistant", type: "tool-result", content: resultText });
-            try {
-              await saveConversation({
-                id: conversationId,
-                pageKey,
-                title: deriveConversationTitle(history),
-                createdAt: conversationCreatedAt,
-                updatedAt: Date.now(),
-                messages: history.map(({ role, content, attachments, type }) => ({
-                  role,
-                  content,
-                  ...(type ? { type } : {}),
-                  ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
-                })),
-              });
-              if (typeof onHistoryChanged === "function") onHistoryChanged();
-            } catch (histErr) {
-              console.error("[ai-agent-chat] failed to save conversation (tool result):", histErr);
+      // A single model turn can legitimately request more than one tool
+      // call (e.g. "search for X and delete the first result") — the
+      // backend now always returns every tool call the model made as an
+      // array (see _providerClients.js), never just the first one.
+      // Backward-compat: fall back to the old singular `toolCall` field
+      // (wrapped as a one-element array) in case a stale cached response
+      // or an in-flight request from an older client build still uses it.
+      const toolCallsToRun = Array.isArray(data.toolCalls)
+        ? data.toolCalls
+        : data.toolCall?.name
+          ? [data.toolCall]
+          : [];
+
+      if (toolCallsToRun.length && typeof onToolCall === "function") {
+        // Run sequentially, not in parallel — later tool calls in the
+        // same turn may depend on UI state a prior one just changed
+        // (e.g. a "create folder" call whose result the next "move item
+        // into it" call needs to already be reflected in the DOM/state).
+        for (const toolCall of toolCallsToRun) {
+          // The original typingEl (for "جارِ التفكير…") was already
+          // removed once the text reply arrived, above. Show a fresh,
+          // tool-specific indicator for the duration of this call so the
+          // user sees *what* is currently running instead of the chat
+          // going silent between the text reply and the tool-result
+          // bubble — this is the fix for ".ai-agent-typing... doesn't
+          // tell me whether the AI is thinking or using a specific
+          // tool". Assigned back into the outer `typingEl` so the
+          // function's single `finally` block still guarantees cleanup
+          // if onToolCall throws or the whole request is aborted mid-loop.
+          typingEl = showTyping(`جارِ استخدام أداة: ${describeToolCall(toolCall)}`);
+          try {
+            // Awaited (not fire-and-forget) — onToolCall may need to show
+            // the app's own async confirmation dialog (_confirm() in
+            // notifications.js) for destructive actions, rather than a
+            // blocking native window.confirm(). There is nothing here that
+            // actually requires a synchronous return; this whole function
+            // is already async, so awaiting is free and lets tool handlers
+            // use the same in-app confirm UI as the rest of the app.
+            const resultText = await onToolCall(toolCall);
+            typingEl.remove();
+            if (resultText) {
+              appendToolResultMessage(resultText);
+              // Tool-result bubbles (e.g. "🗑️ تم مسح الصفحة بالكامل.") were
+              // previously DOM-only — appended to messagesEl above but never
+              // pushed into `history`, so the saveConversation call further
+              // up (which runs BEFORE onToolCall, from the plain text/turn
+              // data) never captured them, and they vanished the moment the
+              // conversation was reopened from the History tab. Recorded
+              // here as a distinct `type: "tool-result"` entry (not a
+              // regular "assistant" turn) so loadConversation/appendMessage
+              // below can tell it apart and re-render it with the same
+              // muted tool-result styling it has live, and re-saved so this
+              // turn's history record actually reflects what the user saw.
+              history.push({ role: "assistant", type: "tool-result", content: resultText });
+              try {
+                await saveConversation({
+                  id: conversationId,
+                  pageKey,
+                  title: deriveConversationTitle(history),
+                  createdAt: conversationCreatedAt,
+                  updatedAt: Date.now(),
+                  messages: history.map(({ role, content, attachments, type }) => ({
+                    role,
+                    content,
+                    ...(type ? { type } : {}),
+                    ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
+                  })),
+                });
+                if (typeof onHistoryChanged === "function") onHistoryChanged();
+              } catch (histErr) {
+                console.error("[ai-agent-chat] failed to save conversation (tool result):", histErr);
+              }
             }
+          } catch (toolErr) {
+            console.error("[ai-agent-chat] onToolCall failed:", toolErr);
+            appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
+            // Stop running any further queued tool calls from this same
+            // turn once one has failed — later calls may assume the
+            // failed one succeeded (e.g. "move the newly created item"),
+            // so continuing could compound the error silently.
+            break;
           }
-        } catch (toolErr) {
-          console.error("[ai-agent-chat] onToolCall failed:", toolErr);
-          appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
         }
       }
     } catch (err) {
-      typingEl.remove();
       console.error("[ai-agent-chat] request failed:", err);
       appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     } finally {
+      // Guaranteed to run exactly once regardless of which path got
+      // here — success, an early return from the !res.ok branch, a
+      // failed tool call that `break`s out of the loop, or a thrown
+      // network error. Previously this was called from two separate
+      // spots (success path + catch block) with no shared guarantee, so
+      // an exception thrown between them could leave the indicator
+      // orphaned in the DOM — `.remove()` itself is also idempotent (see
+      // showTyping), so calling it here even after an earlier explicit
+      // call elsewhere is always safe.
+      typingEl.remove();
       updateAvailabilityGate();
     }
   }

@@ -43,6 +43,7 @@ const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" hei
 const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>`;
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
 const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+const COLLAPSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="m10 10-2 2 2 2"/></svg>`;
 
 // Matches the >=901px breakpoint in ai-agent.css's desktop-layout rules —
 // kept as a named constant here so the JS toggle and the CSS media query
@@ -281,6 +282,59 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // need this whole widget rebuilt, just a CSS reflow.
   const sidebar = document.createElement("div");
   sidebar.className = "ai-agent-sidebar";
+
+  // Retractable/extendable using the same mechanism as the app's Main
+  // Side-Menu (see side-menu.js): a persisted boolean toggled via a
+  // `collapsed` class + CSS width-variable swap, with the collapsed
+  // state's own icon doubling as the expand trigger (clicking any
+  // collapsed-rail icon re-expands), exactly mirroring
+  // side-menu.js's expandBtn/collapseBtn split. Uses its own
+  // localStorage key so it never collides with, or gets overridden by,
+  // the main side-menu's persisted state — the two panels are
+  // independent of one another.
+  const AI_AGENT_SIDEBAR_STORAGE_KEY = "ai_agent_sidebar_expanded";
+  let sidebarCollapsed;
+  try {
+    sidebarCollapsed = localStorage.getItem(AI_AGENT_SIDEBAR_STORAGE_KEY) === "false";
+  } catch {
+    sidebarCollapsed = false;
+  }
+
+  const sidebarCollapseBtn = document.createElement("button");
+  sidebarCollapseBtn.type = "button";
+  sidebarCollapseBtn.className = "ai-agent-sidebar-collapse-btn";
+  sidebarCollapseBtn.setAttribute("aria-label", "طي الشريط الجانبي");
+  sidebarCollapseBtn.title = "طي الشريط الجانبي";
+  sidebarCollapseBtn.innerHTML = COLLAPSE_ICON_SVG;
+
+  function applySidebarCollapsedState(collapsed) {
+    sidebarCollapsed = collapsed;
+    sidebar.classList.toggle("ai-agent-sidebar--collapsed", collapsed);
+    sidebarCollapseBtn.setAttribute("aria-label", collapsed ? "توسيع الشريط الجانبي" : "طي الشريط الجانبي");
+    sidebarCollapseBtn.title = collapsed ? "توسيع الشريط الجانبي" : "طي الشريط الجانبي";
+    try {
+      localStorage.setItem(AI_AGENT_SIDEBAR_STORAGE_KEY, String(!collapsed));
+    } catch {
+      // Non-fatal — collapse state just won't persist across reloads.
+    }
+  }
+
+  sidebarCollapseBtn.addEventListener("click", () => {
+    applySidebarCollapsedState(!sidebarCollapsed);
+  });
+
+  // While collapsed, the rail itself (not just the dedicated button) acts
+  // as the expand trigger — same pattern as side-menu.js's collapsed
+  // favicon-rail icon. Clicking anywhere on the collapsed rail other than
+  // an actual actionable icon just re-expands it.
+  sidebar.addEventListener("click", (e) => {
+    if (!sidebarCollapsed) return;
+    if (e.target.closest(".ai-agent-sidebar-collapse-btn")) return;
+    applySidebarCollapsedState(false);
+  });
+
+  sidebar.appendChild(sidebarCollapseBtn);
+  applySidebarCollapsedState(sidebarCollapsed);
 
   const sidebarNewChatBtn = document.createElement("button");
   sidebarNewChatBtn.type = "button";
@@ -543,7 +597,7 @@ function openAIAgentModal(options, fab) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <h2 id="aiAgentModalTitle">${SPARKLE_ICON_SVG} الباشــمبصمج</h2>
+    <h2 id="aiAgentModalTitle"><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-logo" aria-hidden="true"> الباشــمبصمج</h2>
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
 
@@ -620,7 +674,7 @@ export function createAIAgentFab(options = {}) {
   fab.className = "ai-agent-fab";
   fab.setAttribute("aria-label", "افتح الباشــمبصمج");
   fab.title = "الباشــمبصمج";
-  fab.innerHTML = SPARKLE_ICON_SVG;
+  fab.innerHTML = `<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-fab-logo" aria-hidden="true">`;
   fab.addEventListener("click", () => openAIAgentModal(options, fab));
   return fab;
 }
