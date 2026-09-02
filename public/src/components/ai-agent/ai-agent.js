@@ -285,13 +285,16 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
 
   // Retractable/extendable using the same mechanism as the app's Main
   // Side-Menu (see side-menu.js): a persisted boolean toggled via a
-  // `collapsed` class + CSS width-variable swap, with the collapsed
-  // state's own icon doubling as the expand trigger (clicking any
-  // collapsed-rail icon re-expands), exactly mirroring
-  // side-menu.js's expandBtn/collapseBtn split. Uses its own
-  // localStorage key so it never collides with, or gets overridden by,
-  // the main side-menu's persisted state — the two panels are
-  // independent of one another.
+  // `collapsed` class + CSS width-variable swap. Mirrors side-menu.js's
+  // three-element header exactly, not just its single collapse button:
+  // (1) a collapsed-rail favicon button (own logo, shown only while
+  // collapsed — clicking it expands), (2) an expanded-only header row
+  // with the full wordmark + name (shown only while expanded, purely
+  // decorative/branding — same as .sidebar-logo, not a click target),
+  // and (3) an expanded-only collapse button inside that header row.
+  // Uses its own localStorage key so it never collides with, or gets
+  // overridden by, the main side-menu's persisted state — the two panels
+  // are independent of one another.
   const AI_AGENT_SIDEBAR_STORAGE_KEY = "ai_agent_sidebar_expanded";
   let sidebarCollapsed;
   try {
@@ -300,12 +303,38 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     sidebarCollapsed = false;
   }
 
+  const sidebarHeader = document.createElement("div");
+  sidebarHeader.className = "ai-agent-sidebar-header";
+
+  // (1) Collapsed-rail favicon — the app's own logo image, matching the
+  // main side-menu's collapsed favicon-rail button. Only visible while
+  // collapsed (CSS); acts as the expand trigger.
+  const sidebarFaviconBtn = document.createElement("button");
+  sidebarFaviconBtn.type = "button";
+  sidebarFaviconBtn.className = "ai-agent-sidebar-favicon";
+  sidebarFaviconBtn.setAttribute("aria-label", "توسيع الشريط الجانبي");
+  sidebarFaviconBtn.title = "توسيع الشريط الجانبي";
+  sidebarFaviconBtn.innerHTML =
+    '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="الباشــمبصمج" class="ai-agent-sidebar-favicon-img">';
+
+  // (2) Expanded header: full logo/name + (3) the collapse button —
+  // grouped exactly like .sidebar-header/.sidebar-brand-link/
+  // .sidebar-logo/.sidebar-collapse-btn in the main menu. The logo here
+  // is presentational branding, not a link (the AI agent panel isn't a
+  // page to navigate away to), so it's a plain div, not an <a>.
+  const sidebarBrand = document.createElement("div");
+  sidebarBrand.className = "ai-agent-sidebar-brand";
+  sidebarBrand.innerHTML =
+    '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-sidebar-brand-img"><span class="ai-agent-sidebar-brand-name">الباشــمبصمج</span>';
+
   const sidebarCollapseBtn = document.createElement("button");
   sidebarCollapseBtn.type = "button";
   sidebarCollapseBtn.className = "ai-agent-sidebar-collapse-btn";
   sidebarCollapseBtn.setAttribute("aria-label", "طي الشريط الجانبي");
   sidebarCollapseBtn.title = "طي الشريط الجانبي";
   sidebarCollapseBtn.innerHTML = COLLAPSE_ICON_SVG;
+
+  sidebarHeader.append(sidebarFaviconBtn, sidebarBrand, sidebarCollapseBtn);
 
   function applySidebarCollapsedState(collapsed) {
     sidebarCollapsed = collapsed;
@@ -322,18 +351,16 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarCollapseBtn.addEventListener("click", () => {
     applySidebarCollapsedState(!sidebarCollapsed);
   });
-
-  // While collapsed, the rail itself (not just the dedicated button) acts
-  // as the expand trigger — same pattern as side-menu.js's collapsed
-  // favicon-rail icon. Clicking anywhere on the collapsed rail other than
-  // an actual actionable icon just re-expands it.
-  sidebar.addEventListener("click", (e) => {
-    if (!sidebarCollapsed) return;
-    if (e.target.closest(".ai-agent-sidebar-collapse-btn")) return;
+  // The favicon IS the dedicated expand trigger while collapsed (CSS
+  // hides it entirely once expanded, same as .sidebar-favicon) — no
+  // extra whole-rail click listener needed on top of it (see the
+  // "double resize" fix note on applySidebarCollapsedState's callers:
+  // that extra listener was the second, redundant toggle path).
+  sidebarFaviconBtn.addEventListener("click", () => {
     applySidebarCollapsedState(false);
   });
 
-  sidebar.appendChild(sidebarCollapseBtn);
+  sidebar.appendChild(sidebarHeader);
   applySidebarCollapsedState(sidebarCollapsed);
 
   const sidebarNewChatBtn = document.createElement("button");

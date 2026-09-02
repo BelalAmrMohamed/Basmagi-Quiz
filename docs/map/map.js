@@ -1,5 +1,5 @@
-// scripts/map.js
-// > node scripts/map.js
+// docs/map/map.js
+// > node docs/map/map.js
 
 import fs from "fs";
 import path from "path";
@@ -7,7 +7,7 @@ import path from "path";
 // Settings
 
 // The path of the output map
-const outputMapPath = "docs/context-map.txt";
+const outputMapPath = "docs/map/context-map.txt";
 
 // Files/Folders to ignore
 const IGNORE_NAMES = [
@@ -16,11 +16,7 @@ const IGNORE_NAMES = [
   "quizzes",
   "quiz-media",
   "images",
-  "LICENSE",
-  "README.md",
   "node_modules",
-  "_config.yml",
-  "Context Map.txt",
   "google0c1df2c3df22a824.html",
 ];
 

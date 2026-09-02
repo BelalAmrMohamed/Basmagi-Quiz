@@ -2480,6 +2480,25 @@ html[dir="ltr"] .move-to-dialog-branch {
   }
 }
 
+/* Single-child branch: no rail. A branch's border-right is only readable
+   as "structure" when it's tracing an actual fork back to a sibling
+   further down — with exactly one child, there's nothing to connect
+   this level's line to at the level below (that nested branch, if any,
+   draws its own separate rail at its own indent), so a chain of single-
+   child folders produced a cascade of short, disconnected-looking
+   parallel strokes — one per level, each shorter than the last — instead
+   of one clean line. Dropping the rail (indent via padding-right is
+   kept, so depth is still visually clear from the label's own position)
+   fixes that; branches with 2+ siblings are unaffected and keep the
+   rail exactly as before. */
+.move-to-dialog-branch--single {
+  border-right: none;
+}
+
+html[dir="ltr"] .move-to-dialog-branch--single {
+  border-left: none;
+}
+
 /* Per-row elbow: a short horizontal stub joining this row to its
    branch's own vertical rail (drawn by the .move-to-dialog-branch
    wrapper above, not by this element). `--continues` rows sit in the

@@ -442,7 +442,7 @@ export async function openMoveToDialog(itemIds) {
    * look disconnected even though the "should this level continue"
    * logic was already correct.
    */
-  function addNode(container, label, id, icon, depth, { isCurrent = false, disabledReason = null, hasMoreSiblings = false } = {}) {
+  function addNode(container, label, id, icon, depth, { isCurrent = false, disabledReason = null, hasMoreSiblings = false, isSingleChild = false } = {}) {
     const row = document.createElement("button");
     row.type = "button";
     row.className = "move-to-dialog-node";
@@ -459,8 +459,10 @@ export async function openMoveToDialog(itemIds) {
     // shared vertical rail (drawn by the parent .move-to-dialog-branch
     // wrapper, not here). Only rendered for nested rows (depth > 0) —
     // the root "إمتحاناتك" row at depth 0 has no ancestor rail to
-    // connect to at all.
-    const elbow = depth > 0
+    // connect to at all. Also skipped for a lone child (isSingleChild):
+    // with no rail behind it (see appendChildren), a stub with nothing
+    // to connect to just reads as a stray floating dash.
+    const elbow = depth > 0 && !isSingleChild
       ? `<span class="move-to-dialog-elbow${hasMoreSiblings ? " move-to-dialog-elbow--continues" : ""}" aria-hidden="true"></span>`
       : "";
 
@@ -524,8 +526,20 @@ export async function openMoveToDialog(itemIds) {
     // rail every row (and every nested branch) inside it shares — a
     // single element drawing one line, rather than each row redrawing
     // its own copy of the same line and risking a seam between them.
+    //
+    // The rail is only meaningful when there's an actual fork to trace —
+    // i.e. more than one sibling at this level. A lone child (the common
+    // "folder > folder > folder" single-item chain) has nothing to
+    // branch from or to, so drawing a rail there just produces a cascade
+    // of short, disconnected-looking parallel strokes (one per ancestor
+    // level, each shorter than the last) instead of reading as one
+    // continuous line. Suppressing the rail — but keeping the same
+    // indent via padding-right — for single-child branches fixes that
+    // without touching the real multi-sibling case, where the rail still
+    // renders exactly as before.
     const branch = document.createElement("div");
-    branch.className = "move-to-dialog-branch";
+    branch.className =
+      siblings.length > 1 ? "move-to-dialog-branch" : "move-to-dialog-branch move-to-dialog-branch--single";
     container.appendChild(branch);
 
     siblings.forEach((f, index) => {
@@ -553,6 +567,7 @@ export async function openMoveToDialog(itemIds) {
         // anything inherited from ancestors (those are handled by the
         // branch wrapper's border, not per-row state).
         hasMoreSiblings: !isLastSibling,
+        isSingleChild: siblings.length === 1,
       });
 
       // Still descend into disabled branches (a disabled ancestor doesn't

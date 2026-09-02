@@ -12,6 +12,23 @@ import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
 
+// Safety cap on how many tool-driven rounds resendLastUserTurn() will
+// chain in a single agent turn (see its `agentDepth` param) before giving
+// up and surfacing an error instead of continuing to recurse. Guards
+// against a model that keeps requesting tools every round — without this,
+// that would recurse (and keep hitting the network) indefinitely with no
+// way for the user to tell it apart from genuine progress.
+const MAX_AGENT_DEPTH = 8;
+
+// Icons for the two visual states of the "assistant is working" indicator
+// (see showTyping) — a sparkle/spark glyph for plain "thinking"
+// generation, and a wrench for "running a tool", so the two states are
+// distinguishable at a glance rather than only by reading the label text.
+const TYPING_THINKING_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>';
+const TYPING_TOOL_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>';
+
 /**
  * Reads a File into a bare base64 string (no "data:...;base64," prefix —
  * the backend/provider adapters expect raw base64, see api/ai-agent/chat.js).
@@ -1327,37 +1344,61 @@ export function createChatPanel(options = {}) {
   }
 
   /**
-   * Renders the "assistant is working" indicator. Beyond the animated
-   * dots (still always shown, so "something is happening" reads at a
-   * glance even before any label resolves), an optional `label` renders
-   * as a small text line so the indicator can say *what* the assistant is
-   * currently doing — plain generation vs. running a specific tool —
-   * instead of being purely decorative. Returns an object exposing
-   * `.setLabel(text)` to update that text in place (used once a tool call
-   * starts, see resendLastUserTurn's tool loop) and `.remove()` to tear
-   * the whole indicator down. `.remove()` is idempotent — calling it more
-   * than once (or after the element was already removed) is a no-op,
-   * which matters once removal is called from a `finally` block that
-   * must run regardless of which path got there.
+   * Renders the "assistant is working" indicator as a proper bubble
+   * (matching .ai-agent-msg's card treatment) with a leading icon rather
+   * than bare floating text + dots — the icon switches between a
+   * "thinking" glyph and a "tool" glyph (see `kind`) so the two states
+   * are distinguishable at a glance, not just by reading the label text.
+   * Beyond the animated dots (still always shown, so "something is
+   * happening" reads at a glance even before any label resolves), an
+   * optional `label` renders as a small text line so the indicator can
+   * say *what* the assistant is currently doing — plain generation vs.
+   * running a specific tool — instead of being purely decorative.
+   * Returns an object exposing `.setLabel(text, kind)` to update the text
+   * (and optionally the icon) in place (used once a tool call starts, see
+   * resendLastUserTurn's tool loop) and `.remove()` to tear the whole
+   * indicator down. `.remove()` is idempotent — calling it more than once
+   * (or after the element was already removed) is a no-op, which matters
+   * once removal is called from a `finally` block that must run
+   * regardless of which path got there.
+   * @param {string} [label]
+   * @param {"thinking"|"tool"} [kind] - which icon/visual state to show.
+   *   "thinking" (default) is the plain "جارِ التفكير…" state; "tool" is
+   *   used once a tool call starts, giving the indicator a distinct icon
+   *   so "thinking" vs. "running a tool" reads at a glance instead of
+   *   only from the label text.
    */
-  function showTyping(label = "جارِ التفكير…") {
+  function showTyping(label = "جارِ التفكير…", kind = "thinking") {
     const el = document.createElement("div");
     el.className = "ai-agent-typing";
+    const iconEl = document.createElement("div");
+    iconEl.className = "ai-agent-typing-icon";
+    const textCol = document.createElement("div");
+    textCol.className = "ai-agent-typing-text";
     const labelEl = document.createElement("div");
     labelEl.className = "ai-agent-typing-label";
     labelEl.textContent = label;
     const dotsEl = document.createElement("div");
     dotsEl.className = "ai-agent-typing-dots";
     dotsEl.innerHTML = "<span></span><span></span><span></span>";
-    el.append(labelEl, dotsEl);
+    textCol.append(labelEl, dotsEl);
+
+    function setKind(nextKind) {
+      iconEl.innerHTML = nextKind === "tool" ? TYPING_TOOL_ICON_SVG : TYPING_THINKING_ICON_SVG;
+      el.classList.toggle("ai-agent-typing--tool", nextKind === "tool");
+    }
+    setKind(kind);
+
+    el.append(iconEl, textCol);
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     let removed = false;
     return {
       el,
-      setLabel(text) {
+      setLabel(text, nextKind) {
         if (removed) return;
         labelEl.textContent = text;
+        if (nextKind) setKind(nextKind);
       },
       remove() {
         if (removed) return;
@@ -1377,8 +1418,14 @@ export function createChatPanel(options = {}) {
    * branched conversation's first turn, rather than re-sending through
    * the DOM (which would re-append a duplicate user bubble that's already
    * rendered).
+   * @param {number} [agentDepth] - how many tool-driven rounds deep this
+   *   call is (0 for a normal user-initiated send). Incremented on the
+   *   recursive continuation after a successful tool call, below, and
+   *   capped at MAX_AGENT_DEPTH so a model that keeps requesting tools
+   *   every turn can't recurse indefinitely and hang the panel — it gets
+   *   a plain error instead once the cap is hit.
    */
-  async function resendLastUserTurn() {
+  async function resendLastUserTurn(agentDepth = 0) {
     sendBtn.disabled = true;
     let typingEl = showTyping();
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
@@ -1516,6 +1563,13 @@ export function createChatPanel(options = {}) {
           ? [data.toolCall]
           : [];
 
+      // Whether every tool call in this turn ran without throwing. Stays
+      // true through an empty toolCallsToRun (nothing to fail). Flipped
+      // to false in the `catch` below on the first failure, which is
+      // also where the loop already `break`s — used after the loop to
+      // decide whether it's safe to continue the conversation.
+      let allToolCallsSucceeded = true;
+
       if (toolCallsToRun.length && typeof onToolCall === "function") {
         // Run sequentially, not in parallel — later tool calls in the
         // same turn may depend on UI state a prior one just changed
@@ -1532,7 +1586,7 @@ export function createChatPanel(options = {}) {
           // tool". Assigned back into the outer `typingEl` so the
           // function's single `finally` block still guarantees cleanup
           // if onToolCall throws or the whole request is aborted mid-loop.
-          typingEl = showTyping(`جارِ استخدام أداة: ${describeToolCall(toolCall)}`);
+          typingEl = showTyping(`جارِ استخدام أداة: ${describeToolCall(toolCall)}`, "tool");
           try {
             // Awaited (not fire-and-forget) — onToolCall may need to show
             // the app's own async confirmation dialog (_confirm() in
@@ -1583,9 +1637,39 @@ export function createChatPanel(options = {}) {
             // turn once one has failed — later calls may assume the
             // failed one succeeded (e.g. "move the newly created item"),
             // so continuing could compound the error silently.
+            allToolCallsSucceeded = false;
             break;
           }
         }
+      }
+
+      // This was previously the end of the turn: the tool ran, its result
+      // bubble appeared, and the chat just sat there — nothing ever told
+      // the model what the tool returned, so it could never react to it
+      // (confirm the action, chain a second tool call, or just reply in
+      // text). That's the "gets stuck on جارِ التفكير… after the first
+      // tool use and does nothing" symptom: from the user's side it looks
+      // hung, but really no further request was ever going to be sent.
+      //
+      // The fix: once every tool call in this turn has actually run (and
+      // none of them failed — a failed call already showed its own error
+      // above, and re-sending a history the model doesn't know failed
+      // could make it act as though it succeeded), recurse. `history` was
+      // mutated in place above with the tool-result entries, so this next
+      // call sends the model the full conversation as it now stands and
+      // lets it either issue more tool calls (handled the same way,
+      // recursively) or return a final text reply — same as a real
+      // multi-turn "agent loop", just driven by one recursive call per
+      // round instead of an explicit while-loop.
+      if (toolCallsToRun.length && allToolCallsSucceeded) {
+        if (agentDepth + 1 >= MAX_AGENT_DEPTH) {
+          appendError(
+            "توقف الباشــمبصمج بعد عدد كبير من خطوات الأدوات المتتالية في نفس الطلب. أعد صياغة طلبك أو قسّمه إلى خطوات أصغر.",
+          );
+          return;
+        }
+        await resendLastUserTurn(agentDepth + 1);
+        return;
       }
     } catch (err) {
       console.error("[ai-agent-chat] request failed:", err);

@@ -559,10 +559,61 @@
 .ai-agent-typing {
   align-self: flex-end;
   display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 85%;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* Tool state gets a subtle tint on the card itself (not just the icon)
+   so the two states read apart even at a glance, before the label text
+   is legible — matches the intent of the reference "improve/redesign"
+   request rather than just swapping an icon inside an otherwise
+   identical bubble. */
+.ai-agent-typing--tool {
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-background-secondary));
+}
+
+.ai-agent-typing-icon {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-background-tertiary, var(--color-background));
+  color: var(--color-text-tertiary);
+  animation: aiAgentTypingIconPulse 1.6s infinite ease-in-out;
+}
+
+.ai-agent-typing--tool .ai-agent-typing-icon {
+  color: var(--color-primary);
+}
+
+@keyframes aiAgentTypingIconPulse {
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.92);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ai-agent-typing-text {
+  display: flex;
   flex-direction: column;
-  align-items: flex-end;
   gap: 4px;
-  padding: 10px 14px;
+  min-width: 0;
 }
 
 /* State label ("جارِ التفكير…" / "جارِ استخدام أداة: …") — small and muted
@@ -571,9 +622,12 @@
    bubble. Empty string collapses to nothing via :empty rather than
    leaving a blank line. */
 .ai-agent-typing-label {
-  font-size: 0.72rem;
-  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ai-agent-typing-label:empty {
@@ -591,6 +645,10 @@
   border-radius: 50%;
   background: var(--color-text-tertiary);
   animation: aiAgentTypingBounce 1s infinite ease-in-out;
+}
+
+.ai-agent-typing--tool .ai-agent-typing-dots span {
+  background: var(--color-primary);
 }
 
 .ai-agent-typing-dots span:nth-child(2) {
@@ -1409,37 +1467,110 @@ body.sidebar-expanded .ai-agent-fab {
   padding: 8px;
 }
 
+/* ── Sidebar header (mirrors .sidebar-header / .sidebar-brand-link /
+   .sidebar-logo / .sidebar-favicon / .sidebar-collapse-btn in
+   side-menu.css exactly) ──
+   Three elements, exactly one pair visible at a time depending on
+   .ai-agent-sidebar--collapsed:
+     - .ai-agent-sidebar-favicon: collapsed-rail-only, own logo, the
+       expand trigger.
+     - .ai-agent-sidebar-brand + .ai-agent-sidebar-collapse-btn:
+       expanded-only, wordmark/name + the collapse trigger. */
+.ai-agent-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-header {
+  justify-content: center;
+}
+
+.ai-agent-sidebar-favicon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon {
+  display: flex;
+}
+
+.ai-agent-sidebar-favicon:hover {
+  transform: scale(1.06);
+}
+
+.ai-agent-sidebar-favicon-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ai-agent-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-brand {
+  display: none;
+}
+
+.ai-agent-sidebar-brand-img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ai-agent-sidebar-brand-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .ai-agent-sidebar-collapse-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: flex-end;
   width: 28px;
   height: 28px;
-  margin-bottom: 4px;
   border: none;
   background: transparent;
   color: var(--color-text-secondary);
   border-radius: 8px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
+  display: none;
 }
 
 .ai-agent-sidebar-collapse-btn:hover {
   background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
   color: var(--color-text-primary);
-}
-
-/* Chevron flips to point the opposite way once collapsed, signaling
-   "click to expand" rather than "click to collapse". */
-.ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
-  align-self: center;
-  transform: scaleX(-1);
-}
-
-.ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn:hover {
-  transform: scaleX(-1) scale(1.05);
 }
 
 .ai-agent-sidebar-btn {

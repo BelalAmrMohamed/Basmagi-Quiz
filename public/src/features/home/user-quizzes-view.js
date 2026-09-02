@@ -756,6 +756,44 @@ function downloadQuizAsJson(quiz) {
 }
 
 /**
+ * Splits a bulk selection (raw user_quizzes rows) into upload-eligible
+ * quizzes and any courses/folders mixed into the same selection, and warns
+ * about the latter rather than silently forcing them through the quiz-only
+ * upload wizard.
+ *
+ * _openWizard (adminUpload.js) always runs every item it's given through
+ * normalizeQuizSchema and the quiz-labeled Admin Info step ("عنوان
+ * الاختبار" / "رفع الاختبار") — reasonable for actual quizzes, but a course
+ * or folder card can end up in the same `selectedUserQuizzes` set as plain
+ * quizzes (bulk-select doesn't distinguish item types), and forcing one
+ * through that wizard is exactly the reported "asks me which course to
+ * upload it to, and labels the course as (اختبار)" bug: the wizard has no
+ * concept of "this item IS a course", so it just treats it as one more
+ * quiz to place inside a subject.
+ *
+ * Courses/folders aren't silently dropped from the wizard's DB-backed
+ * upload path — there simply isn't a live one for them yet (see
+ * openFolderUploadModal's doc comment in adminUpload.js: it exists but
+ * nothing currently calls it). Until that's wired up, the correct
+ * behavior is to exclude them here and tell the admin why, rather than
+ * mislabeling them as quizzes.
+ * @param {Array} rows - raw user_quizzes rows matching the selection
+ * @returns {{ quizzes: Array, excludedCount: number }}
+ */
+function splitUploadableSelection(rows) {
+  const quizzes = [];
+  let excludedCount = 0;
+  for (const row of rows) {
+    if (row?.meta?.type === "course" || row?.meta?.type === "folder") {
+      excludedCount++;
+    } else {
+      quizzes.push(row);
+    }
+  }
+  return { quizzes, excludedCount };
+}
+
+/**
  * Lazily creates and wires the admin-only upload button inside an existing
  * bulk action bar if it's missing and the admin is (now) authenticated.
  *
@@ -793,8 +831,19 @@ function ensureBulkUploadButton(bar, selectedUserQuizzes) {
     const selected = userQuizzes.filter((q) =>
       selectedUserQuizzes.has(q.id || q.meta?.id),
     );
+    const { quizzes, excludedCount } = splitUploadableSelection(selected);
+    if (excludedCount > 0) {
+      showNotification(
+        "تم استبعاد المواد/المجلدات",
+        quizzes.length > 0
+          ? `تم رفع الاختبارات المحددة فقط — لا يمكن رفع ${excludedCount} مادة/مجلد عبر هذه النافذة حالياً.`
+          : `لا يمكن رفع المواد أو المجلدات عبر نافذة رفع الاختبارات — حدد اختبارات فقط.`,
+        "warning",
+      );
+    }
+    if (quizzes.length === 0) return;
     import("./adminUpload.js").then((mod) => {
-      mod.openAdminUploadModal(selected);
+      mod.openAdminUploadModal(quizzes);
     });
   };
 }
@@ -967,8 +1016,19 @@ function renderBulkActionBar() {
         const selected = userQuizzes.filter((q) =>
           selectedUserQuizzes.has(q.id || q.meta?.id),
         );
+        const { quizzes, excludedCount } = splitUploadableSelection(selected);
+        if (excludedCount > 0) {
+          showNotification(
+            "تم استبعاد المواد/المجلدات",
+            quizzes.length > 0
+              ? `تم رفع الاختبارات المحددة فقط — لا يمكن رفع ${excludedCount} مادة/مجلد عبر هذه النافذة حالياً.`
+              : `لا يمكن رفع المواد أو المجلدات عبر نافذة رفع الاختبارات — حدد اختبارات فقط.`,
+            "warning",
+          );
+        }
+        if (quizzes.length === 0) return;
         import("./adminUpload.js").then((mod) => {
-          mod.openAdminUploadModal(selected);
+          mod.openAdminUploadModal(quizzes);
         });
       };
     }

@@ -438,17 +438,21 @@ function getSubjectMap(type, college) {
 }
 
 /**
- * Populates the Step 2 subject dropdown, filtered to subjects whose existing
- * year/term (if the track has one) matches the year/term fixed in Step 1.
- * A brand-new subject always shows up as an option regardless of filter,
- * via the "__new__" entry.
+ * Populates the Step 2 subject dropdown with EXISTING subjects/courses
+ * only. This wizard no longer offers "➕ إنشاء مادة جديدة" (create a new
+ * subject/course) — creating a course here was the legacy path the
+ * admin-facing courses/folders feature has since replaced with course
+ * creation directly from userQuizzesView (see "المادة / الكورس" in
+ * renderStep2's own doc comment below for the full reasoning). A subject
+ * with no matching courses at all now shows a clear "no matching course"
+ * state (see renderStep2) rather than silently defaulting into course
+ * creation.
  */
 function populateSubjects(type, college, year, term, subEl, folEl, saved) {
   subEl.disabled = false;
   subEl.innerHTML = `<option value="">— اختر المادة —</option>`;
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   folEl.disabled = false;
-  document.getElementById("adm-new-subject-wrap").style.display = "none";
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
 
   const hasYT = TRACKS_WITH_YEARTERM.has(type);
@@ -463,15 +467,13 @@ function populateSubjects(type, college, year, term, subEl, folEl, saved) {
     .sort((a, b) => a.localeCompare(b));
 
   subjects.forEach(s => subEl.appendChild(mkOption(s, s, saved.subject === s)));
-  subEl.appendChild(mkOption(
-    "__new__", "➕ إنشاء مادة جديدة",
-    saved.subject === "__new__" || subjects.length === 0,
-  ));
 
-  if (saved.subject && saved.subject !== "__new__" && subjects.includes(saved.subject)) {
+  const noSubjectsEl = document.getElementById("adm-no-subjects-hint");
+  if (noSubjectsEl) noSubjectsEl.style.display = subjects.length === 0 ? "block" : "none";
+  subEl.disabled = subjects.length === 0;
+
+  if (saved.subject && subjects.includes(saved.subject)) {
     populateSubfolders(type, college, saved.subject, folEl, saved);
-  } else if (saved.subject === "__new__" || subjects.length === 0) {
-    document.getElementById("adm-new-subject-wrap").style.display = "block";
   }
 }
 
@@ -499,8 +501,7 @@ function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
 function populateSubfolders(type, college, subject, folEl, saved) {
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   document.getElementById("adm-new-subfolder-wrap").style.display = "none";
-  if (!subject || subject === "__new__") {
-    folEl.appendChild(mkOption("__new__", "➕ إنشاء مجلد فرعي جديد"));
+  if (!subject) {
     return;
   }
   const info = getSubjectMap(type, college)[subject];
@@ -546,15 +547,15 @@ async function renderStep2({ educationType, college, year, term }) {
       <p class="adm-hint">اختر المادة ومكان الاختبار داخلها</p>
 
       <div class="adm-field">
-        <label for="adm-subject">المادة / الكورس <span class="adm-badge adm-badge-choose">اختر أو أنشئ</span></label>
+        <label for="adm-subject">المادة / الكورس</label>
         <select id="adm-subject">
           <option value="">— اختر المادة —</option>
         </select>
       </div>
-      <div class="adm-field" id="adm-new-subject-wrap" style="display:none;">
-        <label for="adm-new-subject">اسم المادة الجديدة</label>
-        <input type="text" id="adm-new-subject" placeholder="مثال: Software Engineering" maxlength="80" value="${saved.newSubject || ""}" />
-      </div>
+      <p class="adm-hint" id="adm-no-subjects-hint" style="display:none;">
+        لا توجد مادة مطابقة هنا بعد. المواد والمجلدات تُنشأ الآن من صفحة
+        إمتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الاختبار داخلها.
+      </p>
 
       <div class="adm-field">
         <label for="adm-subfolder">مجلد فرعي <span class="adm-badge adm-badge-opt">اختياري</span></label>
@@ -578,14 +579,11 @@ async function renderStep2({ educationType, college, year, term }) {
 
   const subEl        = document.getElementById("adm-subject");
   const folEl        = document.getElementById("adm-subfolder");
-  const newSubEl      = document.getElementById("adm-new-subject");
   const newSubfolEl   = document.getElementById("adm-new-subfolder");
 
   populateSubjects(educationType, college, year, term, subEl, folEl, saved);
 
   subEl.addEventListener("change", () => {
-    const isNew = subEl.value === "__new__";
-    document.getElementById("adm-new-subject-wrap").style.display = isNew ? "block" : "none";
     // Preserve the previously-saved subfolder choice when re-selecting the
     // same subject the user already had picked; only reset for a genuinely
     // different subject.
@@ -600,7 +598,6 @@ async function renderStep2({ educationType, college, year, term }) {
 
   // Persist free-text typing live so Back/Next navigation never loses it,
   // even if the user never clicks "Next" from this exact state.
-  newSubEl?.addEventListener("input", () => persistSaved({ newSubject: newSubEl.value }));
   newSubfolEl?.addEventListener("input", () => persistSaved({ newSubfolder: newSubfolEl.value }));
 
   document.getElementById("adm-s2-back").addEventListener("click", () => {
@@ -619,11 +616,10 @@ function sanitizePathSegment(raw) {
 }
 
 function getStep2Values() {
-  const subRaw   = document.getElementById("adm-subject")?.value;
-  const subjectInput = subRaw === "__new__"
-    ? document.getElementById("adm-new-subject")?.value || ""
-    : subRaw || "";
-  const subject = subRaw === "__new__" ? sanitizePathSegment(subjectInput) : subjectInput.trim();
+  // Subject is always picked from the existing-subjects dropdown now — see
+  // populateSubjects's own doc comment for why the "➕ إنشاء مادة جديدة"
+  // free-text path was removed.
+  const subject = (document.getElementById("adm-subject")?.value || "").trim();
 
   const folRaw   = document.getElementById("adm-subfolder")?.value;
   let subfolder = "";
@@ -636,18 +632,16 @@ function getStep2Values() {
     subfolder = (folRaw || "").trim();
   }
 
-  const subjectWasSanitized = subRaw === "__new__" && subjectInput.trim() !== "" && subjectInput.trim() !== subject;
-
-  return { subject, subfolder, subjectWasSanitized, subfolderWasSanitized };
+  return { subject, subfolder, subfolderWasSanitized };
 }
 
 function step2Validate(step1Vals) {
-  const { subject, subfolder, subjectWasSanitized, subfolderWasSanitized } = getStep2Values();
-  if (!subject) { showNotification("الرجاء اختيار أو إدخال المادة", "error"); return; }
-  if (subjectWasSanitized || subfolderWasSanitized) {
+  const { subject, subfolder, subfolderWasSanitized } = getStep2Values();
+  if (!subject) { showNotification("الرجاء اختيار المادة", "error"); return; }
+  if (subfolderWasSanitized) {
     showNotification("تم إزالة رموز غير مسموح بها من الاسم المدخل", "warning");
   }
-  persistSaved({ subject, subfolder, newSubject: "", newSubfolder: "" });
+  persistSaved({ subject, subfolder, newSubfolder: "" });
   renderStep3({ ...step1Vals, subject, subfolder });
 }
 
@@ -1064,6 +1058,31 @@ async function _openWizard(quizzes) {
     setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
     return;
   }
+
+  // Defense in depth: this wizard is quiz-only (see renderStep3's
+  // "عنوان الاختبار"/"رفع الاختبار" labels, and normalizeQuizSchema
+  // below) — it has no course/folder concept, so an item with
+  // meta.type "course"/"folder" ending up in here always means some
+  // caller's selection wasn't filtered (the intended filtering happens
+  // once, at the selection boundary — see splitUploadableSelection in
+  // user-quizzes-view.js for the bulk-upload button's own filtering).
+  // Re-checking here means a future caller that forgets that filtering
+  // step fails loudly instead of silently mislabeling a course as
+  // "اختبار" in the Admin Info step — the exact bug this was reported
+  // as. Courses are created from userQuizzesView directly now (see the
+  // "legacy" note on the old create-course-via-upload path), not
+  // through this wizard, so there is no in-wizard way to fix this up —
+  // the caller must not have included them to begin with.
+  const nonQuizItems = quizzes.filter((q) => q?.meta?.type === "course" || q?.meta?.type === "folder");
+  if (nonQuizItems.length > 0) {
+    showNotification(
+      "لا يمكن رفع مادة أو مجلد هنا",
+      "هذه النافذة مخصصة لرفع الاختبارات فقط. المواد والمجلدات تُنشأ من صفحة إمتحاناتك مباشرة.",
+      "error",
+    );
+    return;
+  }
+
   injectStyles();
 
   try {
