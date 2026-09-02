@@ -74,7 +74,9 @@ html[data-theme="dark-slate"] body {
     TOP ACCENT BAR / READING PROGRESS
 ───────────────────────────────────────── */
 .top-bar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: var(--z-above, 10);
     height: 3px;
     background: var(--rule-heavy);
     overflow: hidden;
@@ -301,6 +303,28 @@ li strong {
     background-color: var(--ft-bg);
     color: var(--ft-text);
     margin-top: 0;
+    /* side-menu.css reserves space for the fixed sidebar by adding
+       padding-right directly on body (this file otherwise gives body no
+       padding of its own) — without compensating for it here, that
+       reserved strip shows body's own background between the footer's
+       right edge and the sidebar instead of the footer's dark background
+       reaching it, exactly like the app's other sidebar-aware pages do. */
+    margin-right: calc(-1 * (var(--sidebar-collapsed-width, 64px) + 16px));
+    transition: margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-expanded .site-footer {
+    margin-right: calc(-1 * (var(--sidebar-expanded-width, 240px) + 16px));
+}
+
+@media (max-width: 768px) {
+    .site-footer,
+    body.sidebar-expanded .site-footer {
+        /* side-menu.css collapses to a flat 16px padding-right !important
+           on mobile regardless of expanded state, so the compensation
+           must match that flat value instead of the desktop rail width. */
+        margin-right: -16px;
+    }
 }
 
 .footer-inner {

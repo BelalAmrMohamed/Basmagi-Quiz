@@ -442,10 +442,23 @@ body {
   background: var(--color-surface);
   color: var(--color-text-primary);
   margin-top: 80px;
-  /* Bust out of body padding to span full width */
+  /* Bust out of body's own padding to span full width. body's right
+     padding isn't just this file's 24px — side-menu.css adds the
+     sidebar's reserved width on top of it (padding-right: sidebar-width +
+     16px, layered via a separate `padding-right` declaration, not this
+     file's shorthand `padding`). Compensating only -24px here left a strip
+     of body background showing between the footer's right edge and the
+     sidebar equal to that reserved width. Mirroring the exact same
+     sidebar-width expression used there keeps this in sync with it
+     instead of hardcoding a value that only matched by coincidence. */
   margin-left: -24px;
-  margin-right: -24px;
+  margin-right: calc(-24px - var(--sidebar-collapsed-width, 64px) - 16px);
   margin-bottom: -40px;
+  transition: margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-expanded .site-footer {
+  margin-right: calc(-24px - var(--sidebar-expanded-width, 240px) - 16px);
 }
 
 .footer-inner {
