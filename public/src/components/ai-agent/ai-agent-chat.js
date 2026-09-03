@@ -28,6 +28,8 @@ const TYPING_THINKING_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>';
 const TYPING_TOOL_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>';
+const TYPING_STOP_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>';
 
 /**
  * Reads a File into a bare base64 string (no "data:...;base64," prefix —
@@ -148,6 +150,10 @@ export function createChatPanel(options = {}) {
 
   /** @type {Array<{role: "user"|"assistant", content: string}>} */
   const history = [];
+
+  /** @type {AbortController | null} */
+  let currentAbortController = null;
+  let isGenerating = false;
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
@@ -1362,48 +1368,193 @@ export function createChatPanel(options = {}) {
    * once removal is called from a `finally` block that must run
    * regardless of which path got there.
    * @param {string} [label]
-   * @param {"thinking"|"tool"} [kind] - which icon/visual state to show.
-   *   "thinking" (default) is the plain "جارِ التفكير…" state; "tool" is
-   *   used once a tool call starts, giving the indicator a distinct icon
-   *   so "thinking" vs. "running a tool" reads at a glance instead of
-   *   only from the label text.
+   * @param {"thinking"|"tool"} [kind]
    */
-  function showTyping(label = "جارِ التفكير…", kind = "thinking") {
-    const el = document.createElement("div");
-    el.className = "ai-agent-typing";
-    const iconEl = document.createElement("div");
-    iconEl.className = "ai-agent-typing-icon";
-    const textCol = document.createElement("div");
-    textCol.className = "ai-agent-typing-text";
-    const labelEl = document.createElement("div");
-    labelEl.className = "ai-agent-typing-label";
-    labelEl.textContent = label;
-    const dotsEl = document.createElement("div");
-    dotsEl.className = "ai-agent-typing-dots";
-    dotsEl.innerHTML = "<span></span><span></span><span></span>";
-    textCol.append(labelEl, dotsEl);
-
-    function setKind(nextKind) {
-      iconEl.innerHTML = nextKind === "tool" ? TYPING_TOOL_ICON_SVG : TYPING_THINKING_ICON_SVG;
-      el.classList.toggle("ai-agent-typing--tool", nextKind === "tool");
+  function abortCurrentTurn(reason = "تم إيقاف الرد بواسطة المستخدم.") {
+    if (currentAbortController) {
+      try {
+        currentAbortController.abort();
+      } catch {
+        // non-fatal
+      }
+      currentAbortController = null;
     }
-    setKind(kind);
+    typingController.clear();
+    isGenerating = false;
+    sendBtn.disabled = false;
+    updateAvailabilityGate();
+    if (reason) {
+      appendToolResultMessage(`⏹️ ${reason}`);
+    }
+  }
 
-    el.append(iconEl, textCol);
-    messagesEl.appendChild(el);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-    let removed = false;
+  /**
+   * Typing & Status Indicator Controller (Singleton per Chat Panel)
+   *
+   * Guarantees:
+   * 1. Exactly ONE active indicator element in messagesEl at any time.
+   * 2. In-place morphing (updating label, tool state, step badge, stop button)
+   *    rather than creating and destroying DOM elements on each tool step.
+   * 3. Dynamic repositioning: stays at the bottom of messagesEl when new tool
+   *    results or assistant messages appear.
+   * 4. Guaranteed cleanup: clear() removes all .ai-agent-typing nodes unconditionally,
+   *    guarding against any orphaned elements across turns, errors, or closes/reopens.
+   */
+  const typingController = (function createTypingController() {
+    let activeEl = null;
+    let iconEl = null;
+    let labelEl = null;
+    let stepEl = null;
+    let timerEl = null;
+    let stopBtn = null;
+    let timerInterval = null;
+    let startTime = 0;
+    let onStopCallback = null;
+
+    function formatElapsed(seconds) {
+      if (seconds < 60) return `${seconds}ث`;
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}د ${s}ث`;
+    }
+
+    function buildElement() {
+      const el = document.createElement("div");
+      el.className = "ai-agent-typing";
+
+      iconEl = document.createElement("div");
+      iconEl.className = "ai-agent-typing-icon";
+
+      const contentEl = document.createElement("div");
+      contentEl.className = "ai-agent-typing-content";
+
+      const headerEl = document.createElement("div");
+      headerEl.className = "ai-agent-typing-header";
+
+      stepEl = document.createElement("span");
+      stepEl.className = "ai-agent-typing-step";
+
+      labelEl = document.createElement("div");
+      labelEl.className = "ai-agent-typing-label";
+
+      headerEl.append(stepEl, labelEl);
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "ai-agent-typing-meta";
+
+      const dotsEl = document.createElement("div");
+      dotsEl.className = "ai-agent-typing-dots";
+      dotsEl.innerHTML = "<span></span><span></span><span></span>";
+
+      timerEl = document.createElement("span");
+      timerEl.className = "ai-agent-typing-timer";
+
+      metaEl.append(dotsEl, timerEl);
+      contentEl.append(headerEl, metaEl);
+
+      stopBtn = document.createElement("button");
+      stopBtn.type = "button";
+      stopBtn.className = "ai-agent-typing-stop-btn";
+      stopBtn.setAttribute("aria-label", "إيقاف الرد");
+      stopBtn.title = "إيقاف الرد";
+      stopBtn.innerHTML = `${TYPING_STOP_ICON_SVG}<span>إيقاف</span>`;
+      stopBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (typeof onStopCallback === "function") {
+          onStopCallback();
+        }
+      });
+
+      el.append(iconEl, contentEl, stopBtn);
+      return el;
+    }
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      startTime = Date.now();
+      if (timerEl) timerEl.textContent = "";
+      timerInterval = setInterval(() => {
+        if (!timerEl || !activeEl) {
+          clearInterval(timerInterval);
+          return;
+        }
+        const elapsedSec = Math.floor((Date.now() - startTime) / 1000);
+        if (elapsedSec >= 1) {
+          timerEl.textContent = formatElapsed(elapsedSec);
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      if (timerEl) timerEl.textContent = "";
+    }
+
     return {
-      el,
+      show({ label = "جارِ التفكير…", kind = "thinking", step = "", onStop = null } = {}) {
+        onStopCallback = onStop;
+
+        if (!activeEl || !activeEl.isConnected) {
+          activeEl = buildElement();
+          messagesEl.appendChild(activeEl);
+          startTimer();
+        }
+
+        labelEl.textContent = label;
+        if (step) {
+          stepEl.textContent = step;
+          stepEl.style.display = "";
+        } else {
+          stepEl.textContent = "";
+          stepEl.style.display = "none";
+        }
+
+        iconEl.innerHTML = kind === "tool" ? TYPING_TOOL_ICON_SVG : TYPING_THINKING_ICON_SVG;
+        activeEl.classList.toggle("ai-agent-typing--tool", kind === "tool");
+
+        if (typeof onStop === "function") {
+          stopBtn.style.display = "inline-flex";
+        } else {
+          stopBtn.style.display = "none";
+        }
+
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      },
+
+      moveToBottom() {
+        if (activeEl && activeEl.isConnected) {
+          messagesEl.appendChild(activeEl);
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+      },
+
+      clear() {
+        stopTimer();
+        onStopCallback = null;
+        if (activeEl) {
+          activeEl.remove();
+          activeEl = null;
+        }
+        messagesEl.querySelectorAll(".ai-agent-typing").forEach((n) => n.remove());
+      },
+
+      isActive() {
+        return Boolean(activeEl && activeEl.isConnected);
+      },
+    };
+  })();
+
+  function showTyping(label = "جارِ التفكير…", kind = "thinking") {
+    typingController.show({ label, kind });
+    return {
       setLabel(text, nextKind) {
-        if (removed) return;
-        labelEl.textContent = text;
-        if (nextKind) setKind(nextKind);
+        typingController.show({ label: text, kind: nextKind || kind });
       },
       remove() {
-        if (removed) return;
-        removed = true;
-        el.remove();
+        typingController.clear();
       },
     };
   }
@@ -1426,26 +1577,22 @@ export function createChatPanel(options = {}) {
    *   a plain error instead once the cap is hit.
    */
   async function resendLastUserTurn(agentDepth = 0) {
+    if (agentDepth === 0) {
+      currentAbortController = new AbortController();
+      isGenerating = true;
+    }
     sendBtn.disabled = true;
-    let typingEl = showTyping();
+
+    typingController.show({
+      label: "جارِ التفكير…",
+      kind: "thinking",
+      onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
+    });
+
     const { key: ownKey, hasKey: hasOwnKey } = getOwnKey();
     const provider = getSelectedProvider();
     const model = getSelectedModel();
 
-    // Fold contextPrompt / contextSummary into the same one-off context
-    // message, prepended before the real conversation history — not a
-    // fake system turn, just plain context text the model reads once per
-    // send.
-    //
-    // Both are resolved fresh HERE, on every send, rather than once when
-    // the panel was created — each may be a function precisely so this
-    // stays live (see their JSDoc above). Without this, a page whose
-    // context legitimately changes mid-session (quiz edited, page reset,
-    // a tool call mutating state) would keep sending the assistant a
-    // snapshot from whenever the panel was first mounted, on every later
-    // message — including the first message of a brand new chat opened
-    // afterward, since a static value captured at panel-creation time
-    // never updates.
     const resolvedContextPrompt =
       typeof contextPrompt === "function" ? contextPrompt() : contextPrompt;
     const resolvedContextSummary =
@@ -1458,20 +1605,6 @@ export function createChatPanel(options = {}) {
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
-    // Tool-result entries are stored with role: "assistant" (see the
-    // history.push in the tool-loop below, and appendMessage/
-    // loadConversation which style them via their own `type` — not
-    // `role` — as a distinct "🔧 النظام" bubble). But a tool result is
-    // new information being reported TO the model, not something the
-    // model itself said, and every provider's turn-taking API assumes
-    // strict user/model alternation with a user turn last — Gemini
-    // enforces this explicitly ("Requests ending with a model turn are
-    // not supported"), and the others are undefined/unreliable in the
-    // same shape. Remapped to role: "user" here, at the wire boundary
-    // only, so the stored/rendered history is untouched but the model
-    // always sees the tool result as an incoming user-role message —
-    // this is what makes the post-tool-call continuation (see
-    // resendLastUserTurn's recursive call below) actually valid to send.
     const toWireMessage = ({ role, content, attachments, type }) => ({
       role: type === "tool-result" ? "user" : role,
       content,
@@ -1483,11 +1616,6 @@ export function createChatPanel(options = {}) {
       ? [{ role: "user", content: combinedContext }, ...history.map(toWireMessage)]
       : history.map(toWireMessage);
 
-    // Prefer the user's own saved key when present — if they went to the
-    // trouble of saving one, that's an explicit signal to use it, and it
-    // also avoids a pointless /api/user-profile/identify round trip. Only
-    // fall back to platform access (admin token, or an auto-minted
-    // Level 10+ user token) when no own key is saved.
     let authToken = null;
     if (!hasOwnKey) {
       const isAdmin = isAdminAuthenticated();
@@ -1504,6 +1632,7 @@ export function createChatPanel(options = {}) {
       const res = await fetch("/api/ai-agent/chat", {
         method: "POST",
         headers,
+        signal: currentAbortController?.signal,
         body: JSON.stringify({
           provider,
           model: model || undefined,
@@ -1519,7 +1648,11 @@ export function createChatPanel(options = {}) {
         }),
       });
 
+      if (currentAbortController?.signal?.aborted) return;
+
       const data = await res.json().catch(() => ({}));
+
+      if (currentAbortController?.signal?.aborted) return;
 
       if (!res.ok) {
         console.error(
@@ -1536,14 +1669,9 @@ export function createChatPanel(options = {}) {
       if (data.text) {
         appendMessage("assistant", data.text);
         history.push({ role: "assistant", content: data.text });
+        typingController.moveToBottom();
       }
 
-      // Persist after every successful turn (not just tool calls) — cheap
-      // at this scale (one small IDB write per turn), and means a
-      // conversation is never lost to a refresh/close mid-chat. Only saved
-      // once there's at least one assistant reply in it, so an empty
-      // "opened the panel, never sent anything" session never creates a
-      // history entry.
       try {
         await saveConversation({
           id: conversationId,
@@ -1551,12 +1679,6 @@ export function createChatPanel(options = {}) {
           title: deriveConversationTitle(history),
           createdAt: conversationCreatedAt,
           updatedAt: Date.now(),
-          // Keep the attachment's filename (a few bytes) but drop the
-          // base64 payload itself (see comment on Task 5's summary in the
-          // history-idb module — full attachment data would bloat
-          // IndexedDB fast). This is enough for a reopened "convert this
-          // exam" conversation to still show which file was sent, even
-          // though the file content itself isn't available anymore.
           messages: history.map(({ role, content, attachments, type }) => ({
             role,
             content,
@@ -1566,71 +1688,41 @@ export function createChatPanel(options = {}) {
         });
         if (typeof onHistoryChanged === "function") onHistoryChanged();
       } catch (histErr) {
-        // Non-fatal — history is a convenience feature, never block the
-        // actual chat on a storage failure.
         console.error("[ai-agent-chat] failed to save conversation:", histErr);
       }
 
-      // A single model turn can legitimately request more than one tool
-      // call (e.g. "search for X and delete the first result") — the
-      // backend now always returns every tool call the model made as an
-      // array (see _providerClients.js), never just the first one.
-      // Backward-compat: fall back to the old singular `toolCall` field
-      // (wrapped as a one-element array) in case a stale cached response
-      // or an in-flight request from an older client build still uses it.
       const toolCallsToRun = Array.isArray(data.toolCalls)
         ? data.toolCalls
         : data.toolCall?.name
           ? [data.toolCall]
           : [];
 
-      // Whether every tool call in this turn ran without throwing. Stays
-      // true through an empty toolCallsToRun (nothing to fail). Flipped
-      // to false in the `catch` below on the first failure, which is
-      // also where the loop already `break`s — used after the loop to
-      // decide whether it's safe to continue the conversation.
       let allToolCallsSucceeded = true;
 
       if (toolCallsToRun.length && typeof onToolCall === "function") {
-        // Run sequentially, not in parallel — later tool calls in the
-        // same turn may depend on UI state a prior one just changed
-        // (e.g. a "create folder" call whose result the next "move item
-        // into it" call needs to already be reflected in the DOM/state).
-        for (const toolCall of toolCallsToRun) {
-          // The original typingEl (for "جارِ التفكير…") was already
-          // removed once the text reply arrived, above. Show a fresh,
-          // tool-specific indicator for the duration of this call so the
-          // user sees *what* is currently running instead of the chat
-          // going silent between the text reply and the tool-result
-          // bubble — this is the fix for ".ai-agent-typing... doesn't
-          // tell me whether the AI is thinking or using a specific
-          // tool". Assigned back into the outer `typingEl` so the
-          // function's single `finally` block still guarantees cleanup
-          // if onToolCall throws or the whole request is aborted mid-loop.
-          typingEl = showTyping(`جارِ استخدام أداة: ${describeToolCall(toolCall)}`, "tool");
+        const totalTools = toolCallsToRun.length;
+        for (let i = 0; i < totalTools; i++) {
+          if (currentAbortController?.signal?.aborted) {
+            allToolCallsSucceeded = false;
+            break;
+          }
+          const toolCall = toolCallsToRun[i];
+          const stepLabel = totalTools > 1 ? `خطوة ${i + 1} من ${totalTools}` : "";
+          typingController.show({
+            label: `جارِ استخدام أداة: ${describeToolCall(toolCall)}`,
+            kind: "tool",
+            step: stepLabel,
+            onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
+          });
+
           try {
-            // Awaited (not fire-and-forget) — onToolCall may need to show
-            // the app's own async confirmation dialog (_confirm() in
-            // notifications.js) for destructive actions, rather than a
-            // blocking native window.confirm(). There is nothing here that
-            // actually requires a synchronous return; this whole function
-            // is already async, so awaiting is free and lets tool handlers
-            // use the same in-app confirm UI as the rest of the app.
             const resultText = await onToolCall(toolCall);
-            typingEl.remove();
+            if (currentAbortController?.signal?.aborted) {
+              allToolCallsSucceeded = false;
+              break;
+            }
             if (resultText) {
               appendToolResultMessage(resultText);
-              // Tool-result bubbles (e.g. "🗑️ تم مسح الصفحة بالكامل.") were
-              // previously DOM-only — appended to messagesEl above but never
-              // pushed into `history`, so the saveConversation call further
-              // up (which runs BEFORE onToolCall, from the plain text/turn
-              // data) never captured them, and they vanished the moment the
-              // conversation was reopened from the History tab. Recorded
-              // here as a distinct `type: "tool-result"` entry (not a
-              // regular "assistant" turn) so loadConversation/appendMessage
-              // below can tell it apart and re-render it with the same
-              // muted tool-result styling it has live, and re-saved so this
-              // turn's history record actually reflects what the user saw.
               history.push({ role: "assistant", type: "tool-result", content: resultText });
               try {
                 await saveConversation({
@@ -1650,63 +1742,47 @@ export function createChatPanel(options = {}) {
               } catch (histErr) {
                 console.error("[ai-agent-chat] failed to save conversation (tool result):", histErr);
               }
+              typingController.moveToBottom();
             }
           } catch (toolErr) {
             console.error("[ai-agent-chat] onToolCall failed:", toolErr);
             appendError(toolErr?.userMessage || "تعذر تنفيذ العملية. حاول مرة أخرى.");
-            // Stop running any further queued tool calls from this same
-            // turn once one has failed — later calls may assume the
-            // failed one succeeded (e.g. "move the newly created item"),
-            // so continuing could compound the error silently.
             allToolCallsSucceeded = false;
             break;
           }
         }
       }
 
-      // This was previously the end of the turn: the tool ran, its result
-      // bubble appeared, and the chat just sat there — nothing ever told
-      // the model what the tool returned, so it could never react to it
-      // (confirm the action, chain a second tool call, or just reply in
-      // text). That's the "gets stuck on جارِ التفكير… after the first
-      // tool use and does nothing" symptom: from the user's side it looks
-      // hung, but really no further request was ever going to be sent.
-      //
-      // The fix: once every tool call in this turn has actually run (and
-      // none of them failed — a failed call already showed its own error
-      // above, and re-sending a history the model doesn't know failed
-      // could make it act as though it succeeded), recurse. `history` was
-      // mutated in place above with the tool-result entries, so this next
-      // call sends the model the full conversation as it now stands and
-      // lets it either issue more tool calls (handled the same way,
-      // recursively) or return a final text reply — same as a real
-      // multi-turn "agent loop", just driven by one recursive call per
-      // round instead of an explicit while-loop.
-      if (toolCallsToRun.length && allToolCallsSucceeded) {
+      if (toolCallsToRun.length && allToolCallsSucceeded && !currentAbortController?.signal?.aborted) {
         if (agentDepth + 1 >= MAX_AGENT_DEPTH) {
           appendError(
             "توقف الباشــمبصمج بعد عدد كبير من خطوات الأدوات المتتالية في نفس الطلب. أعد صياغة طلبك أو قسّمه إلى خطوات أصغر.",
           );
           return;
         }
+        typingController.show({
+          label: "جارِ التفكير…",
+          kind: "thinking",
+          step: "",
+          onStop: () => abortCurrentTurn("تم إيقاف الرد بواسطة المستخدم."),
+        });
         await resendLastUserTurn(agentDepth + 1);
         return;
       }
     } catch (err) {
+      if (err?.name === "AbortError" || currentAbortController?.signal?.aborted) {
+        return;
+      }
       console.error("[ai-agent-chat] request failed:", err);
       appendError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     } finally {
-      // Guaranteed to run exactly once regardless of which path got
-      // here — success, an early return from the !res.ok branch, a
-      // failed tool call that `break`s out of the loop, or a thrown
-      // network error. Previously this was called from two separate
-      // spots (success path + catch block) with no shared guarantee, so
-      // an exception thrown between them could leave the indicator
-      // orphaned in the DOM — `.remove()` itself is also idempotent (see
-      // showTyping), so calling it here even after an earlier explicit
-      // call elsewhere is always safe.
-      typingEl.remove();
-      updateAvailabilityGate();
+      if (agentDepth === 0) {
+        typingController.clear();
+        currentAbortController = null;
+        isGenerating = false;
+        sendBtn.disabled = false;
+        updateAvailabilityGate();
+      }
     }
   }
 
@@ -1835,6 +1911,7 @@ export function createChatPanel(options = {}) {
   };
 
   panel.loadConversation = function loadConversation(conversation) {
+    typingController.clear();
     removeSuggestions();
     pendingAttachment = null;
     renderAttachmentChip();
@@ -1886,6 +1963,7 @@ export function createChatPanel(options = {}) {
    * a chat stuck without them for the rest of the panel's lifetime.
    */
   panel.startNewConversation = function startNewConversation() {
+    typingController.clear();
     conversationId = crypto.randomUUID();
     conversationCreatedAt = Date.now();
     history.length = 0;
@@ -1920,6 +1998,7 @@ export function createChatPanel(options = {}) {
     const branchMessages = Array.isArray(branch?.messages) ? branch.messages : [];
     if (!branchMessages.length) return;
 
+    typingController.clear();
     removeSuggestions();
     conversationId = crypto.randomUUID();
     conversationCreatedAt = branch.createdAt || Date.now();
@@ -1955,6 +2034,18 @@ export function createChatPanel(options = {}) {
     updateAvailabilityGate();
     refreshModelBarOptions();
     if (history.length === 0) renderEmptyState();
+  };
+
+  panel.clearTyping = function clearTyping() {
+    typingController.clear();
+  };
+
+  panel.abortGeneration = function abortGeneration() {
+    abortCurrentTurn("تم إيقاف الرد.");
+  };
+
+  panel.isGenerating = function isGeneratingStatus() {
+    return isGenerating;
   };
 
   return panel;

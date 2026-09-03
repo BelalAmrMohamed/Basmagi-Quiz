@@ -49,9 +49,9 @@ const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" heigh
 // .sidebar-favicon/.sidebar-collapse-btn hover-crossfade rules, which
 // .ai-agent-sidebar-favicon/.ai-agent-sidebar-collapse-btn in ai-agent.css
 // replicate for these same three icons.
-const SIDEBAR_EXPAND_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-agent-sidebar-expand-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/></svg>`;
-const SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-default" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
-const SIDEBAR_COLLAPSE_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hover" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`;
+const SIDEBAR_EXPAND_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-agent-sidebar-expand-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`;
+const SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-default"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>`;
+const SIDEBAR_COLLAPSE_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hover" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/></svg>`;
 
 // Matches the >=901px breakpoint in ai-agent.css's desktop-layout rules —
 // kept as a named constant here so the JS toggle and the CSS media query
@@ -596,6 +596,10 @@ function getBranchHandlerRef(pageKey) {
   return ref;
 }
 
+function getChatPanelForPageKey(key) {
+  return chatPanelsByPageKey.get(key || "default") || null;
+}
+
 // Lets handleBranch() (see buildWidgetContent above) swap the cached panel
 // for a given pageKey to the freshly-created branch panel, so a later
 // modal close+reopen resumes from the branch, not from the (now
@@ -609,6 +613,11 @@ function setChatPanelForPageKey(key, chatPanel) {
 // overlay on top of the first — see createAIAgentFab below, which hides
 // the FAB itself for the same reason.
 function openAIAgentModal(options, fab) {
+  const cachedChat = getChatPanelForPageKey(options.pageKey);
+  if (cachedChat && !cachedChat.isGenerating?.()) {
+    cachedChat.clearTyping?.();
+  }
+
   const modal = document.createElement("div");
   modal.className = "modal-overlay ai-agent-modal-overlay";
   modal.setAttribute("role", "dialog");
@@ -621,6 +630,10 @@ function openAIAgentModal(options, fab) {
   }
 
   function closeModal() {
+    const activeChat = getChatPanelForPageKey(options.pageKey);
+    if (activeChat && !activeChat.isGenerating?.()) {
+      activeChat.clearTyping?.();
+    }
     modal.remove();
     document.removeEventListener("keydown", onKeydown);
     if (desktopMql && typeof desktopMql.removeEventListener === "function") {

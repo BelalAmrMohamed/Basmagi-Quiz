@@ -2064,6 +2064,7 @@ Container
   .category-card .icon,
   .phone-only-emoji,
   .user-quiz--phone-only-emoji,
+  .category-icon,
   .user-create-quiz-card--phone-only-emoji {
     font-size: 1.25rem;
     margin-bottom: 0;
@@ -3453,6 +3454,7 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
      shared rule above). `flex` here matches that rule instead of fighting it.  */
   .phone-only-emoji,
   .user-quiz--phone-only-emoji,
+  .category-icon,
   .user-create-quiz-card--phone-only-emoji {
     display: flex;
     align-items: center;

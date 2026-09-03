@@ -437,9 +437,36 @@ html[data-animations="enabled"][data-theme="dark"] {
    CSS transition and animation across the whole site, not just the
    background.
    ===================================================================== */
-html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *, .ai-agent-msg-loading, .ai-agent-msg-loading *, [class*="skeleton"], [class*="skeleton"] *),
-html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *, .ai-agent-msg-loading, .ai-agent-msg-loading *, [class*="skeleton"], [class*="skeleton"] *)::before,
-html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *, .ai-agent-msg-loading, .ai-agent-msg-loading *, [class*="skeleton"], [class*="skeleton"] *)::after {
+html[data-motion="reduced"] *:not(
+  .ai-agent-dictation-wave, .ai-agent-dictation-wave *,
+  .ai-agent-msg-loading, .ai-agent-msg-loading *,
+  .ai-agent-typing, .ai-agent-typing *,
+  .ai-agent-typing-dots, .ai-agent-typing-dots *,
+  .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  [class*="skeleton"], [class*="skeleton"] *,
+  [class*="spinner"], [class*="spinner"] *,
+  [class*="loader"], [class*="loader"] *
+),
+html[data-motion="reduced"] *:not(
+  .ai-agent-dictation-wave, .ai-agent-dictation-wave *,
+  .ai-agent-msg-loading, .ai-agent-msg-loading *,
+  .ai-agent-typing, .ai-agent-typing *,
+  .ai-agent-typing-dots, .ai-agent-typing-dots *,
+  .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  [class*="skeleton"], [class*="skeleton"] *,
+  [class*="spinner"], [class*="spinner"] *,
+  [class*="loader"], [class*="loader"] *
+)::before,
+html[data-motion="reduced"] *:not(
+  .ai-agent-dictation-wave, .ai-agent-dictation-wave *,
+  .ai-agent-msg-loading, .ai-agent-msg-loading *,
+  .ai-agent-typing, .ai-agent-typing *,
+  .ai-agent-typing-dots, .ai-agent-typing-dots *,
+  .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  [class*="skeleton"], [class*="skeleton"] *,
+  [class*="spinner"], [class*="spinner"] *,
+  [class*="loader"], [class*="loader"] *
+)::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
