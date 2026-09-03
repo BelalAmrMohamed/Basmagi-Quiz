@@ -828,7 +828,7 @@ html:not([data-motion="reduced"]) .header-badge::after {
   /* 2. Narrow the white light in the gradient */
   background: linear-gradient(90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.6) 50%,
+      var(--color-user-name-animation) 50%,
       transparent 100%);
 
   /* Start off-screen */

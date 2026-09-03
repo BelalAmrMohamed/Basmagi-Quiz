@@ -7,9 +7,15 @@
 :root {
   --glass-blur: blur(12px);
 
-  --gradient-warm: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
-
-  --scrollbar-thumb: #c0e040;
+  /* amber->red already stays within one warm hue family (45deg travel) so
+     the concept was sound; moved to oklch + an off-center stop so the
+     transition eases perceptually instead of muddying mid-gradient. */
+  --gradient-warm: linear-gradient(
+    135deg,
+    oklch(76.9% 0.165 70deg) 0%,
+    oklch(70% 0.19 48deg) 60%,
+    oklch(63.7% 0.208 25deg) 100%
+  );
 
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -115,7 +121,7 @@ html[data-theme="light"] {
   /* Text */
   --color-text-primary: #111827;
   --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-tertiary: #6b7485; /* was #9ca3af (2.5:1 on white, fails AA); darkened while preserving hue to clear 4.5:1 */
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -123,6 +129,7 @@ html[data-theme="light"] {
   --color-primary-light: #eef2ff;
   --color-primary-dark: #4338ca;
   --color-accent: #6366f1;
+  --color-primary-text: #4f46e5; /* text/icon-safe variant of primary; #6366f1 itself is 4.47:1 on white, just under AA */
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -142,12 +149,20 @@ html[data-theme="light"] {
   --color-admin-hover: #ca8a04;
   --color-admin-light: #fef3c7;
 
+  --color-user-name-animation: rgba(105, 225, 179, 0.6);
+
   /* Gradients */
+  /* Narrowed from a 3-stop indigo->violet->pink sweep (~90deg of hue travel,
+     even 0/50/100 stops) to a single-family indigo->violet sweep in oklch,
+     with an off-center stop and a soft highlight near the light-facing edge.
+     Keeps the theme's own primary/accent hues; just stops sweeping through
+     an unrelated pink at the far end and interpolates perceptually so the
+     midpoint doesn't gray out. */
   --gradient-accent: linear-gradient(
-    135deg,
-    #6366f1 0%,
-    #8b5cf6 50%,
-    #ec4899 100%
+    118deg,
+    oklch(58.5% 0.204 277deg) 0%,
+    oklch(62% 0.19 285deg) 58%,
+    oklch(65% 0.165 293deg) 100%
   );
   --gradient-success: linear-gradient(
     135deg,
@@ -194,7 +209,11 @@ html[data-theme="light"] {
   --anim-particle-3: rgba(236, 72, 153, 0.3);
   --anim-orb: rgba(99, 102, 241, 0.08);
 
-  --scrollbar-thumb-hover: #a9c933;
+  /* Slate-blue scrollbar, on-brand with the theme's border/text-tertiary
+     hues; was an unrelated lime-yellow (#c0e040) with only 1.45:1 contrast
+     against this theme's background. */
+  --scrollbar-thumb: #838d9c;
+  --scrollbar-thumb-hover: #5e697e;
   --scrollbar-track: transparent;
 }
 
@@ -222,7 +241,7 @@ html[data-theme="dark"] {
   /* Text */
   --color-text-primary: #e0e0e0;
   --color-text-secondary: #a0a0a0;
-  --color-text-tertiary: #707070;
+  --color-text-tertiary: #858585; /* was #707070 (3.4:1 on surface, fails AA); lightened in place to clear 4.5:1 */
 
   /* Primary Colors */
   --color-primary: #3b82f6;
@@ -251,12 +270,17 @@ html[data-theme="dark"] {
 
   --color-code: #e2e8f0;
 
+  --color-user-name-animation: white;
+
   /* Gradients */
+  /* Same treatment as the light theme: single-family blue->soft violet-blue
+     sweep in oklch anchored on the theme's own primary (#3b82f6), instead of
+     the old blue->violet->pink 3-hue-family sweep. */
   --gradient-accent: linear-gradient(
-    135deg,
-    #3b82f6 0%,
-    #8b5cf6 50%,
-    #ec4899 100%
+    118deg,
+    oklch(62.3% 0.192 258deg) 0%,
+    oklch(66% 0.17 270deg) 58%,
+    oklch(70% 0.145 280deg) 100%
   );
   --gradient-success: linear-gradient(
     135deg,
@@ -302,7 +326,8 @@ html[data-theme="dark"] {
   --anim-particle-3: rgba(236, 72, 153, 0.35);
   --anim-orb: rgba(59, 130, 246, 0.12);
 
-  --scrollbar-thumb-hover: #d5f754;
+  --scrollbar-thumb: #5e646c;
+  --scrollbar-thumb-hover: #7e8796;
   --scrollbar-track: transparent;
 }
 
@@ -330,7 +355,7 @@ html[data-theme="dark-slate"] {
   /* Text */
   --color-text-primary: #f8fafc;
   --color-text-secondary: #94a3b8;
-  --color-text-tertiary: #64748b;
+  --color-text-tertiary: #8693a8; /* was #64748b (3.1:1 on surface, fails AA); lightened in place to clear 4.5:1 with margin */
 
   /* Primary Colors */
   --color-primary: #6366f1;
@@ -338,6 +363,7 @@ html[data-theme="dark-slate"] {
   --color-primary-light: rgba(99, 102, 241, 0.15);
   --color-primary-dark: #312e81;
   --color-accent: #818cf8;
+  --color-primary-text: #8083f4; /* text/icon-safe variant; #6366f1 is only 3.3:1 on surface, fails AA for text use */
 
   /* Semantic Colors */
   --color-success: #10b981;
@@ -357,12 +383,17 @@ html[data-theme="dark-slate"] {
   --color-admin-hover: #ca8a04;
   --color-admin-light: rgba(234, 179, 8, 0.2);
 
+  --color-user-name-animation: rgba(255, 105, 180, 1);
+
   /* Gradients */
+  /* Same treatment: single-family indigo->soft violet sweep in oklch,
+     anchored on this theme's own primary (#6366f1), replacing the old
+     indigo->violet->pink 3-hue-family sweep. */
   --gradient-accent: linear-gradient(
-    135deg,
-    #6366f1 0%,
-    #8b5cf6 50%,
-    #ec4899 100%
+    118deg,
+    oklch(58.5% 0.204 277deg) 0%,
+    oklch(63% 0.185 286deg) 58%,
+    oklch(68% 0.155 295deg) 100%
   );
   --gradient-success: linear-gradient(
     135deg,
@@ -408,7 +439,8 @@ html[data-theme="dark-slate"] {
   --anim-particle-3: rgba(236, 72, 153, 0.4);
   --anim-orb: rgba(99, 102, 241, 0.15);
 
-  --scrollbar-thumb-hover: #d5f754;
+  --scrollbar-thumb: #5e697e;
+  --scrollbar-thumb-hover: #7b89a8;
   --scrollbar-track: #0f172a;
 }
 
