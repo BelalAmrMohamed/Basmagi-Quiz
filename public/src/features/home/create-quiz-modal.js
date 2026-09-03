@@ -38,7 +38,7 @@ export function createInlineCreateQuizCard() {
   card.setAttribute("title", "تحويل نص ← امتحان");
   card.setAttribute("aria-label", "إنشاء إمتحان جديد من نص");
 
-  // Desktop-only large centered icon (hidden on mobile via CSS)
+  // Desktop-only large centered icon
   const icon = document.createElement("div");
   icon.className = "icon";
   icon.textContent = "➕";
@@ -61,7 +61,7 @@ export function createInlineCreateQuizCard() {
   // this one is shown only on mobile — same "swap icon by breakpoint"
   // pattern used elsewhere on this card).
   const phoneIconEl = document.createElement("span");
-  phoneIconEl.className = "user-quiz--phone-only-emoji";
+  phoneIconEl.className = "user-create-quiz-card--phone-only-emoji";
   phoneIconEl.textContent = "➕";
   phoneIconEl.setAttribute("aria-hidden", "true");
 

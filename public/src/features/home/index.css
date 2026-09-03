@@ -2063,7 +2063,8 @@ Container
   /* ── Category icon: small pill on the left ───────────────────────────────── */
   .category-card .icon,
   .phone-only-emoji,
-  .user-quiz--phone-only-emoji {
+  .user-quiz--phone-only-emoji,
+  .user-create-quiz-card--phone-only-emoji {
     font-size: 1.25rem;
     margin-bottom: 0;
     display: flex;
@@ -3436,7 +3437,8 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
    Custom utility classes for responsive visibility & Mobile Layout Fixes
    ============================================================================ */
 .phone-only-emoji,
-.user-quiz--phone-only-emoji {
+.user-quiz--phone-only-emoji,
+.user-create-quiz-card--phone-only-emoji {
   display: none;
 }
 
@@ -3450,7 +3452,8 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
      `.category-card .icon` (which already uses flex centering, see the
      shared rule above). `flex` here matches that rule instead of fighting it.  */
   .phone-only-emoji,
-  .user-quiz--phone-only-emoji {
+  .user-quiz--phone-only-emoji,
+  .user-create-quiz-card--phone-only-emoji {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3462,7 +3465,8 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
      so the emoji's flex slot is preserved — display:none would collapse
      its space and shift the title text sideways into the checkbox instead
      of just leaving a gap, trading one overlap for a worse one. */
-  .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji {
+  .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji,
+  .user-quizzes-container.selection-mode-active .category-icon {
     visibility: hidden !important;
   }
 
@@ -3660,7 +3664,7 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
   }
 
   /* Description subtitle: sits in place of .user-quiz-card-meta */
-  .user-create-quiz-card .create-quiz-card-subtitle {
+  .user-create-quiz-card--phone-only-emoji .create-quiz-card-subtitle {
     font-size: 0.65rem !important;
     color: var(--color-text-tertiary, #888) !important;
     margin-bottom: 6px !important;
