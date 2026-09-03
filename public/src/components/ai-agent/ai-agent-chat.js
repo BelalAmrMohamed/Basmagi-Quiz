@@ -154,6 +154,7 @@ export function createChatPanel(options = {}) {
   /** @type {AbortController | null} */
   let currentAbortController = null;
   let isGenerating = false;
+  let sessionExecutedTools = new Set();
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
@@ -1580,6 +1581,7 @@ export function createChatPanel(options = {}) {
     if (agentDepth === 0) {
       currentAbortController = new AbortController();
       isGenerating = true;
+      sessionExecutedTools.clear();
     }
     sendBtn.disabled = true;
 
@@ -1605,12 +1607,22 @@ export function createChatPanel(options = {}) {
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
-    const toWireMessage = ({ role, content, attachments, type }) => ({
-      role: type === "tool-result" ? "user" : role,
-      content,
-      attachments,
-      type,
-    });
+    const toWireMessage = ({ role, content, attachments, type }) => {
+      if (type === "tool-result") {
+        return {
+          role: "user",
+          content: `[نتيجة أداة]: ${content}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
+          attachments,
+          type,
+        };
+      }
+      return {
+        role,
+        content,
+        attachments,
+        type,
+      };
+    };
 
     const outgoingMessages = combinedContext
       ? [{ role: "user", content: combinedContext }, ...history.map(toWireMessage)]
@@ -1672,6 +1684,17 @@ export function createChatPanel(options = {}) {
         typingController.moveToBottom();
       }
 
+      const toolCallsToRun = Array.isArray(data.toolCalls)
+        ? data.toolCalls
+        : data.toolCall?.name
+          ? [data.toolCall]
+          : [];
+
+      if (!data.text && toolCallsToRun.length) {
+        const toolSummary = toolCallsToRun.map((tc) => describeToolCall(tc)).join("، ");
+        history.push({ role: "assistant", content: `[تم استدعاء: ${toolSummary}]` });
+      }
+
       try {
         await saveConversation({
           id: conversationId,
@@ -1691,22 +1714,35 @@ export function createChatPanel(options = {}) {
         console.error("[ai-agent-chat] failed to save conversation:", histErr);
       }
 
-      const toolCallsToRun = Array.isArray(data.toolCalls)
-        ? data.toolCalls
-        : data.toolCall?.name
-          ? [data.toolCall]
-          : [];
-
       let allToolCallsSucceeded = true;
+
+      function getToolSignature(toolCall) {
+        const name = toolCall?.name || "";
+        const input = toolCall?.input || {};
+        const primary = input.title || input.name || input.itemName || input.currentTitle || "";
+        const secondary = input.destinationFolder || input.parentFolder || "";
+        return `${name}::${String(primary).trim().toLowerCase()}::${String(secondary).trim().toLowerCase()}`;
+      }
 
       if (toolCallsToRun.length && typeof onToolCall === "function") {
         const totalTools = toolCallsToRun.length;
+        let executedCount = 0;
+
         for (let i = 0; i < totalTools; i++) {
           if (currentAbortController?.signal?.aborted) {
             allToolCallsSucceeded = false;
             break;
           }
           const toolCall = toolCallsToRun[i];
+          const sig = getToolSignature(toolCall);
+
+          if (sessionExecutedTools.has(sig)) {
+            console.warn("[ai-agent-chat] Duplicate tool call prevented in loop:", sig);
+            continue;
+          }
+          sessionExecutedTools.add(sig);
+          executedCount++;
+
           const stepLabel = totalTools > 1 ? `خطوة ${i + 1} من ${totalTools}` : "";
           typingController.show({
             label: `جارِ استخدام أداة: ${describeToolCall(toolCall)}`,
@@ -1750,6 +1786,13 @@ export function createChatPanel(options = {}) {
             allToolCallsSucceeded = false;
             break;
           }
+        }
+
+        // If the model returned tool calls but every single one of them was a duplicate that already ran,
+        // stop recursion to prevent an infinite loop!
+        if (executedCount === 0 && toolCallsToRun.length > 0) {
+          console.warn("[ai-agent-chat] All requested tools were duplicates. Halting agent loop.");
+          return;
         }
       }
 

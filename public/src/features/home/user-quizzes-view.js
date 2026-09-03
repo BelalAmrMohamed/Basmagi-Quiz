@@ -698,18 +698,19 @@ export function renderUserQuizzesView() {
     // Read access lets the assistant answer "what quizzes do I have"
     // without a tool round-trip; create access (enableTools +
     // onToolCall) lets it save a new quiz once the user confirms one.
-    const contextSummary = userQuizzes.map((quiz) => ({
-      title: qz(quiz, "title"),
-      questionCount: qz(quiz, "count"),
-      types: qz(quiz, "type"),
-    }));
+    const getLiveContextSummary = () => {
+      const liveQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      return liveQuizzes.map((quiz) => ({
+        title: qz(quiz, "title"),
+        questionCount: qz(quiz, "count"),
+        types: qz(quiz, "type"),
+      }));
+    };
 
-    // A readable folder-tree listing (by title, indented per depth) so the
-    // model can resolve create_folder's parentFolder and move_item's
-    // itemName/destinationFolder against real names instead of guessing —
-    // it never sees internal ids, only titles, exactly like contextSummary
-    // above only ever exposes quiz titles.
-    const folderTreePrompt = buildFolderTreeContextPrompt(userQuizzes);
+    const getLiveFolderTreePrompt = () => {
+      const liveQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      return buildFolderTreeContextPrompt(liveQuizzes);
+    };
 
     container.appendChild(
       createAIAgentFab({
@@ -718,8 +719,8 @@ export function renderUserQuizzesView() {
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
         suggestedPrompts: HOME_PAGE_SUGGESTED_PROMPTS,
         enableFileUpload: true,
-        contextSummary,
-        contextPrompt: folderTreePrompt,
+        contextSummary: getLiveContextSummary,
+        contextPrompt: getLiveFolderTreePrompt,
         enableTools: true,
         toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item"],
         onToolCall: handleQuizToolCall,
