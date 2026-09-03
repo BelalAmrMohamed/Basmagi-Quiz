@@ -27,12 +27,14 @@ body.sidebar-expanded {
 .sidebar {
   position: fixed;
   top: 0;
-  right: 0; /* RTL: anchored to right edge */
+  right: 0;
+  /* RTL: anchored to right edge */
   left: auto;
   height: 100%;
   width: var(--sidebar-collapsed-width);
   background: var(--sidebar-color);
-  border-left: 1px solid var(--color-border); /* border on the inner/left edge */
+  border-left: 1px solid var(--color-border);
+  /* border on the inner/left edge */
   z-index: var(--z-overlay, 500);
   display: flex;
   flex-direction: column;
@@ -105,7 +107,7 @@ body.sidebar-expanded {
   direction: ltr;
 }
 
-.side-menu nav > * {
+.side-menu nav>* {
   direction: rtl;
 }
 
@@ -175,9 +177,11 @@ body.sidebar-expanded {
 .sidebar nav::-webkit-scrollbar {
   width: 4px;
 }
+
 .sidebar nav::-webkit-scrollbar-track {
   background: transparent;
 }
+
 .sidebar nav::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 4px;
@@ -376,7 +380,8 @@ body.sidebar-expanded {
 
 .side-menu-profile-dropdown {
   display: none;
-  position: fixed; /* escapes the <nav> ancestor's overflow-x: clip, which
+  position: fixed;
+  /* escapes the <nav> ancestor's overflow-x: clip, which
                        would otherwise silently clip an absolutely-positioned
                        popover that extends past the sidebar's left edge.
                        JS sets top/right inline on open (see side-menu.js). */
@@ -385,11 +390,13 @@ body.sidebar-expanded {
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
-  padding: 0 0 6px; /* no top/side padding: the header's cover strip bleeds
+  padding: 0 0 6px;
+  /* no top/side padding: the header's cover strip bleeds
                         flush to the popover's top edge and both side edges */
   z-index: 1000;
   direction: rtl;
-  overflow: hidden; /* clips the cover strip's border-radius to the popover's own rounded top corners */
+  overflow: hidden;
+  /* clips the cover strip's border-radius to the popover's own rounded top corners */
 }
 
 .side-menu-profile-dropdown.open {
@@ -402,6 +409,7 @@ body.sidebar-expanded {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -443,24 +451,20 @@ body.sidebar-expanded {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent 55%,
-    color-mix(in srgb, var(--color-surface) 55%, transparent) 100%
-  );
+  background: linear-gradient(to bottom,
+      transparent 55%,
+      color-mix(in srgb, var(--color-surface) 55%, transparent) 100%);
 }
 
 .side-menu-profile-dropdown-cover.is-default-thumbnail::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.08) 0px,
-    rgba(255, 255, 255, 0.08) 2px,
-    transparent 2px,
-    transparent 14px
-  );
+  background-image: repeating-linear-gradient(135deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 2px,
+      transparent 2px,
+      transparent 14px);
 }
 
 .side-menu-profile-dropdown-avatar-wrap {
@@ -468,7 +472,8 @@ body.sidebar-expanded {
   height: 64px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: -36px; /* overlaps the cover strip's bottom edge */
+  margin-top: -36px;
+  /* overlaps the cover strip's bottom edge */
   border: 3px solid var(--color-surface, #fff);
   background: var(--color-surface, #fff);
   position: relative;
@@ -603,6 +608,7 @@ body.sidebar-expanded {
 }
 
 @media (max-width: 768px) {
+
   /* Dropdown is desktop-only — mobile bottom-nav profile tab stays a plain
      link and never renders this trigger/popover. */
   .side-menu-profile-dropdown {
@@ -786,8 +792,10 @@ body.sidebar-expanded {
 .menu-divider {
   height: 1px;
   background: var(--color-border);
-  margin-block: 8px; /* logical: top/bottom only — no physical left/right */
-  margin-inline: 4px; /* logical: replaces margin: 8px 4px */
+  margin-block: 8px;
+  /* logical: top/bottom only — no physical left/right */
+  margin-inline: 4px;
+  /* logical: replaces margin: 8px 4px */
   flex-shrink: 0;
 }
 
@@ -952,7 +960,8 @@ body.sidebar-expanded {
 .sidebar.expanded .sidebar-expanded-only {
   opacity: 1;
   max-height: 600px;
-  overflow: visible; /* allow theme-selector-btn translateY(-2px) not to clip */
+  overflow: visible;
+  /* allow theme-selector-btn translateY(-2px) not to clip */
   pointer-events: auto;
   transition:
     opacity 150ms ease 100ms,
@@ -1021,8 +1030,7 @@ body.sidebar-expanded {
 
 .theme-controls-toggle-chevron {
   flex-shrink: 0;
-  transition: transform var(--duration-base, 240ms)
-    var(--ease-out-expo, ease);
+  transition: transform var(--duration-base, 240ms) var(--ease-out-expo, ease);
 }
 
 /* Chevron points down when open (default markup state, aria-expanded="true"),
@@ -1052,8 +1060,10 @@ body.sidebar-expanded {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-block: 4px 6px; /* logical top/bottom — replaces margin: 4px 4px 6px */
-  margin-inline: 4px; /* logical left/right  */
+  margin-block: 4px 6px;
+  /* logical top/bottom — replaces margin: 4px 4px 6px */
+  margin-inline: 4px;
+  /* logical left/right  */
   /*
    * padding-top gives vertical room for the translateY(-2px) lift on hover/active.
    * Since .sidebar nav now uses overflow-x: clip (not hidden), the nav no longer
@@ -1178,20 +1188,25 @@ body.sidebar-expanded {
 .theme-selector-btn[data-theme="light"] .theme-btn-preview {
   background: #fafbfc;
 }
+
 .theme-selector-btn[data-theme="light"] .theme-btn-preview-header::before {
   background: #ffffff;
   border: 1px solid #e5e7eb;
 }
+
 .theme-selector-btn[data-theme="light"] .theme-btn-preview-header::after {
   background: #6366f1;
 }
+
 .theme-selector-btn[data-theme="light"] .theme-btn-preview-row {
   background: #ffffff;
   border: 1px solid #e5e7eb;
 }
+
 .theme-selector-btn[data-theme="light"] .theme-btn-preview-row::before {
   background: #6366f1;
 }
+
 .theme-selector-btn[data-theme="light"] .theme-btn-preview-row::after {
   background: #e5e7eb;
 }
@@ -1199,20 +1214,25 @@ body.sidebar-expanded {
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview {
   background: #0f172a;
 }
+
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::before {
   background: #1e293b;
   border: 1px solid #334155;
 }
+
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-header::after {
   background: #818cf8;
 }
+
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row {
   background: #1e293b;
   border: 1px solid #334155;
 }
+
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::before {
   background: #818cf8;
 }
+
 .theme-selector-btn[data-theme="dark-slate"] .theme-btn-preview-row::after {
   background: #334155;
 }
@@ -1220,20 +1240,25 @@ body.sidebar-expanded {
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview {
   background: #121212;
 }
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::before {
   background: #1e1e1e;
   border: 1px solid #333333;
 }
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-header::after {
   background: #60a5fa;
 }
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row {
   background: #1e1e1e;
   border: 1px solid #333333;
 }
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::before {
   background: #60a5fa;
 }
+
 .theme-selector-btn[data-theme="dark"] .theme-btn-preview-row::after {
   background: #333333;
 }
@@ -1293,8 +1318,10 @@ body.sidebar-expanded {
   border-radius: 10px;
   padding: 9px 12px;
   cursor: pointer;
-  margin-block-end: 8px; /* logical bottom: replaces margin: 0 4px 4px */
-  margin-inline: 4px; /* logical left/right */
+  margin-block-end: 8px;
+  /* logical bottom: replaces margin: 0 4px 4px */
+  margin-inline: 4px;
+  /* logical left/right */
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -1347,15 +1374,15 @@ body.sidebar-expanded {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
-.toggle-input:checked ~ .toggle-switch {
+.toggle-input:checked~.toggle-switch {
   background: var(--color-primary, #4f6ef7);
 }
 
-.toggle-input:checked ~ .toggle-switch::after {
+.toggle-input:checked~.toggle-switch::after {
   left: 23px;
 }
 
-.toggle-input:focus-visible ~ .toggle-switch {
+.toggle-input:focus-visible~.toggle-switch {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
@@ -1369,9 +1396,7 @@ body.sidebar-expanded {
   /* Slide up from BOTTOM — full-width bottom sheet */
   .sidebar {
     top: auto;
-    bottom: calc(
-      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
-    );
+    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     width: 100% !important;
@@ -1379,7 +1404,8 @@ body.sidebar-expanded {
     border-left: none;
     border-top: 1px solid var(--color-border);
     border-radius: 24px 24px 0 0;
-    transform: translateY(100%); /* hidden below the viewport */
+    transform: translateY(100%);
+    /* hidden below the viewport */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: none;
     /*
@@ -1396,17 +1422,14 @@ body.sidebar-expanded {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    max-height: calc(
-      85dvh - var(--bottom-nav-height, 54px) - env(safe-area-inset-bottom, 0px)
-    );
+    max-height: calc(85dvh - var(--bottom-nav-height, 54px) - env(safe-area-inset-bottom, 0px));
   }
 
   .sidebar.expanded {
-    transform: translateY(0); /* slide up into view */
+    transform: translateY(0);
+    /* slide up into view */
     box-shadow: var(--shadow-xl);
-    bottom: calc(
-      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px)
-    );
+    bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px));
   }
 
   /* Drag handle — real element, grabbable and draggable (see side-menu.js).
@@ -1485,9 +1508,7 @@ body.sidebar-expanded {
   body,
   body.sidebar-expanded {
     padding-right: 16px !important;
-    padding-bottom: calc(
-      var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px
-    ) !important;
+    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
   }
 
   /* Full labels always visible on mobile */
@@ -1540,10 +1561,10 @@ body.sidebar-expanded {
      the 4 links that are now duplicated as their own bottom-nav tabs
      (الرئيسية / الحساب / إنشاء / الإعدادات). Only the leftover links
      (change name, theme, animations, contact dev, install app) remain. */
-  .sidebar nav > a[href="/"],
-  .sidebar nav > a[href="profile.html"],
-  .sidebar nav > a[href="create-quiz.html"],
-  .sidebar nav > a[href="settings.html"] {
+  .sidebar nav>a[href="/"],
+  .sidebar nav>a[href="profile.html"],
+  .sidebar nav>a[href="create-quiz.html"],
+  .sidebar nav>a[href="settings.html"] {
     display: none;
   }
 
@@ -1617,8 +1638,7 @@ body.sidebar-expanded {
     justify-content: center;
     width: 24px;
     height: 24px;
-    transition: transform 0.18s
-      var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+    transition: transform 0.18s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
   }
 
   .bottom-nav-label {
@@ -1677,13 +1697,13 @@ body.sidebar-expanded {
   }
 
   .bottom-nav-item-profile.active {
-    color: var(
-      --color-text-tertiary
-    ); /* label stays neutral; icon carries the emphasis */
+    color: var(--color-text-tertiary);
+    /* label stays neutral; icon carries the emphasis */
   }
 
   .bottom-nav-item-profile.active::before {
-    content: none; /* the raised pill icon is indicator enough */
+    content: none;
+    /* the raised pill icon is indicator enough */
   }
 
   .bottom-nav-item-profile:active .bottom-nav-icon-profile {
@@ -1804,23 +1824,17 @@ html[data-motion="reduced"] .menu-item:active svg {
   border-radius: 50%;
   border: 1.5px solid var(--badge-gold-hi);
   background:
-    radial-gradient(
-      circle at 32% 28%,
+    radial-gradient(circle at 32% 28%,
       rgba(255, 255, 255, 0.85) 0%,
-      transparent 42%
-    ),
-    radial-gradient(
-      circle at 70% 78%,
+      transparent 42%),
+    radial-gradient(circle at 70% 78%,
       rgba(122, 84, 20, 0.45) 0%,
-      transparent 50%
-    ),
-    linear-gradient(
-      145deg,
+      transparent 50%),
+    linear-gradient(145deg,
       var(--badge-gold-hi) 0%,
       var(--badge-gold) 38%,
       var(--badge-gold-mid) 72%,
-      var(--badge-gold-lo) 100%
-    );
+      var(--badge-gold-lo) 100%);
   box-shadow:
     0 0 0 1px rgba(122, 84, 20, 0.45),
     0 2px 5px rgba(0, 0, 0, 0.3),
@@ -1839,10 +1853,12 @@ html[data-motion="reduced"] .menu-item:active svg {
 }
 
 @keyframes nav-badge-idle-sheen {
+
   0%,
   100% {
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.22)) brightness(1);
   }
+
   50% {
     filter: drop-shadow(0 1px 3px rgba(245, 158, 11, 0.35)) brightness(1.06);
   }
@@ -1854,8 +1870,7 @@ html[data-motion="reduced"] .menu-item:active svg {
 .bottom-nav-item-profile:hover .nav-badge-overlay,
 .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
 .nav-badge-overlay:hover {
-  animation: nav-badge-authority-stamp 0.85s
-    var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+  animation: nav-badge-authority-stamp 0.85s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
   border-color: #fff6d6;
   box-shadow:
     0 0 0 2px rgba(251, 191, 36, 0.55),
@@ -1864,23 +1879,26 @@ html[data-motion="reduced"] .menu-item:active svg {
     0 4px 10px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.8),
     inset 0 -1px 1px rgba(122, 84, 20, 0.3);
-  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85)) brightness(1.12)
-    saturate(1.15);
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.85)) brightness(1.12) saturate(1.15);
 }
 
 @keyframes nav-badge-authority-stamp {
   0% {
     transform: rotate(16deg) scale(1);
   }
+
   28% {
     transform: rotate(-18deg) scale(1.42) translateY(-3px);
   }
+
   52% {
     transform: rotate(10deg) scale(1.18) translateY(-1px);
   }
+
   72% {
     transform: rotate(-8deg) scale(1.3) translateY(-2px);
   }
+
   100% {
     transform: rotate(-6deg) scale(1.28) translateY(-2px);
   }
@@ -2021,6 +2039,7 @@ html[data-motion="reduced"] .nav-badge-overlay:hover {
   background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
   color: white;
 }
+
 .contact-whatsapp:hover {
   border-color: #25d366;
   background: rgba(37, 211, 102, 0.05);
@@ -2030,6 +2049,7 @@ html[data-motion="reduced"] .nav-badge-overlay:hover {
   background: linear-gradient(135deg, #2ca5e0 0%, #1a7fb5 100%);
   color: white;
 }
+
 .contact-telegram:hover {
   border-color: #2ca5e0;
   background: rgba(44, 165, 224, 0.05);
@@ -2039,6 +2059,7 @@ html[data-motion="reduced"] .nav-badge-overlay:hover {
   background: var(--gradient-accent);
   color: white;
 }
+
 .contact-email:hover {
   border-color: var(--color-primary);
   background: var(--color-primary-light);

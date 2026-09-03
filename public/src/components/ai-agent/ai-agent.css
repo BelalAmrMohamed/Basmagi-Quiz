@@ -1492,32 +1492,62 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-sidebar-favicon {
   display: none;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon {
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
   padding: 0;
   border: none;
-  border-radius: 50%;
   background: transparent;
+  border-radius: 10px;
   cursor: pointer;
+  position: relative;
+  color: var(--color-text-primary);
+  transition: background-color 0.2s ease, transform 0.15s ease;
   flex-shrink: 0;
-  transition: transform 0.15s ease;
 }
 
-.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon {
-  display: flex;
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon:hover,
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon:focus-visible {
+  background: var(--color-primary-light, rgba(255, 255, 255, 0.08));
+  outline: none;
 }
 
-.ai-agent-sidebar-favicon:hover {
-  transform: scale(1.06);
-}
-
-.ai-agent-sidebar-favicon-img {
+.ai-agent-sidebar-favicon .ai-agent-sidebar-favicon-img {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
+  border-radius: 6px;
+  object-fit: contain;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ai-agent-sidebar-favicon .ai-agent-sidebar-expand-icon {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary, #6366f1);
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+}
+
+.ai-agent-sidebar-favicon:hover .ai-agent-sidebar-favicon-img,
+.ai-agent-sidebar-favicon:focus-visible .ai-agent-sidebar-favicon-img {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.ai-agent-sidebar-favicon:hover .ai-agent-sidebar-expand-icon,
+.ai-agent-sidebar-favicon:focus-visible .ai-agent-sidebar-expand-icon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .ai-agent-sidebar-brand {
@@ -1535,8 +1565,8 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-sidebar-brand-img {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
+  border-radius: 6px;
+  object-fit: contain;
   flex-shrink: 0;
 }
 
@@ -1560,17 +1590,50 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-text-secondary);
   border-radius: 8px;
   cursor: pointer;
+  position: relative;
   flex-shrink: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
   display: none;
 }
 
-.ai-agent-sidebar-collapse-btn:hover {
-  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
-  color: var(--color-text-primary);
+.ai-agent-sidebar-collapse-btn:hover,
+.ai-agent-sidebar-collapse-btn:focus-visible {
+  background: var(--color-primary-light, rgba(255, 255, 255, 0.08));
+  color: var(--color-primary, #6366f1);
+  outline: none;
+}
+
+.ai-agent-sidebar-collapse-btn svg {
+  width: 20px;
+  height: 20px;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ai-agent-sidebar-collapse-btn .icon-default {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.ai-agent-sidebar-collapse-btn .icon-hover {
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.85);
+  pointer-events: none;
+}
+
+.ai-agent-sidebar-collapse-btn:hover .icon-default,
+.ai-agent-sidebar-collapse-btn:focus-visible .icon-default {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.ai-agent-sidebar-collapse-btn:hover .icon-hover,
+.ai-agent-sidebar-collapse-btn:focus-visible .icon-hover {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .ai-agent-sidebar-btn {

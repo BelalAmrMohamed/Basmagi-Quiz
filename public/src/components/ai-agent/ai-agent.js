@@ -43,7 +43,15 @@ const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" hei
 const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>`;
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
 const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
-const COLLAPSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="m10 10-2 2 2 2"/></svg>`;
+// The following three mirror side-menu.js's own collapsed-favicon/
+// collapse-button icons exactly (same paths, same lucide icons:
+// panel-right-open / panel-left / panel-left-open) — see side-menu.css's
+// .sidebar-favicon/.sidebar-collapse-btn hover-crossfade rules, which
+// .ai-agent-sidebar-favicon/.ai-agent-sidebar-collapse-btn in ai-agent.css
+// replicate for these same three icons.
+const SIDEBAR_EXPAND_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-agent-sidebar-expand-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/></svg>`;
+const SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-default" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
+const SIDEBAR_COLLAPSE_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hover" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`;
 
 // Matches the >=901px breakpoint in ai-agent.css's desktop-layout rules —
 // kept as a named constant here so the JS toggle and the CSS media query
@@ -306,16 +314,20 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   const sidebarHeader = document.createElement("div");
   sidebarHeader.className = "ai-agent-sidebar-header";
 
-  // (1) Collapsed-rail favicon — the app's own logo image, matching the
-  // main side-menu's collapsed favicon-rail button. Only visible while
-  // collapsed (CSS); acts as the expand trigger.
+  // (1) Collapsed-rail favicon — logo image + expand icon as two
+  // siblings inside one button, crossfaded on hover via CSS (see
+  // .ai-agent-sidebar-favicon-img / .ai-agent-sidebar-expand-icon in
+  // ai-agent.css) — exactly side-menu.css's .sidebar-favicon pattern:
+  // default state shows the logo, hover/focus swaps to the expand icon.
+  // Only visible while collapsed (CSS); acts as the expand trigger.
   const sidebarFaviconBtn = document.createElement("button");
   sidebarFaviconBtn.type = "button";
   sidebarFaviconBtn.className = "ai-agent-sidebar-favicon";
   sidebarFaviconBtn.setAttribute("aria-label", "توسيع الشريط الجانبي");
   sidebarFaviconBtn.title = "توسيع الشريط الجانبي";
   sidebarFaviconBtn.innerHTML =
-    '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="الباشــمبصمج" class="ai-agent-sidebar-favicon-img">';
+    '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="الباشــمبصمج" class="ai-agent-sidebar-favicon-img">' +
+    SIDEBAR_EXPAND_ICON_SVG;
 
   // (2) Expanded header: full logo/name + (3) the collapse button —
   // grouped exactly like .sidebar-header/.sidebar-brand-link/
@@ -327,12 +339,16 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarBrand.innerHTML =
     '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-sidebar-brand-img"><span class="ai-agent-sidebar-brand-name">الباشــمبصمج</span>';
 
+  // Collapse button: two icon siblings (default "panel-left" / hover
+  // "panel-left-open" — same lucide icons and same crossfade mechanism
+  // side-menu.css uses for #sidebarCollapseBtn) rather than one static
+  // icon, matching the requested hover behavior exactly.
   const sidebarCollapseBtn = document.createElement("button");
   sidebarCollapseBtn.type = "button";
   sidebarCollapseBtn.className = "ai-agent-sidebar-collapse-btn";
   sidebarCollapseBtn.setAttribute("aria-label", "طي الشريط الجانبي");
   sidebarCollapseBtn.title = "طي الشريط الجانبي";
-  sidebarCollapseBtn.innerHTML = COLLAPSE_ICON_SVG;
+  sidebarCollapseBtn.innerHTML = SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG + SIDEBAR_COLLAPSE_HOVER_ICON_SVG;
 
   sidebarHeader.append(sidebarFaviconBtn, sidebarBrand, sidebarCollapseBtn);
 

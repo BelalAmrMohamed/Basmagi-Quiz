@@ -1458,9 +1458,30 @@ export function createChatPanel(options = {}) {
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
+    // Tool-result entries are stored with role: "assistant" (see the
+    // history.push in the tool-loop below, and appendMessage/
+    // loadConversation which style them via their own `type` — not
+    // `role` — as a distinct "🔧 النظام" bubble). But a tool result is
+    // new information being reported TO the model, not something the
+    // model itself said, and every provider's turn-taking API assumes
+    // strict user/model alternation with a user turn last — Gemini
+    // enforces this explicitly ("Requests ending with a model turn are
+    // not supported"), and the others are undefined/unreliable in the
+    // same shape. Remapped to role: "user" here, at the wire boundary
+    // only, so the stored/rendered history is untouched but the model
+    // always sees the tool result as an incoming user-role message —
+    // this is what makes the post-tool-call continuation (see
+    // resendLastUserTurn's recursive call below) actually valid to send.
+    const toWireMessage = ({ role, content, attachments, type }) => ({
+      role: type === "tool-result" ? "user" : role,
+      content,
+      attachments,
+      type,
+    });
+
     const outgoingMessages = combinedContext
-      ? [{ role: "user", content: combinedContext }, ...history]
-      : history;
+      ? [{ role: "user", content: combinedContext }, ...history.map(toWireMessage)]
+      : history.map(toWireMessage);
 
     // Prefer the user's own saved key when present — if they went to the
     // trouble of saving one, that's an explicit signal to use it, and it
