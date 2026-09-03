@@ -209,11 +209,13 @@ html[data-theme="light"] {
   --anim-particle-3: rgba(236, 72, 153, 0.3);
   --anim-orb: rgba(99, 102, 241, 0.08);
 
-  /* Slate-blue scrollbar, on-brand with the theme's border/text-tertiary
-     hues; was an unrelated lime-yellow (#c0e040) with only 1.45:1 contrast
-     against this theme's background. */
-  --scrollbar-thumb: #838d9c;
-  --scrollbar-thumb-hover: #5e697e;
+  /* Brand lime scrollbar (matches the platform logo) restored. The light
+     theme gets a darkened variant of the same hue (72deg) instead of the
+     shared #c0e040/#a9c933 used on dark/dark-slate, since #c0e040 was only
+     1.45:1 against this theme's near-white background (#fafbfc) - invisible,
+     not just low-contrast. Darkened in place, hue preserved, to clear 3:1. */
+  --scrollbar-thumb: #7c9418;
+  --scrollbar-thumb-hover: #687c14;
   --scrollbar-track: transparent;
 }
 
@@ -326,8 +328,8 @@ html[data-theme="dark"] {
   --anim-particle-3: rgba(236, 72, 153, 0.35);
   --anim-orb: rgba(59, 130, 246, 0.12);
 
-  --scrollbar-thumb: #5e646c;
-  --scrollbar-thumb-hover: #7e8796;
+  --scrollbar-thumb: #c0e040;
+  --scrollbar-thumb-hover: #a9c933;
   --scrollbar-track: transparent;
 }
 
@@ -439,8 +441,8 @@ html[data-theme="dark-slate"] {
   --anim-particle-3: rgba(236, 72, 153, 0.4);
   --anim-orb: rgba(99, 102, 241, 0.15);
 
-  --scrollbar-thumb: #5e697e;
-  --scrollbar-thumb-hover: #7b89a8;
+  --scrollbar-thumb: #c0e040;
+  --scrollbar-thumb-hover: #d5f754;
   --scrollbar-track: #0f172a;
 }
 

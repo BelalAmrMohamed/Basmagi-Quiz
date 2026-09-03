@@ -7,6 +7,7 @@ import { getSelectedUserQuizzes } from "./app-state.js";
 import { toSlug } from "./slug-utils.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
+import { MORE_DOTS_ICON_SVG } from "./icons.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -991,10 +992,72 @@ export function selectItem(itemId) {
   updateBulkActionBar(true);
 }
 
+/**
+ * Recursively count all subfolders and quizzes inside a given folder or course.
+ * @param {object[]} userQuizzes
+ * @param {string} folderId
+ * @returns {{ subfolderCount: number, quizCount: number }}
+ */
+export function getFolderContentsCount(userQuizzes, folderId) {
+  let subfolderCount = 0;
+  let quizCount = 0;
+
+  function walk(currentId) {
+    const children = userQuizzes.filter(
+      (q) => (q.meta?.parentId || null) === currentId
+    );
+    for (const child of children) {
+      const isDir = child.meta?.type === "folder" || child.meta?.type === "course";
+      if (isDir) {
+        subfolderCount++;
+        walk(child.id || child.meta?.id);
+      } else {
+        quizCount++;
+      }
+    }
+  }
+
+  walk(folderId);
+  return { subfolderCount, quizCount };
+}
+
+/**
+ * Format the subfolder and quiz count in natural Arabic with proper plural rules.
+ * @param {number} subfolderCount
+ * @param {number} quizCount
+ * @returns {string}
+ */
+export function formatFolderAndQuizCount(subfolderCount, quizCount) {
+  if (subfolderCount === 0 && quizCount === 0) {
+    return "فارغ";
+  }
+
+  const parts = [];
+
+  if (subfolderCount > 0) {
+    if (subfolderCount === 1) parts.push("مجلد واحد");
+    else if (subfolderCount === 2) parts.push("مجلدان");
+    else if (subfolderCount >= 3 && subfolderCount <= 10) parts.push(`${subfolderCount} مجلدات`);
+    else parts.push(`${subfolderCount} مجلد`);
+  }
+
+  if (quizCount > 0) {
+    if (quizCount === 1) parts.push("اختبار واحد");
+    else if (quizCount === 2) parts.push("اختباران");
+    else if (quizCount >= 3 && quizCount <= 10) parts.push(`${quizCount} اختبارات`);
+    else parts.push(`${quizCount} اختبار`);
+  }
+
+  return parts.join(" · ");
+}
+
 export function createFolderOrCourseCard(item) {
   const card = document.createElement("div");
   card.className = "category-card user-quiz-card";
   card.style.cursor = "pointer";
+  card.style.position = "relative";
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
   const isCourse = item.meta?.type === "course";
   // Courses are always top-level (see canPlaceItem) — there is no valid
   // drop target for one, so it isn't made draggable at all rather than
@@ -1007,26 +1070,86 @@ export function createFolderOrCourseCard(item) {
   const selectedUserQuizzes = getSelectedUserQuizzes();
   const isChecked = selectedUserQuizzes.has(itemId);
 
-  card.innerHTML = `
-    <div class="user-quiz-card-overlay">
-      <input type="checkbox" class="user-quiz-select-checkbox" data-quiz-id="${itemId}" aria-label="تحديد" ${isChecked ? "checked" : ""}>
-    </div>
-    <div class="category-icon" aria-hidden="true">${icon}</div>
-    <div class="category-info">
-      <h3>${item.meta?.title}</h3>
-    </div>
-  `;
+  // Checkbox: attached directly to card as an out-of-flow absolute element
+  // (no in-flow wrapper div, preserving exact phone emoji alignment)
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "user-quiz-select-checkbox";
+  checkbox.setAttribute("data-quiz-id", itemId);
+  checkbox.setAttribute("aria-label", "تحديد");
+  checkbox.checked = isChecked;
+  checkbox.onclick = (e) => {
+    e.stopPropagation();
+    if (checkbox.checked) {
+      selectedUserQuizzes.add(itemId);
+    } else {
+      selectedUserQuizzes.delete(itemId);
+    }
+    updateBulkActionBar();
+  };
+  card.appendChild(checkbox);
+
+  // Category Icon: First in-flow flex child, aligned identically to user-quiz--phone-only-emoji
+  const iconEl = document.createElement("div");
+  iconEl.className = "category-icon";
+  iconEl.setAttribute("aria-hidden", "true");
+  iconEl.textContent = icon;
+  card.appendChild(iconEl);
+
+  // Text wrapper: card-text (display:contents on desktop, flex-column on mobile)
+  const textWrap = document.createElement("div");
+  textWrap.className = "card-text";
+
+  const h = document.createElement("h3");
+  h.textContent = item.meta?.title || "";
+  textWrap.appendChild(h);
+
+  // Subtext: total number of subfolders and quizzes (recursive)
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const { subfolderCount, quizCount } = getFolderContentsCount(userQuizzes, itemId);
+  const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount);
+
+  const subtextEl = document.createElement("p");
+  subtextEl.className = "category-card-subtext user-quiz-count";
+  subtextEl.textContent = subtextStr;
+  textWrap.appendChild(subtextEl);
+
+  card.appendChild(textWrap);
+
+  card.setAttribute("title", item.meta?.title || "");
+  card.setAttribute("aria-label", `${item.meta?.title || ""}, ${subtextStr}`);
+
+  // Actions wrap with ⋮ more button for touch & quick access
+  const actionsWrap = document.createElement("div");
+  actionsWrap.className = "category-card-actions-wrap";
+  const moreBtn = document.createElement("button");
+  moreBtn.className = "exam-more-btn";
+  moreBtn.type = "button";
+  moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
+  moreBtn.setAttribute("aria-label", `خيارات ${item.meta?.title || ""}`);
+  moreBtn.onclick = (e) => {
+    e.stopPropagation();
+    showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
+  };
+  actionsWrap.appendChild(moreBtn);
+  card.appendChild(actionsWrap);
 
   card.onclick = () => {
     // If in selection mode, toggle checkbox instead
     const container = document.querySelector(".user-quizzes-container");
     if (container?.classList.contains("selection-mode-active")) {
-      const checkbox = card.querySelector(".user-quiz-select-checkbox");
-      if (checkbox) checkbox.click();
+      checkbox.click();
       return;
     }
     navigateToFolder(itemId, item.meta?.title);
   };
+
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      card.click();
+    }
+  });
 
   if (!isCourse) {
     card.ondragstart = (e) => handleDragStart(e, itemId);
@@ -1046,20 +1169,6 @@ export function createFolderOrCourseCard(item) {
     e.stopPropagation();
     showContextMenu(e, item.meta?.type || "folder", itemId, item.meta?.title);
   };
-
-  // Sync checkbox state with the shared selection set
-  const checkbox = card.querySelector(".user-quiz-select-checkbox");
-  if (checkbox) {
-    checkbox.onclick = (e) => {
-      e.stopPropagation();
-      if (checkbox.checked) {
-        selectedUserQuizzes.add(itemId);
-      } else {
-        selectedUserQuizzes.delete(itemId);
-      }
-      updateBulkActionBar();
-    };
-  }
 
   return card;
 }
