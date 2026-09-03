@@ -599,12 +599,46 @@ body.sidebar-expanded {
   border-radius: 6px;
 }
 
+/* Sign In Item */
+.side-menu-profile-dropdown-item-signin {
+  color: var(--color-text-primary, #111827);
+  background: var(--color-background-secondary, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+  font-weight: 600;
+  margin-top: 4px;
+  margin-bottom: 2px;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+}
+
+.side-menu-profile-dropdown-item-signin:hover:not(:disabled) {
+  background: var(--color-hover-overlay, rgba(99, 102, 241, 0.06));
+  border-color: var(--color-primary, #6366f1);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.side-menu-profile-dropdown-item-signin:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.side-menu-dropdown-google-icon {
+  flex-shrink: 0;
+  display: block;
+}
+
+/* Danger / Sign Out Item */
 .side-menu-profile-dropdown-item-danger {
   color: #ef4444;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .side-menu-profile-dropdown-item-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.side-menu-profile-dropdown-item-danger:hover svg {
+  stroke: #ffffff !important;
 }
 
 @media (max-width: 768px) {
