@@ -24,7 +24,7 @@ body.has-offline-banner {
   z-index: var(--z-notification, 9999); /* above toasts/overlays */
 
   /* ── Layout ────────────────────────────────────────────────────────────── */
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
@@ -69,6 +69,7 @@ body.has-offline-banner {
 /* Show state — toggled by JS */
 #offlineBanner.is-visible {
   transform: translateY(0);
+  display: flex;
 }
 
 /* ── State: OFFLINE — desaturated amber/warning undertone inside the glass ─ */

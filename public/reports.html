@@ -329,19 +329,6 @@
                 </div>
             </div>
 
-            <div class="menu-divider desktop-only-divider" role="separator"></div>
-
-            <a href="settings.html" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true">
-                    <path
-                        d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
-                    <circle cx="12" cy="12" r="3" />
-                </svg>
-                <span class="menu-label">الإعدادات</span>
-            </a>
-
             <button onclick="changeUsername()" class="menu-item mobile-only-menu-item" title="تغيير الإسم"
                 data-tooltip="تغيير الإسم">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -467,17 +454,16 @@
 
             <!-- Pinned bottom actions -->
             <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
-                <button class="menu-item" id="contactDevBtn" title="تواصل مع المطور؛ للتبليغ عن أي عطل"
-                    data-tooltip="تواصل مع المطور">
+                <a href="settings.html" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                         aria-hidden="true">
                         <path
-                            d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" />
-                        <path d="M8 12h.01M12 12h.01M16 12h.01" />
+                            d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                        <circle cx="12" cy="12" r="3" />
                     </svg>
-                    <span class="menu-label">تواصل مع المطور</span>
-                </button>
+                    <span class="menu-label">الإعدادات</span>
+                </a>
 
                 <button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp"
                     data-tooltip="تثبيت التطبيق" style="display:none;">

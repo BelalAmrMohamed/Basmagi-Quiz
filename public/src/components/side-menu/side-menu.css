@@ -1602,13 +1602,6 @@ body.sidebar-expanded {
     display: none;
   }
 
-  /* The divider that used to separate the create-quiz link from settings
-     would otherwise leave an orphaned line at the very top of the sheet. */
-  /* .sidebar nav > .menu-divider:first-of-type, */
-  .desktop-only-divider {
-    display: none;
-  }
-
   /* ── Bottom Navigation Bar ────────────────────────────────────────────── */
   /* --bottom-nav-height now lives centrally in themes.css :root alongside
      the other layout tokens (--sidebar-collapsed-width, etc.) — no need

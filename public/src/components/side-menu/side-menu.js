@@ -5,7 +5,6 @@
 // ============================================================================
 
 import { mountSignInDialog, openSignInDialog } from "../log-in/sign-in.js";
-import "../contact-dev/contact-dev.js";
 
 mountSignInDialog();
 
@@ -629,35 +628,6 @@ mountSignInDialog();
     });
   }
 
-  // ── Contact Developer button ────────────────────────────────────────────────
-
-  const contactDevBtn = document.getElementById("contactDevBtn");
-  if (contactDevBtn) {
-    contactDevBtn.addEventListener("click", () => {
-      if (isMobile()) closeMobileSidebar();
-      else {
-        // The side bar is expanded
-        const sideBarIsNotExpanded = !sidebar.classList.contains("expanded");
-
-        if (!sideBarIsNotExpanded) {
-          applyDesktopState(sideBarIsNotExpanded);
-          try {
-            localStorage.setItem(STORAGE_KEY, String(sideBarIsNotExpanded));
-          } catch (_) {}
-        }
-      }
-
-      setTimeout(
-        () => {
-          if (typeof window.openContactOverlay === "function") {
-            window.openContactOverlay();
-          }
-        },
-        isMobile() ? 150 : 0,
-      );
-    });
-  }
-
   // ── Run ─────────────────────────────────────────────────────────────────────
   init();
 })();
@@ -1031,47 +1001,6 @@ if (document.readyState === "loading") {
 } else {
   initProfileDropdown();
 }
-
-// ============================================================================
-// CONTACT OVERLAY
-// ============================================================================
-
-const phoneNumber = "201118482193";
-const emailAddress = "belalamrofficial@gmail.com";
-
-window.openContactOverlay = function () {
-  const overlay = document.getElementById("contactDevOverlay");
-  if (overlay) overlay.style.display = "flex";
-};
-
-window.closeContactOverlay = function () {
-  const overlay = document.getElementById("contactDevOverlay");
-  if (overlay) overlay.style.display = "none";
-};
-
-window.contactViaWhatsApp = function () {
-  window.open(`https://wa.me/${phoneNumber}`, "_blank");
-  closeContactOverlay();
-};
-
-window.contactViaTelegram = function () {
-  window.open("https://t.me/BelalAmrMohamed", "_blank");
-  closeContactOverlay();
-};
-
-window.contactViaEmail = function () {
-  window.location.href = `mailto:${emailAddress}`;
-  closeContactOverlay();
-};
-
-document.addEventListener("DOMContentLoaded", () => {
-  const overlay = document.getElementById("contactDevOverlay");
-  if (overlay) {
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeContactOverlay();
-    });
-  }
-});
 
 // ============================================================================
 // CHANGE USERNAME

@@ -99,7 +99,7 @@ html[data-theme="dark-slate"] body {
     display: block;
     height: 100%;
     width: 100%;
-    background: linear-gradient(to left, var(--accent) 0%, var(--accent-sub) 60%, var(--rule-heavy) 100%);
+    background: white;
     transform-origin: right center;
     transform: scaleX(0);
     transition: transform 0.1s linear;
