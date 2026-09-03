@@ -1396,9 +1396,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* background: var(--gradient-accent); */
-  /* background: linear-gradient(135deg, #FFD874 0%, #FF8C69 50%, #FF6B7A 100%); */
-  background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%);;
+  background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%);
   color: #fff;
   cursor: pointer;
   box-shadow: var(--shadow-lg);
@@ -1407,7 +1405,8 @@
 
 .ai-agent-fab:hover {
   transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  /* box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); */
+  box-shadow: 0 6px 16px rgba(255, 107, 122, 0.5), 0 3px 6px rgba(0, 0, 0, 0.15);
 }
 
 .ai-agent-fab:active {
@@ -1415,8 +1414,8 @@
 }
 
 .ai-agent-fab-logo {
-  width: 34px;
-  height: 34px;
+  width: 60%;
+  height: 60%;
   object-fit: contain;
   pointer-events: none;
 }

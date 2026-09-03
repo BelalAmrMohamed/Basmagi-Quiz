@@ -46,7 +46,7 @@
 .formal-answer b,
 .formal-answer-text strong,
 .formal-answer-text b {
-  font-weight: 700;
+  font-weight: 850;
   color: var(--color-text-primary);
 }
 
