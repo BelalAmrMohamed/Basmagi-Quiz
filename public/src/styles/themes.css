@@ -443,6 +443,7 @@ html[data-motion="reduced"] *:not(
   .ai-agent-typing, .ai-agent-typing *,
   .ai-agent-typing-dots, .ai-agent-typing-dots *,
   .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  .ai-agent-msg-speak-btn, .ai-agent-msg-speak-btn *,
   [class*="skeleton"], [class*="skeleton"] *,
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *
@@ -453,6 +454,7 @@ html[data-motion="reduced"] *:not(
   .ai-agent-typing, .ai-agent-typing *,
   .ai-agent-typing-dots, .ai-agent-typing-dots *,
   .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  .ai-agent-msg-speak-btn, .ai-agent-msg-speak-btn *,
   [class*="skeleton"], [class*="skeleton"] *,
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *
@@ -463,6 +465,7 @@ html[data-motion="reduced"] *:not(
   .ai-agent-typing, .ai-agent-typing *,
   .ai-agent-typing-dots, .ai-agent-typing-dots *,
   .ai-agent-typing-icon, .ai-agent-typing-icon *,
+  .ai-agent-msg-speak-btn, .ai-agent-msg-speak-btn *,
   [class*="skeleton"], [class*="skeleton"] *,
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *

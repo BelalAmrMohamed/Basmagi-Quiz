@@ -631,8 +631,18 @@ function openAIAgentModal(options, fab) {
 
   function closeModal() {
     const activeChat = getChatPanelForPageKey(options.pageKey);
-    if (activeChat && !activeChat.isGenerating?.()) {
-      activeChat.clearTyping?.();
+    if (activeChat) {
+      activeChat.stopSpeaking?.();
+      if (!activeChat.isGenerating?.()) {
+        activeChat.clearTyping?.();
+      }
+    }
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        // ignore
+      }
     }
     modal.remove();
     document.removeEventListener("keydown", onKeydown);

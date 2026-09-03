@@ -323,7 +323,8 @@
 }
 
 .ai-agent-msg-copy-btn,
-.ai-agent-msg-edit-btn {
+.ai-agent-msg-edit-btn,
+.ai-agent-msg-speak-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -338,11 +339,13 @@
   box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.15));
   transition:
     color 0.15s,
-    border-color 0.15s;
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .ai-agent-msg-copy-btn:hover,
-.ai-agent-msg-edit-btn:hover {
+.ai-agent-msg-edit-btn:hover,
+.ai-agent-msg-speak-btn:hover {
   color: var(--color-primary);
   border-color: var(--color-primary);
 }
@@ -351,6 +354,24 @@
 .ai-agent-msg-copy-btn--copied:hover {
   color: var(--color-success);
   border-color: var(--color-success);
+}
+
+.ai-agent-msg-speak-btn--speaking {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.1);
+  animation: ai-agent-pulse-speak 1.5s infinite ease-in-out;
+}
+
+@keyframes ai-agent-pulse-speak {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0);
+  }
 }
 
 /* ── Edit-in-place mode (Claude-style "edit and resubmit") ──
@@ -1375,7 +1396,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-accent);
+  /* background: var(--gradient-accent); */
+  /* background: linear-gradient(135deg, #FFD874 0%, #FF8C69 50%, #FF6B7A 100%); */
+  background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%);;
   color: #fff;
   cursor: pointer;
   box-shadow: var(--shadow-lg);

@@ -1000,6 +1000,113 @@ export function createChatPanel(options = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
   const EDIT_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>';
+  const SPEAK_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+  const SPEAK_STOP_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>';
+
+  /** @type {HTMLButtonElement | null} */
+  let activeSpeakBtn = null;
+
+  function stopSpeaking() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {
+        console.error("[ai-agent-chat] speech cancel failed:", e);
+      }
+    }
+    if (activeSpeakBtn) {
+      activeSpeakBtn.innerHTML = SPEAK_ICON_SVG;
+      activeSpeakBtn.classList.remove("ai-agent-msg-speak-btn--speaking");
+      activeSpeakBtn.setAttribute("aria-label", "قراءة الرسالة صوتياً");
+      activeSpeakBtn.title = "قراءة صوتية";
+      activeSpeakBtn = null;
+    }
+  }
+
+  function cleanMarkdownForSpeech(text) {
+    if (!text) return "";
+    return text
+      .replace(/```[\s\S]*?```/g, "") // strip code blocks
+      .replace(/`([^`]+)`/g, "$1") // inline code
+      .replace(/!\[.*?\]\(.*?\)/g, "") // images
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // markdown links
+      .replace(/^[#*>\s-]+/gm, "") // markdown headers, bullets, blockquotes
+      .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, "$1") // bold/italic
+      .replace(/\|/g, " ") // table pipes
+      .replace(/\s+/g, " ") // collapse multiple spaces
+      .trim();
+  }
+
+  /**
+   * Adds a Read Aloud (TTS) button to assistant messages only.
+   * @param {HTMLElement} controlsEl - the controls row below the bubble
+   * @param {string} rawText - raw message text to speak
+   */
+  function addSpeakButton(controlsEl, rawText) {
+    if (typeof window === "undefined" || !("speechSynthesis" in window) || !rawText) return;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "ai-agent-msg-speak-btn";
+    btn.setAttribute("aria-label", "قراءة الرسالة صوتياً");
+    btn.title = "قراءة صوتية";
+    btn.innerHTML = SPEAK_ICON_SVG;
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      if (activeSpeakBtn === btn) {
+        stopSpeaking();
+        return;
+      }
+
+      stopSpeaking();
+
+      const textToSpeak = cleanMarkdownForSpeech(rawText);
+      if (!textToSpeak) return;
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      const isArabic = /[\u0600-\u06FF]/.test(textToSpeak);
+      utterance.lang = isArabic ? "ar-SA" : "en-US";
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+
+      const voices = window.speechSynthesis.getVoices?.() || [];
+      if (isArabic) {
+        const arVoice = voices.find((v) => v.lang && (v.lang.startsWith("ar-") || v.lang === "ar"));
+        if (arVoice) utterance.voice = arVoice;
+      } else {
+        const enVoice = voices.find((v) => v.lang && (v.lang.startsWith("en-") || v.lang === "en"));
+        if (enVoice) utterance.voice = enVoice;
+      }
+
+      utterance.onstart = () => {
+        activeSpeakBtn = btn;
+        btn.innerHTML = SPEAK_STOP_ICON_SVG;
+        btn.classList.add("ai-agent-msg-speak-btn--speaking");
+        btn.setAttribute("aria-label", "إيقاف القراءة الصوتية");
+        btn.title = "إيقاف القراءة";
+      };
+
+      utterance.onend = () => {
+        if (activeSpeakBtn === btn) {
+          stopSpeaking();
+        }
+      };
+
+      utterance.onerror = () => {
+        if (activeSpeakBtn === btn) {
+          stopSpeaking();
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    });
+
+    controlsEl.appendChild(btn);
+  }
 
   /**
    * Adds a small per-message copy button to a rendered bubble, copying the
@@ -1239,7 +1346,12 @@ export function createChatPanel(options = {}) {
       return controls;
     }
 
-    if (content) addCopyButton(ensureControls(), content);
+    if (content) {
+      addCopyButton(ensureControls(), content);
+      if (role === "assistant") {
+        addSpeakButton(ensureControls(), content);
+      }
+    }
     // Edit is only offered for user prompts with real text and a known
     // position in `history` (loadConversation's re-render also supplies
     // this — see below), and only when the caller actually wants
@@ -1954,6 +2066,7 @@ export function createChatPanel(options = {}) {
   };
 
   panel.loadConversation = function loadConversation(conversation) {
+    stopSpeaking();
     typingController.clear();
     removeSuggestions();
     pendingAttachment = null;
@@ -2006,6 +2119,7 @@ export function createChatPanel(options = {}) {
    * a chat stuck without them for the rest of the panel's lifetime.
    */
   panel.startNewConversation = function startNewConversation() {
+    stopSpeaking();
     typingController.clear();
     conversationId = crypto.randomUUID();
     conversationCreatedAt = Date.now();
@@ -2041,6 +2155,7 @@ export function createChatPanel(options = {}) {
     const branchMessages = Array.isArray(branch?.messages) ? branch.messages : [];
     if (!branchMessages.length) return;
 
+    stopSpeaking();
     typingController.clear();
     removeSuggestions();
     conversationId = crypto.randomUUID();
@@ -2089,6 +2204,10 @@ export function createChatPanel(options = {}) {
 
   panel.isGenerating = function isGeneratingStatus() {
     return isGenerating;
+  };
+
+  panel.stopSpeaking = function stopSpeakingAction() {
+    stopSpeaking();
   };
 
   return panel;
