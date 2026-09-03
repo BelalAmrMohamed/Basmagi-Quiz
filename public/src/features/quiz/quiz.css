@@ -77,7 +77,7 @@ body {
 }
 
 .hamburger-stats {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   width: 44px;
@@ -91,17 +91,35 @@ body {
   z-index: calc(var(--z-overlay, 500) + 2);
   transition:
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  padding: 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .hamburger-stats:hover {
-  transform: scale(1.07);
+  transform: scale(1.05);
   box-shadow: var(--shadow-lg);
 }
 
 .hamburger-stats:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
+}
+
+.hamburger-icon {
+  display: block;
+  overflow: visible;
+}
+
+.hamburger-icon .bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease;
 }
 
 .hamburger-stats[aria-expanded="true"] .bar-top {
