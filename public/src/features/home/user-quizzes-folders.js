@@ -691,8 +691,18 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   if (currentFolderId === null) {
     contextMenuEl.appendChild(createMenuItem(CREATE_COURSE_SVG, "إنشاء مادة", () => createNewFolderOrCourse("course")));
   }
+  // Per-item "upload to platform" action — pushes this specific
+  // course/folder (with all of its nested contents) up to the DB via the
+  // dedicated course/folder upload wizards (adminUpload.js). Distinct from
+  // the "استيراد مجلد من جهازك" action below, which imports FROM the local
+  // filesystem INTO user_quizzes rather than uploading an existing local
+  // item OUT to the platform.
+  if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
+    const label = targetType === "course" ? "☁️ رفع المادة إلى المنصة" : "☁️ رفع المجلد إلى المنصة";
+    contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
+  }
   if (isAdminAuthenticated()) {
-    contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "رفع مجلد", () => uploadFolderForAdmins()));
+    contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "استيراد مجلد من جهازك", () => uploadFolderForAdmins()));
   }
 
   contextMenuEl.style.left = `${e.pageX}px`;
@@ -765,7 +775,30 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false) {
 }
 
 /**
- * "رفع مجلد" (admin folder upload) — lets an admin pick a whole
+ * Uploads a single course or folder card (with everything nested inside
+ * it) to the platform, via the dedicated Course/Folder upload wizards in
+ * adminUpload.js. Triggered from the card's ⋮ menu / right-click menu
+ * "☁️ رفع … إلى المنصة" action — see buildCourseUploadPayload /
+ * buildFolderUploadPayload for how the local tree is flattened for the API.
+ * @param {"course"|"folder"} type
+ * @param {string} itemId
+ */
+function uploadItemToPlatform(type, itemId) {
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const item = userQuizzes.find((q) => (q.id || q.meta?.id) === itemId);
+  if (!item) return;
+
+  import("./adminUpload.js").then((mod) => {
+    if (type === "course") {
+      mod.openCourseUploadModal([item], userQuizzes);
+    } else {
+      mod.openFolderUploadModal({ folders: [item], quizzes: [], userQuizzes });
+    }
+  });
+}
+
+/**
+ * "استيراد مجلد من جهازك" (admin local folder import) — lets an admin pick a whole
  * folder/Course on their machine (via the native directory picker) and
  * imports it in one shot: every subdirectory becomes a folder/course record
  * (preserving nesting) and every .json file becomes a quiz inside the right
@@ -970,6 +1003,128 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
     "success",
   );
   renderUserQuizzesView();
+}
+
+// ─── Upload-to-platform tree builders ──────────────────────────────────────
+// These turn a slice of the local `user_quizzes` tree into the flat `items`
+// array api/upload-quiz.js's "folder" mode expects (see that file's header
+// comment for the exact shape). Both builders share the same node shape:
+//   { type: "course"|"folder"|"quiz", name, folderSegments, rootName, quiz? }
+// `folderSegments` is always the ordered chain of ancestor names ABOVE the
+// node (never including the node's own name) — courses have none, a folder
+// has its course's name (+ any ancestor folders) directly above it, and a
+// quiz has whatever chain of course/folders sits above it.
+
+function walkChildren(userQuizzes, parentId) {
+  return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
+}
+
+function quizToPayload(entry) {
+  // Matches the shape normalizeQuizSchema (adminUpload.js) already builds
+  // from a local user_quizzes row — meta/stats/questions — so the exact
+  // same object can be handed straight to POST /api/upload-quiz.
+  return {
+    meta: { ...(entry.meta || {}) },
+    stats: entry.stats || { questionCount: (entry.questions || []).length, questionTypes: [] },
+    questions: entry.questions || [],
+  };
+}
+
+/**
+ * Recursively appends every descendant of `node` (folders + quizzes) into
+ * `items`, tagging each with the ancestor chain above it (`ancestorNames`).
+ * Shared by both buildCourseUploadPayload and buildFolderUploadPayload —
+ * the only difference between the two callers is what ancestorNames starts
+ * as and what rootName is stamped on each item.
+ */
+function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
+  const children = walkChildren(userQuizzes, node.id || node.meta?.id);
+  for (const child of children) {
+    const childId = child.id || child.meta?.id;
+    const childName = (child.meta?.title || "").trim();
+    if (child.meta?.type === "folder") {
+      items.push({
+        type: "folder",
+        name: childName,
+        folderSegments: [...ancestorNames],
+        rootName,
+      });
+      appendSubtree(userQuizzes, child, [...ancestorNames, childName], rootName, items);
+    } else {
+      // A plain quiz leaf.
+      items.push({
+        type: "quiz",
+        name: childName || child.meta?.title || "اختبار",
+        folderSegments: [...ancestorNames],
+        rootName,
+        quiz: quizToPayload(child),
+      });
+    }
+  }
+}
+
+/**
+ * Builds the flat `items` payload for uploading one or more entire courses
+ * (with all of their nested folders and quizzes) to the platform in one
+ * batch — the "مسار رفع المواد" workflow.
+ * @param {Array} userQuizzes - full local user_quizzes collection
+ * @param {Array} courseItems - the selected course rows (meta.type === "course")
+ * @returns {{ items: Array, rootName: string }}
+ */
+export function buildCourseUploadPayload(userQuizzes, courseItems) {
+  const items = [];
+  for (const course of courseItems) {
+    const courseName = (course.meta?.title || "").trim();
+    items.push({ type: "course", name: courseName, folderSegments: [], rootName: courseName });
+    appendSubtree(userQuizzes, course, [courseName], courseName, items);
+  }
+  return { items, rootName: courseItems.length === 1 ? (courseItems[0].meta?.title || "").trim() : "" };
+}
+
+/**
+ * Builds the flat `items` payload for uploading one or more folders (with
+ * their nested contents) plus any loose quizzes selected alongside them
+ * into an EXISTING course already on the platform — the "مسار رفع
+ * المجلدات" workflow. Unlike buildCourseUploadPayload, no "course" item is
+ * emitted: the target course is chosen separately in the wizard
+ * (openFolderUploadModal) and resolved server-side by name, so every
+ * folderSegments chain here is seeded with `targetCourseName` as its first
+ * element to match what api/upload-quiz.js's folder mode expects (the
+ * course name is always folderSegments[0] when no course item is present).
+ * @param {Array} userQuizzes
+ * @param {Array} folderItems - selected folder rows (meta.type === "folder")
+ * @param {Array} additionalQuizzes - selected plain quiz rows alongside the folders
+ * @param {string} targetCourseName - name of the existing course on the platform
+ * @param {string[]} [targetSubfolderPath] - optional chain of existing folder
+ *   names under the course to nest everything one level deeper into
+ * @returns {{ items: Array, rootName: string }}
+ */
+export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQuizzes, targetCourseName, targetSubfolderPath = []) {
+  const items = [];
+  const baseChain = [targetCourseName, ...targetSubfolderPath];
+
+  for (const folder of folderItems) {
+    const folderName = (folder.meta?.title || "").trim();
+    items.push({
+      type: "folder",
+      name: folderName,
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+    });
+    appendSubtree(userQuizzes, folder, [...baseChain, folderName], targetCourseName, items);
+  }
+
+  for (const quiz of additionalQuizzes || []) {
+    items.push({
+      type: "quiz",
+      name: (quiz.meta?.title || "").trim() || "اختبار",
+      folderSegments: [...baseChain],
+      rootName: targetCourseName,
+      quiz: quizToPayload(quiz),
+    });
+  }
+
+  return { items, rootName: targetCourseName };
 }
 
 export function selectItem(itemId) {

@@ -2,7 +2,7 @@
 // api/_courseFolders.js
 // Resolution and validation helpers for relational courses and folders.
 //
-// Shared by api/upload-quiz.js and api/upload-folder.js to manage get-or-create
+// Shared by api/upload-quiz.js (single and "folder" batch modes) to manage get-or-create
 // operations on the `courses` and `folders` tables in Supabase.
 // =============================================================================
 

@@ -27,9 +27,10 @@ import { getToken, isAdminAuthenticated, signOut } from "../../shared/adminAuth.
 import { showNotification } from "../../components/notifications/notifications.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
-import { getManifest } from "../../shared/quizManifest.js";
+import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
 import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 import { UPLOAD_ICON_SVG } from "./icons.js";
+import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-quizzes-folders.js";
 
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
@@ -253,13 +254,23 @@ let _quizzes = [];    // quizzes being uploaded in this session
 let _overlay = null;
 // "single" (default): one quiz or a same-placement batch, via the existing
 // 4-step wizard (Track -> Course & Placement -> Admin Info -> Upload).
-// "folder": an entire local folder/course tree, via openFolderUploadModal
-// below — reuses Step 1 (Track) unchanged, then skips the per-quiz
-// Course & Placement step (the tree itself already carries course/folder
-// names) in favor of a tree-review step, then uploads via
-// POST /api/upload-quiz with { mode: "folder", items: [...] }.
+// "folder": an entire local folder/course tree picked via the native
+// directory picker ("استيراد مجلد من جهازك"), via openLocalFolderTreeUpload
+// below — reuses Step 1 (Track) unchanged, then skips the per-quiz Course &
+// Placement step (the tree itself already carries course/folder names) in
+// favor of a tree-review step, then uploads via POST /api/upload-quiz with
+// { mode: "folder", items: [...] }.
+// "courseUpload": one or more EXISTING local courses (with all of their
+// nested folders/quizzes) uploaded to the platform's top level, via
+// openCourseUploadModal — Track -> Review (+ multi-course disclaimer) -> Upload.
+// "folderUpload": one or more EXISTING local folders (+ optional loose
+// quizzes) uploaded into an EXISTING course already on the platform, via
+// openFolderUploadModal — Track -> Target course/subfolder -> Review -> Upload.
 let _mode = "single";
-let _folderTree = null; // { rootName, items: [...] } set by openFolderUploadModal
+let _folderTree = null; // { rootName, items: [...] } set by openLocalFolderTreeUpload
+let _courseUploadItems = null; // { courseRows, userQuizzes } set by openCourseUploadModal
+let _folderUploadItems = null; // { folderRows, quizRows, userQuizzes } set by openFolderUploadModal
+let _folderUploadTarget = null; // { courseName, subfolderPath: string[] } chosen in that wizard's own step 2
 
 // ─── Small DOM helpers ─────────────────────────────────────────────────────────
 function mkOption(value, text, selected = false) {
@@ -298,7 +309,11 @@ function makeOverlay() {
 }
 
 function stepsHTML(cur) {
-  const steps = _mode === "folder" ? ["المسار", "المراجعة", "الرفع"] : ["المسار", "المادة", "المشرف", "رفع"];
+  const steps =
+    _mode === "localFolderTree" ? ["المسار", "المراجعة", "الرفع"] :
+    _mode === "courseUpload" ? ["المسار", "المراجعة", "الرفع"] :
+    _mode === "folderUpload" ? ["المسار", "الوجهة", "المراجعة", "الرفع"] :
+    ["المسار", "المادة", "المشرف", "رفع"];
   return `<div class="adm-steps">${steps.map((lbl, i) => {
     const n = i + 1, cls = n < cur ? "done" : n === cur ? "active" : "";
     return `${i > 0 ? `<div class="adm-step-line ${n <= cur ? "done" : ""}"></div>` : ""}
@@ -453,7 +468,6 @@ function populateSubjects(type, college, year, term, subEl, folEl, saved) {
   subEl.innerHTML = `<option value="">— اختر المادة —</option>`;
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
   folEl.disabled = false;
-  document.getElementById("adm-new-subfolder-wrap").style.display = "none";
 
   const hasYT = TRACKS_WITH_YEARTERM.has(type);
   const subjectMap = getSubjectMap(type, college);
@@ -498,18 +512,21 @@ function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
   terms.forEach(t => termEl.appendChild(mkOption(t, termLabel(t), t === selectedTerm)));
 }
 
+/**
+ * Populates the Step 2 subfolder dropdown with EXISTING subfolders only.
+ * The "➕ إنشاء مجلد فرعي جديد" free-text option has been removed — folders
+ * are now created directly from userQuizzesView (see the "المادة / الكورس"
+ * doc comment on populateSubjects for the parallel reasoning on subjects),
+ * so this dropdown is a plain existing-folder picker, same as populateSubjects.
+ */
 function populateSubfolders(type, college, subject, folEl, saved) {
   folEl.innerHTML = `<option value="">— بدون مجلد فرعي —</option>`;
-  document.getElementById("adm-new-subfolder-wrap").style.display = "none";
   if (!subject) {
     return;
   }
   const info = getSubjectMap(type, college)[subject];
   const subs = info?.subfolders || [];
   subs.forEach(sf => folEl.appendChild(mkOption(sf, sf, saved.subfolder === sf)));
-  folEl.appendChild(mkOption("__new__", "➕ إنشاء مجلد فرعي جديد", saved.subfolder === "__new__"));
-  if (saved.subfolder === "__new__")
-    document.getElementById("adm-new-subfolder-wrap").style.display = "block";
 }
 
 // ─── Read Step 1 values ───────────────────────────────────────────────────────
@@ -529,8 +546,16 @@ async function step1Validate() {
   if (TRACKS_WITH_YEARTERM.has(educationType) && !year)    { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
   if (TRACKS_WITH_YEARTERM.has(educationType) && !term)    { showNotification("الرجاء اختيار الترم", "error"); return; }
   persistSaved({ educationType, college, year, term });
-  if (_mode === "folder") {
+  if (_mode === "localFolderTree") {
     await renderFolderReviewStep(vals);
+    return;
+  }
+  if (_mode === "courseUpload") {
+    renderCourseUploadReviewStep(vals);
+    return;
+  }
+  if (_mode === "folderUpload") {
+    renderFolderUploadTargetStep(vals);
     return;
   }
   await renderStep2(vals);
@@ -561,10 +586,6 @@ async function renderStep2({ educationType, college, year, term }) {
         <label for="adm-subfolder">مجلد فرعي <span class="adm-badge adm-badge-opt">اختياري</span></label>
         <select id="adm-subfolder" disabled><option value="">— بدون مجلد فرعي —</option></select>
       </div>
-      <div class="adm-field" id="adm-new-subfolder-wrap" style="display:none;">
-        <label for="adm-new-subfolder">اسم المجلد الفرعي الجديد</label>
-        <input type="text" id="adm-new-subfolder" placeholder="مثال: أسئلة الدكتور" maxlength="80" value="${saved.newSubfolder || ""}" />
-      </div>
 
       ${_quizzes.length > 1 ? `<p class="adm-hint" style="margin-top:2px;">سيتم رفع ${_quizzes.length} اختبارات إلى نفس المادة/المجلد المحدد هنا.</p>` : ""}
 
@@ -579,7 +600,6 @@ async function renderStep2({ educationType, college, year, term }) {
 
   const subEl        = document.getElementById("adm-subject");
   const folEl        = document.getElementById("adm-subfolder");
-  const newSubfolEl   = document.getElementById("adm-new-subfolder");
 
   populateSubjects(educationType, college, year, term, subEl, folEl, saved);
 
@@ -591,15 +611,6 @@ async function renderStep2({ educationType, college, year, term }) {
     populateSubfolders(educationType, college, subEl.value, folEl, carrySaved);
   });
 
-  folEl.addEventListener("change", () => {
-    document.getElementById("adm-new-subfolder-wrap").style.display =
-      folEl.value === "__new__" ? "block" : "none";
-  });
-
-  // Persist free-text typing live so Back/Next navigation never loses it,
-  // even if the user never clicks "Next" from this exact state.
-  newSubfolEl?.addEventListener("input", () => persistSaved({ newSubfolder: newSubfolEl.value }));
-
   document.getElementById("adm-s2-back").addEventListener("click", () => {
     renderStep1({ educationType, college, year, term });
   });
@@ -607,41 +618,19 @@ async function renderStep2({ educationType, college, year, term }) {
 }
 
 // ─── Read Step 2 values ───────────────────────────────────────────────────────
-// Strips characters that are unsafe in a storage path segment: forward and
-// backward slashes, and leading/trailing whitespace. Returns "" if nothing
-// meaningful remains.
-function sanitizePathSegment(raw) {
-  if (!raw) return "";
-  return raw.trim().replace(/[\\/]+/g, "-").replace(/^-+|-+$/g, "").trim();
-}
-
 function getStep2Values() {
-  // Subject is always picked from the existing-subjects dropdown now — see
-  // populateSubjects's own doc comment for why the "➕ إنشاء مادة جديدة"
-  // free-text path was removed.
+  // Subject and subfolder are always picked from existing-item dropdowns
+  // now — see populateSubjects's own doc comment for why the free-text
+  // "create new" paths were removed for both.
   const subject = (document.getElementById("adm-subject")?.value || "").trim();
-
-  const folRaw   = document.getElementById("adm-subfolder")?.value;
-  let subfolder = "";
-  let subfolderWasSanitized = false;
-  if (folRaw === "__new__") {
-    const raw = document.getElementById("adm-new-subfolder")?.value || "";
-    subfolder = sanitizePathSegment(raw);
-    subfolderWasSanitized = raw.trim() !== "" && raw.trim() !== subfolder;
-  } else {
-    subfolder = (folRaw || "").trim();
-  }
-
-  return { subject, subfolder, subfolderWasSanitized };
+  const subfolder = (document.getElementById("adm-subfolder")?.value || "").trim();
+  return { subject, subfolder };
 }
 
 function step2Validate(step1Vals) {
-  const { subject, subfolder, subfolderWasSanitized } = getStep2Values();
+  const { subject, subfolder } = getStep2Values();
   if (!subject) { showNotification("الرجاء اختيار المادة", "error"); return; }
-  if (subfolderWasSanitized) {
-    showNotification("تم إزالة رموز غير مسموح بها من الاسم المدخل", "warning");
-  }
-  persistSaved({ subject, subfolder, newSubfolder: "" });
+  persistSaved({ subject, subfolder });
   renderStep3({ ...step1Vals, subject, subfolder });
 }
 
@@ -818,6 +807,338 @@ async function doFolderUpload({ educationType, college, year, term }) {
   }
 
   document.getElementById("adm-folder-btns").style.display = "flex";
+}
+
+// ─── Course Upload mode: Review step (Step 2 of 3) ─────────────────────────
+// Renders every selected course's full local tree, with a disclaimer when
+// more than one course is selected (they all go to the same track/college/
+// year/term chosen in Step 1 — see admin-upload-update.md §4).
+function renderCourseUploadReviewStep(step1Vals) {
+  const { courseRows, userQuizzes } = _courseUploadItems;
+
+  function renderCourseTree(course) {
+    const { items } = (function () {
+      // Reuse the same builder the actual upload will use, just for this
+      // one course, so the preview always matches exactly what gets sent.
+      return buildCourseUploadPayload(userQuizzes, [course]);
+    })();
+    const folderCount = items.filter((i) => i.type === "folder").length;
+    const quizCount = items.filter((i) => i.type === "quiz").length;
+
+    function renderNode(depth, key) {
+      return items
+        .filter((i) => (i.type === "folder" || i.type === "quiz") && (i.folderSegments || []).join("/") === key)
+        .map((i) => {
+          const label = i.type === "folder" ? `📁 ${i.name}` : `📝 ${i.quiz?.meta?.title || i.name || "اختبار"}`;
+          const childKey = i.type === "folder" ? [...(i.folderSegments || []), i.name].join("/") : null;
+          const children = i.type === "folder" ? renderNode(depth + 1, childKey) : "";
+          return `<li style="padding-inline-start:${depth * 18}px;">${label}</li>${children}`;
+        })
+        .join("");
+    }
+
+    const courseName = (course.meta?.title || "").trim();
+    return `
+      <li>📚 ${courseName} <span class="adm-badge adm-badge-opt">${folderCount} مجلد · ${quizCount} اختبار</span></li>
+      ${renderNode(1, courseName)}
+    `;
+  }
+
+  const treeHtml = courseRows.map(renderCourseTree).join("");
+
+  const disclaimer = courseRows.length > 1
+    ? `<p class="adm-hint" style="background:var(--color-background-secondary);padding:10px 12px;border-radius:8px;">
+        ℹ️ <strong>تنبيه</strong>: سيتم رفع جميع المواد المحددة (${courseRows.length} مواد) إلى نفس المسار الدراسي
+        (الكلية / السنة / الترم). إذا كانت إحدى المواد تنتمي لسنة أو ترم مختلف، يُرجى رفعها بشكل منفصل.
+      </p>`
+    : "";
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع المواد إلى المنصة")}
+    ${stepsHTML(2)}
+    <div class="adm-body">
+      <p class="adm-hint">راجع محتويات ${courseRows.length > 1 ? "المواد" : "المادة"} قبل الرفع</p>
+      ${disclaimer}
+      <ul class="adm-batch-list" style="max-height:280px;overflow-y:auto;">${treeHtml}</ul>
+      <div class="adm-btns">
+        <button class="adm-btn adm-btn-ghost" id="adm-course-back">→ رجوع</button>
+        <button class="adm-btn adm-btn-primary" id="adm-course-next">رفع ☁️</button>
+      </div>
+    </div>
+  </div>`;
+
+  window.__admClose = closeModal;
+  document.getElementById("adm-course-back").addEventListener("click", () => renderStep1(step1Vals));
+  document.getElementById("adm-course-next").addEventListener("click", () => doCourseUpload(step1Vals));
+}
+
+// ─── Course Upload mode: Upload step (Step 3 of 3) ─────────────────────────
+async function doCourseUpload({ educationType, college, year, term }) {
+  const { courseRows, userQuizzes } = _courseUploadItems;
+  const { items } = buildCourseUploadPayload(userQuizzes, courseRows);
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع المواد إلى المنصة")}
+    ${stepsHTML(3)}
+    <div class="adm-body">
+      <p class="adm-hint" id="adm-course-hint"><span class="adm-spinner" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-inline-end:6px;"></span>جارٍ رفع ${courseRows.length > 1 ? "المواد" : "المادة"}…</p>
+      <div id="adm-course-result"></div>
+      <div class="adm-btns" id="adm-course-btns" style="display:none;">
+        <button class="adm-btn adm-btn-primary" onclick="window.__admClose()">إغلاق</button>
+      </div>
+    </div>
+  </div>`;
+  window.__admClose = closeModal;
+
+  let result;
+  try {
+    result = await postUpload({
+      mode: "folder",
+      education_type: educationType,
+      college: TRACKS_WITH_COLLEGE.has(educationType) ? college || undefined : undefined,
+      year: TRACKS_WITH_YEARTERM.has(educationType) ? year || undefined : undefined,
+      term: TRACKS_WITH_YEARTERM.has(educationType) ? term || undefined : undefined,
+      items,
+    });
+  } catch (err) {
+    const hintEl = document.getElementById("adm-course-hint");
+    if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
+    document.getElementById("adm-course-btns").style.display = "flex";
+    if (isSessionError(err)) {
+      setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+    }
+    return;
+  }
+
+  const hintEl = document.getElementById("adm-course-hint");
+  const resultEl = document.getElementById("adm-course-result");
+  const { coursesCount, foldersCreated, quizzesUploaded, failed } = result;
+
+  if (hintEl) {
+    if (failed.length === 0) {
+      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} اختبار بنجاح!`;
+      hintEl.style.color = "var(--color-success)";
+      showNotification("تم الرفع بنجاح ✅", "success");
+      invalidateManifestCache();
+    } else {
+      hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} اختبار (فشل ${failed.length})`, "warning");
+      invalidateManifestCache();
+    }
+  }
+
+  if (resultEl && failed.length > 0) {
+    resultEl.innerHTML = `<ul class="adm-batch-list">${failed
+      .map((f) => `<li class="adm-batch-item">❌ ${f.name}: ${f.reason}</li>`)
+      .join("")}</ul>`;
+  }
+
+  document.getElementById("adm-course-btns").style.display = "flex";
+}
+
+// ─── Folder Upload mode: Target step (Step 2 of 4) ─────────────────────────
+// Lets the admin pick the EXISTING course on the platform (from the
+// manifest, same source as populateSubjects) that the selected folders/
+// quizzes should be uploaded into, plus an optional existing subfolder
+// under that course to nest everything one level deeper.
+function renderFolderUploadTargetStep(step1Vals) {
+  const { educationType, college, year, term } = step1Vals;
+  const saved = getSaved();
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع المجلد إلى المنصة")}
+    ${stepsHTML(2)}
+    <div class="adm-body">
+      <p class="adm-hint">اختر المادة الموجودة على المنصة التي سيُرفع المجلد داخلها</p>
+
+      <div class="adm-field">
+        <label for="adm-target-course">المادة / الكورس الموجود</label>
+        <select id="adm-target-course">
+          <option value="">— اختر المادة —</option>
+        </select>
+      </div>
+      <p class="adm-hint" id="adm-no-target-course-hint" style="display:none;">
+        لا توجد مادة مطابقة هنا بعد. أنشئ المادة أولاً من صفحة إمتحاناتك (أو ارفعها عبر
+        "رفع المادة إلى المنصة") ثم عد لرفع هذا المجلد داخلها.
+      </p>
+
+      <div class="adm-field">
+        <label for="adm-target-subfolder">مجلد أب داخل المادة <span class="adm-badge adm-badge-opt">اختياري</span></label>
+        <select id="adm-target-subfolder" disabled><option value="">— المستوى الرئيسي للمادة —</option></select>
+      </div>
+
+      <div class="adm-btns">
+        <button class="adm-btn adm-btn-ghost" id="adm-target-back">→ رجوع</button>
+        <button class="adm-btn adm-btn-primary" id="adm-target-next">التالي ←</button>
+      </div>
+    </div>
+  </div>`;
+
+  window.__admClose = closeModal;
+
+  const courseEl = document.getElementById("adm-target-course");
+  const subfolderEl = document.getElementById("adm-target-subfolder");
+
+  const subjectMap = getSubjectMap(educationType, college);
+  const hasYT = TRACKS_WITH_YEARTERM.has(educationType);
+  const courseNames = Object.entries(subjectMap)
+    .filter(([, data]) => {
+      if (!hasYT || (!year && !term)) return true;
+      return (data.yearterm || []).some(([y, t]) => (!year || y === year) && (!term || t === term));
+    })
+    .map(([name]) => name)
+    .sort((a, b) => a.localeCompare(b));
+
+  courseNames.forEach((name) => courseEl.appendChild(mkOption(name, name, saved.targetCourse === name)));
+  const noCourseHint = document.getElementById("adm-no-target-course-hint");
+  if (noCourseHint) noCourseHint.style.display = courseNames.length === 0 ? "block" : "none";
+  courseEl.disabled = courseNames.length === 0;
+
+  function populateTargetSubfolders(courseName) {
+    subfolderEl.innerHTML = `<option value="">— المستوى الرئيسي للمادة —</option>`;
+    subfolderEl.disabled = true;
+    if (!courseName) return;
+    const subs = subjectMap[courseName]?.subfolders || [];
+    subs.forEach((sf) => subfolderEl.appendChild(mkOption(sf, sf.split("/").join(" ← "))));
+    subfolderEl.disabled = false;
+  }
+
+  if (saved.targetCourse && courseNames.includes(saved.targetCourse)) {
+    populateTargetSubfolders(saved.targetCourse);
+  }
+
+  courseEl.addEventListener("change", () => populateTargetSubfolders(courseEl.value));
+
+  document.getElementById("adm-target-back").addEventListener("click", () => renderStep1(step1Vals));
+  document.getElementById("adm-target-next").addEventListener("click", () => {
+    const targetCourse = courseEl.value?.trim();
+    if (!targetCourse) { showNotification("الرجاء اختيار المادة", "error"); return; }
+    const subfolderRaw = subfolderEl.value?.trim() || "";
+    persistSaved({ targetCourse, targetSubfolder: subfolderRaw });
+    _folderUploadTarget = {
+      courseName: targetCourse,
+      // Existing subfolders are stored as a single "/"-joined path string
+      // (see _extractSubfolders) even when nested more than one level deep
+      // — split it back into an ordered segment chain here.
+      subfolderPath: subfolderRaw ? subfolderRaw.split("/").filter(Boolean) : [],
+    };
+    renderFolderUploadReviewStep(step1Vals);
+  });
+}
+
+// ─── Folder Upload mode: Review step (Step 3 of 4) ─────────────────────────
+function renderFolderUploadReviewStep(step1Vals) {
+  const { folderRows, quizRows, userQuizzes } = _folderUploadItems;
+  const { courseName, subfolderPath } = _folderUploadTarget;
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath);
+
+  const folderCount = items.filter((i) => i.type === "folder").length;
+  const quizCount = items.filter((i) => i.type === "quiz").length;
+  const destinationLabel = subfolderPath.length > 0
+    ? `${courseName} ← ${subfolderPath.join(" ← ")}`
+    : courseName;
+
+  function renderNode(depth, key) {
+    return items
+      .filter((i) => (i.type === "folder" || i.type === "quiz") && (i.folderSegments || []).join("/") === key)
+      .map((i) => {
+        const label = i.type === "folder" ? `📁 ${i.name}` : `📝 ${i.quiz?.meta?.title || i.name || "اختبار"}`;
+        const childKey = i.type === "folder" ? [...(i.folderSegments || []), i.name].join("/") : null;
+        const children = i.type === "folder" ? renderNode(depth + 1, childKey) : "";
+        return `<li style="padding-inline-start:${depth * 18}px;">${label}</li>${children}`;
+      })
+      .join("");
+  }
+
+  const baseKey = [courseName, ...subfolderPath].join("/");
+  const treeHtml = `
+    <li>📚 ${destinationLabel} <span class="adm-badge adm-badge-opt">مادة موجودة</span></li>
+    ${renderNode(1, baseKey)}
+  `;
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع المجلد إلى المنصة")}
+    ${stepsHTML(3)}
+    <div class="adm-body">
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} اختبار داخل "${destinationLabel}"</p>
+      <ul class="adm-batch-list" style="max-height:280px;overflow-y:auto;">${treeHtml}</ul>
+      <div class="adm-btns">
+        <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
+        <button class="adm-btn adm-btn-primary" id="adm-folder-target-next">رفع ☁️</button>
+      </div>
+    </div>
+  </div>`;
+
+  window.__admClose = closeModal;
+  document.getElementById("adm-folder-target-back").addEventListener("click", () => renderFolderUploadTargetStep(step1Vals));
+  document.getElementById("adm-folder-target-next").addEventListener("click", () => doFolderUploadToExisting(step1Vals));
+}
+
+// ─── Folder Upload mode: Upload step (Step 4 of 4) ─────────────────────────
+async function doFolderUploadToExisting({ educationType, college, year, term }) {
+  const { folderRows, quizRows, userQuizzes } = _folderUploadItems;
+  const { courseName, subfolderPath } = _folderUploadTarget;
+  const { items } = buildFolderUploadPayload(userQuizzes, folderRows, quizRows, courseName, subfolderPath);
+
+  _overlay.innerHTML = `<div class="adm-card">
+    ${hdr("رفع المجلد إلى المنصة")}
+    ${stepsHTML(4)}
+    <div class="adm-body">
+      <p class="adm-hint" id="adm-folder-target-hint"><span class="adm-spinner" style="width:14px;height:14px;display:inline-block;vertical-align:-2px;margin-inline-end:6px;"></span>جارٍ رفع المجلد…</p>
+      <div id="adm-folder-target-result"></div>
+      <div class="adm-btns" id="adm-folder-target-btns" style="display:none;">
+        <button class="adm-btn adm-btn-primary" onclick="window.__admClose()">إغلاق</button>
+      </div>
+    </div>
+  </div>`;
+  window.__admClose = closeModal;
+
+  let result;
+  try {
+    result = await postUpload({
+      mode: "folder",
+      education_type: educationType,
+      college: TRACKS_WITH_COLLEGE.has(educationType) ? college || undefined : undefined,
+      year: TRACKS_WITH_YEARTERM.has(educationType) ? year || undefined : undefined,
+      term: TRACKS_WITH_YEARTERM.has(educationType) ? term || undefined : undefined,
+      items,
+    });
+  } catch (err) {
+    const hintEl = document.getElementById("adm-folder-target-hint");
+    if (hintEl) { hintEl.textContent = `❌ ${err.message}`; hintEl.style.color = "var(--color-error)"; }
+    document.getElementById("adm-folder-target-btns").style.display = "flex";
+    if (isSessionError(err)) {
+      setTimeout(() => { signOut(); window.location.href = "/#my-quizzes"; }, 2500);
+    }
+    return;
+  }
+
+  const hintEl = document.getElementById("adm-folder-target-hint");
+  const resultEl = document.getElementById("adm-folder-target-result");
+  const { foldersCreated, quizzesUploaded, failed } = result;
+
+  if (hintEl) {
+    if (failed.length === 0) {
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} اختبار بنجاح!`;
+      hintEl.style.color = "var(--color-success)";
+      showNotification("تم الرفع بنجاح ✅", "success");
+      invalidateManifestCache();
+    } else {
+      hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
+      hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
+      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} اختبار (فشل ${failed.length})`, "warning");
+      invalidateManifestCache();
+    }
+  }
+
+  if (resultEl && failed.length > 0) {
+    resultEl.innerHTML = `<ul class="adm-batch-list">${failed
+      .map((f) => `<li class="adm-batch-item">❌ ${f.name}: ${f.reason}</li>`)
+      .join("")}</ul>`;
+  }
+
+  document.getElementById("adm-folder-target-btns").style.display = "flex";
 }
 
 // ─── Step 4: Upload with progress checklist + confirmation links ──────────────
@@ -1064,8 +1385,10 @@ async function _openWizard(quizzes) {
   // below) — it has no course/folder concept, so an item with
   // meta.type "course"/"folder" ending up in here always means some
   // caller's selection wasn't filtered (the intended filtering happens
-  // once, at the selection boundary — see splitUploadableSelection in
-  // user-quizzes-view.js for the bulk-upload button's own filtering).
+  // once, at the selection boundary — see classifyBulkSelection/
+  // routeBulkUpload in user-quizzes-view.js, which route courses and
+  // folders to openCourseUploadModal/openFolderUploadModal instead of
+  // ever handing them to this wizard).
   // Re-checking here means a future caller that forgets that filtering
   // step fails loudly instead of silently mislabeling a course as
   // "اختبار" in the Admin Info step — the exact bug this was reported
@@ -1138,16 +1461,146 @@ async function openModal(quiz)               { await _openWizard([quiz]); }
 async function openAdminUploadModal(quizzes) { await _openWizard(Array.isArray(quizzes) ? quizzes : [quizzes]); }
 
 /**
- * Entry point for the "رفع مجلد" admin action — uploads an entire local
- * folder/course tree to the remote DB in one wizard flow, instead of the
- * single-quiz/same-placement-batch flow _openWizard drives.
+ * Entry point for the "☁️ رفع المادة إلى المنصة" action — uploads one or
+ * more EXISTING local courses (with everything nested inside them: folders
+ * and quizzes) to the platform's top level in one wizard flow.
+ * Flow: Track -> Review (+ multi-course disclaimer) -> Upload.
+ * @param {Array} courseRows - selected user_quizzes rows with meta.type === "course"
+ * @param {Array} userQuizzes - full local user_quizzes collection, needed to
+ *   walk each course's descendants
+ */
+export async function openCourseUploadModal(courseRows, userQuizzes) {
+  if (_overlay) return;
+  if (!isAdminAuthenticated()) {
+    showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
+    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    return;
+  }
+  if (!Array.isArray(courseRows) || courseRows.length === 0) {
+    showNotification("لا توجد مادة لرفعها", "warning");
+    return;
+  }
+
+  injectStyles();
+
+  try {
+    _mode = "courseUpload";
+    _courseUploadItems = { courseRows, userQuizzes };
+    _folderUploadItems = null;
+    _folderUploadTarget = null;
+    _folderTree = null;
+    _quizzes = [];
+    _quiz = null;
+    _overlay = makeOverlay();
+    document.body.appendChild(_overlay);
+    document.body.style.overflow = "hidden";
+
+    _overlay.innerHTML = `<div class="adm-card">
+      ${hdr("رفع المواد إلى المنصة")}
+      <div class="adm-loading"><span class="adm-spinner"></span> جارٍ تحميل بيانات المنصة…</div>
+    </div>`;
+    window.__admClose = closeModal;
+
+    try {
+      const { subjects } = await getManifest();
+      MANIFEST_TREE = buildManifestTree(subjects);
+    } catch (err) {
+      console.error("[adminUpload] Failed to load manifest:", err);
+      MANIFEST_TREE = {};
+      showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
+    }
+
+    renderStep1(getSaved());
+  } catch (err) {
+    console.error("[adminUpload] Failed to open course upload wizard:", err);
+    showNotification("حدث خطأ أثناء فتح نافذة الرفع، حاول مرة أخرى", "error");
+    if (_overlay) { _overlay.remove(); }
+    _overlay = null;
+    _courseUploadItems = null;
+    _mode = "single";
+    document.body.style.overflow = "";
+  }
+}
+
+/**
+ * Entry point for the "☁️ رفع المجلد إلى المنصة" action — uploads one or
+ * more EXISTING local folders (with their nested contents), plus optional
+ * loose quizzes selected alongside them, into an EXISTING course already on
+ * the platform.
+ * Flow: Track -> Target course/subfolder -> Review -> Upload.
+ * @param {{folders: Array, quizzes: Array, userQuizzes: Array}} selection
+ *   - folders: selected user_quizzes rows with meta.type === "folder"
+ *   - quizzes: selected plain-quiz rows to upload alongside the folders
+ *   - userQuizzes: full local user_quizzes collection
+ */
+export async function openFolderUploadModal({ folders, quizzes, userQuizzes }) {
+  if (_overlay) return;
+  if (!isAdminAuthenticated()) {
+    showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
+    setTimeout(() => { window.location.href = "/#my-quizzes"; }, 1500);
+    return;
+  }
+  const folderRows = folders || [];
+  const quizRows = quizzes || [];
+  if (folderRows.length === 0 && quizRows.length === 0) {
+    showNotification("لا توجد عناصر لرفعها", "warning");
+    return;
+  }
+
+  injectStyles();
+
+  try {
+    _mode = "folderUpload";
+    _folderUploadItems = { folderRows, quizRows, userQuizzes };
+    _folderUploadTarget = null;
+    _courseUploadItems = null;
+    _folderTree = null;
+    _quizzes = [];
+    _quiz = null;
+    _overlay = makeOverlay();
+    document.body.appendChild(_overlay);
+    document.body.style.overflow = "hidden";
+
+    _overlay.innerHTML = `<div class="adm-card">
+      ${hdr("رفع المجلد إلى المنصة")}
+      <div class="adm-loading"><span class="adm-spinner"></span> جارٍ تحميل بيانات المنصة…</div>
+    </div>`;
+    window.__admClose = closeModal;
+
+    try {
+      const { subjects } = await getManifest();
+      MANIFEST_TREE = buildManifestTree(subjects);
+    } catch (err) {
+      console.error("[adminUpload] Failed to load manifest:", err);
+      MANIFEST_TREE = {};
+      showNotification("تعذّر تحميل بيانات المنصة، تحقق من اتصالك", "error");
+    }
+
+    renderStep1(getSaved());
+  } catch (err) {
+    console.error("[adminUpload] Failed to open folder upload wizard:", err);
+    showNotification("حدث خطأ أثناء فتح نافذة الرفع، حاول مرة أخرى", "error");
+    if (_overlay) { _overlay.remove(); }
+    _overlay = null;
+    _folderUploadItems = null;
+    _mode = "single";
+    document.body.style.overflow = "";
+  }
+}
+
+/**
+ * Entry point for a local directory-picker import that targets the remote
+ * DB directly (rather than user_quizzes) — currently unused by any wired-up
+ * caller (the "استيراد مجلد من جهازك" action imports into user_quizzes
+ * instead; see uploadFolderForAdmins/importFolderTree in
+ * user-quizzes-folders.js), but kept available for a future "upload this
+ * picked directory straight to the platform" action without going through
+ * user_quizzes first.
  *
  * @param {{rootName: string, items: Array}} folderTree - same shape
- *   api/upload-quiz.js's folder mode expects for `items`; see
- *   user-quizzes-folders.js's buildFolderUploadTree() for how it's built
- *   from a directory picker's File list.
+ *   api/upload-quiz.js's folder mode expects for `items`.
  */
-export async function openFolderUploadModal(folderTree) {
+export async function openLocalFolderTreeUpload(folderTree) {
   if (_overlay) return;
   if (!isAdminAuthenticated()) {
     showNotification("يجب تسجيل الدخول كمشرف أولاً", "error");
@@ -1161,7 +1614,7 @@ export async function openFolderUploadModal(folderTree) {
   injectStyles();
 
   try {
-    _mode = "folder";
+    _mode = "localFolderTree";
     _folderTree = folderTree;
     _quizzes = [];
     _quiz = null;
@@ -1201,6 +1654,9 @@ function closeModal() {
   document.body.style.overflow = "";
   _quiz = null; _quizzes = [];
   _folderTree = null;
+  _courseUploadItems = null;
+  _folderUploadItems = null;
+  _folderUploadTarget = null;
   _mode = "single";
 }
 
