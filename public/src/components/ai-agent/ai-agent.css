@@ -1958,41 +1958,103 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-export-menu-title {
-  padding: 8px 12px 6px;
+  padding: 12px 14px 9px;
   color: var(--color-text-secondary, #64748b);
-  font-size: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .ai-agent-export-menu-item {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  width: 100%;
-  padding: 9px 12px;
-  border: 0;
-  background: transparent;
+  align-items: center;
+  gap: 9px;
+  min-width: 245px;
+  padding: 8px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
   color: var(--color-text-primary);
-  font: inherit;
+}
+
+.ai-agent-export-menu-item:last-child {
+  border-bottom: 0;
+}
+
+.ai-agent-export-format-icon {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.ai-agent-export-format-icon--pdf {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.ai-agent-export-format-icon--json {
+  background: rgba(16, 185, 129, 0.13);
+  color: #059669;
+}
+
+.ai-agent-export-format-icon--html {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.ai-agent-export-menu-copy {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
   text-align: start;
+}
+
+.ai-agent-export-menu-copy strong {
+  font-size: 0.8rem;
+}
+
+.ai-agent-export-menu-copy span {
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.76rem;
+}
+
+.ai-agent-export-menu-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.ai-agent-export-action {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary, #64748b);
   cursor: pointer;
 }
 
-.ai-agent-export-menu-item:hover,
-.ai-agent-export-menu-item:focus-visible {
+.ai-agent-export-action:hover,
+.ai-agent-export-action:focus-visible {
+  border-color: var(--color-primary);
   background: var(--color-primary-light);
   color: var(--color-primary);
   outline: none;
 }
 
-.ai-agent-export-menu-item strong {
-  min-width: 42px;
-  font-size: 0.8rem;
-}
-
-.ai-agent-export-menu-item span {
-  color: var(--color-text-secondary, #64748b);
-  font-size: 0.76rem;
+.ai-agent-export-action.is-copied {
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 /* Holds the chat panel's own model-selector bar once ai-agent.js moves it

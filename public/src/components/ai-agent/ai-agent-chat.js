@@ -322,6 +322,17 @@ export function createChatPanel(options = {}) {
       .join("\n\n");
   }
 
+  function getHtmlExport() {
+    const body = getExportMessages()
+      .map((message) => `<article><strong>${escapeHtml(message.type === "tool-result" ? "النظام" : message.role === "user" ? "أنت" : "الباشــمبصمج")}</strong><p>${escapeHtml(message.content).replace(/\n/g, "<br>")}</p></article>`)
+      .join("");
+    return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>محادثة الباشــمبصمج</title><style>body{font:16px/1.8 sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1f2937}article{border-bottom:1px solid #ddd;padding:12px 0}strong{color:#2563eb}</style><body>${body}</body></html>`;
+  }
+
+  function getJsonExport() {
+    return JSON.stringify({ version: 1, messages: getExportMessages() }, null, 2);
+  }
+
   function downloadExport(blob, extension) {
     const anchor = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -348,6 +359,20 @@ export function createChatPanel(options = {}) {
     });
   }
 
+  async function loadArabicPdfFont(doc) {
+    const fontUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notonaskharabic/NotoNaskhArabic%5Bwght%5D.ttf";
+    const response = await fetch(fontUrl);
+    if (!response.ok) throw new Error(`Arabic PDF font failed to load: ${response.status}`);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let binary = "";
+    for (let index = 0; index < bytes.length; index += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+    }
+    doc.addFileToVFS("NotoNaskhArabic.ttf", btoa(binary));
+    doc.addFont("NotoNaskhArabic.ttf", "NotoNaskhArabic", "normal");
+    doc.setFont("NotoNaskhArabic", "normal");
+  }
+
   /** Exports only the user-visible conversation, with tool payloads sanitized. */
   async function exportConversation(format = "copy") {
     if (!history.length) return false;
@@ -356,28 +381,35 @@ export function createChatPanel(options = {}) {
       if (format === "txt") {
         downloadExport(new Blob([transcript], { type: "text/plain;charset=utf-8" }), "txt");
       } else if (format === "json") {
-        downloadExport(new Blob([JSON.stringify({ version: 1, messages: getExportMessages() }, null, 2)], { type: "application/json" }), "json");
+        downloadExport(new Blob([getJsonExport()], { type: "application/json" }), "json");
       } else if (format === "md") {
         downloadExport(new Blob([transcript], { type: "text/markdown;charset=utf-8" }), "md");
       } else if (format === "html") {
-        const body = getExportMessages().map((message) => `<article><strong>${escapeHtml(message.type === "tool-result" ? "النظام" : message.role === "user" ? "أنت" : "الباشــمبصمج")}</strong><p>${escapeHtml(message.content).replace(/\n/g, "<br>")}</p></article>`).join("");
-        const html = `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>محادثة الباشــمبصمج</title><style>body{font:16px/1.8 sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1f2937}article{border-bottom:1px solid #ddd;padding:12px 0}strong{color:#2563eb}</style><body>${body}</body></html>`;
-        downloadExport(new Blob([html], { type: "text/html;charset=utf-8" }), "html");
+        downloadExport(new Blob([getHtmlExport()], { type: "text/html;charset=utf-8" }), "html");
       } else if (format === "pdf") {
         await loadPdfLibrary();
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        try {
+          await loadArabicPdfFont(doc);
+        } catch (fontError) {
+          console.warn("[ai-agent-chat] Arabic PDF font unavailable; using jsPDF fallback font:", fontError);
+        }
+        const processArabic = typeof doc.processArabic === "function"
+          ? (line) => doc.processArabic(line)
+          : (line) => line;
         const lines = doc.splitTextToSize(transcript, 180);
         let y = 15;
         for (const line of lines) {
           if (y > 285) { doc.addPage(); y = 15; }
-          doc.text(line, 195, y, { align: "right" });
+          doc.text(processArabic(line), 195, y, { align: "right", charSpace: 0 });
           y += 7;
         }
         doc.save(`ai-chat-${new Date().toISOString().slice(0, 10)}.pdf`);
       } else {
         try {
-          await navigator.clipboard.writeText(transcript);
+          const copyFormat = format === "copy-json" ? getJsonExport() : format === "copy-html" ? getHtmlExport() : transcript;
+          await navigator.clipboard.writeText(copyFormat);
         } catch (clipboardError) {
           console.error("[ai-agent-chat] clipboard write failed:", clipboardError);
           return false;

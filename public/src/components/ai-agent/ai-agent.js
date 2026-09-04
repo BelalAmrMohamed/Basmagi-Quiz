@@ -49,6 +49,8 @@ const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" hei
 const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>`;
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
 const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+const DOWNLOAD_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>`;
+const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
 const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 // The following three mirror side-menu.js's own collapsed-favicon/
 // collapse-button icons exactly (same paths, same lucide icons:
@@ -343,31 +345,58 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       title.textContent = "تصدير المحادثة";
       menu.appendChild(title);
       [
-        ["txt", "TXT", "نص عادي"],
-        ["md", "MD", "Markdown"],
-        ["html", "HTML", "عرض غني في المتصفح"],
-        ["json", "JSON", "نسخة بيانات منظمة"],
-        ["pdf", "PDF", "مستند قابل للطباعة"],
-      ].forEach(([format, label, description]) => {
-        const option = document.createElement("button");
-        option.type = "button";
-        option.className = "ai-agent-export-menu-item";
-        option.setAttribute("role", "menuitem");
-        option.innerHTML = `<strong>${label}</strong><span>${description}</span>`;
-        option.addEventListener("click", async (optionEvent) => {
+        ["txt", "TXT", "نص عادي", "copy"],
+        ["md", "MD", "Markdown منسّق", "copy"],
+        ["html", "HTML", "عرض غني مع التنسيق", "copy-html"],
+        ["json", "JSON", "نسخة بيانات منظمة", "copy-json"],
+        ["pdf", "PDF", "مستند جاهز للطباعة", null],
+      ].forEach(([format, label, description, copyFormat]) => {
+        const row = document.createElement("div");
+        row.className = "ai-agent-export-menu-item";
+        row.setAttribute("role", "group");
+        const formatIcon = document.createElement("span");
+        formatIcon.className = `ai-agent-export-format-icon ai-agent-export-format-icon--${format}`;
+        formatIcon.textContent = label;
+        const copy = document.createElement("div");
+        copy.className = "ai-agent-export-menu-copy";
+        copy.innerHTML = `<strong>${label}</strong><span>${description}</span>`;
+        const actions = document.createElement("span");
+        actions.className = "ai-agent-export-menu-actions";
+        const download = document.createElement("button");
+        download.type = "button";
+        download.className = "ai-agent-export-action";
+        download.title = `تنزيل ${label}`;
+        download.setAttribute("aria-label", `تنزيل بصيغة ${label}`);
+        download.innerHTML = DOWNLOAD_ICON_SVG;
+        download.addEventListener("click", async (optionEvent) => {
           optionEvent.stopPropagation();
           closeMenu();
-          const ok = await chatPanelSlot.current.exportConversation(format);
-          if (ok && format === "txt") {
-            sidebarCopyBtn.innerHTML = `${CHECK_ICON_SVG}<span>تم التصدير</span>`;
-            sidebarCopyBtn.classList.add("ai-agent-sidebar-btn--copied");
-            setTimeout(() => {
-              sidebarCopyBtn.innerHTML = `${COPY_CONVO_ICON_SVG}<span>تصدير المحادثة</span>`;
-              sidebarCopyBtn.classList.remove("ai-agent-sidebar-btn--copied");
-            }, 1500);
-          }
+          await chatPanelSlot.current.exportConversation(format);
         });
-        menu.appendChild(option);
+        actions.appendChild(download);
+        if (copyFormat) {
+          const copyButton = document.createElement("button");
+          copyButton.type = "button";
+          copyButton.className = "ai-agent-export-action";
+          copyButton.title = `نسخ ${label}`;
+          copyButton.setAttribute("aria-label", `نسخ بصيغة ${label}`);
+          copyButton.innerHTML = COPY_ICON_SVG;
+          copyButton.addEventListener("click", async (optionEvent) => {
+            optionEvent.stopPropagation();
+            const ok = await chatPanelSlot.current.exportConversation(copyFormat);
+            if (ok) {
+              copyButton.classList.add("is-copied");
+              copyButton.innerHTML = CHECK_ICON_SVG;
+              setTimeout(() => {
+                copyButton.classList.remove("is-copied");
+                copyButton.innerHTML = COPY_ICON_SVG;
+              }, 1400);
+            }
+          });
+          actions.appendChild(copyButton);
+        }
+        row.append(formatIcon, copy, actions);
+        menu.appendChild(row);
       });
     });
   });
