@@ -713,7 +713,7 @@ function findQuizInManifest(manifest, quizId) {
           questionCount: quiz.questionCount != null ? quiz.questionCount : null,
           questionTypes: formatQuestionTypes(quiz.questionTypes),
           author: quiz.author || null,
-          // subject.name is the clean course name (e.g. "Website Demo"),
+          // subject.name is the clean course name (e.g. "Math"),
           // distinct from any subfolders nested beneath it — see
           // buildSubjectManifestEntry() in scripts/lib/quizPath.js.
           course: subject.name || null,
