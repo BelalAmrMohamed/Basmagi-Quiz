@@ -101,16 +101,22 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const copiedIds = new Map();
 
-  async function copyNode(node, parentId = null, forcedKind = null) {
-    const nodeId = node?.key || node?.id || node?.name;
-    const title = node?.name || node?.title || "بدون عنوان";
-    const isQuiz = Boolean(node?.dbId || node?.questionCount != null) && !node?.subcategories;
+  async function copyNode(node, parentId = null, forcedKind = null, isQuizNode = false) {
+    const sourceNode = node?.key && categoryTree?.[node.key]
+      ? categoryTree[node.key]
+      : node;
+    const nodeId = sourceNode?.key || sourceNode?.id || sourceNode?.name;
+    const title = sourceNode?.name || sourceNode?.title || "بدون عنوان";
+    const isQuiz = isQuizNode || (
+      Boolean(sourceNode?.dbId || sourceNode?.questionCount != null) &&
+      !Array.isArray(sourceNode?.subcategories)
+    );
 
     if (isQuiz) {
-      if (alreadyCopied(node.id, userQuizzes)) return null;
+      if (alreadyCopied(sourceNode.id, userQuizzes)) return null;
       let loaded;
       try {
-        loaded = await loadFullQuizData({ dbId: node.dbId });
+        loaded = await loadFullQuizData({ dbId: sourceNode.dbId || sourceNode.id });
       } catch (error) {
         console.error("Copy tree failed — could not load quiz data:", error);
         return null;
@@ -120,7 +126,7 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
           title: title || loaded.meta?.title || "",
           description: loaded.meta?.description || "",
           source: loaded.meta?.source || "",
-          copiedFrom: node.id,
+          copiedFrom: sourceNode.id,
           parentId,
         },
         stats: loaded.stats || undefined,
@@ -149,13 +155,14 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
     userQuizzes.push(folderEntry);
     copiedIds.set(nodeId, copyId);
 
-    const childKeys = node?.subcategories || [];
+    const childKeys = sourceNode?.subcategories || [];
     for (const childKey of childKeys) {
       const child = typeof childKey === "string" ? categoryTree?.[childKey] : childKey;
       if (child) await copyNode(child, copyId);
     }
-    for (const exam of node?.exams || []) {
-      await copyNode({ ...exam, dbId: exam.dbId }, copyId);
+    const exams = sourceNode?.exams || sourceNode?.quizzes || [];
+    for (const exam of exams) {
+      await copyNode({ ...exam, dbId: exam.dbId }, copyId, null, true);
     }
     return copyId;
   }
