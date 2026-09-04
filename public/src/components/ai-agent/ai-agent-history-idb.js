@@ -219,11 +219,16 @@ export function deriveConversationTitle(messages) {
   const text = (firstUserMsg?.content || "").trim();
   if (!text) {
     // Attachment-only first message (e.g. "just convert this exam", no
-    // accompanying text) — fall back to the filename instead of a generic
-    // "untitled" label, so the history list still gives a useful hint at
-    // a glance about what the conversation was about.
-    const attachmentName = firstUserMsg?.attachments?.[0]?.name;
-    return attachmentName ? `📎 ${attachmentName}` : "محادثة بدون عنوان";
+    // accompanying text) — fall back to the attachment's display label
+    // instead of a generic "untitled" label, so the history list still
+    // gives a useful hint at a glance about what the conversation was
+    // about. Covers both a file attachment (`.name`) and, per Phase 2a's
+    // platform-item attachment refactor, a quiz/course/folder reference
+    // (`.title`) — a quiz-only opener with no typed prompt still gets a
+    // sensible history title instead of "محادثة بدون عنوان".
+    const firstAttachment = firstUserMsg?.attachments?.[0];
+    const label = firstAttachment?.name || firstAttachment?.title;
+    return label ? `📎 ${label}` : "محادثة بدون عنوان";
   }
   return text.length > 40 ? `${text.slice(0, 40)}…` : text;
 }

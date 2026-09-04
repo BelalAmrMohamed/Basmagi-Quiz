@@ -11,6 +11,11 @@ import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelecte
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
 import { saveConversation, deriveConversationTitle } from "./ai-agent-history-idb.js";
+// PHASE 3c: reuses the same anchored-popover engine already used for the
+// history sidebar's per-item "⋮" menu (ai-agent-history.js) and the exam
+// cards' own ⋮ menu — per the plan's explicit instruction not to invent a
+// third distinct dropdown-menu visual style in this codebase.
+import { openExamDropdownMenu, closeAllExamDropdownMenus } from "../../features/home/exam-dropdown-menu.js";
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
 // chain in a single agent turn (see its `agentDepth` param) before giving
@@ -144,9 +149,29 @@ export function createChatPanel(options = {}) {
   const ACCEPTED_ATTACHMENT_TYPES =
     "image/jpeg,image/png,image/gif,image/webp,application/pdf,.docx," +
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  // PHASE 3/2a: the backend (api/ai-agent/chat.js's MAX_ATTACHMENTS_PER_MESSAGE)
+  // still enforces one FILE per message — this cap is client-side UX only
+  // (how many tiles the row will hold), covering a mix of a file + any
+  // number of platform-item attachments (quiz/course/folder references,
+  // which cost the backend a text-context expansion, not a binary upload,
+  // so they aren't bound by the same 1-file limit).
+  const MAX_PENDING_ATTACHMENTS = 6;
 
-  /** @type {{mimeType: string, base64: string, name: string} | null} */
-  let pendingAttachment = null;
+  /**
+   * PHASE 2a attachment-model refactor: was a single `pendingAttachment`
+   * object; now an array so a FILE attachment (existing: user-picked/
+   * dropped, base64-encoded — shape: {kind:"file", mimeType, base64, name})
+   * and PLATFORM-ITEM attachments (new: a reference to a quiz/course/folder
+   * already on the platform/local storage, NOT re-uploaded — shape:
+   * {kind:"quiz"|"course"|"folder", id, title, source:"platform"|"local"})
+   * can coexist. Phase 2's entry points (openAIAgentWithAttachment, see
+   * ai-agent-attach-launcher.js) push platform-item attachments in here;
+   * Phase 4's `/`/`@` menu will do the same for multi-attach. Only ever
+   * populated with at most one FILE at a time (backend limit, see above)
+   * but any number of platform-item entries.
+   * @type {Array<{kind: "file", mimeType: string, base64: string, name: string} | {kind: "quiz"|"course"|"folder", id: string, title: string, source: "platform"|"local"}>}
+   */
+  let pendingAttachments = [];
 
   /** @type {Array<{role: "user"|"assistant", content: string}>} */
   const history = [];
@@ -363,48 +388,165 @@ export function createChatPanel(options = {}) {
     panel.insertBefore(suggestionsEl, inputRow);
   }
 
-  // Pending-attachment chip — shown above the input row once a file is
-  // picked, until it's sent or removed. Built lazily since it's only ever
-  // needed on pages with enableFileUpload.
-  let attachmentChipEl = null;
-  function renderAttachmentChip() {
-    if (attachmentChipEl) {
-      attachmentChipEl.remove();
-      attachmentChipEl = null;
+  // PHASE 3 icons for the attachment tiles — a generic file glyph (used for
+  // any file attachment that isn't an image; images get a real thumbnail
+  // instead, built in buildAttachmentTile below) and one glyph per
+  // platform-item kind, reusing the same shapes the rest of the app already
+  // uses for quizzes/courses/folders (see user-quiz-card.js/
+  // user-quizzes-folders.js's 📝/📚/📁-style conventions) so a tile reads
+  // as "the same kind of thing" wherever it shows up, not a new icon set
+  // invented just for this popover.
+  const ATTACHMENT_FILE_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5z"/><path d="M14 2v6h6"/></svg>';
+  const ATTACHMENT_QUIZ_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+  const ATTACHMENT_COURSE_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+  const ATTACHMENT_FOLDER_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>';
+  const ATTACHMENT_REMOVE_ICON_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+  /**
+   * Shared by both saveConversation() call sites in resendLastUserTurn()
+   * (after a normal turn, and after a tool-result) — maps in-memory
+   * `history` (which can carry base64 file data + platform-item objects
+   * in `attachments`) down to the lightweight persisted shape IndexedDB
+   * actually stores. Only `attachmentName` (a single display label)
+   * survives a save — same "v1: one file at a time" persisted shape as
+   * before Phase 2a/3, just now also covering a platform-item's `.title`
+   * as a fallback source for that label, so a quiz/course/folder-only
+   * opener (no file) still gets a sensible chip on reload and a sensible
+   * derived history title (see deriveConversationTitle's own matching
+   * fallback in ai-agent-history-idb.js).
+   * @param {Array<object>} historyToPersist
+   */
+  function toPersistedMessages(historyToPersist) {
+    return historyToPersist.map(({ role, content, attachments, type }) => {
+      const firstLabel = attachments?.[0]?.name || attachments?.[0]?.title;
+      return {
+        role,
+        content,
+        ...(type ? { type } : {}),
+        ...(firstLabel ? { attachmentName: firstLabel } : {}),
+      };
+    });
+  }
+
+  /**
+   * PHASE 2b (adapted, see toWireMessage's own comment on why this runs
+   * client-side rather than server-side): turns one platform-item
+   * attachment into a labeled block of context text the model can reason
+   * about. Relies on `att.summary` — a plain-text blurb the launcher
+   * (ai-agent-attach-launcher.js) already built from the quiz/course/
+   * folder data it had on hand at attach time (this module deliberately
+   * doesn't import quiz-schema/storage helpers itself, to stay a
+   * self-contained "takes everything via options/attachments" component
+   * per its own header comment) — falls back to just the title if no
+   * summary was supplied (e.g. a server-hosted course whose quiz list
+   * isn't loaded client-side at attach time).
+   * @param {{kind: "quiz"|"course"|"folder", title: string, summary?: string}} att
+   */
+  function expandPlatformAttachment(att) {
+    const kindLabelAr = { quiz: "اختبار", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
+    const body = att.summary ? att.summary : "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
+    return `[مرفق ${kindLabelAr}: ${att.title}]\n${body}`;
+  }
+
+  function iconForAttachment(att) {
+    if (att.kind === "quiz") return ATTACHMENT_QUIZ_ICON_SVG;
+    if (att.kind === "course") return ATTACHMENT_COURSE_ICON_SVG;
+    if (att.kind === "folder") return ATTACHMENT_FOLDER_ICON_SVG;
+    return ATTACHMENT_FILE_ICON_SVG;
+  }
+
+  function labelForAttachment(att) {
+    return att.kind === "file" ? att.name : att.title;
+  }
+
+  /**
+   * Builds one square tile (~64-72px, per Phase 3b) for a single pending
+   * attachment — an image file gets a real thumbnail (base64 data URL,
+   * already in memory from handlePickedFile), everything else gets an
+   * icon matching its kind (see iconForAttachment). Shared by
+   * renderAttachmentChips below.
+   * @param {object} att - one entry from pendingAttachments
+   * @param {number} index - its index, so the remove button can splice
+   *   the exact right entry back out (attachments have no stable id of
+   *   their own — index is stable for the tile's lifetime since
+   *   pendingAttachments is only ever mutated by a full re-render here).
+   */
+  function buildAttachmentTile(att, index) {
+    const tile = document.createElement("div");
+    tile.className = `ai-agent-attachment-tile ai-agent-attachment-tile--${att.kind}`;
+    tile.title = labelForAttachment(att) || "";
+
+    const preview = document.createElement("div");
+    preview.className = "ai-agent-attachment-tile-preview";
+    if (att.kind === "file" && att.mimeType && att.mimeType.startsWith("image/") && att.base64) {
+      const img = document.createElement("img");
+      img.className = "ai-agent-attachment-tile-thumb";
+      img.src = `data:${att.mimeType};base64,${att.base64}`;
+      img.alt = "";
+      preview.appendChild(img);
+    } else {
+      preview.innerHTML = iconForAttachment(att);
     }
-    if (!pendingAttachment) {
-      // Clearing the attachment can drop the last reason Send was
+    tile.appendChild(preview);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "ai-agent-attachment-tile-name";
+    nameSpan.textContent = labelForAttachment(att) || "";
+    tile.appendChild(nameSpan);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "ai-agent-attachment-tile-remove";
+    removeBtn.setAttribute("aria-label", "إزالة المرفق");
+    removeBtn.innerHTML = ATTACHMENT_REMOVE_ICON_SVG;
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      pendingAttachments.splice(index, 1);
+      renderAttachmentChips();
+    });
+    tile.appendChild(removeBtn);
+
+    return tile;
+  }
+
+  // PHASE 3b: attachment tiles now render INSIDE the bordered input
+  // container itself (a row above the textarea line), not as a sibling
+  // element sitting above the whole input row — was
+  // `panel.insertBefore(attachmentChipEl, inputRow)`; now appended into
+  // `attachmentTilesRow`, which itself lives inside `inputRow` (see
+  // inputRow assembly below). Built lazily/emptied-and-rebuilt on every
+  // call, same as the old single-chip version, just N tiles instead of 0-1.
+  let attachmentTilesRow = null;
+  function renderAttachmentChips() {
+    if (attachmentTilesRow) {
+      attachmentTilesRow.remove();
+      attachmentTilesRow = null;
+    }
+    if (!pendingAttachments.length) {
+      // Clearing the last attachment can drop the last reason Send was
       // visible (an attachment alone, with no typed text, is still
       // something to send — see updateSendBtnVisibility's own
-      // pendingAttachment check) — re-sync so removing it can hide Send
+      // pendingAttachments check) — re-sync so removing it can hide Send
       // again when the text field is also empty.
       if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
       return;
     }
 
-    attachmentChipEl = document.createElement("div");
-    attachmentChipEl.className = "ai-agent-attachment-chip";
-    const nameSpan = document.createElement("span");
-    nameSpan.className = "ai-agent-attachment-chip-name";
-    nameSpan.textContent = pendingAttachment.name;
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "ai-agent-attachment-chip-remove";
-    removeBtn.setAttribute("aria-label", "إزالة الملف");
-    removeBtn.textContent = "×";
-    removeBtn.addEventListener("click", () => {
-      pendingAttachment = null;
-      renderAttachmentChip();
+    attachmentTilesRow = document.createElement("div");
+    attachmentTilesRow.className = "ai-agent-attachment-tiles-row";
+    pendingAttachments.forEach((att, i) => {
+      attachmentTilesRow.appendChild(buildAttachmentTile(att, i));
     });
-    attachmentChipEl.appendChild(nameSpan);
-    attachmentChipEl.appendChild(removeBtn);
-    panel.insertBefore(attachmentChipEl, inputRow);
-    // Guarded: this module's first renderAttachmentChip() call happens
-    // during initial panel construction, before updateSendBtnVisibility
-    // is defined further down. Both are hoisted function declarations
-    // (order-independent by the time either actually runs in response
-    // to a user action), but the guard keeps this call site correct even
-    // for that very first call.
+    // inputRow exists by the time this can ever actually be called with a
+    // non-empty pendingAttachments (nothing populates it before the input
+    // row is built), so insert as its first child — above the
+    // textarea/button line, per Phase 3b.
+    inputRow.insertBefore(attachmentTilesRow, inputRow.firstChild);
     if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
   }
 
@@ -412,14 +554,21 @@ export function createChatPanel(options = {}) {
   inputRow.className = "ai-agent-chat-input-row";
 
   let fileInput = null;
-  let attachBtn = null;
+  // PHASE 3c: the standalone paperclip button is gone — replaced by
+  // moreBtn's popover menu below (see "more" menu section), whose first
+  // item triggers the exact same fileInput.click() this used to do
+  // directly. attachBtn itself no longer exists as an element; fileInput
+  // still does, since something has to host the native file picker.
+  let moreBtn = null;
 
   /**
-   * Shared by both the paperclip button's file picker and drag-and-drop
+   * Shared by both the "more" menu's "إرفاق ملف" item and drag-and-drop
    * (see the panel-level drop listener below) — validates and reads a
-   * single File into pendingAttachment. A second drop/pick while one is
-   * already pending simply replaces it (v1 is one file at a time, see
-   * AI_HELPER_IMPROVEMENT_PLAN.md Task 3).
+   * single File into a `kind:"file"` pendingAttachments entry. The backend
+   * still enforces one FILE per message (see MAX_ATTACHMENTS_PER_MESSAGE
+   * in api/ai-agent/chat.js), so a second file pick/drop replaces any
+   * existing FILE entry — but does NOT touch platform-item entries
+   * (quiz/course/folder, see Phase 2a), which aren't subject to that limit.
    * @param {File} file
    */
   async function handlePickedFile(file) {
@@ -432,12 +581,14 @@ export function createChatPanel(options = {}) {
 
     try {
       const base64 = await fileToBase64(file);
-      pendingAttachment = {
+      pendingAttachments = pendingAttachments.filter((a) => a.kind !== "file");
+      pendingAttachments.push({
+        kind: "file",
         mimeType: file.type || "application/octet-stream",
         base64,
         name: file.name,
-      };
-      renderAttachmentChip();
+      });
+      renderAttachmentChips();
     } catch (err) {
       console.error("[ai-agent-chat] failed to read file:", err);
       appendError("تعذرت قراءة الملف. حاول مرة أخرى.");
@@ -450,15 +601,49 @@ export function createChatPanel(options = {}) {
     fileInput.accept = ACCEPTED_ATTACHMENT_TYPES;
     fileInput.hidden = true;
 
-    attachBtn = document.createElement("button");
-    attachBtn.type = "button";
-    attachBtn.className = "ai-agent-attach-btn";
-    attachBtn.setAttribute("aria-label", "إرفاق ملف");
-    attachBtn.title = "إرفاق ملف";
-    attachBtn.innerHTML =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
+    // PHASE 3c: "more" menu — a generic {icon,label,onClick} popover so
+    // future AI Agent features can add entries here without rebuilding it
+    // (per the plan's own stated reason for the redesign). Today it has
+    // exactly one item ("إرفاق ملف"), wired to the same fileInput.click()
+    // the old standalone paperclip button used — moved, not reimplemented.
+    // Styled to match the app's other small anchored popovers (see
+    // openExamDropdownMenu's .exam-dropdown-menu/.exam-action-btn classes,
+    // reused directly rather than inventing a third dropdown visual style —
+    // per the plan's own explicit instruction not to).
+    moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "ai-agent-more-btn";
+    moreBtn.setAttribute("aria-label", "المزيد من الخيارات");
+    moreBtn.title = "المزيد";
+    moreBtn.innerHTML =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
 
-    attachBtn.addEventListener("click", () => fileInput.click());
+    const moreMenuItems = [
+      {
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>',
+        label: "إرفاق ملف",
+        onClick: () => fileInput.click(),
+      },
+    ];
+
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openExamDropdownMenu(moreBtn, (menu) => {
+        moreMenuItems.forEach(({ icon, label, onClick }) => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "exam-action-btn";
+          item.innerHTML = `${icon}<span>${label}</span>`;
+          item.addEventListener("click", (evt) => {
+            evt.stopPropagation();
+            closeAllExamDropdownMenus();
+            onClick();
+          });
+          menu.appendChild(item);
+        });
+      });
+    });
+
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files?.[0];
       fileInput.value = ""; // allow re-picking the same file later
@@ -499,9 +684,9 @@ export function createChatPanel(options = {}) {
       if (!isFileDrag(e)) return;
       e.preventDefault();
       e.stopPropagation();
-      // v1 is one file at a time (see AI_HELPER_IMPROVEMENT_PLAN.md Task 3)
-      // — if multiple files are dropped, only the first is used, same as
-      // the file-input which has no `multiple` attribute.
+      // Still one FILE at a time (backend limit — see handlePickedFile's
+      // own comment) — if multiple files are dropped, only the first is
+      // used, same as the file-input which has no `multiple` attribute.
       const file = e.dataTransfer?.files?.[0];
       if (!file) return;
       await handlePickedFile(file);
@@ -733,7 +918,7 @@ export function createChatPanel(options = {}) {
       micBtn.title = dictating ? "إلغاء الإملاء" : "إملاء صوتي";
       micBtn.classList.toggle("ai-agent-mic-btn--active", dictating);
     }
-    if (attachBtn) attachBtn.hidden = dictating;
+    if (moreBtn) moreBtn.hidden = dictating;
     if (suggestionsEl) suggestionsEl.hidden = dictating;
     // The textarea itself is replaced (not just styled) by the wave
     // animation while dictating — it stays in the DOM and keeps
@@ -920,25 +1105,34 @@ export function createChatPanel(options = {}) {
   sendBtn.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 3 9-3 9 19-9Z"/><path d="M6 12h16"/></svg>';
 
-  // Assemble the input row now that every optional piece (attach button,
+  // Assemble the input row now that every optional piece (more button,
   // mic/cancel button, dictation wave) has been conditionally built
-  // above. DOM order: attach, textarea, wave, mic/cancel, send — send is
-  // deliberately the LAST child so it's the far-right control in this
-  // RTL row (first child sits visually on the right in RTL flex; see
+  // above. PHASE 3b: inputRow is now a flex-column of [tiles?, controls]
+  // (see .ai-agent-chat-input-row/.ai-agent-chat-input-controls in the
+  // CSS) — attachmentTilesRow (built lazily by renderAttachmentChips)
+  // inserts itself as inputRow's own first child whenever there's at
+  // least one pending attachment; inputControls always holds the
+  // horizontal control line below it. DOM order within inputControls:
+  // more, textarea, wave, mic/cancel, send — send is deliberately the
+  // LAST child so it's the far-right control in this RTL row (first
+  // child sits visually on the right in RTL flex; see
   // .ai-agent-chat-input-row's own comment in the CSS), matching "Send
   // Button Position: move the remaining send-btn to the far-right end"
-  // from the request. The wave sits in the textarea's flex slot (see
-  // .ai-agent-dictation-wave's flex:1 in the CSS) so it visually replaces
-  // it in place rather than appearing as an extra element squeezed in.
-  // Only the send button (never attach/mic/textarea) stays visible during
-  // dictation — see setDictationUiState, which hides attachBtn/textarea
-  // but never touches sendBtn.
-  if (attachBtn) inputRow.appendChild(attachBtn);
-  inputRow.appendChild(textarea);
-  inputRow.appendChild(dictationWaveEl);
-  if (micBtn) inputRow.appendChild(micBtn);
-  inputRow.appendChild(sendBtn);
-  if (fileInput) inputRow.appendChild(fileInput);
+  // from the original request. The wave sits in the textarea's flex slot
+  // (see .ai-agent-dictation-wave's flex:1 in the CSS) so it visually
+  // replaces it in place rather than appearing as an extra element
+  // squeezed in. Only the send button (never more/mic/textarea) stays
+  // visible during dictation — see setDictationUiState, which hides
+  // moreBtn/textarea but never touches sendBtn.
+  const inputControls = document.createElement("div");
+  inputControls.className = "ai-agent-chat-input-controls";
+  if (moreBtn) inputControls.appendChild(moreBtn);
+  inputControls.appendChild(textarea);
+  inputControls.appendChild(dictationWaveEl);
+  if (micBtn) inputControls.appendChild(micBtn);
+  inputControls.appendChild(sendBtn);
+  if (fileInput) inputControls.appendChild(fileInput);
+  inputRow.appendChild(inputControls);
 
   // Firefox warning sits above the input row, once, not inside it — it's
   // informational context for the row rather than a control within it.
@@ -979,20 +1173,23 @@ export function createChatPanel(options = {}) {
     const available = isAiHelperAvailable();
     textarea.disabled = !available;
     sendBtn.disabled = !available;
-    if (attachBtn) attachBtn.disabled = !available;
+    if (moreBtn) moreBtn.disabled = !available;
     if (typeof updateSendBtnVisibility === "function") updateSendBtnVisibility();
   }
 
   /**
    * @param {"user"|"assistant"} role
    * @param {string} content
-   * @param {string} [attachmentName] - when the user sent a file with this
-   *   message, its original filename — rendered as a small chip inside the
-   *   bubble so the attachment is visible in the chat itself (previously
-   *   it was only visible to the AI; the user had no confirmation it was
-   *   actually sent, and it silently disappeared from the transcript,
-   *   including on reload from history). Assistant messages never carry
-   *   one; only ever passed for role === "user".
+   * @param {Array<{name?: string, title?: string, kind?: string}>} [attachmentsForDisplay] -
+   *   when the user sent one or more attachments with this message, their
+   *   display labels/kinds — rendered as small chips inside the bubble so
+   *   the attachment(s) stay visible in the chat itself (previously only
+   *   visible to the AI; the user had no confirmation it was actually
+   *   sent, and it silently disappeared from the transcript, including on
+   *   reload from history). Assistant messages never carry any; only ever
+   *   passed for role === "user". Was a single `attachmentName` string
+   *   before Phase 2a/3's array refactor — now a list, since a user
+   *   message can carry a file AND platform-item attachments together.
    */
   const COPY_ICON_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
@@ -1282,7 +1479,7 @@ export function createChatPanel(options = {}) {
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
   }
 
-  function appendMessage(role, content, attachmentName, historyIndex) {
+  function appendMessage(role, content, attachmentsForDisplay, historyIndex) {
     // Wrapper around the bubble itself — copy/edit controls live in this
     // wrapper, BELOW the bubble, rather than inside/on top of it (an
     // earlier version pinned them absolutely inside the bubble's own
@@ -1298,16 +1495,19 @@ export function createChatPanel(options = {}) {
     const el = document.createElement("div");
     el.className = `ai-agent-msg ai-agent-msg--${role}`;
 
-    if (attachmentName) {
-      const chip = document.createElement("div");
-      chip.className = "ai-agent-msg-attachment";
-      chip.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>';
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "ai-agent-msg-attachment-name";
-      nameSpan.textContent = attachmentName;
-      chip.appendChild(nameSpan);
-      el.appendChild(chip);
+    if (Array.isArray(attachmentsForDisplay) && attachmentsForDisplay.length) {
+      attachmentsForDisplay.forEach((att) => {
+        const label = att?.name || att?.title;
+        if (!label) return;
+        const chip = document.createElement("div");
+        chip.className = "ai-agent-msg-attachment";
+        chip.innerHTML = iconForAttachment(att.kind ? att : { kind: "file" });
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "ai-agent-msg-attachment-name";
+        nameSpan.textContent = label;
+        chip.appendChild(nameSpan);
+        el.appendChild(chip);
+      });
     }
 
     if (role === "assistant") {
@@ -1719,19 +1919,46 @@ export function createChatPanel(options = {}) {
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
+    // PHASE 2b adaptation: the plan's own text describes the backend
+    // "resolving" a platform-item attachment server-side by id. That
+    // doesn't fit how this app actually stores quizzes/courses/folders —
+    // they live in the BROWSER's localStorage (see user_quizzes reads
+    // throughout public/src/features/home/), not a server DB the backend
+    // can look up by id. So resolution happens HERE, client-side, where
+    // the full quiz/course/folder data already is — expanded into
+    // readable context text and folded into the outgoing message's
+    // `content`, distinctly labeled so the model treats it as "the user
+    // is asking about THIS specific item" rather than freeform pasted
+    // text (same intent as the plan's 2b, adapted to where the data
+    // actually lives). The client still renders it as a chip in the UI
+    // the whole time (see renderAttachmentChips/appendMessage) — it never
+    // disappears from the user's view, exactly as required.
     const toWireMessage = ({ role, content, attachments, type }) => {
+      const fileAttachments = (attachments || [])
+        .filter((a) => a.kind === "file" || (!a.kind && a.base64))
+        .map(({ mimeType, base64, name }) => ({ mimeType, base64, name }));
+      const platformAttachments = (attachments || []).filter(
+        (a) => a.kind === "quiz" || a.kind === "course" || a.kind === "folder",
+      );
+      const expandedContext = platformAttachments.length
+        ? platformAttachments.map(expandPlatformAttachment).join("\n\n")
+        : "";
+      const effectiveContent = expandedContext
+        ? [content, expandedContext].filter(Boolean).join("\n\n")
+        : content;
+
       if (type === "tool-result") {
         return {
           role: "user",
           content: `[نتيجة أداة]: ${content}\n(توجيه للنظام: تم تنفيذ هذا الإجراء بنجاح وأصبح موجوداً بالفعل. لا تُعد إنشاء أو تكرار نفس العنصر مجدداً، وتابع لتنفيذ بقية خطوات المستخدم إن وُجدت، أو قدم الرد النهائي).`,
-          attachments,
+          attachments: fileAttachments,
           type,
         };
       }
       return {
         role,
-        content,
-        attachments,
+        content: effectiveContent,
+        attachments: fileAttachments,
         type,
       };
     };
@@ -1807,6 +2034,9 @@ export function createChatPanel(options = {}) {
         history.push({ role: "assistant", content: `[تم استدعاء: ${toolSummary}]` });
       }
 
+      // toPersistedMessages (defined once, near createChatPanel's other
+      // helpers below) maps in-memory `history` down to the lightweight
+      // shape IndexedDB actually stores.
       try {
         await saveConversation({
           id: conversationId,
@@ -1814,12 +2044,7 @@ export function createChatPanel(options = {}) {
           title: deriveConversationTitle(history),
           createdAt: conversationCreatedAt,
           updatedAt: Date.now(),
-          messages: history.map(({ role, content, attachments, type }) => ({
-            role,
-            content,
-            ...(type ? { type } : {}),
-            ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
-          })),
+          messages: toPersistedMessages(history),
         });
         if (typeof onHistoryChanged === "function") onHistoryChanged();
       } catch (histErr) {
@@ -1879,12 +2104,7 @@ export function createChatPanel(options = {}) {
                   title: deriveConversationTitle(history),
                   createdAt: conversationCreatedAt,
                   updatedAt: Date.now(),
-                  messages: history.map(({ role, content, attachments, type }) => ({
-                    role,
-                    content,
-                    ...(type ? { type } : {}),
-                    ...(attachments?.[0]?.name ? { attachmentName: attachments[0].name } : {}),
-                  })),
+                  messages: toPersistedMessages(history),
                 });
                 if (typeof onHistoryChanged === "function") onHistoryChanged();
               } catch (histErr) {
@@ -1958,28 +2178,29 @@ export function createChatPanel(options = {}) {
     if (isDictating) stopRecognition();
 
     const text = textarea.value.trim();
-    const attachment = pendingAttachment;
-    // A file with no accompanying text is a valid send (e.g. "just convert
-    // this exam") — only block on genuinely empty input.
-    if (!text && !attachment) return;
+    const attachments = pendingAttachments;
+    // An attachment with no accompanying text is a valid send (e.g. "just
+    // convert this exam", or attaching a quiz and hitting Send with no
+    // typed prompt) — only block on genuinely empty input.
+    if (!text && !attachments.length) return;
 
     textarea.value = "";
     textarea.style.height = "auto";
     sendBtn.disabled = true;
-    pendingAttachment = null;
-    renderAttachmentChip();
+    pendingAttachments = [];
+    renderAttachmentChips();
 
     if (suggestionsEl) {
       removeSuggestions();
     }
 
     const outgoingUserMessage = { role: "user", content: text };
-    if (attachment) outgoingUserMessage.attachments = [attachment];
+    if (attachments.length) outgoingUserMessage.attachments = attachments;
     // Push BEFORE rendering so the new message's own index (history.length
     // - 1) is known for addEditButton's historyIndex — appendMessage
     // reads history[] by index, not by object identity.
     history.push(outgoingUserMessage);
-    appendMessage("user", text, attachment?.name, history.length - 1);
+    appendMessage("user", text, attachments, history.length - 1);
     updateNewChatVisibility();
 
     await resendLastUserTurn();
@@ -2011,7 +2232,7 @@ export function createChatPanel(options = {}) {
       sendBtn.hidden = false;
       return;
     }
-    sendBtn.hidden = textarea.value.trim().length === 0 && !pendingAttachment;
+    sendBtn.hidden = textarea.value.trim().length === 0 && !pendingAttachments.length;
   }
 
   textarea.addEventListener("input", () => {
@@ -2065,12 +2286,35 @@ export function createChatPanel(options = {}) {
     return history.length > 0;
   };
 
+  /**
+   * PHASE 2c: lets an outside caller (ai-agent-attach-launcher.js) attach a
+   * platform-item (quiz/course/folder reference) to this panel's pending
+   * attachments WITHOUT sending anything — the item shows up as a tile the
+   * user can still remove or send alongside a prompt, exactly like a
+   * user-picked file. Never auto-sends; that stays the user's call (send
+   * button / Enter), per the plan's explicit "give the user the ability to
+   * remove it or send it with a prompt" requirement.
+   * @param {{kind: "quiz"|"course"|"folder", id?: string, title: string, source?: string}} attachment
+   */
+  panel.addPendingAttachment = function addPendingAttachment(attachment) {
+    if (!attachment || !attachment.kind || attachment.kind === "file") return;
+    // Avoid duplicate tiles if the same item is attached twice in a row
+    // (e.g. the user reopens the same card's "اسأل الباشـمبصمج" button).
+    const alreadyPending = pendingAttachments.some(
+      (a) => a.kind === attachment.kind && a.id === attachment.id && a.title === attachment.title,
+    );
+    if (alreadyPending) return;
+    if (pendingAttachments.length >= MAX_PENDING_ATTACHMENTS) return;
+    pendingAttachments.push(attachment);
+    renderAttachmentChips();
+  };
+
   panel.loadConversation = function loadConversation(conversation) {
     stopSpeaking();
     typingController.clear();
     removeSuggestions();
-    pendingAttachment = null;
-    renderAttachmentChip();
+    pendingAttachments = [];
+    renderAttachmentChips();
 
     conversationId = conversation.id;
     conversationCreatedAt = conversation.createdAt || Date.now();
@@ -2079,6 +2323,12 @@ export function createChatPanel(options = {}) {
     // from the persisted `attachmentName` (see saveConversation call in
     // sendMessage) — no base64 data available after a reload, but the
     // filename is enough to redraw the same chip the user originally saw.
+    // A platform-item attachment persists as `attachmentName` too (see
+    // deriveConversationTitle/saveConversation's fallback for `.title`) —
+    // reconstructed here as a generic `{name}` chip since the original
+    // kind isn't preserved across a reload; good enough for display,
+    // which is all a reloaded past conversation needs (nothing gets
+    // re-sent from history on load).
     history.push(
       ...conversation.messages.map(({ role, content, attachmentName, type }) => ({
         role,
@@ -2096,7 +2346,7 @@ export function createChatPanel(options = {}) {
         if (m.type === "tool-result") {
           appendToolResultMessage(m.content);
         } else {
-          appendMessage(m.role, m.content, m.attachments?.[0]?.name, i);
+          appendMessage(m.role, m.content, m.attachments, i);
         }
       });
     }
@@ -2124,8 +2374,8 @@ export function createChatPanel(options = {}) {
     conversationId = crypto.randomUUID();
     conversationCreatedAt = Date.now();
     history.length = 0;
-    pendingAttachment = null;
-    renderAttachmentChip();
+    pendingAttachments = [];
+    renderAttachmentChips();
     messagesEl.innerHTML = "";
     renderEmptyState();
     renderSuggestions();
@@ -2168,7 +2418,7 @@ export function createChatPanel(options = {}) {
       if (m.type === "tool-result") {
         appendToolResultMessage(m.content);
       } else {
-        appendMessage(m.role, m.content, m.attachments?.[0]?.name, i);
+        appendMessage(m.role, m.content, m.attachments, i);
       }
     });
     updateNewChatVisibility();

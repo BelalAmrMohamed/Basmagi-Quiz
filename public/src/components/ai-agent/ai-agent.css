@@ -807,39 +807,113 @@
   background: var(--color-background-secondary);
 }
 
-/* ── File attachment (Task 3) ── */
-.ai-agent-attachment-chip {
+/* ── Attachment tiles (Phase 3b) ──
+   Square/card-style tiles living INSIDE the bordered input row (see
+   ai-agent-chat.js's renderAttachmentChips — inserted as inputRow's own
+   first child, not a sibling above it). Replaces the old horizontal
+   list-item pill (.ai-agent-attachment-chip, since removed) — one tile per
+   pending attachment, file or platform-item (quiz/course/folder), in a
+   horizontally-scrollable row above the textarea line. */
+.ai-agent-attachment-tiles-row {
   display: flex;
-  align-items: center;
   gap: 8px;
-  margin: 10px 10px 0;
-  padding: 6px 10px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  font-size: 0.82rem;
+  padding: 10px 10px 0;
+  overflow-x: auto;
   direction: rtl;
 }
 
-.ai-agent-attachment-chip-name {
-  flex: 1;
+.ai-agent-attachment-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  width: 68px;
+  height: 68px;
+  padding: 6px 4px 5px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+/* Distinct tint per attachment kind so a file vs. a quiz/course/folder
+   reference reads apart from each other at a glance, matching the tinted
+   type badges already used elsewhere for question types (see
+   .user-quiz-types-row's colorMap in user-quiz-card.js) rather than
+   inventing an unrelated color language just for this tile. */
+.ai-agent-attachment-tile--quiz {
+  border-color: var(--color-primary-light, var(--color-border));
+}
+
+.ai-agent-attachment-tile--course {
+  border-color: var(--color-success-light, var(--color-border));
+}
+
+.ai-agent-attachment-tile--folder {
+  border-color: var(--color-warning-light, var(--color-border));
+}
+
+.ai-agent-attachment-tile-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--color-text-secondary, currentColor);
+  flex-shrink: 0;
+}
+
+.ai-agent-attachment-tile-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.ai-agent-attachment-tile-name {
+  width: 100%;
+  font-size: 0.62rem;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-text-primary);
-}
-
-.ai-agent-attachment-chip-remove {
-  border: none;
-  background: none;
-  color: var(--color-text-secondary, currentColor);
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
   padding: 0 2px;
 }
 
-.ai-agent-attach-btn {
+.ai-agent-attachment-tile-remove {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary, currentColor);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ai-agent-attachment-tile-remove:hover {
+  background: var(--color-danger, #dc2626);
+  color: #fff;
+}
+
+/* ── "More" popover button (Phase 3c) — replaces the standalone paperclip
+   .ai-agent-attach-btn (removed). Same footprint/shape as the old attach
+   button so the input row's layout doesn't shift, but now opens a small
+   anchored menu (see openExamDropdownMenu in ai-agent-chat.js) instead of
+   directly triggering the file picker. */
+.ai-agent-more-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -852,21 +926,33 @@
   transition: border-color 0.15s ease;
 }
 
-.ai-agent-attach-btn:hover {
+.ai-agent-more-btn:hover {
   border-color: var(--color-primary);
 }
 
-.ai-agent-attach-btn:disabled {
+.ai-agent-more-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .ai-agent-chat-input-row {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   padding: 10px;
   border-top: 1.5px solid var(--color-border);
   background: var(--color-background-secondary);
+}
+
+/* The row's own direct children below (textarea/wave/mic/send/more) still
+   need to sit in a horizontal line — only attachmentTilesRow (inserted as
+   inputRow's own first child) sits above them as its own row. Wrapping
+   those direct-line controls in .ai-agent-chat-input-controls keeps
+   inputRow itself a simple flex-column of [tiles?, controls] without
+   touching every one of ai-agent-chat.js's individual appendChild calls. */
+.ai-agent-chat-input-controls {
+  display: flex;
+  gap: 8px;
 }
 
 .ai-agent-chat-input {

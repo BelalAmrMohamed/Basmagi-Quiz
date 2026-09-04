@@ -546,7 +546,7 @@ function getBranchHandlerRef(pageKey) {
   return ref;
 }
 
-function getChatPanelForPageKey(key) {
+export function getChatPanelForPageKey(key) {
   return chatPanelsByPageKey.get(key || "default") || null;
 }
 
@@ -562,7 +562,7 @@ function setChatPanelForPageKey(key, chatPanel) {
 // click on the FAB (or a stray listener firing twice) can't stack a second
 // overlay on top of the first — see createAIAgentFab below, which hides
 // the FAB itself for the same reason.
-function openAIAgentModal(options, fab) {
+export function openAIAgentModal(options, fab) {
   const cachedChat = getChatPanelForPageKey(options.pageKey);
   if (cachedChat && !cachedChat.isGenerating?.()) {
     cachedChat.clearTyping?.();

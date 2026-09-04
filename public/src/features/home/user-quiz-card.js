@@ -46,6 +46,19 @@ import {
   _confirm,
   _alert,
 } from "../../components/notifications/notifications.js";
+// PHASE 2: "اسأل الباشـمبصمج" entry point — opens the AI Agent with this
+// quiz pre-attached. Deliberately NOT importing from user-quizzes-view.js
+// for the home-page system prompt/tools config (that file already imports
+// createUserQuizCard FROM this one — importing back would be circular);
+// this button opens the same "home" pageKey with a minimal, safe config
+// instead (no tools — the live folder-tree context those tools need is
+// built and owned by user-quizzes-view.js, not safely reconstructable
+// here), which is enough for the assistant to read/discuss the attached
+// quiz. See ai-agent-attach-launcher.js's own top comment for the fuller
+// rationale.
+import { openAIAgentWithAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { SPARKLE_ICON_SVG } from "./icons.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
