@@ -2342,3 +2342,35 @@ body.sidebar-expanded .ai-agent-fab {
      harmless; hiding the more discoverable one wasn't worth the
      de-duplication. */
 }
+
+/* ── PHASE 4: `/`/`@` attachment trigger menu ──
+   Reuses .exam-dropdown-menu's positioning/chrome (fixed, z-index,
+   surface/border/radius/shadow — see index.css) via the shared class on
+   the element itself (openTriggerMenu in ai-agent-chat.js sets
+   className="exam-dropdown-menu ai-agent-trigger-menu"); these rules only
+   add the couple of things specific to THIS menu's own content — a
+   scrollable cap for a longer recent-items list, and the empty-state
+   message style, neither of which exam-dropdown-menu needs for its own
+   short, fixed action lists. */
+.ai-agent-trigger-menu {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.ai-agent-trigger-menu-item {
+  overflow: hidden;
+}
+
+.ai-agent-trigger-menu-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-agent-trigger-menu-empty {
+  padding: 10px 8px;
+  font-size: 0.85rem;
+  color: var(--color-text-tertiary);
+  text-align: center;
+}
