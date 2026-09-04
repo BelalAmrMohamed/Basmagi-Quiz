@@ -189,6 +189,7 @@ body {
     transform: scale(0.4) rotate(-8deg);
     opacity: 0;
   }
+
   to {
     transform: scale(1) rotate(0deg);
     opacity: 1;
@@ -228,6 +229,7 @@ body {
 .score-circle.pass {
   background: var(--gradient-success);
 }
+
 .score-circle.fail {
   background: var(--gradient-warm);
 }
@@ -300,6 +302,7 @@ body {
 .nav-btn.primary {
   background: var(--gradient-accent);
 }
+
 .nav-btn.secondary {
   background: var(--gradient-secondary);
 }
@@ -449,10 +452,8 @@ body {
 
 /* Active / selected state */
 .filter-btn.active {
-  background: var(
-    --gradient-accent,
-    linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)
-  );
+  background: var(--gradient-accent,
+      linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%));
   border-color: transparent;
   color: #fff;
   box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
@@ -485,38 +486,35 @@ body {
 .review-card.correct {
   border-left-color: var(--color-success, #10b981);
 }
+
 .review-card.wrong {
   border-left-color: var(--color-error, #ef4444);
 }
+
 .review-card.skipped {
   border-left-color: var(--color-warning, #f59e0b);
 }
+
 .review-card.essay-card {
   border-left-color: #3b82f6;
 }
 
 .review-card.correct {
-  background: linear-gradient(
-    to right,
-    var(--color-success-light) 0%,
-    var(--color-surface) 30%
-  );
+  background: linear-gradient(to right,
+      var(--color-success-light) 0%,
+      var(--color-surface) 30%);
 }
 
 .review-card.wrong {
-  background: linear-gradient(
-    to right,
-    var(--color-error-light) 0%,
-    var(--color-surface) 30%
-  );
+  background: linear-gradient(to right,
+      var(--color-error-light) 0%,
+      var(--color-surface) 30%);
 }
 
 .review-card.skipped {
-  background: linear-gradient(
-    to right,
-    var(--color-warning-light) 0%,
-    var(--color-surface) 30%
-  );
+  background: linear-gradient(to right,
+      var(--color-warning-light) 0%,
+      var(--color-surface) 30%);
 }
 
 .review-card.essay-card {
@@ -525,11 +523,9 @@ body {
 
 [data-theme="dark-slate"] .review-card.essay-card,
 [data-theme="dark"] .review-card.essay-card {
-  background: linear-gradient(
-    to right,
-    rgba(59, 130, 246, 0.15) 0%,
-    var(--color-surface) 30%
-  );
+  background: linear-gradient(to right,
+      rgba(59, 130, 246, 0.15) 0%,
+      var(--color-surface) 30%);
 }
 
 /* Review card header */
@@ -605,10 +601,12 @@ body {
 .status-correct svg {
   color: var(--color-success, #10b981);
 }
+
 .status-wrong i,
 .status-wrong svg {
   color: var(--color-error, #ef4444);
 }
+
 .status-skipped i,
 .status-skipped svg {
   color: var(--color-warning, #f59e0b);
@@ -657,12 +655,15 @@ body {
 .ans-correct .ans-text {
   border-color: var(--color-success, #10b981);
 }
+
 .ans-wrong .ans-text {
   border-color: var(--color-error, #ef4444);
 }
+
 .ans-skipped .ans-text {
   border-color: var(--color-warning, #f59e0b);
 }
+
 .ans-correct-answer .ans-text {
   border-color: var(--color-success, #10b981);
 }
@@ -704,14 +705,17 @@ body {
   background: rgba(16, 185, 129, 0.15);
   color: var(--color-success, #10b981);
 }
+
 .essay-score-good {
   background: rgba(59, 130, 246, 0.15);
   color: #3b82f6;
 }
+
 .essay-score-poor {
   background: rgba(245, 158, 11, 0.15);
   color: var(--color-warning, #f59e0b);
 }
+
 .essay-score-none {
   background: rgba(239, 68, 68, 0.12);
   color: var(--color-error, #ef4444);
@@ -767,13 +771,12 @@ body {
 .essay-answer-box.user-essay {
   border-color: #3b82f6;
 }
+
 .essay-answer-box.formal-essay {
   border-color: var(--color-success, #10b981);
-  background: linear-gradient(
-    135deg,
-    #d1fae5 0%,
-    var(--color-background-secondary) 100%
-  );
+  background: linear-gradient(135deg,
+      #d1fae5 0%,
+      var(--color-background-secondary) 100%);
 }
 
 [data-theme="dark-slate"] .essay-answer-box.formal-essay,
@@ -896,6 +899,7 @@ body {
   border: none;
   background: var(--color-background);
 }
+
 .watermark {
   text-align: center;
   margin-top: 80px;
@@ -939,7 +943,7 @@ body {
 
 /* ─── Side Menu download button ───────────────────────────────────────────
    The download section used to be a list of individual per-format buttons
-   here; it's now a single .menu-item ("تحميل الإمتحان") that opens the
+   here; it's now a single .menu-item ("تحميل الامتحان") that opens the
    shared download-quiz-modal component — see
    public/src/components/download-quiz-modal/download-quiz-modal.css for
    that modal's styling. No page-specific CSS needed here anymore. */
@@ -975,9 +979,7 @@ body {
    estimate if the layout stylesheet hasn't set it. */
 @media (max-width: 640px) {
   .modal-overlay {
-    padding-bottom: calc(
-      var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px)
-    );
+    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
     align-items: center;
     box-sizing: border-box;
   }
@@ -1062,6 +1064,7 @@ body {
       opacity: 0;
       transform: translateY(16px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -1083,6 +1086,7 @@ body {
   .header {
     padding: 32px 24px;
   }
+
   .header h1 {
     font-size: 2rem;
   }
@@ -1133,6 +1137,7 @@ body {
     padding: 16px 18px;
     font-size: 1rem;
   }
+
   .question-card {
     padding: 28px 20px;
   }
@@ -1280,6 +1285,7 @@ body {
 .sdt-highlight .sdt-label {
   color: var(--color-primary, #6366f1);
 }
+
 .sdt-highlight .sdt-value {
   color: var(--color-text-primary, #e2e8f0);
   font-size: 14.5px;
@@ -1288,15 +1294,19 @@ body {
 .sdt-pass {
   color: var(--color-success, #10b981) !important;
 }
+
 .sdt-fail {
   color: var(--color-error, #ef4444) !important;
 }
+
 .sdt-correct {
   color: var(--color-success, #10b981) !important;
 }
+
 .sdt-wrong {
   color: var(--color-error, #ef4444) !important;
 }
+
 .sdt-skipped {
   color: var(--color-text-muted, #94a3b8) !important;
 }
@@ -1312,6 +1322,7 @@ body {
   font-size: 1.05em;
   letter-spacing: 1px;
 }
+
 .sdt-star-empty {
   opacity: 0.3;
 }
@@ -1321,6 +1332,7 @@ body {
   0% {
     background-position: -600px 0;
   }
+
   100% {
     background-position: 600px 0;
   }
@@ -1328,12 +1340,10 @@ body {
 
 .skeleton-block,
 .skeleton-circle {
-  background: linear-gradient(
-    90deg,
-    var(--color-border-light, rgba(148, 163, 184, 0.12)) 25%,
-    var(--color-border, rgba(148, 163, 184, 0.25)) 50%,
-    var(--color-border-light, rgba(148, 163, 184, 0.12)) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--color-border-light, rgba(148, 163, 184, 0.12)) 25%,
+      var(--color-border, rgba(148, 163, 184, 0.25)) 50%,
+      var(--color-border-light, rgba(148, 163, 184, 0.12)) 75%);
   background-size: 600px 100%;
   animation: skeleton-shimmer 1.5s linear infinite;
   border-radius: 8px;
@@ -1415,8 +1425,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 18px;
-  animation: cert-modal-in 420ms
-    var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+  animation: cert-modal-in 420ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
 }
 
 @keyframes cert-modal-in {
@@ -1424,6 +1433,7 @@ body {
     transform: scale(0.82) translateY(28px);
     opacity: 0;
   }
+
   to {
     transform: scale(1) translateY(0);
     opacity: 1;
@@ -1512,9 +1522,11 @@ body {
     padding: 18px 14px 16px;
     border-radius: 14px;
   }
+
   .cert-modal-header h2 {
     font-size: 1.125rem;
   }
+
   .cert-btn {
     padding: 9px 16px;
     font-size: 0.85rem;
@@ -1526,6 +1538,7 @@ body {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -1643,8 +1656,7 @@ dialog.quiz-info-dialog {
 }
 
 .quiz-info-dialog[open] {
-  animation: dialog-pop-in 0.22s
-    var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+  animation: dialog-pop-in 0.22s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
 }
 
 @keyframes dialog-pop-in {
@@ -1652,6 +1664,7 @@ dialog.quiz-info-dialog {
     opacity: 0;
     transform: scale(0.93) translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: scale(1) translateY(0);

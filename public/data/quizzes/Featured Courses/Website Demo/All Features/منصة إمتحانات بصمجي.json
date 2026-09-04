@@ -1,9 +1,9 @@
 {
   "meta": {
-    "title": "منصة إمتحانات بصمجي",
+    "title": "منصة امتحانات بصمجي",
     "id": "3SVMT2U3",
     "createdAt": "2026-03-01 - 20:37",
-    "path": "quizzes/Featured Courses/Website Demo/All Features/منصة إمتحانات بصمجي.json",
+    "path": "quizzes/Featured Courses/Website Demo/All Features/منصة امتحانات بصمجي.json",
     "description": "Basmagi Quiz Platform Demo",
     "source": "https://www.w3schools.com/CPP/default.asp",
     "password": "1234",
@@ -134,7 +134,7 @@
       ]
     },
     {
-      "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الإمتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الإمتحان. أليست ميزة رائعة؟",
+      "q": "لو قمت بحل جميع الأسئلة بشكل صحيح، وكان الامتحان به أكثر من 10 أسئلة، وكان واحد من الأسئلة على الأقل مقالي، سوف تحصل على شهادة بعد الامتحان. أليست ميزة رائعة؟",
       "options": [
         "نعم",
         "لا"

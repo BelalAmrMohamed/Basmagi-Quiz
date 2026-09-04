@@ -2,7 +2,7 @@
 // public/src/features/home/create-quiz-modal.js
 // CREATE-QUIZ MODALS
 // ============================================================================
-// Two related flows, both reachable from the "إمتحاناتك" (My Quizzes) view:
+// Two related flows, both reachable from the "امتحاناتك" (My Quizzes) view:
 //   1. openPromptSelectionModal() — pick one of the three AI prompt presets
 //      (see ai-prompts.js) and copy it to clipboard for use with an external AI.
 //   2. createInlineCreateQuizCard()/openInlineCreateQuizModal() — paste text or
@@ -36,7 +36,7 @@ export function createInlineCreateQuizCard() {
   card.setAttribute("role", "button");
   card.setAttribute("tabindex", "0");
   card.setAttribute("title", "تحويل نص ← امتحان");
-  card.setAttribute("aria-label", "إنشاء إمتحان جديد من نص");
+  card.setAttribute("aria-label", "إنشاء امتحان جديد من نص");
 
   // Desktop-only large centered icon
   const icon = document.createElement("div");
@@ -49,7 +49,7 @@ export function createInlineCreateQuizCard() {
   textWrap.className = "card-text";
 
   const titleEl = document.createElement("h3");
-  titleEl.textContent = "إنشاء إمتحان جديد";
+  titleEl.textContent = "إنشاء امتحان جديد";
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
   // h3. BUG FIX: same misalignment as exam-card.js/user-quiz-card.js — an
@@ -68,7 +68,7 @@ export function createInlineCreateQuizCard() {
   const desc = document.createElement("p");
   desc.className = "create-quiz-card-subtitle";
   desc.textContent =
-    "الصق أسئلة الإمتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
+    "الصق أسئلة الامتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
 
   textWrap.appendChild(titleEl);
   textWrap.appendChild(desc);
@@ -119,7 +119,7 @@ function openInlineCreateQuizModal() {
     <div class="create-quiz-modal__header">
       <h2 id="inlineCreateQuizTitle" class="create-quiz-modal__title">
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
-        إنشاء إمتحان جديد
+        إنشاء امتحان جديد
       </h2>
       <button type="button" id="inlineQuizClose" class="create-quiz-modal__close-btn" aria-label="إغلاق">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -132,13 +132,13 @@ function openInlineCreateQuizModal() {
       <svg xmlns="http://www.w3.org/2000/svg" width="35" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
       </span>
     </button>
-    <p class="create-quiz-modal__subtitle">قم باستخدام ميزة الـ \`prompt\` لتحويل أي إمتحان تملكه إلى كود باستخدام الذكاء الإصطناعي</p>
+    <p class="create-quiz-modal__subtitle">قم باستخدام ميزة الـ \`prompt\` لتحويل أي امتحان تملكه إلى كود باستخدام الذكاء الإصطناعي</p>
     <div class="create-quiz-modal__form-group">
-      <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الإمتحان</label>
+      <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الامتحان</label>
       <input type="text" id="inlineQuizTitle" class="create-quiz-modal__input" placeholder="Arrays in C++" />
     </div>
     <div class="create-quiz-modal__form-group create-quiz-modal__form-group--content">
-      <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الإمتحان</label>
+      <label for="inlineQuizContent" class="create-quiz-modal__label">محتوى الامتحان</label>
       <textarea id="inlineQuizContent" class="inline-quiz-textarea create-quiz-modal__textarea" rows="4"></textarea>
     </div>
     <div class="create-quiz-modal__actions">
@@ -249,7 +249,7 @@ function openInlineCreateQuizModal() {
   wireJsonFileDropZone(
     modalCard,
     async (files) => {
-      // Multiple files / multi-quiz payloads → import straight into إمتحاناتك
+      // Multiple files / multi-quiz payloads → import straight into امتحاناتك
       if (files.length > 1) {
         const count = await importJsonQuizFiles(files, { refresh: false });
         if (count > 0) {
@@ -406,7 +406,7 @@ function openInlineCreateQuizModal() {
     close();
     showNotification(
       "تم الإنشاء",
-      'تم إنشاء الإمتحان وإضافته إلى "إمتحاناتك"',
+      'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
       "success",
     );
     renderRootCategories();

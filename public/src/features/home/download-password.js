@@ -86,7 +86,7 @@ function promptDownloadPassword(title, correctPassword, dbSource) {
 
     const h2 = document.createElement("h2");
     h2.id = "downloadPasswordTitle";
-    h2.textContent = "هذا الإمتحان محمي بكلمة مرور";
+    h2.textContent = "هذا الامتحان محمي بكلمة مرور";
 
     const p = document.createElement("p");
     p.textContent = `أدخل كلمة المرور لتنزيل "${title}"`;
@@ -99,7 +99,7 @@ function promptDownloadPassword(title, correctPassword, dbSource) {
     input.className = "download-password-input";
     input.placeholder = "كلمة المرور";
     input.autocomplete = "off";
-    input.setAttribute("aria-label", "كلمة مرور الإمتحان");
+    input.setAttribute("aria-label", "كلمة مرور الامتحان");
 
     const errorMsg = document.createElement("p");
     errorMsg.className = "download-password-error";

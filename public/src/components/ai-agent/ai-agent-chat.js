@@ -3,7 +3,7 @@
 // Chat tab: conversation state, sending messages to /api/ai-agent/chat,
 // and rendering the message list. Self-contained — takes everything it
 // needs via createChatPanel(options) so it can be mounted from either the
-// "إمتحاناتك" view or result.html with different contextual system prompts.
+// "امتحاناتك" view or result.html with different contextual system prompts.
 // =============================================================================
 
 import { renderMarkdown, _processByLine } from "../../shared/markdown.js";

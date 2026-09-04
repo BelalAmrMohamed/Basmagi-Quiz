@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/shared/console-core.js
-// منصة إمتحانات بصمجي — Console Runtime
+// منصة امتحانات بصمجي — Console Runtime
 // ============================================================================
 
 /*!
@@ -90,7 +90,7 @@
     raw: (txt, style) => console.log(`%c${txt}`, style),
   };
 
-  const LOGO = "منصة إمتحانات بصمجي";
+  const LOGO = "منصة امتحانات بصمجي";
 
   const LOGO_Style = `
     display: inline-block;
@@ -166,7 +166,7 @@
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
-  const BUILD_TAG = "core@8.1.0";
+  const BUILD_TAG = "core@8.1.1";
 
   function printHelp() {
     log.rule("═", 64);
@@ -190,7 +190,7 @@
   function printAbout() {
     log.rule("═", 64);
     printLogo();
-    log.sub("  منصة إمتحانات بصمجي");
+    log.sub("  منصة امتحانات بصمجي");
     log.kv("  build:", BUILD_TAG);
     log.kv("  engine:", "console-core.js (shared console runtime)");
     log.kv("  page:", registry.pageLabel || "unknown");

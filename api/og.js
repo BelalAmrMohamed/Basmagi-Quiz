@@ -258,7 +258,7 @@ export default async function handler(req) {
   const meta = quizData || (manifestData ? findQuizInManifest(manifestData, quizId) : null);
 
   // ── 2. Build display strings ──────────────────────────────────────────────
-  const rawTitle = meta ? (meta.title || quizId || "إمتحان") : "منصة إمتحانات بصمجي";
+  const rawTitle = meta ? (meta.title || quizId || "امتحان") : "منصة امتحانات بصمجي";
   const isArabic = detectArabic(rawTitle);
   const title = truncateTitle(rawTitle, isArabic ? TITLE_MAX_CHARS_ARABIC : TITLE_MAX_CHARS_LATIN);
   const details = meta ? buildDetails(meta, isArabic) : "";

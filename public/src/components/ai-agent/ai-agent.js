@@ -5,7 +5,7 @@
 // inlined into the page's DOM. Framework-free, self-contained, and
 // page-agnostic: pass everything it needs via the `options` object rather
 // than reaching for globals, so the same createAIAgentFab() call works from
-// both the "إمتحاناتك" view (user-quizzes-view.js) and result.html.
+// both the "امتحاناتك" view (user-quizzes-view.js) and result.html.
 //
 // Usage:
 //   import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";

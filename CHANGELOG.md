@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved accessibility with Arabic-optimized typography.
 
 ### 📁 Custom Quiz Management
-- Added "إمتحاناتك" (Your Quizzes) dedicated card/folder on the main dashboard.
+- Added "امتحاناتك" (Your Quizzes) dedicated card/folder on the main dashboard.
 - Implemented quiz backup/download functionality for user-created content.
 
 ### 📤 Advanced Exports

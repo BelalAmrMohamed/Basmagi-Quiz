@@ -459,7 +459,7 @@ export async function openMoveToDialog(itemIds) {
     // Own-level elbow: a short stub connecting this row to the branch's
     // shared vertical rail (drawn by the parent .move-to-dialog-branch
     // wrapper, not here). Only rendered for nested rows (depth > 0) —
-    // the root "إمتحاناتك" row at depth 0 has no ancestor rail to
+    // the root "امتحاناتك" row at depth 0 has no ancestor rail to
     // connect to at all. Also skipped for a lone child (isSingleChild):
     // with no rail behind it (see appendChildren), a stub with nothing
     // to connect to just reads as a stray floating dash.
@@ -501,7 +501,7 @@ export async function openMoveToDialog(itemIds) {
   // "stay at root" is harmless) when the item(s) are already there.
   // Appended directly into treeEl — it has no ancestor rail of its own,
   // so it needs no wrapping .move-to-dialog-branch.
-  addNode(treeEl, "إمتحاناتك (الرئيسية)", null, "🏠", 0, {
+  addNode(treeEl, "امتحاناتك (الرئيسية)", null, "🏠", 0, {
     isCurrent: currentParentId === null,
   });
 
@@ -612,7 +612,7 @@ let customMenuJustOpened = false;
 // SVG icons for context menu items
 const CREATE_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
 const CREATE_COURSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
-const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`;
 const SELECT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
 const RENAME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
@@ -688,9 +688,18 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
 
   // Global actions — always visible regardless of what was right-clicked
   contextMenuEl.appendChild(createMenuItem(CREATE_FOLDER_SVG, "إنشاء مجلد", () => createNewFolderOrCourse("folder")));
-  if (currentFolderId === null) {
-    contextMenuEl.appendChild(createMenuItem(CREATE_COURSE_SVG, "إنشاء مادة", () => createNewFolderOrCourse("course")));
-  }
+  // Courses are top-level only — inside a folder/course this option can't
+  // do anything, but it stays visible-but-disabled (not hidden) so the
+  // menu's shape doesn't shift depending on location.
+  contextMenuEl.appendChild(
+    createMenuItem(
+      CREATE_COURSE_SVG,
+      "إنشاء مادة",
+      () => createNewFolderOrCourse("course"),
+      false,
+      currentFolderId !== null ? "المواد تُنشأ في المستوى الرئيسي فقط." : null,
+    ),
+  );
   // Per-item "upload to platform" action — pushes this specific
   // course/folder (with all of its nested contents) up to the DB via the
   // dedicated course/folder upload wizards (adminUpload.js). Distinct from
@@ -698,7 +707,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // filesystem INTO user_quizzes rather than uploading an existing local
   // item OUT to the platform.
   if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
-    const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
+    const label = targetType === "course" ? "☁️ رفع المادة إلى المنصة" : "☁️ رفع المجلد إلى المنصة";
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
   }
   if (isAdminAuthenticated()) {
@@ -756,17 +765,22 @@ function positionContextMenu(e) {
   contextMenuEl.style.top = `${top + window.scrollY}px`;
 }
 
-function createMenuItem(iconSvg, label, onClick, isDanger = false) {
+function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReason = null) {
   const item = document.createElement("div");
+  const disabled = !!disabledReason;
   item.style.cssText = `
-    padding: 9px 14px; cursor: pointer; color: ${isDanger ? "var(--color-danger, #dc2626)" : "var(--color-text-primary)"};
+    padding: 9px 14px; cursor: ${disabled ? "not-allowed" : "pointer"};
+    color: ${disabled ? "var(--color-text-tertiary, var(--color-text-secondary))" : (isDanger ? "var(--color-danger, #dc2626)" : "var(--color-text-primary)")};
+    opacity: ${disabled ? "0.55" : "1"};
     font-size: 0.88rem; transition: background 0.15s; display: flex; align-items: center; gap: 10px;
   `;
   item.innerHTML = `<span style="flex-shrink:0;display:flex;align-items:center;opacity:0.75">${iconSvg}</span><span>${label}</span>`;
-  item.onmouseover = () => item.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))";
+  if (disabled) item.title = disabledReason;
+  item.onmouseover = () => { if (!disabled) item.style.background = "var(--color-bg-hover, rgba(0,0,0,0.05))"; };
   item.onmouseout = () => item.style.background = "transparent";
   item.onclick = (e) => {
     e.stopPropagation();
+    if (disabled) return;
     contextMenuEl.style.display = "none";
     customMenuJustOpened = false;
     onClick();
@@ -1047,9 +1061,19 @@ function quizToPayload(entry) {
   if (!meta.title) meta.title = "اختبار";
 
   const questions = entry.questions || [];
+  // Must mirror api/_validateQuiz.js's inferQuestionType exactly (options
+  // length 0 -> Essay, 2 -> True/False, else MCQ) — the server recomputes
+  // stats from `questions` and rejects the upload if this doesn't match
+  // (STATS_MISMATCH), so this can never be a placeholder/empty value.
+  const types = new Set();
+  questions.forEach((q) => {
+    if (!Array.isArray(q.options) || q.options.length === 0) types.add("Essay");
+    else if (q.options.length === 2) types.add("True/False");
+    else types.add("MCQ");
+  });
   return {
     meta,
-    stats: { questionCount: questions.length, questionTypes: [] },
+    stats: { questionCount: questions.length, questionTypes: Array.from(types).sort() },
     questions,
   };
 }

@@ -127,7 +127,7 @@ export class SearchManager {
       // Inside a course — search for quizzes
       const currentCategory = navStack[navStack.length - 1];
 
-      if (currentCategory.name === "إمتحاناتك") {
+      if (currentCategory.name === "امتحاناتك") {
         this.currentContext = "userQuizzes";
         if (this.elements.searchInput) {
           this.elements.searchInput.placeholder = "ابحث في اختباراتك...";

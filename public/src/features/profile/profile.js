@@ -930,7 +930,7 @@ function historyItemHtml(attempt, index) {
           <div class="history-score ${
             percentage >= 60 ? "pass" : "fail"
           }">${percentage}%</div>
-          ${exam ? `<a href="/q/${attempt.examId}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الإمتحان</a>` : ""}
+          ${exam ? `<a href="/q/${attempt.examId}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
           <button class="delete-btn" data-action="delete-history" data-index="${index}" aria-label="حذف هذا الاختبار من السجل"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;

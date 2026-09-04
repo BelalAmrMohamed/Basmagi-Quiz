@@ -87,9 +87,7 @@ body {
 
 /* ============================================================================
    exam-more-btn — shared 3-dots trigger for the exam card "more actions"
-   overlay (نسخ الرابط / مشاركة الإمتحان / معلومات الإمتحان / تحميل).
-   Replaces the old desktop-only share-quiz-link-button; now used on both
-   desktop and mobile so the menu content stays identical everywhere.
+   overlay (نسخ الرابط / مشاركة الامتحان / معلومات الامتحان / تحميل).
    ============================================================================ */
 .exam-more-btn {
   position: absolute;
@@ -328,13 +326,13 @@ body {
   /* BUG FIX: was var(--z-header) (~1000), but .bottom-nav uses
      calc(var(--z-overlay) + 1) (~4001) — on phones that let the bottom nav
      paint over the lower rows of this dropdown (including the "حذف
-     الإمتحان" delete action), making them invisible and untappable.
+     الامتحان" delete action), making them invisible and untappable.
      var(--z-tooltip) (6000) clears the bottom nav with the same margin the
      course-info-tooltip already uses. positionExamDropdownMenu() in
      floating-position.js also now reserves the bottom-nav's height so the
      menu never gets placed underneath it in the first place — this z-index
      bump is the backstop for cases the reserved space alone doesn't cover
-     (e.g. a very tall menu after the "معلومات الإمتحان" submenu expands). */
+     (e.g. a very tall menu after the "معلومات الامتحان" submenu expands). */
   z-index: var(--z-tooltip);
   width: 240px;
   max-width: calc(100vw - 16px);
@@ -371,7 +369,7 @@ body {
 }
 
 /* ============================================================================
-   Submenu — nested popover for "معلومات الإمتحان" inside .exam-dropdown-menu.
+   Submenu — nested popover for "معلومات الامتحان" inside .exam-dropdown-menu.
    Shows a quick info preview plus a "كل المعلومات" button that opens the
    full quiz-info-modal-card. Reveals on hover for real pointer/mouse
    devices, and toggles on tap/click everywhere else — see
@@ -2366,6 +2364,7 @@ Container
   text-align: right;
   cursor: pointer;
   transition: background-color 0.12s ease;
+  position: relative;
 }
 
 .move-to-dialog-node:hover:not(.move-to-dialog-node--disabled) {
@@ -2377,7 +2376,7 @@ Container
   outline-offset: -2px;
 }
 
-/* Root row (depth 0, "إمتحاناتك الرئيسية") reads as a distinct, permanent
+/* Root row (depth 0, "امتحاناتك الرئيسية") reads as a distinct, permanent
    top-level destination rather than just another tree row. */
 .move-to-dialog-node[data-depth="0"] {
   font-weight: 600;
@@ -2519,35 +2518,25 @@ html[dir="ltr"] .move-to-dialog-branch--single {
    difference between an ongoing vs. terminal rail is intentionally
    subtle (a design choice already present before this rewrite) rather
    than a literal elbow curve. */
+/* Absolutely positioned against the row itself (not squeezed into flex
+   flow via a negative margin, which broke as soon as row content wrapped
+   or padding differed) — anchored to the branch's own border, which sits
+   exactly `padding-right` (18px) from the row's right edge. */
 .move-to-dialog-elbow {
-  flex-shrink: 0;
-  position: relative;
-  width: 18px;
-  align-self: stretch;
-  margin-right: -18px;
-  /* pulls back under the branch's own padding-right so the stub starts from the shared rail, not a second indent */
-}
-
-.move-to-dialog-elbow::after {
-  content: "";
   position: absolute;
   top: 50%;
-  right: 0;
-  width: 10px;
+  right: -18px;
+  width: 16px;
   height: 1.5px;
   background: var(--color-text-tertiary, var(--color-border));
   opacity: 0.55;
   border-radius: 1px;
+  pointer-events: none;
 }
 
 html[dir="ltr"] .move-to-dialog-elbow {
-  margin-right: 0;
-  margin-left: -18px;
-}
-
-html[dir="ltr"] .move-to-dialog-elbow::after {
   right: auto;
-  left: 0;
+  left: -18px;
 }
 
 /* ============================================================================

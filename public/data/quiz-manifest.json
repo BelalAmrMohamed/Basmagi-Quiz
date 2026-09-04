@@ -294,8 +294,8 @@
       "quizzes": [
         {
           "id": "3SVMT2U3",
-          "title": "منصة إمتحانات بصمجي",
-          "path": "/data/quizzes/Featured Courses/Website Demo/All Features/منصة إمتحانات بصمجي.json",
+          "title": "منصة امتحانات بصمجي",
+          "path": "/data/quizzes/Featured Courses/Website Demo/All Features/منصة امتحانات بصمجي.json",
           "questionCount": 12,
           "questionTypes": [
             "Essay",
@@ -1414,7 +1414,7 @@
         {
           "id": "GN3CQGDJ",
           "title": "Ch1 Zaqazeeq",
-          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch1 Zaqazeeq.json",
+          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/امتحانات جامعة الزقازيق/Ch1 Zaqazeeq.json",
           "questionCount": 14,
           "questionTypes": [
             "Essay",
@@ -1427,7 +1427,7 @@
         {
           "id": "OXSWYQ6F",
           "title": "Ch2 Zaqazeeq",
-          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch2 Zaqazeeq.json",
+          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/امتحانات جامعة الزقازيق/Ch2 Zaqazeeq.json",
           "questionCount": 25,
           "questionTypes": [
             "Essay",
@@ -1440,7 +1440,7 @@
         {
           "id": "SGUYS4AA",
           "title": "Ch3 Zaqazeeq",
-          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/إمتحانات جامعة الزقازيق/Ch3 Zaqazeeq.json",
+          "path": "/data/quizzes/University/Computer Science/2/1/Operatings Systems/امتحانات جامعة الزقازيق/Ch3 Zaqazeeq.json",
           "questionCount": 27,
           "questionTypes": [
             "Essay",
@@ -1753,8 +1753,8 @@
         },
         {
           "id": "AHMTTSRO",
-          "title": "أسئلة متكررة - توقعات إمتحان الميد",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات إمتحان الميد.json",
+          "title": "أسئلة متكررة - توقعات امتحان الميد",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/أسئلة متكررة - توقعات امتحان الميد.json",
           "questionCount": 15,
           "questionTypes": [
             "MCQ"
@@ -1765,7 +1765,7 @@
         {
           "id": "EMUKKIAQ",
           "title": "2021 - 2022 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2021-2022 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2021-2022 Final.json",
           "questionCount": 25,
           "questionTypes": [
             "MCQ",
@@ -1777,7 +1777,7 @@
         {
           "id": "OULCHDXH",
           "title": "2023 - 2024 Summer Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2023-2024 Summer Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2023-2024 Summer Final.json",
           "questionCount": 25,
           "questionTypes": [
             "MCQ",
@@ -1789,7 +1789,7 @@
         {
           "id": "3ZIWJ3UA",
           "title": "2024 2025 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2024-2025 Mid.json",
           "questionCount": 20,
           "questionTypes": [
             "MCQ",
@@ -1801,7 +1801,7 @@
         {
           "id": "BLL3FIXQ",
           "title": "2024 2025 Part Of Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2024-2025 Part of Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2024-2025 Part of Final.json",
           "questionCount": 28,
           "questionTypes": [
             "MCQ"
@@ -1812,7 +1812,7 @@
         {
           "id": "EPAHYLUZ",
           "title": "2025 2026 Final   دكتورة مختلفة   من يومين",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Final - دكتورة مختلفة - من يومين.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2025-2026 Final - دكتورة مختلفة - من يومين.json",
           "questionCount": 26,
           "questionTypes": [
             "Essay",
@@ -1825,7 +1825,7 @@
         {
           "id": "AYPS2FSA",
           "title": "2025 2026 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/2025-2026 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/2025-2026 Mid.json",
           "questionCount": 20,
           "questionTypes": [
             "MCQ"
@@ -1836,7 +1836,7 @@
         {
           "id": "4RIEMSHZ",
           "title": "Mid - حاسبات الحكومية",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/إمتحانات سابقة لنفس الدكتور/Mid - حاسبات الحكومية.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/امتحانات سابقة لنفس الدكتور/Mid - حاسبات الحكومية.json",
           "questionCount": 10,
           "questionTypes": [
             "MCQ"
@@ -1846,8 +1846,8 @@
         },
         {
           "id": "JJAPZW5R",
-          "title": "توقعات الإمتحان   أسئلة متكررة",
-          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/توقعات الإمتحان - أسئلة متكررة.json",
+          "title": "توقعات الامتحان   أسئلة متكررة",
+          "path": "/data/quizzes/University/Computer Science/2/2/Data Structures and Algorithms/توقعات الامتحان - أسئلة متكررة.json",
           "questionCount": 13,
           "questionTypes": [
             "MCQ",
@@ -1907,7 +1907,7 @@
         {
           "id": "GQPTK2NG",
           "title": "2019 - 2020 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2019 - 2020 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/2019 - 2020 Final.json",
           "questionCount": 26,
           "questionTypes": [
             "Essay",
@@ -1920,7 +1920,7 @@
         {
           "id": "NOQQR6BP",
           "title": "2020 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2020 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/2020 Mid.json",
           "questionCount": 17,
           "questionTypes": [
             "Essay",
@@ -1932,7 +1932,7 @@
         {
           "id": "PZFZ3EXJ",
           "title": "2022 - 2023 Final - Page 1",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2022 - 2023 Final - Page 1.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/2022 - 2023 Final - Page 1.json",
           "questionCount": 23,
           "questionTypes": [
             "Essay",
@@ -1944,7 +1944,7 @@
         {
           "id": "4JPFRS65",
           "title": "2022 - 2023 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2022 - 2023 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/2022 - 2023 Mid.json",
           "questionCount": 25,
           "questionTypes": [
             "MCQ",
@@ -1956,7 +1956,7 @@
         {
           "id": "MGRWHTPZ",
           "title": "2024 - 2025 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/2024 - 2025 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/2024 - 2025 Final.json",
           "questionCount": 39,
           "questionTypes": [
             "Essay",
@@ -1968,7 +1968,7 @@
         {
           "id": "KYHTHYHN",
           "title": "SQL MOCK TEST III",
-          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/إمتحانات حاسبات الحكومية/SQL MOCK TEST III.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Database Management Systems/امتحانات حاسبات الحكومية/SQL MOCK TEST III.json",
           "questionCount": 50,
           "questionTypes": [
             "MCQ"
@@ -2080,8 +2080,8 @@
         },
         {
           "id": "77ZZAPDU",
-          "title": "أسئلة الإحتمالات من الإمتحانات السابقة",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/أسئلة_الإحتمالات_من_الإمتحانات_السابقة.json",
+          "title": "أسئلة الإحتمالات من الامتحانات السابقة",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/أسئلة_الإحتمالات_من_الامتحانات_السابقة.json",
           "questionCount": 95,
           "questionTypes": [
             "Essay",
@@ -2094,7 +2094,7 @@
         {
           "id": "OJEZYZXY",
           "title": "2020 - 2021 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2020 - 2021 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2020 - 2021 Final.json",
           "questionCount": 17,
           "questionTypes": [
             "Essay",
@@ -2106,7 +2106,7 @@
         {
           "id": "L3MU425I",
           "title": "2020 - 2021 Summer Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2020 - 2021 Summer Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2020 - 2021 Summer Final.json",
           "questionCount": 19,
           "questionTypes": [
             "Essay",
@@ -2119,7 +2119,7 @@
         {
           "id": "OM6GFOHD",
           "title": "2021 - 2022 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2021 - 2022 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2021 - 2022 Mid.json",
           "questionCount": 15,
           "questionTypes": [
             "Essay",
@@ -2132,7 +2132,7 @@
         {
           "id": "V535GVMD",
           "title": "2022 - 2023 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2022 - 2023 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2022 - 2023 Final.json",
           "questionCount": 10,
           "questionTypes": [
             "Essay"
@@ -2144,7 +2144,7 @@
         {
           "id": "NPVJY7XR",
           "title": "2023 - 2024 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2023 - 2024 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2023 - 2024 Final.json",
           "questionCount": 20,
           "questionTypes": [
             "Essay",
@@ -2157,7 +2157,7 @@
         {
           "id": "MGRWHTPF",
           "title": "2024 - 2025 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2024 - 2025 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2024 - 2025 Final.json",
           "questionCount": 22,
           "questionTypes": [
             "Essay",
@@ -2169,7 +2169,7 @@
         {
           "id": "ORGPP7LI",
           "title": "2024 - 2025 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2024 - 2025 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2024 - 2025 Mid.json",
           "questionCount": 16,
           "questionTypes": [
             "MCQ"
@@ -2181,7 +2181,7 @@
         {
           "id": "ZLGUOKMX",
           "title": "2025   2026 Final   دكتور حسام   علوم المنيا الحكومية",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Final - دكتور حسام - علوم المنيا الحكومية.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025 - 2026 Final - دكتور حسام - علوم المنيا الحكومية.json",
           "questionCount": 19,
           "questionTypes": [
             "Essay",
@@ -2193,7 +2193,7 @@
         {
           "id": "W6QAT73F",
           "title": "2025   2026 Final الحكومية الترم الأول",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Final الحكومية الترم الأول.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025 - 2026 Final الحكومية الترم الأول.json",
           "questionCount": 16,
           "questionTypes": [
             "Essay",
@@ -2205,7 +2205,7 @@
         {
           "id": "6RXW5ZRZ",
           "title": "2025 - 2026 Summer Final (دكتور تاني)",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025 - 2026 Summer Final (دكتور تاني).json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025 - 2026 Summer Final (دكتور تاني).json",
           "questionCount": 9,
           "questionTypes": [
             "Essay"
@@ -2217,7 +2217,7 @@
         {
           "id": "3HVTJ2UD",
           "title": "2025-2026 Lotus Mid (د. حسام رضوان)",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025-2026_Lotus_Mid_د_حسام_رضوان.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025-2026_Lotus_Mid_د_حسام_رضوان.json",
           "questionCount": 10,
           "questionTypes": [
             "Essay",
@@ -2229,7 +2229,7 @@
         {
           "id": "HIPWRNXI",
           "title": "2025-2026 Mid and Oral (د. حسام رضوان) - حاسبات المنيا الأهلية",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025-2026_Mid_and_Oral_د_حسام_رضوان_-_حاسبات_المنيا_الأهلية.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025-2026_Mid_and_Oral_د_حسام_رضوان_-_حاسبات_المنيا_الأهلية.json",
           "questionCount": 17,
           "questionTypes": [
             "Essay",
@@ -2241,7 +2241,7 @@
         {
           "id": "N6QFXNCX",
           "title": "2025 - 2026 Lotus Final من شوية",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات الدكتور السابقة/2025_-_2026_Lotus_Final_من_شوية.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات الدكتور السابقة/2025_-_2026_Lotus_Final_من_شوية.json",
           "questionCount": 28,
           "questionTypes": [
             "Essay",
@@ -2253,7 +2253,7 @@
         {
           "id": "AI7Y6NOP",
           "title": "Lecture 1 Quiz",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 1 quiz.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 1 quiz.json",
           "questionCount": 32,
           "questionTypes": [
             "MCQ"
@@ -2265,7 +2265,7 @@
         {
           "id": "ZRJQMLL7",
           "title": "Lecture 2 Quiz",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 2 Quiz.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 2 Quiz.json",
           "questionCount": 11,
           "questionTypes": [
             "MCQ"
@@ -2276,7 +2276,7 @@
         {
           "id": "5ONYHYGP",
           "title": "Lecture 3 - Quiz 1",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 3 - Quiz 1.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 3 - Quiz 1.json",
           "questionCount": 5,
           "questionTypes": [
             "Essay",
@@ -2288,7 +2288,7 @@
         {
           "id": "SVVBLRXS",
           "title": "Lecture 3 - Quiz 2",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 3 - Quiz 2.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 3 - Quiz 2.json",
           "questionCount": 5,
           "questionTypes": [
             "Essay"
@@ -2299,7 +2299,7 @@
         {
           "id": "BUVBJFRQ",
           "title": "Lecture 4 – Quiz 1",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 4 – Quiz 1.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 4 – Quiz 1.json",
           "questionCount": 12,
           "questionTypes": [
             "Essay",
@@ -2311,7 +2311,7 @@
         {
           "id": "LAKV3WR5",
           "title": "Lecture 4 – Quiz 2",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/Lecture 4 – Quiz 2.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/Lecture 4 – Quiz 2.json",
           "questionCount": 13,
           "questionTypes": [
             "Essay",
@@ -2322,8 +2322,8 @@
         },
         {
           "id": "6W7GREF6",
-          "title": "أسئلة إمتحانات السابقة عن المحاضرة 4",
-          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/إمتحانات على المحاضرات/أسئلة إمتحانات السابقة عن المحاضرة 4.json",
+          "title": "أسئلة امتحانات السابقة عن المحاضرة 4",
+          "path": "/data/quizzes/University/Computer Science/2/2/Probability and Statistics/امتحانات على المحاضرات/أسئلة امتحانات السابقة عن المحاضرة 4.json",
           "questionCount": 8,
           "questionTypes": [
             "Essay"
@@ -2698,7 +2698,7 @@
         {
           "id": "3TSGPZMW",
           "title": "2017 - 2018 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2017 - 2018 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/امتحانات سابقة/2017 - 2018 Final.json",
           "questionCount": 24,
           "questionTypes": [
             "Essay"
@@ -2709,7 +2709,7 @@
         {
           "id": "W7LPVYJC",
           "title": "2018 - 2019 Final",
-          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2018 - 2019 Final.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/امتحانات سابقة/2018 - 2019 Final.json",
           "questionCount": 22,
           "questionTypes": [
             "Essay",
@@ -2721,7 +2721,7 @@
         {
           "id": "T4D37W3P",
           "title": "2024 - 2025 Mid Exam",
-          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2024 - 2025 Mid_Exam.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/امتحانات سابقة/2024 - 2025 Mid_Exam.json",
           "questionCount": 7,
           "questionTypes": [
             "Essay"
@@ -2732,7 +2732,7 @@
         {
           "id": "6FWI7O32",
           "title": "2025   2026 Mid",
-          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/إمتحانات سابقة/2025 - 2026 Mid.json",
+          "path": "/data/quizzes/University/Computer Science/2/2/System Analysis/امتحانات سابقة/2025 - 2026 Mid.json",
           "questionCount": 13,
           "questionTypes": [
             "Essay",
@@ -2766,8 +2766,8 @@
         },
         {
           "id": "RVO5XMTZ",
-          "title": "منصة إمتحانات بصمجي",
-          "path": "/data/quizzes/University/Computer Science/2/2/Website Demo/منصة_إمتحانات_بصمجي.json",
+          "title": "منصة امتحانات بصمجي",
+          "path": "/data/quizzes/University/Computer Science/2/2/Website Demo/منصة_امتحانات_بصمجي.json",
           "questionCount": 12,
           "questionTypes": [
             "Essay",

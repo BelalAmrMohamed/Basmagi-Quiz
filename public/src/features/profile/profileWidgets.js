@@ -475,7 +475,7 @@ function uploadedQuizItemHtml(quiz) {
           <small>${subtitleParts.join(" • ")}${subtitleParts.length && date ? " • " : ""}${date}</small>
         </div>
         <div class="history-actions">
-          ${quiz.path ? `<a href="/q/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الإمتحان</a>` : ""}
+          ${quiz.path ? `<a href="/q/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
         </div>
       </div>`;
 }

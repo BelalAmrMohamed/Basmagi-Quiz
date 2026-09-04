@@ -179,7 +179,7 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
         const reportRecord = {
           id: data.report?.id || crypto.randomUUID?.() || Date.now().toString(),
           quiz_id: quizId,
-          quiz_title: quizTitle || document.title.replace(" | منصة إمتحانات بصمجي", "").trim() || "اختبار",
+          quiz_title: quizTitle || document.title.replace(" | منصة امتحانات بصمجي", "").trim() || "اختبار",
           question_index: questionIndex,
           question_text: questionText || `سؤال رقم ${questionIndex + 1}`,
           reason: finalReason,

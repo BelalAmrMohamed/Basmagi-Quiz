@@ -37,7 +37,7 @@ import { openReportModal, isQuestionReported } from "../../components/report-que
 // the rest of the page's interactivity.
 try {
   showNotification(
-    "الإمتحان بدأ",
+    "الامتحان بدأ",
     "أسأل الله لك التوفيق والسداد",
     "./assets/images/صلى_على_النبي_2.png",
   );
@@ -174,7 +174,7 @@ function promptForQuizPassword(correctPassword) {
               <h2 id="quizPasswordDialogTitle">هذا الإختبار محمي بكلمة سر</h2>
             </div>
             <div class="quiz-password-dialog-body">
-              <p class="quiz-password-dialog-hint">يرجى إدخال كلمة السر التي زودك بها المعلم للوصول إلى هذا الإمتحان.</p>
+              <p class="quiz-password-dialog-hint">يرجى إدخال كلمة السر التي زودك بها المعلم للوصول إلى هذا الامتحان.</p>
               <input type="password" id="quizPasswordInput" class="quiz-password-input"
                      placeholder="كلمة السر" autocomplete="off" aria-label="كلمة السر">
               <p class="quiz-password-error" id="quizPasswordError" role="alert" hidden>كلمة السر غير صحيحة. حاول مرة أخرى.</p>
@@ -1381,7 +1381,7 @@ async function init() {
       const saved = localStorage.getItem(`quiz_state_${examId}`);
       if (saved && quizMode === "practice") {
         const state = JSON.parse(saved);
-        if (await _confirm("استئناف الإمتحان؟")) {
+        if (await _confirm("استئناف الامتحان؟")) {
           currentIdx = state.currentIdx || 0;
           userAnswers = state.userAnswers || {};
           lockedQuestions = state.lockedQuestions || {};
@@ -1496,7 +1496,7 @@ async function init() {
           ) {
             await navigator.share({
               files: [file],
-              title: "سؤال من الإمتحان",
+              title: "سؤال من الامتحان",
             });
           } else {
             // fallback download
@@ -2495,7 +2495,7 @@ const maybeAutoSubmit = () => {
       try {
         if (
           await _confirm(
-            "لقد أجبت على جميع الأسئلة. هل تريد تسليم الإمتحان الآن؟",
+            "لقد أجبت على جميع الأسئلة. هل تريد تسليم الامتحان الآن؟",
           )
         ) {
           finish(true);
@@ -2618,7 +2618,7 @@ async function restart(skipconfirmationNotification) {
   // 1. _confirm Intent
   if (
     !skipconfirmationNotification &&
-    !(await _confirm("هل تريد إعادة الإمتحان؟ سيتم فقدان التقدم الحالي"))
+    !(await _confirm("هل تريد إعادة الامتحان؟ سيتم فقدان التقدم الحالي"))
   )
     return;
 

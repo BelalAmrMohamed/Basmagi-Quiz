@@ -183,11 +183,11 @@ export function renderCategory(category) {
  * @returns {string}
  */
 function getItemText(count) {
-  if (count === 0) return "لا يوجد إمتحانات";
-  if (count === 1) return "إمتحان واحد";
-  if (count === 2) return "إمتحانان";
-  if (count <= 10) return "إمتحانات";
-  return "إمتحان";
+  if (count === 0) return "لا يوجد امتحانات";
+  if (count === 1) return "امتحان واحد";
+  if (count === 2) return "امتحانان";
+  if (count <= 10) return "امتحانات";
+  return "امتحان";
 }
 
 export function createCategoryCard(

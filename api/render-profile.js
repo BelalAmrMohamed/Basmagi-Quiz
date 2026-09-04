@@ -102,7 +102,7 @@ export default async function handler(req, res) {
   const displayLabel = adminData.display_name || adminData.handle;
 
   const title = displayLabel;
-  const description = `الصفحة الشخصية للمشرف ${displayLabel} على منصة إمتحانات بصمجي`;
+  const description = `الصفحة الشخصية للمشرف ${displayLabel} على منصة امتحانات بصمجي`;
   const canonicalUrl = `${SITE_ORIGIN}/@${encodeURIComponent(cleanHandle)}`;
 
   html = html.replace(

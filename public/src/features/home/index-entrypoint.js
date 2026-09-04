@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const username = getFromStorage("username", "User");
     // eslint-disable-next-line no-undef
     showNotification(
-      "منصة إمتحانات بصمجي",
+      "منصة امتحانات بصمجي",
       `السلام عليكم يا ${escapeHtml(username)}`,
       "./assets/images/السلام عليكم.png",
     );

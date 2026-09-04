@@ -48,7 +48,7 @@ export function createExamCard(exam) {
   card.className = "card exam-card";
   card.setAttribute("role", "article");
   card.setAttribute("title", `${exam.description || exam.title}`);
-  card.setAttribute("aria-label", `إمتحان: ${exam.title || exam.id}`);
+  card.setAttribute("aria-label", `امتحان: ${exam.title || exam.id}`);
 
   // ── DB source accent border ───────────────────────────────────────────────
   if (exam.dbSource === "db") card.classList.add("exam-card--db");
@@ -202,7 +202,7 @@ export function createExamCard(exam) {
       ? `تحميل ${exam.title || exam.id} (محمي بكلمة مرور)`
       : `تحميل ${exam.title || exam.id}`,
   );
-  if (exam.password) downloadBtn.title = "هذا الإمتحان محمي بكلمة مرور";
+  if (exam.password) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
   downloadBtn.onclick = (ev) => {
     ev.stopPropagation();
     showDownloadPopup();
@@ -285,7 +285,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     downloadOpt.innerHTML = exam.password
       ? `${LOCK_ICON_SVG}<span>تحميل</span>`
       : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-    if (exam.password) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+    if (exam.password) downloadOpt.title = "هذا الامتحان محمي بكلمة مرور";
     downloadOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();
@@ -303,7 +303,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       navigator.clipboard
         .writeText(buildExamShareUrl(exam.id))
         .then(() =>
-          showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
+          showNotification("تم النسخ", "تم نسخ رابط الامتحان!", "success"),
         );
     };
     menu.appendChild(copyOpt);
@@ -311,7 +311,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     const shareOpt = document.createElement("button");
     shareOpt.type = "button";
     shareOpt.className = "exam-action-btn";
-    shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الإمتحان</span>`;
+    shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الامتحان</span>`;
     shareOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();
@@ -322,21 +322,21 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
         navigator.clipboard
           .writeText(url)
           .then(() =>
-            showNotification("تم النسخ", "تم نسخ رابط الإمتحان!", "success"),
+            showNotification("تم النسخ", "تم نسخ رابط الامتحان!", "success"),
           );
       }
     };
     menu.appendChild(shareOpt);
 
-    // ── "نسخ لإمتحاناتي" — copies this quiz into the visitor's own
-    // localStorage "إمتحاناتك" list. Visible on every quiz (static or DB),
+    // ── "نسخ لامتحاناتي" — copies this quiz into the visitor's own
+    // localStorage "امتحاناتك" list. Visible on every quiz (static or DB),
     // for every visitor, logged in or not — no visibility gate here (see
     // Phase 0 spec, Feature B). Uses DUPLICATE_ICON_SVG rather than
     // COPY_ICON_SVG so it doesn't share an icon with "نسخ الرابط" above.
     const copyToMineOpt = document.createElement("button");
     copyToMineOpt.type = "button";
     copyToMineOpt.className = "exam-action-btn";
-    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لإمتحاناتي</span>`;
+    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
     copyToMineOpt.onclick = async (e) => {
       e.stopPropagation();
       closeMenu();
@@ -358,13 +358,13 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       const deleteOpt = document.createElement("button");
       deleteOpt.type = "button";
       deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-      deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
+      deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الامتحان</span>`;
       deleteOpt.onclick = async (e) => {
         e.stopPropagation();
         closeMenu();
         const creatorLabel = exam.author || exam.author_email || "غير معروف";
         const confirmed = await _confirm(
-          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟ \nصاحب الإمتحان: (${creatorLabel}). لا يمكن التراجع عن هذا الإجراء.`,
+          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟ \nصاحب الامتحان: (${creatorLabel}). لا يمكن التراجع عن هذا الإجراء.`,
         );
         if (!confirmed) return;
         const ok = await deleteQuizFromDatabase(exam);
@@ -379,7 +379,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       menu.appendChild(deleteOpt);
     }
 
-    // ── "معلومات الإمتحان" submenu ───────────────────────────────────────
+    // ── "معلومات الامتحان" submenu ───────────────────────────────────────
     // Basic preview built synchronously from the manifest entry. Shows only
     // id, description, category, date, and source (المصدر is
     // copy-to-clipboard). "كل المعلومات" opens the full quiz-info-modal-card

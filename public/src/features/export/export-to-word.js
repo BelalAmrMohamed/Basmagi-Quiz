@@ -990,7 +990,7 @@ export async function exportToWord(config, questions, userAnswers = []) {
           alignment: AlignmentType.CENTER,
           children: [
             new TextRun({
-              text: "منصة إمتحانات بصمجي | Page ",
+              text: "منصة امتحانات بصمجي | Page ",
               size: 18,
               color: COLORS.textLight,
             }),

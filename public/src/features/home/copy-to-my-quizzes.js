@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/copy-to-my-quizzes.js
-// COPY TO MY QUIZZES — "نسخ لإمتحاناتي": clones any manifest exam (static or
+// COPY TO MY QUIZZES — "نسخ لامتحاناتي": clones any manifest exam (static or
 // database-backed) into the visitor's own localStorage "user_quizzes" list,
 // exactly as if they'd re-imported its JSON via the create-quiz modal.
 // ============================================================================
@@ -8,7 +8,7 @@
 // Feature B). Unlike download, this never touches the network beyond the one
 // fetch already needed to read the quiz's questions (loadFullQuizData) — the
 // resulting entry is built with the same buildUserQuizEntry() the JSON-file
-// import path uses, so the two ways of getting a quiz into "إمتحاناتك" stay
+// import path uses, so the two ways of getting a quiz into "امتحاناتك" stay
 // schema-identical.
 // ============================================================================
 
@@ -27,7 +27,7 @@ function alreadyCopied(examId, userQuizzes) {
 
 /**
  * Copies a manifest exam (relative-path or DB-sourced) into the user's
- * local "إمتحاناتك" list.
+ * local "امتحاناتك" list.
  *
  * @param {object} exam - manifest exam entry (id, title, path, ...)
  * @returns {Promise<boolean>} true if a new copy was created
@@ -38,7 +38,7 @@ export async function copyQuizToUserQuizzes(exam) {
   if (alreadyCopied(exam.id, userQuizzes)) {
     showNotification(
       "منسوخ بالفعل",
-      "لقد قمت بنسخ هذا الإمتحان إلى إمتحاناتك من قبل",
+      "لقد قمت بنسخ هذا الامتحان إلى امتحاناتك من قبل",
       "warning",
     );
     return false;
@@ -49,7 +49,7 @@ export async function copyQuizToUserQuizzes(exam) {
     loaded = await loadFullQuizData(exam);
   } catch (e) {
     console.error("Copy failed — could not load quiz data:", e);
-    showNotification("خطأ", "تعذّر نسخ الإمتحان. حاول مرة أخرى.", "error");
+    showNotification("خطأ", "تعذّر نسخ الامتحان. حاول مرة أخرى.", "error");
     return false;
   }
 
@@ -86,7 +86,7 @@ export async function copyQuizToUserQuizzes(exam) {
 
   showNotification(
     "تم النسخ",
-    `تم نسخ "${exam.title || exam.id}" إلى إمتحاناتك`,
+    `تم نسخ "${exam.title || exam.id}" إلى امتحاناتك`,
     "success",
   );
   return true;

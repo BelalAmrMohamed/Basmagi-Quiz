@@ -1816,7 +1816,7 @@ export async function exportToPdf(
 
     // #8: Arabic watermark
     const WATERMARK_W = 52;
-    const WATERMARK_TEXT = "منصة إمتحانات بصمجي";
+    const WATERMARK_TEXT = "منصة امتحانات بصمجي";
 
     const addGameFooter = (isLastPage = false) => {
       const fy = pageHeight - SIZES.footerH;

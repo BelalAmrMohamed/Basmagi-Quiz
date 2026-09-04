@@ -104,7 +104,7 @@ export async function deleteQuizFromDatabase(exam) {
     console.error("Delete failed:", res.status, body);
     showNotification(
       "خطأ",
-      body.error || "فشل حذف الإمتحان. حاول مرة أخرى.",
+      body.error || "فشل حذف الامتحان. حاول مرة أخرى.",
       "error",
     );
     return false;

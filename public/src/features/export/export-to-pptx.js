@@ -455,7 +455,7 @@ export async function exportToPptx(config, questions, userAnswers = []) {
     };
 
     const addFooter = (slide) => {
-      slide.addText("صنع بواسطة منصة إمتحانات بصمجي", {
+      slide.addText("صنع بواسطة منصة امتحانات بصمجي", {
         x: MARGIN,
         y: SLIDE_HEIGHT - FOOTER_HEIGHT,
         w: USABLE_WIDTH,

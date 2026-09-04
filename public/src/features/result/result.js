@@ -450,7 +450,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  document.title = `نتائج إمتحان ${config.title}`;
+  document.title = `نتائج امتحان ${config.title}`;
 
   // ── Score breakdown via centralised metrics calculator ─────────────────────
   const {
@@ -1499,7 +1499,7 @@ async function drawCertificateCanvas(name, quizTitle, quizCategory) {
   ctx.direction = "ltr";
   ctx.fillStyle = "#4a2810";
   ctx.font = 'bold 22px "Amiri", serif';
-  ctx.fillText("إمتحانات بصمجي", W - 90, H - 77);
+  ctx.fillText("امتحانات بصمجي", W - 90, H - 77);
   ctx.fillStyle = "#8a5a30";
   ctx.font = '14px "Amiri", Georgia, serif';
 

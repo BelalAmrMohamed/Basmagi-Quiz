@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/quiz-info-modal.js
-// QUIZ INFO MODAL — the "معلومات الإمتحان" read-only info dialog shown from
+// QUIZ INFO MODAL — the "معلومات الامتحان" read-only info dialog shown from
 // both manifest exams (showQuizInfoModal) and user-made quizzes
 // (showUserQuizInfoModal).
 // ============================================================================
@@ -52,7 +52,7 @@ export async function showQuizInfoModal(exam) {
   const loadingHtml = `
     <div class="quiz-info-dialog-inner">
       <div class="quiz-info-dialog-header">
-        <h2 id="quizInfoDialogTitle">معلومات الإمتحان</h2>
+        <h2 id="quizInfoDialogTitle">معلومات الامتحان</h2>
         <button class="quiz-info-dialog-close" type="button" aria-label="إغلاق">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -130,7 +130,7 @@ export async function showQuizInfoModal(exam) {
 }
 
 /**
- * "معلومات الإمتحان" info modal for user-made quizzes.
+ * "معلومات الامتحان" info modal for user-made quizzes.
  */
 export function showUserQuizInfoModal(quiz) {
   const config = {

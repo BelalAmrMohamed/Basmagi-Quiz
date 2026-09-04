@@ -15,7 +15,7 @@ export function positionExamDropdownMenu(menu, triggerBtn) {
   // BUG FIX: on phones this clamped only to the raw viewport height, not
   // accounting for the fixed .bottom-nav bar sitting on top of the page's
   // bottom edge — so a menu tall enough to reach the bottom of the screen
-  // (e.g. with several actions, including "حذف الإمتحان") could get placed
+  // (e.g. with several actions, including "حذف الامتحان") could get placed
   // (or clamped) partly underneath the nav instead of above it. Reserve the
   // nav's height the same way positionCourseInfoTooltip already does for
   // the course-info tooltip.
@@ -40,7 +40,7 @@ export function positionExamDropdownMenu(menu, triggerBtn) {
 
   // Clamp vertically within the available viewport (above the bottom nav) —
   // covers menus that grow taller after being positioned (e.g. expanding
-  // the "معلومات الإمتحان" submenu inline on narrow viewports), which the
+  // the "معلومات الامتحان" submenu inline on narrow viewports), which the
   // flip-above check above can't account for since it only runs once at
   // initial placement.
   if (top + menuH > availableVh - gap) top = availableVh - menuH - gap;

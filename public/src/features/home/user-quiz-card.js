@@ -56,7 +56,7 @@ export function createUserQuizCard(quiz, index) {
   const card = document.createElement("div");
   card.className = "exam-card user-quiz-card";
   card.setAttribute("role", "article");
-  card.setAttribute("aria-label", `إمتحان: ${qz(quiz, "title")}`);
+  card.setAttribute("aria-label", `امتحان: ${qz(quiz, "title")}`);
   card.setAttribute(
     "title",
     `${qz(quiz, "description") ? `Description: ${qz(quiz, "description")}` : `Type: ${qz(quiz, "type")}`}`,
@@ -143,7 +143,7 @@ export function createUserQuizCard(quiz, index) {
       ? `تحميل اختبار ${qz(quiz, "title")} (محمي بكلمة مرور)`
       : `تحميل اختبار ${qz(quiz, "title")}`,
   );
-  if (userQuizPassword) downloadBtn.title = "هذا الإمتحان محمي بكلمة مرور";
+  if (userQuizPassword) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
   downloadBtn.onclick = (e) => {
     e.stopPropagation();
     showUserQuizDownloadPopup(quiz);
@@ -244,7 +244,7 @@ export function playUserQuiz(quiz) {
  */
 export async function deleteUserQuiz(quizId) {
   try {
-    if (!(await _confirm("هل أنت متأكد من مسح الإمتحان؟ لا يمكن إسترداده"))) {
+    if (!(await _confirm("هل أنت متأكد من مسح الامتحان؟ لا يمكن إسترداده"))) {
       return;
     }
 
@@ -296,7 +296,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     downloadOpt.innerHTML = userQuizPwd
       ? `${LOCK_ICON_SVG}<span>تحميل</span>`
       : `${DOWNLOAD_ICON_SVG}<span>تحميل</span>`;
-    if (userQuizPwd) downloadOpt.title = "هذا الإمتحان محمي بكلمة مرور";
+    if (userQuizPwd) downloadOpt.title = "هذا الامتحان محمي بكلمة مرور";
     downloadOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();
@@ -310,7 +310,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     const editOpt = document.createElement("button");
     editOpt.type = "button";
     editOpt.className = "exam-action-btn";
-    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الإمتحان</span>`;
+    editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل الامتحان</span>`;
     editOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();
@@ -318,7 +318,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     };
     menu.appendChild(editOpt);
 
-    // ── "معلومات الإمتحان" submenu — user quizzes carry everything already
+    // ── "معلومات الامتحان" submenu — user quizzes carry everything already
     // in localStorage (quiz.meta/quiz.stats), so the preview builds
     // synchronously straight from qz(). Shows only id, description,
     // category, date, and source (المصدر is copy-to-clipboard).
@@ -358,7 +358,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";
     deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الإمتحان</span>`;
+    deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الامتحان</span>`;
     deleteOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();

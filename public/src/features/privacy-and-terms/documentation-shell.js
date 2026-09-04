@@ -4,15 +4,15 @@ const sidebarMarkup = `
   <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true" tabindex="-1">
     <div class="sidebar-drag-handle" id="sidebarDragHandle" aria-hidden="true"><span class="sidebar-drag-handle-bar"></span></div>
     <button class="sidebar-favicon" id="sidebarExpandBtn" type="button" title="توسيع القائمة" aria-label="توسيع القائمة" data-tooltip="توسيع القائمة">
-      <img src="./favicon.png" alt="منصة إمتحانات بصمجي" width="28" height="28" class="sidebar-favicon-img">
+      <img src="./favicon.png" alt="منصة امتحانات بصمجي" width="28" height="28" class="sidebar-favicon-img">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right-open-icon sidebar-expand-icon" aria-hidden="true">
         <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/>
       </svg>
     </button>
     <div class="sidebar-header sidebar-expanded-only">
       <a href="/" class="sidebar-brand-link" aria-label="الصفحة الرئيسية">
-        <div class="sidebar-logo" title="منصة إمتحانات بصمجي">
-          <svg xmlns="http://www.w3.org/2000/svg" width="180" height="40" viewBox="0 0 220 40" style="direction: ltr;"><image x="0" y="0" width="40" height="40" href="./favicon.png" /><text x="50" y="27" font-family="Tajawal, Arial, sans-serif" font-size="17" font-weight="bold" fill="currentColor" text-anchor="start">إمتحانات بصمجي</text></svg>
+        <div class="sidebar-logo" title="منصة امتحانات بصمجي">
+          <svg xmlns="http://www.w3.org/2000/svg" width="180" height="40" viewBox="0 0 220 40" style="direction: ltr;"><image x="0" y="0" width="40" height="40" href="./favicon.png" /><text x="50" y="27" font-family="Tajawal, Arial, sans-serif" font-size="17" font-weight="bold" fill="currentColor" text-anchor="start">امتحانات بصمجي</text></svg>
         </div>
       </a>
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" title="طي القائمة" aria-label="طي القائمة" data-tooltip="طي القائمة">
@@ -26,7 +26,7 @@ const sidebarMarkup = `
     </div>
     <nav role="navigation" aria-label="روابط التنقل">
       <a href="/" title="الصفحة الرئيسية" class="menu-item" data-tooltip="الصفحة الرئيسية"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg><span class="menu-label">الصفحة الرئيسية</span></a>
-      <a href="/create-quiz.html" title="إنشاء إمتحانات" class="menu-item" data-tooltip="إنشاء إمتحانات"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="m15 5 4 4" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg><span class="menu-label">إنشاء إمتحانات</span></a>
+      <a href="/create-quiz.html" title="إنشاء امتحانات" class="menu-item" data-tooltip="إنشاء امتحانات"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 21h8" /><path d="m15 5 4 4" /><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" /></svg><span class="menu-label">إنشاء امتحانات</span></a>
       <a href="/profile.html" title="الحساب" class="menu-item" data-tooltip="الحساب"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0" /><circle cx="12" cy="7" r="4" /></svg><span class="menu-label">الحساب</span></a>
     </nav>
   </aside>

@@ -4,7 +4,7 @@
 export const QuizInfoModalCSS = `
 /* ============================================================================
    quiz-info-modal.css
-   Shared styles for the "معلومات الإمتحان" (Quiz Info) dialog across all pages.
+   Shared styles for the "معلومات الامتحان" (Quiz Info) dialog across all pages.
    ============================================================================ */
 
 /* ─── Dialog Shell & Backdrop ─── */

@@ -3,7 +3,7 @@
    Scoped styles for the modular AI Helper widget. Reuses existing design
    tokens (--color-*, --gradient-accent, --shadow-*) and mirrors the visual
    language of .exam-action-btn / .adm-btn so the widget doesn't look bolted
-   on, whether it's mounted in "إمتحاناتك" or result.html.
+   on, whether it's mounted in "امتحاناتك" or result.html.
    ============================================================================= */
 
 .ai-agent-widget {
@@ -364,10 +364,13 @@
 }
 
 @keyframes ai-agent-pulse-speak {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
   }
+
   50% {
     transform: scale(1.05);
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0);
@@ -624,11 +627,13 @@
 }
 
 @keyframes aiAgentTypingIconPulse {
+
   0%,
   100% {
     opacity: 0.7;
     transform: scale(0.94);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.04);
@@ -708,12 +713,14 @@
 }
 
 @keyframes aiAgentTypingBounce {
+
   0%,
   60%,
   100% {
     transform: translateY(0);
     opacity: 0.35;
   }
+
   30% {
     transform: translateY(-4px);
     opacity: 1;

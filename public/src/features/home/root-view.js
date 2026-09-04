@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/root-view.js
-// ROOT VIEW — the home screen: "إمتحاناتك" folder card + subscribed courses
+// ROOT VIEW — the home screen: "امتحاناتك" folder card + subscribed courses
 // (or all courses, if none subscribed).
 // ============================================================================
 // BUG FIXES applied here:
@@ -36,7 +36,7 @@ export async function renderRootCategories() {
     navigationStack.length = 0; // clear in place — same effect as reassigning []
     updateBreadcrumb();
 
-    // Leaving the "إمتحاناتك" view entirely — selection mode and the
+    // Leaving the "امتحاناتك" view entirely — selection mode and the
     // floating bulk action bar belong to that view only. The bar lives on
     // document.body (not inside `container`), so it wouldn't otherwise get
     // cleaned up just because the view underneath it changed.
@@ -81,11 +81,11 @@ export async function renderRootCategories() {
 
     const fragment = document.createDocumentFragment();
 
-    // 1. Add "إمتحاناتك" Folder Card
+    // 1. Add "امتحاناتك" Folder Card
     try {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
       const quizzesCard = createCategoryCard(
-        "إمتحاناتك",
+        "امتحاناتك",
         userQuizzes.length,
         true,
       );

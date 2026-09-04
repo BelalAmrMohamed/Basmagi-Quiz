@@ -2556,7 +2556,7 @@ window.saveLocally = function () {
     if (quizId) {
       showNotification(
         "تم الحفظ!",
-        'يمكنك العثور عليه في "إمتحاناتك"',
+        'يمكنك العثور عليه في "امتحاناتك"',
         "success",
       );
       if (editingQuizId) {

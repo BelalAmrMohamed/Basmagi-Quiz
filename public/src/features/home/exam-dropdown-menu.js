@@ -64,7 +64,7 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
   }
 
   // Re-runs the menu's own viewport clamping. Needed because nested content
-  // (like the "معلومات الإمتحان" submenu) can change the menu's effective
+  // (like the "معلومات الامتحان" submenu) can change the menu's effective
   // height/width after it's already been positioned — e.g. on narrow
   // viewports the submenu stacks inline below the trigger, growing the
   // menu tall enough to run off the bottom of the screen.
@@ -91,7 +91,7 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
 
 
 /**
- * Builds the "معلومات الإمتحان" row as a submenu: a trigger button plus a
+ * Builds the "معلومات الامتحان" row as a submenu: a trigger button plus a
  * popover (.submenu-content) previewing `basicRows`, with a "كل المعلومات"
  * button that closes the whole dropdown and calls `onShowFull` (which opens
  * the full quiz-info-modal-card). Reveals on hover for real pointer/mouse
@@ -105,7 +105,7 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "exam-action-btn submenu-trigger";
-  trigger.innerHTML = `<span class="submenu-trigger-label">${INFO_ICON_SVG}<span>معلومات الإمتحان</span></span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+  trigger.innerHTML = `<span class="submenu-trigger-label">${INFO_ICON_SVG}<span>معلومات الامتحان</span></span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
 
   const content = document.createElement("div");
   content.className = "submenu-content";

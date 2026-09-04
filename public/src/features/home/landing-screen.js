@@ -353,19 +353,19 @@ export function renderLandingScreen() {
   // Title
   const titleEl = document.createElement("h2");
   titleEl.className = "landing-title";
-  titleEl.textContent = "أهلاً بيك في منصة إمتحانات بصمجي!";
+  titleEl.textContent = "أهلاً بيك في منصة امتحانات بصمجي!";
 
   // Subtitle
   const subtitleEl = document.createElement("p");
   subtitleEl.className = "landing-subtitle";
   subtitleEl.textContent =
-    "منصة مجانية بالكامل — إختبر نفسك في مواد الكلية وجهّز نفسك للإمتحان.";
+    "منصة مجانية بالكامل — إختبر نفسك في مواد الكلية وجهّز نفسك للامتحان.";
 
   // Feature pills
   const features = document.createElement("div");
   features.className = "landing-features";
   const featureItems = [
-    { icon: "📚", text: "مكتبة إمتحانات شاملة" },
+    { icon: "📚", text: "مكتبة امتحانات شاملة" },
     { icon: "⚡", text: "بدون تسجيل دخول" },
     { icon: "🏆", text: "تتبع تقدمك" },
   ];

@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/quiz-file-import.js
-// Shared JSON quiz file import used by the إمتحاناتك drop-zone and the
+// Shared JSON quiz file import used by the امتحاناتك drop-zone and the
 // inline create-quiz modal drop-zone.
 // ============================================================================
 
@@ -189,17 +189,17 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
   if (importedCount > 0) {
     const quizCountText =
       importedCount === 1
-        ? "إمتحان واحد"
+        ? "امتحان واحد"
         : importedCount === 2
-          ? "إمتحانان"
+          ? "امتحانان"
           : importedCount > 2 && importedCount < 11
-            ? `${importedCount} إمتحانات`
-            : `${importedCount} إمتحان`;
+            ? `${importedCount} امتحانات`
+            : `${importedCount} امتحان`;
 
     setInStorage("user_quizzes", JSON.stringify(existingQuizzes));
     showNotification(
       "تم الإنشاء",
-      `تم إنشاء ${quizCountText} في "إمتحاناتك"`,
+      `تم إنشاء ${quizCountText} في "امتحاناتك"`,
       "success",
     );
 

@@ -1,6 +1,6 @@
 // ============================================================================
 // public/src/features/home/user-quizzes-view.js
-// USER QUIZZES VIEW — the "إمتحاناتك" (My Quizzes) screen: card grid,
+// USER QUIZZES VIEW — the "امتحاناتك" (My Quizzes) screen: card grid,
 // admin sign-in/out bar, bulk selection + bulk action bar, and drag-and-drop
 // file import.
 // ============================================================================
@@ -90,7 +90,7 @@ function handleCreateQuizToolCall(toolCall) {
       10,
     );
     const err = new Error("create_quiz tool call had no questions");
-    err.userMessage = "تعذر إنشاء الإمتحان: لا توجد أسئلة صالحة.";
+    err.userMessage = "تعذر إنشاء الامتحان: لا توجد أسئلة صالحة.";
     throw err;
   }
 
@@ -103,12 +103,12 @@ function handleCreateQuizToolCall(toolCall) {
   saveNewUserQuiz(parsed, title);
   showNotification(
     "تم الإنشاء",
-    'تم إنشاء الإمتحان وإضافته إلى "إمتحاناتك"',
+    'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
     "success",
   );
   renderRootCategories();
   renderUserQuizzesView();
-  return `✅ تم إنشاء الإمتحان: ${title}`;
+  return `✅ تم إنشاء الامتحان: ${title}`;
 }
 
 /**
@@ -127,7 +127,7 @@ function handleEditQuizToolCall(toolCall) {
 
   if (!currentTitle) {
     const err = new Error("edit_quiz tool call had no currentTitle");
-    err.userMessage = "تعذر تعديل الإمتحان: لم يتم تحديد الامتحان المطلوب تعديله.";
+    err.userMessage = "تعذر تعديل الامتحان: لم يتم تحديد الامتحان المطلوب تعديله.";
     throw err;
   }
 
@@ -160,10 +160,10 @@ function handleEditQuizToolCall(toolCall) {
   quizzes[index] = entry;
   setInStorage("user_quizzes", JSON.stringify(quizzes));
 
-  showNotification("تم التعديل", `تم تعديل الإمتحان "${newTitle}"`, "success");
+  showNotification("تم التعديل", `تم تعديل الامتحان "${newTitle}"`, "success");
   renderRootCategories();
   renderUserQuizzesView();
-  return `✅ تم تعديل الإمتحان: ${newTitle}`;
+  return `✅ تم تعديل الامتحان: ${newTitle}`;
 }
 
 /**
@@ -187,7 +187,7 @@ function handleDeleteQuizToolCall(toolCall) {
 
   if (!title) {
     const err = new Error("delete_quiz tool call had no title");
-    err.userMessage = "تعذر حذف الإمتحان: لم يتم تحديد اسم الامتحان.";
+    err.userMessage = "تعذر حذف الامتحان: لم يتم تحديد اسم الامتحان.";
     throw err;
   }
 
@@ -203,14 +203,14 @@ function handleDeleteQuizToolCall(toolCall) {
   const remaining = quizzes.filter((q) => q !== match);
   setInStorage("user_quizzes", JSON.stringify(remaining));
 
-  showNotification("تم الحذف", `تم حذف الإمتحان "${title}"`, "success");
+  showNotification("تم الحذف", `تم حذف الامتحان "${title}"`, "success");
   renderRootCategories();
   renderUserQuizzesView();
-  return `🗑️ تم حذف الإمتحان: ${title}`;
+  return `🗑️ تم حذف الامتحان: ${title}`;
 }
 
 /**
- * "إمتحاناتك الرئيسية" (root) is how the folder-tree context prompt and
+ * "امتحاناتك الرئيسية" (root) is how the folder-tree context prompt and
  * move_item's destinationFolder both refer to the top level — resolve that
  * literal label the same way for both create_folder's parentFolder and
  * move_item's destinationFolder so the model can use the exact string it
@@ -218,7 +218,7 @@ function handleDeleteQuizToolCall(toolCall) {
  * (which it won't reliably infer purely from the schema description).
  */
 function resolveFolderTitleToId(folderTitle) {
-  if (!folderTitle || folderTitle === "إمتحاناتك الرئيسية" || folderTitle === "الرئيسية") {
+  if (!folderTitle || folderTitle === "امتحاناتك الرئيسية" || folderTitle === "الرئيسية") {
     return { ok: true, id: null };
   }
   const found = findFolderByName(folderTitle);
@@ -307,7 +307,7 @@ function handleMoveItemToolCall(toolCall) {
   renderUserQuizzesView();
 
   if (moved > 0) {
-    return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "إمتحاناتك الرئيسية"}.`;
+    return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "امتحاناتك الرئيسية"}.`;
   }
   const err = new Error(`Move blocked/no-op for ${itemName}`);
   err.userMessage = blocked > 0
@@ -318,7 +318,7 @@ function handleMoveItemToolCall(toolCall) {
 
 /**
  * Renders the user's folder/course tree as an indented plain-text list by
- * title (root "إمتحاناتك الرئيسية" first, then each folder/course nested
+ * title (root "امتحاناتك الرئيسية" first, then each folder/course nested
  * under its parent) for the AI agent's system-context — this is the only
  * way the model can resolve create_folder's parentFolder or move_item's
  * itemName/destinationFolder to a real location, since (like every other
@@ -330,7 +330,7 @@ function buildFolderTreeContextPrompt(userQuizzes) {
   const nodes = userQuizzes.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
-  const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- إمتحاناتك الرئيسية (المستوى الرئيسي)"];
+  const lines = ["هيكل المجلدات والمواد الحالي للمستخدم:", "- امتحاناتك الرئيسية (المستوى الرئيسي)"];
 
   function appendChildren(parentId, depth) {
     nodes
@@ -388,13 +388,13 @@ export function renderUserQuizzesView() {
     // Update Navigation Stack — only push if we're not already sitting on
     // this same view. Without this guard, any re-render of this view while
     // already inside it (e.g. renderUserQuizzesView() called again after a
-    // bulk delete) pushes a second "إمتحاناتك" frame, making the breadcrumb
+    // bulk delete) pushes a second "امتحاناتك" frame, making the breadcrumb
     // read navigationStack[length - 2] (undefined) instead of the actual
     // parent, which broke both its label and its onclick handler.
     const navigationStack = getNavigationStack();
     const topOfStack = navigationStack[navigationStack.length - 1];
-    if (!topOfStack || topOfStack.name !== "إمتحاناتك") {
-      navigationStack.push({ name: "إمتحاناتك" });
+    if (!topOfStack || topOfStack.name !== "امتحاناتك") {
+      navigationStack.push({ name: "امتحاناتك" });
     }
     updateBreadcrumb();
 
@@ -408,7 +408,7 @@ export function renderUserQuizzesView() {
 
     // Fix the #breadcrumb back-button for nested user-quiz folders.
     // updateBreadcrumb() only knows about the navigationStack which holds
-    // a single "إمتحاناتك" entry — it always renders "الرجوع إلى المواد ←"
+    // a single "امتحاناتك" entry — it always renders "الرجوع إلى المواد ←"
     // regardless of how deep we are in the folder tree. Override it directly
     // based on the real folderPathStack.
     const pathStack = getCurrentFolderPathStack();
@@ -420,9 +420,9 @@ export function renderUserQuizzesView() {
       if (breadcrumbText) {
         if (pathStack.length === 1) {
           // Parent is the root of user-quizzes
-          breadcrumbText.textContent = "الرجوع إلى إمتحاناتك ←";
+          breadcrumbText.textContent = "الرجوع إلى امتحاناتك ←";
           breadcrumbEl.onclick = () => navigateToFolder(null, null);
-          breadcrumbEl.setAttribute("aria-label", "الرجوع إلى إمتحاناتك ←");
+          breadcrumbEl.setAttribute("aria-label", "الرجوع إلى امتحاناتك ←");
         } else {
           // Parent is the previous folder in the path stack
           const parentFolder = pathStack[pathStack.length - 2];
@@ -450,7 +450,7 @@ export function renderUserQuizzesView() {
     }
 
     // Update Title: use the smart collapsible breadcrumb in #Subjects-text.
-    // Build items from folderPathStack: root = "إمتحاناتك", then each folder.
+    // Build items from folderPathStack: root = "امتحاناتك", then each folder.
     if (title) {
       let userQuizzes = [];
       try {
@@ -464,7 +464,7 @@ export function renderUserQuizzesView() {
       // valid "move item here" drop target, not just the clickable ones.
       const bcItems = [
         {
-          label: "إمتحاناتك",
+          label: "امتحاناتك",
           icon: "📁",
           onClick: pathStack.length > 0 ? () => navigateToFolder(null, null) : undefined,
           dropTargetId: null,
@@ -570,7 +570,7 @@ export function renderUserQuizzesView() {
           // silently-missing option here would look like a bug, the same
           // inconsistency Part 3 flags for the desktop context menu.
           courseOpt.disabled = true;
-          courseOpt.title = "يمكن إنشاء المواد في الصفحة الرئيسية لـ«إمتحاناتك» فقط";
+          courseOpt.title = "يمكن إنشاء المواد في الصفحة الرئيسية لـ«امتحاناتك» فقط";
           courseOpt.style.opacity = "0.5";
           courseOpt.style.cursor = "not-allowed";
         }
@@ -614,7 +614,7 @@ export function renderUserQuizzesView() {
     // Inline create-quiz card (always visible in this view)
     const inlineCreateCard = createInlineCreateQuizCard();
 
-    // Drag-and-drop JSON import on the whole إمتحاناتك section
+    // Drag-and-drop JSON import on the whole امتحاناتك section
     wireJsonFileDropZone(container, (files) => importJsonQuizFiles(files), {
       isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
     });
@@ -866,7 +866,7 @@ function ensureBulkUploadButton(bar, selectedUserQuizzes) {
 
   const btn = document.createElement("button");
   btn.className = "btn bulk-upload-btn";
-  btn.title = "رفع الإمتحان (للمشرفين)";
+  btn.title = "رفع الامتحان (للمشرفين)";
   btn.style.display = "none";
   btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`;
 
@@ -953,7 +953,7 @@ function renderBulkActionBar() {
 
     let uploadBtnHtml = "";
     if (isAdminAuthenticated()) {
-      uploadBtnHtml = `<button class="btn bulk-upload-btn" title="رفع الإمتحان (للمشرفين)" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></button>`;
+      uploadBtnHtml = `<button class="btn bulk-upload-btn" title="رفع الامتحان (للمشرفين)" style="display:none"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></button>`;
     }
 
     bar.innerHTML = `

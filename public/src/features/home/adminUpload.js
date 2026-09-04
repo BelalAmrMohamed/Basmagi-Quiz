@@ -213,28 +213,42 @@ function injectStyles() {
     .adm-batch-item-count { font-size:.75rem; color:var(--color-text-tertiary); white-space:nowrap; }
 
     /* ── Thread tree (course/folder upload review) ──────────────────────────
-       Styled after a YouTube-style comment thread: each node is a row with
-       an icon + label, and every level of nesting is a real DOM child
-       wrapped in .adm-thread-branch, whose own border-inline-start draws
-       one continuous rail for that whole sibling group — so the vertical
-       line is guaranteed unbroken from a group's first row to its last,
-       the same structural approach openMoveToDialog's tree uses (see
-       user-quizzes-folders.js), not an ASCII/box-drawing text hack. Rows
-       past a per-level cap collapse behind a "عرض N إضافي" toggle, mirroring
-       YouTube's "Show more replies" — a large uploaded course shouldn't
-       force the whole review step into an unreadable multi-screen list. */
+       True YouTube-comment-thread structure: each sibling group is one
+       .adm-thread-branch wrapping element whose OWN border-inline-start
+       draws one continuous vertical rail (unbroken from first row to
+       last, immune to per-row height differences). Each row additionally
+       gets its own short .adm-thread-elbow horizontal stub connecting it
+       sideways to that rail — the piece the old version was missing
+       entirely (it only ever drew the vertical part). Rows past a
+       per-level cap collapse behind a "عرض N إضافي" toggle, mirroring
+       YouTube's "Show more replies". */
     .adm-thread-root { list-style:none; margin:0 0 13px; padding:0; }
     .adm-thread-branch {
-      list-style:none; margin:0; padding:0 0 0 18px;
-      border-inline-start:2px solid var(--color-border);
-      margin-inline-start:13px;
+      list-style:none; margin:0; padding:0; position:relative;
+      padding-inline-start:20px;
+      border-inline-start:1.5px solid var(--color-border);
+      margin-inline-start:12px;
     }
     .adm-thread-branch:first-child { margin-inline-start:0; padding-inline-start:0; border-inline-start:none; }
+    .adm-thread-branch:first-child > li > .adm-thread-row > .adm-thread-elbow { display:none; }
+    .adm-thread-branch > li:last-child { position:relative; }
+    /* Masks the parent rail below the LAST row in a branch, so the line
+       terminates at that row instead of visibly running past it. */
+    .adm-thread-branch > li:last-child::after {
+      content:""; position:absolute; top:15px; bottom:-6px; inset-inline-start:-21.5px;
+      width:3px; background:var(--color-surface);
+    }
     .adm-thread-row {
       display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px;
-      font-size:.85rem; color:var(--color-text-primary); margin-bottom:2px;
+      font-size:.85rem; color:var(--color-text-primary); margin-bottom:2px; position:relative;
     }
     .adm-thread-row:hover { background:var(--color-background-secondary); }
+    /* Short horizontal stub joining this row to its branch's vertical
+       rail — the connector the old version never drew. */
+    .adm-thread-elbow {
+      position:absolute; inset-inline-start:-20px; top:15px; width:16px; height:1.5px;
+      background:var(--color-border);
+    }
     .adm-thread-icon { flex-shrink:0; font-size:.95rem; line-height:1; }
     .adm-thread-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .adm-thread-count {
@@ -244,7 +258,7 @@ function injectStyles() {
     }
     .adm-thread-more {
       background:none; border:none; color:var(--color-primary); font-size:.8rem; font-weight:700;
-      cursor:pointer; padding:5px 8px 5px 26px; display:block; font-family:inherit;
+      cursor:pointer; padding:5px 8px 5px 26px; display:block; font-family:inherit; position:relative;
     }
     .adm-thread-more:hover { text-decoration:underline; }
 
@@ -441,6 +455,18 @@ function renderStep1(saved = {}) {
     document.getElementById("adm-yearterm-wrap").style.display = TRACKS_WITH_YEARTERM.has(type) ? "" : "none";
   }
 
+  // Re-fills the college <select>'s own <option> list for `type`. Needed
+  // because that list is baked once into the initial innerHTML based on
+  // whatever track was selected at render time — switching the track
+  // dropdown afterward (e.g. from a non-University track restored from
+  // localStorage) previously left the college <select> permanently empty,
+  // since nothing ever regenerated its options.
+  function populateCollegeOptions(type, selectedCollege = "") {
+    const colleges = type === "University" ? Object.keys(MANIFEST_TREE["University"] || {}).sort() : [];
+    colEl.innerHTML = `<option value="">— اختر الكلية —</option>` +
+      colleges.map(c => `<option value="${c}" ${c === selectedCollege ? "selected" : ""}>${c}</option>`).join("");
+  }
+
   function triggerYearTermPopulate(type, college, sv) {
     syncYearTermDisabledState(type, college);
     if (!TRACKS_WITH_YEARTERM.has(type)) return;
@@ -460,6 +486,7 @@ function renderStep1(saved = {}) {
   eduEl.addEventListener("change", () => {
     const type = getType();
     applyTrackVisibility(type);
+    populateCollegeOptions(type, "");
     triggerYearTermPopulate(type, "", {});
   });
 
@@ -527,26 +554,33 @@ function populateSubjects(type, college, year, term, subEl, folEl, saved) {
   }
 }
 
+// Always offer the full year/term range in addition to whatever already
+// has courses — existing data should never be a ceiling on where new
+// content can be uploaded (e.g. a track with courses only in year 3
+// must still allow uploading to year 1, 2, etc).
+const ALL_YEARS = [1,2,3,4,5,6].map(String);
+const ALL_TERMS = [1,2,3].map(String);
+
 function populateYearOptions(type, college, yearEl, selectedYear = "") {
-  const yearsSet = new Set();
+  const yearsSet = new Set(ALL_YEARS);
   for (const data of Object.values(getSubjectMap(type, college)))
     for (const [y] of data.yearterm || []) yearsSet.add(y);
-  if (yearsSet.size === 0) [1,2,3,4,5,6].forEach(n => yearsSet.add(String(n)));
-  const years = [...yearsSet].sort();
+  const years = [...yearsSet].sort(sortNumericStr);
   yearEl.innerHTML = `<option value="">— اختر السنة —</option>`;
   years.forEach(y => yearEl.appendChild(mkOption(y, yearLabel(y), y === selectedYear)));
 }
 
 function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
-  const termsSet = new Set();
+  const termsSet = new Set(ALL_TERMS.slice(0, 2)); // terms 1-2 always offered; term 3 only if actually used
   for (const data of Object.values(getSubjectMap(type, college)))
     for (const [y, t] of data.yearterm || [])
       if (!year || y === year) termsSet.add(t);
-  if (termsSet.size === 0) [1, 2].forEach(n => termsSet.add(String(n)));
-  const terms = [...termsSet].sort();
+  const terms = [...termsSet].sort(sortNumericStr);
   termEl.innerHTML = `<option value="">— اختر الترم —</option>`;
   terms.forEach(t => termEl.appendChild(mkOption(t, termLabel(t), t === selectedTerm)));
 }
+
+function sortNumericStr(a, b) { return parseInt(a, 10) - parseInt(b, 10); }
 
 /**
  * Populates the Step 2 subfolder dropdown with EXISTING subfolders only.
@@ -615,7 +649,7 @@ async function renderStep2({ educationType, college, year, term }) {
       </div>
       <p class="adm-hint" id="adm-no-subjects-hint" style="display:none;">
         لا توجد مادة مطابقة هنا بعد. المواد والمجلدات تُنشأ الآن من صفحة
-        إمتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الاختبار داخلها.
+        امتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الاختبار داخلها.
       </p>
 
       <div class="adm-field">
@@ -760,10 +794,11 @@ function renderThreadTree(items, root, rootChain) {
   const list = document.createElement("ul");
   list.className = "adm-thread-root";
 
-  function makeRow(icon, label, badge) {
+  function makeRow(icon, label, badge, isNested = false) {
     const row = document.createElement("div");
     row.className = "adm-thread-row";
     row.innerHTML =
+      (isNested ? `<span class="adm-thread-elbow" aria-hidden="true"></span>` : "") +
       `<span class="adm-thread-icon" aria-hidden="true">${icon}</span>` +
       `<span class="adm-thread-label"></span>` +
       (badge ? `<span class="adm-thread-count">${badge}</span>` : "");
@@ -808,10 +843,10 @@ function renderThreadTree(items, root, rootChain) {
         const badgeParts = [];
         if (folders) badgeParts.push(`${folders} مجلد`);
         if (quizzes) badgeParts.push(`${quizzes} اختبار`);
-        li.appendChild(makeRow("📁", item.name, badgeParts.join(" · ")));
+        li.appendChild(makeRow("📁", item.name, badgeParts.join(" · "), true));
         appendGroup(li, childKey, depth + 1);
       } else {
-        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "اختبار"));
+        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "اختبار", "", true));
       }
       sublist.appendChild(li);
     }
@@ -1085,7 +1120,7 @@ function renderFolderUploadTargetStep(step1Vals) {
         </select>
       </div>
       <p class="adm-hint" id="adm-no-target-course-hint" style="display:none;">
-        لا توجد مادة مطابقة هنا بعد. أنشئ المادة أولاً من صفحة إمتحاناتك (أو ارفعها عبر
+        لا توجد مادة مطابقة هنا بعد. أنشئ المادة أولاً من صفحة امتحاناتك (أو ارفعها عبر
         "رفع المادة إلى المنصة") ثم عد لرفع هذا المجلد داخلها.
       </p>
 
@@ -1512,7 +1547,7 @@ async function _openWizard(quizzes) {
   if (nonQuizItems.length > 0) {
     showNotification(
       "لا يمكن رفع مادة أو مجلد هنا",
-      "هذه النافذة مخصصة لرفع الاختبارات فقط. المواد والمجلدات تُنشأ من صفحة إمتحاناتك مباشرة.",
+      "هذه النافذة مخصصة لرفع الاختبارات فقط. المواد والمجلدات تُنشأ من صفحة امتحاناتك مباشرة.",
       "error",
     );
     return;
@@ -1573,7 +1608,7 @@ async function openModal(quiz)               { await _openWizard([quiz]); }
 async function openAdminUploadModal(quizzes) { await _openWizard(Array.isArray(quizzes) ? quizzes : [quizzes]); }
 
 /**
- * Entry point for the "رفع المادة إلى المنصة" action — uploads one or
+ * Entry point for the "☁️ رفع المادة إلى المنصة" action — uploads one or
  * more EXISTING local courses (with everything nested inside them: folders
  * and quizzes) to the platform's top level in one wizard flow.
  * Flow: Track -> Review (+ multi-course disclaimer) -> Upload.
@@ -1635,7 +1670,7 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
 }
 
 /**
- * Entry point for the "رفع المجلد إلى المنصة" action — uploads one or
+ * Entry point for the "☁️ رفع المجلد إلى المنصة" action — uploads one or
  * more EXISTING local folders (with their nested contents), plus optional
  * loose quizzes selected alongside them, into an EXISTING course already on
  * the platform.

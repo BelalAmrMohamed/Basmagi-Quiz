@@ -1,6 +1,6 @@
 // Service Worker for Basmagi Quiz Platform
 
-const CACHE_VERSION = "basmagi-v8.1.0";
+const CACHE_VERSION = "basmagi-v8.1.1";
 const OFFLINE_CACHE = `${CACHE_VERSION}-offline`;
 const OFFLINE_URL = "/offline.html";
 const OFFLINE_ASSETS = [OFFLINE_URL, "/favicon.png"];
@@ -106,7 +106,7 @@ self.addEventListener("push", (event) => {
 
   event.waitUntil(
     self.registration.showNotification(
-      data.title || "منصة إمتحانات بصمجي",
+      data.title || "منصة امتحانات بصمجي",
       options,
     ),
   );
