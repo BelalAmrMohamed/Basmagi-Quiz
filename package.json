@@ -4,6 +4,8 @@
   "description": "Vanilla JS examination platform with quiz creation and export features",
   "type": "module",
   "scripts": {
+    "migrate:quizzes:dry-run": "node scripts/migrate-local-quizzes-to-db.js --dry-run",
+    "migrate:quizzes": "node scripts/migrate-local-quizzes-to-db.js",
     "sync:quizzes": "node scripts/sync-quizzes.js",
     "sync:quizzes:clean": "node scripts/sync-quizzes.js --delete-synced",
     "dev": "npm run dev:vercel",

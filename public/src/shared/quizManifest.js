@@ -30,7 +30,7 @@
 // Call invalidateManifestCache() after an admin upload.
 // =============================================================================
 
-import { extractFolderSegmentsFromQuizPath, parseDbPath, buildCourseKey, buildSubjectManifestEntry } from "./quizPath.js";
+import { extractFolderSegmentsFromQuizPath } from "./quizPath.js";
 import { generateQuizId } from "./quizId.js";
 import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
 
@@ -103,42 +103,83 @@ async function fetchDbManifest() {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
-  const { data, error } = await supabase
-    .from("quizzes")
-    .select(
-      "id, path, filename, title, category, subject, subfolder, data, education_type, password",
-    )
-    .order("category", { ascending: true });
+  const [{ data: quizzes, error: quizzesError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await Promise.all([
+    supabase
+      .from("quizzes")
+      .select("id, course_id, folder_id, path, filename, title, data, password")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("courses")
+      .select("id, name, education_type, college, year, term")
+      .order("name", { ascending: true }),
+    supabase
+      .from("folders")
+      .select("id, course_id, name, parent_folder_id")
+      .order("name", { ascending: true }),
+  ]);
 
-  if (error) throw error;
+  if (quizzesError) throw quizzesError;
+  if (coursesError) throw coursesError;
+  if (foldersError) throw foldersError;
+
+  const courseById = new Map((courses || []).map((course) => [course.id, course]));
+  const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
+
+  function getFolderSegments(folderId, courseId) {
+    const segments = [];
+    const visited = new Set();
+    let currentId = folderId;
+
+    while (currentId) {
+      if (visited.has(currentId)) {
+        throw new Error(`Folder cycle detected at ${currentId}`);
+      }
+      visited.add(currentId);
+
+      const folder = folderById.get(currentId);
+      if (!folder || folder.course_id !== courseId) {
+        throw new Error(`Folder ${currentId} does not belong to course ${courseId}`);
+      }
+      segments.unshift(folder.name);
+      currentId = folder.parent_folder_id;
+    }
+
+    return segments;
+  }
 
   const subjectsMap = new Map();
 
-  for (const row of data) {
-    let rawPath = row.path;
-    let parsed = parseDbPath(rawPath, row.filename);
-
-    if (!parsed) {
-      if (row.education_type === "University") {
-        rawPath = `University/${row.path}`;
-        parsed = parseDbPath(rawPath, row.filename);
-      }
-      if (!parsed) {
-        console.warn(`[quizManifest] Unrecognized path: ${row.path}`);
-        continue;
-      }
+  for (const row of quizzes || []) {
+    const course = courseById.get(row.course_id);
+    if (!course) {
+      console.warn(`[quizManifest] Quiz ${row.id} has no valid course_id`);
+      continue;
     }
 
-    const education_type = row.education_type || parsed.education_type;
-    parsed.education_type = education_type;
-
-    const courseKey = buildCourseKey(parsed);
-
-    if (!subjectsMap.has(courseKey)) {
-      subjectsMap.set(courseKey, await buildSubjectManifestEntry(parsed, []));
+    let folderSegments;
+    try {
+      folderSegments = getFolderSegments(row.folder_id, row.course_id);
+    } catch (error) {
+      console.warn(`[quizManifest] ${error.message}`);
+      continue;
     }
 
-    const subjectEntry = subjectsMap.get(courseKey);
+    if (!subjectsMap.has(course.id)) {
+      const subject = {
+        id: course.id,
+        name: course.name,
+        education_type: course.education_type,
+        quizzes: [],
+      };
+      if (course.education_type === "University" && course.college) {
+        subject.faculty = course.college;
+      }
+      if (course.year != null) subject.year = course.year;
+      if (course.term != null) subject.term = course.term;
+      subjectsMap.set(course.id, subject);
+    }
+
+    const subjectEntry = subjectsMap.get(course.id);
     const examRelPath = `quizzes/${row.path}/${row.filename}`;
     const examFetchPath = `/api/quiz-data?path=${encodeURIComponent(examRelPath)}`;
 
@@ -146,13 +187,14 @@ async function fetchDbManifest() {
     const quizStats = row.data?.stats || {};
 
     const quizEntry = {
-      id: quizMeta.id || (await generateQuizId(examRelPath)),
+      id: quizMeta.id || (await generateQuizId(String(row.id))),
       dbId: row.id,
       title: quizMeta.title || row.title,
       path: examFetchPath,
+      folderSegments,
       questionCount: quizStats.questionCount ?? 0,
       questionTypes: quizStats.questionTypes ?? [],
-      education_type,
+      education_type: course.education_type,
       dbSource: "db",
     };
 
@@ -243,11 +285,15 @@ function buildCompatStructures(subjects) {
     }
 
     for (const quiz of subject.quizzes ?? []) {
-      let folderSegments = [];
-      try {
-        const extracted = extractFolderSegmentsFromQuizPath(quiz.path);
-        folderSegments = extracted.folderSegments || [];
-      } catch (_) {}
+      let folderSegments = Array.isArray(quiz.folderSegments)
+        ? quiz.folderSegments
+        : [];
+      if (!Array.isArray(quiz.folderSegments)) {
+        try {
+          const extracted = extractFolderSegmentsFromQuizPath(quiz.path);
+          folderSegments = extracted.folderSegments || [];
+        } catch (_) {}
+      }
 
       let examCategoryKey = key;
 
