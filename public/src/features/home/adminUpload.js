@@ -212,6 +212,42 @@ function injectStyles() {
     .adm-batch-item-title { font-weight:600; color:var(--color-text-primary); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .adm-batch-item-count { font-size:.75rem; color:var(--color-text-tertiary); white-space:nowrap; }
 
+    /* ── Thread tree (course/folder upload review) ──────────────────────────
+       Styled after a YouTube-style comment thread: each node is a row with
+       an icon + label, and every level of nesting is a real DOM child
+       wrapped in .adm-thread-branch, whose own border-inline-start draws
+       one continuous rail for that whole sibling group — so the vertical
+       line is guaranteed unbroken from a group's first row to its last,
+       the same structural approach openMoveToDialog's tree uses (see
+       user-quizzes-folders.js), not an ASCII/box-drawing text hack. Rows
+       past a per-level cap collapse behind a "عرض N إضافي" toggle, mirroring
+       YouTube's "Show more replies" — a large uploaded course shouldn't
+       force the whole review step into an unreadable multi-screen list. */
+    .adm-thread-root { list-style:none; margin:0 0 13px; padding:0; }
+    .adm-thread-branch {
+      list-style:none; margin:0; padding:0 0 0 18px;
+      border-inline-start:2px solid var(--color-border);
+      margin-inline-start:13px;
+    }
+    .adm-thread-branch:first-child { margin-inline-start:0; padding-inline-start:0; border-inline-start:none; }
+    .adm-thread-row {
+      display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px;
+      font-size:.85rem; color:var(--color-text-primary); margin-bottom:2px;
+    }
+    .adm-thread-row:hover { background:var(--color-background-secondary); }
+    .adm-thread-icon { flex-shrink:0; font-size:.95rem; line-height:1; }
+    .adm-thread-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .adm-thread-count {
+      flex-shrink:0; font-size:.72rem; font-weight:700; color:var(--color-text-tertiary);
+      background:var(--color-background-secondary); border:1px solid var(--color-border);
+      padding:1px 8px; border-radius:20px;
+    }
+    .adm-thread-more {
+      background:none; border:none; color:var(--color-primary); font-size:.8rem; font-weight:700;
+      cursor:pointer; padding:5px 8px 5px 26px; display:block; font-family:inherit;
+    }
+    .adm-thread-more:hover { text-decoration:underline; }
+
     .adm-progress-list { list-style:none; margin:0 0 16px; padding:0; }
     .adm-progress-item {
       display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px;
@@ -701,6 +737,115 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
   });
 }
 
+// ─── Shared thread-style tree renderer (course/folder upload review) ───────
+// Builds a real, nested DOM tree of the flat `items` array (same shape as
+// api/upload-quiz.js's folder-mode `items`) under one root node, styled
+// like a YouTube comment thread: each sibling group is one .adm-thread-
+// branch whose border-inline-start draws that group's whole connecting
+// rail, real DOM nesting for real indentation (not text/ASCII), and a
+// "عرض N إضافي" collapse toggle per sibling group past MAX_VISIBLE_SIBLINGS
+// so a large course/folder doesn't turn the review step into a wall of text.
+//
+// @param {Array} items - flat items array (type: "folder"|"quiz", name,
+//   folderSegments) — NOT including the root itself
+// @param {{label: string, icon: string, badge?: string}} root - the node
+//   items are nested under (a course name, or "Course ← Subfolder" for the
+//   Folder Upload wizard's existing-course target)
+// @param {string[]} rootChain - the folderSegments value that items directly
+//   under the root carry (e.g. [courseName] or [courseName, ...subfolders])
+// @returns {HTMLUListElement}
+const MAX_VISIBLE_SIBLINGS = 6;
+
+function renderThreadTree(items, root, rootChain) {
+  const list = document.createElement("ul");
+  list.className = "adm-thread-root";
+
+  function makeRow(icon, label, badge) {
+    const row = document.createElement("div");
+    row.className = "adm-thread-row";
+    row.innerHTML =
+      `<span class="adm-thread-icon" aria-hidden="true">${icon}</span>` +
+      `<span class="adm-thread-label"></span>` +
+      (badge ? `<span class="adm-thread-count">${badge}</span>` : "");
+    row.querySelector(".adm-thread-label").textContent = label;
+    return row;
+  }
+
+  function countDescendants(chainKey) {
+    let folders = 0, quizzes = 0;
+    function walk(key) {
+      for (const item of items) {
+        if ((item.folderSegments || []).join("/") !== key) continue;
+        if (item.type === "folder") {
+          folders++;
+          walk([...(item.folderSegments || []), item.name].join("/"));
+        } else {
+          quizzes++;
+        }
+      }
+    }
+    walk(chainKey);
+    return { folders, quizzes };
+  }
+
+  // Renders one sibling group (all items whose folderSegments join to
+  // `chainKey`) into `container`, collapsing past MAX_VISIBLE_SIBLINGS.
+  function appendGroup(container, chainKey, depth) {
+    const siblings = items.filter((i) => (i.folderSegments || []).join("/") === chainKey);
+    if (siblings.length === 0) return;
+
+    const branch = document.createElement("li");
+    branch.className = "adm-thread-branch";
+    const sublist = document.createElement("ul");
+    sublist.style.cssText = "list-style:none;margin:0;padding:0;";
+    branch.appendChild(sublist);
+
+    function renderOne(item) {
+      const li = document.createElement("li");
+      if (item.type === "folder") {
+        const childKey = [...(item.folderSegments || []), item.name].join("/");
+        const { folders, quizzes } = countDescendants(childKey);
+        const badgeParts = [];
+        if (folders) badgeParts.push(`${folders} مجلد`);
+        if (quizzes) badgeParts.push(`${quizzes} اختبار`);
+        li.appendChild(makeRow("📁", item.name, badgeParts.join(" · ")));
+        appendGroup(li, childKey, depth + 1);
+      } else {
+        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "اختبار"));
+      }
+      sublist.appendChild(li);
+    }
+
+    const visible = siblings.slice(0, MAX_VISIBLE_SIBLINGS);
+    const hidden = siblings.slice(MAX_VISIBLE_SIBLINGS);
+    visible.forEach(renderOne);
+
+    if (hidden.length > 0) {
+      const moreBtn = document.createElement("button");
+      moreBtn.type = "button";
+      moreBtn.className = "adm-thread-more";
+      moreBtn.textContent = `عرض ${hidden.length} إضافي`;
+      moreBtn.onclick = () => {
+        hidden.forEach(renderOne);
+        moreBtn.remove();
+      };
+      branch.appendChild(moreBtn);
+    }
+
+    container.appendChild(branch);
+  }
+
+  const rootLi = document.createElement("li");
+  rootLi.appendChild(makeRow(root.icon, root.label, root.badge));
+  const rootChildrenList = document.createElement("ul");
+  rootChildrenList.style.cssText = "list-style:none;margin:0;padding:0;";
+  appendGroup(rootChildrenList, rootChain.join("/"), 1);
+  rootLi.appendChild(rootChildrenList);
+  list.appendChild(rootLi);
+
+  return list;
+}
+
 // ─── Folder mode: Review step (replaces Step 2 for tree uploads) ────────────
 // Shows a flat, indented preview of the parsed folder tree (course →
 // folders → quizzes) so the admin can confirm what's about to be created
@@ -711,36 +856,30 @@ function renderFolderReviewStep(step1Vals) {
   const courseItem = items.find((i) => i.type === "course");
   const folderCount = items.filter((i) => i.type === "folder").length + (courseItem ? 1 : 0);
   const quizCount = items.filter((i) => i.type === "quiz").length;
-
-  function renderNode(depth, folderSegmentsKey) {
-    return items
-      .filter((i) => (i.type === "folder" || i.type === "quiz") && (i.folderSegments || []).join("/") === folderSegmentsKey)
-      .map((i) => {
-        const label = i.type === "folder" ? `📁 ${i.name}` : `📝 ${i.quiz?.meta?.title || i.name || "اختبار"}`;
-        const childKey = i.type === "folder" ? [...(i.folderSegments || []), i.name].join("/") : null;
-        const children = i.type === "folder" ? renderNode(depth + 1, childKey) : "";
-        return `<li style="padding-inline-start:${depth * 18}px;">${label}</li>${children}`;
-      })
-      .join("");
-  }
-
-  const treeHtml = `
-    <li>${courseItem ? "📚" : "📁"} ${courseItem ? courseItem.name : rootName} ${courseItem ? "" : '<span class="adm-badge adm-badge-opt">مادة موجودة</span>'}</li>
-    ${renderNode(1, courseItem ? "" : "")}
-  `;
+  const rootLabel = courseItem ? courseItem.name : rootName;
+  const rootChain = courseItem ? [rootLabel] : [];
+  const nonRootItems = courseItem ? items.filter((i) => i !== courseItem) : items;
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع مجلد إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
       <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} اختبار</p>
-      <ul class="adm-batch-list" style="max-height:280px;overflow-y:auto;">${treeHtml}</ul>
+      <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-back">→ رجوع</button>
         <button class="adm-btn adm-btn-primary" id="adm-folder-next">رفع ☁️</button>
       </div>
     </div>
   </div>`;
+
+  document.getElementById("adm-tree-holder").appendChild(
+    renderThreadTree(nonRootItems, {
+      icon: courseItem ? "📚" : "📁",
+      label: rootLabel,
+      badge: courseItem ? "" : "مادة موجودة",
+    }, rootChain),
+  );
 
   window.__admClose = closeModal;
   document.getElementById("adm-folder-back").addEventListener("click", () => renderStep1(step1Vals));
@@ -816,36 +955,6 @@ async function doFolderUpload({ educationType, college, year, term }) {
 function renderCourseUploadReviewStep(step1Vals) {
   const { courseRows, userQuizzes } = _courseUploadItems;
 
-  function renderCourseTree(course) {
-    const { items } = (function () {
-      // Reuse the same builder the actual upload will use, just for this
-      // one course, so the preview always matches exactly what gets sent.
-      return buildCourseUploadPayload(userQuizzes, [course]);
-    })();
-    const folderCount = items.filter((i) => i.type === "folder").length;
-    const quizCount = items.filter((i) => i.type === "quiz").length;
-
-    function renderNode(depth, key) {
-      return items
-        .filter((i) => (i.type === "folder" || i.type === "quiz") && (i.folderSegments || []).join("/") === key)
-        .map((i) => {
-          const label = i.type === "folder" ? `📁 ${i.name}` : `📝 ${i.quiz?.meta?.title || i.name || "اختبار"}`;
-          const childKey = i.type === "folder" ? [...(i.folderSegments || []), i.name].join("/") : null;
-          const children = i.type === "folder" ? renderNode(depth + 1, childKey) : "";
-          return `<li style="padding-inline-start:${depth * 18}px;">${label}</li>${children}`;
-        })
-        .join("");
-    }
-
-    const courseName = (course.meta?.title || "").trim();
-    return `
-      <li>📚 ${courseName} <span class="adm-badge adm-badge-opt">${folderCount} مجلد · ${quizCount} اختبار</span></li>
-      ${renderNode(1, courseName)}
-    `;
-  }
-
-  const treeHtml = courseRows.map(renderCourseTree).join("");
-
   const disclaimer = courseRows.length > 1
     ? `<p class="adm-hint" style="background:var(--color-background-secondary);padding:10px 12px;border-radius:8px;">
         ℹ️ <strong>تنبيه</strong>: سيتم رفع جميع المواد المحددة (${courseRows.length} مواد) إلى نفس المسار الدراسي
@@ -859,13 +968,30 @@ function renderCourseUploadReviewStep(step1Vals) {
     <div class="adm-body">
       <p class="adm-hint">راجع محتويات ${courseRows.length > 1 ? "المواد" : "المادة"} قبل الرفع</p>
       ${disclaimer}
-      <ul class="adm-batch-list" style="max-height:280px;overflow-y:auto;">${treeHtml}</ul>
+      <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-course-back">→ رجوع</button>
         <button class="adm-btn adm-btn-primary" id="adm-course-next">رفع ☁️</button>
       </div>
     </div>
   </div>`;
+
+  const treeHolder = document.getElementById("adm-tree-holder");
+  // Each selected course gets its own root-level thread tree (reusing the
+  // exact same builder the actual upload call will use, so the preview
+  // always matches what gets sent — see buildCourseUploadPayload).
+  courseRows.forEach((course) => {
+    const courseName = (course.meta?.title || "").trim();
+    const { items } = buildCourseUploadPayload(userQuizzes, [course]);
+    const folderCount = items.filter((i) => i.type === "folder").length;
+    const quizCount = items.filter((i) => i.type === "quiz").length;
+    const badgeParts = [];
+    if (folderCount) badgeParts.push(`${folderCount} مجلد`);
+    if (quizCount) badgeParts.push(`${quizCount} اختبار`);
+    treeHolder.appendChild(
+      renderThreadTree(items, { icon: "📚", label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
+    );
+  });
 
   window.__admClose = closeModal;
   document.getElementById("adm-course-back").addEventListener("click", () => renderStep1(step1Vals));
@@ -1039,36 +1165,22 @@ function renderFolderUploadReviewStep(step1Vals) {
     ? `${courseName} ← ${subfolderPath.join(" ← ")}`
     : courseName;
 
-  function renderNode(depth, key) {
-    return items
-      .filter((i) => (i.type === "folder" || i.type === "quiz") && (i.folderSegments || []).join("/") === key)
-      .map((i) => {
-        const label = i.type === "folder" ? `📁 ${i.name}` : `📝 ${i.quiz?.meta?.title || i.name || "اختبار"}`;
-        const childKey = i.type === "folder" ? [...(i.folderSegments || []), i.name].join("/") : null;
-        const children = i.type === "folder" ? renderNode(depth + 1, childKey) : "";
-        return `<li style="padding-inline-start:${depth * 18}px;">${label}</li>${children}`;
-      })
-      .join("");
-  }
-
-  const baseKey = [courseName, ...subfolderPath].join("/");
-  const treeHtml = `
-    <li>📚 ${destinationLabel} <span class="adm-badge adm-badge-opt">مادة موجودة</span></li>
-    ${renderNode(1, baseKey)}
-  `;
-
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع المجلد إلى المنصة")}
     ${stepsHTML(3)}
     <div class="adm-body">
       <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} اختبار داخل "${destinationLabel}"</p>
-      <ul class="adm-batch-list" style="max-height:280px;overflow-y:auto;">${treeHtml}</ul>
+      <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
         <button class="adm-btn adm-btn-primary" id="adm-folder-target-next">رفع ☁️</button>
       </div>
     </div>
   </div>`;
+
+  document.getElementById("adm-tree-holder").appendChild(
+    renderThreadTree(items, { icon: "📚", label: destinationLabel, badge: "مادة موجودة" }, [courseName, ...subfolderPath]),
+  );
 
   window.__admClose = closeModal;
   document.getElementById("adm-folder-target-back").addEventListener("click", () => renderFolderUploadTargetStep(step1Vals));
@@ -1523,7 +1635,7 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
 }
 
 /**
- * Entry point for the "رفع المجلد إلى المنصة" action — uploads one or
+ * Entry point for the "☁️ رفع المجلد إلى المنصة" action — uploads one or
  * more EXISTING local folders (with their nested contents), plus optional
  * loose quizzes selected alongside them, into an EXISTING course already on
  * the platform.
@@ -1677,4 +1789,4 @@ export function createUploadButton(quiz) {
   return btn;
 }
 
-export { openModal as openUploadModal, openAdminUploadModal };
+export { openModal as openUploadModal, openAdminUploadModal, normalizeQuizSchema };

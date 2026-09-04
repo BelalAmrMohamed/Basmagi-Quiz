@@ -612,7 +612,7 @@ let customMenuJustOpened = false;
 // SVG icons for context menu items
 const CREATE_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
 const CREATE_COURSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`;
-const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
+const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>`;
 const SELECT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
 const RENAME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
@@ -698,7 +698,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // filesystem INTO user_quizzes rather than uploading an existing local
   // item OUT to the platform.
   if (isAdminAuthenticated() && (targetType === "course" || targetType === "folder")) {
-    const label = targetType === "course" ? "رفع المادة إلى المنصة" : "رفع المجلد إلى المنصة";
+    const label = targetType === "course" ? "☁️ رفع المادة إلى المنصة" : "☁️ رفع المجلد إلى المنصة";
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, label, () => uploadItemToPlatform(targetType, targetId)));
   }
   if (isAdminAuthenticated()) {
@@ -1019,14 +1019,38 @@ function walkChildren(userQuizzes, parentId) {
   return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
 }
 
+// Mirrors api/_validateQuiz.js's ALLOWED_META_KEYS whitelist: the server
+// rejects (not silently strips) any unrecognized meta key, so local-only
+// bookkeeping fields on a user_quizzes row — parentId, type, icon,
+// createdAt's raw form, etc. — must never reach the request body as-is.
+// Kept in sync manually with the server list; adding a new persisted meta
+// field server-side means adding it here too.
+const UPLOADABLE_META_KEYS = new Set([
+  "title",
+  "description",
+  "source",
+  "createdAt",
+  "password",
+  "view",
+  "mode",
+]);
+
 function quizToPayload(entry) {
-  // Matches the shape normalizeQuizSchema (adminUpload.js) already builds
-  // from a local user_quizzes row — meta/stats/questions — so the exact
-  // same object can be handed straight to POST /api/upload-quiz.
+  const rawMeta = entry.meta || {};
+  const meta = {};
+  for (const key of UPLOADABLE_META_KEYS) {
+    const val = rawMeta[key];
+    if (typeof val === "string" ? val.trim() : val != null) {
+      meta[key] = typeof val === "string" ? val.trim() : val;
+    }
+  }
+  if (!meta.title) meta.title = "اختبار";
+
+  const questions = entry.questions || [];
   return {
-    meta: { ...(entry.meta || {}) },
-    stats: entry.stats || { questionCount: (entry.questions || []).length, questionTypes: [] },
-    questions: entry.questions || [],
+    meta,
+    stats: { questionCount: questions.length, questionTypes: [] },
+    questions,
   };
 }
 
