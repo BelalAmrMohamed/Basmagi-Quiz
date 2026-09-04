@@ -1957,6 +1957,44 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-text-primary);
 }
 
+.ai-agent-export-menu-title {
+  padding: 8px 12px 6px;
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.ai-agent-export-menu-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ai-agent-export-menu-item:hover,
+.ai-agent-export-menu-item:focus-visible {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.ai-agent-export-menu-item strong {
+  min-width: 42px;
+  font-size: 0.8rem;
+}
+
+.ai-agent-export-menu-item span {
+  color: var(--color-text-secondary, #64748b);
+  font-size: 0.76rem;
+}
+
 /* Holds the chat panel's own model-selector bar once ai-agent.js moves it
    here from its default spot above the input row (see relocateModelBar()
    / panel.modelBarEl) — a compact control that fits the sidebar's own

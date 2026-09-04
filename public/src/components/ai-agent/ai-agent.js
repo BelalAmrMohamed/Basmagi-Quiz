@@ -42,6 +42,7 @@
 import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
+import { openExamDropdownMenu } from "../../features/home/exam-dropdown-menu.js";
 
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
@@ -331,24 +332,44 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   const sidebarCopyBtn = document.createElement("button");
   sidebarCopyBtn.type = "button";
   sidebarCopyBtn.className = "ai-agent-sidebar-btn";
-  sidebarCopyBtn.innerHTML = `${COPY_CONVO_ICON_SVG}<span>نسخ المحادثة</span>`;
-  sidebarCopyBtn.addEventListener("click", async () => {
-    // Delegates to the chat panel's own export logic rather than
-    // re-implementing transcript-building here — see `.exportConversation`
-    // exposed by createChatPanel() in ai-agent-chat.js, which is the same
-    // routine the corner "export chat" icon button uses.
+  sidebarCopyBtn.innerHTML = `${COPY_CONVO_ICON_SVG}<span>تصدير المحادثة</span>`;
+  sidebarCopyBtn.setAttribute("aria-haspopup", "menu");
+  sidebarCopyBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
     if (sidebarCopyBtn.disabled) return;
-    if (typeof chatPanelSlot.current.exportConversation !== "function") return;
-    const ok = await chatPanelSlot.current.exportConversation();
-    if (ok) {
-      const original = sidebarCopyBtn.innerHTML;
-      sidebarCopyBtn.innerHTML = `${CHECK_ICON_SVG}<span>تم النسخ</span>`;
-      sidebarCopyBtn.classList.add("ai-agent-sidebar-btn--copied");
-      setTimeout(() => {
-        sidebarCopyBtn.innerHTML = original;
-        sidebarCopyBtn.classList.remove("ai-agent-sidebar-btn--copied");
-      }, 1500);
-    }
+    openExamDropdownMenu(sidebarCopyBtn, (menu, closeMenu) => {
+      const title = document.createElement("div");
+      title.className = "ai-agent-export-menu-title";
+      title.textContent = "تصدير المحادثة";
+      menu.appendChild(title);
+      [
+        ["txt", "TXT", "نص عادي"],
+        ["md", "MD", "Markdown"],
+        ["html", "HTML", "عرض غني في المتصفح"],
+        ["json", "JSON", "نسخة بيانات منظمة"],
+        ["pdf", "PDF", "مستند قابل للطباعة"],
+      ].forEach(([format, label, description]) => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "ai-agent-export-menu-item";
+        option.setAttribute("role", "menuitem");
+        option.innerHTML = `<strong>${label}</strong><span>${description}</span>`;
+        option.addEventListener("click", async (optionEvent) => {
+          optionEvent.stopPropagation();
+          closeMenu();
+          const ok = await chatPanelSlot.current.exportConversation(format);
+          if (ok && format === "txt") {
+            sidebarCopyBtn.innerHTML = `${CHECK_ICON_SVG}<span>تم التصدير</span>`;
+            sidebarCopyBtn.classList.add("ai-agent-sidebar-btn--copied");
+            setTimeout(() => {
+              sidebarCopyBtn.innerHTML = `${COPY_CONVO_ICON_SVG}<span>تصدير المحادثة</span>`;
+              sidebarCopyBtn.classList.remove("ai-agent-sidebar-btn--copied");
+            }, 1500);
+          }
+        });
+        menu.appendChild(option);
+      });
+    });
   });
 
   // Disables (visually + functionally) the "نسخ المحادثة" button whenever

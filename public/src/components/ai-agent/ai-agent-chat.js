@@ -264,36 +264,132 @@ export function createChatPanel(options = {}) {
   messagesEl.className = "ai-agent-chat-messages";
   panel.appendChild(messagesEl);
 
-  /**
-   * Builds the plain-text "أنت: ... / الباشــمبصمج: ..." transcript and
-   * copies it to the clipboard — shared by the in-panel corner export
-  * button (the desktop sidebar's "نسخ المحادثة"
-   * button (see ai-agent.js, which calls panel.exportConversation()
-   * directly rather than needing to reach into this panel's DOM to click
-   * the corner button programmatically).
-   * @returns {Promise<boolean>} whether the copy succeeded
-   */
-  async function exportTranscript() {
-    if (!history.length) return false;
-    // تول-result entries get their own "🔧 النظام:" label so they read as
-    // distinct from a normal assistant reply, matching how they're
-    // visually distinguished (muted/system style) in the live chat and in
-    // the History tab's re-render (see loadConversation above).
-    const transcript = history
-      .map((m) => {
-        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "الباشــمبصمج";
-        return `${label}: ${m.content}`;
+  function extractQuizTitle(value) {
+    if (!value || typeof value !== "object") return "اختبار";
+    const keys = ["title", "name", "quizTitle", "quizName"];
+    for (const key of keys) {
+      if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
+    }
+    for (const child of Object.values(value)) {
+      if (child && typeof child === "object") {
+        const title = extractQuizTitle(child);
+        if (title !== "اختبار") return title;
+      }
+    }
+    return "اختبار";
+  }
+
+  function sanitizeToolOutput(content) {
+    if (typeof content !== "string") return String(content ?? "");
+    const trimmed = content.trim();
+    const looksLikeQuizPayload =
+      trimmed.startsWith("بيانات الاختبار") ||
+      trimmed.startsWith("{") && /questions|quiz|اختبار/i.test(trimmed) ||
+      trimmed.length > 800 && /questions|quiz|اختبار|أسئلة/i.test(trimmed);
+    if (!looksLikeQuizPayload) return content;
+
+    const firstBrace = trimmed.indexOf("{");
+    const lastBrace = trimmed.lastIndexOf("}");
+    const jsonCandidate = firstBrace >= 0 && lastBrace > firstBrace
+      ? trimmed.slice(firstBrace, lastBrace + 1)
+      : trimmed.replace(/^بيانات الاختبار\s*:?\s*/i, "");
+    try {
+      return `[تم الحصول على بيانات اختبار: ${extractQuizTitle(JSON.parse(jsonCandidate))}]`;
+    } catch {
+      const titleMatch = content.match(/(?:title|name|اسم الاختبار)\s*["'=:]+\s*([^,"'{}\n]+)/i);
+      return `[تم الحصول على بيانات اختبار: ${titleMatch?.[1]?.trim() || "اختبار"}]`;
+    }
+  }
+
+  function getExportMessages() {
+    return history.map((message) => ({
+      role: message.role,
+      type: message.type || undefined,
+      content: message.type === "tool-result"
+        ? sanitizeToolOutput(message.content)
+        : String(message.content ?? ""),
+    }));
+  }
+
+  function getTranscript() {
+    return getExportMessages()
+      .map((message) => {
+        const label = message.type === "tool-result"
+          ? "🔧 النظام"
+          : message.role === "user" ? "أنت" : "الباشــمبصمج";
+        return `${label}: ${message.content}`;
       })
       .join("\n\n");
+  }
+
+  function downloadExport(blob, extension) {
+    const anchor = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    anchor.href = url;
+    anchor.download = `ai-chat-${new Date().toISOString().slice(0, 10)}.${extension}`;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    })[character]);
+  }
+
+  function loadPdfLibrary() {
+    if (window.jspdf?.jsPDF) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("PDF library failed to load"));
+      document.head.appendChild(script);
+    });
+  }
+
+  /** Exports only the user-visible conversation, with tool payloads sanitized. */
+  async function exportConversation(format = "copy") {
+    if (!history.length) return false;
+    const transcript = getTranscript();
     try {
-      await navigator.clipboard.writeText(transcript);
+      if (format === "txt") {
+        downloadExport(new Blob([transcript], { type: "text/plain;charset=utf-8" }), "txt");
+      } else if (format === "json") {
+        downloadExport(new Blob([JSON.stringify({ version: 1, messages: getExportMessages() }, null, 2)], { type: "application/json" }), "json");
+      } else if (format === "md") {
+        downloadExport(new Blob([transcript], { type: "text/markdown;charset=utf-8" }), "md");
+      } else if (format === "html") {
+        const body = getExportMessages().map((message) => `<article><strong>${escapeHtml(message.type === "tool-result" ? "النظام" : message.role === "user" ? "أنت" : "الباشــمبصمج")}</strong><p>${escapeHtml(message.content).replace(/\n/g, "<br>")}</p></article>`).join("");
+        const html = `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>محادثة الباشــمبصمج</title><style>body{font:16px/1.8 sans-serif;max-width:800px;margin:40px auto;padding:0 20px;color:#1f2937}article{border-bottom:1px solid #ddd;padding:12px 0}strong{color:#2563eb}</style><body>${body}</body></html>`;
+        downloadExport(new Blob([html], { type: "text/html;charset=utf-8" }), "html");
+      } else if (format === "pdf") {
+        await loadPdfLibrary();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const lines = doc.splitTextToSize(transcript, 180);
+        let y = 15;
+        for (const line of lines) {
+          if (y > 285) { doc.addPage(); y = 15; }
+          doc.text(line, 195, y, { align: "right" });
+          y += 7;
+        }
+        doc.save(`ai-chat-${new Date().toISOString().slice(0, 10)}.pdf`);
+      } else {
+        try {
+          await navigator.clipboard.writeText(transcript);
+        } catch (clipboardError) {
+          console.error("[ai-agent-chat] clipboard write failed:", clipboardError);
+          return false;
+        }
+      }
       return true;
     } catch (err) {
-      console.error("[ai-agent-chat] export-chat clipboard write failed:", err);
+      console.error(`[ai-agent-chat] ${format} export failed:`, err);
       return false;
     }
   }
-  panel.exportConversation = exportTranscript;
+  panel.exportConversation = exportConversation;
 
   // Suggestion chips — only meaningful before the conversation starts.
   // renderSuggestions() (re)builds them; called once up front here, and
