@@ -4,6 +4,7 @@
 console.log("result.js loaded successfully");
 
 import { getManifest } from "../../shared/quizManifest.js";
+import { loadFullQuizData } from "../home/quiz-data-loader.js";
 
 // Download modal (shared component)
 import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
@@ -238,38 +239,6 @@ function escapeHTML(input) {
  * @returns {string} Category string, or "" if the path is absent / malformed.
  */
 
-function extractCategoryFromPath(path) {
-  if (!path) return "";
-
-  let rawPath = path;
-
-  // Decode DB paths: /api/quiz-data?path=quizzes%2F...
-  // URLSearchParams matches the exact approach used in quizManifest.js.
-  try {
-    const qIdx = rawPath.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-      const p = params.get("path");
-      if (p) rawPath = decodeURIComponent(p);
-    }
-  } catch (_) {
-    /* ignore malformed query strings */
-  }
-
-  // Match the canonical structure: skip Faculty / Year / Term, then capture
-  // everything from Subject onward (including optional subfolders + filename).
-  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
-  if (match) {
-    const segments = match[1].split("/");
-    // Drop the filename (last segment); join the rest as the category.
-    // A subject-only path yields ["Subject", "file.json"] → ["Subject"] → "Subject".
-    const parts = segments.slice(0, -1);
-    if (parts.length > 0) return parts.join(" / ");
-  }
-
-  return "";
-}
-
 const formatQuestionTypes = (stats) => {
   const qt = stats?.questionTypes;
   if (!qt) return null;
@@ -329,11 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       resultMeta.createdAt ||
       (manifestEntry && manifestEntry.createdAt) ||
       null,
-    path:
-      result.path ||
-      resultMeta.path ||
-      (manifestEntry && manifestEntry.path) ||
-      null,
+    dbId: resolvedQuizDbId,
     author:
       result.author ||
       resultMeta.author ||
@@ -389,45 +354,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     result.questions.length > 0
   ) {
     questions = result.questions;
-  } else if (config.path) {
+  } else if (config.dbId) {
     try {
-      let fetchUrl;
-      if (config.path.startsWith("/") || config.path.startsWith("http")) {
-        fetchUrl = new URL(config.path, window.location.origin).href;
-      } else {
-        fetchUrl = new URL(
-          config.path,
-          new URL("/data/", window.location.origin),
-        ).href;
-      }
-
-      if (
-        config.path.toLowerCase().endsWith(".json") ||
-        config.path.startsWith("/api/") ||
-        config.path.includes("?")
-      ) {
-        const res = await fetch(fetchUrl);
-        if (res.ok) {
-          const data = await res.json();
-          questions = data.questions || [];
-          if (data.meta) {
-            if (data.meta.createdAt && !config.createdAt)
-              config.createdAt = data.meta.createdAt;
-            if (data.meta.description && !config.description)
-              config.description = data.meta.description;
-            if (data.meta.source && !config.source)
-              config.source = data.meta.source;
-            if (data.meta.author && !config.author)
-              config.author = data.meta.author;
-            if (data.meta.author_handle && !config.authorHandle)
-              config.authorHandle = data.meta.author_handle;
-            if (data.meta.author_id && !config.authorId)
-              config.authorId = data.meta.author_id;
-          }
-        }
-      } else {
-        const loaded = await import(/* @vite-ignore */ fetchUrl);
-        questions = loaded.questions || [];
+      const loaded = await loadFullQuizData({ dbId: config.dbId });
+      questions = loaded.questions || [];
+      if (loaded.meta) {
+        if (loaded.meta.createdAt && !config.createdAt)
+          config.createdAt = loaded.meta.createdAt;
+        if (loaded.meta.description && !config.description)
+          config.description = loaded.meta.description;
+        if (loaded.meta.source && !config.source)
+          config.source = loaded.meta.source;
+        if (loaded.meta.author && !config.author)
+          config.author = loaded.meta.author;
+        if (loaded.meta.author_handle && !config.authorHandle)
+          config.authorHandle = loaded.meta.authorHandle;
+        if (loaded.meta.author_id && !config.authorId)
+          config.authorId = loaded.meta.author_id;
       }
     } catch (e) {
       console.error("Failed to load questions", e);
@@ -443,7 +386,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         config.title = found.title || config.title;
         config.source = found.source || config.source;
         config.createdAt = found.createdAt || config.createdAt;
-        config.path = found.path || config.path;
       }
     } catch (e) {
       console.error("Error loading user quiz questions", e);
@@ -503,7 +445,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Populate the info dialog using the shared HTML builder.
   if (els.quizInfoDialog) {
     if (!config.category) {
-      config.category = extractCategoryFromPath(config.path);
+      config.category = config.category || "";
     }
 
     const authorIdentifier = config.authorId || config.authorHandle;
@@ -656,7 +598,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       showCertificate(
         userName,
         config.title,
-        config.category || extractCategoryFromPath(config.path),
+        config.category,
       );
     }, 800);
 
@@ -672,7 +614,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       showCertificate(
         userName,
         config.title,
-        config.category || extractCategoryFromPath(config.path),
+        config.category,
       );
     });
     scoreHeader && scoreHeader.appendChild(certReopenBtn);

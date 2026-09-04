@@ -6,13 +6,10 @@
   "scripts": {
     "migrate:quizzes:dry-run": "node scripts/migrate-local-quizzes-to-db.js --dry-run",
     "migrate:quizzes": "node scripts/migrate-local-quizzes-to-db.js",
-    "sync:quizzes": "node scripts/sync-quizzes.js",
-    "sync:quizzes:clean": "node scripts/sync-quizzes.js --delete-synced",
     "dev": "npm run dev:vercel",
     "dev:vercel": "npx vercel dev --local --listen 8080",
     "dev:static": "npx http-server public -p 8080 -o -c-1",
     "vercel": "vercel dev",
-    "generate-manifest": "node scripts/generate-quiz-manifest.js",
     "map-project": "node scripts/map.js"
   },
   "keywords": [

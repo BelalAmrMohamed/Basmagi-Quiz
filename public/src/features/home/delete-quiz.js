@@ -36,7 +36,7 @@ import { showNotification } from "../../components/notifications/notifications.j
  * @returns {boolean}
  */
 export function canDeleteQuiz(exam) {
-  if (!exam || exam.dbSource !== "db") return false;
+  if (!exam?.dbId) return false;
   if (!isAdminAuthenticated()) return false;
 
   const roleInfo = getAdminRoleInfo();

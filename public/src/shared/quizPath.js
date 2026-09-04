@@ -3,8 +3,6 @@
 // Shared quiz path parsing for manifest generation and API routes.
 // =============================================================================
 
-import { generateQuizId } from "../shared/quizId.js";
-
 export const ROOT_MAP = {
   University: {
     education_type: "University",
@@ -130,129 +128,6 @@ export function validateTrackPath(education_type, fields) {
   } else {
     throw new Error("INVALID_PATH: invalid education_type");
   }
-}
-
-export function normalizeSlashes(p) {
-  return p.replace(/\\/g, "/").replace(/^\/+/, "");
-}
-
-export function stripQuizzesPrefix(p) {
-  const n = normalizeSlashes(p);
-  return n.startsWith("quizzes/") ? n.slice("quizzes/".length) : n;
-}
-
-export function parseCanonicalPath(canonicalPath) {
-  const withoutPrefix = stripQuizzesPrefix(canonicalPath);
-  const lastSlash = withoutPrefix.lastIndexOf("/");
-  if (lastSlash === -1) return null;
-
-  const filename = withoutPrefix.slice(lastSlash + 1);
-  const dirPart = withoutPrefix.slice(0, lastSlash);
-  return parseDbPath(dirPart, filename);
-}
-
-export function parseDbPath(dbPath, filename = "") {
-  const segments = normalizeSlashes(dbPath).split("/").filter(Boolean);
-  if (!segments.length) return null;
-
-  const rootFolder = segments[0];
-  const config = ROOT_MAP[rootFolder];
-  if (!config) return null;
-
-  const rest = segments.slice(1);
-  const { education_type, segments: labels } = config;
-
-  const fields = {};
-  for (let i = 0; i < labels.length; i++) {
-    fields[labels[i]] = rest[i];
-  }
-
-  const course = fields.course;
-  if (!course) return null;
-
-  const subfolders = rest.slice(labels.length);
-
-  return {
-    education_type,
-    rootFolder,
-    college: fields.college,
-    year: fields.year,
-    term: fields.term,
-    course,
-    subfolders,
-    filename: filename || undefined,
-    dbPath: filename ? `${dbPath}/${filename}` : dbPath,
-  };
-}
-
-export function buildCourseKey(parsed) {
-  const parts = [parsed.rootFolder];
-  if (parsed.college) parts.push(parsed.college);
-  if (parsed.year) parts.push(parsed.year);
-  if (parsed.term) parts.push(parsed.term);
-  parts.push(parsed.course);
-  return parts.join("/");
-}
-
-export function buildCourseRelDir(parsed) {
-  return `quizzes/${buildCourseKey(parsed)}`;
-}
-
-export async function buildSubjectManifestEntry(parsed, quizzes = []) {
-  const courseRelDir = buildCourseRelDir(parsed);
-  const entry = {
-    id: await generateQuizId(courseRelDir),
-    name: parsed.course,
-    education_type: parsed.education_type,
-    quizzes,
-  };
-
-  if (parsed.education_type === "University" && parsed.college) {
-    entry.faculty = parsed.college;
-    if (parsed.year) entry.year = parseInt(parsed.year, 10);
-    if (parsed.term) entry.term = parseInt(parsed.term, 10);
-  } else if (["Primary", "Middle", "High"].includes(parsed.education_type)) {
-    if (parsed.year) entry.year = parseInt(parsed.year, 10);
-    if (parsed.term) entry.term = parseInt(parsed.term, 10);
-  }
-
-  return entry;
-}
-
-export function extractFolderSegmentsFromQuizPath(rawPath) {
-  let pathStr = rawPath;
-
-  try {
-    const qIdx = pathStr.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(pathStr.slice(qIdx + 1));
-      const pathParam = params.get("path");
-      if (pathParam) pathStr = decodeURIComponent(pathParam);
-    }
-  } catch {
-    /* ignore */
-  }
-
-  let canonical = normalizeSlashes(pathStr);
-  if (canonical.startsWith("data/quizzes/")) {
-    canonical = canonical.slice("data/quizzes/".length);
-  } else if (canonical.startsWith("data/")) {
-    canonical = canonical.slice("data/".length);
-  } else if (canonical.startsWith("quizzes/")) {
-    canonical = canonical.slice("quizzes/".length);
-  }
-
-  const lastSlash = canonical.lastIndexOf("/");
-  if (lastSlash === -1) return { education_type: null, folderSegments: [] };
-
-  const dirPart = canonical.slice(0, lastSlash);
-  const parsed = parseDbPath(dirPart);
-  if (!parsed) return { education_type: null, folderSegments: [] };
-
-  return {
-    education_type: parsed.education_type,
-    folderSegments: parsed.subfolders,
-  };
 }
 
 export function isValidEducationType(type) {

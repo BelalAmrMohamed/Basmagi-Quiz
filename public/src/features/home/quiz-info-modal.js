@@ -68,10 +68,10 @@ export async function showQuizInfoModal(exam) {
 
   const config = {
     id: exam.id,
+    dbId: exam.dbId,
     title: exam.title || exam.id,
     description: exam.description || null,
     category: exam.category || null,
-    path: exam.path || null,
     createdAt: exam.createdAt || null,
     source: exam.source || null,
     author: exam.author || null,
@@ -84,7 +84,7 @@ export async function showQuizInfoModal(exam) {
   let questionCount = typeof exam.questionCount === "number" ? exam.questionCount : null;
 
   try {
-    if (exam.path) {
+    if (exam.dbId) {
       const { questions, meta, stats } = await loadFullQuizData(exam);
       if (meta) {
         if (!config.description) config.description = meta.description || null;

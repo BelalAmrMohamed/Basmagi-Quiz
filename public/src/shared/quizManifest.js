@@ -4,13 +4,6 @@
 //
 // Sources
 // ───────
-// 1. LOCAL  /data/quiz-manifest.json  — built by generate-quiz-manifest.js,
-//    bundled with the site at deploy time. Fast, always available offline.
-//
-// 2. DB     /api/quiz-manifest        — Vercel function that queries Supabase
-//    and returns newly-uploaded quizzes in the same shape as the local file.
-//    May be unavailable (network error, Supabase down, etc.).
-//
 // Manifest shape (new)
 // ────────────────────
 // { generatedAt, dataRoot, subjects: [ { id, name, faculty, year, term, quizzes: [...] } ] }
@@ -30,14 +23,8 @@
 // Call invalidateManifestCache() after an admin upload.
 // =============================================================================
 
-import { extractFolderSegmentsFromQuizPath } from "./quizPath.js";
 import { generateQuizId } from "./quizId.js";
 import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
-
-const LOCAL_MANIFEST_URL = new URL(
-  "../../data/quiz-manifest.json",
-  import.meta.url,
-).href;
 
 let cached = null;
 
@@ -50,7 +37,9 @@ let cached = null;
  */
 export async function getManifest() {
   if (cached) return cached;
-  cached = await fetchAndMerge();
+  const { subjects } = await fetchDbManifest();
+  const { categoryTree, examList } = buildCompatStructures(subjects);
+  cached = { subjects, categoryTree, examList };
   return cached;
 }
 
@@ -63,38 +52,11 @@ export function invalidateManifestCache() {
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
-async function fetchAndMerge() {
-  const [localResult, dbResult] = await Promise.allSettled([
-    fetchJson(LOCAL_MANIFEST_URL),
-    fetchDbManifest(),
-  ]);
-
-  const local =
-    localResult.status === "fulfilled" ? localResult.value : { subjects: [] };
-
-  const db =
-    dbResult.status === "fulfilled" ? dbResult.value : { subjects: [] };
-
-  if (dbResult.status === "rejected") {
-    console.warn(
-      "[quizManifest] DB manifest unavailable — showing local quizzes only.",
-      dbResult.reason,
-    );
-  }
-
-  const mergedSubjects = mergeSubjects(local.subjects ?? [], db.subjects ?? []);
-
-  // Build categoryTree + examList for backward compatibility with index.js
-  const { categoryTree, examList } = buildCompatStructures(mergedSubjects);
-
-  return { subjects: mergedSubjects, categoryTree, examList };
-}
-
 /**
- * Client-side equivalent of the old /api/quiz-manifest Vercel function —
+ * Queries Supabase directly and shapes rows into the compatibility manifest.
  * queries Supabase directly (public SELECT is allowed by the `quizzes`
- * table's RLS policy) and shapes the rows into the same
- * { subjects: [...] } structure the local manifest uses. Kept in this
+ * table's RLS policy) and shapes the rows into the
+ * { subjects: [...] } structure used by the client. Kept in this
  * module (rather than a shared helper) since it's the only caller.
  * See CHANGELOG for why this moved off a serverless function (Vercel
  * Hobby's 12-function cap).
@@ -106,7 +68,7 @@ async function fetchDbManifest() {
   const [{ data: quizzes, error: quizzesError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await Promise.all([
     supabase
       .from("quizzes")
-      .select("id, course_id, folder_id, path, filename, title, data, password")
+      .select("id, course_id, folder_id, title, data, password")
       .order("created_at", { ascending: true }),
     supabase
       .from("courses")
@@ -180,9 +142,6 @@ async function fetchDbManifest() {
     }
 
     const subjectEntry = subjectsMap.get(course.id);
-    const examRelPath = `quizzes/${row.path}/${row.filename}`;
-    const examFetchPath = `/api/quiz-data?path=${encodeURIComponent(examRelPath)}`;
-
     const quizMeta = row.data?.meta || {};
     const quizStats = row.data?.stats || {};
 
@@ -190,12 +149,10 @@ async function fetchDbManifest() {
       id: quizMeta.id || (await generateQuizId(String(row.id))),
       dbId: row.id,
       title: quizMeta.title || row.title,
-      path: examFetchPath,
       folderSegments,
       questionCount: quizStats.questionCount ?? 0,
       questionTypes: quizStats.questionTypes ?? [],
       education_type: course.education_type,
-      dbSource: "db",
     };
 
     if (quizMeta.description) quizEntry.description = quizMeta.description;
@@ -220,32 +177,6 @@ async function fetchDbManifest() {
  * @param {Subject[]} db
  * @returns {Subject[]}
  */
-function mergeSubjects(local, db) {
-  // Deep-clone local so we never mutate the original
-  const merged = JSON.parse(JSON.stringify(local));
-  const seenIds = new Map(merged.map((s) => [s.id, s]));
-
-  for (const dbSubject of db) {
-    if (seenIds.has(dbSubject.id)) {
-      // Merge quizzes into the existing local subject
-      const localSubject = seenIds.get(dbSubject.id);
-      const seenQuizIds = new Set(localSubject.quizzes.map((q) => q.id));
-      for (const quiz of dbSubject.quizzes ?? []) {
-        if (!seenQuizIds.has(quiz.id)) {
-          seenQuizIds.add(quiz.id);
-          localSubject.quizzes.push(quiz);
-        }
-      }
-    } else {
-      // Brand-new subject from DB
-      merged.push(dbSubject);
-      seenIds.set(dbSubject.id, dbSubject);
-    }
-  }
-
-  return merged;
-}
-
 /**
  * Builds backward-compatible `categoryTree` and `examList` from subjects.
  *
@@ -288,13 +219,6 @@ function buildCompatStructures(subjects) {
       let folderSegments = Array.isArray(quiz.folderSegments)
         ? quiz.folderSegments
         : [];
-      if (!Array.isArray(quiz.folderSegments)) {
-        try {
-          const extracted = extractFolderSegmentsFromQuizPath(quiz.path);
-          folderSegments = extracted.folderSegments || [];
-        } catch (_) {}
-      }
-
       let examCategoryKey = key;
 
       if (folderSegments.length > 0) {
@@ -326,8 +250,8 @@ function buildCompatStructures(subjects) {
 
       const examEntry = {
         id: quiz.id,
+        dbId: quiz.dbId,
         title: quiz.title,
-        path: quiz.path,
         education_type: quiz.education_type || subject.education_type,
         createdAt: quiz.createdAt,
         category: examCategoryKey,
@@ -338,7 +262,6 @@ function buildCompatStructures(subjects) {
         ...(quiz.author_email && { author_email: quiz.author_email }),
         ...(quiz.source && { source: quiz.source }),
         ...(quiz.password && { password: quiz.password }),
-        ...(quiz.dbSource === "db" ? { dbSource: "db" } : {}),
       };
 
       categoryTree[examCategoryKey].exams.push(examEntry);
@@ -351,11 +274,3 @@ function buildCompatStructures(subjects) {
   return { categoryTree, examList };
 }
 
-/**
- * Thin fetch wrapper that throws on non-OK responses.
- */
-async function fetchJson(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status} ${url}`);
-  return res.json();
-}

@@ -28,7 +28,6 @@ import { showNotification } from "../../components/notifications/notifications.j
 import { userProfile } from "../../shared/userProfile.js";
 import { generateQuizId } from "../../shared/quizId.js";
 import { getManifest, invalidateManifestCache } from "../../shared/quizManifest.js";
-import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 import { UPLOAD_ICON_SVG } from "./icons.js";
 import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-quizzes-folders.js";
 
@@ -86,13 +85,13 @@ function buildManifestTree(subjects) {
 function _extractSubfolders(quizzes, entry) {
   const seen = new Set(entry.subfolders);
   for (const quiz of quizzes) {
-    try {
-      const { folderSegments } = extractFolderSegmentsFromQuizPath(quiz.path);
-      if (folderSegments && folderSegments.length > 0) {
-        const sf = folderSegments.join("/");
-        if (!seen.has(sf)) { seen.add(sf); entry.subfolders.push(sf); }
-      }
-    } catch (_) {}
+    const folderSegments = Array.isArray(quiz.folderSegments)
+      ? quiz.folderSegments
+      : [];
+    if (folderSegments.length > 0) {
+      const sf = folderSegments.join("/");
+      if (!seen.has(sf)) { seen.add(sf); entry.subfolders.push(sf); }
+    }
   }
 }
 

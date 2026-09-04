@@ -27,7 +27,7 @@ export async function sha256Hex(text) {
     .join("");
 }
 
-export async function quizPasswordMatches(input, stored, dbSource) {
+export async function quizPasswordMatches(input, stored) {
   if (!stored) return false;
   const storedStr = String(stored).trim();
   const inputStr = String(input).trim();
@@ -61,7 +61,7 @@ export function markDownloadPasswordVerified(quizId) {
  * Resolves `true` if the correct password was entered, `false` if the user
  * cancelled or the password was wrong after the user gave up.
  */
-function promptDownloadPassword(title, correctPassword, dbSource) {
+function promptDownloadPassword(title, correctPassword) {
   return new Promise((resolve) => {
     const modal = document.createElement("div");
     modal.className = "modal-overlay";
@@ -127,7 +127,6 @@ function promptDownloadPassword(title, correctPassword, dbSource) {
       const ok = await quizPasswordMatches(
         input.value,
         correctPassword,
-        dbSource,
       );
       if (ok) {
         finish(true);
@@ -174,11 +173,11 @@ function promptDownloadPassword(title, correctPassword, dbSource) {
  * @param {string|null|undefined} password - the quiz's correct password, if any
  * @param {string} title - quiz title, shown in the prompt
  */
-export async function ensureDownloadAllowed(quizId, password, title, dbSource) {
+export async function ensureDownloadAllowed(quizId, password, title) {
   if (!password) return true;
   if (isDownloadPasswordVerified(quizId)) return true;
 
-  const ok = await promptDownloadPassword(title, password, dbSource);
+  const ok = await promptDownloadPassword(title, password);
   if (ok) markDownloadPasswordVerified(quizId);
   return ok;
 }

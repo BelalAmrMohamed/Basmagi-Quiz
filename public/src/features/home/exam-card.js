@@ -17,10 +17,7 @@ import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
 import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
-import {
-  extractCategoryFromPath,
-  formatDateForInfo,
-} from "../../components/quiz-info-modal/quiz-info-html.js";
+import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
   createExamInfoSubmenu,
   openExamDropdownMenu,
@@ -49,11 +46,6 @@ export function createExamCard(exam) {
   card.setAttribute("role", "article");
   card.setAttribute("title", `${exam.description || exam.title}`);
   card.setAttribute("aria-label", `امتحان: ${exam.title || exam.id}`);
-
-  // ── DB source accent border ───────────────────────────────────────────────
-  if (exam.dbSource === "db") card.classList.add("exam-card--db");
-
-  // ──────────────────────────────────────────────────────────────────────────
 
   const h = document.createElement("h3");
   h.textContent = exam.title || exam.id;
@@ -113,7 +105,6 @@ export function createExamCard(exam) {
       exam.id,
       password,
       exam.title || exam.id,
-      exam.dbSource,
     );
     if (!allowed) return;
 
@@ -125,8 +116,8 @@ export function createExamCard(exam) {
     // lazy-load behavior instead of forcing a fetch before the modal opens.
     const initialConfig = {
       id: exam.id,
+      dbId: exam.dbId,
       title: exam.title || exam.id,
-      path: exam.path,
       source: exam.source || null,
       description: exam.description || null,
       createdAt: exam.createdAt || null,
@@ -389,7 +380,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       { label: "ID", val: exam.id, multiline: true, copyable: true },
       {
         label: "المادة",
-        val: exam.category || extractCategoryFromPath(exam.path) || null,
+        val: exam.category || null,
         multiline: true,
       },
       { label: "الوصف", val: exam.description || null, multiline: true },

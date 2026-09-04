@@ -45,13 +45,6 @@ const SITE_ORIGIN = process.env.SITE_ORIGIN || "https://basmagi-quiz.vercel.app"
 
 const BACKGROUND_IMAGE_URL = `${SITE_ORIGIN}/assets/images/thumbnails/quiz-thumbnail-customizable.png`;
 
-// ── Local quiz manifest (relative-path quizzes) ──────────────────────────────
-// Relative-path quizzes are never written to Supabase — their metadata lives
-// only in this static file. Edge runtime has no `fs`, so fetch it over HTTP
-// the same way the background image and font are fetched. Served from
-// public/data/quiz-manifest.json (see render-quiz.js for the disk-side path).
-const MANIFEST_URL = `${SITE_ORIGIN}/data/quiz-manifest.json`;
-
 // ── Layout geometry ────────────────────────────────────────────────────────
 // All measured against the real 1200×630 background PNG (see header comment).
 // Right-hand content column sits between the bulb card (ends x≈408) and the
@@ -232,7 +225,7 @@ export default async function handler(req) {
   const quizId = searchParams.get("quizId");
 
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
-  const [fontData, quizData, bgImageArrayBuffer, manifestData] = await Promise.all([
+  const [fontData, quizData, bgImageArrayBuffer] = await Promise.all([
     // If the font fetch/parse ever fails again (network hiccup, Google
     // Fonts markup change, etc.), fall back to null rather than letting
     // the whole handler throw — ImageResponse still renders fine without
@@ -249,13 +242,9 @@ export default async function handler(req) {
       console.error("[og] bg image fetch error:", err);
       return null;
     }),
-    quizId ? fetchManifest() : null,
   ]);
 
-  // Supabase only holds DB-uploaded quizzes. A miss there is expected and
-  // normal for relative-path quizzes — fall back to the local manifest
-  // before giving up and using generic defaults.
-  const meta = quizData || (manifestData ? findQuizInManifest(manifestData, quizId) : null);
+  const meta = quizData;
 
   // ── 2. Build display strings ──────────────────────────────────────────────
   const rawTitle = meta ? (meta.title || quizId || "امتحان") : "منصة امتحانات بصمجي";
@@ -613,10 +602,7 @@ async function fetchQuizMeta(quizId) {
   try {
     // PostgREST filter: data->meta->>id = quizId
     const url = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
-    url.searchParams.set(
-      "select",
-      "data,title,path,filename,category,subject,subfolder,education_type",
-    );
+    url.searchParams.set("select", "data,title,subject");
     url.searchParams.set("data->meta->>id", `eq.${quizId}`);
     url.searchParams.set("limit", "1");
 
@@ -639,19 +625,6 @@ async function fetchQuizMeta(quizId) {
     const quizMeta = row.data?.meta || {};
     const quizStats = row.data?.stats || {};
 
-    // Prefer the clean course name from `subject` (matches quiz-manifest.js's
-    // own use of the same column). Fall back to parsing `path` the same way
-    // quiz-manifest.js does via parseDbPath, in case `subject` is ever blank
-    // for a legacy row — mirrors the fallback already used there.
-    let course = row.subject || null;
-    if (!course && row.path) {
-      let parsed = parseDbPath(row.path, row.filename);
-      if (!parsed && row.education_type === "University") {
-        parsed = parseDbPath(`University/${row.path}`, row.filename);
-      }
-      course = parsed?.course || null;
-    }
-
     return {
       title: quizMeta.title || row.title || quizId,
       description: quizMeta.description || null,
@@ -662,37 +635,12 @@ async function fetchQuizMeta(quizId) {
       // language, since that's what currently drives RTL/label selection.
       questionTypes: formatQuestionTypes(quizStats.questionTypes),
       author: quizMeta.author || null,
-      course,
+      course: row.subject || null,
     };
   } catch (err) {
     console.error("[og] fetchQuizMeta error:", err);
     return null;
   }
-}
-
-// ── Manifest cache (survives across warm invocations) ────────────────────────
-let _manifestPromise = null;
-
-/**
- * Fetches quiz-manifest.json — the source of truth for relative-path quizzes,
- * which are never written to Supabase. Cached at module level like loadFont(),
- * since the manifest only changes on deploy.
- *
- * @returns {Promise<{subjects: Array}|null>}
- */
-function fetchManifest() {
-  if (_manifestPromise) return _manifestPromise;
-  _manifestPromise = fetch(MANIFEST_URL)
-    .then((res) => {
-      if (!res.ok) throw new Error(`Manifest fetch failed: ${res.status}`);
-      return res.json();
-    })
-    .catch((err) => {
-      console.error("[og] fetchManifest error:", err);
-      _manifestPromise = null; // allow retry on next request rather than caching a failure
-      return null;
-    });
-  return _manifestPromise;
 }
 
 /**
@@ -703,27 +651,6 @@ function fetchManifest() {
  * @param {string} quizId
  * @returns {{title:string, description:string|null, questionCount:number|null, questionTypes:string|null, author:string|null, course:string|null}|null}
  */
-function findQuizInManifest(manifest, quizId) {
-  for (const subject of manifest.subjects ?? []) {
-    for (const quiz of subject.quizzes ?? []) {
-      if (quiz.id === quizId) {
-        return {
-          title: quiz.title || quizId,
-          description: quiz.description || null,
-          questionCount: quiz.questionCount != null ? quiz.questionCount : null,
-          questionTypes: formatQuestionTypes(quiz.questionTypes),
-          author: quiz.author || null,
-          // subject.name is the clean course name (e.g. "Math"),
-          // distinct from any subfolders nested beneath it — see
-          // buildSubjectManifestEntry() in scripts/lib/quizPath.js.
-          course: subject.name || null,
-        };
-      }
-    }
-  }
-  return null;
-}
-
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -848,40 +775,3 @@ function formatQuestionTypes(qt) {
   return String(qt) || null;
 }
 
-export function parseDbPath(dbPath, filename = "") {
-  const segments = normalizeSlashes(dbPath).split("/").filter(Boolean);
-  if (!segments.length) return null;
-
-  const rootFolder = segments[0];
-  const config = ROOT_MAP[rootFolder];
-  if (!config) return null;
-
-  const rest = segments.slice(1);
-  const { education_type, segments: labels } = config;
-
-  const fields = {};
-  for (let i = 0; i < labels.length; i++) {
-    fields[labels[i]] = rest[i];
-  }
-
-  const course = fields.course;
-  if (!course) return null;
-
-  const subfolders = rest.slice(labels.length);
-
-  return { 
-    education_type,
-    rootFolder,
-    college: fields.college,
-    year: fields.year,
-    term: fields.term,
-    course,
-    subfolders,
-    filename: filename || undefined,
-    dbPath: filename ? `${dbPath}/${filename}` : dbPath,
-  };
-}
-
-export function normalizeSlashes(p) {
-  return p.replace(/\\/g, "/").replace(/^\/+/, "");
-}
