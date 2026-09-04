@@ -1,11 +1,11 @@
 // =============================================================================
 // public/src/components/ai-agent/ai-agent.js
-// Modular "AI Helper" widget — three tabs (Chat / History / Settings), shown
-// inside a modal opened from a floating action button (FAB), rather than
-// inlined into the page's DOM. Framework-free, self-contained, and
-// page-agnostic: pass everything it needs via the `options` object rather
-// than reaching for globals, so the same createAIAgentFab() call works from
-// both the "امتحاناتك" view (user-quizzes-view.js) and result.html.
+// Modular "AI Helper" widget, shown inside a modal opened from a floating
+// action button (FAB), rather than inlined into the page's DOM.
+// Framework-free, self-contained, and page-agnostic: pass everything it
+// needs via the `options` object rather than reaching for globals, so the
+// same createAIAgentFab() call works from both the "امتحاناتك" view
+// (user-quizzes-view.js) and result.html.
 //
 // Usage:
 //   import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
@@ -21,28 +21,45 @@
 // — every page in this app does, since download-quiz-modal relies on them
 // too.
 //
-// DESKTOP LAYOUT: on wide viewports (see the ai-agent-desktop-layout class
-// toggled below via a matchMedia listener, and the >=901px rules in
-// ai-agent.css) the modal grows and gains a left-hand sidebar — New Chat,
-// Copy Conversation, a short list of recent conversations, and a "Show all
-// history" button that jumps to the full History tab. Mobile keeps the
-// original tabbed layout unchanged; the sidebar is simply hidden there and
-// the same three tab buttons remain the only navigation.
+// PHASE 6 (this version): the old three-tab (Chat/History/Settings)
+// switcher is gone. The chat panel is now the ONLY panel inside
+// .ai-agent-body — there is nothing to switch between anymore. The
+// sidebar (previously a desktop-only extra alongside the tabs) is now the
+// single navigation surface everywhere:
+//   - Desktop (>=901px, DESKTOP_BREAKPOINT_QUERY below): a permanent
+//     left-hand column (RTL: sidebar visually on the left, chat on the
+//     right) showing New Chat / settings (gear) / the full, scrollable
+//     conversation history (createHistoryPanel, reused directly — see its
+//     own header comment) — not a short 5-item "recents" list anymore.
+//   - Mobile (<901px): the sidebar is off-canvas, opened via a hamburger
+//     button in the modal header (see openAIAgentModal below) as a bottom
+//     sheet — NOT a left/right slide-in drawer. This deliberately mirrors
+//     the app's own persistent side-menu (side-menu.js/side-menu.css),
+//     which is itself a translateY bottom sheet with a backdrop and a
+//     drag handle on mobile, not a horizontal drawer — see
+//     .ai-agent-sidebar--mobile-open in ai-agent.css.
+// Settings (previously its own tab) now opens as a second, stacked modal
+// from a gear button in the sidebar (see openSettingsModal below) —
+// createSettingsPanel()'s own internals are unchanged, just mounted
+// inside a lightweight modal wrapper instead of a tab panel.
 // =============================================================================
 
 import { createChatPanel } from "./ai-agent-chat.js";
 import { createSettingsPanel } from "./ai-agent-settings.js";
 import { createHistoryPanel } from "./ai-agent-history.js";
-import { listConversations } from "./ai-agent-history-idb.js";
 
-const CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
-const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
-const HISTORY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>`;
 const CLOSE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 const SPARKLE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>`;
 const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>`;
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
 const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
+const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+// PHASE 6: hamburger — mobile-only, opens the sidebar as a bottom sheet
+// (see .ai-agent-mobile-hamburger-btn / .ai-agent-sidebar--mobile-open in
+// ai-agent.css). Three plain bars, matching the weight/size of the other
+// small header icon buttons rather than borrowing a lucide "menu" glyph
+// with a different stroke style.
+const HAMBURGER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>`;
 // The following three mirror side-menu.js's own collapsed-favicon/
 // collapse-button icons exactly (same paths, same lucide icons:
 // panel-right-open / panel-left / panel-left-open) — see side-menu.css's
@@ -59,10 +76,10 @@ const SIDEBAR_COLLAPSE_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg"
 const DESKTOP_BREAKPOINT_QUERY = "(min-width: 901px)";
 
 /**
- * Builds the tabbed widget content (Chat + History + Settings) — the part
- * that lives inside the modal card. Kept separate from the FAB/modal
- * chrome so it can still be embedded directly if a future page wants that
- * instead.
+ * Builds the widget content (just the chat panel + sidebar now — see this
+ * file's own top-of-file PHASE 6 comment) — the part that lives inside the
+ * modal card. Kept separate from the FAB/modal chrome so it can still be
+ * embedded directly if a future page wants that instead.
  * @param {object} [options]
  * @returns {HTMLElement}
  */
@@ -72,45 +89,11 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
 
   const pageKey = options.pageKey || "default";
 
-  // ── Tabs (mobile nav; also used as the section switcher on desktop) ──
-  const tabs = document.createElement("div");
-  tabs.className = "ai-agent-tabs";
-
-  const chatTabBtn = document.createElement("button");
-  chatTabBtn.type = "button";
-  chatTabBtn.className = "ai-agent-tab-btn active";
-  chatTabBtn.innerHTML = `${CHAT_ICON_SVG}<span>المحادثة</span>`;
-
-  const historyTabBtn = document.createElement("button");
-  historyTabBtn.type = "button";
-  historyTabBtn.className = "ai-agent-tab-btn";
-  historyTabBtn.innerHTML = `${HISTORY_ICON_SVG}<span>السجل</span>`;
-
-  const settingsTabBtn = document.createElement("button");
-  settingsTabBtn.type = "button";
-  settingsTabBtn.className = "ai-agent-tab-btn";
-  settingsTabBtn.innerHTML = `${SETTINGS_ICON_SVG}<span>الإعدادات</span>`;
-
-  tabs.appendChild(chatTabBtn);
-  tabs.appendChild(historyTabBtn);
-  tabs.appendChild(settingsTabBtn);
-  widget.appendChild(tabs);
-
-  // ── Row wrapper: sidebar (desktop only) + .ai-agent-body ──
-  // A separate flex row from `tabs` above so the desktop sidebar can sit
-  // beside the panels without the tab strip also being pulled into that
-  // row. BUG FIX: previously `sidebar` was inserted as a sibling of
-  // `body` directly under `.ai-agent-widget` (itself always
-  // flex-direction:column), and the row-reverse rule meant to lay them
-  // out side by side was mistakenly applied to `.ai-agent-body` — which
-  // only wraps the three PANELS, not the sidebar, so it had no sidebar to
-  // lay out next to and did nothing. Sidebar and body ended up stacking
-  // vertically like any other column children, with the panels' own
-  // fixed max-height leaving a large gap below the sidebar in a much
-  // taller desktop modal. `row` (this new wrapper) is the actual node
-  // that becomes a flex row on desktop (see .ai-agent-desktop-layout
-  // .ai-agent-row in ai-agent.css) — sidebar and body are its only two
-  // children, so reversing IT lays them out side by side correctly.
+  // ── Row wrapper: sidebar + .ai-agent-body ──
+  // A flex row on desktop (see .ai-agent-desktop-layout .ai-agent-row in
+  // ai-agent.css) so the sidebar and the chat panel sit side by side;
+  // stacked on mobile, where the sidebar is off-canvas instead (see
+  // .ai-agent-sidebar--mobile-open).
   const row = document.createElement("div");
   row.className = "ai-agent-row";
   widget.appendChild(row);
@@ -124,10 +107,10 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // ai-agent-chat.js) can swap in a genuinely new chat panel instance —
   // with its own fresh conversationId/history — without this whole widget
   // needing to be torn down and rebuilt. Everything that needs "the
-  // current chat panel" (tab-switching, History tab's onSelect, the
-  // sidebar's New Chat/Copy Conversation buttons) reads
-  // chatPanelSlot.current rather than closing over one fixed panel
-  // reference, since that reference itself changes on a branch.
+  // current chat panel" (the sidebar's history list/New Chat/Copy
+  // Conversation buttons) reads chatPanelSlot.current rather than closing
+  // over one fixed panel reference, since that reference itself changes
+  // on a branch.
   const chatPanelSlot = {
     current:
       existingChatPanel ||
@@ -142,21 +125,29 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // See getOrCreateChatPanel's own onBranchConversation-forwarding
   // comment below: a REUSED existingChatPanel was built on some earlier
   // modal open, whose onHistoryChanged (if any) closes over that open's
-  // now-stale historyPanel/refreshSidebarRecents. Point the same
-  // per-pageKey ref this widget forwards onBranchConversation through at
-  // THIS open's refreshHistoryHighlights too, so a save from a reused
-  // panel still reaches the currently-open modal's history/sidebar.
+  // now-stale historyPanel. Point the same per-pageKey ref this widget
+  // forwards onBranchConversation through at THIS open's
+  // refreshHistoryHighlights too, so a save from a reused panel still
+  // reaches the currently-open modal's history/sidebar.
   if (branchHandlerRef) branchHandlerRef.onHistoryChanged = refreshHistoryHighlights;
 
+  // PHASE 6: the full history list — previously the separate "History"
+  // tab's own panel, shown only when that tab was active. Now reused
+  // directly as the sidebar's always-visible list (see createHistoryPanel's
+  // own updated header comment) — there's no more capped 5-item "recents"
+  // rendering duplicated alongside it; this IS the recents list, just
+  // uncapped and scrollable.
   const historyPanel = createHistoryPanel({
     pageKey,
-    // Selecting a past conversation: load it into the (single, reused)
-    // chat panel instance and switch back to the Chat tab — mirrors how
-    // e.g. ChatGPT's history sidebar reopens a thread into the same chat
-    // view rather than spawning a separate one.
+    // Selecting a past conversation loads it straight into the (single,
+    // reused) chat panel instance — mirrors how e.g. ChatGPT's history
+    // sidebar reopens a thread into the same chat view rather than
+    // spawning a separate one. On mobile, also closes the off-canvas
+    // sidebar sheet so the user lands back on the chat immediately
+    // instead of having to dismiss the sheet themselves.
     onSelect: (conversation) => {
       chatPanelSlot.current.loadConversation(conversation);
-      activateTab(chatTabBtn, chatPanelSlot.current);
+      closeMobileSidebarSheet();
     },
     // Always reads chatPanelSlot.current (not a fixed panel reference)
     // so this stays correct across handleBranch swapping in a new panel
@@ -166,62 +157,20 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
         ? chatPanelSlot.current.getConversationId()
         : null,
   });
-
-  const settingsPanel = createSettingsPanel({
-    ...options,
-    // Lets the Chat tab's placeholder/input-disabled state react
-    // immediately when the user saves or clears their own API key (or
-    // changes their model — see ai-agent-settings.js's modelSelect
-    // listener, which also fires this) here, rather than only updating on
-    // the next full modal open (see the panel-reuse cache in
-    // openAIAgentModal below, which is what makes "the same chat panel
-    // instance" meaningful across tab switches).
-    onKeyChanged: () => {
-      if (typeof chatPanelSlot.current.refreshAvailability === "function") {
-        chatPanelSlot.current.refreshAvailability();
-      }
-    },
-  });
+  historyPanel.classList.add("ai-agent-sidebar-history-panel");
 
   body.appendChild(chatPanelSlot.current);
-  body.appendChild(historyPanel);
-  body.appendChild(settingsPanel);
 
-  // Re-renders both places a saved conversation can show up (the full
-  // History tab list and the desktop sidebar's short recents list) so
-  // their "currently active" highlight (see ai-agent-history.js's
-  // getActiveConversationId / refreshSidebarRecents below) follows
-  // whatever the Chat tab has open right now. Passed as chat panels'
-  // onHistoryChanged — fired after every save, new-chat, and
-  // loadConversation (see ai-agent-chat.js) — rather than only on tab
-  // clicks, so the highlight in an already-open History tab (desktop
-  // layout keeps the sidebar visible alongside it) doesn't go stale
-  // mid-conversation.
+  // Re-renders the sidebar's history list (the one place a saved
+  // conversation now shows up — see PHASE 6 comment above) so its
+  // "currently active" highlight (see ai-agent-history.js's
+  // getActiveConversationId) follows whatever the chat panel has open
+  // right now. Passed as chat panels' onHistoryChanged — fired after
+  // every save, new-chat, and loadConversation (see ai-agent-chat.js).
   function refreshHistoryHighlights() {
     historyPanel.refresh();
-    refreshSidebarRecents();
     refreshCopyButtonState();
   }
-
-  function activateTab(tabBtn, panel) {
-    [chatTabBtn, historyTabBtn, settingsTabBtn].forEach((b) => b.classList.remove("active"));
-    [chatPanelSlot.current, historyPanel, settingsPanel].forEach((p) => {
-      // Guard against a stale reference to a panel that's already been
-      // replaceChild'd out by handleBranch below — classList.remove on a
-      // detached node is harmless, but the .active class matters only for
-      // nodes actually still in `body`.
-      if (p) p.classList.remove("active");
-    });
-    tabBtn.classList.add("active");
-    panel.classList.add("active");
-  }
-
-  chatTabBtn.addEventListener("click", () => activateTab(chatTabBtn, chatPanelSlot.current));
-  historyTabBtn.addEventListener("click", () => {
-    activateTab(historyTabBtn, historyPanel);
-    refreshHistoryHighlights();
-  });
-  settingsTabBtn.addEventListener("click", () => activateTab(settingsTabBtn, settingsPanel));
 
   /**
    * Handles Submit from the Edit-user-prompt flow (see
@@ -229,11 +178,11 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
    * brand new chat panel instance seeded with the branch's truncated
    * history, swaps it into both this widget's DOM (replacing the old chat
    * panel node) and the module-level per-pageKey cache (so it's what
-   * reopening the AI Helper later reuses), and switches to the Chat tab
-   * to show it — a NEW panel rather than the existing one, since the
-   * whole point of branching is a separate conversation that leaves the
-   * one being edited from untouched (see ai-agent-chat.js's own
-   * onBranchConversation doc for the full rationale).
+   * reopening the AI Helper later reuses) — a NEW panel rather than the
+   * existing one, since the whole point of branching is a separate
+   * conversation that leaves the one being edited from untouched (see
+   * ai-agent-chat.js's own onBranchConversation doc for the full
+   * rationale).
    * @param {{messages: Array<object>, createdAt: number}} branch
    */
   function handleBranch(branch) {
@@ -246,17 +195,11 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       // setChatPanelForPageKey below and can be reused as `existingChatPanel`
       // on a LATER modal reopen — at which point `body` here has already
       // been removed (closeModal()'s modal.remove()) and a brand new one
-      // exists in the new buildWidgetContent() call. Editing a message a
-      // second time then ran the STALE handleBranch against the old,
-      // detached `body`, throwing "the node to be replaced is not a child
-      // of this node" from replaceChild, while the new modal's own sidebar
-      // — never told about the branch — kept its original modelBarEl in
-      // place, leaving two `.ai-agent-chat-model-select` bars on screen.
-      // Routing through the same per-pageKey forwarding proxy every other
-      // cached panel uses (see getOrCreateChatPanel) fixes both: the proxy
-      // always calls whichever handleBranch the CURRENTLY open modal most
-      // recently registered (see the branchHandlerRef.current assignment
-      // right after this function), never a stale one.
+      // exists in the new buildWidgetContent() call. Routing through the
+      // same per-pageKey forwarding proxy every other cached panel uses
+      // (see getOrCreateChatPanel) fixes this: the proxy always calls
+      // whichever handleBranch the CURRENTLY open modal most recently
+      // registered, never a stale one.
       onBranchConversation: branchHandlerRef
         ? (b) => branchHandlerRef.current?.(b)
         : handleBranch,
@@ -267,9 +210,9 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     chatPanelSlot.current.classList.add("active");
     setChatPanelForPageKey(pageKey, newPanel);
     newPanel.loadBranch(branch);
-    activateTab(chatTabBtn, newPanel);
     relocateModelBar();
     refreshHistoryHighlights();
+    closeMobileSidebarSheet();
   }
 
   // See buildWidgetContent's own onBranchConversation doc above: if this
@@ -282,12 +225,16 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // handleBranch itself) already gets the real function directly.
   if (branchHandlerRef) branchHandlerRef.current = handleBranch;
 
-  // ── Desktop sidebar ──
-  // Hidden entirely on mobile via CSS (see .ai-agent-sidebar's display:none
-  // below >=901px in ai-agent.css) — built unconditionally here rather
-  // than gated on a JS viewport check so a resize across the breakpoint
-  // (e.g. rotating a tablet, or a desktop window being resized) doesn't
-  // need this whole widget rebuilt, just a CSS reflow.
+  // ── Sidebar ──
+  // PHASE 6: no longer desktop-only chrome hidden behind a media query at
+  // the JS level — built unconditionally exactly as before (a live-resize
+  // across the breakpoint stays a pure CSS reflow, see
+  // .ai-agent-desktop-layout in ai-agent.css), but now ALSO reachable on
+  // mobile as an off-canvas bottom sheet (see .ai-agent-sidebar--mobile-open
+  // and openMobileSidebarSheet/closeMobileSidebarSheet below) rather than
+  // being permanently hidden there. It is now the ONE navigation surface
+  // on every breakpoint — there is no more tab strip anywhere to fall
+  // back on.
   const sidebar = document.createElement("div");
   sidebar.className = "ai-agent-sidebar";
 
@@ -302,7 +249,10 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // and (3) an expanded-only collapse button inside that header row.
   // Uses its own localStorage key so it never collides with, or gets
   // overridden by, the main side-menu's persisted state — the two panels
-  // are independent of one another.
+  // are independent of one another. Collapse only ever applies on
+  // desktop — see .ai-agent-sidebar--mobile-open's own rules in the CSS,
+  // which force the sidebar fully expanded whenever it's shown as the
+  // mobile bottom sheet regardless of this persisted state.
   const AI_AGENT_SIDEBAR_STORAGE_KEY = "ai_agent_sidebar_expanded";
   let sidebarCollapsed;
   try {
@@ -342,7 +292,12 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // Collapse button: two icon siblings (default "panel-left" / hover
   // "panel-left-open" — same lucide icons and same crossfade mechanism
   // side-menu.css uses for #sidebarCollapseBtn) rather than one static
-  // icon, matching the requested hover behavior exactly.
+  // icon, matching the requested hover behavior exactly. Desktop-only —
+  // hidden via CSS whenever the sidebar is shown as the mobile bottom
+  // sheet (see .ai-agent-sidebar--mobile-open .ai-agent-sidebar-collapse-btn),
+  // since collapsing to an icon rail makes no sense in that layout; the
+  // mobile close button (added in openAIAgentModal below, next to the
+  // hamburger) is the mobile equivalent instead.
   const sidebarCollapseBtn = document.createElement("button");
   sidebarCollapseBtn.type = "button";
   sidebarCollapseBtn.className = "ai-agent-sidebar-collapse-btn";
@@ -369,9 +324,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   });
   // The favicon IS the dedicated expand trigger while collapsed (CSS
   // hides it entirely once expanded, same as .sidebar-favicon) — no
-  // extra whole-rail click listener needed on top of it (see the
-  // "double resize" fix note on applySidebarCollapsedState's callers:
-  // that extra listener was the second, redundant toggle path).
+  // extra whole-rail click listener needed on top of it.
   sidebarFaviconBtn.addEventListener("click", () => {
     applySidebarCollapsedState(false);
   });
@@ -385,8 +338,8 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarNewChatBtn.innerHTML = `${NEW_CHAT_ICON_SVG}<span>محادثة جديدة</span>`;
   sidebarNewChatBtn.addEventListener("click", () => {
     chatPanelSlot.current.startNewConversation();
-    activateTab(chatTabBtn, chatPanelSlot.current);
     refreshCopyButtonState();
+    closeMobileSidebarSheet();
   });
 
   const sidebarCopyBtn = document.createElement("button");
@@ -434,13 +387,35 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebar.appendChild(sidebarNewChatBtn);
   sidebar.appendChild(sidebarCopyBtn);
 
+  // PHASE 6: settings (gear) button — settings is no longer a tab; this
+  // opens it as its own small stacked modal (see openSettingsModal below)
+  // on top of the AI Agent modal, reusing createSettingsPanel()'s
+  // internals unchanged.
+  const sidebarSettingsBtn = document.createElement("button");
+  sidebarSettingsBtn.type = "button";
+  sidebarSettingsBtn.className = "ai-agent-sidebar-btn";
+  sidebarSettingsBtn.innerHTML = `${SETTINGS_ICON_SVG}<span>الإعدادات</span>`;
+  sidebarSettingsBtn.addEventListener("click", () => {
+    openSettingsModal(options, () => {
+      // Settings can change the saved API key/model — refresh the chat
+      // panel's own availability gate/model options the same way the old
+      // Settings tab's onKeyChanged used to (see createSettingsPanel call
+      // below), so closing the settings modal reflects the change
+      // immediately rather than needing a fresh page load.
+      if (typeof chatPanelSlot.current.refreshAvailability === "function") {
+        chatPanelSlot.current.refreshAvailability();
+      }
+    });
+  });
+  sidebar.appendChild(sidebarSettingsBtn);
+
   // ── Model selector slot ──
   // Holds whichever chat panel's own `.modelBarEl` (see createChatPanel
   // in ai-agent-chat.js) is currently active, moved here from its default
   // spot above the chat panel's input row — see the "Sidebar Integration"
   // requirement: the bar used to render full-panel-width above the input
   // row, which read as an oversized dropdown in the wrong place. A slot
-  // (rather than reparenting once) because branching (handleBranch below)
+  // (rather than reparenting once) because branching (handleBranch above)
   // swaps in a brand NEW panel with its OWN new modelBarEl each time —
   // relocateModelBar() re-does the move whenever the active panel changes.
   const modelBarSlot = document.createElement("div");
@@ -455,69 +430,44 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   }
   relocateModelBar();
 
-  const sidebarRecentsLabel = document.createElement("div");
-  sidebarRecentsLabel.className = "ai-agent-sidebar-label";
-  sidebarRecentsLabel.textContent = "محادثات سابقة";
-  sidebar.appendChild(sidebarRecentsLabel);
-
-  const sidebarRecentsList = document.createElement("div");
-  sidebarRecentsList.className = "ai-agent-sidebar-recents";
-  sidebar.appendChild(sidebarRecentsList);
-
-  // The sidebar previously duplicated "show full history" as its own
-  // button (.ai-agent-sidebar-show-all) alongside the tab strip's own
-  // .ai-agent-tab-btn (السابقة) — same destination, so it was pure
-  // redundancy on desktop. Removed; the tab button is the one way in.
-  //
-  // A short (5-item) recent-conversations list, independent of the full
-  // History tab's own list — same underlying IDB store (ai-agent-history-idb.js),
-  // just capped and re-rendered on a lighter cadence (only when something
-  // in this session could plausibly have changed it: after a send, a
-  // branch, or opening the History tab) rather than on every render.
-  async function refreshSidebarRecents() {
-    let conversations = [];
-    try {
-      conversations = await listConversations(pageKey);
-    } catch (err) {
-      console.error("[ai-agent] failed to load recent conversations for sidebar:", err);
-      sidebarRecentsList.innerHTML = "";
-      return;
-    }
-    const activeId =
-      typeof chatPanelSlot.current.getConversationId === "function"
-        ? chatPanelSlot.current.getConversationId()
-        : null;
-
-    sidebarRecentsList.innerHTML = "";
-    conversations.slice(0, 5).forEach((conv) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "ai-agent-sidebar-recent-item";
-      // Mirrors the History tab's own active highlight (see
-      // ai-agent-history.js) — same underlying data, so both lists
-      // should agree on which conversation is currently open.
-      if (activeId && conv.id === activeId) {
-        item.classList.add("ai-agent-sidebar-recent-item--active");
-        item.setAttribute("aria-current", "true");
-      }
-      item.textContent = conv.title;
-      item.title = conv.title;
-      item.addEventListener("click", () => {
-        chatPanelSlot.current.loadConversation(conv);
-        activateTab(chatTabBtn, chatPanelSlot.current);
-      });
-      sidebarRecentsList.appendChild(item);
-    });
-    if (!conversations.length) {
-      const empty = document.createElement("div");
-      empty.className = "ai-agent-sidebar-recents-empty";
-      empty.textContent = "لا توجد محادثات بعد";
-      sidebarRecentsList.appendChild(empty);
-    }
-  }
-  refreshSidebarRecents();
+  // PHASE 6: the full, scrollable history list (see historyPanel above),
+  // not a capped 5-item recents list — this is what "sidebar becomes the
+  // permanent history surface" means structurally: createHistoryPanel's
+  // own panel node IS the sidebar's history section now, refreshed
+  // through the exact same refresh()/refreshHistoryHighlights() path the
+  // old History tab used.
+  sidebar.appendChild(historyPanel);
+  historyPanel.refresh();
 
   row.insertBefore(sidebar, body);
+
+  // ── Mobile off-canvas sheet open/close ──
+  // Exposed on `widget` so openAIAgentModal's hamburger button (built once
+  // per modal open, outside this function) can drive it without reaching
+  // into this closure's internals directly.
+  function openMobileSidebarSheet() {
+    sidebar.classList.add("ai-agent-sidebar--mobile-open");
+    if (mobileBackdrop) mobileBackdrop.classList.add("ai-agent-mobile-backdrop--visible");
+  }
+  function closeMobileSidebarSheet() {
+    sidebar.classList.remove("ai-agent-sidebar--mobile-open");
+    if (mobileBackdrop) mobileBackdrop.classList.remove("ai-agent-mobile-backdrop--visible");
+  }
+  widget.openMobileSidebarSheet = openMobileSidebarSheet;
+  widget.closeMobileSidebarSheet = closeMobileSidebarSheet;
+
+  // Backdrop — dim overlay behind the open mobile sheet, closing on
+  // click, same standard drawer/sheet pattern the main site's side-menu
+  // already implements (see side-menu.js's own backdrop listener).
+  // Appended to `widget` (not <body>) so it's scoped to, and torn down
+  // with, this specific widget instance rather than needing separate
+  // cleanup wiring — .ai-agent-modal-card's own stacking context keeps it
+  // correctly layered above the chat panel and below the sidebar sheet
+  // (see the CSS z-index rules).
+  const mobileBackdrop = document.createElement("div");
+  mobileBackdrop.className = "ai-agent-mobile-backdrop";
+  mobileBackdrop.addEventListener("click", closeMobileSidebarSheet);
+  widget.appendChild(mobileBackdrop);
 
   return widget;
 }

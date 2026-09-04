@@ -1201,7 +1201,43 @@
   margin-top: 2px;
 }
 
-.ai-agent-history-item-delete {
+/* PHASE 5: pinned conversations sort first (see listConversations in
+   ai-agent-history-idb.js) — a small filled-pin badge ahead of the title
+   is the visual cue for that ordering, distinct from the --active
+   highlight (a pinned item and the currently-open item are independent
+   states and can coexist). */
+.ai-agent-history-item--pinned .ai-agent-history-item-title::before {
+  content: "📌";
+  margin-inline-end: 4px;
+  font-size: 0.78rem;
+}
+
+/* PHASE 5: inline rename — replaces .ai-agent-history-item-title in place
+   (see enterRenameMode in ai-agent-history.js), so it inherits the same
+   flex slot/width without a separate layout pass. */
+.ai-agent-history-item-rename-input {
+  width: 100%;
+  border: 1.5px solid var(--color-primary);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-family: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  unicode-bidi: plaintext;
+}
+
+.ai-agent-history-item-rename-input:focus {
+  outline: none;
+}
+
+/* PHASE 5: renamed from -delete to -more — this button now opens the
+   حذف/إعادة تسمية/تثبيت menu (openItemMenu in ai-agent-history.js) rather
+   than deleting directly. Same shape/hover treatment as the old delete
+   button, just without the danger-red hover tint (deletion is now one
+   menu row among three, not this button's own single action). */
+.ai-agent-history-item-more {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -1216,9 +1252,9 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.ai-agent-history-item-delete:hover {
-  background: var(--color-danger-light, rgba(220, 38, 38, 0.12));
-  color: var(--color-danger, #dc2626);
+.ai-agent-history-item-more:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 /* ── Settings tab ──
@@ -1483,7 +1519,16 @@ body.sidebar-expanded .ai-agent-fab {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  max-height: min(640px, 88vh);
+  /* PHASE 7 (stop resizing the modal window): fixed `height`, not
+     `max-height`. `max-height` is a ceiling — the modal still shrinks to
+     fit its content below that ceiling, which is exactly what produced
+     the "flashes twice" symptom (opening empty, then growing/settling
+     once the empty-state message or first messages render). A fixed
+     `height` makes this the ONE size for the mobile breakpoint,
+     regardless of content; internal panels scroll instead (see
+     .ai-agent-modal-card .ai-agent-panel below, already overflow-y:auto
+     via min-height:0/max-height:none). */
+  height: min(640px, 88vh);
   box-sizing: border-box;
 }
 
@@ -1520,7 +1565,8 @@ body.sidebar-expanded .ai-agent-fab {
 
 @media (max-width: 640px) {
   .ai-agent-modal-card {
-    max-height: min(560px, 80vh);
+    /* Fixed height, same rationale as the base rule above. */
+    height: min(560px, 80vh);
   }
 }
 
@@ -1990,9 +2036,11 @@ body.sidebar-expanded .ai-agent-fab {
    reflected in real time either way. */
 @media (min-width: 901px) {
   .ai-agent-modal-card.ai-agent-desktop-layout {
+    /* PHASE 7: fixed `width`/`height`, not content-driven — same
+       rationale as the mobile fixed-height rule above, applied to the
+       desktop breakpoint's own target dimensions. */
     width: min(92vw, 860px);
-    max-width: 860px;
-    max-height: min(760px, 90vh);
+    height: min(760px, 90vh);
   }
 
   .ai-agent-desktop-layout .ai-agent-row {
