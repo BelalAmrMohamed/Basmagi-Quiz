@@ -1627,7 +1627,9 @@ export function createChatPanel(options = {}) {
   function appendToolResultMessage(text) {
     const el = document.createElement("div");
     el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
-    el.textContent = text;
+    const isRawQuizPayload = typeof text === "string" &&
+      (text.startsWith("بيانات الاختبار") || text.length > 800 || text.trim().startsWith("{"));
+    el.textContent = isRawQuizPayload ? "تم استرجاع بيانات الاختبار بنجاح." : text;
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
     }
@@ -1650,6 +1652,7 @@ export function createChatPanel(options = {}) {
     create_course: "إنشاء مادة",
     move_item: "نقل عنصر",
     reset_quiz_page: "إعادة تعيين الصفحة",
+    fetch_attached_quiz: "استرجاع بيانات الاختبار",
   };
 
   function describeToolCall(toolCall) {

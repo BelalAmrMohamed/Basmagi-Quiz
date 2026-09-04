@@ -33,6 +33,7 @@ import {
   readUserQuizzes,
   buildUserRootAttachment,
 } from "./ai-agent-item-lookup.js";
+import { loadFullQuizData } from "../../features/home/quiz-data-loader.js";
 
 /**
  * Resolves a user-created quiz/folder/course id (from `user_quizzes`) into
@@ -60,24 +61,27 @@ export function resolveUserItemAttachment(id) {
  * @param {{key?: string, name: string}} course
  * @returns {{kind: "course", id: string, title: string, source: "platform"}}
  */
-export function buildPlatformCourseAttachment(course) {
-  const buildTree = (node) => ({
-    kind: "folder",
-    id: node?.key || node?.name || "course",
-    title: node?.name || "بدون عنوان",
-    children: [
-      ...(node?.subcategories || []).map((child) =>
-        typeof child === "object"
-          ? buildTree(child)
-          : { kind: "folder", id: child, title: child, children: [] }),
-      ...(node?.exams || []).map((exam) => ({
-        kind: "quiz",
-        id: exam.id,
-        title: exam.title || exam.id,
-        questionCount: exam.questionCount || 0,
-      })),
-    ],
-  });
+export function buildPlatformCourseAttachment(course, categoryTree = null) {
+  const buildTree = (node) => {
+    const resolvedNode = typeof node === "string" && categoryTree
+      ? categoryTree[node]
+      : node;
+    return {
+      kind: "folder",
+      id: resolvedNode?.key || resolvedNode?.name || "course",
+      title: resolvedNode?.name || "بدون عنوان",
+      children: [
+        ...(resolvedNode?.subcategories || []).map((child) => buildTree(child)),
+        ...(resolvedNode?.exams || []).map((exam) => ({
+          kind: "quiz",
+          id: exam.id,
+          dbId: exam.dbId,
+          title: exam.title || exam.id,
+          questionCount: exam.questionCount || 0,
+        })),
+      ],
+    };
+  };
   const tree = buildTree(course);
   const countQuizzes = (nodes) => nodes.reduce((n, item) => n + (item.kind === "quiz" ? 1 : countQuizzes(item.children || [])), 0);
   const countFolders = (nodes) => nodes.reduce((n, item) => n + (item.kind === "quiz" ? 0 : 1 + countFolders(item.children || [])), 0);
@@ -99,6 +103,7 @@ export function buildPlatformQuizAttachment(exam, payload) {
   return {
     kind: "quiz",
     id: exam.id,
+    dbId: exam.dbId,
     title: exam.title || exam.id,
     source: "platform",
     payload,
@@ -139,15 +144,43 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     enableFileUpload: true,
     enableTools: true,
     toolNames: ["fetch_attached_quiz"],
-    onToolCall: (toolCall) => {
+    onToolCall: async (toolCall) => {
       if (toolCall?.name !== "fetch_attached_quiz") {
         throw new Error("Unknown attachment tool");
       }
-      const quiz = resolveUserItemById(toolCall.input?.quizId, readUserQuizzes());
-      if (!quiz || quiz.kind !== "quiz") {
+      const requestedId = String(toolCall.input?.quizId || "");
+      const findAttachedQuiz = (node) => {
+        if (!node) return null;
+        if (node.kind === "quiz" && [node.id, node.dbId].some((id) => String(id || "") === requestedId)) {
+          return node;
+        }
+        return (node.children || []).reduce(
+          (found, child) => found || findAttachedQuiz(child),
+          null,
+        );
+      };
+      const attachedQuiz = (attachment.payload?.tree || []).reduce(
+        (found, node) => found || findAttachedQuiz(node),
+        null,
+      );
+      const directAttachedQuiz = attachment.kind === "quiz" &&
+        [attachment.id, attachment.dbId].some((id) => String(id || "") === requestedId)
+        ? attachment
+        : null;
+      const quiz = resolveUserItemById(requestedId, readUserQuizzes());
+      if (!directAttachedQuiz && !attachedQuiz && (!quiz || quiz.kind !== "quiz")) {
         throw new Error("الاختبار المطلوب غير موجود في المرفق الحالي.");
       }
-      return `بيانات الاختبار ${quiz.title} (المعرّف ${quiz.id}):\n${JSON.stringify(quiz.payload)}`;
+      let payload = directAttachedQuiz?.payload || attachedQuiz?.payload || quiz?.payload;
+      if (!payload && attachedQuiz?.dbId) {
+        const loaded = await loadFullQuizData({ dbId: attachedQuiz.dbId });
+        payload = {
+          meta: loaded.meta || {},
+          stats: loaded.stats || {},
+          questions: loaded.questions || [],
+        };
+      }
+      return `بيانات الاختبار ${directAttachedQuiz?.title || attachedQuiz?.title || quiz?.title} (المعرّف ${requestedId}):\n${JSON.stringify(payload || {})}`;
     },
     ...pageOptions,
   };
@@ -163,6 +196,6 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   }
 }
 
-export function buildPlatformFolderAttachment(folder) {
-  return { ...buildPlatformCourseAttachment(folder), kind: "folder" };
+export function buildPlatformFolderAttachment(folder, categoryTree = null) {
+  return { ...buildPlatformCourseAttachment(folder, categoryTree), kind: "folder" };
 }

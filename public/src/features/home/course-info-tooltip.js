@@ -44,6 +44,7 @@ import { positionCourseInfoTooltip } from "./tooltip-position.js";
 import { openAIAgentWithAttachment, buildPlatformCourseAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
+import { getCategoryTree } from "./app-state.js";
 
 const EDU_TYPE_AR = {
   University: "جامعي",
@@ -232,7 +233,7 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     askAiBtn.onclick = (e) => {
       e.stopPropagation();
       closeTooltip();
-      openAIAgentWithAttachment(buildPlatformCourseAttachment(course), {
+      openAIAgentWithAttachment(buildPlatformCourseAttachment(course, getCategoryTree()), {
         defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
       });
     };

@@ -24,6 +24,21 @@ import { getCourseItemCount } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
+import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import {
+  COPY_ICON_SVG,
+  DUPLICATE_ICON_SVG,
+  SHARE_ICON_SVG,
+  SPARKLE_ICON_SVG,
+} from "./icons.js";
+import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { loadFullQuizData } from "./quiz-data-loader.js";
+import { showNotification } from "../../components/notifications/notifications.js";
+import {
+  openAIAgentWithAttachment,
+  buildPlatformFolderAttachment,
+} from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 
 export function getCategoriesLazy() {
   const cached = getCategoriesCache();
@@ -241,27 +256,83 @@ export function createCategoryCard(
     moreBtn.className = "exam-more-btn";
     moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`;
     moreBtn.setAttribute("aria-label", `خيارات ${name}`);
-    moreBtn.onclick = async (event) => {
+    moreBtn.onclick = (event) => {
       event.stopPropagation();
-      const { openExamDropdownMenu } = await import("./exam-dropdown-menu.js");
-      const { openAIAgentWithAttachment, buildPlatformFolderAttachment } = await import(
-        "../../components/ai-agent/ai-agent-attach-launcher.js"
-      );
-      const { HOME_PAGE_SYSTEM_PROMPT } = await import(
-        "../../components/ai-agent/ai-agent-default-prompts.js"
-      );
       openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
         const askAi = document.createElement("button");
         askAi.type = "button";
         askAi.className = "exam-action-btn";
-        askAi.textContent = "اسأل الباشـمبصمج";
+        askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
         askAi.onclick = () => {
           closeMenu();
-          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData), {
+          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData, getCategoryTree()), {
             defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
           });
         };
         menu.appendChild(askAi);
+
+        const folderUrl = `${window.location.origin}/#${(courseData.path || [courseData.name])
+          .map((segment) => encodeURIComponent(segment))
+          .join("/")}`;
+        const copyLink = document.createElement("button");
+        copyLink.type = "button";
+        copyLink.className = "exam-action-btn";
+        copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+        copyLink.onclick = async () => {
+          await navigator.clipboard.writeText(folderUrl);
+          closeMenu();
+          showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
+        };
+        menu.appendChild(copyLink);
+
+        const shareLink = document.createElement("button");
+        shareLink.type = "button";
+        shareLink.className = "exam-action-btn";
+        shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
+        shareLink.onclick = async () => {
+          closeMenu();
+          if (navigator.share) {
+            await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => {});
+          } else {
+            await navigator.clipboard.writeText(folderUrl);
+            showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
+          }
+        };
+        menu.appendChild(shareLink);
+
+        const copyToMine = document.createElement("button");
+        copyToMine.type = "button";
+        copyToMine.className = "exam-action-btn";
+        copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+        copyToMine.onclick = async () => {
+          copyToMine.disabled = true;
+          try {
+            const attachment = buildPlatformFolderAttachment(courseData, getCategoryTree());
+            const exams = [];
+            const collectExams = (node) => {
+              (node.children || []).forEach((child) => {
+                if (child.kind === "quiz") exams.push(child);
+                else collectExams(child);
+              });
+            };
+            collectExams(attachment.payload.tree[0]);
+            for (const exam of exams) {
+              if (!exam.dbId) continue;
+              const loaded = await loadFullQuizData({ dbId: exam.dbId });
+              await copyQuizToUserQuizzes({
+                id: exam.id,
+                dbId: exam.dbId,
+                title: exam.title,
+                data: loaded,
+              });
+            }
+            closeMenu();
+            showNotification("تم النسخ", "تم نسخ اختبارات المجلد إلى امتحاناتك.", "success");
+          } finally {
+            copyToMine.disabled = false;
+          }
+        };
+        menu.appendChild(copyToMine);
 
         const counts = document.createElement("div");
         counts.className = "exam-action-btn";

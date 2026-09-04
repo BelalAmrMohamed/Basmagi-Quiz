@@ -30,12 +30,19 @@ import { getCourseItemCount } from "./course-count.js";
 import { attachCourseInfoTooltip } from "./course-info-tooltip.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
-import { MORE_DOTS_ICON_SVG, SPARKLE_ICON_SVG } from "./icons.js";
+import {
+  MORE_DOTS_ICON_SVG,
+  SPARKLE_ICON_SVG,
+  COPY_ICON_SVG,
+  DUPLICATE_ICON_SVG,
+  SHARE_ICON_SVG,
+} from "./icons.js";
 import {
   openAIAgentWithAttachment,
   buildUserRootAttachmentForAskAi,
 } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 export async function renderRootCategories() {
   try {
@@ -127,6 +134,43 @@ export async function renderRootCategories() {
             });
           };
           menu.appendChild(askAi);
+
+          const rootUrl = `${window.location.origin}/#my-quizzes`;
+          const copyLink = document.createElement("button");
+          copyLink.type = "button";
+          copyLink.className = "exam-action-btn";
+          copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+          copyLink.onclick = async () => {
+            await navigator.clipboard.writeText(rootUrl);
+            closeMenu();
+            showNotification("تم النسخ", "تم نسخ رابط امتحاناتك.", "success");
+          };
+          menu.appendChild(copyLink);
+
+          const shareLink = document.createElement("button");
+          shareLink.type = "button";
+          shareLink.className = "exam-action-btn";
+          shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
+          shareLink.onclick = async () => {
+            closeMenu();
+            if (navigator.share) {
+              await navigator.share({ title: "امتحاناتك", url: rootUrl }).catch(() => {});
+            } else {
+              await navigator.clipboard.writeText(rootUrl);
+              showNotification("تم النسخ", "تم نسخ رابط امتحاناتك.", "success");
+            }
+          };
+          menu.appendChild(shareLink);
+
+          const alreadyMine = document.createElement("button");
+          alreadyMine.type = "button";
+          alreadyMine.className = "exam-action-btn";
+          alreadyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+          alreadyMine.onclick = () => {
+            closeMenu();
+            showNotification("امتحاناتك", "هذا المجلد موجود بالفعل في امتحاناتك.", "info");
+          };
+          menu.appendChild(alreadyMine);
         });
       };
       quizzesCard.appendChild(rootMenuBtn);
