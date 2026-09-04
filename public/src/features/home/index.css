@@ -1675,9 +1675,12 @@ Container
     overflow: hidden;
   }
 
-  /* First card (create-quiz): no top border (container border serves as top) */
-  .user-quizzes-container>.exam-card:first-child {
+  /* First card: no top border (container border serves as top) */
+  .user-quizzes-container>.exam-card:first-child,
+  .user-quizzes-container>.category-card:first-child,
+  .user-quizzes-container>.user-create-quiz-card:first-child {
     border: none !important;
+    border-top: none !important;
   }
 
   /* Outer drop-zone container: strip the border the global .grid-container
@@ -2073,6 +2076,7 @@ Container
     justify-content: center;
     width: 34px;
     height: 34px;
+    flex-shrink: 0;
     transform: none !important;
     transition: none;
     filter: none;
@@ -3155,6 +3159,87 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
   box-shadow: var(--shadow-lg);
 }
 
+/* ── Folder & course category cards in user quizzes view ──
+   Size and layout behave identically to user quiz cards on desktop */
+.user-quizzes-container .category-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  border: 2px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  align-self: start;
+  text-align: center;
+}
+
+.user-quizzes-container .category-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.user-quizzes-container .category-card::before {
+  border-radius: 12px 12px 0 0;
+}
+
+/* Category icon on desktop within user quizzes */
+.user-quizzes-container .category-card .category-icon {
+  font-size: 2.75rem;
+  margin: 10px auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  line-height: 1;
+}
+
+.user-quizzes-container .category-card:hover .category-icon {
+  transform: scale(1.08);
+}
+
+.user-quizzes-container .category-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+  color: var(--color-text-primary);
+  text-align: center;
+  direction: ltr;
+}
+
+/* Subtext in user quizzes category card */
+.user-quizzes-container .category-card .category-card-subtext {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  direction: rtl;
+  text-align: center;
+}
+
+/* More options button (⋮) on folder card */
+.user-quizzes-container .category-card .category-card-actions-wrap {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+}
+
+.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn {
+  position: static;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
 /* Gradient accent bar at the top of the card */
 .user-quiz-accent-bar {
   position: absolute;
@@ -3481,10 +3566,11 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
     display: none;
   }
 
-  /* ── User-quiz cards: same compact list-row as normal exam cards ── */
+  /* ── User-quiz and folder cards: same compact list-row as normal exam cards ── */
 
   /* Card shell */
-  .exam-card.user-quiz-card {
+  .exam-card.user-quiz-card,
+  .user-quizzes-container .category-card {
     flex-direction: row !important;
     align-items: center !important;
     gap: 10px !important;
@@ -3507,14 +3593,16 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
   }
 
   /* No lift animation on mobile */
-  .exam-card.user-quiz-card:hover {
+  .exam-card.user-quiz-card:hover,
+  .user-quizzes-container .category-card:hover {
     transform: none !important;
     box-shadow: none !important;
   }
 
   /* card-text: override display:contents (desktop base) → flex column
      so it participates in the horizontal flex row as the stretchy middle */
-  .exam-card.user-quiz-card .card-text {
+  .exam-card.user-quiz-card .card-text,
+  .user-quizzes-container .category-card .card-text {
     display: flex !important;
     flex-direction: column !important;
     gap: 2px !important;
@@ -3524,7 +3612,8 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
   }
 
   /* Title: compact, single line, truncated */
-  .exam-card.user-quiz-card h3 {
+  .exam-card.user-quiz-card h3,
+  .user-quizzes-container .category-card h3 {
     font-size: 0.83rem !important;
     font-weight: 600 !important;
     margin-bottom: 0 !important;
@@ -3534,6 +3623,56 @@ html[dir="ltr"] .move-to-dialog-elbow::after {
     text-align: left !important;
     direction: ltr !important;
     width: 100% !important;
+  }
+
+  /* Folder subtext on mobile */
+  .user-quizzes-container .category-card .category-card-subtext {
+    font-size: 0.65rem !important;
+    color: var(--color-text-tertiary, #888) !important;
+    direction: rtl !important;
+    margin: 0 0 6px 0 !important;
+    text-align: right !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Actions wrap on mobile */
+  .user-quizzes-container .category-card .category-card-actions-wrap {
+    position: static !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+    margin-top: 0 !important;
+    margin-left: auto !important;
+    width: auto !important;
+  }
+
+  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn {
+    position: static !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Ensure .category-icon aligns identically to .user-quiz--phone-only-emoji */
+  .user-quizzes-container .category-card .category-icon {
+    font-size: 1.25rem !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    flex-shrink: 0 !important;
+    transform: none !important;
+    transition: none !important;
+    filter: none !important;
+    background: inherit !important;
+    border-radius: 8px !important;
   }
 
   /* Meta bar: reset absolute desktop positioning → static sub-row under title */
