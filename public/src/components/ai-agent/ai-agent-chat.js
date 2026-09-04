@@ -265,7 +265,7 @@ export function createChatPanel(options = {}) {
   panel.appendChild(messagesEl);
 
   /**
-   * Builds the plain-text "أنت: ... / البشمبصمج: ..." transcript and
+   * Builds the plain-text "أنت: ... / الباشــمبصمج: ..." transcript and
    * copies it to the clipboard — shared by the in-panel corner export
   * button (the desktop sidebar's "نسخ المحادثة"
    * button (see ai-agent.js, which calls panel.exportConversation()
@@ -281,7 +281,7 @@ export function createChatPanel(options = {}) {
     // the History tab's re-render (see loadConversation above).
     const transcript = history
       .map((m) => {
-        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "البشمبصمج";
+        const label = m.type === "tool-result" ? "🔧 النظام" : m.role === "user" ? "أنت" : "الباشــمبصمج";
         return `${label}: ${m.content}`;
       })
       .join("\n\n");
