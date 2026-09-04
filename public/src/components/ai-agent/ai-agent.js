@@ -718,12 +718,12 @@ export function openAIAgentModal(options, fab) {
 
   // The established sidebar collapse control is the mobile drawer trigger.
   const sidebarCollapseBtns = modal.querySelectorAll(".ai-agent-sidebar-collapse-btn");
-  let mobileSheetOpen = false;
+  const mobileSidebar = widgetEl.querySelector(".ai-agent-sidebar");
   sidebarCollapseBtns.forEach((sidebarCollapseBtn) => {
     sidebarCollapseBtn.addEventListener("click", (event) => {
       if (window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches) return;
       event.stopPropagation();
-      mobileSheetOpen = !mobileSheetOpen;
+      const mobileSheetOpen = !mobileSidebar?.classList.contains("ai-agent-sidebar--mobile-open");
       sidebarCollapseBtns.forEach((button) =>
         button.setAttribute("aria-expanded", String(mobileSheetOpen)),
       );
@@ -742,7 +742,6 @@ export function openAIAgentModal(options, fab) {
   // resets it too.
   const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
   widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {
-    mobileSheetOpen = false;
     sidebarCollapseBtns.forEach((button) => button.setAttribute("aria-expanded", "false"));
     return originalCloseMobileSheet?.();
   };
