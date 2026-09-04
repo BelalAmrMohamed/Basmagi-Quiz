@@ -31,13 +31,8 @@
 //     right) showing New Chat / settings (gear) / the full, scrollable
 //     conversation history (createHistoryPanel, reused directly — see its
 //     own header comment) — not a short 5-item "recents" list anymore.
-//   - Mobile (<901px): the sidebar is off-canvas, opened via a hamburger
-//     button in the modal header (see openAIAgentModal below) as a bottom
-//     sheet — NOT a left/right slide-in drawer. This deliberately mirrors
-//     the app's own persistent side-menu (side-menu.js/side-menu.css),
-//     which is itself a translateY bottom sheet with a backdrop and a
-//     drag handle on mobile, not a horizontal drawer — see
-//     .ai-agent-sidebar--mobile-open in ai-agent.css.
+//   - Mobile (<901px): the sidebar is an off-canvas side drawer opened by
+//     the same collapse control used by the desktop sidebar.
 // Settings (previously its own tab) now opens as a second, stacked modal
 // from a gear button in the sidebar (see openSettingsModal below) —
 // createSettingsPanel()'s own internals are unchanged, just mounted
@@ -54,12 +49,6 @@ const NEW_CHAT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" he
 const COPY_CONVO_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>`;
 const CHECK_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`;
 const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
-// PHASE 6: hamburger — mobile-only, opens the sidebar as a bottom sheet
-// (see .ai-agent-mobile-hamburger-btn / .ai-agent-sidebar--mobile-open in
-// ai-agent.css). Three plain bars, matching the weight/size of the other
-// small header icon buttons rather than borrowing a lucide "menu" glyph
-// with a different stroke style.
-const HAMBURGER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>`;
 // The following three mirror side-menu.js's own collapsed-favicon/
 // collapse-button icons exactly (same paths, same lucide icons:
 // panel-right-open / panel-left / panel-left-open) — see side-menu.css's
@@ -230,7 +219,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // the JS level — built unconditionally exactly as before (a live-resize
   // across the breakpoint stays a pure CSS reflow, see
   // .ai-agent-desktop-layout in ai-agent.css), but now ALSO reachable on
-  // mobile as an off-canvas bottom sheet (see .ai-agent-sidebar--mobile-open
+  // mobile as an off-canvas side drawer (see .ai-agent-sidebar--mobile-open
   // and openMobileSidebarSheet/closeMobileSidebarSheet below) rather than
   // being permanently hidden there. It is now the ONE navigation surface
   // on every breakpoint — there is no more tab strip anywhere to fall
@@ -293,11 +282,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // "panel-left-open" — same lucide icons and same crossfade mechanism
   // side-menu.css uses for #sidebarCollapseBtn) rather than one static
   // icon, matching the requested hover behavior exactly. Desktop-only —
-  // hidden via CSS whenever the sidebar is shown as the mobile bottom
-  // sheet (see .ai-agent-sidebar--mobile-open .ai-agent-sidebar-collapse-btn),
-  // since collapsing to an icon rail makes no sense in that layout; the
-  // mobile close button (added in openAIAgentModal below, next to the
-  // hamburger) is the mobile equivalent instead.
+  // The same control also opens and closes the mobile drawer.
   const sidebarCollapseBtn = document.createElement("button");
   sidebarCollapseBtn.type = "button";
   sidebarCollapseBtn.className = "ai-agent-sidebar-collapse-btn";
@@ -320,6 +305,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   }
 
   sidebarCollapseBtn.addEventListener("click", () => {
+    if (!window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches) return;
     applySidebarCollapsedState(!sidebarCollapsed);
   });
   // The favicon IS the dedicated expand trigger while collapsed (CSS
@@ -451,16 +437,18 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
 
   row.insertBefore(sidebar, body);
 
-  // ── Mobile off-canvas sheet open/close ──
-  // Exposed on `widget` so openAIAgentModal's hamburger button (built once
+  // ── Mobile off-canvas drawer open/close ──
+  // Exposed on `widget` so openAIAgentModal's sidebar control (built once
   // per modal open, outside this function) can drive it without reaching
   // into this closure's internals directly.
   function openMobileSidebarSheet() {
+    sidebar.classList.remove("ai-agent-sidebar--collapsed");
     sidebar.classList.add("ai-agent-sidebar--mobile-open");
     if (mobileBackdrop) mobileBackdrop.classList.add("ai-agent-mobile-backdrop--visible");
   }
   function closeMobileSidebarSheet() {
     sidebar.classList.remove("ai-agent-sidebar--mobile-open");
+    sidebar.classList.toggle("ai-agent-sidebar--collapsed", sidebarCollapsed);
     if (mobileBackdrop) mobileBackdrop.classList.remove("ai-agent-mobile-backdrop--visible");
   }
   widget.openMobileSidebarSheet = openMobileSidebarSheet;
@@ -705,7 +693,7 @@ export function openAIAgentModal(options, fab) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
-    <button type="button" class="ai-agent-mobile-hamburger-btn" aria-label="فتح القائمة" aria-expanded="false">${HAMBURGER_ICON_SVG}</button>
+    <button type="button" class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle" aria-label="فتح القائمة" aria-expanded="false" title="فتح القائمة">${SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG}${SIDEBAR_COLLAPSE_HOVER_ICON_SVG}</button>
     <h2 id="aiAgentModalTitle"><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-logo" aria-hidden="true"> الباشــمبصمج</h2>
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
@@ -718,13 +706,8 @@ export function openAIAgentModal(options, fab) {
   // this function runs.
   const branchHandlerRef = getBranchHandlerRef(options.pageKey);
 
-  // PHASE 6 FIX: buildWidgetContent's return value (`widget`) exposes
-  // openMobileSidebarSheet/closeMobileSidebarSheet (see its own doc
-  // comment above), but nothing ever called them — the hamburger button
-  // referenced in this file's own header comments and CSS class names
-  // was never actually created, so mobile had no way to reach the
-  // sidebar (settings button + full history list) at all. Capture the
-  // built widget so the hamburger button below can drive it.
+  // Capture the built widget so the sidebar collapse control can drive the
+  // mobile drawer as well as the desktop collapsed state.
   const widgetEl = buildWidgetContent(options, getOrCreateChatPanel(options), branchHandlerRef);
 
   modalCard.appendChild(header);
@@ -733,20 +716,23 @@ export function openAIAgentModal(options, fab) {
 
   modal.querySelector(".ai-agent-modal-close").onclick = closeModal;
 
-  // Hamburger — mobile-only (hidden via CSS on desktop layout), toggles
-  // the sidebar open/closed as a bottom sheet (see widgetEl's own
-  // openMobileSidebarSheet/closeMobileSidebarSheet + the
-  // .ai-agent-sidebar--mobile-open/.ai-agent-mobile-backdrop CSS).
-  const hamburgerBtn = modal.querySelector(".ai-agent-mobile-hamburger-btn");
+  // The established sidebar collapse control is the mobile drawer trigger.
+  const sidebarCollapseBtns = modal.querySelectorAll(".ai-agent-sidebar-collapse-btn");
   let mobileSheetOpen = false;
-  hamburgerBtn.addEventListener("click", () => {
-    mobileSheetOpen = !mobileSheetOpen;
-    hamburgerBtn.setAttribute("aria-expanded", String(mobileSheetOpen));
-    if (mobileSheetOpen) {
-      widgetEl.openMobileSidebarSheet?.();
-    } else {
-      widgetEl.closeMobileSidebarSheet?.();
-    }
+  sidebarCollapseBtns.forEach((sidebarCollapseBtn) => {
+    sidebarCollapseBtn.addEventListener("click", (event) => {
+      if (window.matchMedia?.(DESKTOP_BREAKPOINT_QUERY).matches) return;
+      event.stopPropagation();
+      mobileSheetOpen = !mobileSheetOpen;
+      sidebarCollapseBtns.forEach((button) =>
+        button.setAttribute("aria-expanded", String(mobileSheetOpen)),
+      );
+      if (mobileSheetOpen) {
+        widgetEl.openMobileSidebarSheet?.();
+      } else {
+        widgetEl.closeMobileSidebarSheet?.();
+      }
+    });
   });
   // The sidebar can also be closed from elsewhere (backdrop click, New
   // Chat, selecting a history item — see buildWidgetContent's own
@@ -757,7 +743,7 @@ export function openAIAgentModal(options, fab) {
   const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
   widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {
     mobileSheetOpen = false;
-    hamburgerBtn.setAttribute("aria-expanded", "false");
+    sidebarCollapseBtns.forEach((button) => button.setAttribute("aria-expanded", "false"));
     return originalCloseMobileSheet?.();
   };
 

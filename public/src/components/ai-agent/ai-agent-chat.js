@@ -262,36 +262,10 @@ export function createChatPanel(options = {}) {
   messagesEl.className = "ai-agent-chat-messages";
   panel.appendChild(messagesEl);
 
-  // "New chat" — a small floating icon button in the corner of the message
-  // list (not a full header row; it only needs to be there when there's
-  // actually something to leave behind). Hidden whenever the current
-  // conversation has no messages yet — a brand new chat, or right after
-  // pressing this same button — since starting a new chat from an already
-  // empty one is a no-op the user shouldn't be invited to reach for.
-  // updateNewChatVisibility() (called after every state change: send,
-  // loadConversation, startNewConversation) keeps this in sync.
-  const newChatBtn = document.createElement("button");
-  newChatBtn.type = "button";
-  newChatBtn.className = "ai-agent-corner-btn ai-agent-new-chat-btn";
-  newChatBtn.innerHTML =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /><path d="M12 7v6" /><path d="M9 10h6" /></svg>';
-  newChatBtn.title = "بدء محادثة جديدة";
-  newChatBtn.setAttribute("aria-label", "بدء محادثة جديدة");
-  newChatBtn.hidden = true;
-  newChatBtn.addEventListener("click", () => panel.startNewConversation());
-  panel.appendChild(newChatBtn);
-
-  // "Export chat" — grouped right next to "New chat" (same corner, same
-  // icon-button shape via the shared .ai-agent-corner-btn class) since
-  // both are chat-lifecycle actions on the current conversation. Copies a
-  // plain-text transcript (both user prompts and AI answers, including
-  // tool-result system lines — see history's `type: "tool-result"`
-  // entries) to the clipboard; same visibility rule as newChatBtn (hidden
-  // until there's at least one message to export).
   /**
    * Builds the plain-text "أنت: ... / البشمبصمج: ..." transcript and
    * copies it to the clipboard — shared by the in-panel corner export
-   * button (exportChatBtn below) and the desktop sidebar's "نسخ المحادثة"
+  * button (the desktop sidebar's "نسخ المحادثة"
    * button (see ai-agent.js, which calls panel.exportConversation()
    * directly rather than needing to reach into this panel's DOM to click
    * the corner button programmatically).
@@ -318,33 +292,6 @@ export function createChatPanel(options = {}) {
     }
   }
   panel.exportConversation = exportTranscript;
-
-  const exportChatBtn = document.createElement("button");
-  exportChatBtn.type = "button";
-  exportChatBtn.className = "ai-agent-corner-btn ai-agent-export-chat-btn";
-  exportChatBtn.innerHTML =
-   '<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg>';
-  exportChatBtn.title = "نسخ المحادثة";
-  exportChatBtn.setAttribute("aria-label", "نسخ المحادثة");
-  exportChatBtn.hidden = true;
-  exportChatBtn.addEventListener("click", async () => {
-    const ok = await exportTranscript();
-    if (!ok) return;
-    const original = exportChatBtn.innerHTML;
-    exportChatBtn.innerHTML = CHECK_ICON_SVG;
-    exportChatBtn.classList.add("ai-agent-corner-btn--copied");
-    setTimeout(() => {
-      exportChatBtn.innerHTML = original;
-      exportChatBtn.classList.remove("ai-agent-corner-btn--copied");
-    }, 1500);
-  });
-  panel.appendChild(exportChatBtn);
-
-  function updateNewChatVisibility() {
-    newChatBtn.hidden = history.length === 0;
-    exportChatBtn.hidden = history.length === 0;
-  }
-
 
   // Suggestion chips — only meaningful before the conversation starts.
   // renderSuggestions() (re)builds them; called once up front here, and
@@ -2238,8 +2185,6 @@ export function createChatPanel(options = {}) {
     // reads history[] by index, not by object identity.
     history.push(outgoingUserMessage);
     appendMessage("user", text, attachments, history.length - 1);
-    updateNewChatVisibility();
-
     await resendLastUserTurn();
   }
 
@@ -2498,9 +2443,8 @@ export function createChatPanel(options = {}) {
 
   /**
    * Whether this panel currently has any messages at all — mirrors the
-   * same history.length check updateNewChatVisibility() already uses to
-   * show/hide the corner "new chat"/"export chat" icon buttons. Exposed
-   * so the desktop sidebar's own "نسخ المحادثة" button (see ai-agent.js)
+  * same history.length signal used by the desktop sidebar's own
+  * "نسخ المحادثة" button (see ai-agent.js), which
    * can disable itself on an empty/new chat, where there's nothing to
    * copy — same signal, just readable from outside the panel's closure.
    * @returns {boolean}
@@ -2573,7 +2517,6 @@ export function createChatPanel(options = {}) {
         }
       });
     }
-    updateNewChatVisibility();
     // Tells the History tab / sidebar recents which entry is now active
     // (see getConversationId above) so they can re-render their
     // highlight to follow the freshly-loaded conversation.
@@ -2583,10 +2526,8 @@ export function createChatPanel(options = {}) {
   /**
    * Starts a fresh conversation in this same panel instance: clears
    * in-memory state and mints a new id so the next turn creates a new IDB
-   * record rather than continuing the previous one. Wired to the floating
-   * "new chat" icon button (see newChatBtn above) — that button hides
-   * itself once the conversation is empty, so this never fires on an
-   * already-empty chat. Also restores the suggestion chips (see
+  * record rather than continuing the previous one. Also restores the
+  * suggestion chips (see
    * renderSuggestions()) — a fresh conversation should look the same as
    * one starting from freshly opening the AI Helper, chips included, not
    * a chat stuck without them for the rest of the panel's lifetime.
@@ -2602,13 +2543,11 @@ export function createChatPanel(options = {}) {
     messagesEl.innerHTML = "";
     renderEmptyState();
     renderSuggestions();
-    updateNewChatVisibility();
     // A new (unsaved) conversationId means no history entry should show
     // as active anymore — refresh the highlight to reflect that.
     if (typeof onHistoryChanged === "function") onHistoryChanged();
   };
 
-  updateNewChatVisibility();
 
   /**
    * Seeds this (freshly-created, empty) panel with a branched history from
@@ -2644,7 +2583,6 @@ export function createChatPanel(options = {}) {
         appendMessage(m.role, m.content, m.attachments, i);
       }
     });
-    updateNewChatVisibility();
 
     // Re-send the last (edited) prompt to actually get a fresh AI reply
     // for it — resendLastUserTurn() below does the network round trip

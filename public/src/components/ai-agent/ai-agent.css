@@ -120,13 +120,6 @@
    ai-agent-chat.js::appendMessage / markdown.js::detectDirection), so
    English and Arabic messages align independently in the same list. */
 
-/* .ai-agent-panel already establishes a flex column; add relative
-   positioning here specifically for .ai-agent-chat-panel so the floating
-   "new chat" button below can anchor to its corner. */
-.ai-agent-chat-panel {
-  position: relative;
-}
-
 /* Model selector bar (see modelBar in createChatPanel, ai-agent-chat.js).
    Rendered here in its DEFAULT position — directly in the chat panel,
    above the messages — for any embedding that doesn't relocate it (see
@@ -160,68 +153,6 @@
 .ai-agent-chat-model-select:focus {
   outline: none;
   border-color: var(--color-primary);
-}
-
-/* Shared shape for the small floating icon-only buttons pinned to the
-   corner of the message list — "New chat" and "Export chat" (see
-   newChatBtn/exportChatBtn in ai-agent-chat.js), grouped together since
-   both are chat-lifecycle actions on the current conversation. Hidden via
-   the `hidden` attribute whenever the current conversation has no
-   messages yet, so neither invites acting on a chat that's already new/
-   empty. Icon-only + subtle so they don't compete with the actual
-   conversation for attention. Positioned side by side: "New chat" in the
-   outer corner, "Export chat" just inside it (see the two position rules
-   below) so they read as one small button group rather than two
-   unrelated floating controls. */
-.ai-agent-corner-btn {
-  position: absolute;
-  top: 10px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  box-shadow: var(--shadow-sm, 0 1px 3px Black);
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
-}
-
-.ai-agent-corner-btn:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-  transform: translateY(-1px);
-}
-
-.ai-agent-corner-btn[hidden] {
-  display: none;
-}
-
-.ai-agent-corner-btn--copied,
-.ai-agent-corner-btn--copied:hover {
-  border-color: var(--color-success);
-  color: var(--color-success);
-  background: var(--color-success-light, rgba(34, 197, 94));
-}
-
-/* Make the buttons invisible at 768px when the side-menu appears */
-@media (min-width: 768px) {
-  .ai-agent-corner-btn {
-    display: none;
-  }
-}
-
-.ai-agent-new-chat-btn {
-  inset-inline-end: 10px;
-}
-
-.ai-agent-export-chat-btn {
-  inset-inline-end: 48px;
 }
 
 .ai-agent-chat-messages {
@@ -1633,51 +1564,13 @@ body.sidebar-expanded .ai-agent-fab {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* The hamburger button (mobile-only) sits before this in source order,
+  /* The mobile sidebar button sits before this in source order,
      .close-btn after — space-between (inherited from the shared
      .modal-header rule) would otherwise push the title flush against
      whichever of those is visible instead of staying visually centered
      between them. */
   flex: 1;
   justify-content: center;
-}
-
-/* BUG FIX (mobile sidebar unreachable): this button was referenced in
-   ai-agent.js's own comments and CSS class name from the start, but
-   never actually built into the header — so there was no way to open
-   the sidebar sheet on mobile at all, meaning no settings button and no
-   history list were ever reachable there. Sized/styled to match
-   .close-btn exactly (same 36px circular hit target) so the header reads
-   as one consistent icon-button pair, hamburger on one side mirroring
-   close on the other. */
-.ai-agent-mobile-hamburger-btn {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: background-color 150ms ease, color 150ms ease;
-}
-
-.ai-agent-mobile-hamburger-btn:hover {
-  background: var(--color-background-secondary);
-  color: var(--color-text-primary);
-}
-
-/* Desktop has the permanent sidebar already visible alongside the chat —
-   the hamburger toggle only makes sense once the sidebar is off-canvas,
-   i.e. below the same 901px breakpoint everything else in this file
-   gates on. */
-@media (max-width: 900px) {
-  .ai-agent-mobile-hamburger-btn {
-    display: flex;
-  }
 }
 
 .ai-agent-logo {
@@ -1744,46 +1637,35 @@ body.sidebar-expanded .ai-agent-fab {
   transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1), padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ── Mobile off-canvas sidebar sheet ──
-   BUG FIX: .ai-agent-sidebar--mobile-open and .ai-agent-mobile-backdrop
-   were both toggled by JS (openMobileSidebarSheet/closeMobileSidebarSheet
-   in ai-agent.js) from the start, but neither class had any CSS behind
-   it — combined with the hamburger button never being built (see the
-   .ai-agent-mobile-hamburger-btn fix above), the sidebar was completely
-   unreachable on mobile: no settings button, no history list, nothing.
-   Mirrors the main site's own side-menu bottom-sheet pattern exactly
-   (see side-menu.css's `.sidebar` mobile rules: translateY(100%) hidden
-   → translateY(0) shown, backdrop fade), rather than a left/right
-   drawer — same mechanic the rest of this file's comments already
-   describe. Scoped to the same <900px range the hamburger button itself
-   uses, so the two states can never disagree with each other. */
+/* ── Mobile off-canvas sidebar drawer ── */
 @media (max-width: 900px) {
   .ai-agent-sidebar {
     position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    top: auto;
+    inset-block: 0;
+    right: 0;
+    left: auto;
     z-index: 5;
-    width: 100% !important;
-    max-height: 80%;
+    width: min(86vw, 320px) !important;
+    height: 100%;
     border-inline-start: none;
-    border-top: 1px solid var(--color-border);
-    border-radius: 16px 16px 0 0;
-    box-shadow: var(--shadow-xl, 0 -8px 24px rgba(0, 0, 0, 0.18));
-    transform: translateY(100%);
+    border-inline-start: 1px solid var(--color-border);
+    border-radius: 0;
+    box-shadow: var(--shadow-xl, 8px 0 24px rgba(0, 0, 0, 0.18));
+    transform: translateX(100%);
     transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .ai-agent-sidebar--mobile-open {
     display: flex !important;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 
   /* Collapse only ever applies on desktop (see ai-agent.js's own
      applySidebarCollapsedState doc comment) — force the sheet fully
      expanded on mobile regardless of the persisted collapsed state. */
   .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed {
-    width: 100% !important;
+    width: min(86vw, 320px) !important;
+    height: 100%;
     padding: 14px 10px;
     align-items: stretch;
   }
@@ -1799,11 +1681,6 @@ body.sidebar-expanded .ai-agent-fab {
     justify-content: flex-start;
     width: 100%;
     padding: 8px 10px;
-  }
-
-  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon,
-  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
-    display: none;
   }
 
   .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-brand {
@@ -1980,6 +1857,12 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
   display: none;
+}
+
+@media (max-width: 900px) {
+  .ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
+    display: flex;
+  }
 }
 
 .ai-agent-sidebar-collapse-btn:hover,
@@ -2373,4 +2256,55 @@ body.sidebar-expanded .ai-agent-fab {
   font-size: 0.85rem;
   color: var(--color-text-tertiary);
   text-align: center;
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-history-panel,
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-history-panel * {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .ai-agent-sidebar-collapse-btn {
+    display: flex;
+  }
+}
+
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-history-panel,
+.ai-agent-sidebar--collapsed .ai-agent-sidebar-history-panel * {
+  display: none !important;
+}
+
+.ai-agent-mobile-sidebar-toggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .ai-agent-mobile-sidebar-toggle {
+    display: flex;
+  }
+}
+
+@media (max-width: 900px) {
+
+  .ai-agent-modal-card .ai-agent-body,
+  .ai-agent-modal-card .ai-agent-row,
+  .ai-agent-modal-card .ai-agent-chat-panel {
+    min-height: 0;
+  }
+
+  .ai-agent-modal-card .ai-agent-chat-panel {
+    flex: 1;
+  }
+
+  .ai-agent-modal-card .ai-agent-chat-messages {
+    min-height: 0;
+  }
+
+  .ai-agent-modal-card .ai-agent-chat-input-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    flex-shrink: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
 }
