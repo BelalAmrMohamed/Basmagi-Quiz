@@ -57,7 +57,13 @@ body {
     color: var(--ink);
     font-family: "IBM Plex Sans Arabic", "Noto Naskh Arabic", serif;
     line-height: 1.85;
+    padding-right: calc(var(--sidebar-collapsed-width) + 16px);
+    transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-font-smoothing: antialiased;
+}
+
+body.sidebar-expanded {
+    padding-right: calc(var(--sidebar-expanded-width) + 16px);
 }
 
 html[data-theme="dark"] body,
@@ -86,8 +92,17 @@ html[data-theme="dark-slate"] body {
     top: 0;
     z-index: var(--z-above, 10);
     height: 3px;
+    width: calc(100% + var(--sidebar-collapsed-width) + 16px);
+    margin-right: calc(-1 * (var(--sidebar-collapsed-width) + 16px));
     background: var(--rule-heavy);
     overflow: hidden;
+    transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1),
+        margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.sidebar-expanded .top-bar {
+    width: calc(100% + var(--sidebar-expanded-width) + 16px);
+    margin-right: calc(-1 * (var(--sidebar-expanded-width) + 16px));
 }
 
 /* The decorative gradient now lives on a fill bar whose width (via
@@ -313,12 +328,7 @@ li strong {
     background-color: var(--ft-bg);
     color: var(--ft-text);
     margin-top: 0;
-    /* side-menu.css reserves space for the fixed sidebar by adding
-       padding-right directly on body (this file otherwise gives body no
-       padding of its own) — without compensating for it here, that
-       reserved strip shows body's own background between the footer's
-       right edge and the sidebar instead of the footer's dark background
-       reaching it, exactly like the app's other sidebar-aware pages do. */
+    /* Extend the footer background through the page-owned sidebar inset. */
     margin-right: calc(-1 * (var(--sidebar-collapsed-width, 64px) + 16px));
     /* The negative margin above only re-extends the footer's background
        under the sidebar's reserved rail — without pushing the content back
@@ -345,6 +355,18 @@ body.sidebar-expanded .site-footer {
            must match that flat value instead of the desktop rail width. */
         margin-right: -16px;
         padding-right: 16px;
+    }
+
+    body,
+    body.sidebar-expanded {
+        padding-right: 16px;
+        padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+    }
+
+    body .top-bar,
+    body.sidebar-expanded .top-bar {
+        width: calc(100% + 16px);
+        margin-right: -16px;
     }
 }
 

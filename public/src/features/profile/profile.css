@@ -30,20 +30,20 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  /*
-         * side-menu.css owns the sidebar-side inset (physical padding-right,
-         * RTL-only today — out of scope for this pass). We only control the
-         * non-sidebar side here, using a logical property so at least this
-         * declaration is direction-safe.
-         */
+  /* Keep the non-sidebar side separate from the page-owned sidebar inset. */
   padding-top: 40px;
   padding-bottom: 40px;
   padding-left: 24px;
-  padding-right: 24px;
+  padding-right: calc(var(--sidebar-collapsed-width) + 16px);
+  transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   /* clip (not hidden) so nested overflow-x:auto scrollers like the activity
            heatmap can still receive horizontal pans on mobile WebKit. */
   overflow-x: clip;
+}
+
+body.sidebar-expanded {
+  padding-right: calc(var(--sidebar-expanded-width) + 16px);
 }
 
 .container {
@@ -111,11 +111,9 @@ body {
   /* Gentle scrim along the bottom edge only, so the cover photo
            itself stays visible instead of being washed out — this strip
            is short enough that a heavy scrim would hide most of it. */
-  background: linear-gradient(
-    to bottom,
-    transparent 60%,
-    color-mix(in srgb, var(--color-surface) 45%, transparent) 100%
-  );
+  background: linear-gradient(to bottom,
+      transparent 60%,
+      color-mix(in srgb, var(--color-surface) 45%, transparent) 100%);
 }
 
 /* Default cover gradient when the user/admin hasn't set one.
@@ -141,13 +139,11 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.08) 0px,
-    rgba(255, 255, 255, 0.08) 2px,
-    transparent 2px,
-    transparent 14px
-  );
+  background-image: repeating-linear-gradient(135deg,
+      rgba(255, 255, 255, 0.08) 0px,
+      rgba(255, 255, 255, 0.08) 2px,
+      transparent 2px,
+      transparent 14px);
   pointer-events: none;
 }
 
@@ -157,7 +153,8 @@ body {
   inset-inline-start: 12px;
   z-index: 3;
   pointer-events: auto;
-  display: none; /* shown via .identity-cover:hover / :focus-within, and unconditionally on touch via JS toggling .is-editable */
+  display: none;
+  /* shown via .identity-cover:hover / :focus-within, and unconditionally on touch via JS toggling .is-editable */
   align-items: center;
   justify-content: center;
   width: 34px;
@@ -334,7 +331,8 @@ body {
   color: #fff;
   box-shadow: var(--shadow-sm);
   border: 2px solid var(--color-surface);
-  cursor: pointer; /* real button now (opens #roleInfoOverlay) — not just a hover-tooltip */
+  cursor: pointer;
+  /* real button now (opens #roleInfoOverlay) — not just a hover-tooltip */
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -448,7 +446,7 @@ body {
   min-width: 128px;
 }
 
-.avatar-wrapper > #avatarImage {
+.avatar-wrapper>#avatarImage {
   width: 128px;
   height: 128px;
   border-radius: 50%;
@@ -559,12 +557,15 @@ body {
   0% {
     transform: scale(1);
   }
+
   30% {
     transform: scale(1.12);
   }
+
   60% {
     transform: scale(0.97);
   }
+
   100% {
     transform: scale(1);
   }
@@ -581,6 +582,7 @@ body {
 html[data-motion="reduced"] .level-gauge-fill {
   transition: none;
 }
+
 html[data-motion="reduced"] .level-gauge-leveled-up {
   animation: none;
 }
@@ -735,19 +737,22 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
 }
 
 #adminStatsGrid .stat-card {
-  background-color: color-mix(
-    in srgb,
-    var(--color-primary) 4%,
-    var(--color-background-secondary)
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--color-primary) 14%,
-    var(--color-border-light)
-  );
+  background-color: color-mix(in srgb,
+      var(--color-primary) 4%,
+      var(--color-background-secondary));
+  border-color: color-mix(in srgb,
+      var(--color-primary) 14%,
+      var(--color-border-light));
 }
 
 @media (max-width: 768px) {
+
+  body,
+  body.sidebar-expanded {
+    padding-right: 16px;
+    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
   #adminStatsGrid {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
@@ -765,12 +770,15 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
   }
+
   #adminStatsGrid .stat-card {
     padding: 10px;
   }
+
   #adminStatsGrid .stat-card .icon {
     font-size: 1.2rem;
   }
+
   #adminStatsGrid .stat-card .value {
     font-size: 0.95rem;
   }
@@ -1407,20 +1415,16 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 
 .heatmap-body.is-overflowing::before {
   inset-inline-start: 0;
-  background: linear-gradient(
-    to inline-end,
-    var(--color-surface) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(to inline-end,
+      var(--color-surface) 0%,
+      transparent 100%);
 }
 
 .heatmap-body.is-overflowing::after {
   inset-inline-end: 0;
-  background: linear-gradient(
-    to inline-start,
-    var(--color-surface) 0%,
-    transparent 100%
-  );
+  background: linear-gradient(to inline-start,
+      var(--color-surface) 0%,
+      transparent 100%);
 }
 
 .heatmap-daylabels {
@@ -1553,6 +1557,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
     opacity: 0;
     transform: scale(0.5);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -1577,11 +1582,9 @@ html[data-motion="reduced"] {
 }
 
 .heatmap-cell[data-level="2"] {
-  background: color-mix(
-    in srgb,
-    var(--color-primary) 45%,
-    var(--color-primary-light)
-  );
+  background: color-mix(in srgb,
+      var(--color-primary) 45%,
+      var(--color-primary-light));
 }
 
 .heatmap-cell[data-level="3"] {
@@ -1597,16 +1600,14 @@ html[data-motion="reduced"] {
          they read as disabled vs empty in-year days (data-level="0"). */
 .heatmap-cell-disabled {
   background: transparent;
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--color-border-light) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border-light) 55%, transparent);
   cursor: default;
   animation-name: heatmapCellInDisabled;
 }
 
 .heatmap-cell-disabled:hover {
   transform: scale(1);
-  box-shadow: inset 0 0 0 1px
-    color-mix(in srgb, var(--color-border-light) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-border-light) 55%, transparent);
 }
 
 @keyframes heatmapCellInDisabled {
@@ -1614,6 +1615,7 @@ html[data-motion="reduced"] {
     opacity: 0;
     transform: scale(0.5);
   }
+
   to {
     opacity: 0.35;
     transform: scale(1);
@@ -1710,7 +1712,8 @@ html[data-motion="reduced"] {
 }
 
 .mastery-list.is-expanded {
-  max-height: 1200px; /* generous ceiling well above 8 rows' actual height */
+  max-height: 1200px;
+  /* generous ceiling well above 8 rows' actual height */
 }
 
 /* Fade-to-transparent cue at the clipped edge — hidden once expanded. */
@@ -1953,7 +1956,7 @@ html[data-motion="reduced"] {
   }
 
   .avatar-wrapper,
-  .avatar-wrapper > #avatarImage {
+  .avatar-wrapper>#avatarImage {
     width: 84px;
     height: 84px;
     min-width: 84px;
@@ -2040,7 +2043,7 @@ html[data-motion="reduced"] {
   }
 
   .avatar-wrapper,
-  .avatar-wrapper > #avatarImage {
+  .avatar-wrapper>#avatarImage {
     width: 68px;
     height: 68px;
     min-width: 68px;
@@ -2222,7 +2225,8 @@ html[data-motion="reduced"] {
 .thumbnail-preset-btn {
   aspect-ratio: 3 / 1;
   border-radius: 10px;
-  grid-column: span 2; /* 2 swatches per row instead of 4, given the wide aspect */
+  grid-column: span 2;
+  /* 2 swatches per row instead of 4, given the wide aspect */
 }
 
 .thumbnail-preset-btn:hover {
@@ -2341,7 +2345,8 @@ html[data-motion="reduced"] {
   border-radius: 12px;
   background: var(--color-background-secondary);
   cursor: grab;
-  touch-action: none; /* prevent the browser's own pan/zoom from fighting the cropper's pointer handling */
+  touch-action: none;
+  /* prevent the browser's own pan/zoom from fighting the cropper's pointer handling */
   user-select: none;
 }
 
@@ -2371,7 +2376,8 @@ html[data-motion="reduced"] {
   left: 50%;
   max-width: none;
   transform-origin: 0 0;
-  pointer-events: none; /* the stage element owns pointer/drag handling, not the img itself */
+  pointer-events: none;
+  /* the stage element owns pointer/drag handling, not the img itself */
 }
 
 .avatar-crop-hint {
@@ -2423,6 +2429,7 @@ html[data-motion="reduced"] {
   text-decoration: none;
   font-weight: 600;
 }
+
 /* ==================== Nav Role Badge Overlay ==================== */
 /* Small role badge (owner/admin) pinned to the corner of the nav avatar.
          Injected by avatarEngine.js's syncNavAvatars() (and mirrored by the
@@ -2446,6 +2453,7 @@ html[data-motion="reduced"] {
 }
 
 @media (max-width: 768px) {
+
   /* Bottom-nav avatar is a small icon-sized image — scale the badge down
            and pull it further into the corner so it no longer overlaps the
            avatar itself. */

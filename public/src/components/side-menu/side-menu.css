@@ -12,17 +12,6 @@
   --sidebar-expanded-width: 240px;
 }
 
-/* ── Body padding shifts with sidebar (RTL: sidebar is on the right) ────── */
-body {
-  /* 16px gap added so content never visually touches the sidebar edge */
-  padding-right: calc(var(--sidebar-collapsed-width) + 16px);
-  transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-body.sidebar-expanded {
-  padding-right: calc(var(--sidebar-expanded-width) + 16px);
-}
-
 /* ── Sidebar Panel ────────────────────────────────────────────────────────── */
 .sidebar {
   position: fixed;
@@ -73,6 +62,16 @@ body.sidebar-expanded {
   padding: 8px;
   border-top: 1px solid var(--color-border);
   background: var(--sidebar-color);
+}
+
+/* Some legacy page templates still place this block inside the nav scroll
+   container. Make that placement occupy the sidebar track rather than the
+   nav's 8px padded content track; templates with a direct-sidebar placement
+   are unaffected. */
+.sidebar nav>.sidebar-pinned-actions {
+  width: calc(100% + 16px);
+  margin-left: -8px;
+  margin-right: -8px;
 }
 
 /* Desktop only: stick to the bottom of nav's own scrollport instead of
@@ -1534,15 +1533,6 @@ body.sidebar-expanded {
   .sidebar .sidebar-favicon,
   .sidebar-collapse-btn {
     display: none !important;
-  }
-
-  /* No body padding shift on mobile — sidebar is an overlay.
-     padding-bottom reserves space for the fixed bottom nav bar so page
-     content (and things like the footer) are never hidden behind it. */
-  body,
-  body.sidebar-expanded {
-    padding-right: 16px !important;
-    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px) !important;
   }
 
   /* Full labels always visible on mobile */

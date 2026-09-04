@@ -22,7 +22,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   padding: 40px 24px;
+  padding-right: calc(var(--sidebar-collapsed-width) + 16px);
+  transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--color-text-primary);
+}
+
+body.sidebar-expanded {
+  padding-right: calc(var(--sidebar-expanded-width) + 16px);
 }
 
 /* ============================================================================
@@ -666,6 +672,12 @@ body.sidebar-expanded .site-footer {
 @media (max-width: 768px) {
   body {
     padding: 24px 16px;
+    padding-right: 16px;
+    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
+  body.sidebar-expanded {
+    padding-right: 16px;
   }
 
   .settings-page {
