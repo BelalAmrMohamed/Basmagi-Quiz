@@ -2,17 +2,18 @@
 // =============================================================================
 // Shared deterministic 8-char Base32 ID generator.
 //
-// This is the single source of truth for quiz/category ID generation.
-// Both generate-quiz-manifest.js (build-time) and api/quiz-manifest.js
-// (runtime) import from here — guaranteeing the same ID for the same path
-// in both environments, which is the prerequisite for stable shareable links.
+// Used by scripts/migrate-local-quizzes-to-db.js when migrating a legacy
+// local quiz file into the DB, so the migrated row's derived ID matches
+// what public/src/shared/quizId.js (the browser-side counterpart used as a
+// fallback in quizManifest.js) would compute for the same input.
 //
-// Algorithm (mirrors the original inline version in generate-quiz-manifest.js):
-//   1. Compute SHA-256 of the relative path string (relative to public/data/).
+// Algorithm:
+//   1. Compute SHA-256 of the input string.
 //   2. For each of the 8 output positions: charset[ hash[i] % 32 ].
 //
-// ⚠️  Do NOT change this function without re-running generate-quiz-manifest.js
-//     and re-uploading all quizzes — IDs will shift and every shared link breaks.
+// ⚠️  Do NOT change this function without also updating
+//     public/src/shared/quizId.js — they must stay in sync, or IDs will
+//     differ between server-side (migration) and client-side generation.
 // =============================================================================
 
 import crypto from "crypto";

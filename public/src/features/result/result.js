@@ -225,20 +225,6 @@ function escapeHTML(input) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * extractCategoryFromPath — derives the quiz category from a manifest path.
- *
- * Path structure:
- *   quizzes/[Faculty]/[Year]/[Term]/[Subject]/[...subfolders]/[quiz].json
- *
- * This function handles both local paths and encoded DB paths (/api/quiz-data?path=...).
- * The "Category" is the part of the path that identifies the subject and subfolders,
- * appearing after the Faculty/Year/Term segments.
- *
- * @param  {string|null|undefined} path - The `config.path` value.
- * @returns {string} Category string, or "" if the path is absent / malformed.
- */
-
 const formatQuestionTypes = (stats) => {
   const qt = stats?.questionTypes;
   if (!qt) return null;

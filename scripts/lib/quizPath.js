@@ -1,9 +1,14 @@
 // scripts/lib/quizPath.js
 // =============================================================================
-// Shared quiz path parsing for manifest generation and API routes.
+// Write-time path helpers shared by the upload API routes
+// (api/upload-quiz.js, api/upload-folder.js) and the one-off local→DB
+// migration script (scripts/migrate-local-quizzes-to-db.js).
+//
+// These build/parse the denormalized `path`/`category`/`subject`/`subfolder`
+// string columns that get stored alongside a quiz row's course_id/folder_id
+// on INSERT. Nothing on the read path uses these anymore — quizManifest.js
+// reads course_id/folder_id directly (see its own header comment).
 // =============================================================================
-
-import { generateQuizId } from "./quizId.js";
 
 export const ROOT_MAP = {
   University: {
@@ -139,21 +144,6 @@ export function normalizeSlashes(p) {
   return p.replace(/\\/g, "/").replace(/^\/+/, "");
 }
 
-export function stripQuizzesPrefix(p) {
-  const n = normalizeSlashes(p);
-  return n.startsWith("quizzes/") ? n.slice("quizzes/".length) : n;
-}
-
-export function parseCanonicalPath(canonicalPath) {
-  const withoutPrefix = stripQuizzesPrefix(canonicalPath);
-  const lastSlash = withoutPrefix.lastIndexOf("/");
-  if (lastSlash === -1) return null;
-
-  const filename = withoutPrefix.slice(lastSlash + 1);
-  const dirPart = withoutPrefix.slice(0, lastSlash);
-  return parseDbPath(dirPart, filename);
-}
-
 export function parseDbPath(dbPath, filename = "") {
   const segments = normalizeSlashes(dbPath).split("/").filter(Boolean);
   if (!segments.length) return null;
@@ -185,70 +175,6 @@ export function parseDbPath(dbPath, filename = "") {
     subfolders,
     filename: filename || undefined,
     dbPath: filename ? `${dbPath}/${filename}` : dbPath,
-  };
-}
-
-export function buildCourseKey(parsed) {
-  const parts = [parsed.rootFolder];
-  if (parsed.college) parts.push(parsed.college);
-  if (parsed.year) parts.push(parsed.year);
-  if (parsed.term) parts.push(parsed.term);
-  parts.push(parsed.course);
-  return parts.join("/");
-}
-
-export function buildCourseRelDir(parsed) {
-  return `quizzes/${buildCourseKey(parsed)}`;
-}
-
-export function buildSubjectManifestEntry(parsed, quizzes = []) {
-  const courseRelDir = buildCourseRelDir(parsed);
-  const entry = {
-    id: generateQuizId(courseRelDir),
-    name: parsed.course,
-    education_type: parsed.education_type,
-    quizzes,
-  };
-
-  if (parsed.education_type === "University" && parsed.college) {
-    entry.faculty = parsed.college;
-    if (parsed.year) entry.year = parseInt(parsed.year, 10);
-    if (parsed.term) entry.term = parseInt(parsed.term, 10);
-  } else if (["Primary", "Middle", "High"].includes(parsed.education_type)) {
-    if (parsed.year) entry.year = parseInt(parsed.year, 10);
-    if (parsed.term) entry.term = parseInt(parsed.term, 10);
-  }
-
-  return entry;
-}
-
-export function extractFolderSegmentsFromQuizPath(rawPath) {
-  let pathStr = rawPath;
-
-  try {
-    const qIdx = pathStr.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(pathStr.slice(qIdx + 1));
-      const pathParam = params.get("path");
-      if (pathParam) pathStr = decodeURIComponent(pathParam);
-    }
-  } catch {
-    /* ignore */
-  }
-
-  pathStr = pathStr.replace(/^\/data\//, "quizzes/");
-
-  const canonical = stripQuizzesPrefix(pathStr);
-  const lastSlash = canonical.lastIndexOf("/");
-  if (lastSlash === -1) return { education_type: null, folderSegments: [] };
-
-  const dirPart = canonical.slice(0, lastSlash);
-  const parsed = parseDbPath(dirPart);
-  if (!parsed) return { education_type: null, folderSegments: [] };
-
-  return {
-    education_type: parsed.education_type,
-    folderSegments: parsed.subfolders,
   };
 }
 

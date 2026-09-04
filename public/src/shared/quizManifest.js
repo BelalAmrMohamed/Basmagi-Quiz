@@ -1,26 +1,23 @@
 // public/src/shared/quizManifest.js
 // =============================================================================
-// Loads and merges the local static manifest with the live DB manifest.
+// Loads the quiz manifest — DB-only. Queries Supabase for `quizzes`,
+// `courses`, and `folders` directly, then reconstructs each quiz's
+// subject/subfolder placement by walking course_id → course row and
+// folder_id → parent_folder_id chain. Nothing here reads a local file or
+// a bundled/static manifest.
 //
-// Sources
-// ───────
-// Manifest shape (new)
-// ────────────────────
-// { generatedAt, dataRoot, subjects: [ { id, name, faculty, year, term, quizzes: [...] } ] }
-//
-// Merge rules
-// ───────────
-// • Both fetches run in parallel (Promise.allSettled).
-// • LOCAL wins on ID collision for both subjects and quizzes.
-// • DB-only subjects/quizzes are appended after local ones.
+// Manifest shape
+// ──────────────
+// { subjects: [ { id, name, education_type, faculty?, year?, term?, quizzes: [...] } ] }
 //
 // For backward compatibility, getManifest() also returns a `categoryTree`
-// object (keyed by subject name) that index.js uses for navigation.
+// object (keyed by subject/subfolder name) that index.js uses for
+// navigation, and an `examList` flat array.
 //
 // Caching
 // ───────
 // Cached in memory for the lifetime of the page.
-// Call invalidateManifestCache() after an admin upload.
+// Call invalidateManifestCache() after an admin upload or delete.
 // =============================================================================
 
 import { generateQuizId } from "./quizId.js";
@@ -168,29 +165,17 @@ async function fetchDbManifest() {
 }
 
 /**
- * Merges two subjects arrays.
- * Subjects are matched by `id`. For matching subjects, their quizzes arrays
- * are merged (local first, no duplicate IDs).
- * DB-only subjects are appended.
- *
- * @param {Subject[]} local
- * @param {Subject[]} db
- * @returns {Subject[]}
- */
-/**
  * Builds backward-compatible `categoryTree` and `examList` from subjects.
  *
  * categoryTree shape expected by index.js:
  *   { [subjectName]: { id, name, faculty, year, term, path, parent, subcategories, exams } }
  *
- * Since the new manifest flattens subfolders, we reconstruct subfolder nodes
- * from quiz paths when a quiz's path reveals a subfolder segment.
+ * Each quiz's `folderSegments` (walked from folder_id's parent chain in
+ * fetchDbManifest()) is used to reconstruct nested subfolder nodes.
  *
  * @param {Subject[]} subjects
  * @returns {{ categoryTree: object, examList: object[] }}
  */
-
-
 function buildCompatStructures(subjects) {
   const categoryTree = {};
   const examList = [];
@@ -273,4 +258,3 @@ function buildCompatStructures(subjects) {
 
   return { categoryTree, examList };
 }
-

@@ -342,9 +342,8 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
 
     // ── "حذف" — database quizzes only, and only for the quiz's own
     // creator or a platform owner. canDeleteQuiz() covers both the
-    // dbSource==="db" check and the creator/owner check, so this stays
-    // hidden for static/relative-path quizzes and for anyone else's DB
-    // quizzes.
+    // exam.dbId presence check and the creator/owner check, so this stays
+    // hidden for quizzes with no DB row and for anyone else's DB quizzes.
     if (canDeleteQuiz(exam)) {
       const deleteOpt = document.createElement("button");
       deleteOpt.type = "button";

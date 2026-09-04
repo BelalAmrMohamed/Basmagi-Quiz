@@ -36,36 +36,6 @@ import {
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
-// ── Quiz Info Dialog helpers (ported from result.js) ──────────────────────
-// Resolves a category label from a stored quiz path when config.category
-// isn't set directly. Mirrors the canonical Faculty/Year/Term/Subject path
-// structure used elsewhere in the app.
-const extractCategoryFromPath = (path) => {
-  if (!path) return "";
-
-  let rawPath = path;
-
-  try {
-    const qIdx = rawPath.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(rawPath.slice(qIdx + 1));
-      const p = params.get("path");
-      if (p) rawPath = decodeURIComponent(p);
-    }
-  } catch (_) {
-    // ignore malformed query strings
-  }
-
-  const match = rawPath.match(/quizzes\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
-  if (match) {
-    const segments = match[1].split("/");
-    const parts = segments.slice(0, -1);
-    if (parts.length > 0) return parts.join(" / ");
-  }
-
-  return "";
-};
-
 import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { QuizInfoModalCSS } from "../../components/quiz-info-modal/quiz-info-modal-css.js";
 
@@ -97,10 +67,6 @@ const serializeHlBuiltinsJs = (set) =>
 
 export async function buildStandaloneQuizHtml(config, questions) {
   const processedQuestions = await convertImagesToBase64(questions);
-
-  if (!config.category) {
-    config.category = extractCategoryFromPath(config.path);
-  }
 
   const authorIdentifier = config.authorId || config.authorHandle;
   let creatorProfile = null;

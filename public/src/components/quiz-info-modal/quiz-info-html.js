@@ -1,41 +1,6 @@
 // public/src/components/quiz-info-modal/quiz-info-html.js
 import { escapeHtml } from "../../features/home/escape-html.js";
-import { extractFolderSegmentsFromQuizPath } from "../../shared/quizPath.js";
 import { avatarEngine } from "../../shared/avatarEngine.js";
-
-/**
- * Derives the quiz category/course name from a manifest path.
- */
-export function extractCategoryFromPath(path) {
-  if (!path) return "";
-  const subfolders = extractFolderSegmentsFromQuizPath(path);
-  if (subfolders.length > 0) return subfolders.join(" / ");
-  return "";
-}
-
-/**
- * Derives the clean path (المسار) excluding quizzes/ and the file name, keeping the trailing slash.
- */
-export function extractCleanPath(path) {
-  if (!path) return "";
-  // Strip "quizzes/" if present and decode API paths (/api/quiz-data?path=...)
-  let clean = path;
-  try {
-    const qIdx = path.indexOf("?");
-    if (qIdx !== -1) {
-      const params = new URLSearchParams(path.slice(qIdx + 1));
-      const p = params.get("path");
-      if (p) clean = decodeURIComponent(p);
-    }
-  } catch (_) {}
-  clean = clean.replace(/^quizzes\//, "");
-  // Remove the file name at the end
-  const lastSlash = clean.lastIndexOf("/");
-  if (lastSlash !== -1) {
-    clean = clean.substring(0, lastSlash + 1);
-  }
-  return clean;
-}
 
 /** Normalise a stored date string down to just its date portion. */
 export function formatDateForInfo(raw) {
@@ -164,20 +129,11 @@ export function buildQuizInfoModalHtml(config, questionCount = null, creatorProf
   const gridItems = [];
 
   // Subject (المادة)
-  const subject = config.category || extractCategoryFromPath(config.path);
+  const subject = config.category || "";
   if (subject) {
     gridItems.push(`
       <div class="quiz-meta-label">المادة</div>
       <div class="quiz-meta-value">${escapeHtml(subject)}</div>
-    `);
-  }
-
-  // Path (المسار) — only for non-API paths (local quizzes)
-  const cleanPath = extractCleanPath(config.path);
-  if (cleanPath) {
-    gridItems.push(`
-      <div class="quiz-meta-label">المسار</div>
-      <div class="quiz-meta-value" style="opacity: 0.85; font-size: 0.9em;">${escapeHtml(cleanPath)}</div>
     `);
   }
 

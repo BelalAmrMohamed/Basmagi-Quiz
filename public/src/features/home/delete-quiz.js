@@ -10,13 +10,13 @@
 // IMPORTANT — this client-side check is UX only, not the real authorization
 // boundary. Every other privileged write in this codebase goes through a
 // server-validated /api/* endpoint (see adminAuth.js's signIn()/signInWithSupabase()
-// hitting /api/auth, and quizManifest.js's DB reads hitting /api/quiz-manifest)
-// rather than a raw Supabase client call from the browser — no Supabase
-// client instance is ever exposed to this module for that reason. Deletion
-// follows the same pattern: it calls /api/delete-quiz with the admin JWT,
-// and that endpoint must re-validate role/ownership server-side (via
-// Supabase RLS and/or an explicit creator/owner check) before deleting the
-// row. This module cannot itself guarantee authorization — the backend must.
+// hitting /api/auth) rather than a raw Supabase client call from the browser
+// for writes — no Supabase client instance is ever exposed to this module for
+// that reason. Deletion follows the same pattern: it calls /api/delete-quiz
+// with the admin JWT, and that endpoint must re-validate role/ownership
+// server-side (via Supabase RLS and/or an explicit creator/owner check)
+// before deleting the row. This module cannot itself guarantee authorization
+// — the backend must.
 // ============================================================================
 
 import {
@@ -32,7 +32,7 @@ import { showNotification } from "../../components/notifications/notifications.j
  * "حذف" option for this exam: it must be a database quiz, and the admin
  * must either be the quiz's own creator or a platform owner.
  *
- * @param {object} exam - manifest exam entry (id, dbSource, author_email, ...)
+ * @param {object} exam - manifest exam entry (id, dbId, author_email, ...)
  * @returns {boolean}
  */
 export function canDeleteQuiz(exam) {
@@ -66,7 +66,7 @@ export function canDeleteQuiz(exam) {
  * quiz's card from the DOM on success — this function only handles the
  * network call, cache invalidation, and user-facing notifications.
  *
- * @param {object} exam - manifest exam entry (must have `id`, dbSource: "db")
+ * @param {object} exam - manifest exam entry (must have `id`, `dbId`)
  * @returns {Promise<boolean>} true if the quiz was deleted
  */
 export async function deleteQuizFromDatabase(exam) {
