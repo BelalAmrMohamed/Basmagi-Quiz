@@ -135,7 +135,7 @@ async function fetchDbManifest() {
     const courseKey = buildCourseKey(parsed);
 
     if (!subjectsMap.has(courseKey)) {
-      subjectsMap.set(courseKey, buildSubjectManifestEntry(parsed, []));
+      subjectsMap.set(courseKey, await buildSubjectManifestEntry(parsed, []));
     }
 
     const subjectEntry = subjectsMap.get(courseKey);

@@ -198,10 +198,10 @@ export function buildCourseRelDir(parsed) {
   return `quizzes/${buildCourseKey(parsed)}`;
 }
 
-export function buildSubjectManifestEntry(parsed, quizzes = []) {
+export async function buildSubjectManifestEntry(parsed, quizzes = []) {
   const courseRelDir = buildCourseRelDir(parsed);
   const entry = {
-    id: generateQuizId(courseRelDir),
+    id: await generateQuizId(courseRelDir),
     name: parsed.course,
     education_type: parsed.education_type,
     quizzes,
