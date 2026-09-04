@@ -7,6 +7,7 @@
 // =============================================================================
 
 import { renderMarkdown, _processByLine } from "../../shared/markdown.js";
+import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, applyResponseLanguage, isAiHelperAvailable } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
 import { isAdminAuthenticated, getToken as getAdminToken } from "../../shared/adminAuth.js";
@@ -348,29 +349,30 @@ export function createChatPanel(options = {}) {
     })[character]);
   }
 
-  function loadPdfLibrary() {
-    if (window.jspdf?.jsPDF) return Promise.resolve();
-    return new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      script.onload = resolve;
-      script.onerror = () => reject(new Error("PDF library failed to load"));
-      document.head.appendChild(script);
-    });
-  }
-
-  async function loadArabicPdfFont(doc) {
-    const fontUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notonaskharabic/NotoNaskhArabic%5Bwght%5D.ttf";
-    const response = await fetch(fontUrl);
-    if (!response.ok) throw new Error(`Arabic PDF font failed to load: ${response.status}`);
-    const bytes = new Uint8Array(await response.arrayBuffer());
-    let binary = "";
-    for (let index = 0; index < bytes.length; index += 0x8000) {
-      binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
-    }
-    doc.addFileToVFS("NotoNaskhArabic.ttf", btoa(binary));
-    doc.addFont("NotoNaskhArabic.ttf", "NotoNaskhArabic", "normal");
-    doc.setFont("NotoNaskhArabic", "normal");
+  function printConversation() {
+    const printWindow = window.open("", "_blank", "width=900,height=700");
+    if (!printWindow) throw new Error("Print window was blocked");
+    const body = getExportMessages()
+      .map((message) => `<article><header>${escapeHtml(message.type === "tool-result" ? "النظام" : message.role === "user" ? "أنت" : "الباشــمبصمج")}</header><div class="message-content">${renderMarkdown(message.content)}</div></article>`)
+      .join("");
+    const printCss = `${MARKDOWN_CSS}\n@page{size:auto;margin:16mm 14mm}*{box-sizing:border-box}body{margin:0;background:#fff;color:#172033;font-family:Tahoma,"Segoe UI",sans-serif;direction:rtl;line-height:1.8}.print-header{border-bottom:2px solid #2563eb;margin-bottom:24px;padding-bottom:12px}.print-header h1{margin:0;color:#172033;font-size:22px}.print-header p{margin:3px 0 0;color:#64748b;font-size:12px}article{break-inside:avoid;border-bottom:1px solid #dbe2ea;padding:14px 0}article:last-child{border-bottom:0}article header{margin-bottom:5px;color:#2563eb;font-size:14px;font-weight:700}.message-content{overflow-wrap:anywhere}.message-content p:first-child{margin-top:0}.message-content p:last-child{margin-bottom:0}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}`;
+    let hasPrinted = false;
+    const printOnce = () => {
+      if (hasPrinted || printWindow.closed) return;
+      hasPrinted = true;
+      printWindow.focus();
+      printWindow.print();
+      printWindow.addEventListener("afterprint", () => printWindow.close(), { once: true });
+    };
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>محادثة الباشــمبصمج</title><style>${printCss}</style></head><body><div class="print-header"><h1>محادثة الباشــمبصمج</h1><p>${new Date().toLocaleDateString("ar-EG")}</p></div>${body}</body></html>`);
+    printWindow.document.close();
+    printWindow.addEventListener("load", () => {
+      printOnce();
+    }, { once: true });
+    setTimeout(() => {
+      printOnce();
+    }, 400);
   }
 
   /** Exports only the user-visible conversation, with tool payloads sanitized. */
@@ -387,25 +389,7 @@ export function createChatPanel(options = {}) {
       } else if (format === "html") {
         downloadExport(new Blob([getHtmlExport()], { type: "text/html;charset=utf-8" }), "html");
       } else if (format === "pdf") {
-        await loadPdfLibrary();
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-        try {
-          await loadArabicPdfFont(doc);
-        } catch (fontError) {
-          console.warn("[ai-agent-chat] Arabic PDF font unavailable; using jsPDF fallback font:", fontError);
-        }
-        const processArabic = typeof doc.processArabic === "function"
-          ? (line) => doc.processArabic(line)
-          : (line) => line;
-        const lines = doc.splitTextToSize(transcript, 180);
-        let y = 15;
-        for (const line of lines) {
-          if (y > 285) { doc.addPage(); y = 15; }
-          doc.text(processArabic(line), 195, y, { align: "right", charSpace: 0 });
-          y += 7;
-        }
-        doc.save(`ai-chat-${new Date().toISOString().slice(0, 10)}.pdf`);
+        printConversation();
       } else {
         try {
           const copyFormat = format === "copy-json" ? getJsonExport() : format === "copy-html" ? getHtmlExport() : transcript;

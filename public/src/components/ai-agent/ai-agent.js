@@ -340,6 +340,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     event.stopPropagation();
     if (sidebarCopyBtn.disabled) return;
     openExamDropdownMenu(sidebarCopyBtn, (menu, closeMenu) => {
+      menu.classList.add("ai-agent-export-menu");
       const title = document.createElement("div");
       title.className = "ai-agent-export-menu-title";
       title.textContent = "تصدير المحادثة";

@@ -1969,7 +1969,9 @@ body.sidebar-expanded .ai-agent-fab {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-width: 245px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px 10px;
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
   color: var(--color-text-primary);
@@ -2013,6 +2015,7 @@ body.sidebar-expanded .ai-agent-fab {
   flex: 1;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
   text-align: start;
 }
 
@@ -2023,6 +2026,9 @@ body.sidebar-expanded .ai-agent-fab {
 .ai-agent-export-menu-copy span {
   color: var(--color-text-secondary, #64748b);
   font-size: 0.76rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ai-agent-export-menu-actions {
@@ -2408,4 +2414,11 @@ body.sidebar-expanded .ai-agent-fab {
     flex-shrink: 0;
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
+}
+
+.exam-dropdown-menu.ai-agent-export-menu {
+  width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
