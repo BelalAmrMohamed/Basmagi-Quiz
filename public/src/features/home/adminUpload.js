@@ -1608,7 +1608,7 @@ async function openModal(quiz)               { await _openWizard([quiz]); }
 async function openAdminUploadModal(quizzes) { await _openWizard(Array.isArray(quizzes) ? quizzes : [quizzes]); }
 
 /**
- * Entry point for the "☁️ رفع المادة إلى المنصة" action — uploads one or
+ * Entry point for the "رفع المادة إلى المنصة" action — uploads one or
  * more EXISTING local courses (with everything nested inside them: folders
  * and quizzes) to the platform's top level in one wizard flow.
  * Flow: Track -> Review (+ multi-course disclaimer) -> Upload.
