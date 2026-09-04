@@ -198,7 +198,7 @@ async function fetchQuizMeta(quizId) {
   const { data, error } = await supabase
     .from("quizzes")
     .select("id, data, title")
-    .filter("data->meta->>'id'", "eq", quizId)
+    .filter("data->meta->>id", "eq", quizId)
     .limit(1)
     .maybeSingle();
 
