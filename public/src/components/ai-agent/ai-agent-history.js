@@ -21,6 +21,7 @@ import {
 } from "./ai-agent-history-idb.js";
 import { openExamDropdownMenu } from "../../features/home/exam-dropdown-menu.js";
 import { detectDirection } from "../../shared/markdown.js";
+import { _confirm } from "../notifications/notifications.js";
 
 const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 const MORE_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`;
@@ -171,6 +172,7 @@ export function createHistoryPanel(options = {}) {
       deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المحادثة</span>`;
       deleteOpt.onclick = async (e) => {
         e.stopPropagation();
+        if (!(await _confirm("هل أنت متأكد من حذف هذه المحادثة؟"))) return;
         closeMenu();
         try {
           await deleteConversation(conv.id);

@@ -183,6 +183,7 @@ export function createChatPanel(options = {}) {
   let currentAbortController = null;
   let isGenerating = false;
   let sessionExecutedTools = new Set();
+  let attachmentToolHandler = null;
 
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-chat-panel";
@@ -399,7 +400,9 @@ export function createChatPanel(options = {}) {
    */
   function expandPlatformAttachment(att) {
     const kindLabelAr = { quiz: "اختبار", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
-    const body = att.summary ? att.summary : "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
+    const body = att.payload
+      ? JSON.stringify(att.payload)
+      : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
     return `[مرفق ${kindLabelAr}: ${att.title}]\n${body}`;
   }
 
@@ -2052,7 +2055,7 @@ export function createChatPanel(options = {}) {
         return `${name}::${String(primary).trim().toLowerCase()}::${String(secondary).trim().toLowerCase()}`;
       }
 
-      if (toolCallsToRun.length && typeof onToolCall === "function") {
+      if (toolCallsToRun.length && (typeof onToolCall === "function" || attachmentToolHandler)) {
         const totalTools = toolCallsToRun.length;
         let executedCount = 0;
 
@@ -2080,7 +2083,10 @@ export function createChatPanel(options = {}) {
           });
 
           try {
-            const resultText = await onToolCall(toolCall);
+            const handler = toolCall?.name === "fetch_attached_quiz" && attachmentToolHandler
+              ? attachmentToolHandler
+              : onToolCall;
+            const resultText = await handler(toolCall);
             if (currentAbortController?.signal?.aborted) {
               allToolCallsSucceeded = false;
               break;
@@ -2482,6 +2488,10 @@ export function createChatPanel(options = {}) {
     renderAttachmentChips();
   };
 
+  panel.setAttachmentToolHandler = function setAttachmentToolHandler(handler) {
+    attachmentToolHandler = typeof handler === "function" ? handler : null;
+  };
+
   panel.loadConversation = function loadConversation(conversation) {
     stopSpeaking();
     typingController.clear();
@@ -2544,7 +2554,6 @@ export function createChatPanel(options = {}) {
     conversationId = crypto.randomUUID();
     conversationCreatedAt = Date.now();
     history.length = 0;
-    pendingAttachments = [];
     renderAttachmentChips();
     messagesEl.innerHTML = "";
     renderEmptyState();

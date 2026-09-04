@@ -29,6 +29,13 @@ import { setFolderState } from "./user-quizzes-folders.js";
 import { getCourseItemCount } from "./course-count.js";
 import { attachCourseInfoTooltip } from "./course-info-tooltip.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
+import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import { MORE_DOTS_ICON_SVG, SPARKLE_ICON_SVG } from "./icons.js";
+import {
+  openAIAgentWithAttachment,
+  buildUserRootAttachmentForAskAi,
+} from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 
 export async function renderRootCategories() {
   try {
@@ -92,6 +99,37 @@ export async function renderRootCategories() {
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";
+
+      const rootMenuBtn = document.createElement("button");
+      rootMenuBtn.type = "button";
+      rootMenuBtn.className = "exam-more-btn";
+      rootMenuBtn.innerHTML = MORE_DOTS_ICON_SVG;
+      rootMenuBtn.setAttribute("aria-label", "خيارات امتحاناتك");
+      rootMenuBtn.onclick = (event) => {
+        event.stopPropagation();
+        openExamDropdownMenu(rootMenuBtn, (menu, closeMenu) => {
+          const attachment = buildUserRootAttachmentForAskAi();
+          const stats = document.createElement("div");
+          stats.className = "exam-action-btn";
+          stats.disabled = true;
+          stats.textContent = attachment.summary;
+          menu.appendChild(stats);
+
+          const askAi = document.createElement("button");
+          askAi.type = "button";
+          askAi.className = "exam-action-btn";
+          askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+          askAi.onclick = (clickEvent) => {
+            clickEvent.stopPropagation();
+            closeMenu();
+            openAIAgentWithAttachment(attachment, {
+              defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+            });
+          };
+          menu.appendChild(askAi);
+        });
+      };
+      quizzesCard.appendChild(rootMenuBtn);
 
       quizzesCard.onclick = () => {
         // Always reset to the root of user-quizzes, regardless of where the

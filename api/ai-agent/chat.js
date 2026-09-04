@@ -73,7 +73,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -259,6 +259,7 @@ const TOOLS_BY_NAME = {
   create_folder: CREATE_FOLDER_TOOL,
   create_course: CREATE_COURSE_TOOL,
   move_item: MOVE_ITEM_TOOL,
+  fetch_attached_quiz: FETCH_ATTACHED_QUIZ_TOOL,
 };
 
 // Historical default — the home page's original three tools — kept so

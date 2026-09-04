@@ -68,6 +68,21 @@ export function summarizeFolder(userQuizzes, folderId) {
   return parts.length ? `يحتوي على: ${parts.join(" و")}` : "مجلد فارغ حاليًا";
 }
 
+function buildItemTree(userQuizzes, parentId) {
+  return userQuizzes
+    .filter((item) => (item.meta?.parentId || null) === parentId)
+    .map((item) => {
+      const id = item.meta?.id || item.id;
+      const kind = item.meta?.type === "course" || item.meta?.type === "folder"
+        ? item.meta.type
+        : "quiz";
+      const node = { kind, id, title: qz(item, "title") || "بدون عنوان" };
+      if (kind === "quiz") node.questionCount = qz(item, "count");
+      else node.children = buildItemTree(userQuizzes, id);
+      return node;
+    });
+}
+
 /**
  * Resolves a user-created quiz/folder/course id into the
  * {kind, id, title, summary, source} shape panel.addPendingAttachment
@@ -85,10 +100,27 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
   const title = qz(item, "title") || item.meta?.title || "بدون عنوان";
   const metaType = item.meta?.type;
   const kind = metaType === "folder" || metaType === "course" ? metaType : "quiz";
-  const summary =
-    kind === "quiz" ? summarizeQuiz(item) : summarizeFolder(userQuizzes, id);
+  if (kind === "quiz") {
+    return {
+      kind,
+      id,
+      title,
+      summary: summarizeQuiz(item),
+      source: "local",
+      payload: { meta: item.meta || {}, stats: item.stats || {}, questions: item.questions || [] },
+    };
+  }
 
-  return { kind, id, title, summary, source: "local" };
+  const tree = buildItemTree(userQuizzes, id);
+  const counts = getFolderContentsCount(userQuizzes, id);
+  return {
+    kind,
+    id,
+    title,
+    summary: `عدد الاختبارات: ${counts.quizCount} — عدد المجلدات الفرعية: ${counts.subfolderCount}`,
+    source: "local",
+    payload: { totalQuizCount: counts.quizCount, totalFolderCount: counts.subfolderCount, tree },
+  };
 }
 
 /**
@@ -137,4 +169,32 @@ export function listRecentUserItems(query = "", limit = 8) {
   });
 
   return items.slice(0, limit);
+}
+
+export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
+  const tree = buildItemTree(userQuizzes, null);
+  const quizCount = tree.reduce((count, item) => {
+    if (item.kind === "quiz") return count + 1;
+    return count + countTreeQuizzes(item.children || []);
+  }, 0);
+  const folderCount = tree.reduce((count, item) => {
+    if (item.kind === "quiz") return count;
+    return count + 1 + countTreeFolders(item.children || []);
+  }, 0);
+  return {
+    kind: "folder",
+    id: "user-quizzes-root",
+    title: "امتحاناتك",
+    summary: `عدد الاختبارات: ${quizCount} — عدد المجلدات: ${folderCount}`,
+    source: "local",
+    payload: { totalQuizCount: quizCount, totalFolderCount: folderCount, tree },
+  };
+}
+
+function countTreeQuizzes(nodes) {
+  return nodes.reduce((count, node) => count + (node.kind === "quiz" ? 1 : countTreeQuizzes(node.children || [])), 0);
+}
+
+function countTreeFolders(nodes) {
+  return nodes.reduce((count, node) => count + (node.kind === "quiz" ? 0 : 1 + countTreeFolders(node.children || [])), 0);
 }

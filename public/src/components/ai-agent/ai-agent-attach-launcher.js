@@ -28,7 +28,11 @@
 // =============================================================================
 
 import { openAIAgentModal, getChatPanelForPageKey } from "./ai-agent.js";
-import { resolveUserItemById } from "./ai-agent-item-lookup.js";
+import {
+  resolveUserItemById,
+  readUserQuizzes,
+  buildUserRootAttachment,
+} from "./ai-agent-item-lookup.js";
 
 /**
  * Resolves a user-created quiz/folder/course id (from `user_quizzes`) into
@@ -57,12 +61,52 @@ export function resolveUserItemAttachment(id) {
  * @returns {{kind: "course", id: string, title: string, source: "platform"}}
  */
 export function buildPlatformCourseAttachment(course) {
+  const buildTree = (node) => ({
+    kind: "folder",
+    id: node?.key || node?.name || "course",
+    title: node?.name || "بدون عنوان",
+    children: [
+      ...(node?.subcategories || []).map((child) =>
+        typeof child === "object"
+          ? buildTree(child)
+          : { kind: "folder", id: child, title: child, children: [] }),
+      ...(node?.exams || []).map((exam) => ({
+        kind: "quiz",
+        id: exam.id,
+        title: exam.title || exam.id,
+        questionCount: exam.questionCount || 0,
+      })),
+    ],
+  });
+  const tree = buildTree(course);
+  const countQuizzes = (nodes) => nodes.reduce((n, item) => n + (item.kind === "quiz" ? 1 : countQuizzes(item.children || [])), 0);
+  const countFolders = (nodes) => nodes.reduce((n, item) => n + (item.kind === "quiz" ? 0 : 1 + countFolders(item.children || [])), 0);
   return {
     kind: "course",
     id: course.key || course.name,
     title: course.name,
     source: "platform",
+    summary: `عدد الاختبارات: ${countQuizzes(tree.children)} — عدد المجلدات: ${countFolders(tree.children)}`,
+    payload: {
+      totalQuizCount: countQuizzes(tree.children),
+      totalFolderCount: countFolders(tree.children),
+      tree: [tree],
+    },
   };
+}
+
+export function buildPlatformQuizAttachment(exam, payload) {
+  return {
+    kind: "quiz",
+    id: exam.id,
+    title: exam.title || exam.id,
+    source: "platform",
+    payload,
+  };
+}
+
+export function buildUserRootAttachmentForAskAi() {
+  return buildUserRootAttachment(readUserQuizzes());
 }
 
 /**
@@ -93,6 +137,18 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   const options = {
     pageKey: "home",
     enableFileUpload: true,
+    enableTools: true,
+    toolNames: ["fetch_attached_quiz"],
+    onToolCall: (toolCall) => {
+      if (toolCall?.name !== "fetch_attached_quiz") {
+        throw new Error("Unknown attachment tool");
+      }
+      const quiz = resolveUserItemById(toolCall.input?.quizId, readUserQuizzes());
+      if (!quiz || quiz.kind !== "quiz") {
+        throw new Error("الاختبار المطلوب غير موجود في المرفق الحالي.");
+      }
+      return `بيانات الاختبار ${quiz.title} (المعرّف ${quiz.id}):\n${JSON.stringify(quiz.payload)}`;
+    },
     ...pageOptions,
   };
 
@@ -102,6 +158,11 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   // getChatPanelForPageKey — no need to await/poll for it.
   const panel = getChatPanelForPageKey("home");
   if (panel && typeof panel.addPendingAttachment === "function") {
+    panel.setAttachmentToolHandler?.(options.onToolCall);
     panel.addPendingAttachment(attachment);
   }
+}
+
+export function buildPlatformFolderAttachment(folder) {
+  return { ...buildPlatformCourseAttachment(folder), kind: "folder" };
 }

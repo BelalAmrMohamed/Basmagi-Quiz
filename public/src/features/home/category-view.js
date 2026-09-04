@@ -134,13 +134,7 @@ export function renderCategory(category) {
       const subCat = categoryTree[subCatKey];
       if (subCat) {
         const itemCount = getCourseItemCount(subCat);
-        const card = createCategoryCard(
-          subCat.name,
-          itemCount,
-          true,
-          null,
-          true,
-        );
+        const card = createCategoryCard(subCat.name, itemCount, true, subCat, true);
         card.onclick = () => renderCategory(subCat);
         fragment.appendChild(card);
       }
@@ -240,6 +234,44 @@ export function createCategoryCard(
 
   card.appendChild(iconDiv);
   card.appendChild(textWrap);
+
+  if (isSubfolder && courseData) {
+    const moreBtn = document.createElement("button");
+    moreBtn.type = "button";
+    moreBtn.className = "exam-more-btn";
+    moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`;
+    moreBtn.setAttribute("aria-label", `خيارات ${name}`);
+    moreBtn.onclick = async (event) => {
+      event.stopPropagation();
+      const { openExamDropdownMenu } = await import("./exam-dropdown-menu.js");
+      const { openAIAgentWithAttachment, buildPlatformFolderAttachment } = await import(
+        "../../components/ai-agent/ai-agent-attach-launcher.js"
+      );
+      const { HOME_PAGE_SYSTEM_PROMPT } = await import(
+        "../../components/ai-agent/ai-agent-default-prompts.js"
+      );
+      openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
+        const askAi = document.createElement("button");
+        askAi.type = "button";
+        askAi.className = "exam-action-btn";
+        askAi.textContent = "اسأل الباشـمبصمج";
+        askAi.onclick = () => {
+          closeMenu();
+          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData), {
+            defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+          });
+        };
+        menu.appendChild(askAi);
+
+        const counts = document.createElement("div");
+        counts.className = "exam-action-btn";
+        counts.disabled = true;
+        counts.textContent = `${itemCount} اختبار · ${(courseData.subcategories || []).length} مجلد فرعي`;
+        menu.appendChild(counts);
+      });
+    };
+    card.appendChild(moreBtn);
+  }
 
   // Keyboard support
   card.addEventListener("keydown", (e) => {

@@ -35,6 +35,12 @@ import {
   showNotification,
   _confirm,
 } from "../../components/notifications/notifications.js";
+import {
+  openAIAgentWithAttachment,
+  buildPlatformQuizAttachment,
+} from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { SPARKLE_ICON_SVG } from "./icons.js";
 
 function buildExamShareUrl(examId) {
   return window.location.origin + "/q/" + encodeURIComponent(examId);
@@ -318,6 +324,32 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       }
     };
     menu.appendChild(shareOpt);
+
+    const askAiOpt = document.createElement("button");
+    askAiOpt.type = "button";
+    askAiOpt.className = "exam-action-btn";
+    askAiOpt.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+    askAiOpt.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      askAiOpt.disabled = true;
+      try {
+        const fullQuiz = await loadFullQuizData(exam);
+        openAIAgentWithAttachment(
+          buildPlatformQuizAttachment(exam, {
+            meta: fullQuiz.meta || { title: exam.title || exam.id },
+            stats: fullQuiz.stats || {},
+            questions: fullQuiz.questions || [],
+          }),
+          { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT },
+        );
+      } catch (err) {
+        showNotification("تعذر الإرفاق", "تعذر تحميل محتوى الاختبار حاليًا.", "error");
+      } finally {
+        askAiOpt.disabled = false;
+      }
+    };
+    menu.appendChild(askAiOpt);
 
     // ── "نسخ لامتحاناتي" — copies this quiz into the visitor's own
     // localStorage "امتحاناتك" list. Visible on every quiz (static or DB),

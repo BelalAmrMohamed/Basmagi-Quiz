@@ -203,3 +203,14 @@ export const RESET_QUIZ_PAGE_TOOL = {
     properties: {},
   },
 };
+
+export const FETCH_ATTACHED_QUIZ_TOOL = {
+  name: "fetch_attached_quiz",
+  description:
+    "Fetch the full questions and answers for one quiz listed in an attached course or folder. Use the exact quiz ID from the attached hierarchy, and only when the user asks for details that the hierarchy does not contain.",
+  input_schema: {
+    type: "object",
+    properties: { quizId: { type: "string" } },
+    required: ["quizId"],
+  },
+};

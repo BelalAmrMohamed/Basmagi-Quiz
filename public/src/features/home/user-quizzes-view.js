@@ -722,7 +722,7 @@ export function renderUserQuizzesView() {
         contextSummary: getLiveContextSummary,
         contextPrompt: getLiveFolderTreePrompt,
         enableTools: true,
-        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item"],
+        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz"],
         onToolCall: handleQuizToolCall,
       }),
     );

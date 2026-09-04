@@ -617,6 +617,7 @@ const SELECT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="1
 const RENAME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
 const MOVE_TO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5c0-1.1.9-2 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/></svg>`;
+const ASK_AI_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="m19 16 .7 2.3L22 19l-2.3.7z"/></svg>`;
 
 export function initContextMenu() {
   if (contextMenuEl) return;
@@ -684,6 +685,16 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     const divider = document.createElement("div");
     divider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
     contextMenuEl.appendChild(divider);
+
+    contextMenuEl.appendChild(
+      createMenuItem(ASK_AI_SVG, "اسأل الباشـمبصمج", async () => {
+        const { openAIAgentWithAttachment, resolveUserItemAttachment } = await import(
+          "../../components/ai-agent/ai-agent-attach-launcher.js"
+        );
+        const attachment = resolveUserItemAttachment(targetId);
+        if (attachment) openAIAgentWithAttachment(attachment);
+      }),
+    );
   }
 
   // Global actions — always visible regardless of what was right-clicked
