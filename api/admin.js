@@ -43,6 +43,10 @@ function getOwnerEmails() {
     .filter(Boolean);
 }
 
+function normalizeCollegeName(name) {
+  return String(name || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 // =============================================================================
 // admin-control handlers (owner-only admin management)
 // =============================================================================
@@ -66,8 +70,19 @@ async function handleControlGet(req, res, payload, supabase) {
 
   const uniqueCategories = new Set((catData || []).map((r) => r.category));
 
+  const { data: colleges, error: collegesError } = await supabase
+    .from("colleges")
+    .select("id, education_type, name, normalized_name, year_count, terms, is_active")
+    .order("education_type", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (collegesError) {
+    return res.status(500).json({ error: "Failed to fetch colleges" });
+  }
+
   return res.status(200).json({
     admins: admins || [],
+    colleges: colleges || [],
     platformStats: {
       totalQuizzes: quizCount ?? 0,
       totalCategories: uniqueCategories.size,
@@ -136,6 +151,56 @@ async function handleControlPost(req, res, payload, supabase) {
     }
 
     return res.status(200).json({ success: true, allowed_scopes: data.allowed_scopes });
+  }
+
+  if (action === "save_college") {
+    const { id, name, education_type = "University", year_count, terms, is_active = true } = req.body;
+    const cleanName = String(name || "").trim().replace(/\s+/g, " ");
+    const years = Number(year_count);
+    const cleanTerms = Array.isArray(terms) ? terms.map(Number).filter(Number.isInteger) : [];
+
+    if (!cleanName || !/^(University|Primary|Middle|High)$/.test(education_type)) {
+      return res.status(400).json({ error: "Invalid college data" });
+    }
+    if (!Number.isInteger(years) || years < 1 || years > 12) {
+      return res.status(400).json({ error: "Year count must be between 1 and 12" });
+    }
+    if (!cleanTerms.length || cleanTerms.some((term) => term < 1 || term > 4)) {
+      return res.status(400).json({ error: "Select at least one valid term" });
+    }
+
+    const values = {
+      name: cleanName,
+      normalized_name: normalizeCollegeName(cleanName),
+      education_type,
+      year_count: years,
+      terms: [...new Set(cleanTerms)].sort((a, b) => a - b),
+      is_active: Boolean(is_active),
+      updated_at: new Date().toISOString(),
+    };
+    const query = id
+      ? supabase.from("colleges").update(values).eq("id", id)
+      : supabase.from("colleges").insert({ ...values, created_by: payload.sub || null });
+    const { data, error } = await query
+      .select("id, education_type, name, normalized_name, year_count, terms, is_active")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") return res.status(400).json({ error: "A college with this name already exists" });
+      return res.status(500).json({ error: "Failed to save college" });
+    }
+    return res.status(200).json({ college: data });
+  }
+
+  if (action === "delete_college") {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: "College ID is required" });
+    const { error } = await supabase
+      .from("colleges")
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return res.status(500).json({ error: "Failed to deactivate college" });
+    return res.status(200).json({ success: true });
   }
 
   return res.status(400).json({ error: "Invalid action" });

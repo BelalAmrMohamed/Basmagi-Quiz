@@ -89,6 +89,77 @@ body {
     border-color: var(--gold);
 }
 
+.college-form {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.college-form select,
+.college-form input[type="number"] {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+}
+
+.college-terms {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.college-form-actions,
+.college-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.college-list {
+    display: grid;
+    gap: 8px;
+}
+
+.college-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.college-info {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.college-info strong {
+    color: var(--text);
+    overflow-wrap: anywhere;
+}
+
+.college-info span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+.college-actions button {
+    padding: 5px 9px;
+    font-size: 0.76rem;
+    white-space: nowrap;
+}
+
 .btn-nav.danger {
     border-color: rgba(192, 57, 43, 0.5);
     background: rgba(192, 57, 43, 0.12);

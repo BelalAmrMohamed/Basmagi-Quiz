@@ -103,6 +103,40 @@
             <!-- RIGHT: PLATFORM STATS & OWNER INFO -->
             <div class="panel">
                 <div class="panel-header">
+                    <div class="panel-title">إدارة الكليات</div>
+                </div>
+                <div class="panel-body">
+                    <form id="collegeForm" class="college-form">
+                        <input type="hidden" id="collegeId">
+                        <input type="text" id="collegeName" placeholder="اسم الكلية" required>
+                        <select id="collegeEducationType">
+                            <option value="University">جامعي</option>
+                            <option value="Primary">ابتدائي</option>
+                            <option value="Middle">إعدادي</option>
+                            <option value="High">ثانوي</option>
+                        </select>
+                        <input type="number" id="collegeYearCount" min="1" max="12" value="4" placeholder="عدد السنوات"
+                            required>
+                        <div class="college-terms">
+                            <label><input type="checkbox" value="1" checked> الترم 1</label>
+                            <label><input type="checkbox" value="2" checked> الترم 2</label>
+                            <label><input type="checkbox" value="3"> الترم 3</label>
+                            <label><input type="checkbox" value="4"> الترم 4</label>
+                        </div>
+                        <div class="college-form-actions">
+                            <button class="btn-primary" type="submit">حفظ الكلية</button>
+                            <button class="btn-nav" type="button" id="cancelCollegeEdit" hidden>إلغاء التعديل</button>
+                        </div>
+                    </form>
+                    <div id="collegesList" class="college-list">
+                        <div class="admin-empty">جاري التحميل...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: PLATFORM STATS & OWNER INFO -->
+            <div class="panel">
+                <div class="panel-header">
                     <div class="panel-title">إحصائيات المنصة</div>
                 </div>
                 <div class="panel-body">

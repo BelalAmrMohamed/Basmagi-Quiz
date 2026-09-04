@@ -87,6 +87,104 @@ function renderPlatformStats(stats) {
     ownerEmailDisplay.textContent = stats.ownerEmail ?? "—";
 }
 
+let loadedColleges = [];
+
+function resetCollegeForm() {
+  document.getElementById("collegeForm").reset();
+  document.getElementById("collegeId").value = "";
+  document.getElementById("collegeYearCount").value = "4";
+  document.getElementById("cancelCollegeEdit").hidden = true;
+}
+
+function renderColleges(colleges) {
+  loadedColleges = colleges || [];
+  const list = document.getElementById("collegesList");
+  list.replaceChildren();
+  if (!loadedColleges.length) {
+    list.innerHTML = '<div class="admin-empty">لا توجد كليات مضافة</div>';
+    return;
+  }
+  loadedColleges.forEach((college) => {
+    const card = document.createElement("div");
+    card.className = "college-card";
+    const info = document.createElement("div");
+    info.className = "college-info";
+    info.innerHTML = `<strong></strong><span></span>`;
+    info.querySelector("strong").textContent = college.name;
+    info.querySelector("span").textContent = `${college.education_type} · ${college.year_count} سنوات · ${(college.terms || []).join(", ")} ترم`;
+    const actions = document.createElement("div");
+    actions.className = "college-actions";
+    const edit = document.createElement("button");
+    edit.className = "btn-primary";
+    edit.textContent = "تعديل";
+    edit.onclick = () => editCollege(college.id);
+    const remove = document.createElement("button");
+    remove.className = "btn-remove";
+    remove.textContent = "تعطيل";
+    remove.onclick = () => deactivateCollege(college.id);
+    actions.append(edit, remove);
+    card.append(info, actions);
+    list.appendChild(card);
+  });
+}
+
+function editCollege(id) {
+  const college = loadedColleges.find((item) => item.id === id);
+  if (!college) return;
+  document.getElementById("collegeId").value = college.id;
+  document.getElementById("collegeName").value = college.name;
+  document.getElementById("collegeEducationType").value = college.education_type;
+  document.getElementById("collegeYearCount").value = college.year_count;
+  document.querySelectorAll("#collegeForm .college-terms input").forEach((input) => {
+    input.checked = (college.terms || []).includes(Number(input.value));
+  });
+  document.getElementById("cancelCollegeEdit").hidden = false;
+}
+
+async function saveCollege(event) {
+  event.preventDefault();
+  const terms = [...document.querySelectorAll("#collegeForm .college-terms input:checked")]
+    .map((input) => Number(input.value));
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        action: "save_college",
+        id: document.getElementById("collegeId").value || undefined,
+        name: document.getElementById("collegeName").value,
+        education_type: document.getElementById("collegeEducationType").value,
+        year_count: Number(document.getElementById("collegeYearCount").value),
+        terms,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMessage("تم حفظ الكلية بنجاح");
+    resetCollegeForm();
+    loadData();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+async function deactivateCollege(id) {
+  if (!window.confirm("سيتم إخفاء الكلية من خيارات الرفع. هل تريد المتابعة؟")) return;
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({ action: "delete_college", id }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showMessage("تم تعطيل الكلية");
+    loadData();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
 // ── Data loading ───────────────────────────────────────────────────────────────
 async function loadData() {
   try {
@@ -104,6 +202,7 @@ async function loadData() {
 
     // Render platform stats
     renderPlatformStats(data.platformStats);
+    renderColleges(data.colleges);
 
     // Render admin list
     const list = document.getElementById("adminsTableBody");
@@ -218,6 +317,9 @@ window.removeAdmin = function (email) {
 };
 
 window.submitAddAdmin = submitAddAdmin;
+
+document.getElementById("collegeForm").addEventListener("submit", saveCollege);
+document.getElementById("cancelCollegeEdit").addEventListener("click", resetCollegeForm);
 
 // ── Scopes Modal ─────────────────────────────────────────────────────────────
 let currentScopeEmail = null;

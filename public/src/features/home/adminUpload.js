@@ -51,6 +51,7 @@ const TRACKS_WITH_YEARTERM = new Set(["University", "High", "Middle", "Primary"]
 // School:     { High|Middle|Primary: { [subject]: { yearterm, subfolders } } }
 // Featured:   { Featured: { [subject]: { subfolders } } }
 let MANIFEST_TREE = {};
+let COLLEGE_METADATA = {};
 
 function buildManifestTree(subjects) {
   const tree = {};
@@ -387,7 +388,7 @@ function renderStep1(saved = {}) {
   const selType   = lastSaved.educationType || "University";
   const hasColl   = TRACKS_WITH_COLLEGE.has(selType);
   const hasYT     = TRACKS_WITH_YEARTERM.has(selType);
-  const colleges  = selType === "University" ? Object.keys(MANIFEST_TREE["University"] || {}).sort() : [];
+  const colleges  = selType === "University" ? getUniversityColleges() : [];
   const collegeOpts = colleges.map(c =>
     `<option value="${c}" ${lastSaved.college === c ? "selected" : ""}>${c}</option>`).join("");
 
@@ -462,7 +463,7 @@ function renderStep1(saved = {}) {
   // localStorage) previously left the college <select> permanently empty,
   // since nothing ever regenerated its options.
   function populateCollegeOptions(type, selectedCollege = "") {
-    const colleges = type === "University" ? Object.keys(MANIFEST_TREE["University"] || {}).sort() : [];
+    const colleges = type === "University" ? getUniversityColleges() : [];
     colEl.innerHTML = `<option value="">— اختر الكلية —</option>` +
       colleges.map(c => `<option value="${c}" ${c === selectedCollege ? "selected" : ""}>${c}</option>`).join("");
   }
@@ -515,6 +516,26 @@ function getSubjectMap(type, college) {
     : (MANIFEST_TREE[type] || {});
 }
 
+async function loadCollegeMetadata() {
+  try {
+    const response = await fetch("/api/colleges?education_type=University");
+    if (!response.ok) throw new Error(`College metadata request failed: ${response.status}`);
+    const data = await response.json();
+    COLLEGE_METADATA = Object.fromEntries(
+      (data.colleges || []).map((college) => [college.name, college]),
+    );
+  } catch (error) {
+    console.warn("[adminUpload] College metadata unavailable:", error);
+    COLLEGE_METADATA = {};
+  }
+}
+
+function getUniversityColleges() {
+  const names = new Set(Object.keys(MANIFEST_TREE["University"] || {}));
+  Object.keys(COLLEGE_METADATA).forEach((name) => names.add(name));
+  return [...names].sort((a, b) => a.localeCompare(b));
+}
+
 /**
  * Populates the Step 2 subject dropdown with EXISTING subjects/courses
  * only. This wizard no longer offers "➕ إنشاء مادة جديدة" (create a new
@@ -558,11 +579,10 @@ function populateSubjects(type, college, year, term, subEl, folEl, saved) {
 // has courses — existing data should never be a ceiling on where new
 // content can be uploaded (e.g. a track with courses only in year 3
 // must still allow uploading to year 1, 2, etc).
-const ALL_YEARS = [1,2,3,4,5,6].map(String);
-const ALL_TERMS = [1,2,3].map(String);
-
 function populateYearOptions(type, college, yearEl, selectedYear = "") {
-  const yearsSet = new Set(ALL_YEARS);
+  const configuredYearCount = type === "University" ? COLLEGE_METADATA[college]?.year_count : null;
+  const fallbackYearCount = Number.isInteger(configuredYearCount) ? configuredYearCount : 6;
+  const yearsSet = new Set(Array.from({ length: fallbackYearCount }, (_, index) => String(index + 1)));
   for (const data of Object.values(getSubjectMap(type, college)))
     for (const [y] of data.yearterm || []) yearsSet.add(y);
   const years = [...yearsSet].sort(sortNumericStr);
@@ -571,7 +591,8 @@ function populateYearOptions(type, college, yearEl, selectedYear = "") {
 }
 
 function populateTermOptions(type, college, year, termEl, selectedTerm = "") {
-  const termsSet = new Set(ALL_TERMS.slice(0, 2)); // terms 1-2 always offered; term 3 only if actually used
+  const configuredTerms = type === "University" ? COLLEGE_METADATA[college]?.terms : null;
+  const termsSet = new Set(configuredTerms?.map(String) || ["1", "2"]);
   for (const data of Object.values(getSubjectMap(type, college)))
     for (const [y, t] of data.yearterm || [])
       if (!year || y === year) termsSet.add(t);
@@ -1573,6 +1594,7 @@ async function _openWizard(quizzes) {
     try {
       const { subjects } = await getManifest();
       MANIFEST_TREE = buildManifestTree(subjects);
+      await loadCollegeMetadata();
     } catch (err) {
       console.error("[adminUpload] Failed to load manifest:", err);
       MANIFEST_TREE = {};
@@ -1651,6 +1673,7 @@ export async function openCourseUploadModal(courseRows, userQuizzes) {
     try {
       const { subjects } = await getManifest();
       MANIFEST_TREE = buildManifestTree(subjects);
+      await loadCollegeMetadata();
     } catch (err) {
       console.error("[adminUpload] Failed to load manifest:", err);
       MANIFEST_TREE = {};
@@ -1717,6 +1740,7 @@ export async function openFolderUploadModal({ folders, quizzes, userQuizzes }) {
     try {
       const { subjects } = await getManifest();
       MANIFEST_TREE = buildManifestTree(subjects);
+      await loadCollegeMetadata();
     } catch (err) {
       console.error("[adminUpload] Failed to load manifest:", err);
       MANIFEST_TREE = {};
@@ -1778,6 +1802,7 @@ export async function openLocalFolderTreeUpload(folderTree) {
     try {
       const { subjects } = await getManifest();
       MANIFEST_TREE = buildManifestTree(subjects);
+      await loadCollegeMetadata();
     } catch (err) {
       console.error("[adminUpload] Failed to load manifest:", err);
       MANIFEST_TREE = {};

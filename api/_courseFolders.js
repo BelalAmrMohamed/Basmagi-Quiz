@@ -76,13 +76,28 @@ export async function resolveCourse(supabase, { educationType, college, year, te
   }
   const courseName = name.trim();
 
+  let collegeId = null;
+  if (educationType === "University" && college) {
+    const normalizedCollege = college.trim().replace(/\s+/g, " ").toLowerCase();
+    const { data: collegeRow } = await supabase
+      .from("colleges")
+      .select("id")
+      .eq("education_type", "University")
+      .eq("normalized_name", normalizedCollege)
+      .eq("is_active", true)
+      .maybeSingle();
+    collegeId = collegeRow?.id || null;
+  }
+
   let query = supabase
     .from("courses")
     .select("id, name")
     .eq("education_type", educationType)
     .eq("name", courseName);
 
-  if (college) {
+  if (collegeId) {
+    query = query.eq("college_id", collegeId);
+  } else if (college) {
     query = query.eq("college", college);
   } else {
     query = query.is("college", null);
@@ -118,6 +133,7 @@ export async function resolveCourse(supabase, { educationType, college, year, te
       name: courseName,
       education_type: educationType,
       college: college || null,
+      college_id: collegeId,
       year: numYear,
       term: numTerm,
       created_by: adminId || null,
