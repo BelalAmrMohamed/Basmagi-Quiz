@@ -898,6 +898,7 @@
   color: var(--color-text-primary);
   min-height: 40px;
   max-height: 120px;
+  overflow-y: hidden;
   direction: rtl;
   unicode-bidi: plaintext;
 }

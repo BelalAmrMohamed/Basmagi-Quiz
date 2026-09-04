@@ -26,6 +26,7 @@ import { listRecentUserItems, resolveUserItemById } from "./ai-agent-item-lookup
 // that would recurse (and keep hitting the network) indefinitely with no
 // way for the user to tell it apart from genuine progress.
 const MAX_AGENT_DEPTH = 8;
+const CHAT_INPUT_MAX_HEIGHT = 120;
 
 // Icons for the two visual states of the "assistant is working" indicator
 // (see showTyping) — a sparkle/spark glyph for plain "thinking"
@@ -687,6 +688,13 @@ export function createChatPanel(options = {}) {
   // LTR even for an Arabic-only message.
   textarea.dir = "auto";
 
+  function resizeChatInput() {
+    textarea.style.height = "auto";
+    const contentHeight = textarea.scrollHeight;
+    textarea.style.height = `${Math.min(contentHeight, CHAT_INPUT_MAX_HEIGHT)}px`;
+    textarea.style.overflowY = contentHeight > CHAT_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+  }
+
   // Live mic-volume metering for the wave bars (separate from
   // SpeechRecognition, which exposes no amplitude data of its own) — a
   // short-lived AudioContext/AnalyserNode pair opened alongside each
@@ -968,8 +976,7 @@ export function createChatPanel(options = {}) {
       // Live transcription directly into the chat input field, per the
       // spec — not a separate preview area.
       textarea.value = composeDictationValue(interim);
-      textarea.style.height = "auto";
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+      resizeChatInput();
     };
 
     recognition.onerror = (event) => {
@@ -2228,8 +2235,7 @@ export function createChatPanel(options = {}) {
   }
 
   textarea.addEventListener("input", () => {
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    resizeChatInput();
     updateSendBtnVisibility();
     // No manual textarea.style.direction here on purpose. Setting one
     // direction for the *whole field* based on the first strong character
