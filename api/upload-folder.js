@@ -114,67 +114,81 @@ export default async function handler(req, res) {
     if (adminData) adminId = adminData.id;
   }
 
-  // The batch's single course (if any) is created/resolved first so every
-  // folder/quiz item nested under it can reference the same courseId.
-  // Non-course batches (uploading folders/quizzes into an EXISTING course)
-  // still need a course to attach to — the first segment of every item's
-  // folderSegments chain names that existing course, resolved the same way
-  // (get-or-create is safe here too: it just finds the existing row).
-  const courseItem = items.find((i) => i.type === "course");
-  const anyItem = items[0];
-  const courseName = courseItem ? courseItem.name : anyItem.rootName;
+  // Resolve courses in this batch: each distinct course is resolved/created
+  // once and cached in courseIdByName so multiple courses can be uploaded
+  // in a single batch to the same education_type/college/year/term.
+  const courseIdByName = new Map();
 
-  let courseId;
-  try {
+  async function getOrResolveCourse(cName) {
+    const trimmed = (cName || "").trim();
+    if (!trimmed) throw new Error("اسم المادة مفقود.");
+    if (courseIdByName.has(trimmed)) return courseIdByName.get(trimmed);
     const course = await resolveCourse(supabase, {
       educationType: education_type,
       college: education_type === "University" ? college : null,
       year: ["University", "Primary", "Middle", "High"].includes(education_type) ? year : null,
       term: ["University", "Primary", "Middle", "High"].includes(education_type) ? term : null,
-      name: courseName,
+      name: trimmed,
       adminId,
     });
-    courseId = course.id;
-  } catch (e) {
-    console.error("[upload-folder] course resolution failed:", e.message);
-    return res.status(500).json({ error: "فشل تجهيز المادة. حاول مجددًا." });
+    courseIdByName.set(trimmed, course.id);
+    return course.id;
   }
 
-  // Resolve/create every folder level exactly once, in shortest-path-first
-  // order, caching by joined segment key so a folder referenced by
-  // multiple quizzes (e.g. two quizzes both under "Unit1/Week2") is only
-  // created once instead of racing itself within the same batch.
-  const folderIdByKey = new Map(); // "" => null (course root)
-  folderIdByKey.set("", null);
+  // Pre-resolve all explicit course items
+  for (const item of items) {
+    if (item.type === "course") {
+      try {
+        await getOrResolveCourse(item.name);
+      } catch (e) {
+        console.error("[upload-folder] course resolution failed for:", item.name, e.message);
+        return res.status(500).json({ error: `فشل تجهيز المادة "${item.name}". حاول مجددًا.` });
+      }
+    }
+  }
 
-  async function resolveFolderChain(segments) {
-    // Drop the leading course-name segment — folderSegments includes the
-    // course name itself as the first element for nested items, but
-    // resolveFolderPath only wants the folder levels underneath it.
+  // If no explicit course item exists, resolve from rootName
+  if (courseIdByName.size === 0 && items[0]?.rootName) {
+    try {
+      await getOrResolveCourse(items[0].rootName);
+    } catch (e) {
+      console.error("[upload-folder] rootName course resolution failed:", e.message);
+      return res.status(500).json({ error: "فشل تجهيز المادة. حاول مجددًا." });
+    }
+  }
+
+  const folderIdByKey = new Map();
+
+  async function resolveFolderChain(targetCourseId, courseName, segments) {
     const folderOnly = segments.length > 0 && segments[0] === courseName ? segments.slice(1) : segments;
-    const key = folderOnly.join("/");
+    const key = `${targetCourseId}:${folderOnly.join("/")}`;
     if (folderIdByKey.has(key)) return folderIdByKey.get(key);
-    const id = await resolveFolderPath(supabase, { courseId, segments: folderOnly, adminId });
+    const id = await resolveFolderPath(supabase, { courseId: targetCourseId, segments: folderOnly, adminId });
     folderIdByKey.set(key, id);
     return id;
   }
 
-  const results = { foldersCreated: 0, quizzesUploaded: 0, failed: [] };
+  const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, failed: [] };
 
   for (const item of items) {
     if (item.type === "course") continue; // already resolved as courseId above
 
     try {
+      const itemCourseName = (item.folderSegments && item.folderSegments.length > 0)
+        ? item.folderSegments[0]
+        : (item.rootName || courseIdByName.keys().next().value);
+      const targetCourseId = await getOrResolveCourse(itemCourseName);
+
       if (item.type === "folder") {
         const fullChain = [...(item.folderSegments || []), item.name];
         const before = folderIdByKey.size;
-        await resolveFolderChain(fullChain);
+        await resolveFolderChain(targetCourseId, itemCourseName, fullChain);
         if (folderIdByKey.size > before) results.foldersCreated++;
         continue;
       }
 
       if (item.type === "quiz") {
-        const folderId = await resolveFolderChain(item.folderSegments || []);
+        const folderId = await resolveFolderChain(targetCourseId, itemCourseName, item.folderSegments || []);
 
         if (item.quiz?.meta && typeof item.quiz.meta.id !== "string") {
           item.quiz.meta.id = "AAAAAAAA";
@@ -182,13 +196,13 @@ export default async function handler(req, res) {
         const cleanQuiz = validateQuizPayload(item.quiz);
 
         const folderPathForStorage = (item.folderSegments || [])
-          .filter((s) => s !== courseName);
+          .filter((s) => s !== itemCourseName);
         const fullPath = buildDbPath({
           education_type,
           college,
           year,
           term,
-          subject: courseName,
+          subject: itemCourseName,
           subfolder: folderPathForStorage.join("/") || undefined,
         });
         const parsedPath = parseDbPath(fullPath);
@@ -236,7 +250,7 @@ export default async function handler(req, res) {
           year: dbCols.year || null,
           term: dbCols.term || null,
           uploaded_by: adminId,
-          course_id: courseId,
+          course_id: targetCourseId,
           folder_id: folderId,
         });
 
@@ -259,9 +273,10 @@ export default async function handler(req, res) {
     }
   }
 
-  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 ? 207 : 201).json({
-    success: results.quizzesUploaded > 0,
-    courseId,
+  const isSuccess = results.quizzesUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;
+  return res.status(results.failed.length > 0 && results.quizzesUploaded === 0 && results.foldersCreated === 0 ? 207 : 201).json({
+    success: isSuccess,
+    courseIds: Array.from(courseIdByName.values()),
     ...results,
   });
 }
