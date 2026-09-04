@@ -31,8 +31,7 @@ import {
   SHARE_ICON_SVG,
   SPARKLE_ICON_SVG,
 } from "./icons.js";
-import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
-import { loadFullQuizData } from "./quiz-data-loader.js";
+import { copyCategoryTreeToUserQuizzes } from "./copy-to-my-quizzes.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import {
   openAIAgentWithAttachment,
@@ -272,7 +271,7 @@ export function createCategoryCard(
         menu.appendChild(askAi);
 
         const folderUrl = `${window.location.origin}/#${(courseData.path || [courseData.name])
-          .map((segment) => encodeURIComponent(segment))
+          .map((segment) => toSlug(segment))
           .join("/")}`;
         const copyLink = document.createElement("button");
         copyLink.type = "button";
@@ -307,27 +306,8 @@ export function createCategoryCard(
         copyToMine.onclick = async () => {
           copyToMine.disabled = true;
           try {
-            const attachment = buildPlatformFolderAttachment(courseData, getCategoryTree());
-            const exams = [];
-            const collectExams = (node) => {
-              (node.children || []).forEach((child) => {
-                if (child.kind === "quiz") exams.push(child);
-                else collectExams(child);
-              });
-            };
-            collectExams(attachment.payload.tree[0]);
-            for (const exam of exams) {
-              if (!exam.dbId) continue;
-              const loaded = await loadFullQuizData({ dbId: exam.dbId });
-              await copyQuizToUserQuizzes({
-                id: exam.id,
-                dbId: exam.dbId,
-                title: exam.title,
-                data: loaded,
-              });
-            }
+            await copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder");
             closeMenu();
-            showNotification("تم النسخ", "تم نسخ اختبارات المجلد إلى امتحاناتك.", "success");
           } finally {
             copyToMine.disabled = false;
           }

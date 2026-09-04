@@ -308,7 +308,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     const shareOpt = document.createElement("button");
     shareOpt.type = "button";
     shareOpt.className = "exam-action-btn";
-    shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الامتحان</span>`;
+    shareOpt.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
     shareOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();

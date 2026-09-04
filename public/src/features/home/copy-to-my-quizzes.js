@@ -91,3 +91,77 @@ export async function copyQuizToUserQuizzes(exam) {
   );
   return true;
 }
+
+/**
+ * Copies a complete manifest course/folder tree while preserving parentId
+ * relationships. Unlike copying leaves individually, this keeps the same
+ * hierarchy in the user's local collection.
+ */
+export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, rootKind = "folder") {
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const copiedIds = new Map();
+
+  async function copyNode(node, parentId = null, forcedKind = null) {
+    const nodeId = node?.key || node?.id || node?.name;
+    const title = node?.name || node?.title || "بدون عنوان";
+    const isQuiz = Boolean(node?.dbId || node?.questionCount != null) && !node?.subcategories;
+
+    if (isQuiz) {
+      if (alreadyCopied(node.id, userQuizzes)) return null;
+      let loaded;
+      try {
+        loaded = await loadFullQuizData({ dbId: node.dbId });
+      } catch (error) {
+        console.error("Copy tree failed — could not load quiz data:", error);
+        return null;
+      }
+      const parsed = {
+        meta: {
+          title: title || loaded.meta?.title || "",
+          description: loaded.meta?.description || "",
+          source: loaded.meta?.source || "",
+          copiedFrom: node.id,
+          parentId,
+        },
+        stats: loaded.stats || undefined,
+        questions: loaded.questions || [],
+      };
+      const entry = buildUserQuizEntry(crypto.randomUUID(), parsed, title);
+      entry.meta.parentId = parentId;
+      entry.meta.createdAt = new Date().toLocaleString("en-US");
+      userQuizzes.push(entry);
+      return entry.meta.id;
+    }
+
+    const copyId = crypto.randomUUID();
+    const folderEntry = {
+      meta: {
+        id: copyId,
+        title,
+        type: forcedKind || (node?.kind === "course" ? "course" : "folder"),
+        parentId,
+        createdAt: new Date().toLocaleString("en-US"),
+        copiedFrom: nodeId,
+      },
+      stats: { questionCount: 0, questionTypes: [] },
+      questions: [],
+    };
+    userQuizzes.push(folderEntry);
+    copiedIds.set(nodeId, copyId);
+
+    const childKeys = node?.subcategories || [];
+    for (const childKey of childKeys) {
+      const child = typeof childKey === "string" ? categoryTree?.[childKey] : childKey;
+      if (child) await copyNode(child, copyId);
+    }
+    for (const exam of node?.exams || []) {
+      await copyNode({ ...exam, dbId: exam.dbId }, copyId);
+    }
+    return copyId;
+  }
+
+  await copyNode(rootNode, null, rootKind);
+  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  showNotification("تم النسخ", "تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات.", "success");
+  return true;
+}

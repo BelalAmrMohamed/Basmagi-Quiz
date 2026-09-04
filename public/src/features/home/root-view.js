@@ -27,9 +27,12 @@ import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
 import { setFolderState } from "./user-quizzes-folders.js";
 import { getCourseItemCount } from "./course-count.js";
-import { attachCourseInfoTooltip } from "./course-info-tooltip.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { showCourseInfoModal } from "./course-actions.js";
+import { copyCategoryTreeToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { toSlug } from "./slug-utils.js";
 import {
   MORE_DOTS_ICON_SVG,
   SPARKLE_ICON_SVG,
@@ -39,10 +42,107 @@ import {
 } from "./icons.js";
 import {
   openAIAgentWithAttachment,
+  buildPlatformCourseAttachment,
   buildUserRootAttachmentForAskAi,
 } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { _confirm } from "../../components/notifications/notifications.js";
+
+function attachCourseActionsMenu(card, course, categoryTree) {
+  const moreBtn = document.createElement("button");
+  moreBtn.type = "button";
+  moreBtn.className = "exam-more-btn";
+  moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
+  moreBtn.setAttribute("aria-label", `خيارات ${course.name}`);
+  moreBtn.onclick = (event) => {
+    event.stopPropagation();
+    openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
+      const folderUrl = `${window.location.origin}/#${(course.path || [course.name]).map(toSlug).join("/")}`;
+
+      const copyLink = document.createElement("button");
+      copyLink.type = "button";
+      copyLink.className = "exam-action-btn";
+      copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
+      copyLink.onclick = async () => {
+        await navigator.clipboard.writeText(folderUrl);
+        closeMenu();
+        showNotification("تم النسخ", "تم نسخ رابط المادة.", "success");
+      };
+      menu.appendChild(copyLink);
+
+      const shareLink = document.createElement("button");
+      shareLink.type = "button";
+      shareLink.className = "exam-action-btn";
+      shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
+      shareLink.onclick = async () => {
+        closeMenu();
+        if (navigator.share) {
+          await navigator.share({ title: course.name, url: folderUrl }).catch(() => {});
+        } else {
+          await navigator.clipboard.writeText(folderUrl);
+          showNotification("تم النسخ", "تم نسخ رابط المادة.", "success");
+        }
+      };
+      menu.appendChild(shareLink);
+
+      const copyMine = document.createElement("button");
+      copyMine.type = "button";
+      copyMine.className = "exam-action-btn";
+      copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+      copyMine.onclick = async () => {
+        copyMine.disabled = true;
+        try {
+          await copyCategoryTreeToUserQuizzes(course, categoryTree, "course");
+          closeMenu();
+        } finally {
+          copyMine.disabled = false;
+        }
+      };
+      menu.appendChild(copyMine);
+
+      const askAi = document.createElement("button");
+      askAi.type = "button";
+      askAi.className = "exam-action-btn";
+      askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+      askAi.onclick = () => {
+        closeMenu();
+        openAIAgentWithAttachment(buildPlatformCourseAttachment(course, categoryTree), {
+          defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+        });
+      };
+      menu.appendChild(askAi);
+
+      const infoRows = [
+        { label: "التعليم", val: course.education_type || "-" },
+        { label: "الكلية", val: course.faculty && course.faculty !== "All" ? course.faculty : null },
+        { label: "العام", val: course.year || "-" },
+        { label: "الترم", val: course.term || "-" },
+      ].filter((row) => row.val);
+      menu.appendChild(createExamInfoSubmenu(
+        infoRows,
+        () => showCourseInfoModal(course),
+        closeMenu,
+        reposition,
+      ));
+
+      const unsubscribe = document.createElement("button");
+      unsubscribe.type = "button";
+      unsubscribe.className = "exam-action-btn exam-action-btn--danger";
+      unsubscribe.textContent = "إلغاء الاشتراك";
+      unsubscribe.onclick = async () => {
+        if (!(await _confirm("هل أنت متأكد من إلغاء الاشتراك في هذه المادة؟"))) return;
+        userProfile.setSubscribedCourses(
+          userProfile.getSubscribedCourseIds().filter((id) => id !== course.id),
+        );
+        closeMenu();
+        renderRootCategories();
+      };
+      menu.appendChild(unsubscribe);
+    });
+  };
+  card.appendChild(moreBtn);
+}
 
 export async function renderRootCategories() {
   try {
@@ -196,10 +296,7 @@ export async function renderRootCategories() {
         // tooltip-building code (identical to the "all courses" branch
         // below except for the unsubscribe button) — now a single shared,
         // escaped builder. See course-info-tooltip.js.
-        attachCourseInfoTooltip(card, course, {
-          withUnsubscribe: true,
-          onUnsubscribe: () => renderRootCategories(),
-        });
+        attachCourseActionsMenu(card, course, categoryTree);
 
         card.onclick = () => renderCategory(categoryTree[course.key]);
         fragment.appendChild(card);
@@ -218,7 +315,7 @@ export async function renderRootCategories() {
 
         // DEDUPLICATION: same shared builder as the subscribed-courses
         // branch above, without the unsubscribe button (not subscribed yet).
-        attachCourseInfoTooltip(card, category);
+        attachCourseActionsMenu(card, category, categoryTree);
 
         card.onclick = () => renderCategory(category);
         fragment.appendChild(card);

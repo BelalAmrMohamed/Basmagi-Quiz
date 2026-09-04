@@ -21,6 +21,24 @@
 import { INFO_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { renderRootCategories } from "./root-view.js";
+import { getCategoryTree } from "./app-state.js";
+
+function getCourseContentsStats(course) {
+  const tree = getCategoryTree() || {};
+  let quizCount = Array.isArray(course?.exams) ? course.exams.length : 0;
+  let subfolderCount = 0;
+
+  function visitFolder(key) {
+    const folder = typeof key === "string" ? tree[key] : key;
+    if (!folder) return;
+    subfolderCount += 1;
+    quizCount += Array.isArray(folder.exams) ? folder.exams.length : 0;
+    (folder.subcategories || []).forEach(visitFolder);
+  }
+
+  (course?.subcategories || []).forEach(visitFolder);
+  return { quizCount, subfolderCount };
+}
 
 /**
  * Show a bottom-sheet action overlay for a subscribed course card.
@@ -93,10 +111,18 @@ export function showCourseInfoModal(course) {
   });
 
   const modalCard = document.createElement("div");
-  modalCard.className = "modal-card quiz-info-modal-card";
+  modalCard.className = "modal-card quiz-info-modal-card course-info-modal-card";
 
   const h2 = document.createElement("h2");
   h2.textContent = "معلومات المادة";
+
+  const { quizCount, subfolderCount } = getCourseContentsStats(course);
+  const stats = document.createElement("div");
+  stats.className = "course-info-stats";
+  stats.innerHTML = `
+    <div class="course-info-stat"><strong>${quizCount}</strong><span>اختبار</span></div>
+    <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
+  `;
 
   const tableWrap = document.createElement("div");
   tableWrap.className = "quiz-info-table-wrap";
@@ -130,6 +156,7 @@ export function showCourseInfoModal(course) {
   closeBtn.onclick = () => modal.remove();
 
   modalCard.appendChild(h2);
+  modalCard.appendChild(stats);
   modalCard.appendChild(tableWrap);
   modalCard.appendChild(closeBtn);
   modal.appendChild(modalCard);
