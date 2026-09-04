@@ -437,6 +437,16 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   // through the exact same refresh()/refreshHistoryHighlights() path the
   // old History tab used.
   sidebar.appendChild(historyPanel);
+  // BUG FIX: same class of bug as the settings modal (see openSettingsModal's
+  // own comment) — .ai-agent-panel is `display: none !important` unless
+  // it also carries `.active` (a leftover requirement from the old tab
+  // system, where activateTab() added it). historyPanel is mounted here
+  // as a permanent, always-visible part of the sidebar, not one of
+  // several panels being switched between, so nothing else was ever
+  // going to add that class — the full history list was rendering
+  // correctly into the DOM (refresh() below works fine) but was
+  // invisible the entire time.
+  historyPanel.classList.add("active");
   historyPanel.refresh();
 
   row.insertBefore(sidebar, body);
@@ -558,6 +568,88 @@ function setChatPanelForPageKey(key, chatPanel) {
   chatPanelsByPageKey.set(key || "default", chatPanel);
 }
 
+// BUG FIX: this was called from the sidebar's settings button but never
+// defined anywhere in the file — a leftover from Phase 6a's plan (see
+// this file's own top-of-file comment) never actually being implemented,
+// which threw "openSettingsModal is not defined" on every click. Per the
+// plan's own recommendation (6a: "reuse the existing .modal-card pattern
+// as a second, stacked modal ... less risk of breaking
+// ai-agent-settings.js's internals"), this opens createSettingsPanel()
+// unchanged inside a small second modal layered on top of the AI Agent
+// modal, rather than a popover.
+// @param {object} options - same options object the chat panel/settings
+//   panel were built with (needs pageKey/defaultSystemPrompt).
+// @param {() => void} [onClose] - called after the settings modal closes,
+//   so the caller can refresh anything settings may have changed (see the
+//   sidebar settings button's own onKeyChanged-equivalent refresh call).
+function openSettingsModal(options, onClose) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay ai-agent-modal-overlay ai-agent-settings-modal-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "aiAgentSettingsModalTitle");
+
+  const card = document.createElement("div");
+  card.className = "modal-card ai-agent-modal-card ai-agent-settings-modal-card";
+
+  const header = document.createElement("div");
+  header.className = "modal-header";
+  header.innerHTML = `
+    <h2 id="aiAgentSettingsModalTitle">الإعدادات</h2>
+    <button type="button" class="close-btn ai-agent-settings-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
+  `;
+
+  function closeSettingsModal() {
+    overlay.remove();
+    document.removeEventListener("keydown", onSettingsKeydown);
+    if (typeof onClose === "function") onClose();
+  }
+
+  const onSettingsKeydown = (e) => {
+    if (e.key === "Escape") {
+      // Both this modal's own Escape handler AND the underlying AI Agent
+      // modal's onKeydown (still attached — see openAIAgentModal) listen
+      // on the SAME `document` target, so plain stopPropagation() (meant
+      // for parent/child bubbling) doesn't stop the other — only
+      // stopImmediatePropagation() prevents a later-registered sibling
+      // listener on the same target from also firing. Without it, one
+      // Escape press while this stacked modal is open would close BOTH
+      // layers at once instead of just this one.
+      e.stopImmediatePropagation();
+      closeSettingsModal();
+    }
+  };
+  document.addEventListener("keydown", onSettingsKeydown);
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeSettingsModal();
+  });
+
+  const settingsPanel = createSettingsPanel({
+    pageKey: options.pageKey,
+    defaultSystemPrompt: options.defaultSystemPrompt,
+    // createSettingsPanel's own onKeyChanged fires on every key/model/
+    // prompt/language change (see ai-agent-settings.js), not just on
+    // close — kept as-is so live edits inside this stacked modal still
+    // reach the caller immediately, same as they did as a tab.
+    onKeyChanged: onClose,
+  });
+  // BUG FIX: .ai-agent-panel is `display: none !important` by default
+  // (see ai-agent.css) — under the old tab system, activateTab() was
+  // what added `.active` to make the selected panel visible. Now that
+  // this panel is mounted standalone (not one of several panels being
+  // switched between), nothing else adds that class, so without this the
+  // settings modal would open with a hidden empty body.
+  settingsPanel.classList.add("active");
+
+  card.appendChild(header);
+  card.appendChild(settingsPanel);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  overlay.querySelector(".ai-agent-settings-modal-close").onclick = closeSettingsModal;
+}
+
 // Tracks whether a modal is currently open, per FAB instance, so a second
 // click on the FAB (or a stray listener firing twice) can't stack a second
 // overlay on top of the first — see createAIAgentFab below, which hides
@@ -613,6 +705,7 @@ export function openAIAgentModal(options, fab) {
   const header = document.createElement("div");
   header.className = "modal-header";
   header.innerHTML = `
+    <button type="button" class="ai-agent-mobile-hamburger-btn" aria-label="فتح القائمة" aria-expanded="false">${HAMBURGER_ICON_SVG}</button>
     <h2 id="aiAgentModalTitle"><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-logo" aria-hidden="true"> الباشــمبصمج</h2>
     <button type="button" class="close-btn ai-agent-modal-close" aria-label="إغلاق">${CLOSE_ICON_SVG}</button>
   `;
@@ -625,13 +718,48 @@ export function openAIAgentModal(options, fab) {
   // this function runs.
   const branchHandlerRef = getBranchHandlerRef(options.pageKey);
 
+  // PHASE 6 FIX: buildWidgetContent's return value (`widget`) exposes
+  // openMobileSidebarSheet/closeMobileSidebarSheet (see its own doc
+  // comment above), but nothing ever called them — the hamburger button
+  // referenced in this file's own header comments and CSS class names
+  // was never actually created, so mobile had no way to reach the
+  // sidebar (settings button + full history list) at all. Capture the
+  // built widget so the hamburger button below can drive it.
+  const widgetEl = buildWidgetContent(options, getOrCreateChatPanel(options), branchHandlerRef);
+
   modalCard.appendChild(header);
-  modalCard.appendChild(
-    buildWidgetContent(options, getOrCreateChatPanel(options), branchHandlerRef)
-  );
+  modalCard.appendChild(widgetEl);
   modal.appendChild(modalCard);
 
   modal.querySelector(".ai-agent-modal-close").onclick = closeModal;
+
+  // Hamburger — mobile-only (hidden via CSS on desktop layout), toggles
+  // the sidebar open/closed as a bottom sheet (see widgetEl's own
+  // openMobileSidebarSheet/closeMobileSidebarSheet + the
+  // .ai-agent-sidebar--mobile-open/.ai-agent-mobile-backdrop CSS).
+  const hamburgerBtn = modal.querySelector(".ai-agent-mobile-hamburger-btn");
+  let mobileSheetOpen = false;
+  hamburgerBtn.addEventListener("click", () => {
+    mobileSheetOpen = !mobileSheetOpen;
+    hamburgerBtn.setAttribute("aria-expanded", String(mobileSheetOpen));
+    if (mobileSheetOpen) {
+      widgetEl.openMobileSidebarSheet?.();
+    } else {
+      widgetEl.closeMobileSidebarSheet?.();
+    }
+  });
+  // The sidebar can also be closed from elsewhere (backdrop click, New
+  // Chat, selecting a history item — see buildWidgetContent's own
+  // closeMobileSidebarSheet call sites), which would otherwise leave the
+  // hamburger's aria-expanded/visual state out of sync. Wrap the exposed
+  // closer so every close path — not just this button's own click —
+  // resets it too.
+  const originalCloseMobileSheet = widgetEl.closeMobileSidebarSheet;
+  widgetEl.closeMobileSidebarSheet = function patchedCloseMobileSidebarSheet() {
+    mobileSheetOpen = false;
+    hamburgerBtn.setAttribute("aria-expanded", "false");
+    return originalCloseMobileSheet?.();
+  };
 
   // Desktop-layout toggle — a class on the modal card, not a hardcoded
   // assumption, so ai-agent.css's own >=901px media query stays the single

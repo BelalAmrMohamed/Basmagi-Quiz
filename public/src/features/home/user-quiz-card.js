@@ -56,7 +56,7 @@ import {
 // here), which is enough for the assistant to read/discuss the attached
 // quiz. See ai-agent-attach-launcher.js's own top comment for the fuller
 // rationale.
-import { openAIAgentWithAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { openAIAgentWithAttachment, resolveUserItemAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
@@ -367,6 +367,28 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
       openMoveToDialog([quiz.id || quiz.meta?.id]);
     };
     menu.appendChild(moveOpt);
+
+    // ── PHASE 2: "اسأل الباشـمبصمج" — opens the AI Agent with this
+    // quiz/folder/course pre-attached (see ai-agent-attach-launcher.js's
+    // own doc comment for the full rationale on why this is a minimal,
+    // tool-free "home" pageKey chat rather than reusing
+    // user-quizzes-view.js's own live tool config directly).
+    const askAiOpt = document.createElement("button");
+    askAiOpt.type = "button";
+    askAiOpt.className = "exam-action-btn";
+    askAiOpt.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+    askAiOpt.onclick = (e) => {
+      e.stopPropagation();
+      closeMenu();
+      const itemId = qz(quiz, "id") || quiz.id || quiz.meta?.id;
+      const attachment = resolveUserItemAttachment(itemId);
+      if (attachment) {
+        openAIAgentWithAttachment(attachment, {
+          defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+        });
+      }
+    };
+    menu.appendChild(askAiOpt);
 
     const deleteOpt = document.createElement("button");
     deleteOpt.type = "button";

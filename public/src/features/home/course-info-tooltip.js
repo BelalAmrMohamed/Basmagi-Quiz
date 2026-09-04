@@ -41,6 +41,9 @@ import { escapeHtml } from "./escape-html.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { _confirm } from "../../components/notifications/notifications.js";
 import { positionCourseInfoTooltip } from "./tooltip-position.js";
+import { openAIAgentWithAttachment, buildPlatformCourseAttachment } from "../../components/ai-agent/ai-agent-attach-launcher.js";
+import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
+import { SPARKLE_ICON_SVG } from "./icons.js";
 
 const EDU_TYPE_AR = {
   University: "جامعي",
@@ -109,13 +112,24 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     tooltip.innerHTML = `
       ${courseInfoHtml}
       <hr class="tooltip-divider">
+      <button class="tooltip-ask-ai-btn" type="button">
+        ${SPARKLE_ICON_SVG}
+        <span>اسأل الباشـمبصمج</span>
+      </button>
       <button class="tooltip-delete-btn" type="button">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
         <span>إلغاء الإشتراك</span>
       </button>
     `;
   } else {
-    tooltip.innerHTML = courseInfoHtml;
+    tooltip.innerHTML = `
+      ${courseInfoHtml}
+      <hr class="tooltip-divider">
+      <button class="tooltip-ask-ai-btn" type="button">
+        ${SPARKLE_ICON_SVG}
+        <span>اسأل الباشـمبصمج</span>
+      </button>
+    `;
   }
 
   infoContainer.appendChild(infoBtn);
@@ -211,6 +225,17 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
     document.addEventListener("keydown", onKeydown);
     window.addEventListener("resize", closeTooltip);
     window.addEventListener("scroll", onScroll, true);
+  }
+
+  const askAiBtn = tooltip.querySelector(".tooltip-ask-ai-btn");
+  if (askAiBtn) {
+    askAiBtn.onclick = (e) => {
+      e.stopPropagation();
+      closeTooltip();
+      openAIAgentWithAttachment(buildPlatformCourseAttachment(course), {
+        defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+      });
+    };
   }
 
   if (withUnsubscribe) {

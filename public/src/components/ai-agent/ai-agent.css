@@ -1603,6 +1603,12 @@ body.sidebar-expanded .ai-agent-fab {
   max-width: 460px;
   padding: 0;
   overflow: hidden;
+  /* Containing block for the mobile sidebar sheet's `position: absolute`
+     (see .ai-agent-sidebar's <900px rules below) — without this it would
+     anchor to the nearest OTHER positioned ancestor (or the viewport),
+     rather than sliding up from within this card's own rounded-corner
+     bounds the way the main site's side-menu bottom sheet does. */
+  position: relative;
   display: flex;
   flex-direction: column;
   /* PHASE 7 (stop resizing the modal window): fixed `height`, not
@@ -1627,6 +1633,51 @@ body.sidebar-expanded .ai-agent-fab {
   display: flex;
   align-items: center;
   gap: 8px;
+  /* The hamburger button (mobile-only) sits before this in source order,
+     .close-btn after — space-between (inherited from the shared
+     .modal-header rule) would otherwise push the title flush against
+     whichever of those is visible instead of staying visually centered
+     between them. */
+  flex: 1;
+  justify-content: center;
+}
+
+/* BUG FIX (mobile sidebar unreachable): this button was referenced in
+   ai-agent.js's own comments and CSS class name from the start, but
+   never actually built into the header — so there was no way to open
+   the sidebar sheet on mobile at all, meaning no settings button and no
+   history list were ever reachable there. Sized/styled to match
+   .close-btn exactly (same 36px circular hit target) so the header reads
+   as one consistent icon-button pair, hamburger on one side mirroring
+   close on the other. */
+.ai-agent-mobile-hamburger-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.ai-agent-mobile-hamburger-btn:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Desktop has the permanent sidebar already visible alongside the chat —
+   the hamburger toggle only makes sense once the sidebar is off-canvas,
+   i.e. below the same 901px breakpoint everything else in this file
+   gates on. */
+@media (max-width: 900px) {
+  .ai-agent-mobile-hamburger-btn {
+    display: flex;
+  }
 }
 
 .ai-agent-logo {
@@ -1645,6 +1696,24 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-modal-card .ai-agent-panel {
+  min-height: 0;
+  max-height: none;
+}
+
+/* ── Settings-as-its-own-modal (Phase 6a) ──
+   openSettingsModal() (ai-agent.js) mounts createSettingsPanel()'s panel
+   directly as the settings modal's only body content, not nested inside
+   .ai-agent-widget/.ai-agent-row like the chat panel is. It still needs
+   to fill the remaining fixed-card height below the header and scroll
+   internally, same as every other panel does. Fixed height instead of
+   Phase 7's chat sizing — settings' content is short and doesn't need
+   the wider/taller chat-with-sidebar dimensions. */
+.ai-agent-settings-modal-card {
+  height: min(560px, 80vh);
+}
+
+.ai-agent-settings-modal-card .ai-agent-panel {
+  flex: 1;
   min-height: 0;
   max-height: none;
 }
@@ -1673,6 +1742,88 @@ body.sidebar-expanded .ai-agent-fab {
   overflow-x: hidden;
   direction: rtl;
   transition: width 250ms cubic-bezier(0.4, 0, 0.2, 1), padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Mobile off-canvas sidebar sheet ──
+   BUG FIX: .ai-agent-sidebar--mobile-open and .ai-agent-mobile-backdrop
+   were both toggled by JS (openMobileSidebarSheet/closeMobileSidebarSheet
+   in ai-agent.js) from the start, but neither class had any CSS behind
+   it — combined with the hamburger button never being built (see the
+   .ai-agent-mobile-hamburger-btn fix above), the sidebar was completely
+   unreachable on mobile: no settings button, no history list, nothing.
+   Mirrors the main site's own side-menu bottom-sheet pattern exactly
+   (see side-menu.css's `.sidebar` mobile rules: translateY(100%) hidden
+   → translateY(0) shown, backdrop fade), rather than a left/right
+   drawer — same mechanic the rest of this file's comments already
+   describe. Scoped to the same <900px range the hamburger button itself
+   uses, so the two states can never disagree with each other. */
+@media (max-width: 900px) {
+  .ai-agent-sidebar {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 5;
+    width: 100% !important;
+    max-height: 80%;
+    border-inline-start: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: var(--shadow-xl, 0 -8px 24px rgba(0, 0, 0, 0.18));
+    transform: translateY(100%);
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .ai-agent-sidebar--mobile-open {
+    display: flex !important;
+    transform: translateY(0);
+  }
+
+  /* Collapse only ever applies on desktop (see ai-agent.js's own
+     applySidebarCollapsedState doc comment) — force the sheet fully
+     expanded on mobile regardless of the persisted collapsed state. */
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed {
+    width: 100% !important;
+    padding: 14px 10px;
+    align-items: stretch;
+  }
+
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-btn span,
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-label,
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-recents,
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-model-slot {
+    display: revert;
+  }
+
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-btn {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 8px 10px;
+  }
+
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-favicon,
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-collapse-btn {
+    display: none;
+  }
+
+  .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed .ai-agent-sidebar-brand {
+    display: flex;
+  }
+}
+
+.ai-agent-mobile-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 250ms ease;
+}
+
+.ai-agent-mobile-backdrop--visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* Collapsed rail — same visual idea as the main Side-Menu's collapsed
@@ -2122,6 +2273,15 @@ body.sidebar-expanded .ai-agent-fab {
    reflected in real time either way. */
 @media (min-width: 901px) {
   .ai-agent-modal-card.ai-agent-desktop-layout {
+    /* BUG FIX: the base .ai-agent-modal-card rule sets
+       `max-width: 460px` (the mobile/narrow-viewport ceiling) with no
+       desktop override, so this `width: min(92vw, 860px)` was being
+       silently clamped back down to 460px on every desktop screen —
+       `max-width` isn't overridden just because `width` is re-declared
+       elsewhere; it's a separate property and the old rule was still in
+       effect. Raising the ceiling here is what actually lets the modal
+       reach its intended desktop size instead of staying phone-narrow. */
+    max-width: 860px;
     /* PHASE 7: fixed `width`/`height`, not content-driven — same
        rationale as the mobile fixed-height rule above, applied to the
        desktop breakpoint's own target dimensions. */

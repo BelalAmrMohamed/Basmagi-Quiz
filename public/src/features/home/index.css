@@ -270,6 +270,36 @@ body.sidebar-expanded {
   color: white;
 }
 
+/* "اسأل الباشـمبصمج" — same shape/sizing as .tooltip-delete-btn (a full-
+   width action row below the divider), primary accent instead of danger
+   red since this isn't a destructive action. Sits above the delete
+   button when both are present (see course-info-tooltip.js's markup
+   order) so the safe action reads before the destructive one. */
+.tooltip-ask-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--color-primary-light);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  color: var(--color-primary);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 6px;
+}
+
+.tooltip-ask-ai-btn:hover {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
 @media (max-width: 640px) {
   .exam-more-btn {
     position: static;
