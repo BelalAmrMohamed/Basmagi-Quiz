@@ -20,7 +20,7 @@ import {
 } from "./app-state.js";
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
-import { getCourseItemCount } from "./course-count.js";
+import { getCourseItemCount, refreshUserQuizzesCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
@@ -31,7 +31,7 @@ import {
   SHARE_ICON_SVG,
   SPARKLE_ICON_SVG,
 } from "./icons.js";
-import { copyCategoryTreeToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import {
   openAIAgentWithAttachment,
@@ -297,18 +297,14 @@ export function createCategoryCard(
         copyToMine.className = "exam-action-btn";
         copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
         copyToMine.onclick = async () => {
-          copyToMine.disabled = true;
-          try {
-            await copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder");
-            // Lazy import: root-view.js already imports from this module, so
-            // a static import here would be circular (same reason the
-            // "الرجوع للرئيسية" button above lazy-imports renderRootCategories).
-            const { refreshUserQuizzesCardSubtext } = await import("./root-view.js");
-            refreshUserQuizzesCardSubtext();
-            closeMenu();
-          } finally {
-            copyToMine.disabled = false;
-          }
+          await withCopyButtonLoadingState(copyToMine, () =>
+            copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder"),
+          );
+          // BUG FIX: refresh the "امتحاناتك" card's subtext right away
+          // instead of leaving it stale until the next navigation back to
+          // the root view (see refreshUserQuizzesCard() in course-count.js).
+          refreshUserQuizzesCard();
+          closeMenu();
         };
         menu.appendChild(copyToMine);
 

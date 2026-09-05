@@ -33,6 +33,7 @@ import {
   createFolderOrCourseNamed,
   findFolderByName,
   moveItemsToFolder,
+  expandSelectionWithDescendants,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -1001,9 +1002,18 @@ function renderBulkActionBar() {
       if (selectedUserQuizzes.size === 0) return;
       if (await _confirm("هل أنت متأكد من حذف الامتحانات المحددة؟")) {
         let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+        // BUG FIX: expand the checked selection to include descendants of any
+        // selected folder/course first — see expandSelectionWithDescendants()
+        // in user-quizzes-folders.js for why a plain filter-by-checked-id
+        // left orphaned children behind that kept inflating the
+        // "امتحاناتك" card's counts after this delete.
+        const idsToDelete = expandSelectionWithDescendants(
+          selectedUserQuizzes,
+          userQuizzes,
+        );
         userQuizzes = userQuizzes.filter((q) => {
           const qId = qz(q, "id") || q.id;
-          return !selectedUserQuizzes.has(qId);
+          return !idsToDelete.has(qId);
         });
         setInStorage("user_quizzes", JSON.stringify(userQuizzes));
         selectedUserQuizzes.clear();

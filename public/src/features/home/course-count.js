@@ -25,6 +25,7 @@
 // reloads don't need to call it.
 
 import { getCategoryTree } from "./app-state.js";
+import { getFromStorage } from "../../shared/storage-helpers.js";
 
 let cache = new WeakMap();
 
@@ -64,11 +65,50 @@ export function getCourseItemCount(category) {
 }
 
 /**
+ * Drops "orphaned" rows from a flat user_quizzes array — rows whose
+ * meta.parentId points at an id that no longer exists in the array.
+ *
+ * BUG FIX: bulk-delete (the "حذف" bulk action in user-quizzes-view.js) only
+ * ever removes exactly the ids the user checked. That's correct when
+ * "تحديد الكل" is used (it selects literally every row in the flat array,
+ * nested children included), but a manual partial selection — e.g. checking
+ * just a course/folder row without its children also being individually
+ * checked — deletes the parent while leaving its children behind with a
+ * parentId that no longer resolves to anything. Those orphans don't render
+ * anywhere (every view walks the tree top-down from a real parent), so they
+ * were invisible in the UI, but getUserQuizzesBreakdown() was still tallying
+ * them into the "امتحاناتك" card's counts — hence counts that didn't match
+ * what was actually visible (e.g. reporting content after the visible list
+ * had already been fully emptied). Filtering to only reachable rows before
+ * counting keeps the card's numbers in sync with what user-quizzes-view.js
+ * actually shows.
+ *
+ * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
+ * @returns {Array} only the rows that are root-level or have a live parent
+ */
+function pruneOrphanedRows(userQuizzes) {
+  const rows = userQuizzes || [];
+  const liveIds = new Set();
+  for (const row of rows) {
+    const id = row?.id || row?.meta?.id;
+    if (id) liveIds.add(id);
+  }
+  return rows.filter((row) => {
+    const parentId = row?.meta?.parentId || null;
+    return parentId === null || liveIds.has(parentId);
+  });
+}
+
+/**
  * Breaks down the flat "user_quizzes" localStorage array into counts of
  * quizzes / folders / courses (by meta.type — entries without a meta.type
  * are plain quizzes). Used for the "امتحاناتك" root card, whose subtext
  * previously just used the array's raw .length and labeled everything as
  * "exams", even when the list actually contained folders/courses too.
+ *
+ * Orphaned rows (see pruneOrphanedRows above) are excluded before counting,
+ * so a partially-cascaded delete can't inflate these numbers past what's
+ * actually visible in the "امتحاناتك" view.
  *
  * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
  * @returns {{quizCount: number, folderCount: number, courseCount: number, total: number}}
@@ -77,7 +117,7 @@ export function getUserQuizzesBreakdown(userQuizzes) {
   let quizCount = 0;
   let folderCount = 0;
   let courseCount = 0;
-  for (const row of userQuizzes || []) {
+  for (const row of pruneOrphanedRows(userQuizzes)) {
     if (row?.meta?.type === "course") courseCount += 1;
     else if (row?.meta?.type === "folder") folderCount += 1;
     else quizCount += 1;
@@ -90,32 +130,42 @@ export function getUserQuizzesBreakdown(userQuizzes) {
   };
 }
 
-/** Small internal Arabic-pluralization helper for a (singular, dual,
- * plural) label set: 1 → singular, 2 → dual, 3-10 → "N plural" (e.g. "11
- * امتحانات" was wrong — that reading only holds for 3-10), 11+ → "N
- * singular" (Arabic reverts to the singular/tamyiz form after 10, e.g. "11
- * امتحان" not "11 امتحانات"). */
-function pluralizeArabic(count, singular, dual, plural) {
+/** Small internal Arabic-pluralization helper for a (singular, dual, plural,
+ * plural11plus) label set: 1 → singular, 2 → dual, 3-10 → "N plural", 11+ →
+ * "N plural11plus".
+ *
+ * BUG FIX: this used to always use the 3-10 plural form for any count above
+ * 2, including 11+ ("11 امتحانات") — Arabic counted-noun agreement actually
+ * switches at 11 (tamyiz singular, e.g. "11 امتحان" not "11 امتحانات"). This
+ * previously drifted out of sync with getItemText() in category-view.js,
+ * which already had the correct 3-10 vs 11+ split for the same "امتحان(ات)"
+ * label — passing pluralWord as both the `plural` and `plural11plus` arg
+ * reproduces the old always-3-10-form behavior for callers where the
+ * 11+ label happens to be identical (courses/folders below don't currently
+ * have real-world counts high enough for this to matter, but the helper
+ * supports it for correctness). */
+function pluralizeArabic(count, singular, dual, plural, plural11Plus = plural) {
   if (count === 1) return singular;
   if (count === 2) return dual;
-  if (count >= 3 && count <= 10) return `${count} ${plural}`;
-  // 11+: Arabic counted nouns drop back to the singular form.
-  const singularNoun = singular.replace(/ (واحد|واحدة)$/, "");
-  return `${count} ${singularNoun}`;
+  if (count <= 10) return `${count} ${plural}`;
+  return `${count} ${plural11Plus}`;
 }
 
 /**
- * Arabic subtext for the FACE of the "امتحاناتك" root card — quizzes only,
- * e.g. "8 امتحانات". Deliberately does NOT include the course/folder counts:
- * those are already one tap away in this same card's dropdown (the
- * .root-quizzes-breakdown block in root-view.js), so repeating the full
- * breakdown on the card face itself just reads as a single confusing "N
- * امتحانات" total that doesn't match the actual quiz count.
+ * Arabic subtext for the "امتحاناتك" root card. Only counts actual quizzes
+ * (not folders/courses) — the card's full breakdown (quizzes/courses/
+ * folders) is already shown in its dropdown menu (see root-view.js), so the
+ * subtext line just needs the headline "N امتحان" figure a user expects from
+ * every other card on this page, not a repeat of the whole breakdown.
  */
-export function formatUserQuizzesCardSubtext({ quizCount, total }) {
+export function formatUserQuizzesBreakdown({ quizCount, folderCount, courseCount, total }) {
   if (total === 0) return "لا يوجد محتوى بعد";
-  if (quizCount === 0) return "لا يوجد امتحانات بعد";
-  return pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات");
+  if (quizCount === 0) {
+    // Edge case: only folders/courses, no quizzes yet directly visible in
+    // the count — still say something rather than a blank "0 امتحان".
+    return "لا يوجد امتحانات بعد";
+  }
+  return pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات", "امتحان");
 }
 
 export function formatArabicQuestionCount(count) {
@@ -124,4 +174,36 @@ export function formatArabicQuestionCount(count) {
   if (count === 2) return "سؤالين";
   if (count >= 3 && count <= 10) return `${count} أسئلة`;
   return `${count} سؤال`;
+}
+
+/**
+ * Patches the already-rendered "امتحاناتك" card's subtext in place, instead
+ * of waiting for the next full renderRootCategories() call (root-view.js).
+ *
+ * BUG FIX: the card's quiz-count subtext was only ever recomputed inside
+ * renderRootCategories(), which only runs on navigation back to the root
+ * view. After "نسخ لامتحاناتي" (copy-to-my-quizzes.js) finished writing the
+ * new entries to localStorage, the card kept showing its old, stale count
+ * until the user left the course/quiz page and came back (or reloaded).
+ * Every "نسخ لامتحاناتي" click handler now calls this right after its copy
+ * promise resolves. It's a no-op (silently returns) if the root view isn't
+ * currently mounted (e.g. the copy happened from inside a course page and
+ * the card behind it isn't in the DOM at all) — renderRootCategories() will
+ * compute the correct number the next time the user does navigate back, so
+ * nothing is lost by skipping the patch in that case.
+ *
+ * Lives here (rather than in root-view.js, which creates the card) so both
+ * category-view.js and exam-card.js can call it after their own copy
+ * handlers without creating a circular import with root-view.js.
+ */
+export function refreshUserQuizzesCard() {
+  const card = document.querySelector(
+    '.grid-container .category-card[data-user-quizzes-card="true"]',
+  );
+  if (!card) return;
+  const subtextEl = card.querySelector(".card-text p");
+  if (!subtextEl) return;
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const breakdown = getUserQuizzesBreakdown(userQuizzes);
+  subtextEl.textContent = formatUserQuizzesBreakdown(breakdown);
 }

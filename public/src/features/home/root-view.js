@@ -26,13 +26,13 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
 import { setFolderState } from "./user-quizzes-folders.js";
-import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesCardSubtext } from "./course-count.js";
+import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesBreakdown, refreshUserQuizzesCard } from "./course-count.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
-import { copyCategoryTreeToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import { toSlug } from "./slug-utils.js";
 import {
   MORE_DOTS_ICON_SVG,
@@ -49,39 +49,6 @@ import {
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { _confirm } from "../../components/notifications/notifications.js";
-
-/**
- * Re-reads "user_quizzes" from storage and updates the already-rendered
- * "امتحاناتك" root card's subtext in place, without a full
- * renderRootCategories() re-render.
- *
- * Why this exists: "نسخ لامتحاناتي" ("copy to my quizzes") can be triggered
- * from three places (this file's course dropdown, exam-card.js's quiz
- * dropdown, category-view.js's folder/course dropdown) while the user is
- * still looking at the root view underneath the open menu — none of those
- * call sites re-render the root view afterward (nor should they: doing so
- * would close menus and reset scroll position for an action that doesn't
- * change what course/folder the user is currently browsing). Without this,
- * the "امتحاناتك" card's subtext only ever caught up the next time
- * renderRootCategories() happened to run for an unrelated reason (leaving
- * and re-entering the root view, or a full reload) — which is exactly the
- * "doesn't update until you get into a course and quit" bug report.
- *
- * Safe no-op if the root card isn't currently mounted (e.g. the user has
- * already navigated away from the root view by the time the copy resolves,
- * or the card is missing due to an earlier render error) — in that case the
- * next renderRootCategories() call picks up the fresh count/breakdown
- * anyway, since both read storage live rather than caching.
- */
-export function refreshUserQuizzesCardSubtext() {
-  const card = document.querySelector(".root-user-quizzes-card");
-  if (!card) return;
-  const subtextEl = card.querySelector(".card-text p");
-  if (!subtextEl) return;
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-  const breakdown = getUserQuizzesBreakdown(userQuizzes);
-  subtextEl.textContent = formatUserQuizzesCardSubtext(breakdown);
-}
 
 function attachCourseActionsMenu(card, course, categoryTree) {
   const moreBtn = document.createElement("button");
@@ -125,14 +92,14 @@ function attachCourseActionsMenu(card, course, categoryTree) {
       copyMine.className = "exam-action-btn";
       copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
       copyMine.onclick = async () => {
-        copyMine.disabled = true;
-        try {
-          await copyCategoryTreeToUserQuizzes(course, categoryTree, "course");
-          refreshUserQuizzesCardSubtext();
-          closeMenu();
-        } finally {
-          copyMine.disabled = false;
-        }
+        await withCopyButtonLoadingState(copyMine, () =>
+          copyCategoryTreeToUserQuizzes(course, categoryTree, "course"),
+        );
+        // BUG FIX: refresh the "امتحاناتك" card's subtext right away
+        // instead of leaving it stale until the next navigation back to
+        // the root view (see refreshUserQuizzesCard() above).
+        refreshUserQuizzesCard();
+        closeMenu();
       };
       menu.appendChild(copyMine);
 
@@ -235,19 +202,17 @@ export async function renderRootCategories() {
         true,
         null,
         false,
-        // Card subtext intentionally shows the quiz count ONLY, not the full
-        // quizzes/courses/folders breakdown — the full breakdown is already
-        // one tap away in this card's own dropdown (see the
-        // .root-quizzes-breakdown block below), so repeating it on the card
-        // face is redundant and, at a glance, easy to misread as one
-        // combined "N امتحانات" number (see formatUserQuizzesCardSubtext()).
-        formatUserQuizzesCardSubtext(breakdown),
+        // Subtext shows only the quiz count (e.g. "8 امتحانات"), matching
+        // every other card's "N امتحان(ات)" convention — the full
+        // quizzes/courses/folders breakdown lives in this card's dropdown
+        // menu instead of being crammed into the subtext line. See
+        // formatUserQuizzesBreakdown() in course-count.js.
+        formatUserQuizzesBreakdown(breakdown),
       );
-      // Stable hook so copy actions elsewhere (exam-card.js, category-view.js,
-      // this file's own course dropdown) can refresh just this card's subtext
-      // in place after a "نسخ لامتحاناتي" without forcing a full
-      // renderRootCategories() re-render — see refreshUserQuizzesCardSubtext().
-      quizzesCard.classList.add("root-user-quizzes-card");
+      // Tagged so refreshUserQuizzesCard() can find this specific card by
+      // attribute instead of assuming DOM order (it's always appended
+      // first, but relying on that felt fragile for a targeted lookup).
+      quizzesCard.setAttribute("data-user-quizzes-card", "true");
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";
@@ -303,15 +268,15 @@ export async function renderRootCategories() {
           // it, unlike manifest courses/folders/quizzes which live on the
           // server and have a real, shareable URL.
 
-          const alreadyMine = document.createElement("button");
-          alreadyMine.type = "button";
-          alreadyMine.className = "exam-action-btn";
-          alreadyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
-          alreadyMine.onclick = () => {
-            closeMenu();
-            showNotification("امتحاناتك", "هذا المجلد موجود بالفعل في امتحاناتك.", "info");
-          };
-          menu.appendChild(alreadyMine);
+          // const alreadyMine = document.createElement("button");
+          // alreadyMine.type = "button";
+          // alreadyMine.className = "exam-action-btn";
+          // alreadyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+          // alreadyMine.onclick = () => {
+          //   closeMenu();
+          //   showNotification("امتحاناتك", "هذا المجلد موجود بالفعل في امتحاناتك.", "info");
+          // };
+          // menu.appendChild(alreadyMine);
         });
       };
       quizzesCard.appendChild(rootMenuBtn);

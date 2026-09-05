@@ -18,6 +18,33 @@ import { loadFullQuizData } from "./quiz-data-loader.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 
 /**
+ * Shared loading-state wrapper for every "نسخ لامتحاناتي" button (root-view.js,
+ * category-view.js, exam-card.js). Copying a whole course tree can take a
+ * while (one loadFullQuizData() fetch per quiz, sequentially — see
+ * copyCategoryTreeToUserQuizzes below), and the button previously only set
+ * `.disabled = true` with no visible change, so a slow copy looked like a
+ * dead click. This swaps the button to a spinner + "جاري النسخ..." for the
+ * duration of `task` and always restores the original label/enabled state
+ * afterward, success or failure, via try/finally.
+ *
+ * @param {HTMLButtonElement} button
+ * @param {() => Promise<any>} task
+ */
+export async function withCopyButtonLoadingState(button, task) {
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.classList.add("is-copying");
+  button.innerHTML = `<span class="copy-btn-spinner" aria-hidden="true"></span><span>جاري النسخ...</span>`;
+  try {
+    return await task();
+  } finally {
+    button.disabled = false;
+    button.classList.remove("is-copying");
+    button.innerHTML = originalHtml;
+  }
+}
+
+/**
  * Returns true if `examId` has already been copied into user_quizzes
  * (tracked via meta.copiedFrom on the copy).
  */

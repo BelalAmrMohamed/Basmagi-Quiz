@@ -501,24 +501,21 @@ body.sidebar-expanded {
   border-bottom: none;
 }
 
-.quiz-info-table th {
+.quiz-info-table th,
+.quiz-info-table td {
   padding: 12px 16px;
   text-align: right;
   vertical-align: middle;
+}
+
+.quiz-info-table th {
   width: 40%;
   color: var(--color-text-secondary);
   font-weight: 600;
   background: var(--color-background-secondary);
 }
 
-/* Values are mostly numbers (Year/Term) or English college names, so they're
-   left-aligned rather than following the RTL right-alignment used for the
-   Arabic <th> labels — matches how numbers/Latin-script data reads more
-   naturally against a right-aligned label column. */
 .quiz-info-table td {
-  padding: 12px 16px;
-  text-align: left;
-  vertical-align: middle;
   color: var(--color-text-primary);
   font-weight: 500;
 }
@@ -526,7 +523,21 @@ body.sidebar-expanded {
 /* Highlighted "كورسات مميزة" value — stands out from regular education-type
    values (جامعي/ثانوي/إعدادي/إبتدائي) in both the full modal table and the
    dropdown submenu preview. */
-.quiz-info-table td.featured-value,
+/* BUG FIX: the modal table's "featured-value" class used to go directly on
+   the <td> itself (course-actions.js), making the whole cell
+   `display: inline-flex` — that drops the cell out of normal table layout
+   and shrink-wraps/left-aligns it at the flex default (flex-start) instead of
+   centering it in the column. course-actions.js now wraps an inner
+   <span class="featured-value"> instead (matching how course-info-tooltip.js
+   and exam-dropdown-menu.js already did it) and gives the <td> itself a
+   separate ".featured-value-cell" class that just centers normally — the
+   pill now centers via the cell's own text-align instead of fighting table
+   layout with flex. */
+.quiz-info-table td.featured-value-cell {
+  text-align: center;
+}
+
+.quiz-info-table td .featured-value,
 .submenu-content .tooltip-row span.featured-value,
 .submenu-content .tooltip-row span:last-child.featured-value {
   display: inline-flex;
@@ -541,16 +552,6 @@ body.sidebar-expanded {
   font-size: 0.85em;
   direction: rtl;
   text-align: right;
-}
-
-/* .featured-value is inline-flex, which only ever sizes to its own content
-   — the cell's text-align never actually centered it, since inline-level
-   boxes are positioned by text-align but not stretched to justify-content
-   rules. Overriding just this cell's text-align to center re-centers the
-   pill within the <td> without touching the left-alignment of every other
-   (plain-text/numeric) cell, which keeps the rule above. */
-.quiz-info-table td.featured-value {
-  text-align: center;
 }
 
 /* ============================================================================
@@ -737,16 +738,8 @@ body.sidebar-expanded {
   align-items: normal !important;
 }
 
-/* Beats the generic .exam-action-btn:hover rule (which this block also
-   matches, since it reuses .exam-action-btn for consistent padding/spacing)
-   on all three properties that rule touches, not just background — leaving
-   border-color/color unset here let the block's border and text still shift
-   to the primary color on hover, making a non-interactive summary block look
-   like a clickable button. */
 .exam-dropdown-menu .root-quizzes-breakdown:hover {
   background: none;
-  border-color: var(--color-border);
-  color: inherit;
 }
 
 .root-quizzes-breakdown .tooltip-row {
@@ -754,8 +747,8 @@ body.sidebar-expanded {
   justify-content: space-between;
   gap: 12px;
   font-size: 0.85rem;
-  /* direction: rtl; */
-  /* text-align: right; */
+  direction: rtl;
+  text-align: right;
 }
 
 .root-quizzes-breakdown .tooltip-row span:first-child {
@@ -2999,6 +2992,31 @@ html[dir="ltr"] .move-to-dialog-elbow {
   text-align: center;
   padding: 80px 32px;
   font-size: 1.125rem;
+}
+
+/* "نسخ لامتحاناتي" button loading state — spinner shown in place of the
+   duplicate icon while a copy (single quiz or a whole course/folder tree)
+   is in flight. See withCopyButtonLoadingState() in copy-to-my-quizzes.js. */
+.copy-btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: copy-btn-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes copy-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.exam-action-btn.is-copying {
+  cursor: progress;
+  opacity: 0.85;
 }
 
 /* Empty State */

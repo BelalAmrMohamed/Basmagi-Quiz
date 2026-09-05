@@ -220,22 +220,47 @@ export async function renameItem(itemId, currentTitle) {
   renderUserQuizzesView();
 }
 
-export async function deleteFolder(folderId) {
-  if (!(await _confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟"))) return;
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-  const idsToDelete = new Set([folderId]);
-  
-  // Recursively find all children
+/**
+ * Given a set of ids the user explicitly selected, expands it to also
+ * include every descendant of any folder/course among them, against a given
+ * userQuizzes snapshot. Shared by deleteFolder() (single item, always a
+ * folder/course) and the bulk-delete action in user-quizzes-view.js (a mixed
+ * selection that may or may not include folders/courses).
+ *
+ * BUG FIX: the bulk-delete handler used to remove only the exact ids the
+ * user had checked. That's fine when "تحديد الكل" was used first (it selects
+ * every row in the flat array, nested children included), but checking a
+ * folder/course row without also individually checking its children left
+ * those children behind as orphans — rows whose meta.parentId pointed at an
+ * id that no longer existed. They didn't render anywhere (every view walks
+ * down from a real, existing parent), but they kept inflating the
+ * "امتحاناتك" card's counts (see pruneOrphanedRows in course-count.js) even
+ * after the visible list looked empty. Expanding the selection to include
+ * descendants before deleting stops new orphans from being created.
+ * @param {Set<string>} selectedIds
+ * @param {Array} userQuizzes
+ * @returns {Set<string>}
+ */
+export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
+  const idsToDelete = new Set(selectedIds);
   let added = true;
   while (added) {
     added = false;
     for (const q of userQuizzes) {
-      if (q.meta?.parentId && idsToDelete.has(q.meta.parentId) && !idsToDelete.has(q.id)) {
-        idsToDelete.add(q.id || q.meta.id);
+      const qId = q.id || q.meta?.id;
+      if (q.meta?.parentId && idsToDelete.has(q.meta.parentId) && !idsToDelete.has(qId)) {
+        idsToDelete.add(qId);
         added = true;
       }
     }
   }
+  return idsToDelete;
+}
+
+export async function deleteFolder(folderId) {
+  if (!(await _confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟"))) return;
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userQuizzes);
 
   const newQuizzes = userQuizzes.filter((q) => !idsToDelete.has(q.id) && !idsToDelete.has(q.meta?.id));
   setInStorage("user_quizzes", JSON.stringify(newQuizzes));

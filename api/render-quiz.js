@@ -91,6 +91,40 @@ export default async function handler(req, res) {
 
   const quizId = id.trim();
 
+  // ── User-copied quiz short-circuit ────────────────────────────────────────
+  // BUG FIX: quizzes copied via "نسخ لامتحاناتي" (copy-to-my-quizzes.js) only
+  // ever exist in the visitor's own localStorage — they were never written to
+  // Supabase and never will be, since they're per-browser local data, not a
+  // server-side entity. The old code always ran the Supabase lookup first and
+  // hard-404'd on a miss, so every copied quiz's URL 404'd here before
+  // quiz.js's client-side `?type=user` localStorage-recovery logic ever got a
+  // chance to load (see quiz.js ~line 1101). playUserQuiz() (user-quiz-card.js)
+  // always appends `?type=user` when linking to a copy, and Vercel's rewrite
+  // (`/q/:id` → `/api/render-quiz?id=:id`) passes extra incoming query-string
+  // params straight through, so `req.query.type` reliably reads "user" here —
+  // skip Supabase and the 404 entirely and just serve the template. There's no
+  // server-side metadata for a local-only quiz, so this intentionally skips
+  // the OG/meta injection block below (step 4) the same way the Supabase-miss
+  // path already does.
+  if (req.query.type === "user") {
+    let userHtml;
+    try {
+      userHtml = fs.readFileSync(TEMPLATE_PATH, "utf8");
+    } catch (err) {
+      console.error("[render-quiz] Could not read quiz.html:", err);
+      return res.status(500).send("Internal Server Error");
+    }
+    userHtml = userHtml.replace(
+      "</head>",
+      `  <meta name="quiz:id" content="${escapeHtml(quizId)}">\n</head>`,
+    );
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    // Never cache — this response has no real OG metadata and the same URL
+    // could later belong to a different visitor's different local quiz.
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).send(userHtml);
+  }
+
     // ── 1. Fetch quiz metadata from Supabase ──────────────────────────────────
   let meta = null;
   try {

@@ -8,14 +8,13 @@
 
 import { startQuiz } from "./quiz-navigation.js";
 import { isRecentlyAdded } from "./date-utils.js";
-import { formatArabicQuestionCount } from "./course-count.js";
+import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
 import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
-import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
-import { refreshUserQuizzesCardSubtext } from "./root-view.js";
+import { copyQuizToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -337,17 +336,18 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
     copyToMineOpt.onclick = async (e) => {
       e.stopPropagation();
+      // BUG FIX: this used to call closeMenu() *before* the copy started,
+      // so the button (and its disabled state) vanished immediately and a
+      // slow copy — a big course tree can mean many sequential
+      // loadFullQuizData() fetches — gave zero visible feedback that
+      // anything was happening. Keep the menu open, show the spinner via
+      // withCopyButtonLoadingState(), and only close once the copy (success
+      // or failure) has actually finished.
+      await withCopyButtonLoadingState(copyToMineOpt, () =>
+        copyQuizToUserQuizzes(exam),
+      );
+      refreshUserQuizzesCard();
       closeMenu();
-      copyToMineOpt.disabled = true;
-      try {
-        await copyQuizToUserQuizzes(exam);
-        // Keep the "امتحاناتك" root card's subtext in sync immediately —
-        // it's rendered underneath this dropdown and won't otherwise
-        // refresh until an unrelated full root re-render happens.
-        refreshUserQuizzesCardSubtext();
-      } finally {
-        copyToMineOpt.disabled = false;
-      }
     };
     menu.appendChild(copyToMineOpt);
 
