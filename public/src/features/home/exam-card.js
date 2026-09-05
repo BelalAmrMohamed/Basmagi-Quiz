@@ -325,6 +325,27 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     };
     menu.appendChild(shareOpt);
 
+    // ── "نسخ لامتحاناتي" — copies this quiz into the visitor's own
+    // localStorage "امتحاناتك" list. Visible on every quiz (static or DB),
+    // for every visitor, logged in or not — no visibility gate here (see
+    // Phase 0 spec, Feature B). Uses DUPLICATE_ICON_SVG rather than
+    // COPY_ICON_SVG so it doesn't share an icon with "نسخ الرابط" above.
+    const copyToMineOpt = document.createElement("button");
+    copyToMineOpt.type = "button";
+    copyToMineOpt.className = "exam-action-btn";
+    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
+    copyToMineOpt.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      copyToMineOpt.disabled = true;
+      try {
+        await copyQuizToUserQuizzes(exam);
+      } finally {
+        copyToMineOpt.disabled = false;
+      }
+    };
+    menu.appendChild(copyToMineOpt);
+
     const askAiOpt = document.createElement("button");
     askAiOpt.type = "button";
     askAiOpt.className = "exam-action-btn";
@@ -350,27 +371,6 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       }
     };
     menu.appendChild(askAiOpt);
-
-    // ── "نسخ لامتحاناتي" — copies this quiz into the visitor's own
-    // localStorage "امتحاناتك" list. Visible on every quiz (static or DB),
-    // for every visitor, logged in or not — no visibility gate here (see
-    // Phase 0 spec, Feature B). Uses DUPLICATE_ICON_SVG rather than
-    // COPY_ICON_SVG so it doesn't share an icon with "نسخ الرابط" above.
-    const copyToMineOpt = document.createElement("button");
-    copyToMineOpt.type = "button";
-    copyToMineOpt.className = "exam-action-btn";
-    copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
-    copyToMineOpt.onclick = async (e) => {
-      e.stopPropagation();
-      closeMenu();
-      copyToMineOpt.disabled = true;
-      try {
-        await copyQuizToUserQuizzes(exam);
-      } finally {
-        copyToMineOpt.disabled = false;
-      }
-    };
-    menu.appendChild(copyToMineOpt);
 
     // ── "حذف" — database quizzes only, and only for the quiz's own
     // creator or a platform owner. canDeleteQuiz() covers both the

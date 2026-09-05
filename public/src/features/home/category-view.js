@@ -258,18 +258,6 @@ export function createCategoryCard(
     moreBtn.onclick = (event) => {
       event.stopPropagation();
       openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
-        const askAi = document.createElement("button");
-        askAi.type = "button";
-        askAi.className = "exam-action-btn";
-        askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
-        askAi.onclick = () => {
-          closeMenu();
-          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData, getCategoryTree()), {
-            defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
-          });
-        };
-        menu.appendChild(askAi);
-
         const folderUrl = `${window.location.origin}/#${(courseData.path || [courseData.name])
           .map((segment) => toSlug(segment))
           .join("/")}`;
@@ -313,6 +301,18 @@ export function createCategoryCard(
           }
         };
         menu.appendChild(copyToMine);
+
+        const askAi = document.createElement("button");
+        askAi.type = "button";
+        askAi.className = "exam-action-btn";
+        askAi.innerHTML = `${SPARKLE_ICON_SVG}<span>اسأل الباشـمبصمج</span>`;
+        askAi.onclick = () => {
+          closeMenu();
+          openAIAgentWithAttachment(buildPlatformFolderAttachment(courseData, getCategoryTree()), {
+            defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
+          });
+        };
+        menu.appendChild(askAi);
 
         const counts = document.createElement("div");
         counts.className = "exam-action-btn";
