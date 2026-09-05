@@ -2307,7 +2307,7 @@ Container
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: var(--z-modal, 5000);
 }
 
 /* Phones show a fixed bottom-nav bar over the page. Reserve its height (plus

@@ -1510,17 +1510,10 @@ body.sidebar-expanded .ai-agent-fab {
    index.css and download-quiz-modal.css for the same pattern). This is
    just the widget-specific sizing on top of that base. */
 
-/* BUG FIX: the shared .modal-overlay rule (index.css) sits at z-index:
-   2000, but the app's persistent desktop side-menu (.sidebar,
-   side-menu.css) sits at var(--z-overlay, 500) = 4000 — higher than the
-   modal. On medium/square desktop viewports (where the sidebar is
-   visible and the AI Agent modal is also wide enough to reach that side
-   of the screen) the sidebar rendered ON TOP of the modal's right edge
-   instead of the modal covering it like every other overlay in the app.
-   Scoped to this modal specifically (not a blanket .modal-overlay bump)
-   since other modals haven't been audited against the same conflict. */
+/* Keep this component-specific overlay aligned with the shared modal tier so
+   it covers the persistent side menu whenever it is active. */
 .ai-agent-modal-overlay {
-  z-index: 4001;
+  z-index: var(--z-modal, 5000);
 }
 
 .ai-agent-modal-card {

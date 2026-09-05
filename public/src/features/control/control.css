@@ -488,7 +488,7 @@ input::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: var(--z-modal, 5000);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s;
