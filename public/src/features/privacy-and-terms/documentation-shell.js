@@ -1,4 +1,6 @@
 // public/src/features/privacy-and-terms/documentation-shell.js
+import "../../shared/flow-field.js";
+
 const sidebarMarkup = `
   <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
   <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true" tabindex="-1">

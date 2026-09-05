@@ -23,7 +23,7 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  background-color: var(--color-background, #121212);
+  background-color: transparent;
   color: var(--color-text-primary, #e0e0e0);
   padding-top: 32px;
   padding-bottom: 80px;

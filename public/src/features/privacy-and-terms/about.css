@@ -21,7 +21,7 @@
   --about-highlight-bg: #17221d;
   --about-highlight-ink: #f3f0e8;
   --about-highlight-muted: #c9d4cc;
-  background: var(--about-paper);
+  background: transparent;
   color: var(--about-ink);
   font-family: "IBM Plex Sans Arabic", sans-serif;
 }

@@ -53,7 +53,7 @@ body {
 }
 
 body {
-    background-color: var(--bg);
+    background-color: transparent;
     color: var(--ink);
     font-family: "IBM Plex Sans Arabic", "Noto Naskh Arabic", serif;
     line-height: 1.85;
