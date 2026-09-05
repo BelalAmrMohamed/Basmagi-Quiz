@@ -232,7 +232,13 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const courseId = searchParams.get("course");
   if (courseId) {
-    return renderCourseImage(courseId);
+    // ?folder=Algebra/Second (raw folder names, "/"-joined — see
+    // render-course.js's OG image URL builder) requests the nested-folder
+    // variant of the course image: same layout, but the title/stats reflect
+    // the deepest folder in the chain instead of the course itself, with
+    // the full "Course / Sub / Sub2" breadcrumb shown as the title.
+    const folderPath = searchParams.get("folder");
+    return renderCourseImage(courseId, folderPath ? folderPath.split("/").filter(Boolean) : null);
   }
 
   const quizId = searchParams.get("quizId");
@@ -799,17 +805,21 @@ const COURSE_BRAND_DARK = "#0f172a";
 const COURSE_TITLE_MAX_CHARS_ARABIC = 34;
 const COURSE_TITLE_MAX_CHARS_LATIN = 55;
 
-async function renderCourseImage(courseId) {
+async function renderCourseImage(courseId, folderPath) {
   const [fontData, meta] = await Promise.all([
     loadFont().catch((err) => {
       console.error("[og] course font load error:", err);
       return null;
     }),
-    fetchCourseMeta(courseId),
+    fetchCourseMeta(courseId, folderPath),
   ]);
 
-  const rawTitle = meta ? meta.name : "منصة امتحانات بصمجي";
-  const isArabic = detectArabic(rawTitle);
+  // meta.name is the deepest folder's own name when a path resolved (for
+  // isArabic detection / stats), while meta.breadcrumb is the full
+  // "Course / Sub / Sub2" display string used as the actual title below —
+  // so a folder several levels deep still shows which course it belongs to.
+  const rawTitle = meta ? meta.breadcrumb : "منصة امتحانات بصمجي";
+  const isArabic = detectArabic(meta ? meta.name : rawTitle);
   const title = truncateTitle(
     rawTitle,
     isArabic ? COURSE_TITLE_MAX_CHARS_ARABIC : COURSE_TITLE_MAX_CHARS_LATIN,
@@ -882,7 +892,9 @@ async function renderCourseImage(courseId) {
               fontWeight: "700",
               direction: "ltr",
             },
-            children: isArabic ? "مقرر دراسي" : "COURSE",
+            children: folderPath && folderPath.length > 0
+              ? (isArabic ? "مجلد" : "FOLDER")
+              : (isArabic ? "مقرر دراسي" : "COURSE"),
           },
         },
         {
@@ -994,9 +1006,11 @@ async function renderCourseImage(courseId) {
  * not a manifest re-walk.
  *
  * @param {string} courseId
- * @returns {Promise<{name:string, folderCount:number, quizCount:number, questionCount:number|null, lastUpdated:string|null}|null>}
+ * @param {string[]|null} folderPath Raw folder names to walk under the
+ *   course (e.g. ["Algebra", "Second"]), or null/[] for the course itself.
+ * @returns {Promise<{name:string, breadcrumb:string, folderCount:number, quizCount:number, questionCount:number|null, lastUpdated:string|null}|null>}
  */
-async function fetchCourseMeta(courseId) {
+async function fetchCourseMeta(courseId, folderPath) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     console.error("[og] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
     return null;
@@ -1022,10 +1036,48 @@ async function fetchCourseMeta(courseId) {
     if (!courseRows || courseRows.length === 0) return null;
     const course = courseRows[0];
 
-    const countFor = async (table) => {
+    // ── Walk the folder path (if any), matching each segment by raw name ──
+    // (render-course.js already resolved the slug → real name server-side
+    // before building this /api/og?folder= URL, so here it's an exact-name
+    // match at each level — no toSlug needed on this side.)
+    let targetFolderId = null;
+    let targetName = course.name;
+    const breadcrumbParts = [course.name];
+
+    if (Array.isArray(folderPath) && folderPath.length > 0) {
+      let parentFolderId = null;
+      for (const segment of folderPath) {
+        const folderUrl = new URL(`${SUPABASE_URL}/rest/v1/folders`);
+        folderUrl.searchParams.set("select", "id,name");
+        folderUrl.searchParams.set("course_id", `eq.${courseId}`);
+        folderUrl.searchParams.set(
+          "parent_folder_id",
+          parentFolderId ? `eq.${parentFolderId}` : "is.null",
+        );
+        folderUrl.searchParams.set("name", `eq.${segment}`);
+        folderUrl.searchParams.set("limit", "1");
+
+        const folderRes = await fetch(folderUrl.toString(), { headers });
+        if (!folderRes.ok) break;
+        const folderRows = await folderRes.json();
+        if (!folderRows || folderRows.length === 0) break; // unresolved — fall back to course-level below
+
+        parentFolderId = folderRows[0].id;
+        breadcrumbParts.push(folderRows[0].name);
+      }
+      // Only treat the walk as successful if every segment resolved.
+      if (breadcrumbParts.length === folderPath.length + 1) {
+        targetFolderId = parentFolderId;
+        targetName = breadcrumbParts[breadcrumbParts.length - 1];
+      } else {
+        breadcrumbParts.length = 1; // reset to course-only breadcrumb
+      }
+    }
+
+    const countFor = async (table, idColumn) => {
       const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
       url.searchParams.set("select", "id");
-      url.searchParams.set("course_id", `eq.${courseId}`);
+      url.searchParams.set(idColumn, `eq.${targetFolderId || courseId}`);
       const res = await fetch(url.toString(), {
         method: "HEAD",
         headers: { ...headers, Prefer: "count=exact" },
@@ -1036,10 +1088,19 @@ async function fetchCourseMeta(courseId) {
       return Number.isFinite(total) ? total : 0;
     };
 
-    const [folderCount, quizCount] = await Promise.all([
-      countFor("folders"),
-      countFor("quizzes"),
-    ]);
+    // Direct children only: scoped to the resolved folder via
+    // parent_folder_id/folder_id when a folder resolved, otherwise scoped
+    // to the whole course via course_id — matching render-course.js's
+    // same course-vs-folder count distinction.
+    const [folderCount, quizCount] = targetFolderId
+      ? await Promise.all([
+        countFor("folders", "parent_folder_id"),
+        countFor("quizzes", "folder_id"),
+      ])
+      : await Promise.all([
+        countFor("folders", "course_id"),
+        countFor("quizzes", "course_id"),
+      ]);
 
     // Best-effort extra stats (question count total, last-updated date) —
     // not fatal if this sub-fetch fails.
@@ -1048,7 +1109,13 @@ async function fetchCourseMeta(courseId) {
     try {
       const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
       quizzesUrl.searchParams.set("select", "data,created_at");
-      quizzesUrl.searchParams.set("course_id", `eq.${courseId}`);
+      // Scoped to the resolved folder's direct quizzes when a folder path
+      // resolved, otherwise the whole course — same distinction as the
+      // folderCount/quizCount queries above.
+      quizzesUrl.searchParams.set(
+        targetFolderId ? "folder_id" : "course_id",
+        `eq.${targetFolderId || courseId}`,
+      );
       quizzesUrl.searchParams.set("order", "created_at.desc");
       quizzesUrl.searchParams.set("limit", "500");
       const quizzesRes = await fetch(quizzesUrl.toString(), { headers });
@@ -1068,7 +1135,8 @@ async function fetchCourseMeta(courseId) {
     }
 
     return {
-      name: course.name || "Course",
+      name: targetName || "Course",
+      breadcrumb: breadcrumbParts.join(" / "),
       folderCount,
       quizCount,
       questionCount,

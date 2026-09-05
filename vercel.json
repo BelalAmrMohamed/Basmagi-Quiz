@@ -16,8 +16,8 @@
       "destination": "/api/render-quiz?id=:id"
     },
     {
-      "source": "/course/:name",
-      "destination": "/api/render-course?name=:name"
+      "source": "/course/:path*",
+      "destination": "/api/render-course/:path*"
     },
     {
       "source": "/api/admin-control",

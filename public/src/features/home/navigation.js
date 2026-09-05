@@ -85,17 +85,21 @@ export function restoreViewFromURL() {
   const hash = window.location.hash.slice(1); // strip leading #
   const pathname = window.location.pathname;
 
-  // ── Course view — pathname-based: /course/:name[#subSlug/subSlug2/...] ────
+  // ── Course view — pathname-based: /course/:name/:subSlug/:subSlug2/... ────
   // Courses are always top-level (single-segment categoryTree key, parent
-  // === null), so :name is resolved directly against a root category's
-  // `name` (case-insensitive / slug match, same approach toSlug/fromSlug
-  // already use elsewhere) rather than walked like a nested key.
+  // === null), so the first path segment is resolved directly against a
+  // root category's `name` (case-insensitive / slug match, same approach
+  // toSlug/fromSlug already use elsewhere) rather than walked like a nested
+  // key. Any further segments are nested-subfolder slugs, walked one level
+  // at a time the same way the legacy #hash chain below still is — these
+  // are now real path segments (server-visible, so shared links get an
+  // accurate per-folder OG image; see render-course.js/api/og.js), not a
+  // hash the server never saw.
   //
-  // A trailing hash (if present) is still the old nested-subfolder slug
-  // chain, now rooted at the course instead of at "/" — resolved the same
-  // way the plain-hash branch below resolves it, just starting from the
-  // matched course's key instead of matching the full categoryTree.
-  const courseMatch = pathname.match(/^\/course\/([^/]+)\/?$/);
+  // A #hash after a /course/:name path (no extra path segments) is still
+  // accepted and resolved the same way, for backward compatibility with
+  // links shared before this change.
+  const courseMatch = pathname.match(/^\/course\/([^/]+)((?:\/[^/]+)*)\/?$/);
   if (courseMatch) {
     let courseName;
     try {
@@ -103,6 +107,32 @@ export function restoreViewFromURL() {
     } catch {
       courseName = courseMatch[1];
     }
+
+    // Extra path segments (new scheme) take priority; fall back to the
+    // #hash chain (old scheme) only when there are no extra path segments,
+    // so an old bookmarked /course/:name#sub/sub2 link still resolves.
+    const extraPathSegments = courseMatch[2]
+      .split("/")
+      .filter(Boolean)
+      .map((s) => {
+        try {
+          return decodeURIComponent(s);
+        } catch {
+          return s;
+        }
+      });
+    const subSlugParts = extraPathSegments.length > 0
+      ? extraPathSegments
+      : hash
+        .split("/")
+        .filter(Boolean)
+        .map((s) => {
+          try {
+            return decodeURIComponent(s);
+          } catch {
+            return s;
+          }
+        });
 
     const categoryTree = getCategoryTree();
     if (categoryTree) {
@@ -113,30 +143,24 @@ export function restoreViewFromURL() {
       });
 
       if (courseKey) {
-        if (!hash) {
+        if (subSlugParts.length === 0) {
           // No nested subfolder — render the course itself.
           setNavigationStack([]);
           renderCategory(categoryTree[courseKey]);
           return;
         }
 
-        // Nested subfolder chain, e.g. #subSlug/subSlug2/...
-        const subSlugParts = hash
-          .split("/")
-          .filter(Boolean)
-          .map((s) => {
-            try {
-              return decodeURIComponent(s);
-            } catch {
-              return s;
-            }
-          });
-
         let catKey = courseKey;
         let cat = categoryTree[courseKey];
         let resolved = true;
 
         for (const slugPart of subSlugParts) {
+          // slugPart is already a slug (both the new path segments and the
+          // legacy #hash chain are built via toSlug() on the write side —
+          // see category-view.js) — compare directly, don't re-slug it:
+          // toSlug() isn't idempotent (it double-encodes existing "-" as
+          // "--"), so running it again here would break the match for any
+          // folder name containing a literal hyphen.
           const nextKey = (cat.subcategories || []).find(
             (subKey) =>
               categoryTree[subKey] && toSlug(categoryTree[subKey].name) === slugPart,

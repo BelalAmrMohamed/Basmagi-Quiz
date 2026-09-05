@@ -58,6 +58,7 @@ import {
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { _confirm } from "../../components/notifications/notifications.js";
+import { toSlug } from "./slug-utils.js";
 
 function attachCourseActionsMenu(card, course, categoryTree) {
   const moreBtn = document.createElement("button");
@@ -69,9 +70,9 @@ function attachCourseActionsMenu(card, course, categoryTree) {
     event.stopPropagation();
     openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
       // Courses are always top-level (single-segment path), so this is
-      // always just /course/{courseName} — matches renderCategory()'s
-      // pathname scheme and render-course.js's canonical URL.
-      const folderUrl = `${window.location.origin}/course/${encodeURIComponent(course.name)}`;
+      // always just /course/{courseSlug} — matches renderCategory()'s
+      // pathname scheme and render-course.js's slug-based canonical URL.
+      const folderUrl = `${window.location.origin}/course/${encodeURIComponent(toSlug(course.name))}`;
 
       const copyLink = document.createElement("button");
       copyLink.type = "button";

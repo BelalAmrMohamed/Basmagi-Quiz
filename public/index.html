@@ -4,6 +4,19 @@
 <head>
     <meta charset="UTF-8">
 
+    <!-- Fixes relative asset URLs (src/..., assets/..., favicon.png, etc.)
+         breaking on any page served from a nested path — e.g.
+         /course/:name and /course/:name/:sub/:sub2/... (see
+         render-course.js and api/render-course.js's :path* handling).
+         Without this, the browser resolves "src/foo.js" against the
+         *current* pathname's directory depth, so a two-segment nested
+         folder URL would request .../course/CourseName/Sub/src/foo.js
+         (404 → SPA catch-all → text/html → "Failed to load module
+         script... MIME type text/html" in the console) instead of the
+         real file at the site root. Must be the first tag after <meta
+         charset> and before any other relative href/src in <head>. -->
+    <base href="/">
+
     <!-- Critical Performance: DNS prefetch and preconnect -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">

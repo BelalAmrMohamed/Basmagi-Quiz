@@ -58,45 +58,39 @@ export function renderCategory(category) {
     navigationStack.push(category);
     updateBreadcrumb();
 
-    // ── Obj 4: Update the URL — pathname for top-level courses, hash for
-    // nested subfolders within a course ───────────────────────────────────────
+    // ── Obj 4: Update the URL — real pathname segments for both the course
+    // and any nested subfolders ─────────────────────────────────────────────
     // Courses cannot be nested (single-segment categoryTree key, parent ===
-    // null), so a top-level course now gets a real, crawlable pathname:
-    //   /course/{courseName}
-    // (courseName is the raw, encoded course name — matches render-course.js's
-    // `.eq("name", courseName)` lookup, NOT the toSlug() scheme below.)
+    // null), so a top-level course gets a real, crawlable pathname:
+    //   /course/{courseSlug}
+    // (courseSlug is toSlug(course.name) — dashes, not raw %20-encoded
+    // spaces — matching render-course.js's slug-based fetchCourseMeta()
+    // lookup.)
     //
-    // Nested subfolders *within* a course keep the previous hash-based slug
-    // scheme, now appended after the course's pathname instead of after "/":
-    //   /course/{courseName}#{subSlug}/{subSlug2}/...
-    // Each "/" segment of the categoryTree key (after the course-name prefix)
-    // is passed through toSlug(). Literal hyphens in names are double-encoded
-    // ("--") so they survive a round-trip; spaces become single "-".
+    // Nested subfolders *within* a course now get their own real path
+    // segments too (not a #hash), so each folder level is server-visible and
+    // gets its own accurate OG image/title (see render-course.js's :path*
+    // handling and api/og.js's ?folder= support) — a hash is never sent to
+    // the server, so a crawler hitting a hash-based link could only ever see
+    // the course-level page, not the specific folder that was shared:
+    //   /course/{courseSlug}/{subSlug}/{subSlug2}/...
+    // Each "/" segment of the categoryTree key (including the course-name
+    // prefix) is passed through toSlug(). Literal hyphens in names are
+    // double-encoded ("--") so they survive a round-trip; spaces become a
+    // single "-".
     const categoryTree = getCategoryTree();
     const catKey = category.key || Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
     if (catKey) {
       const keyParts = catKey.split("/");
-      const isTopLevelCourse = keyParts.length === 1;
 
-      let url;
-      if (isTopLevelCourse) {
-        // Top-level course → real pathname, no hash.
-        url = `/course/${encodeURIComponent(category.name || catKey)}`;
-      } else {
-        // Nested subfolder → course pathname + hash for the subfolder chain
-        // (mirrors the old all-hash scheme, just rooted at the course path
-        // instead of at "/").
-        const coursePath = `/course/${encodeURIComponent(keyParts[0])}`;
-        const subSlugPath = keyParts.slice(1).map(toSlug).join("/");
-        // Encode each segment individually (encodeURIComponent handles Arabic,
-        // Cyrillic, etc.) then rejoin with "/" so the path separator is preserved.
-        // "-" and "--" are ASCII and pass through encodeURIComponent unchanged,
-        // so the space↔hyphen and literal-hyphen↔"--" round-trip is unaffected.
-        const subSlugUrl = subSlugPath.split("/").map(encodeURIComponent).join("/");
-        url = `${coursePath}#${subSlugUrl}`;
-      }
+      // Encode each slug segment individually (encodeURIComponent handles
+      // Arabic, Cyrillic, etc.) then rejoin with "/" so the path separator
+      // is preserved. "-" and "--" are ASCII and pass through
+      // encodeURIComponent unchanged, so the space↔hyphen and literal-
+      // hyphen↔"--" round-trip is unaffected.
+      const url = "/course/" + keyParts.map((part) => encodeURIComponent(toSlug(part))).join("/");
 
       // ── Bug 1 Fix: record this navigation in the browser history ───────────
       // pushState so back fires popstate → restoreViewFromURL(); during popstate
@@ -286,17 +280,15 @@ export function createCategoryCard(
     moreBtn.onclick = (event) => {
       event.stopPropagation();
       openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
-        // Build a shareable URL matching the pathname+hash scheme used by
-        // renderCategory(): /course/{courseName}#{subSlug}/{subSlug2}/...
+        // Build a shareable URL matching the real-path scheme used by
+        // renderCategory(): /course/{courseSlug}/{subSlug}/{subSlug2}/...
+        // (all real path segments now, not a #hash — see renderCategory()'s
+        // comment for why: a hash is never sent to the server, so a shared
+        // link to a nested folder needs a real path segment to get its own
+        // accurate OG image.)
         const pathSegments = courseData.path || [courseData.name];
-        const coursePath = `/course/${encodeURIComponent(pathSegments[0])}`;
-        const subSlugUrl = pathSegments
-          .slice(1)
-          .map(toSlug)
-          .map(encodeURIComponent)
-          .join("/");
-        const folderUrl = `${window.location.origin}${coursePath}${subSlugUrl ? `#${subSlugUrl}` : ""
-          }`;
+        const folderUrl = `${window.location.origin}/course/` +
+          pathSegments.map((seg) => encodeURIComponent(toSlug(seg))).join("/");
         const copyLink = document.createElement("button");
         copyLink.type = "button";
         copyLink.className = "exam-action-btn";

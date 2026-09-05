@@ -64,16 +64,51 @@ export default async function handler(req, res) {
         return res.status(405).end();
     }
 
-    const name = req.query.name;
-    if (!name || typeof name !== "string" || name.trim() === "") {
+    // vercel.json rewrites the entire /course/... subtree with a single rule
+    // ("/course/:path*" → "/api/render-course/:path*"), rather than a
+    // separate ":name" rewrite plus a ":name/:path*" one, and rather than a
+    // "?path=:path*" query-string destination — this Vercel CLI version's
+    // path compiler rejects both of those shapes outright as soon as a
+    // repeating (":x*") param either follows another dynamic segment, or is
+    // glued directly after a "?key=" in the destination ("Can not repeat
+    // 'x' without a prefix and suffix" / "Unexpected MODIFIER"). The only
+    // shape it accepts is a single wildcard directly after a literal
+    // prefix, substituted as literal path segments in the destination too
+    // (matching Vercel's own documented "/api/:path*" → ".../:path*"
+    // example) — which means the segments arrive as real extra path
+    // segments on req.url (e.g. "/api/render-course/Website-Demo/All-
+    // Features"), NOT as req.query.path, since api/render-course.js is a
+    // single fixed-name file, not a "[...path].js" catch-all route file.
+    // So this handler parses req.url's pathname itself, splits the first
+    // segment (course slug) from any remaining segments (folder path).
+    const urlPath = (req.url || "").split("?")[0]; // strip any query string
+    const allSegments = urlPath
+        .replace(/^\/api\/render-course\/?/, "") // strip the fixed function path prefix
+        .split("/")
+        .filter(Boolean)
+        .map((seg) => {
+            try {
+                return decodeURIComponent(seg);
+            } catch {
+                return seg;
+            }
+        });
+
+    if (allSegments.length === 0) {
         return res.redirect(302, "/");
     }
 
-    // :name is a URL slug (dashes, e.g. "Data-Structures-and-Algorithms"),
-    // NOT the raw course name — resolved against courses' toSlug(name) in
-    // fetchCourseMeta(), same case/slug-insensitive approach the client's
-    // navigation.js uses for hash-based routing.
-    const courseSlug = decodeURIComponent(name.trim());
+    // First segment is the course slug (dashes, e.g.
+    // "Data-Structures-and-Algorithms"), NOT the raw course name — resolved
+    // against courses' toSlug(name) in fetchCourseMeta(), same case/slug-
+    // insensitive approach the client's navigation.js uses. Any remaining
+    // segments are nested-folder-name slugs, resolved level-by-level via
+    // fetchFolderPath() below (parent_folder_id chain in the `folders`
+    // table). This gives nested folders their own server-visible URL and
+    // OG image, instead of the client-only #hash scheme (which crawlers
+    // never see, so they'd otherwise always get the course-level image).
+    const courseSlug = allSegments[0];
+    const pathSlugs = allSegments.slice(1);
     const educationType =
         typeof req.query.education_type === "string" ? req.query.education_type : null;
 
@@ -83,6 +118,20 @@ export default async function handler(req, res) {
         meta = await fetchCourseMeta(courseSlug, educationType);
     } catch (err) {
         console.error("[render-course] Supabase lookup failed:", err);
+    }
+
+    // ── 1b. Walk the folder path (if any) under the resolved course ───────────
+    // folderMeta is null when there's no path, the course itself is unknown,
+    // or a segment fails to resolve (unknown/renamed folder) — in all of
+    // those cases we fall back to rendering the course-level page/meta,
+    // same as an unresolved hash does client-side.
+    let folderMeta = null;
+    if (meta && pathSlugs.length > 0) {
+        try {
+            folderMeta = await fetchFolderPath(meta.id, pathSlugs);
+        } catch (err) {
+            console.error("[render-course] Folder path lookup failed:", err);
+        }
     }
 
     // ── 2. Read the SPA shell template ─────────────────────────────────────────
@@ -109,19 +158,37 @@ export default async function handler(req, res) {
     }
 
     // ── 3. Inject data-island meta tags for the client SPA to hydrate from ────
+    // course:folder-path (when present) lets navigation.js resolve straight
+    // to the nested folder on load, instead of resolving the course only and
+    // relying on a hash the server never sees.
     html = html.replace(
         "</head>",
         `  <meta name="course:id" content="${escapeHtml(meta.id)}">\n` +
-        `  <meta name="course:name" content="${escapeHtml(meta.name)}">\n</head>`,
+        `  <meta name="course:name" content="${escapeHtml(meta.name)}">\n` +
+        (folderMeta
+            ? `  <meta name="course:folder-path" content="${escapeHtml(pathSlugs.join("/"))}">\n`
+            : "") +
+        `</head>`,
     );
 
     // ── 4. Inject OG / title / canonical tags ─────────────────────────────────
-    const title = buildTitle(meta);
-    const description = buildDescription(meta);
-    const canonicalUrl = `${SITE_ORIGIN}/course/${toSlug(meta.name)}`;
-    // /api/og handles both quizId= and course= — see that file's handler()
-    // dispatch comment for why these two Edge OG generators share one function.
-    const ogImageUrl = `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}`;
+    // When a folder path resolved, every tag reflects the deepest folder
+    // (title, description, canonical, OG image all show the full chain, e.g.
+    // "Math / Algebra / Second") rather than the course alone.
+    const pageMeta = folderMeta || meta;
+    const title = buildTitle(pageMeta, meta.name);
+    const description = buildDescription(pageMeta, meta.name);
+    const courseSlugPath = toSlug(meta.name);
+    const folderSlugPath = folderMeta
+        ? "/" + folderMeta.path.map((seg) => encodeURIComponent(toSlug(seg))).join("/")
+        : "";
+    const canonicalUrl = `${SITE_ORIGIN}/course/${encodeURIComponent(courseSlugPath)}${folderSlugPath}`;
+    // /api/og handles quizId=, course=, and course=+folder= — see that
+    // file's handler() dispatch comment for why these Edge OG generators
+    // share one function.
+    const ogImageUrl = folderMeta
+        ? `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&folder=${encodeURIComponent(folderMeta.path.join("/"))}&v=${OG_IMAGE_VERSION}`
+        : `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}`;
 
     html = html.replace(
         /<title>[^<]*<\/title>/i,
@@ -213,6 +280,77 @@ async function fetchCourseMeta(courseSlug, educationType) {
     };
 }
 
+/**
+ * Walks a chain of folder-name slugs under a course, level by level, using
+ * `folders.parent_folder_id` (null at the top level, directly under the
+ * course). Each segment is matched via toSlug(name) against the slug in the
+ * URL — same case/slug-insensitive approach fetchCourseMeta() and the
+ * client's navigation.js use. Returns null (falls back to the course page)
+ * if any segment fails to resolve, e.g. a stale/renamed folder link.
+ *
+ * Direct-child-only counts are used for folderCount/quizCount (not a full
+ * subtree walk) to match what the course page's own counts represent
+ * (immediate children), and to keep this to one query pair regardless of
+ * how deep the path is.
+ *
+ * @param {string} courseId
+ * @param {string[]} pathSlugs e.g. ["Algebra", "Second"]
+ * @returns {Promise<{id:string, name:string, path:string[], folderCount:number, quizCount:number}|null>}
+ */
+async function fetchFolderPath(courseId, pathSlugs) {
+    let parentFolderId = null;
+    let folder = null;
+    const resolvedNames = [];
+
+    for (const slug of pathSlugs) {
+        const query = supabase
+            .from("folders")
+            .select("id, name")
+            .eq("course_id", courseId);
+        const { data: siblings, error } = parentFolderId
+            ? await query.eq("parent_folder_id", parentFolderId)
+            : await query.is("parent_folder_id", null);
+
+        if (error) {
+            console.error("[render-course] folder path lookup error:", error.message);
+            return null;
+        }
+        if (!Array.isArray(siblings) || siblings.length === 0) return null;
+
+        const match = siblings.find((f) => toSlug(f.name) === slug);
+        if (!match) return null;
+
+        folder = match;
+        parentFolderId = match.id;
+        resolvedNames.push(match.name);
+    }
+
+    if (!folder) return null;
+
+    const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
+        await Promise.all([
+            supabase
+                .from("folders")
+                .select("id", { count: "exact", head: true })
+                .eq("parent_folder_id", folder.id),
+            supabase
+                .from("quizzes")
+                .select("id", { count: "exact", head: true })
+                .eq("folder_id", folder.id),
+        ]);
+
+    if (folderErr) console.error("[render-course] folder-count error:", folderErr.message);
+    if (quizErr) console.error("[render-course] folder quiz-count error:", quizErr.message);
+
+    return {
+        id: folder.id,
+        name: folder.name,
+        path: resolvedNames,
+        folderCount: folderCount || 0,
+        quizCount: quizCount || 0,
+    };
+}
+
 // =============================================================================
 // Title / description formatting
 // =============================================================================
@@ -225,18 +363,32 @@ function isArabicText(text) {
     );
 }
 
-function buildTitle(meta) {
+// `meta` is either the course-level object (from fetchCourseMeta) or a
+// folder-level object (from fetchFolderPath, which additionally carries
+// `path`: the full breadcrumb of resolved folder names under the course).
+// When `courseName` + `meta.path` are both given, the displayed name/breadcrumb
+// reads "Course / Sub / Sub2" instead of just the deepest folder's own name,
+// so a deeply nested folder's title/OG image still shows which course it's
+// under.
+function displayPath(courseName, meta) {
+    if (!meta.path) return meta.name; // course-level: no breadcrumb needed
+    return [courseName, ...meta.path].join(" / ");
+}
+
+function buildTitle(meta, courseName) {
+    const label = displayPath(courseName, meta);
     const isArabic = isArabicText(meta.name);
     const folderLabel = isArabic ? "مجلد" : "Folders";
     const quizLabel = isArabic ? "امتحان" : "Quizzes";
-    return `${meta.name}: ${meta.folderCount} ${folderLabel} · ${meta.quizCount} ${quizLabel}`;
+    return `${label}: ${meta.folderCount} ${folderLabel} · ${meta.quizCount} ${quizLabel}`;
 }
 
-function buildDescription(meta) {
+function buildDescription(meta, courseName) {
+    const label = displayPath(courseName, meta);
     const isArabic = isArabicText(meta.name);
     return isArabic
-        ? `تصفح ${meta.quizCount} امتحان ضمن ${meta.folderCount} مجلد في مقرر ${meta.name} على منصة امتحانات بصمجي.`
-        : `Browse ${meta.quizCount} quizzes across ${meta.folderCount} folders in ${meta.name} on Basmagi Quiz Platform.`;
+        ? `تصفح ${meta.quizCount} امتحان ضمن ${meta.folderCount} مجلد في ${label} على منصة امتحانات بصمجي.`
+        : `Browse ${meta.quizCount} quizzes across ${meta.folderCount} folders in ${label} on Basmagi Quiz Platform.`;
 }
 
 // =============================================================================

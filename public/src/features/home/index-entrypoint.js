@@ -76,18 +76,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // renderRootCategories() → history.replaceState("", "", pathname), stripping
   // the ?id= query parameter from the quiz URL before quiz.js could read it.
   //
-  // /course/:name is also a valid index page: course pages render inside
-  // this same SPA shell (see render-course.js's header comment), just at a
-  // real pathname instead of a hash on "/". /quiz/:id is NOT affected here —
-  // quiz.html is a separate physical file (see public/quiz.html) that never
-  // loads this module's DOMContentLoaded listener in the first place, so no
-  // extra check is needed to keep that path working.
+  // /course/:name (and /course/:name/:sub/:sub2/...) is also a valid index
+  // page: course and nested-folder pages render inside this same SPA shell
+  // (see render-course.js's header comment), just at a real pathname
+  // instead of a hash on "/" — nested subfolders now get their own real
+  // path segments too (see navigation.js's restoreViewFromURL and
+  // render-course.js's :path* handling), so the guard must match any depth
+  // under /course/, not just the single-segment course path. /quiz/:id is
+  // NOT affected here — quiz.html is a separate physical file (see
+  // public/quiz.html) that never loads this module's DOMContentLoaded
+  // listener in the first place, so no extra check is needed to keep that
+  // path working.
   const p = window.location.pathname;
   const isIndexPage =
     p === "/" ||
     p.endsWith("/index.html") ||
     p.endsWith("/index") ||
-    /^\/course\/[^/]+\/?$/.test(p);
+    /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p);
   if (!isIndexPage) return;
 
   // Sync local admin session state with Supabase before anything renders
