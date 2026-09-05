@@ -41,7 +41,6 @@ import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
-import { toSlug } from "./slug-utils.js";
 import {
   MORE_DOTS_ICON_SVG,
   SPARKLE_ICON_SVG,
@@ -69,7 +68,10 @@ function attachCourseActionsMenu(card, course, categoryTree) {
   moreBtn.onclick = (event) => {
     event.stopPropagation();
     openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
-      const folderUrl = `${window.location.origin}/#${(course.path || [course.name]).map(toSlug).join("/")}`;
+      // Courses are always top-level (single-segment path), so this is
+      // always just /course/{courseName} — matches renderCategory()'s
+      // pathname scheme and render-course.js's canonical URL.
+      const folderUrl = `${window.location.origin}/course/${encodeURIComponent(course.name)}`;
 
       const copyLink = document.createElement("button");
       copyLink.type = "button";
@@ -164,14 +166,20 @@ export async function renderRootCategories() {
     getSelectedUserQuizzes().clear();
     updateBulkActionBar(false);
 
+    // ── Course URLs are now real pathnames (/course/:name), not hashes on
+    // "/" — so, unlike before, we can no longer just re-stamp
+    // window.location.pathname as-is when returning to root: if we got here
+    // from a /course/:name URL, that pathname needs to be cleared back to
+    // "/" explicitly (search/query string, if any, is preserved).
+    const rootPath = `/${window.location.search}`;
     if (isRestoring()) {
-      history.replaceState({ view: "root" }, "", window.location.pathname);
+      history.replaceState({ view: "root" }, "", rootPath);
     } else {
       // BUG FIX (removed leftover debug log): this branch used to log a
       // captured `new Error().stack` on every single navigation back to the
       // root view — a real production perf/console-noise cost (stack
       // capture isn't free) left over from a prior debugging session.
-      history.pushState({ view: "root" }, "", window.location.pathname);
+      history.pushState({ view: "root" }, "", rootPath);
     }
 
     // Update search context when returning to root

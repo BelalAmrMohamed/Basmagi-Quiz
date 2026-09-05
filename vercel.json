@@ -8,8 +8,16 @@
       "destination": "/api/render-profile?handle=:handle"
     },
     {
+      "source": "/quiz/:id",
+      "destination": "/api/render-quiz?id=:id"
+    },
+    {
       "source": "/q/:id",
       "destination": "/api/render-quiz?id=:id"
+    },
+    {
+      "source": "/course/:name",
+      "destination": "/api/render-course?name=:name"
     },
     {
       "source": "/api/admin-control",
@@ -18,6 +26,26 @@
     {
       "source": "/api/admin-stats",
       "destination": "/api/admin"
+    },
+    {
+      "source": "/api/user-profile/identify",
+      "destination": "/api/user-profile?action=identify"
+    },
+    {
+      "source": "/api/user-profile/sync-progress",
+      "destination": "/api/user-profile?action=sync-progress"
+    },
+    {
+      "source": "/api/colleges",
+      "destination": "/api/college-quiz"
+    },
+    {
+      "source": "/api/delete-quiz",
+      "destination": "/api/college-quiz"
+    },
+    {
+      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|service-worker\\.js|.*\\.[a-zA-Z0-9]+$).*)",
+      "destination": "/index.html"
     }
   ]
 }

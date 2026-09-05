@@ -75,9 +75,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // Without this guard, initApp() would run on quiz.html and call
   // renderRootCategories() → history.replaceState("", "", pathname), stripping
   // the ?id= query parameter from the quiz URL before quiz.js could read it.
+  //
+  // /course/:name is also a valid index page: course pages render inside
+  // this same SPA shell (see render-course.js's header comment), just at a
+  // real pathname instead of a hash on "/". /quiz/:id is NOT affected here —
+  // quiz.html is a separate physical file (see public/quiz.html) that never
+  // loads this module's DOMContentLoaded listener in the first place, so no
+  // extra check is needed to keep that path working.
   const p = window.location.pathname;
   const isIndexPage =
-    p === "/" || p.endsWith("/index.html") || p.endsWith("/index");
+    p === "/" ||
+    p.endsWith("/index.html") ||
+    p.endsWith("/index") ||
+    /^\/course\/[^/]+\/?$/.test(p);
   if (!isIndexPage) return;
 
   // Sync local admin session state with Supabase before anything renders

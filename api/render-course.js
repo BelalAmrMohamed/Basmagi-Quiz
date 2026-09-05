@@ -47,6 +47,15 @@ const OG_IMAGE_VERSION = 1;
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
+// Mirrors public/src/features/home/slug-utils.js's toSlug() exactly (kept in
+// sync manually — this is a Node serverless function and can't import an ES
+// module from public/src). Converts a display name to the same URL slug the
+// client builds, so /course/:name can use readable dashes (e.g.
+// "Data-Structures-and-Algorithms") instead of raw percent-encoded spaces.
+function toSlug(str) {
+    return str.trim().replace(/-/g, "--").replace(/\s+/g, "-");
+}
+
 // =============================================================================
 // Handler
 // =============================================================================
@@ -60,12 +69,18 @@ export default async function handler(req, res) {
         return res.redirect(302, "/");
     }
 
-    const courseName = decodeURIComponent(name.trim());
+    // :name is a URL slug (dashes, e.g. "Data-Structures-and-Algorithms"),
+    // NOT the raw course name — resolved against courses' toSlug(name) in
+    // fetchCourseMeta(), same case/slug-insensitive approach the client's
+    // navigation.js uses for hash-based routing.
+    const courseSlug = decodeURIComponent(name.trim());
+    const educationType =
+        typeof req.query.education_type === "string" ? req.query.education_type : null;
 
     // ── 1. Fetch course metadata + counts from Supabase ───────────────────────
     let meta = null;
     try {
-        meta = await fetchCourseMeta(courseName);
+        meta = await fetchCourseMeta(courseSlug, educationType);
     } catch (err) {
         console.error("[render-course] Supabase lookup failed:", err);
     }
@@ -80,13 +95,13 @@ export default async function handler(req, res) {
     }
 
     if (!meta) {
-        // Unknown course name — let the SPA load normally (it will fall back to
+        // Unknown course slug — let the SPA load normally (it will fall back to
         // the root view client-side once navigation.js fails to resolve it) but
-        // still inject the raw name so the client can retry after the manifest
+        // still inject the raw slug so the client can retry after the manifest
         // loads, and never cache a miss.
         html = html.replace(
             "</head>",
-            `  <meta name="course:name" content="${escapeHtml(courseName)}">\n</head>`,
+            `  <meta name="course:name" content="${escapeHtml(courseSlug)}">\n</head>`,
         );
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.setHeader("Cache-Control", "no-store");
@@ -103,7 +118,7 @@ export default async function handler(req, res) {
     // ── 4. Inject OG / title / canonical tags ─────────────────────────────────
     const title = buildTitle(meta);
     const description = buildDescription(meta);
-    const canonicalUrl = `${SITE_ORIGIN}/course/${encodeURIComponent(courseName)}`;
+    const canonicalUrl = `${SITE_ORIGIN}/course/${toSlug(meta.name)}`;
     // /api/og handles both quizId= and course= — see that file's handler()
     // dispatch comment for why these two Edge OG generators share one function.
     const ogImageUrl = `${SITE_ORIGIN}/api/og?course=${encodeURIComponent(meta.id)}&v=${OG_IMAGE_VERSION}`;
@@ -141,26 +156,39 @@ export default async function handler(req, res) {
 // =============================================================================
 
 /**
- * Fetches a course by name and its folder/quiz counts.
- * Relational count queries against `folders`/`quizzes` (course_id) — same
- * relations quizManifest.js walks client-side, not a manifest re-walk.
+ * Fetches a course by URL slug and its folder/quiz counts.
+ * Courses aren't guaranteed globally unique by name (the real uniqueness key
+ * is (education_type, college, year, term, name) — see
+ * api/_courseFolders.js), so this fetches all courses' (id, name,
+ * education_type) and matches toSlug(name) against the incoming slug,
+ * exactly like the client's navigation.js does for hash-based routing.
+ * ?education_type= (if present) disambiguates when multiple courses share a
+ * slug; otherwise the first match wins.
  *
- * @param {string} courseName
+ * Relational count queries against `folders`/`quizzes` (course_id), NOT the
+ * old manifest-walk approach (see public/src/shared/quizManifest.js).
+ *
+ * @param {string} courseSlug
+ * @param {string|null} educationType
  * @returns {Promise<{id:string, name:string, folderCount:number, quizCount:number}|null>}
  */
-async function fetchCourseMeta(courseName) {
-    const { data: course, error: courseErr } = await supabase
+async function fetchCourseMeta(courseSlug, educationType) {
+    const { data: courses, error: coursesErr } = await supabase
         .from("courses")
-        .select("id, name, education_type")
-        .eq("name", courseName)
-        .limit(1)
-        .maybeSingle();
+        .select("id, name, education_type");
 
-    if (courseErr) {
-        console.error("[render-course] Supabase course lookup error:", courseErr.message);
+    if (coursesErr) {
+        console.error("[render-course] Supabase course lookup error:", coursesErr.message);
         return null;
     }
-    if (!course) return null;
+    if (!Array.isArray(courses) || courses.length === 0) return null;
+
+    const candidates = courses.filter((c) => toSlug(c.name) === courseSlug);
+    if (candidates.length === 0) return null;
+
+    const course =
+        (educationType && candidates.find((c) => c.education_type === educationType)) ||
+        candidates[0];
 
     const [{ count: folderCount, error: folderErr }, { count: quizCount, error: quizErr }] =
         await Promise.all([

@@ -83,6 +83,90 @@ function findCategoryAncestors(targetKey, tree) {
 
 export function restoreViewFromURL() {
   const hash = window.location.hash.slice(1); // strip leading #
+  const pathname = window.location.pathname;
+
+  // ── Course view — pathname-based: /course/:name[#subSlug/subSlug2/...] ────
+  // Courses are always top-level (single-segment categoryTree key, parent
+  // === null), so :name is resolved directly against a root category's
+  // `name` (case-insensitive / slug match, same approach toSlug/fromSlug
+  // already use elsewhere) rather than walked like a nested key.
+  //
+  // A trailing hash (if present) is still the old nested-subfolder slug
+  // chain, now rooted at the course instead of at "/" — resolved the same
+  // way the plain-hash branch below resolves it, just starting from the
+  // matched course's key instead of matching the full categoryTree.
+  const courseMatch = pathname.match(/^\/course\/([^/]+)\/?$/);
+  if (courseMatch) {
+    let courseName;
+    try {
+      courseName = decodeURIComponent(courseMatch[1]);
+    } catch {
+      courseName = courseMatch[1];
+    }
+
+    const categoryTree = getCategoryTree();
+    if (categoryTree) {
+      const courseSlug = toSlug(courseName);
+      const courseKey = Object.keys(categoryTree).find((key) => {
+        const node = categoryTree[key];
+        return !node.parent && toSlug(node.name) === courseSlug;
+      });
+
+      if (courseKey) {
+        if (!hash) {
+          // No nested subfolder — render the course itself.
+          setNavigationStack([]);
+          renderCategory(categoryTree[courseKey]);
+          return;
+        }
+
+        // Nested subfolder chain, e.g. #subSlug/subSlug2/...
+        const subSlugParts = hash
+          .split("/")
+          .filter(Boolean)
+          .map((s) => {
+            try {
+              return decodeURIComponent(s);
+            } catch {
+              return s;
+            }
+          });
+
+        let catKey = courseKey;
+        let cat = categoryTree[courseKey];
+        let resolved = true;
+
+        for (const slugPart of subSlugParts) {
+          const nextKey = (cat.subcategories || []).find(
+            (subKey) =>
+              categoryTree[subKey] && toSlug(categoryTree[subKey].name) === slugPart,
+          );
+          if (!nextKey) {
+            resolved = false;
+            break;
+          }
+          catKey = nextKey;
+          cat = categoryTree[nextKey];
+        }
+
+        if (resolved) {
+          const ancestors = findCategoryAncestors(catKey, categoryTree);
+          setNavigationStack([...ancestors]);
+          renderCategory(cat);
+          return;
+        }
+
+        // Subfolder chain didn't resolve — fall back to the course itself.
+        setNavigationStack([]);
+        renderCategory(categoryTree[courseKey]);
+        return;
+      }
+    }
+    // Course name didn't resolve against the tree (e.g. manifest not loaded
+    // yet, or a stale/typo'd link) — fall through to root.
+    renderRootCategories();
+    return;
+  }
 
   // ── Root view ──────────────────────────────────────────────────────────────
   if (!hash) {

@@ -58,31 +58,54 @@ export function renderCategory(category) {
     navigationStack.push(category);
     updateBreadcrumb();
 
-    // ── Obj 4: Update URL hash using clean slug-based scheme ─────────────────
-    // URL format:  #{categorySlug}  or  #{categorySlug}/{subfolderSlug}/...
-    // Each "/" segment of the categoryTree key is passed through toSlug().
-    // Literal hyphens in names are double-encoded ("--") so they survive a
-    // round-trip; spaces become single "-".
+    // ── Obj 4: Update the URL — pathname for top-level courses, hash for
+    // nested subfolders within a course ───────────────────────────────────────
+    // Courses cannot be nested (single-segment categoryTree key, parent ===
+    // null), so a top-level course now gets a real, crawlable pathname:
+    //   /course/{courseName}
+    // (courseName is the raw, encoded course name — matches render-course.js's
+    // `.eq("name", courseName)` lookup, NOT the toSlug() scheme below.)
+    //
+    // Nested subfolders *within* a course keep the previous hash-based slug
+    // scheme, now appended after the course's pathname instead of after "/":
+    //   /course/{courseName}#{subSlug}/{subSlug2}/...
+    // Each "/" segment of the categoryTree key (after the course-name prefix)
+    // is passed through toSlug(). Literal hyphens in names are double-encoded
+    // ("--") so they survive a round-trip; spaces become single "-".
     const categoryTree = getCategoryTree();
     const catKey = category.key || Object.keys(categoryTree || {}).find(
       (k) => categoryTree[k] === category,
     );
     if (catKey) {
-      const slugPath = catKey.split("/").map(toSlug).join("/");
-      // Encode each segment individually (encodeURIComponent handles Arabic,
-      // Cyrillic, etc.) then rejoin with "/" so the path separator is preserved.
-      // "-" and "--" are ASCII and pass through encodeURIComponent unchanged,
-      // so the space↔hyphen and literal-hyphen↔"--" round-trip is unaffected.
-      const url = `#${slugPath.split("/").map(encodeURIComponent).join("/")}`;
+      const keyParts = catKey.split("/");
+      const isTopLevelCourse = keyParts.length === 1;
+
+      let url;
+      if (isTopLevelCourse) {
+        // Top-level course → real pathname, no hash.
+        url = `/course/${encodeURIComponent(category.name || catKey)}`;
+      } else {
+        // Nested subfolder → course pathname + hash for the subfolder chain
+        // (mirrors the old all-hash scheme, just rooted at the course path
+        // instead of at "/").
+        const coursePath = `/course/${encodeURIComponent(keyParts[0])}`;
+        const subSlugPath = keyParts.slice(1).map(toSlug).join("/");
+        // Encode each segment individually (encodeURIComponent handles Arabic,
+        // Cyrillic, etc.) then rejoin with "/" so the path separator is preserved.
+        // "-" and "--" are ASCII and pass through encodeURIComponent unchanged,
+        // so the space↔hyphen and literal-hyphen↔"--" round-trip is unaffected.
+        const subSlugUrl = subSlugPath.split("/").map(encodeURIComponent).join("/");
+        url = `${coursePath}#${subSlugUrl}`;
+      }
 
       // ── Bug 1 Fix: record this navigation in the browser history ───────────
       // pushState so back fires popstate → restoreViewFromURL(); during popstate
       // restoration only replaceState so we don't create a phantom entry.
       try {
         if (!isRestoring()) {
-          history.pushState({ view: "category", slugPath }, "", url);
+          history.pushState({ view: "category", catKey }, "", url);
         } else {
-          history.replaceState({ view: "category", slugPath }, "", url);
+          history.replaceState({ view: "category", catKey }, "", url);
         }
       } catch (pushErr) {
         // Genuine error handling (kept) — history.pushState/replaceState can
@@ -127,11 +150,11 @@ export function renderCategory(category) {
           onClick:
             idx < stackSnapshot.length - 1
               ? () => {
-                  // Navigate to this ancestor: reset the stack to the items
-                  // above it, then renderCategory (which pushes it again).
-                  setNavigationStack(stackSnapshot.slice(0, idx));
-                  renderCategory(stackSnapshot[idx]);
-                }
+                // Navigate to this ancestor: reset the stack to the items
+                // above it, then renderCategory (which pushes it again).
+                setNavigationStack(stackSnapshot.slice(0, idx));
+                renderCategory(stackSnapshot[idx]);
+              }
               : undefined, // last = current page, non-clickable
         })),
       ];
@@ -263,9 +286,17 @@ export function createCategoryCard(
     moreBtn.onclick = (event) => {
       event.stopPropagation();
       openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
-        const folderUrl = `${window.location.origin}/#${(courseData.path || [courseData.name])
-          .map((segment) => toSlug(segment))
-          .join("/")}`;
+        // Build a shareable URL matching the pathname+hash scheme used by
+        // renderCategory(): /course/{courseName}#{subSlug}/{subSlug2}/...
+        const pathSegments = courseData.path || [courseData.name];
+        const coursePath = `/course/${encodeURIComponent(pathSegments[0])}`;
+        const subSlugUrl = pathSegments
+          .slice(1)
+          .map(toSlug)
+          .map(encodeURIComponent)
+          .join("/");
+        const folderUrl = `${window.location.origin}${coursePath}${subSlugUrl ? `#${subSlugUrl}` : ""
+          }`;
         const copyLink = document.createElement("button");
         copyLink.type = "button";
         copyLink.className = "exam-action-btn";
@@ -284,7 +315,7 @@ export function createCategoryCard(
         shareLink.onclick = async () => {
           closeMenu();
           if (navigator.share) {
-            await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => {});
+            await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => { });
           } else {
             await navigator.clipboard.writeText(folderUrl);
             showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
