@@ -763,6 +763,22 @@ body.sidebar-expanded {
   text-align: left;
 }
 
+/* Soft storage-size warning shown in the "امتحاناتك" card's dropdown once
+   the raw user_quizzes value grows large (see getUserQuizzesStorageWarning
+   in course-count.js) — styled like a small non-interactive notice, not a
+   button, since it's informational only. */
+.root-quizzes-storage-warning {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-error, #dc2626);
+  background: var(--color-error-light, rgba(220, 38, 38, 0.08));
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 2px 0;
+  direction: rtl;
+  text-align: right;
+}
+
 /* Narrow viewports don't have room to open the submenu beside the trigger —
    stack it below instead, matching the dropdown's own below-the-button
    placement. */

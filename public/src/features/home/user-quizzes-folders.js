@@ -363,6 +363,44 @@ export async function deleteFolder(folderId) {
   renderUserQuizzesView();
 }
 
+/**
+ * "حذف الكل" — wipes the entire "امتحاناتك" collection (every quiz, folder,
+ * and course) in one action, unconditionally, regardless of current folder
+ * or selection state.
+ *
+ * This exists as a deliberate escape hatch for storage bloat/orphan buildup
+ * (see A6/Part D) that no automatic cleanup heuristic should attempt to fix
+ * on its own — a user staring at a phantom "5000 lines in localStorage but
+ * nothing renders" situation needs a way to just start over without Claude
+ * (or the app) guessing which of those rows were "real" vs leftover cruft
+ * from a bygone copy-tree bug. `pruneOrphanedRows`-style automatic pruning
+ * only removes rows that are provably unreachable; it deliberately does NOT
+ * address rows that are technically reachable yet never rendered due to an
+ * unrelated view-layer bug — this button is the deliberately blunter, fully
+ * manual alternative for exactly that residual case.
+ *
+ * Uses a much stronger, explicit confirmation than the normal `_confirm`
+ * wording used elsewhere (deleteFolder above, bulk-delete in
+ * user-quizzes-view.js) since this is irreversible and total rather than
+ * scoped to one item/selection.
+ */
+export async function deleteAllUserQuizzes() {
+  const confirmed = await _confirm(
+    "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
+  );
+  if (!confirmed) return;
+
+  setInStorage("user_quizzes", "[]");
+  // navigateToFolder(null, ...) resets to root AND calls
+  // renderUserQuizzesView() itself — no need to call it again here.
+  navigateToFolder(null, null);
+
+  const { refreshUserQuizzesCard } = await import("./course-count.js");
+  refreshUserQuizzesCard();
+
+  showNotification("تم الحذف", "تم حذف كل امتحاناتك ومجلداتك.", "success");
+}
+
 // Drag and drop logic
 let draggedItemId = null;
 
@@ -862,6 +900,16 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   if (isAdminAuthenticated()) {
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "استيراد مجلد من جهازك", () => uploadFolderForAdmins()));
   }
+
+  // Divider before the fully-destructive, collection-wide action below —
+  // kept visually and physically separate from the item-scoped "حذف" above
+  // so a misclick can't easily wipe everything instead of one folder.
+  const dangerDivider = document.createElement("div");
+  dangerDivider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
+  contextMenuEl.appendChild(dangerDivider);
+  contextMenuEl.appendChild(
+    createMenuItem(DELETE_SVG, "حذف الكل", () => deleteAllUserQuizzes(), true),
+  );
 
   contextMenuEl.style.left = `${e.pageX}px`;
   contextMenuEl.style.top = `${e.pageY}px`;

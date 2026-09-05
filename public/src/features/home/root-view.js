@@ -25,8 +25,16 @@ import {
 import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
-import { setFolderState } from "./user-quizzes-folders.js";
-import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesBreakdown, refreshUserQuizzesCard } from "./course-count.js";
+import { setFolderState, deleteAllUserQuizzes } from "./user-quizzes-folders.js";
+import {
+  getCourseItemCount,
+  getUserQuizzesBreakdown,
+  formatUserQuizzesBreakdown,
+  refreshUserQuizzesCard,
+  exportUserQuizzesAsJson,
+  getUserQuizzesStorageWarning,
+} from "./course-count.js";
+
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
@@ -40,6 +48,8 @@ import {
   COPY_ICON_SVG,
   DUPLICATE_ICON_SVG,
   SHARE_ICON_SVG,
+  DOWNLOAD_ICON_SVG,
+  TRASH_ICON_SVG,
 } from "./icons.js";
 import {
   openAIAgentWithAttachment,
@@ -79,7 +89,7 @@ function attachCourseActionsMenu(card, course, categoryTree) {
       shareLink.onclick = async () => {
         closeMenu();
         if (navigator.share) {
-          await navigator.share({ title: course.name, url: folderUrl }).catch(() => {});
+          await navigator.share({ title: course.name, url: folderUrl }).catch(() => { });
         } else {
           await navigator.clipboard.writeText(folderUrl);
           showNotification("تم النسخ", "تم نسخ رابط المادة.", "success");
@@ -255,13 +265,25 @@ export async function renderRootCategories() {
           breakdownWrap.className = "exam-action-btn root-quizzes-breakdown";
           breakdownWrap.innerHTML = breakdownRows.length
             ? breakdownRows
-                .map(
-                  ({ label, val }) =>
-                    `<div class="tooltip-row"><span>${label}:</span><span>${val}</span></div>`,
-                )
-                .join("")
+              .map(
+                ({ label, val }) =>
+                  `<div class="tooltip-row"><span>${label}:</span><span>${val}</span></div>`,
+              )
+              .join("")
             : `<p class="quiz-info-empty">لا يوجد محتوى بعد</p>`;
           menu.appendChild(breakdownWrap);
+
+          // Storage-size soft warning (Part D of the restriction/rules
+          // plan) — only shown once the raw "user_quizzes" value is large
+          // enough to be a real risk; silent otherwise so this doesn't
+          // clutter the menu for the overwhelming majority of users.
+          const storageWarning = getUserQuizzesStorageWarning();
+          if (storageWarning.warn) {
+            const warningEl = document.createElement("p");
+            warningEl.className = "quiz-info-empty root-quizzes-storage-warning";
+            warningEl.textContent = storageWarning.message;
+            menu.appendChild(warningEl);
+          }
 
           // No "نسخ الرابط"/"مشاركة الرابط" here — this card's contents are
           // strictly local (localStorage), so there is no shareable link for
@@ -277,6 +299,38 @@ export async function renderRootCategories() {
           //   showNotification("امتحاناتك", "هذا المجلد موجود بالفعل في امتحاناتك.", "info");
           // };
           // menu.appendChild(alreadyMine);
+
+          // Export-as-JSON (Part D): a low-key, no-devtools-required way to
+          // get the raw "user_quizzes" data out, both for debugging (what
+          // this session previously needed a manual console `copy(...)` for)
+          // and as a manual backup before a destructive action like the
+          // "حذف الكل" button right below it.
+          const exportBtn = document.createElement("button");
+          exportBtn.type = "button";
+          exportBtn.className = "exam-action-btn";
+          exportBtn.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تصدير بيانات امتحاناتك</span>`;
+          exportBtn.onclick = (clickEvent) => {
+            clickEvent.stopPropagation();
+            closeMenu();
+            exportUserQuizzesAsJson();
+          };
+          menu.appendChild(exportBtn);
+
+          // "حذف الكل" (Part C, item 1) — a fully destructive, collection-
+          // wide wipe, kept separate from every other action here with its
+          // own strong, explicit confirmation (see deleteAllUserQuizzes's
+          // doc comment) rather than the default _confirm wording used for
+          // single-item deletes elsewhere.
+          const deleteAllBtn = document.createElement("button");
+          deleteAllBtn.type = "button";
+          deleteAllBtn.className = "exam-action-btn exam-action-btn--danger";
+          deleteAllBtn.innerHTML = `${TRASH_ICON_SVG}<span>حذف الكل</span>`;
+          deleteAllBtn.onclick = async (clickEvent) => {
+            clickEvent.stopPropagation();
+            closeMenu();
+            await deleteAllUserQuizzes();
+          };
+          menu.appendChild(deleteAllBtn);
         });
       };
       quizzesCard.appendChild(rootMenuBtn);
@@ -297,7 +351,7 @@ export async function renderRootCategories() {
       subscribedCourses.forEach((course) => {
         const itemCount = getCourseItemCount(course);
         const card = createCategoryCard(course.name, itemCount, true, course);
-        
+
         // DEDUPLICATION: this used to be ~85 lines of copy-pasted
         // tooltip-building code (identical to the "all courses" branch
         // below except for the unsubscribe button) — now a single shared,

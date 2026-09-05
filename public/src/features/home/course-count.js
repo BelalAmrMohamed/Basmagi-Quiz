@@ -26,6 +26,7 @@
 
 import { getCategoryTree } from "./app-state.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
+import { isRowReachable } from "./user-quizzes-folders.js";
 
 let cache = new WeakMap();
 
@@ -65,8 +66,8 @@ export function getCourseItemCount(category) {
 }
 
 /**
- * Drops "orphaned" rows from a flat user_quizzes array — rows whose
- * meta.parentId points at an id that no longer exists in the array.
+ * Drops "orphaned" rows from a flat user_quizzes array — rows that aren't
+ * genuinely reachable from a root (parentId === null) node.
  *
  * BUG FIX: bulk-delete (the "حذف" bulk action in user-quizzes-view.js) only
  * ever removes exactly the ids the user checked. That's correct when
@@ -83,20 +84,25 @@ export function getCourseItemCount(category) {
  * counting keeps the card's numbers in sync with what user-quizzes-view.js
  * actually shows.
  *
+ * BUG FIX 2: this originally only checked one level up — a row was kept if
+ * `parentId === null` OR the immediate parent id existed *anywhere* in the
+ * array. That misses the case where the parent itself is an orphan (e.g. its
+ * own parent — the grandparent — was deleted): the row's direct parent still
+ * exists as an array entry, so the one-level check wrongly called it "live"
+ * even though neither of them is actually reachable from a root node. Now
+ * delegates to isRowReachable() (user-quizzes-folders.js), which walks the
+ * *entire* ancestor chain up to a real root, so a multi-level dangling chain
+ * is correctly excluded in full rather than just its first broken link.
+ *
  * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
- * @returns {Array} only the rows that are root-level or have a live parent
+ * @returns {Array} only the rows genuinely reachable from a root node
  */
 function pruneOrphanedRows(userQuizzes) {
   const rows = userQuizzes || [];
-  const liveIds = new Set();
-  for (const row of rows) {
-    const id = row?.id || row?.meta?.id;
-    if (id) liveIds.add(id);
-  }
-  return rows.filter((row) => {
-    const parentId = row?.meta?.parentId || null;
-    return parentId === null || liveIds.has(parentId);
-  });
+  const byId = new Map(
+    rows.map((row) => [row?.id || row?.meta?.id, row]).filter(([id]) => id),
+  );
+  return rows.filter((row) => isRowReachable(row, rows, byId));
 }
 
 /**
@@ -174,6 +180,82 @@ export function formatArabicQuestionCount(count) {
   if (count === 2) return "سؤالين";
   if (count >= 3 && count <= 10) return `${count} أسئلة`;
   return `${count} سؤال`;
+}
+
+/**
+ * Soft localStorage size ceiling for the "user_quizzes" key, in bytes.
+ * localStorage generally caps around 5–10MB total (across every key on the
+ * origin, not just this one), so this is deliberately conservative — a
+ * warning well before writes actually start failing, not a hard technical
+ * limit. See getUserQuizzesStorageWarning() below.
+ */
+const USER_QUIZZES_STORAGE_WARNING_BYTES = 2 * 1024 * 1024; // 2MB
+
+/**
+ * Checks the raw serialized size of the "user_quizzes" localStorage value
+ * and returns a warning message once it's large enough to be a real risk —
+ * either of hitting the browser's storage quota (writes silently start
+ * failing past that point) or of just being unusually bloated (accumulated
+ * orphan rows from a past bug — see A6 in the restriction/rules plan).
+ *
+ * Deliberately a *soft* ceiling with no automatic action taken — see
+ * deleteAllUserQuizzes()'s doc comment for why an automatic cleanup
+ * heuristic is the wrong call for real user data. This just surfaces the
+ * number so the user can decide (export via exportUserQuizzesAsJson(),
+ * manually delete some items, or reach for "حذف الكل").
+ *
+ * @param {string} [rawValue] - the raw JSON string as stored; re-reads from
+ *   storage if omitted.
+ * @returns {{warn: boolean, bytes: number, message?: string}}
+ */
+export function getUserQuizzesStorageWarning(rawValue) {
+  const raw = rawValue ?? getFromStorage("user_quizzes", "[]");
+  const bytes = new Blob([raw]).size;
+  if (bytes < USER_QUIZZES_STORAGE_WARNING_BYTES) {
+    return { warn: false, bytes };
+  }
+  const mb = (bytes / (1024 * 1024)).toFixed(1);
+  return {
+    warn: true,
+    bytes,
+    message: `حجم بيانات "امتحاناتك" أصبح كبيراً (${mb} ميجابايت) وقد يتسبب ذلك في مشاكل عند الحفظ لاحقاً. يمكنك تصدير نسخة احتياطية أو حذف بعض العناصر غير المستخدمة.`,
+  };
+}
+
+/**
+ * Exports the raw "user_quizzes" localStorage value as a downloadable JSON
+ * file, named with today's date so repeated exports don't overwrite each
+ * other in the user's downloads folder.
+ *
+ * Added per Part D of the restriction/rules plan: investigating this key
+ * previously required opening devtools and manually running
+ * `copy(localStorage.getItem('user_quizzes'))` — this gives every user (not
+ * just ones comfortable with devtools) a one-click way to get the same data
+ * out, both as a debugging aid and as a manual backup before a destructive
+ * action like "حذف الكل" (deleteAllUserQuizzes in user-quizzes-folders.js).
+ */
+export function exportUserQuizzesAsJson() {
+  const raw = getFromStorage("user_quizzes", "[]");
+  // Re-serialize with indentation for human readability rather than
+  // exporting the raw single-line storage string as-is — this file is meant
+  // to be opened and inspected, not just round-tripped back in.
+  let pretty = raw;
+  try {
+    pretty = JSON.stringify(JSON.parse(raw), null, 2);
+  } catch {
+    // If it somehow isn't valid JSON, export the raw string as a fallback
+    // rather than throwing away the export entirely.
+  }
+  const blob = new Blob([pretty], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const dateStamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `my-quizzes-backup-${dateStamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /**
