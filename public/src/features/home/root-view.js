@@ -321,16 +321,20 @@ export async function renderRootCategories() {
           // own double-verification flow (button confirm + type-to-confirm,
           // see deleteAllUserQuizzes's doc comment) rather than the single
           // default _confirm wording used for single-item deletes elsewhere.
-          const deleteAllBtn = document.createElement("button");
-          deleteAllBtn.type = "button";
-          deleteAllBtn.className = "exam-action-btn exam-action-btn--danger";
-          deleteAllBtn.innerHTML = `${TRASH_ICON_SVG}<span>حذف الكل</span>`;
-          deleteAllBtn.onclick = async (clickEvent) => {
-            clickEvent.stopPropagation();
-            closeMenu();
-            await deleteAllUserQuizzes();
-          };
-          menu.appendChild(deleteAllBtn);
+          // Hidden entirely once "امتحاناتك" is already empty (freshBreakdown
+          // computed above) — nothing left to wipe.
+          if (freshBreakdown.total > 0) {
+            const deleteAllBtn = document.createElement("button");
+            deleteAllBtn.type = "button";
+            deleteAllBtn.className = "exam-action-btn exam-action-btn--danger";
+            deleteAllBtn.innerHTML = `${TRASH_ICON_SVG}<span>حذف الكل</span>`;
+            deleteAllBtn.onclick = async (clickEvent) => {
+              clickEvent.stopPropagation();
+              closeMenu();
+              await deleteAllUserQuizzes();
+            };
+            menu.appendChild(deleteAllBtn);
+          }
         });
       };
       quizzesCard.appendChild(rootMenuBtn);

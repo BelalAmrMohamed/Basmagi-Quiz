@@ -914,15 +914,20 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "استيراد مجلد من جهازك", () => uploadFolderForAdmins()));
   }
 
-  // Divider before the fully-destructive, collection-wide action below —
-  // kept visually and physically separate from the item-scoped "حذف" above
-  // so a misclick can't easily wipe everything instead of one folder.
-  const dangerDivider = document.createElement("div");
-  dangerDivider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
-  contextMenuEl.appendChild(dangerDivider);
-  contextMenuEl.appendChild(
-    createMenuItem(DELETE_SVG, "حذف الكل", () => deleteAllUserQuizzes(), true),
-  );
+  // Divider + "حذف الكل" below — kept visually and physically separate from
+  // the item-scoped "حذف" above so a misclick can't easily wipe everything
+  // instead of one folder. Hidden entirely (not just disabled) once
+  // "امتحاناتك" is already empty — there's nothing left to wipe, and a
+  // visible-but-inert danger button would just be confusing.
+  const userQuizzesForDeleteAll = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  if (userQuizzesForDeleteAll.length > 0) {
+    const dangerDivider = document.createElement("div");
+    dangerDivider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
+    contextMenuEl.appendChild(dangerDivider);
+    contextMenuEl.appendChild(
+      createMenuItem(DELETE_SVG, "حذف الكل", () => deleteAllUserQuizzes(), true),
+    );
+  }
 
   contextMenuEl.style.left = `${e.pageX}px`;
   contextMenuEl.style.top = `${e.pageY}px`;
