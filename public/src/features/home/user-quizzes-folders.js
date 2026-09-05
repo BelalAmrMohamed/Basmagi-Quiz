@@ -18,6 +18,92 @@ export function getChildren(userQuizzes, parentId) {
 }
 
 /**
+ * Walks a row's full parentId chain up to a root (parentId === null) and
+ * returns true only if every ancestor along the way actually exists in
+ * `userQuizzes`. A row one level below a missing parent is caught by a
+ * simple "does my direct parent exist" check, but a row whose *grandparent*
+ * is missing (its direct parent still exists as a row, but that parent's
+ * own parent doesn't) would incorrectly pass a one-level check — this walks
+ * the whole chain, the same way isDescendant() below already does for the
+ * unrelated "am I inside myself" check, so both share the same notion of
+ * what "reachable from root" means.
+ *
+ * Used by:
+ *  - pruneOrphanedRows() (course-count.js) — so the "امتحاناتك" card's
+ *    counts only include genuinely reachable rows.
+ *  - hasSameLevelCollision() below — so a same-name/type/level clash
+ *    against a row that's technically still in storage but unreachable
+ *    (a leftover from an old bug, or one being cleaned up) doesn't block a
+ *    legitimate new copy/create/rename/move.
+ *
+ * @param {object} row - a user_quizzes entry
+ * @param {Array} userQuizzes
+ * @param {Map<string, object>} [byId] - optional id→row lookup to reuse
+ *   across many calls in the same pass instead of re-scanning the array
+ *   each time (collision checks and bulk operations call this per-row).
+ * @returns {boolean}
+ */
+export function isRowReachable(row, userQuizzes, byId = null) {
+  const lookup =
+    byId ||
+    new Map(
+      userQuizzes.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
+    );
+  const seen = new Set();
+  let current = row;
+  while (current) {
+    const parentId = current.meta?.parentId || null;
+    if (parentId === null) return true;
+    if (seen.has(parentId)) return false; // cyclic parentId — treat as unreachable, not an infinite loop
+    seen.add(parentId);
+    current = lookup.get(parentId);
+    if (!current) return false;
+  }
+  return true;
+}
+
+/**
+ * The one rule the whole "امتحاناتك" section must follow, enforced
+ * identically everywhere a new name can be introduced at a level: create
+ * (createFolderOrCourseNamed), rename (renameItem), move
+ * (moveItemsToFolder), single-quiz copy (copyQuizToUserQuizzes), and
+ * tree copy (copyCategoryTreeToUserQuizzes's copyNode, every node type).
+ *
+ * "No two elements of the same type AND same name may share the same
+ * parentId." Different levels are always allowed regardless of name reuse;
+ * different types at the same level with the same name are always allowed
+ * too (a folder and a course can both be named "math" side by side).
+ *
+ * Unreachable/orphaned rows (see isRowReachable above) never count as a
+ * collision — a leftover row from an old bug shouldn't block a legitimate
+ * new item from taking that name.
+ *
+ * @param {Array} userQuizzes - checked as given, so a caller that has
+ *   already `.push()`-ed newly copied siblings earlier in the same pass
+ *   (copyCategoryTreeToUserQuizzes copying two subtrees in one call) gets
+ *   those included automatically — pass the same live array reference
+ *   you're building, not a stale snapshot.
+ * @param {{type: string, title: string, parentId: string|null, excludeId?: string}} candidate
+ * @returns {boolean} true if placing `candidate` would collide
+ */
+export function hasSameLevelCollision(userQuizzes, { type, title, parentId, excludeId = null }) {
+  const normalizedTitle = (title || "").trim().toLowerCase();
+  const normalizedParentId = parentId || null;
+  const byId = new Map(
+    userQuizzes.map((q) => [q.id || q.meta?.id, q]).filter(([id]) => id),
+  );
+  return userQuizzes.some((q) => {
+    const qId = q.id || q.meta?.id;
+    if (excludeId && qId === excludeId) return false;
+    const qType = q.meta?.type || "quiz"; // plain quiz rows carry no meta.type
+    if (qType !== (type || "quiz")) return false;
+    if ((q.meta?.parentId || null) !== normalizedParentId) return false;
+    if ((q.meta?.title || "").trim().toLowerCase() !== normalizedTitle) return false;
+    return isRowReachable(q, userQuizzes, byId);
+  });
+}
+
+/**
  * Courses are always top-level — they never live inside another folder or
  * course, and nothing may be moved/dropped/dragged into a course except
  * directly from the root. This is the single guard every move/drop/create
@@ -131,17 +217,28 @@ export function createFolderOrCourseNamed(type, name, parentId) {
 
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
 
-  const duplicate = userQuizzes.find(
-    (q) => (q.meta?.parentId || null) === (parentId || null) &&
-            (q.meta?.title || "").trim().toLowerCase() === trimmedName.toLowerCase()
-  );
-  if (duplicate) {
-    return { ok: false, reason: "يوجد عنصر بنفس الاسم في هذا المستوى بالفعل." };
+  // BUG FIX: this used to compare only parentId + title, never type — a
+  // course named "math" would block a folder also named "math" at the same
+  // level, even though they're different types and the rule only forbids
+  // same-type + same-name clashes. Now routed through the single shared
+  // predicate every other creation/rename/move/copy path also uses.
+  if (hasSameLevelCollision(userQuizzes, { type, title: trimmedName, parentId: parentId || null })) {
+    return { ok: false, reason: "يوجد عنصر بنفس الاسم والنوع في هذا المستوى بالفعل." };
   }
 
+  // BUG FIX (schema consistency): give every row both a top-level `id` and
+  // a `meta.id` set to the same value. Two different code paths create
+  // folder/course rows — this one (previously top-level id only) and
+  // copyCategoryTreeToUserQuizzes()'s copyNode() (previously meta.id only,
+  // no top-level id at all) — and every reader in this codebase falls back
+  // with `q.id || q.meta?.id`. Keeping both in sync means that fallback
+  // always finds the same value regardless of which function created the
+  // row.
+  const newId = crypto.randomUUID();
   const newFolder = {
-    id: crypto.randomUUID(),
+    id: newId,
     meta: {
+      id: newId,
       type,
       title: trimmedName,
       parentId: parentId || null,
@@ -177,7 +274,7 @@ export function findFolderByName(title, parentTitle = null) {
   if (parentTitle) {
     const parent = userQuizzes.find(
       (q) => (q.meta?.type === "folder" || q.meta?.type === "course") &&
-              normalize(q.meta?.title) === normalize(parentTitle),
+        normalize(q.meta?.title) === normalize(parentTitle),
     );
     if (!parent) return null;
     parentId = parent.id || parent.meta?.id;
@@ -203,15 +300,14 @@ export async function renameItem(itemId, currentTitle) {
 
   const trimmedName = newName.trim();
   const parentId = item.meta?.parentId || null;
+  const itemType = item.meta?.type || "quiz";
 
-  // Prevent duplicate names at the same level (excluding the item itself)
-  const duplicate = userQuizzes.find(
-    (q) => (q.id !== itemId && q.meta?.id !== itemId) &&
-            (q.meta?.parentId || null) === parentId &&
-            (q.meta?.title || "").trim().toLowerCase() === trimmedName.toLowerCase()
-  );
-  if (duplicate) {
-    showNotification("الاسم مستخدم", "يوجد عنصر بنفس الاسم في هذا المستوى. اختر اسماً مختلفاً.", "warning");
+  // BUG FIX: same predicate as createFolderOrCourseNamed — routed through
+  // the shared hasSameLevelCollision() so type is actually compared (a
+  // rename to a name already used by a different-typed sibling should be
+  // allowed) and unreachable/orphaned rows never block a legitimate rename.
+  if (hasSameLevelCollision(userQuizzes, { type: itemType, title: trimmedName, parentId, excludeId: itemId })) {
+    showNotification("الاسم مستخدم", "يوجد عنصر بنفس الاسم والنوع في هذا المستوى. اختر اسماً مختلفاً.", "warning");
     return;
   }
 
@@ -360,6 +456,23 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
     if (!item) return;
     if (!item.meta) item.meta = {};
     if ((item.meta.parentId || null) === (targetFolderId || null)) return; // already there
+    // BUG FIX: moving an item used to skip the same-level collision check
+    // entirely — e.g. dragging a quiz into a folder that already had a
+    // same-named quiz would silently create a same-level duplicate. Routed
+    // through the same shared predicate as create/rename/copy so this rule
+    // applies universally instead of only where someone remembered to add
+    // it.
+    if (
+      hasSameLevelCollision(userQuizzes, {
+        type: item.meta?.type || "quiz",
+        title: item.meta?.title || "",
+        parentId: targetFolderId || null,
+        excludeId: itemId,
+      })
+    ) {
+      blocked++;
+      return;
+    }
     item.meta.parentId = targetFolderId;
     moved++;
   });

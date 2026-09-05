@@ -16,6 +16,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { hasSameLevelCollision } from "./user-quizzes-folders.js";
 
 /**
  * Shared loading-state wrapper for every "نسخ لامتحاناتي" button (root-view.js,
@@ -45,14 +46,6 @@ export async function withCopyButtonLoadingState(button, task) {
 }
 
 /**
- * Returns true if `examId` has already been copied into user_quizzes
- * (tracked via meta.copiedFrom on the copy).
- */
-function alreadyCopied(examId, userQuizzes) {
-  return userQuizzes.some((q) => q.meta?.copiedFrom === examId);
-}
-
-/**
  * Copies a manifest exam (relative-path or DB-sourced) into the user's
  * local "امتحاناتك" list.
  *
@@ -61,11 +54,22 @@ function alreadyCopied(examId, userQuizzes) {
  */
 export async function copyQuizToUserQuizzes(exam) {
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const title = exam.title || exam.id || "";
 
-  if (alreadyCopied(exam.id, userQuizzes)) {
+  // BUG FIX: this used to be a global "has this examId ever been copied
+  // anywhere, at any level" check via meta.copiedFrom — so moving the copy
+  // into a folder afterward and copying the source again was still
+  // (incorrectly) blocked, since the moved copy's copiedFrom tag still
+  // matched regardless of its new parentId. Single-quiz copies always land
+  // at root, so the real rule ("no same-type+same-name clash at the same
+  // level") only needs to check root for a same-named plain quiz — routed
+  // through the same shared predicate every other creation/rename/move/copy
+  // path uses, so a since-moved or since-deleted row never blocks a
+  // legitimate new copy.
+  if (hasSameLevelCollision(userQuizzes, { type: "quiz", title, parentId: null })) {
     showNotification(
-      "منسوخ بالفعل",
-      "لقد قمت بنسخ هذا الامتحان إلى امتحاناتك من قبل",
+      "موجود بالفعل",
+      "يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل",
       "warning",
     );
     return false;
@@ -91,8 +95,8 @@ export async function copyQuizToUserQuizzes(exam) {
       title: exam.title || sourceMeta.title || "",
       description: exam.description || sourceMeta.description || "",
       source: exam.source || sourceMeta.source || "",
-      // copiedFrom powers the dedupe check above and lets a future "نسخة
-      // من" indicator be added without another schema migration.
+      // copiedFrom no longer powers any dedupe check (see above) — kept
+      // purely as provenance, e.g. for a future "نسخة من" indicator.
       copiedFrom: exam.id,
     },
     stats: loaded.stats || undefined,
@@ -107,6 +111,13 @@ export async function copyQuizToUserQuizzes(exam) {
   // buildUserQuizEntry() only fills meta.createdAt if missing — force it to
   // "now" (copy time), never the original quiz's createdAt.
   entry.meta.createdAt = new Date().toLocaleString("en-US");
+  // Schema consistency (see hasSameLevelCollision's doc comment in
+  // user-quizzes-folders.js): keep meta.id in sync with the top-level id
+  // buildUserQuizEntry() already sets, so every `q.id || q.meta?.id`
+  // fallback reader gets the same answer regardless of which function
+  // created this row.
+  entry.meta.id = entry.id;
+  entry.meta.parentId = null;
 
   userQuizzes.push(entry);
   setInStorage("user_quizzes", JSON.stringify(userQuizzes));
@@ -127,8 +138,10 @@ export async function copyQuizToUserQuizzes(exam) {
 export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, rootKind = "folder") {
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const copiedIds = new Map();
+  let rootBlocked = false;
+  let anySkipped = false;
 
-  async function copyNode(node, parentId = null, forcedKind = null, isQuizNode = false) {
+  async function copyNode(node, parentId = null, forcedKind = null, isQuizNode = false, isRoot = false) {
     const sourceNode = node?.key && categoryTree?.[node.key]
       ? categoryTree[node.key]
       : node;
@@ -140,7 +153,21 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
     );
 
     if (isQuiz) {
-      if (alreadyCopied(sourceNode.id, userQuizzes)) return null;
+      // BUG FIX: this used to be alreadyCopied(sourceNode.id, ...) — a
+      // global "has this source id ever been copied anywhere" check via
+      // meta.copiedFrom, regardless of the copy's current level. Moving a
+      // previously-copied quiz into a folder and copying its source again
+      // was incorrectly still blocked. Now checked against the real rule
+      // (same type + same name + same parentId), against `userQuizzes` —
+      // which already includes every sibling pushed earlier in this same
+      // tree-copy pass, so two subtrees copied in one call that both
+      // contain e.g. a "Week 1" folder can't create duplicate siblings of
+      // each other either.
+      if (hasSameLevelCollision(userQuizzes, { type: "quiz", title, parentId })) {
+        anySkipped = true;
+        if (isRoot) rootBlocked = true;
+        return null;
+      }
       let loaded;
       try {
         loaded = await loadFullQuizData({ dbId: sourceNode.dbId || sourceNode.id });
@@ -162,16 +189,37 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
       const entry = buildUserQuizEntry(crypto.randomUUID(), parsed, title);
       entry.meta.parentId = parentId;
       entry.meta.createdAt = new Date().toLocaleString("en-US");
+      // Schema consistency (see hasSameLevelCollision's doc comment in
+      // user-quizzes-folders.js) — keep meta.id synced with the top-level
+      // id so every `q.id || q.meta?.id` fallback reader agrees.
+      entry.meta.id = entry.id;
       userQuizzes.push(entry);
-      return entry.meta.id;
+      return entry.id;
+    }
+
+    const nodeType = forcedKind || (node?.kind === "course" ? "course" : "folder");
+    // BUG FIX: the folder/course branch previously had NO collision check
+    // at all — copying the same course/folder twice would unconditionally
+    // create a second duplicate container, while its children underneath
+    // still got silently blocked by the old global alreadyCopied() check
+    // from the first copy, producing a visible half-empty duplicate. Now
+    // checked with the same rule as everything else; a collision on the
+    // tree's own root node blocks the whole copy outright (rootBlocked),
+    // while a collision on a descendant node just skips that one branch
+    // (and everything under it) and continues with any sibling branches.
+    if (hasSameLevelCollision(userQuizzes, { type: nodeType, title, parentId })) {
+      anySkipped = true;
+      if (isRoot) rootBlocked = true;
+      return null;
     }
 
     const copyId = crypto.randomUUID();
     const folderEntry = {
+      id: copyId,
       meta: {
         id: copyId,
         title,
-        type: forcedKind || (node?.kind === "course" ? "course" : "folder"),
+        type: nodeType,
         parentId,
         createdAt: new Date().toLocaleString("en-US"),
         copiedFrom: nodeId,
@@ -194,8 +242,25 @@ export async function copyCategoryTreeToUserQuizzes(rootNode, categoryTree, root
     return copyId;
   }
 
-  await copyNode(rootNode, null, rootKind);
+  await copyNode(rootNode, null, rootKind, false, true);
   setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+
+  if (rootBlocked) {
+    showNotification(
+      "موجود بالفعل",
+      "يوجد عنصر بنفس الاسم والنوع في هذا المستوى من امتحاناتك بالفعل.",
+      "warning",
+    );
+    return false;
+  }
+  if (anySkipped) {
+    showNotification(
+      "تم النسخ جزئياً",
+      "تم نسخ الشجرة، لكن بعض العناصر تم تخطيها لوجود عنصر بنفس الاسم والنوع في نفس المستوى بالفعل.",
+      "warning",
+    );
+    return true;
+  }
   showNotification("تم النسخ", "تم نسخ الشجرة كاملة مع الحفاظ على ترتيب المجلدات.", "success");
   return true;
 }
