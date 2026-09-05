@@ -90,7 +90,7 @@ export function buildPlatformCourseAttachment(course, categoryTree = null) {
     id: course.key || course.name,
     title: course.name,
     source: "platform",
-    summary: `عدد الاختبارات: ${countQuizzes(tree.children)} — عدد المجلدات: ${countFolders(tree.children)}`,
+    summary: `عدد الامتحانات: ${countQuizzes(tree.children)} — عدد المجلدات: ${countFolders(tree.children)}`,
     payload: {
       totalQuizCount: countQuizzes(tree.children),
       totalFolderCount: countFolders(tree.children),

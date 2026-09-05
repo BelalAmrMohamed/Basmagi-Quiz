@@ -92,19 +92,23 @@ body.sidebar-expanded {
 }
 
 /* ============================================================================
-   exam-more-btn — shared 3-dots trigger for the exam card "more actions"
-   overlay (نسخ الرابط / مشاركة الرابط / معلومات الامتحان / تحميل).
+   exam-more-btn — shared 3-dots trigger for the "more actions" dropdown.
+   Base size is tuned for QUIZ cards specifically: quiz titles sit close to
+   the top-right corner, so the trigger has to stay small/unobtrusive to
+   avoid overlapping the title. Courses and folders don't have that overlap
+   constraint and read as visually "too small"/fiddly to tap at this size —
+   see the --lg modifier below, applied via JS for course/folder contexts
+   (category-view.js, root-view.js, user-quizzes-folders.js).
    ============================================================================ */
 .exam-more-btn {
   position: absolute;
   top: 5px;
   right: 5px;
-  /* background: var(--color-background-secondary); */
-  background: inherit;
+  background: var(--color-surface);
   color: var(--color-text-secondary);
-  border: none;
-  width: 20px;
-  height: 20px;
+  border: 1px solid transparent;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,11 +116,37 @@ body.sidebar-expanded {
   transition: all 0.2s;
   z-index: 2;
   border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.exam-more-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 .exam-more-btn:hover {
-  border: 1px solid;
+  border-color: var(--color-primary-hover);
   background: var(--color-border);
+}
+
+/* Courses & folders (category-view.js, root-view.js,
+   user-quizzes-folders.js) — larger, more clickable, with a visible resting
+   border so it reads as a deliberate control rather than a stray dot, matching
+   the weight of .course-kebab-btn used elsewhere for the same kind of card. */
+.exam-more-btn--lg {
+  width: 30px;
+  height: 30px;
+}
+
+.exam-more-btn--lg svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exam-more-btn--lg:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 /*
@@ -445,6 +475,72 @@ body.sidebar-expanded {
 }
 
 /* ============================================================================
+   quiz-info-table-wrap / quiz-info-table — clean structured data table used
+   inside the "معلومات المادة" modal (course-actions.js) to present
+   key/value fields (نوع التعليم / الكلية / العام / الترم). Previously had no
+   styling at all and rendered as an unstyled bare <table>.
+   ============================================================================ */
+.quiz-info-table-wrap {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.quiz-info-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.quiz-info-table tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.quiz-info-table tr:last-child {
+  border-bottom: none;
+}
+
+.quiz-info-table th,
+.quiz-info-table td {
+  padding: 12px 16px;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.quiz-info-table th {
+  width: 40%;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  background: var(--color-background-secondary);
+}
+
+.quiz-info-table td {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+/* Highlighted "كورسات مميزة" value — stands out from regular education-type
+   values (جامعي/ثانوي/إعدادي/إبتدائي) in both the full modal table and the
+   dropdown submenu preview. */
+.quiz-info-table td.featured-value,
+.submenu-content .tooltip-row span.featured-value,
+.submenu-content .tooltip-row span:last-child.featured-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b8860b;
+  background: color-mix(in srgb, #f5c518 22%, transparent);
+  border: 1px solid color-mix(in srgb, #f5c518 55%, transparent);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-weight: 700;
+  font-size: 0.85em;
+  direction: rtl;
+  text-align: right;
+}
+
+/* ============================================================================
    Submenu — nested popover for "معلومات الامتحان" inside .exam-dropdown-menu.
    Shows a quick info preview plus a "كل المعلومات" button that opens the
    full quiz-info-modal-card. Reveals on hover for real pointer/mouse
@@ -534,6 +630,15 @@ body.sidebar-expanded {
 .submenu-content .tooltip-row span:last-child {
   color: var(--color-text-secondary);
   font-weight: 600;
+  direction: rtl;
+  text-align: left;
+}
+
+/* Rows carrying genuinely LTR content (dates, numeric ids, etc.) opt back
+   into LTR alignment explicitly rather than it being the default for every
+   value — Arabic labels like "جامعي" or "الترم الأول" were previously forced
+   into LTR direction/alignment even though they're plain Arabic text. */
+.submenu-content .tooltip-row span.ltr-val {
   direction: ltr;
   text-align: left;
 }
@@ -605,6 +710,40 @@ body.sidebar-expanded {
 
 .submenu-more-btn {
   margin-top: 4px;
+}
+
+/* "امتحاناتك" root card dropdown — contents breakdown block (quizzes /
+   courses / folders). Same tooltip-row layout as the course/folder info
+   submenus, but rendered as a plain non-interactive block (no hover state,
+   not clickable) since it's just a summary, not an action. */
+.root-quizzes-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: default;
+}
+
+.exam-dropdown-menu .root-quizzes-breakdown:hover {
+  background: none;
+}
+
+.root-quizzes-breakdown .tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.85rem;
+  direction: rtl;
+  text-align: right;
+}
+
+.root-quizzes-breakdown .tooltip-row span:first-child {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.root-quizzes-breakdown .tooltip-row span:last-child {
+  color: var(--color-text-primary);
+  font-weight: 700;
 }
 
 /* Narrow viewports don't have room to open the submenu beside the trigger —
@@ -3299,11 +3438,16 @@ html[dir="ltr"] .move-to-dialog-elbow {
   z-index: 3;
 }
 
-.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn {
+.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg {
   position: static;
   width: 26px;
   height: 26px;
   border-radius: 6px;
+}
+
+.user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Gradient accent bar at the top of the card */
@@ -3714,7 +3858,7 @@ html[dir="ltr"] .move-to-dialog-elbow {
     width: auto !important;
   }
 
-  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn {
+  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg {
     position: static !important;
     width: 32px !important;
     height: 32px !important;
@@ -3722,6 +3866,11 @@ html[dir="ltr"] .move-to-dialog-elbow {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+
+  .user-quizzes-container .category-card .category-card-actions-wrap .exam-more-btn.exam-more-btn--lg svg {
+    width: 18px !important;
+    height: 18px !important;
   }
 
   /* Ensure .category-icon aligns identically to .user-quiz--phone-only-emoji */

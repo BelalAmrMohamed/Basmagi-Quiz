@@ -45,14 +45,7 @@ import { openAIAgentWithAttachment, buildPlatformCourseAttachment } from "../../
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { SPARKLE_ICON_SVG } from "./icons.js";
 import { getCategoryTree } from "./app-state.js";
-
-const EDU_TYPE_AR = {
-  University: "جامعي",
-  High: "ثانوي",
-  Middle: "إعدادي",
-  Primary: "إبتدائي",
-  Featured: "كورسات مميزة",
-};
+import { buildCourseInfoRows, isFeaturedCourse } from "./course-info-fields.js";
 
 /**
  * Builds the `.course-info-container` (info button + tooltip) for a course
@@ -90,23 +83,20 @@ export function attachCourseInfoTooltip(card, course, options = {}) {
   tooltip.className = "course-info-tooltip tooltip-interactive";
   tooltip.setAttribute("role", "dialog");
 
-  const eduTypeAr =
-    EDU_TYPE_AR[course.education_type] || course.education_type || "-";
-
   let courseInfoHtml = "";
-  if (course.education_type === "Featured") {
+  if (isFeaturedCourse(course)) {
     courseInfoHtml = `
       <div class="tooltip-row" style="justify-content: center;">
-        <span style="color: var(--color-primary); font-size: 1rem;">مادة مميزة</span>
+        <span class="featured-value">مادة مميزة</span>
       </div>
     `;
   } else {
-    courseInfoHtml = `
-      <div class="tooltip-row"><span>التعليم:</span> <span>${escapeHtml(eduTypeAr)}</span></div>
-      ${course.faculty && course.faculty !== "All" ? `<div class="tooltip-row"><span>الكلية:</span> <span>${escapeHtml(course.faculty)}</span></div>` : ""}
-      <div class="tooltip-row"><span>العام:</span> <span>${escapeHtml(course.year || "-")}</span></div>
-      <div class="tooltip-row"><span>الترم:</span> <span>${escapeHtml(course.term || "-")}</span></div>
-    `;
+    courseInfoHtml = buildCourseInfoRows(course)
+      .map(
+        ({ label, val, highlight }) =>
+          `<div class="tooltip-row"><span>${escapeHtml(label)}:</span> <span${highlight ? ' class="featured-value"' : ""}>${escapeHtml(String(val))}</span></div>`,
+      )
+      .join("");
   }
 
   if (withUnsubscribe) {

@@ -98,21 +98,28 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
  * devices, and toggles on click/tap everywhere (so it also works on desktop
  * via keyboard/click, and is the only way in on touch devices).
  */
-export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, reposition) {
+export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, reposition, triggerLabel = "معلومات الامتحان") {
   const container = document.createElement("div");
   container.className = "submenu-container";
 
   const trigger = document.createElement("button");
   trigger.type = "button";
   trigger.className = "exam-action-btn submenu-trigger";
-  trigger.innerHTML = `<span class="submenu-trigger-label">${INFO_ICON_SVG}<span>معلومات الامتحان</span></span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+  trigger.innerHTML = `<span class="submenu-trigger-label">${INFO_ICON_SVG}<span>${escapeHtml(triggerLabel)}</span></span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
 
   const content = document.createElement("div");
   content.className = "submenu-content";
   content.innerHTML = basicRows.length
     ? basicRows
-        .map(({ label, val, multiline, copyable }) => {
-          const valAttrs = multiline ? ` class="multiline-val"` : "";
+        .map(({ label, val, multiline, copyable, ltr, highlight }) => {
+          const valClasses = [
+            multiline ? "multiline-val" : "",
+            ltr ? "ltr-val" : "",
+            highlight ? "featured-value" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const valAttrs = valClasses ? ` class="${valClasses}"` : "";
           const labelHtml = copyable
             ? `<span class="copyable-label">${escapeHtml(label)}:${COPY_CHECK_ICON_SVG}</span>`
             : `<span>${escapeHtml(label)}:</span>`;

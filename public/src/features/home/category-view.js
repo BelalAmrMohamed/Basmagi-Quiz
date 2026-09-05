@@ -204,6 +204,11 @@ export function createCategoryCard(
   isFolder = false,
   courseData = null,
   isSubfolder = false, // ← new param: true for subcategories inside a course
+  subtextOverride = null, // ← optional: exact subtext string, bypassing the
+  // generic itemCount/getItemText() "N امتحان(ات)" phrasing below. Used by
+  // the "امتحاناتك" root card, whose contents aren't purely quizzes (can
+  // include folders/courses too), so a single "N امتحان" label is wrong for
+  // it — see getUserQuizzesBreakdown()/formatUserQuizzesBreakdown().
 ) {
   const card = document.createElement("div");
 
@@ -213,7 +218,7 @@ export function createCategoryCard(
   card.setAttribute("title", `${name}`);
   card.setAttribute(
     "aria-label",
-    `${name}, ${itemCount} ${getItemText(itemCount)}`,
+    `${name}, ${subtextOverride || `${itemCount} ${getItemText(itemCount)}`}`,
   );
 
   if (courseData && isRecentlyAdded(courseData.createdAt)) {
@@ -236,7 +241,7 @@ export function createCategoryCard(
 
   const p = document.createElement("p");
 
-  p.textContent = `${itemCount > 2 ? itemCount : ""} ${getItemText(itemCount)}`;
+  p.textContent = subtextOverride || `${itemCount > 2 ? itemCount : ""} ${getItemText(itemCount)}`;
 
   // Wrap text elements — display:contents on desktop (transparent), flex col on mobile
   const textWrap = document.createElement("div");
@@ -252,8 +257,8 @@ export function createCategoryCard(
   if (isSubfolder && courseData) {
     const moreBtn = document.createElement("button");
     moreBtn.type = "button";
-    moreBtn.className = "exam-more-btn";
-    moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`;
+    moreBtn.className = "exam-more-btn exam-more-btn--lg";
+    moreBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1.5"></circle><circle cx="12" cy="5" r="1.5"></circle><circle cx="12" cy="19" r="1.5"></circle></svg>`;
     moreBtn.setAttribute("aria-label", `خيارات ${name}`);
     moreBtn.onclick = (event) => {
       event.stopPropagation();

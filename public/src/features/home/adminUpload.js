@@ -1328,7 +1328,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     ${hdr(isBatch ? `رفع ${_quizzes.length} اختبارات` : "رفع الاختبار")}
     ${stepsHTML(4)}
     <div class="adm-body">
-      <p class="adm-hint" id="adm-s4-hint">جارٍ رفع الاختبارات…</p>
+      <p class="adm-hint" id="adm-s4-hint">جارٍ رفع الامتحانات…</p>
       <ul class="adm-progress-list">
         ${items.map(item => `<li class="adm-progress-item" id="${item.id}">
           <span class="adm-progress-icon">⏳</span>
@@ -1567,7 +1567,7 @@ async function _openWizard(quizzes) {
   if (nonQuizItems.length > 0) {
     showNotification(
       "لا يمكن رفع مادة أو مجلد هنا",
-      "هذه النافذة مخصصة لرفع الاختبارات فقط. المواد والمجلدات تُنشأ من صفحة امتحاناتك مباشرة.",
+      "هذه النافذة مخصصة لرفع الامتحانات فقط. المواد والمجلدات تُنشأ من صفحة امتحاناتك مباشرة.",
       "error",
     );
     return;

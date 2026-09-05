@@ -63,6 +63,56 @@ export function getCourseItemCount(category) {
   return count;
 }
 
+/**
+ * Breaks down the flat "user_quizzes" localStorage array into counts of
+ * quizzes / folders / courses (by meta.type — entries without a meta.type
+ * are plain quizzes). Used for the "امتحاناتك" root card, whose subtext
+ * previously just used the array's raw .length and labeled everything as
+ * "exams", even when the list actually contained folders/courses too.
+ *
+ * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
+ * @returns {{quizCount: number, folderCount: number, courseCount: number, total: number}}
+ */
+export function getUserQuizzesBreakdown(userQuizzes) {
+  let quizCount = 0;
+  let folderCount = 0;
+  let courseCount = 0;
+  for (const row of userQuizzes || []) {
+    if (row?.meta?.type === "course") courseCount += 1;
+    else if (row?.meta?.type === "folder") folderCount += 1;
+    else quizCount += 1;
+  }
+  return {
+    quizCount,
+    folderCount,
+    courseCount,
+    total: quizCount + folderCount + courseCount,
+  };
+}
+
+/** Small internal Arabic-pluralization helper for a (singular, dual,
+ * plural) label set: 1 → singular, 2 → dual, 3+ → "N plural". */
+function pluralizeArabic(count, singular, dual, plural) {
+  if (count === 1) return singular;
+  if (count === 2) return dual;
+  return `${count} ${plural}`;
+}
+
+/**
+ * Arabic subtext for the "امتحاناتك" root card, e.g. "3 امتحانات · مادة
+ * واحدة · مجلد واحد" — only including the parts that are actually non-zero,
+ * so a plain flat list of quizzes still just reads "3 امتحانات" as before.
+ */
+export function formatUserQuizzesBreakdown({ quizCount, folderCount, courseCount, total }) {
+  if (total === 0) return "لا يوجد محتوى بعد";
+
+  const parts = [];
+  if (quizCount > 0) parts.push(pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات"));
+  if (courseCount > 0) parts.push(pluralizeArabic(courseCount, "مادة واحدة", "مادتان", "مواد"));
+  if (folderCount > 0) parts.push(pluralizeArabic(folderCount, "مجلد واحد", "مجلدان", "مجلدات"));
+  return parts.join(" · ");
+}
+
 export function formatArabicQuestionCount(count) {
   if (!count || count === 0) return "لا أسئلة";
   if (count === 1) return "سؤال واحد";

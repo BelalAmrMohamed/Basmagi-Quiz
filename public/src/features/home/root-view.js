@@ -26,11 +26,12 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
 import { setFolderState } from "./user-quizzes-folders.js";
-import { getCourseItemCount } from "./course-count.js";
+import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesBreakdown } from "./course-count.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
+import { buildCourseInfoRows } from "./course-info-fields.js";
 import { copyCategoryTreeToUserQuizzes } from "./copy-to-my-quizzes.js";
 import { toSlug } from "./slug-utils.js";
 import {
@@ -52,7 +53,7 @@ import { _confirm } from "../../components/notifications/notifications.js";
 function attachCourseActionsMenu(card, course, categoryTree) {
   const moreBtn = document.createElement("button");
   moreBtn.type = "button";
-  moreBtn.className = "exam-more-btn";
+  moreBtn.className = "exam-more-btn exam-more-btn--lg";
   moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
   moreBtn.setAttribute("aria-label", `خيارات ${course.name}`);
   moreBtn.onclick = (event) => {
@@ -113,17 +114,12 @@ function attachCourseActionsMenu(card, course, categoryTree) {
       };
       menu.appendChild(askAi);
 
-      const infoRows = [
-        { label: "التعليم", val: course.education_type || "-" },
-        { label: "الكلية", val: course.faculty && course.faculty !== "All" ? course.faculty : null },
-        { label: "العام", val: course.year || "-" },
-        { label: "الترم", val: course.term || "-" },
-      ].filter((row) => row.val);
       menu.appendChild(createExamInfoSubmenu(
-        infoRows,
+        buildCourseInfoRows(course),
         () => showCourseInfoModal(course),
         closeMenu,
         reposition,
+        "معلومات المادة",
       ));
 
       const unsubscribe = document.createElement("button");
@@ -198,10 +194,18 @@ export async function renderRootCategories() {
     // 1. Add "امتحاناتك" Folder Card
     try {
       const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+      const breakdown = getUserQuizzesBreakdown(userQuizzes);
       const quizzesCard = createCategoryCard(
         "امتحاناتك",
-        userQuizzes.length,
+        breakdown.total,
         true,
+        null,
+        false,
+        // Accurate subtext: parses the actual entity breakdown (quizzes /
+        // courses / folders) instead of a flat, mislabeled item count — a
+        // list of "3 quizzes + 1 course + 1 folder" used to render as a flat
+        // "5 امتحانات".
+        formatUserQuizzesBreakdown(breakdown),
       );
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
@@ -209,19 +213,12 @@ export async function renderRootCategories() {
 
       const rootMenuBtn = document.createElement("button");
       rootMenuBtn.type = "button";
-      rootMenuBtn.className = "exam-more-btn";
+      rootMenuBtn.className = "exam-more-btn exam-more-btn--lg";
       rootMenuBtn.innerHTML = MORE_DOTS_ICON_SVG;
       rootMenuBtn.setAttribute("aria-label", "خيارات امتحاناتك");
       rootMenuBtn.onclick = (event) => {
         event.stopPropagation();
         openExamDropdownMenu(rootMenuBtn, (menu, closeMenu) => {
-          const attachment = buildUserRootAttachmentForAskAi();
-          const stats = document.createElement("div");
-          stats.className = "exam-action-btn";
-          stats.disabled = true;
-          stats.textContent = attachment.summary;
-          menu.appendChild(stats);
-
           const askAi = document.createElement("button");
           askAi.type = "button";
           askAi.className = "exam-action-btn";
@@ -229,38 +226,41 @@ export async function renderRootCategories() {
           askAi.onclick = (clickEvent) => {
             clickEvent.stopPropagation();
             closeMenu();
-            openAIAgentWithAttachment(attachment, {
+            openAIAgentWithAttachment(buildUserRootAttachmentForAskAi(), {
               defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT,
             });
           };
           menu.appendChild(askAi);
 
-          const rootUrl = `${window.location.origin}/#my-quizzes`;
-          const copyLink = document.createElement("button");
-          copyLink.type = "button";
-          copyLink.className = "exam-action-btn";
-          copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
-          copyLink.onclick = async () => {
-            await navigator.clipboard.writeText(rootUrl);
-            closeMenu();
-            showNotification("تم النسخ", "تم نسخ رابط امتحاناتك.", "success");
-          };
-          menu.appendChild(copyLink);
+          // Contents breakdown — same idea as the course/folder submenus
+          // (education/college-style key/value rows), but with no "كل
+          // المعلومات" button: there's no separate "full info" modal for
+          // this card, since its contents are strictly local and already
+          // fully described right here.
+          const freshBreakdown = getUserQuizzesBreakdown(
+            JSON.parse(getFromStorage("user_quizzes", "[]")),
+          );
+          const breakdownRows = [
+            { label: "الامتحانات", val: String(freshBreakdown.quizCount) },
+            { label: "المواد", val: String(freshBreakdown.courseCount) },
+            { label: "المجلدات", val: String(freshBreakdown.folderCount) },
+          ].filter((row) => row.val !== "0");
+          const breakdownWrap = document.createElement("div");
+          breakdownWrap.className = "exam-action-btn root-quizzes-breakdown";
+          breakdownWrap.innerHTML = breakdownRows.length
+            ? breakdownRows
+                .map(
+                  ({ label, val }) =>
+                    `<div class="tooltip-row"><span>${label}:</span><span>${val}</span></div>`,
+                )
+                .join("")
+            : `<p class="quiz-info-empty">لا يوجد محتوى بعد</p>`;
+          menu.appendChild(breakdownWrap);
 
-          const shareLink = document.createElement("button");
-          shareLink.type = "button";
-          shareLink.className = "exam-action-btn";
-          shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
-          shareLink.onclick = async () => {
-            closeMenu();
-            if (navigator.share) {
-              await navigator.share({ title: "امتحاناتك", url: rootUrl }).catch(() => {});
-            } else {
-              await navigator.clipboard.writeText(rootUrl);
-              showNotification("تم النسخ", "تم نسخ رابط امتحاناتك.", "success");
-            }
-          };
-          menu.appendChild(shareLink);
+          // No "نسخ الرابط"/"مشاركة الرابط" here — this card's contents are
+          // strictly local (localStorage), so there is no shareable link for
+          // it, unlike manifest courses/folders/quizzes which live on the
+          // server and have a real, shareable URL.
 
           const alreadyMine = document.createElement("button");
           alreadyMine.type = "button";

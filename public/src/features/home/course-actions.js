@@ -22,6 +22,8 @@ import { INFO_ICON_SVG, TRASH_ICON_SVG } from "./icons.js";
 import { userProfile } from "../../shared/userProfile.js";
 import { renderRootCategories } from "./root-view.js";
 import { getCategoryTree } from "./app-state.js";
+import { buildCourseInfoRows } from "./course-info-fields.js";
+import { escapeHtml } from "./escape-html.js";
 
 function getCourseContentsStats(course) {
   const tree = getCategoryTree() || {};
@@ -129,24 +131,13 @@ export function showCourseInfoModal(course) {
 
   const table = document.createElement("table");
   table.className = "quiz-info-table";
-  table.innerHTML = `
-    <tbody>
-      <tr><th>نوع التعليم</th><td>${
-        {
-          University: "جامعي",
-          High: "ثانوي",
-          Middle: "إعدادي",
-          Primary: "إبتدائي",
-          Featured: "كورسات مميزة",
-        }[course.education_type] ||
-        course.education_type ||
-        "-"
-      }</td></tr>
-      ${course.faculty && course.faculty !== "All" ? `<tr><th>الكلية</th><td>${course.faculty}</td></tr>` : ""}
-      <tr><th>العام</th><td>${course.year || "-"}</td></tr>
-      <tr><th>الترم</th><td>${course.term || "-"}</td></tr>
-    </tbody>
-  `;
+  const rowsHtml = buildCourseInfoRows(course)
+    .map(
+      ({ label, val, highlight }) =>
+        `<tr><th>${escapeHtml(label)}</th><td${highlight ? ' class="featured-value"' : ""}>${escapeHtml(String(val))}</td></tr>`,
+    )
+    .join("");
+  table.innerHTML = `<tbody>${rowsHtml}</tbody>`;
   tableWrap.appendChild(table);
 
   const closeBtn = document.createElement("button");

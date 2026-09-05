@@ -117,7 +117,7 @@ export function resolveUserItemById(id, userQuizzes = readUserQuizzes()) {
     kind,
     id,
     title,
-    summary: `عدد الاختبارات: ${counts.quizCount} — عدد المجلدات الفرعية: ${counts.subfolderCount}`,
+    summary: `عدد الامتحانات: ${counts.quizCount} — عدد المجلدات: ${counts.subfolderCount}`,
     source: "local",
     payload: { totalQuizCount: counts.quizCount, totalFolderCount: counts.subfolderCount, tree },
   };
@@ -185,7 +185,7 @@ export function buildUserRootAttachment(userQuizzes = readUserQuizzes()) {
     kind: "folder",
     id: "user-quizzes-root",
     title: "امتحاناتك",
-    summary: `عدد الاختبارات: ${quizCount} — عدد المجلدات: ${folderCount}`,
+    summary: `عدد الامتحانات: ${quizCount} — عدد المجلدات: ${folderCount}`,
     source: "local",
     payload: { totalQuizCount: quizCount, totalFolderCount: folderCount, tree },
   };

@@ -999,7 +999,7 @@ function renderBulkActionBar() {
 
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
       if (selectedUserQuizzes.size === 0) return;
-      if (await _confirm("هل أنت متأكد من حذف الاختبارات المحددة؟")) {
+      if (await _confirm("هل أنت متأكد من حذف الامتحانات المحددة؟")) {
         let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
         userQuizzes = userQuizzes.filter((q) => {
           const qId = qz(q, "id") || q.id;

@@ -408,14 +408,14 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     // via showQuizInfoModal, which does the async backfill fetch for
     // anything still missing.
     const basicRows = [
-      { label: "ID", val: exam.id, multiline: true, copyable: true },
+      { label: "ID", val: exam.id, multiline: true, copyable: true, ltr: true },
       {
         label: "المادة",
         val: exam.category || null,
         multiline: true,
       },
       { label: "الوصف", val: exam.description || null, multiline: true },
-      { label: "التاريخ", val: formatDateForInfo(exam.createdAt) },
+      { label: "التاريخ", val: formatDateForInfo(exam.createdAt), ltr: true },
       {
         label: "المصدر",
         val: exam.source || null,

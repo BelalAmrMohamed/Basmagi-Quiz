@@ -336,10 +336,10 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     // synchronously straight from qz(). Shows only id, description,
     // category, date, and source (المصدر is copy-to-clipboard).
     const basicRows = [
-      { label: "ID", val: quiz.id, multiline: true, copyable: true },
+      { label: "ID", val: quiz.id, multiline: true, copyable: true, ltr: true },
       { label: "المادة", val: qz(quiz, "category") || null, multiline: true },
       { label: "الوصف", val: qz(quiz, "description") || null, multiline: true },
-      { label: "التاريخ", val: formatDateForInfo(qz(quiz, "createdAt")) },
+      { label: "التاريخ", val: formatDateForInfo(qz(quiz, "createdAt")), ltr: true },
       {
         label: "المصدر",
         val: qz(quiz, "source") || null,

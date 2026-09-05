@@ -1337,7 +1337,7 @@ export function createFolderOrCourseCard(item) {
   const actionsWrap = document.createElement("div");
   actionsWrap.className = "category-card-actions-wrap";
   const moreBtn = document.createElement("button");
-  moreBtn.className = "exam-more-btn";
+  moreBtn.className = "exam-more-btn exam-more-btn--lg";
   moreBtn.type = "button";
   moreBtn.innerHTML = MORE_DOTS_ICON_SVG;
   moreBtn.setAttribute("aria-label", `خيارات ${item.meta?.title || ""}`);
