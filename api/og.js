@@ -195,8 +195,8 @@ function loadFont() {
       const rangeMatch = block.match(/unicode-range:\s*([^;]+);/);
       const isArabicSubset = rangeMatch
         ? /U\+06[0-9A-Fa-f]{2}|U\+075|U\+08[0-9A-Fa-f]{2}|U\+FB[5-9A-Fa-f]|U\+FE7|U\+FEF/i.test(
-            rangeMatch[1],
-          )
+          rangeMatch[1],
+        )
         : false;
       entries.push({ url: fontUrl, isArabicSubset });
     }
@@ -220,8 +220,21 @@ function loadFont() {
 // =============================================================================
 // Handler
 // =============================================================================
+// Also handles /api/og?course=<id> (course OG thumbnails) — merged in here
+// rather than as a separate api/og-course.js function so the two Edge OG
+// generators (quiz + course) share one Vercel function slot, since Hobby's
+// 12-function cap counts them separately otherwise. Course requests are
+// dispatched to renderCourseImage() below, which reuses this file's font
+// loading and bidi helpers but has its own (much simpler) layout — the
+// pixel-measured quiz-thumbnail background here is quiz-specific artwork
+// (bulb card, button, pill) that doesn't make sense for a course page.
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
+  const courseId = searchParams.get("course");
+  if (courseId) {
+    return renderCourseImage(courseId);
+  }
+
   const quizId = searchParams.get("quizId");
 
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
@@ -333,52 +346,52 @@ export default async function handler(req) {
         // ── Question count / type badge — now in the old pill's row ──────
         details
           ? {
-              type: "div",
-              props: {
-                style: {
-                  display: "flex",
-                  position: "absolute",
-                  // Left edge pinned to the button's own left edge (x≈534,
-                  // see BUTTON_ROW below) rather than centered across the
-                  // full text column, so the badge's left side lines up
-                  // vertically with the button's left side underneath it.
-                  left: `${BUTTON_ROW.left}px`,
-                  top: "148px",
-                  width: `${TEXT_COLUMN.right - BUTTON_ROW.left}px`,
-                  height: "41px", // matches old pill height (148–189)
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  // ltr here: this wrapper has a single child (no sibling
-                  // order for flexbox to mirror), and the text inside has
-                  // already been pre-mirrored by renderBidiText — leaving
-                  // this as rtl double-handles direction and produces the
-                  // oversized inter-word gaps Satori's Arabic shaper adds
-                  // under an rtl context.
-                  direction: "ltr",
-                },
-                children: [
-                  {
-                    type: "div",
-                    props: {
-                      style: {
-                        display: "flex",
-                        alignItems: "center",
-                        background: "rgba(0,136,204,0.12)",
-                        border: `1px solid rgba(0,136,204,0.3)`,
-                        borderRadius: "10px",
-                        padding: "8px 22px",
-                        fontSize: "20px",
-                        color: BRAND_BLUE,
-                        fontWeight: "700",
-                        // ltr: text already pre-mirrored by renderBidiText.
-                        direction: "ltr",
-                      },
-                      children: renderBidiText(details, isArabic),
-                    },
-                  },
-                ],
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                position: "absolute",
+                // Left edge pinned to the button's own left edge (x≈534,
+                // see BUTTON_ROW below) rather than centered across the
+                // full text column, so the badge's left side lines up
+                // vertically with the button's left side underneath it.
+                left: `${BUTTON_ROW.left}px`,
+                top: "148px",
+                width: `${TEXT_COLUMN.right - BUTTON_ROW.left}px`,
+                height: "41px", // matches old pill height (148–189)
+                alignItems: "center",
+                justifyContent: "flex-start",
+                // ltr here: this wrapper has a single child (no sibling
+                // order for flexbox to mirror), and the text inside has
+                // already been pre-mirrored by renderBidiText — leaving
+                // this as rtl double-handles direction and produces the
+                // oversized inter-word gaps Satori's Arabic shaper adds
+                // under an rtl context.
+                direction: "ltr",
               },
-            }
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      background: "rgba(0,136,204,0.12)",
+                      border: `1px solid rgba(0,136,204,0.3)`,
+                      borderRadius: "10px",
+                      padding: "8px 22px",
+                      fontSize: "20px",
+                      color: BRAND_BLUE,
+                      fontWeight: "700",
+                      // ltr: text already pre-mirrored by renderBidiText.
+                      direction: "ltr",
+                    },
+                    children: renderBidiText(details, isArabic),
+                  },
+                },
+              ],
+            },
+          }
           : null,
 
         // ── Title + description column ────────────────────────────────────
@@ -429,24 +442,24 @@ export default async function handler(req) {
               // ── Description (smaller, single line, muted) ──────────────
               description
                 ? {
-                    type: "div",
-                    props: {
-                      style: {
-                        display: "flex",
-                        fontSize: "20px",
-                        fontWeight: "400",
-                        color: "#4b5563",
-                        lineHeight: "1.3",
-                        textAlign: "center",
-                        direction: "ltr",
-                        width: "100%",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        justifyContent: "center",
-                      },
-                      children: renderBidiText(description, isArabic),
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      fontSize: "20px",
+                      fontWeight: "400",
+                      color: "#4b5563",
+                      lineHeight: "1.3",
+                      textAlign: "center",
+                      direction: "ltr",
+                      width: "100%",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      justifyContent: "center",
                     },
-                  }
+                    children: renderBidiText(description, isArabic),
+                  },
+                }
                 : null,
             ].filter(Boolean),
           },
@@ -455,45 +468,45 @@ export default async function handler(req) {
         // ── Course name pill — its own row, just above the button ────────
         courseName
           ? {
-              type: "div",
-              props: {
-                style: {
-                  display: "flex",
-                  position: "absolute",
-                  left: `${COURSE_ROW.left}px`,
-                  top: `${COURSE_ROW.top}px`,
-                  width: `${COURSE_ROW.right - COURSE_ROW.left}px`,
-                  height: `${COURSE_ROW.bottom - COURSE_ROW.top}px`,
-                  alignItems: "center",
-                  // flex-start (not center): the pill's own left edge must
-                  // line up with the button's left edge directly below it,
-                  // matching the stats badge's alignment above.
-                  justifyContent: "flex-start",
-                  // ltr: single child, text pre-mirrored by renderBidiText.
-                  direction: "ltr",
-                },
-                children: [
-                  {
-                    type: "div",
-                    props: {
-                      style: {
-                        display: "flex",
-                        alignItems: "center",
-                        background: "rgba(17,24,39,0.06)",
-                        borderRadius: "8px",
-                        padding: "5px 18px",
-                        fontSize: "17px",
-                        color: "#374151",
-                        fontWeight: "700",
-                        whiteSpace: "nowrap",
-                        direction: "ltr",
-                      },
-                      children: renderBidiText(courseName, detectArabic(courseName)),
-                    },
-                  },
-                ],
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                position: "absolute",
+                left: `${COURSE_ROW.left}px`,
+                top: `${COURSE_ROW.top}px`,
+                width: `${COURSE_ROW.right - COURSE_ROW.left}px`,
+                height: `${COURSE_ROW.bottom - COURSE_ROW.top}px`,
+                alignItems: "center",
+                // flex-start (not center): the pill's own left edge must
+                // line up with the button's left edge directly below it,
+                // matching the stats badge's alignment above.
+                justifyContent: "flex-start",
+                // ltr: single child, text pre-mirrored by renderBidiText.
+                direction: "ltr",
               },
-            }
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      alignItems: "center",
+                      background: "rgba(17,24,39,0.06)",
+                      borderRadius: "8px",
+                      padding: "5px 18px",
+                      fontSize: "17px",
+                      color: "#374151",
+                      fontWeight: "700",
+                      whiteSpace: "nowrap",
+                      direction: "ltr",
+                    },
+                    children: renderBidiText(courseName, detectArabic(courseName)),
+                  },
+                },
+              ],
+            },
+          }
           : null,
 
         // ── Author line — bottom footer strip, centered on the button ────
@@ -510,37 +523,37 @@ export default async function handler(req) {
         // into one string and mirroring once, as a whole, avoids this.
         authorName
           ? {
-              type: "div",
-              props: {
-                style: {
-                  display: "flex",
-                  position: "absolute",
-                  left: `${AUTHOR_ROW.centerX - 300}px`,
-                  top: `${AUTHOR_ROW.top}px`,
-                  width: "600px",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  direction: "ltr",
-                  fontSize: "22px",
-                },
-                children: [
-                  {
-                    type: "div",
-                    props: {
-                      style: { display: "flex", color: "#9ca3af", fontWeight: "400" },
-                      children: renderBidiText(`${authorLabel} `, false),
-                    },
-                  },
-                  {
-                    type: "div",
-                    props: {
-                      style: { display: "flex", color: "#374151", fontWeight: "700" },
-                      children: " ",
-                    },
-                  },
-                ],
+            type: "div",
+            props: {
+              style: {
+                display: "flex",
+                position: "absolute",
+                left: `${AUTHOR_ROW.centerX - 300}px`,
+                top: `${AUTHOR_ROW.top}px`,
+                width: "600px",
+                alignItems: "center",
+                justifyContent: "center",
+                direction: "ltr",
+                fontSize: "22px",
               },
-            }
+              children: [
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", color: "#9ca3af", fontWeight: "400" },
+                    children: renderBidiText(`${authorLabel} `, false),
+                  },
+                },
+                {
+                  type: "div",
+                  props: {
+                    style: { display: "flex", color: "#374151", fontWeight: "700" },
+                    children: " ",
+                  },
+                },
+              ],
+            },
+          }
           : null,
       ].filter(Boolean),
     },
@@ -568,11 +581,11 @@ export default async function handler(req) {
     // each glyph against whichever of these two entries actually covers it.
     fonts: fontData
       ? fontData.map((entry) => ({
-          name: entry.name,
-          data: entry.data,
-          weight: 700,
-          style: "normal",
-        }))
+        name: entry.name,
+        data: entry.data,
+        weight: 700,
+        style: "normal",
+      }))
       : [],
     headers: {
       "Cache-Control": renderIsComplete
@@ -775,3 +788,294 @@ function formatQuestionTypes(qt) {
   return String(qt) || null;
 }
 
+// =============================================================================
+// Course OG image (used by /api/og?course=<id>) — see handler() dispatch above.
+// Flat brand-gradient layout (no background PNG — the quiz thumbnail's
+// bulb/button/pill artwork doesn't apply to a course page), reusing this
+// file's font loading + Arabic bidi helpers.
+// =============================================================================
+
+const COURSE_BRAND_DARK = "#0f172a";
+const COURSE_TITLE_MAX_CHARS_ARABIC = 34;
+const COURSE_TITLE_MAX_CHARS_LATIN = 55;
+
+async function renderCourseImage(courseId) {
+  const [fontData, meta] = await Promise.all([
+    loadFont().catch((err) => {
+      console.error("[og] course font load error:", err);
+      return null;
+    }),
+    fetchCourseMeta(courseId),
+  ]);
+
+  const rawTitle = meta ? meta.name : "منصة امتحانات بصمجي";
+  const isArabic = detectArabic(rawTitle);
+  const title = truncateTitle(
+    rawTitle,
+    isArabic ? COURSE_TITLE_MAX_CHARS_ARABIC : COURSE_TITLE_MAX_CHARS_LATIN,
+  );
+
+  const titleFontSize = isArabic
+    ? title.length > 22
+      ? "48px"
+      : title.length > 17
+        ? "56px"
+        : "64px"
+    : title.length > 33
+      ? "44px"
+      : title.length > 27
+        ? "52px"
+        : "60px";
+
+  const stats = [];
+  if (meta) {
+    stats.push({ value: String(meta.folderCount), label: isArabic ? "مجلد" : "Folders" });
+    stats.push({ value: String(meta.quizCount), label: isArabic ? "امتحان" : "Quizzes" });
+    if (meta.questionCount != null) {
+      stats.push({ value: String(meta.questionCount), label: isArabic ? "سؤال" : "Questions" });
+    }
+    if (meta.lastUpdated) {
+      stats.push({ value: meta.lastUpdated, label: isArabic ? "آخر تحديث" : "Updated" });
+    }
+  }
+
+  const element = {
+    type: "div",
+    props: {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        fontFamily: FONT_FAMILY_STACK,
+        backgroundColor: COURSE_BRAND_DARK,
+        backgroundImage: `linear-gradient(135deg, ${COURSE_BRAND_DARK} 0%, #142850 55%, ${BRAND_BLUE} 130%)`,
+      },
+      children: [
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              right: "40px",
+              top: "36px",
+              fontSize: "16px",
+              color: "#9ca3af",
+              fontWeight: "400",
+              direction: "ltr",
+            },
+            children: "basmagi-quiz.vercel.app",
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              left: "80px",
+              top: "90px",
+              fontSize: "22px",
+              color: "#7dd3fc",
+              fontWeight: "700",
+              direction: "ltr",
+            },
+            children: isArabic ? "مقرر دراسي" : "COURSE",
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              left: "80px",
+              right: "80px",
+              top: "150px",
+              fontSize: titleFontSize,
+              color: "#ffffff",
+              fontWeight: "700",
+              lineHeight: 1.25,
+              direction: "ltr",
+              textAlign: isArabic ? "right" : "left",
+            },
+            children: renderBidiText(title, isArabic),
+          },
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              left: "80px",
+              right: "80px",
+              bottom: "80px",
+              flexDirection: isArabic ? "row-reverse" : "row",
+              gap: "28px",
+            },
+            children: stats.map((stat) => ({
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: isArabic ? "flex-end" : "flex-start",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  borderRadius: "16px",
+                  padding: "18px 26px",
+                  minWidth: "150px",
+                },
+                children: [
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        display: "flex",
+                        fontSize: "40px",
+                        color: "#ffffff",
+                        fontWeight: "700",
+                        direction: "ltr",
+                      },
+                      children: stat.value,
+                    },
+                  },
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        display: "flex",
+                        fontSize: "18px",
+                        color: "#cbd5e1",
+                        fontWeight: "400",
+                        marginTop: "4px",
+                        direction: "ltr",
+                      },
+                      children: stat.label,
+                    },
+                  },
+                ],
+              },
+            })),
+          },
+        },
+      ],
+    },
+  };
+
+  const renderIsComplete = fontData !== null && meta !== null;
+
+  return new ImageResponse(element, {
+    width: 1200,
+    height: 630,
+    fonts: fontData
+      ? fontData.map((entry) => ({
+        name: entry.name,
+        data: entry.data,
+        weight: 700,
+        style: "normal",
+      }))
+      : [],
+    headers: {
+      "Cache-Control": renderIsComplete
+        ? "public, immutable, no-transform, max-age=31536000, s-maxage=31536000"
+        : "public, s-maxage=300, stale-while-revalidate=3600",
+    },
+  });
+}
+
+/**
+ * Fetches course metadata + folder/quiz counts via the Supabase PostgREST
+ * HTTP API (Edge-safe, fetch-only). Uses relational count queries (Prefer:
+ * count=exact HEAD requests) against `folders`/`quizzes` by course_id,
+ * matching the approach public/src/shared/quizManifest.js uses client-side —
+ * not a manifest re-walk.
+ *
+ * @param {string} courseId
+ * @returns {Promise<{name:string, folderCount:number, quizCount:number, questionCount:number|null, lastUpdated:string|null}|null>}
+ */
+async function fetchCourseMeta(courseId) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    console.error("[og] Missing SUPABASE_URL or SUPABASE_ANON_KEY");
+    return null;
+  }
+
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+  };
+
+  try {
+    const courseUrl = new URL(`${SUPABASE_URL}/rest/v1/courses`);
+    courseUrl.searchParams.set("select", "id,name");
+    courseUrl.searchParams.set("id", `eq.${courseId}`);
+    courseUrl.searchParams.set("limit", "1");
+
+    const courseRes = await fetch(courseUrl.toString(), { headers });
+    if (!courseRes.ok) {
+      console.error(`[og] course lookup returned ${courseRes.status}`);
+      return null;
+    }
+    const courseRows = await courseRes.json();
+    if (!courseRows || courseRows.length === 0) return null;
+    const course = courseRows[0];
+
+    const countFor = async (table) => {
+      const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+      url.searchParams.set("select", "id");
+      url.searchParams.set("course_id", `eq.${courseId}`);
+      const res = await fetch(url.toString(), {
+        method: "HEAD",
+        headers: { ...headers, Prefer: "count=exact" },
+      });
+      if (!res.ok) return 0;
+      const range = res.headers.get("content-range"); // "0-24/123"
+      const total = range ? Number(range.split("/")[1]) : 0;
+      return Number.isFinite(total) ? total : 0;
+    };
+
+    const [folderCount, quizCount] = await Promise.all([
+      countFor("folders"),
+      countFor("quizzes"),
+    ]);
+
+    // Best-effort extra stats (question count total, last-updated date) —
+    // not fatal if this sub-fetch fails.
+    let questionCount = null;
+    let lastUpdated = null;
+    try {
+      const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
+      quizzesUrl.searchParams.set("select", "data,created_at");
+      quizzesUrl.searchParams.set("course_id", `eq.${courseId}`);
+      quizzesUrl.searchParams.set("order", "created_at.desc");
+      quizzesUrl.searchParams.set("limit", "500");
+      const quizzesRes = await fetch(quizzesUrl.toString(), { headers });
+      if (quizzesRes.ok) {
+        const rows = await quizzesRes.json();
+        if (Array.isArray(rows) && rows.length > 0) {
+          questionCount = rows.reduce((sum, row) => {
+            const qc = row?.data?.stats?.questionCount;
+            return sum + (typeof qc === "number" ? qc : 0);
+          }, 0);
+          const newest = rows[0]?.created_at;
+          if (newest) lastUpdated = new Date(newest).toLocaleDateString("en-CA");
+        }
+      }
+    } catch (err) {
+      console.error("[og] course extra stats fetch error:", err);
+    }
+
+    return {
+      name: course.name || "Course",
+      folderCount,
+      quizCount,
+      questionCount,
+      lastUpdated,
+    };
+  } catch (err) {
+    console.error("[og] fetchCourseMeta error:", err);
+    return null;
+  }
+}

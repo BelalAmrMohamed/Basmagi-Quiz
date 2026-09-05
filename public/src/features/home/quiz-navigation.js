@@ -12,9 +12,9 @@ export function startQuiz(id) {
     localStorage.setItem("quiz_start_time", Date.now().toString());
 
     // Only the quiz ID travels in the URL → links are shareable
-    window.location.href = `/q/${encodeURIComponent(id)}`;
+    window.location.href = `/quiz/${encodeURIComponent(id)}`;
   } catch (error) {
     console.error("Error starting quiz:", error);
-    _alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء بدء الامتحان. حاول مرة أخرى.");
   }
 }

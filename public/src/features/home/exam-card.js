@@ -43,7 +43,7 @@ import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-defa
 import { SPARKLE_ICON_SVG } from "./icons.js";
 
 function buildExamShareUrl(examId) {
-  return window.location.origin + "/q/" + encodeURIComponent(examId);
+  return window.location.origin + "/quiz/" + encodeURIComponent(examId);
 }
 
 export function createExamCard(exam) {
@@ -104,7 +104,7 @@ export function createExamCard(exam) {
           password = loaded.meta.password;
           exam.password = password;
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     const allowed = await ensureDownloadAllowed(
@@ -314,7 +314,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       closeMenu();
       const url = buildExamShareUrl(exam.id);
       if (navigator.share) {
-        navigator.share({ title: exam.title || exam.id, url }).catch(() => {});
+        navigator.share({ title: exam.title || exam.id, url }).catch(() => { });
       } else {
         navigator.clipboard
           .writeText(url)

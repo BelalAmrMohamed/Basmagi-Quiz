@@ -296,16 +296,15 @@ export async function renderCategoryMastery(user, examList) {
 
   container.innerHTML = `
     <div class="mastery-list${needsCollapse ? " is-collapsible" : ""}" id="categoryMasteryList">${rowsHtml}</div>
-    ${
-      needsCollapse
-        ? `
+    ${needsCollapse
+      ? `
     <div class="show-more-row" id="categoryMasteryShowMoreRow">
       <button type="button" class="show-more-btn" id="categoryMasteryShowMoreBtn">
         <span id="categoryMasteryShowMoreLabel">عرض المزيد</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
       </button>
     </div>`
-        : ""
+      : ""
     }`;
 
   if (needsCollapse) {
@@ -419,7 +418,7 @@ function flaggedItemHtml(key, examList) {
           <small>السؤال رقم ${parseInt(qIdx, 10) + 1}</small>
         </div>
         <div class="history-actions">
-          <a href="/q/${examId}?startAt=${qIdx}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">مراجعة السؤال</a>
+          <a href="/quiz/${examId}?startAt=${qIdx}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">مراجعة السؤال</a>
           <button class="unstar-btn" onclick="unflagQuestion('${examId}', ${qIdx})" aria-label="إزالة العلامة">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>
           </button>
@@ -475,7 +474,7 @@ function uploadedQuizItemHtml(quiz) {
           <small>${subtitleParts.join(" • ")}${subtitleParts.length && date ? " • " : ""}${date}</small>
         </div>
         <div class="history-actions">
-          ${quiz.path ? `<a href="/q/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
+          ${quiz.path ? `<a href="/quiz/${quiz.id}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
         </div>
       </div>`;
 }

@@ -245,7 +245,7 @@ export function playUserQuiz(quiz) {
 
     // Navigate to quiz page with special parameter
     const mode = userProfile.getDefaultQuizMode();
-    window.location.href = `/q/${encodeURIComponent(quiz.id)}?type=user`;
+    window.location.href = `/quiz/${encodeURIComponent(quiz.id)}?type=user`;
   } catch (error) {
     console.error("Error playing user quiz:", error);
     _alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");

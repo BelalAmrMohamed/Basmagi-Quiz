@@ -34,14 +34,14 @@ import { buildCourseUploadPayload, buildFolderUploadPayload } from "./user-quizz
 // ─── Track definitions ────────────────────────────────────────────────────────
 const TRACK_LABELS = {
   University: "جامعي",
-  High:       "ثانوي",
-  Middle:     "إعدادي",
-  Primary:    "ابتدائي",
-  Featured:   "كورسات مميزة",
+  High: "ثانوي",
+  Middle: "إعدادي",
+  Primary: "ابتدائي",
+  Featured: "كورسات مميزة",
 };
 
 // University requires a College; school tracks do not.
-const TRACKS_WITH_COLLEGE  = new Set(["University"]);
+const TRACKS_WITH_COLLEGE = new Set(["University"]);
 // Featured Courses have no Year/Term; all others do.
 const TRACKS_WITH_YEARTERM = new Set(["University", "High", "Middle", "Primary"]);
 
@@ -55,11 +55,11 @@ let COLLEGE_METADATA = {};
 function buildManifestTree(subjects) {
   const tree = {};
   for (const subject of subjects) {
-    const type    = subject.education_type;
+    const type = subject.education_type;
     const college = subject.faculty;
-    const name    = subject.name;
-    const year    = subject.year  != null ? String(subject.year)  : null;
-    const term    = subject.term  != null ? String(subject.term)  : null;
+    const name = subject.name;
+    const year = subject.year != null ? String(subject.year) : null;
+    const term = subject.term != null ? String(subject.term) : null;
     if (!type || !name) continue;
     if (!tree[type]) tree[type] = {};
 
@@ -115,8 +115,8 @@ function termLabel(t) { return TERM_LABELS[t] || (t ? `ترم ${t}` : ""); }
 
 // ─── Persist last-used selections ─────────────────────────────────────────────
 const LS_KEY = "admin_upload_last";
-function getSaved()      { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; } }
-function persistSaved(v) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...getSaved(), ...v })); } catch {} }
+function getSaved() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; } }
+function persistSaved(v) { try { localStorage.setItem(LS_KEY, JSON.stringify({ ...getSaved(), ...v })); } catch { } }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 function injectStyles() {
@@ -299,7 +299,7 @@ function injectStyles() {
 }
 
 // ─── Module state ─────────────────────────────────────────────────────────────
-let _quiz    = null;  // compat ref - always _quizzes[0]
+let _quiz = null;  // compat ref - always _quizzes[0]
 let _quizzes = [];    // quizzes being uploaded in this session
 let _overlay = null;
 // "single" (default): one quiz or a same-placement batch, via the existing
@@ -343,7 +343,7 @@ async function postUpload(payload) {
     method: "POST", headers: authHeaders(), body: JSON.stringify(payload),
   });
   let body = {};
-  try { body = await res.json(); } catch (_) {}
+  try { body = await res.json(); } catch (_) { }
   if (!res.ok) throw new Error(body.error || "فشل الرفع");
   return body;
 }
@@ -361,9 +361,9 @@ function makeOverlay() {
 function stepsHTML(cur) {
   const steps =
     _mode === "localFolderTree" ? ["المسار", "المراجعة", "الرفع"] :
-    _mode === "courseUpload" ? ["المسار", "المراجعة", "الرفع"] :
-    _mode === "folderUpload" ? ["المسار", "الوجهة", "المراجعة", "الرفع"] :
-    ["المسار", "المادة", "المشرف", "رفع"];
+      _mode === "courseUpload" ? ["المسار", "المراجعة", "الرفع"] :
+        _mode === "folderUpload" ? ["المسار", "الوجهة", "المراجعة", "الرفع"] :
+          ["المسار", "المادة", "المشرف", "رفع"];
   return `<div class="adm-steps">${steps.map((lbl, i) => {
     const n = i + 1, cls = n < cur ? "done" : n === cur ? "active" : "";
     return `${i > 0 ? `<div class="adm-step-line ${n <= cur ? "done" : ""}"></div>` : ""}
@@ -384,10 +384,10 @@ function hdr(title) {
 // ─── Step 1: Track & Position ──────────────────────────────────────────────────
 function renderStep1(saved = {}) {
   const lastSaved = { ...getSaved(), ...saved };
-  const selType   = lastSaved.educationType || "University";
-  const hasColl   = TRACKS_WITH_COLLEGE.has(selType);
-  const hasYT     = TRACKS_WITH_YEARTERM.has(selType);
-  const colleges  = selType === "University" ? getUniversityColleges() : [];
+  const selType = lastSaved.educationType || "University";
+  const hasColl = TRACKS_WITH_COLLEGE.has(selType);
+  const hasYT = TRACKS_WITH_YEARTERM.has(selType);
+  const colleges = selType === "University" ? getUniversityColleges() : [];
   const collegeOpts = colleges.map(c =>
     `<option value="${c}" ${lastSaved.college === c ? "selected" : ""}>${c}</option>`).join("");
 
@@ -400,7 +400,7 @@ function renderStep1(saved = {}) {
       <div class="adm-field">
         <label for="adm-edu-type">نوع المسار التعليمي <span class="adm-badge adm-badge-fixed">مطلوب</span></label>
         <select id="adm-edu-type">
-          ${Object.entries(TRACK_LABELS).map(([k,v]) => `<option value="${k}" ${k === selType ? "selected" : ""}>${v}</option>`).join("")}
+          ${Object.entries(TRACK_LABELS).map(([k, v]) => `<option value="${k}" ${k === selType ? "selected" : ""}>${v}</option>`).join("")}
         </select>
       </div>
 
@@ -431,12 +431,12 @@ function renderStep1(saved = {}) {
 
   window.__admClose = closeModal;
 
-  const eduEl  = document.getElementById("adm-edu-type");
-  const colEl  = document.getElementById("adm-college");
+  const eduEl = document.getElementById("adm-edu-type");
+  const colEl = document.getElementById("adm-college");
   const yearEl = document.getElementById("adm-year");
   const termEl = document.getElementById("adm-term");
 
-  const getType    = () => eduEl.value;
+  const getType = () => eduEl.value;
   const getCollege = () => colEl.value?.trim() || "";
 
   // Keeps year/term select disabled state in sync with visibility + college
@@ -451,7 +451,7 @@ function renderStep1(saved = {}) {
   }
 
   function applyTrackVisibility(type) {
-    document.getElementById("adm-college-wrap").style.display  = TRACKS_WITH_COLLEGE.has(type) ? "" : "none";
+    document.getElementById("adm-college-wrap").style.display = TRACKS_WITH_COLLEGE.has(type) ? "" : "none";
     document.getElementById("adm-yearterm-wrap").style.display = TRACKS_WITH_YEARTERM.has(type) ? "" : "none";
   }
 
@@ -623,18 +623,18 @@ function populateSubfolders(type, college, subject, folEl, saved) {
 function getStep1Values() {
   const educationType = document.getElementById("adm-edu-type")?.value || "University";
   const college = document.getElementById("adm-college")?.value?.trim() || "";
-  const year    = document.getElementById("adm-year")?.value || "";
-  const term    = document.getElementById("adm-term")?.value || "";
+  const year = document.getElementById("adm-year")?.value || "";
+  const term = document.getElementById("adm-term")?.value || "";
   return { educationType, college, year, term };
 }
 
 async function step1Validate() {
   const vals = getStep1Values();
   const { educationType, college, year, term } = vals;
-  if (!educationType)                                       { showNotification("الرجاء اختيار نوع المسار", "error"); return; }
-  if (TRACKS_WITH_COLLEGE.has(educationType) && !college)  { showNotification("الرجاء اختيار الكلية", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !year)    { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
-  if (TRACKS_WITH_YEARTERM.has(educationType) && !term)    { showNotification("الرجاء اختيار الترم", "error"); return; }
+  if (!educationType) { showNotification("الرجاء اختيار نوع المسار", "error"); return; }
+  if (TRACKS_WITH_COLLEGE.has(educationType) && !college) { showNotification("الرجاء اختيار الكلية", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !year) { showNotification("الرجاء اختيار السنة الدراسية", "error"); return; }
+  if (TRACKS_WITH_YEARTERM.has(educationType) && !term) { showNotification("الرجاء اختيار الترم", "error"); return; }
   persistSaved({ educationType, college, year, term });
   if (_mode === "localFolderTree") {
     await renderFolderReviewStep(vals);
@@ -653,7 +653,7 @@ async function step1Validate() {
 
 // ─── Step 2: Course & Placement ────────────────────────────────────────────────
 async function renderStep2({ educationType, college, year, term }) {
-  const saved   = getSaved();
+  const saved = getSaved();
 
   _overlay.innerHTML = `<div class="adm-card">
     ${hdr("رفع إلى قاعدة البيانات")}
@@ -688,8 +688,8 @@ async function renderStep2({ educationType, college, year, term }) {
 
   window.__admClose = closeModal;
 
-  const subEl        = document.getElementById("adm-subject");
-  const folEl        = document.getElementById("adm-subfolder");
+  const subEl = document.getElementById("adm-subject");
+  const folEl = document.getElementById("adm-subfolder");
 
   populateSubjects(educationType, college, year, term, subEl, folEl, saved);
 
@@ -726,15 +726,15 @@ function step2Validate(step1Vals) {
 
 // ─── Step 3: Admin Info & Review ───────────────────────────────────────────────
 function renderStep3({ educationType, college, year, term, subject, subfolder }) {
-  const saved    = getSaved();
-  const isBatch  = _quizzes.length > 1;
+  const saved = getSaved();
+  const isBatch = _quizzes.length > 1;
   const trackLbl = TRACK_LABELS[educationType] || educationType;
-  const yLbl     = yearLabel(year);
-  const tLbl     = termLabel(term);
+  const yLbl = yearLabel(year);
+  const tLbl = termLabel(term);
 
   const pathParts = [];
   if (TRACKS_WITH_COLLEGE.has(educationType) && college) pathParts.push(college);
-  if (TRACKS_WITH_YEARTERM.has(educationType) && year)   pathParts.push(yLbl, tLbl);
+  if (TRACKS_WITH_YEARTERM.has(educationType) && year) pathParts.push(yLbl, tLbl);
   pathParts.push(subject);
   if (subfolder) pathParts.push(subfolder);
   const locationLabel = pathParts.join(" / ");
@@ -747,7 +747,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
       return `<li class="adm-batch-item"><span class="adm-batch-item-count">${c} سؤال</span><span class="adm-batch-item-title">${t}</span></li>`;
     }).join("")}</ul>`;
   } else {
-    const q  = _quizzes[0];
+    const q = _quizzes[0];
     const qT = q?.meta?.title || q?.title || "";
     const qC = q?.stats?.questionCount ?? q?.questions?.length ?? 0;
     listHTML = `
@@ -1309,18 +1309,18 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
 }
 
 // ─── Step 4: Upload with progress checklist + confirmation links ──────────────
-// Quiz links point at /q/{quizId} using the routable quiz content id
+// Quiz links point at /quiz/{quizId} using the routable quiz content id
 // (quiz.meta.id) returned by the API — the same id the manifest/router use
 // elsewhere (see api/quiz-manifest.js), NOT the Supabase row id.
 function quizLinkHref(quizId) {
-  return window.location.origin + "/q/" + encodeURIComponent(quizId);
+  return window.location.origin + "/quiz/" + encodeURIComponent(quizId);
 }
 
 async function doUpload({ educationType, college, subject, year, term, subfolder }) {
   const isBatch = _quizzes.length > 1;
-  const items   = _quizzes.map((q, i) => ({
-    quiz:  q,
-    id:    `adm-prog-${i}`,
+  const items = _quizzes.map((q, i) => ({
+    quiz: q,
+    id: `adm-prog-${i}`,
     title: q.meta?.title || q.title || `اختبار ${i + 1}`,
   }));
 
@@ -1347,7 +1347,7 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     const li = document.getElementById(item.id);
     if (!li) return;
     const iconEl = li.querySelector(".adm-progress-icon");
-    let msgEl    = li.querySelector(".adm-progress-msg");
+    let msgEl = li.querySelector(".adm-progress-msg");
     li.className = `adm-progress-item ${state}`;
     if (state === "uploading") {
       iconEl.innerHTML = `<span class="adm-spinner" style="border-top-color:var(--color-primary);border-color:var(--color-border);width:14px;height:14px;margin:0;"></span>`;
@@ -1376,9 +1376,9 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
     try {
       const result = await postUpload({
         education_type: educationType,
-        college:   TRACKS_WITH_COLLEGE.has(educationType)  ? college || undefined : undefined,
-        year:      TRACKS_WITH_YEARTERM.has(educationType) ? year    || undefined : undefined,
-        term:      TRACKS_WITH_YEARTERM.has(educationType) ? term    || undefined : undefined,
+        college: TRACKS_WITH_COLLEGE.has(educationType) ? college || undefined : undefined,
+        year: TRACKS_WITH_YEARTERM.has(educationType) ? year || undefined : undefined,
+        term: TRACKS_WITH_YEARTERM.has(educationType) ? term || undefined : undefined,
         subject,
         subfolder: subfolder || undefined,
         quiz: item.quiz,
@@ -1487,7 +1487,7 @@ function renderConfirmationLinks(container, links) {
     li.innerHTML = `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;">${l.title}</span><span style="font-size:1.1rem;color:var(--color-primary);" title="نسخ الرابط">📋</span>`;
     li.addEventListener("click", () => copyLinkToClipboard(li.dataset.url));
     li.addEventListener("mouseover", () => { li.style.background = "var(--color-primary-light)"; });
-    li.addEventListener("mouseout",  () => { li.style.background = "var(--color-background-secondary)"; });
+    li.addEventListener("mouseout", () => { li.style.background = "var(--color-background-secondary)"; });
     list.appendChild(li);
   });
   container.appendChild(list);
@@ -1579,7 +1579,7 @@ async function _openWizard(quizzes) {
     _mode = "single";
     _folderTree = null;
     _quizzes = quizzes.map(normalizeQuizSchema);
-    _quiz    = _quizzes[0] || null;
+    _quiz = _quizzes[0] || null;
     _overlay = makeOverlay();
     document.body.appendChild(_overlay);
     document.body.style.overflow = "hidden";
@@ -1608,7 +1608,7 @@ async function _openWizard(quizzes) {
           saved.college = p.faculty;
           if (!saved.educationType) saved.educationType = "University";
         }
-      } catch (_) {}
+      } catch (_) { }
     }
     renderStep1(saved);
   } catch (err) {
@@ -1625,7 +1625,7 @@ async function _openWizard(quizzes) {
   }
 }
 
-async function openModal(quiz)               { await _openWizard([quiz]); }
+async function openModal(quiz) { await _openWizard([quiz]); }
 async function openAdminUploadModal(quizzes) { await _openWizard(Array.isArray(quizzes) ? quizzes : [quizzes]); }
 
 /**

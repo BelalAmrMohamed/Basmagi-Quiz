@@ -917,7 +917,7 @@ function updateBreadcrumb(meta) {
       const p = params.get("path");
       if (p) rawPath = decodeURIComponent(p);
     }
-  } catch (_) {}
+  } catch (_) { }
   const parts = rawPath.split("/");
   let courseName = "";
   let intermediate = [];
@@ -1019,17 +1019,19 @@ async function init() {
   // bypasses the !examId guard below — leading to a confusing "Exam not found"
   // error.  Guard against null explicitly before decoding.
   //
-  // SSR fallback: Under the /q/:id URL structure, there is no ?id= query
+  // SSR fallback: Under the /quiz/:id URL structure, there is no ?id= query
   // param. The server-side render-quiz function injects a
   // <meta name="quiz:id" content="…"> tag instead. Fall back to that, then
-  // to extracting the ID from the /q/:id pathname as a last resort.
+  // to extracting the ID from the /quiz/:id pathname as a last resort.
+  // (Also matches the old /q/:id form for anyone who still has that URL
+  // cached client-side, e.g. a service-worker response.)
   let rawId = params.get("id");
   if (rawId === null) {
     const metaEl = document.querySelector('meta[name="quiz:id"]');
     rawId = metaEl ? metaEl.getAttribute("content") : null;
   }
   if (rawId === null) {
-    const pathMatch = window.location.pathname.match(/^\/q\/(.+)/);
+    const pathMatch = window.location.pathname.match(/^\/(?:quiz|q)\/(.+)/);
     if (pathMatch) rawId = decodeURIComponent(pathMatch[1]);
   }
   examId = rawId !== null ? decodeURIComponent(rawId) : null;
@@ -1675,26 +1677,23 @@ function createGridItem(q, idx) {
   const button = document.createElement("button");
   button.className = `menu-nav-item grid-item ${statusClass}`;
   button.onclick = () => window.jumpToQuestion(idx);
-  button.title = `Question ${idx + 1}${isBookmarked ? " - Bookmarked" : ""}${
-    isFlagged ? " - Flagged" : ""
-  }`;
+  button.title = `Question ${idx + 1}${isBookmarked ? " - Bookmarked" : ""}${isFlagged ? " - Flagged" : ""
+    }`;
 
   button.innerHTML = `
     <span>${idx + 1}</span>
-    ${
-      statusIcon
-        ? `<span class="menu-nav-status grid-status">${statusIcon}</span>`
-        : ""
+    ${statusIcon
+      ? `<span class="menu-nav-status grid-status">${statusIcon}</span>`
+      : ""
     }
-    ${
-      isBookmarked || isFlagged
-        ? `
+    ${isBookmarked || isFlagged
+      ? `
       <div class="menu-nav-badges">
         ${isBookmarked ? '<span class="mini-badge bookmark"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star-icon lucide-star"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/></svg></span>' : ""}
         ${isFlagged ? '<span class="mini-badge flag"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg></span>' : ""}
       </div>
     `
-        : ""
+      : ""
     }
   `;
 
@@ -1769,11 +1768,10 @@ function createListItem(q, idx) {
   div.innerHTML = `
     <div class="menu-nav-item-left" onclick="window.jumpToQuestion(${idx})">
       <span class="menu-nav-number">Q${idx + 1}</span>
-      ${
-        statusIcon
-          ? `<span class="menu-nav-status list-status">${statusIcon}</span>`
-          : ""
-      }
+      ${statusIcon
+      ? `<span class="menu-nav-status list-status">${statusIcon}</span>`
+      : ""
+    }
     </div>
     <div class="menu-nav-item-right">
       <span class="menu-nav-icon bookmark-icon ${isBookmarked ? "active" : ""}" 
@@ -1876,13 +1874,12 @@ function buildVerticalQuestionBodyHTML(q, idx) {
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
-        ${
-          isLocked
-            ? `<div class="formal-answer">            
+        ${isLocked
+          ? `<div class="formal-answer">            
           <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
           <strong style="text-align: center;">الإجابة النموذجية</strong>
           <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div></div>`
-            : ""
+          : ""
         }
         <div class="${feedbackClass}">${feedbackText}</div>
       `,
@@ -1980,7 +1977,7 @@ function restoreMediaFromMap(container, stateMap) {
     if (!state || state.time <= 0) return;
     const restore = () => {
       el.currentTime = state.time;
-      if (!state.paused) el.play().catch(() => {});
+      if (!state.paused) el.play().catch(() => { });
     };
     if (el.readyState >= 1) restore();
     else el.addEventListener("loadedmetadata", restore, { once: true });
@@ -2062,7 +2059,7 @@ function renderAllQuestionsVertical() {
           if (!state || state.time <= 0) return;
           const restore = () => {
             el.currentTime = state.time;
-            if (!state.paused) el.play().catch(() => {});
+            if (!state.paused) el.play().catch(() => { });
           };
           if (el.readyState >= 1) restore();
           else el.addEventListener("loadedmetadata", restore, { once: true });
@@ -2196,27 +2193,24 @@ function buildQuestionBodyHTML(q, idx) {
             oninput="window.handleEssayInput()"
           >${escapeHtml(userSelected || "")}</textarea>
         </div>
-        <button class="check-answer-btn ${
-          isLocked || !showCheckButton ? "hidden" : ""
+        <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""
         }"
                 id="checkBtn" onclick="window.checkAnswer()"
-                ${
-                  !userSelected || String(userSelected).trim() === ""
-                    ? "disabled"
-                    : ""
-                }>
+                ${!userSelected || String(userSelected).trim() === ""
+          ? "disabled"
+          : ""
+        }>
           Check Answer
         </button>
-        ${
-          isLocked
-            ? `
+        ${isLocked
+          ? `
           <div class="formal-answer">
             <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
             <strong style="text-align: center;">الإجابة النموذجية</strong>
             <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
           </div>
         `
-            : ""
+          : ""
         }
         <div class="${feedbackClass}">${feedbackText}</div>
       `,
@@ -2232,44 +2226,41 @@ function buildQuestionBodyHTML(q, idx) {
       ${reloadableHeaderHTML}
       <div class="options-grid">
         ${q.options
-          .map((opt, i) => {
-            let isSelected = false;
-            if (isMultiple) {
-              isSelected =
-                Array.isArray(userSelected) && userSelected.includes(i);
-            } else {
-              isSelected = userSelected === i;
-            }
+        .map((opt, i) => {
+          let isSelected = false;
+          if (isMultiple) {
+            isSelected =
+              Array.isArray(userSelected) && userSelected.includes(i);
+          } else {
+            isSelected = userSelected === i;
+          }
 
-            let optionClass = "option-row";
-            if (isSelected) optionClass += " selected";
-            if (isLocked) {
-              optionClass += " locked";
-              const isCorrectOption = isMultiple
-                ? Array.isArray(q.correct) && q.correct.includes(i)
-                : i === q.correct;
-              if (isCorrectOption) optionClass += " correct";
-              if (isSelected && !isCorrectOption) optionClass += " wrong";
-            }
+          let optionClass = "option-row";
+          if (isSelected) optionClass += " selected";
+          if (isLocked) {
+            optionClass += " locked";
+            const isCorrectOption = isMultiple
+              ? Array.isArray(q.correct) && q.correct.includes(i)
+              : i === q.correct;
+            if (isCorrectOption) optionClass += " correct";
+            if (isSelected && !isCorrectOption) optionClass += " wrong";
+          }
 
-            const inputType = isMultiple ? "checkbox" : "radio";
-            const inputName = isMultiple ? `answer-${i}` : "answer";
+          const inputType = isMultiple ? "checkbox" : "radio";
+          const inputName = isMultiple ? `answer-${i}` : "answer";
 
-            return `
-            <div class="${optionClass}" ${
-              isLocked ? "" : `onclick="window.handleSelect(${i})"`
+          return `
+            <div class="${optionClass}" ${isLocked ? "" : `onclick="window.handleSelect(${i})"`
             }>
-              <input type="${inputType}" name="${inputName}" ${
-                isSelected ? "checked" : ""
-              } 
+              <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""
+            } 
                      ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
               <span class="option-label">${renderMarkdown(opt)}</span>
             </div>`;
-          })
-          .join("")}
+        })
+        .join("")}
       </div>
-      <button title="إظهار الإجابة الصحيحة" class="check-answer-btn ${
-        isLocked || !showCheckButton ? "hidden" : ""
+      <button title="إظهار الإجابة الصحيحة" class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""
       }"
               id="checkBtn" onclick="window.checkAnswer()"
               ${userSelected === undefined || (isMultiple && (!Array.isArray(userSelected) || userSelected.length === 0)) ? "disabled" : ""}>
@@ -2548,7 +2539,7 @@ async function finish(skipconfirmationNotification) {
   // use a fire-and-forget keepalive-capable request.
   try {
     if (window.syncProgressToServer) window.syncProgressToServer();
-  } catch (e) {}
+  } catch (e) { }
 
   window.location.href = "result.html";
 }
@@ -3061,7 +3052,7 @@ init();
       applyDesktopState(true);
       try {
         localStorage.setItem(STORAGE_KEY, "true");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -3070,7 +3061,7 @@ init();
       applyDesktopState(false);
       try {
         localStorage.setItem(STORAGE_KEY, "false");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -3155,7 +3146,7 @@ init();
 
       try {
         dragHandle.setPointerCapture(pointerId);
-      } catch (_) {}
+      } catch (_) { }
 
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
@@ -3282,7 +3273,7 @@ init();
     themeControlsPanel.classList.toggle("collapsed", !expanded);
     try {
       localStorage.setItem(THEME_ACCORDION_KEY, String(expanded));
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (themeControlsToggle && themeControlsPanel) {
@@ -3310,7 +3301,7 @@ init();
       applyDesktopState(true);
       try {
         localStorage.setItem(STORAGE_KEY, "true");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -3345,7 +3336,7 @@ init();
     }
     try {
       localStorage.setItem(QUIZ_NAV_ACCORDION_KEY, String(expanded));
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (quizNavToggle && quizNavPanel) {
@@ -3374,7 +3365,7 @@ init();
       applyDesktopState(true);
       try {
         localStorage.setItem(STORAGE_KEY, "true");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 

@@ -1,7 +1,7 @@
 // =============================================================================
 // api/render-quiz.js
 //
-// Serverless function (Node.js runtime) that handles all requests to /q/:id.
+// Serverless function (Node.js runtime) that handles all requests to /quiz/:id.
 //
 // What it does:
 //   1. Reads the quiz ID from ?id= (injected by the vercel.json rewrite rule).
@@ -13,8 +13,10 @@
 //   6. Returns the modified HTML with edge-cache headers.
 //
 // URL contract:
-//   /q/QUIZ_ID  →  (vercel.json rewrite)  →  /api/render-quiz?id=QUIZ_ID
-//   Browser URL stays /q/QUIZ_ID. quiz.js reads the ID from <meta name="quiz:id">.
+//   /quiz/QUIZ_ID  →  (vercel.json rewrite)  →  /api/render-quiz?id=QUIZ_ID
+//   Browser URL stays /quiz/QUIZ_ID. quiz.js reads the ID from <meta name="quiz:id">.
+//   (The old /q/:id path is still rewritten too, for anyone with a bookmarked
+//   or shared link — see vercel.json.)
 // =============================================================================
 
 import fs from "fs";
@@ -125,7 +127,7 @@ export default async function handler(req, res) {
     return res.status(200).send(userHtml);
   }
 
-    // ── 1. Fetch quiz metadata from Supabase ──────────────────────────────────
+  // ── 1. Fetch quiz metadata from Supabase ──────────────────────────────────
   let meta = null;
   try {
     meta = await fetchQuizMeta(quizId);
@@ -134,9 +136,9 @@ export default async function handler(req, res) {
     // Fall through — we'll still try the local manifest below.
   }
 
-    if (!meta) {
-      // No metadata found in Supabase, so we will not attempt to find it in the local manifest.
-      return res.status(404).send("Quiz not found");
+  if (!meta) {
+    // No metadata found in Supabase, so we will not attempt to find it in the local manifest.
+    return res.status(404).send("Quiz not found");
   }
 
   // ── 2. Read HTML template ─────────────────────────────────────────────────
@@ -162,7 +164,7 @@ export default async function handler(req, res) {
   if (meta) {
     const title = buildTitle(meta);
     const description = meta.description || "";
-    const canonicalUrl = `${SITE_ORIGIN}/q/${encodeURIComponent(quizId)}`;
+    const canonicalUrl = `${SITE_ORIGIN}/quiz/${encodeURIComponent(quizId)}`;
     const ogImageUrl = `${SITE_ORIGIN}/api/og?quizId=${encodeURIComponent(quizId)}&v=${OG_IMAGE_VERSION}`;
 
     // <title>
