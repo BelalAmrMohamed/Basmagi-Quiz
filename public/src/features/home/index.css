@@ -501,21 +501,24 @@ body.sidebar-expanded {
   border-bottom: none;
 }
 
-.quiz-info-table th,
-.quiz-info-table td {
+.quiz-info-table th {
   padding: 12px 16px;
   text-align: right;
   vertical-align: middle;
-}
-
-.quiz-info-table th {
   width: 40%;
   color: var(--color-text-secondary);
   font-weight: 600;
   background: var(--color-background-secondary);
 }
 
+/* Values are mostly numbers (Year/Term) or English college names, so they're
+   left-aligned rather than following the RTL right-alignment used for the
+   Arabic <th> labels — matches how numbers/Latin-script data reads more
+   naturally against a right-aligned label column. */
 .quiz-info-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
   color: var(--color-text-primary);
   font-weight: 500;
 }
@@ -538,6 +541,16 @@ body.sidebar-expanded {
   font-size: 0.85em;
   direction: rtl;
   text-align: right;
+}
+
+/* .featured-value is inline-flex, which only ever sizes to its own content
+   — the cell's text-align never actually centered it, since inline-level
+   boxes are positioned by text-align but not stretched to justify-content
+   rules. Overriding just this cell's text-align to center re-centers the
+   pill within the <td> without touching the left-alignment of every other
+   (plain-text/numeric) cell, which keeps the rule above. */
+.quiz-info-table td.featured-value {
+  text-align: center;
 }
 
 /* ============================================================================
@@ -721,10 +734,19 @@ body.sidebar-expanded {
   flex-direction: column;
   gap: 6px;
   cursor: default;
+  align-items: normal !important;
 }
 
+/* Beats the generic .exam-action-btn:hover rule (which this block also
+   matches, since it reuses .exam-action-btn for consistent padding/spacing)
+   on all three properties that rule touches, not just background — leaving
+   border-color/color unset here let the block's border and text still shift
+   to the primary color on hover, making a non-interactive summary block look
+   like a clickable button. */
 .exam-dropdown-menu .root-quizzes-breakdown:hover {
   background: none;
+  border-color: var(--color-border);
+  color: inherit;
 }
 
 .root-quizzes-breakdown .tooltip-row {
@@ -732,18 +754,20 @@ body.sidebar-expanded {
   justify-content: space-between;
   gap: 12px;
   font-size: 0.85rem;
-  direction: rtl;
-  text-align: right;
+  /* direction: rtl; */
+  /* text-align: right; */
 }
 
 .root-quizzes-breakdown .tooltip-row span:first-child {
   color: var(--color-text-secondary);
   font-weight: 600;
+  text-align: right;
 }
 
 .root-quizzes-breakdown .tooltip-row span:last-child {
   color: var(--color-text-primary);
   font-weight: 700;
+  text-align: left;
 }
 
 /* Narrow viewports don't have room to open the submenu beside the trigger —

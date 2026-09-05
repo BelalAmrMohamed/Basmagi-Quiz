@@ -15,6 +15,7 @@ import { showDownloadModal } from "../../components/download-quiz-modal/download
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes } from "./copy-to-my-quizzes.js";
+import { refreshUserQuizzesCardSubtext } from "./root-view.js";
 import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -340,6 +341,10 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
       copyToMineOpt.disabled = true;
       try {
         await copyQuizToUserQuizzes(exam);
+        // Keep the "امتحاناتك" root card's subtext in sync immediately —
+        // it's rendered underneath this dropdown and won't otherwise
+        // refresh until an unrelated full root re-render happens.
+        refreshUserQuizzesCardSubtext();
       } finally {
         copyToMineOpt.disabled = false;
       }

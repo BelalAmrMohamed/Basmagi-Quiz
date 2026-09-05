@@ -300,6 +300,11 @@ export function createCategoryCard(
           copyToMine.disabled = true;
           try {
             await copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder");
+            // Lazy import: root-view.js already imports from this module, so
+            // a static import here would be circular (same reason the
+            // "الرجوع للرئيسية" button above lazy-imports renderRootCategories).
+            const { refreshUserQuizzesCardSubtext } = await import("./root-view.js");
+            refreshUserQuizzesCardSubtext();
             closeMenu();
           } finally {
             copyToMine.disabled = false;

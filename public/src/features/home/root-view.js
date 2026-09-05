@@ -26,7 +26,7 @@ import { updateBreadcrumb } from "./breadcrumb.js";
 import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { updateBulkActionBar, renderUserQuizzesView } from "./user-quizzes-view.js";
 import { setFolderState } from "./user-quizzes-folders.js";
-import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesBreakdown } from "./course-count.js";
+import { getCourseItemCount, getUserQuizzesBreakdown, formatUserQuizzesCardSubtext } from "./course-count.js";
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
@@ -49,6 +49,39 @@ import {
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { showNotification } from "../../components/notifications/notifications.js";
 import { _confirm } from "../../components/notifications/notifications.js";
+
+/**
+ * Re-reads "user_quizzes" from storage and updates the already-rendered
+ * "امتحاناتك" root card's subtext in place, without a full
+ * renderRootCategories() re-render.
+ *
+ * Why this exists: "نسخ لامتحاناتي" ("copy to my quizzes") can be triggered
+ * from three places (this file's course dropdown, exam-card.js's quiz
+ * dropdown, category-view.js's folder/course dropdown) while the user is
+ * still looking at the root view underneath the open menu — none of those
+ * call sites re-render the root view afterward (nor should they: doing so
+ * would close menus and reset scroll position for an action that doesn't
+ * change what course/folder the user is currently browsing). Without this,
+ * the "امتحاناتك" card's subtext only ever caught up the next time
+ * renderRootCategories() happened to run for an unrelated reason (leaving
+ * and re-entering the root view, or a full reload) — which is exactly the
+ * "doesn't update until you get into a course and quit" bug report.
+ *
+ * Safe no-op if the root card isn't currently mounted (e.g. the user has
+ * already navigated away from the root view by the time the copy resolves,
+ * or the card is missing due to an earlier render error) — in that case the
+ * next renderRootCategories() call picks up the fresh count/breakdown
+ * anyway, since both read storage live rather than caching.
+ */
+export function refreshUserQuizzesCardSubtext() {
+  const card = document.querySelector(".root-user-quizzes-card");
+  if (!card) return;
+  const subtextEl = card.querySelector(".card-text p");
+  if (!subtextEl) return;
+  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const breakdown = getUserQuizzesBreakdown(userQuizzes);
+  subtextEl.textContent = formatUserQuizzesCardSubtext(breakdown);
+}
 
 function attachCourseActionsMenu(card, course, categoryTree) {
   const moreBtn = document.createElement("button");
@@ -95,6 +128,7 @@ function attachCourseActionsMenu(card, course, categoryTree) {
         copyMine.disabled = true;
         try {
           await copyCategoryTreeToUserQuizzes(course, categoryTree, "course");
+          refreshUserQuizzesCardSubtext();
           closeMenu();
         } finally {
           copyMine.disabled = false;
@@ -201,12 +235,19 @@ export async function renderRootCategories() {
         true,
         null,
         false,
-        // Accurate subtext: parses the actual entity breakdown (quizzes /
-        // courses / folders) instead of a flat, mislabeled item count — a
-        // list of "3 quizzes + 1 course + 1 folder" used to render as a flat
-        // "5 امتحانات".
-        formatUserQuizzesBreakdown(breakdown),
+        // Card subtext intentionally shows the quiz count ONLY, not the full
+        // quizzes/courses/folders breakdown — the full breakdown is already
+        // one tap away in this card's own dropdown (see the
+        // .root-quizzes-breakdown block below), so repeating it on the card
+        // face is redundant and, at a glance, easy to misread as one
+        // combined "N امتحانات" number (see formatUserQuizzesCardSubtext()).
+        formatUserQuizzesCardSubtext(breakdown),
       );
+      // Stable hook so copy actions elsewhere (exam-card.js, category-view.js,
+      // this file's own course dropdown) can refresh just this card's subtext
+      // in place after a "نسخ لامتحاناتي" without forcing a full
+      // renderRootCategories() re-render — see refreshUserQuizzesCardSubtext().
+      quizzesCard.classList.add("root-user-quizzes-card");
       // Custom icon
       const iconDiv = quizzesCard.querySelector(".icon");
       if (iconDiv) iconDiv.textContent = "✏️";

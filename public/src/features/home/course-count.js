@@ -91,26 +91,31 @@ export function getUserQuizzesBreakdown(userQuizzes) {
 }
 
 /** Small internal Arabic-pluralization helper for a (singular, dual,
- * plural) label set: 1 → singular, 2 → dual, 3+ → "N plural". */
+ * plural) label set: 1 → singular, 2 → dual, 3-10 → "N plural" (e.g. "11
+ * امتحانات" was wrong — that reading only holds for 3-10), 11+ → "N
+ * singular" (Arabic reverts to the singular/tamyiz form after 10, e.g. "11
+ * امتحان" not "11 امتحانات"). */
 function pluralizeArabic(count, singular, dual, plural) {
   if (count === 1) return singular;
   if (count === 2) return dual;
-  return `${count} ${plural}`;
+  if (count >= 3 && count <= 10) return `${count} ${plural}`;
+  // 11+: Arabic counted nouns drop back to the singular form.
+  const singularNoun = singular.replace(/ (واحد|واحدة)$/, "");
+  return `${count} ${singularNoun}`;
 }
 
 /**
- * Arabic subtext for the "امتحاناتك" root card, e.g. "3 امتحانات · مادة
- * واحدة · مجلد واحد" — only including the parts that are actually non-zero,
- * so a plain flat list of quizzes still just reads "3 امتحانات" as before.
+ * Arabic subtext for the FACE of the "امتحاناتك" root card — quizzes only,
+ * e.g. "8 امتحانات". Deliberately does NOT include the course/folder counts:
+ * those are already one tap away in this same card's dropdown (the
+ * .root-quizzes-breakdown block in root-view.js), so repeating the full
+ * breakdown on the card face itself just reads as a single confusing "N
+ * امتحانات" total that doesn't match the actual quiz count.
  */
-export function formatUserQuizzesBreakdown({ quizCount, folderCount, courseCount, total }) {
+export function formatUserQuizzesCardSubtext({ quizCount, total }) {
   if (total === 0) return "لا يوجد محتوى بعد";
-
-  const parts = [];
-  if (quizCount > 0) parts.push(pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات"));
-  if (courseCount > 0) parts.push(pluralizeArabic(courseCount, "مادة واحدة", "مادتان", "مواد"));
-  if (folderCount > 0) parts.push(pluralizeArabic(folderCount, "مجلد واحد", "مجلدان", "مجلدات"));
-  return parts.join(" · ");
+  if (quizCount === 0) return "لا يوجد امتحانات بعد";
+  return pluralizeArabic(quizCount, "امتحان واحد", "امتحانان", "امتحانات");
 }
 
 export function formatArabicQuestionCount(count) {
