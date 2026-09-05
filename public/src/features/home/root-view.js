@@ -318,9 +318,9 @@ export async function renderRootCategories() {
 
           // "حذف الكل" (Part C, item 1) — a fully destructive, collection-
           // wide wipe, kept separate from every other action here with its
-          // own strong, explicit confirmation (see deleteAllUserQuizzes's
-          // doc comment) rather than the default _confirm wording used for
-          // single-item deletes elsewhere.
+          // own double-verification flow (button confirm + type-to-confirm,
+          // see deleteAllUserQuizzes's doc comment) rather than the single
+          // default _confirm wording used for single-item deletes elsewhere.
           const deleteAllBtn = document.createElement("button");
           deleteAllBtn.type = "button";
           deleteAllBtn.className = "exam-action-btn exam-action-btn--danger";

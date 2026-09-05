@@ -336,6 +336,18 @@ export function _alert(message) {
       Usage: const answer = await _prompt("Your name?", "Guest");
       Resolves with the entered string, or null if cancelled
       (matches native prompt() semantics exactly).
+
+      BUG FIX: the input previously had no `dir` attribute, so it inherited
+      a single static direction (LTR, or RTL depending on ambient page/CSS
+      direction) for the entire session regardless of what the user actually
+      typed — typing Arabic into an LTR-inherited input left the caret and
+      text alignment fighting the script the whole time, and vice versa for
+      English typed into an RTL-inherited one. `dir="auto"` (native browser
+      behavior, no JS needed) makes the browser re-run the Unicode
+      bidirectional algorithm on the input's own content as it changes, so
+      the field's direction always matches whatever script the user is
+      currently typing, live, per keystroke — the same fix already used for
+      the AI agent's chat textarea (see ai-agent-chat.js).
      ============================ */
 
 export function _prompt(message, defaultValue = "") {
@@ -352,7 +364,7 @@ export function _prompt(message, defaultValue = "") {
     modal.innerHTML = `
         <div class="confirmation-content">
           <p class="confirmation-message">${escapeHtml(message)}</p>
-          <input type="text" class="prompt-input" value="${escapeHtml(defaultValue)}" />
+          <input type="text" class="prompt-input" dir="auto" value="${escapeHtml(defaultValue)}" />
           <div class="confirmation-actions">
             <button class="confirmation-btn confirm">نعم</button>
             <button class="confirmation-btn cancel">لا</button>
@@ -439,6 +451,200 @@ export function _prompt(message, defaultValue = "") {
     window.addEventListener("keydown", handleKeydown);
 
     // Click outside treats as cancel
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) handleCancel();
+    });
+  });
+}
+
+/* ============================
+      Typed-Confirmation Modal (double verification)
+      For fully destructive, hard-to-undo, collection-wide actions where a
+      single button-press confirmation is too easy to click past without
+      reading — e.g. "حذف الكل" living in the same context menu as the much
+      more common, much less dangerous per-item "حذف". Modeled on GitHub's
+      "type the repo name to confirm deletion" pattern: the confirm button
+      stays disabled until the typed text exactly matches a phrase the
+      caller chooses (case-sensitive, no trimming — an exact match is the
+      whole point of this friction).
+
+      Usage:
+        const ok = await _confirmTyped({
+          message: "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ...",
+          confirmPhrase: "حذف الكل",
+        });
+        if (!ok) return;
+
+      Resolves `true` only if the user completed BOTH steps (pressed
+      "نعم" on the initial _confirm-style step, then typed the exact
+      phrase and pressed the final destructive button); `false` if they
+      backed out at either step. There is no single "cancel" the user can
+      mis-click their way past into an accidental delete — every path that
+      isn't an exact-match confirm resolves false.
+     ============================ */
+
+/**
+ * @param {object} options
+ * @param {string} options.message - shown on the first (button-only) step;
+ *   same semantics/rendering as _confirm()'s message (supports "\n").
+ * @param {string} options.confirmPhrase - the exact string the user must
+ *   type on the second step to enable the destructive button.
+ * @param {string} [options.inputLabel] - short instruction shown above the
+ *   typed-confirmation input on the second step. Defaults to a generic
+ *   "اكتب ... للتأكيد" built from confirmPhrase if omitted.
+ * @param {string} [options.confirmButtonLabel] - label for the final
+ *   destructive button (step 2). Defaults to "حذف نهائياً".
+ * @returns {Promise<boolean>}
+ */
+export function _confirmTyped({
+  message,
+  confirmPhrase,
+  inputLabel = null,
+  confirmButtonLabel = "حذف نهائياً",
+}) {
+  return new Promise((resolve) => {
+    // Step 1 reuses the exact same button-only confirmation the rest of the
+    // app already uses for every other destructive action — so a user who
+    // never proceeds past this step sees a UI identical to what they're
+    // already used to, and only encounters the extra typed step for this
+    // specifically more dangerous action.
+    _confirm(message).then((confirmedStep1) => {
+      if (!confirmedStep1) {
+        resolve(false);
+        return;
+      }
+      openTypedConfirmationStep({
+        confirmPhrase,
+        inputLabel:
+          inputLabel || `اكتب "${confirmPhrase}" للتأكيد النهائي:`,
+        confirmButtonLabel,
+      }).then(resolve);
+    });
+  });
+}
+
+/**
+ * The second, typed step of _confirmTyped() — its own modal so its
+ * lifecycle (focus trap, animation, escape-to-cancel) mirrors _confirm()/
+ * _prompt() exactly rather than bolting extra states onto one of those.
+ * Not exported: only ever reached via _confirmTyped(), never standalone.
+ */
+function openTypedConfirmationStep({ confirmPhrase, inputLabel, confirmButtonLabel }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "confirmation-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "confirmation-modal prompt-modal typed-confirmation-modal";
+
+    modal.innerHTML = `
+        <div class="confirmation-content">
+          <p class="confirmation-message">${escapeHtml(inputLabel)}</p>
+          <p class="typed-confirmation-phrase" dir="auto">${escapeHtml(confirmPhrase)}</p>
+          <input
+            type="text"
+            class="prompt-input typed-confirmation-input"
+            dir="auto"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+          />
+          <div class="confirmation-actions">
+            <button class="confirmation-btn confirm typed-confirmation-confirm-btn" disabled>${escapeHtml(confirmButtonLabel)}</button>
+            <button class="confirmation-btn cancel">إلغاء</button>
+          </div>
+        </div>
+      `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    const input = modal.querySelector(".typed-confirmation-input");
+    const confirmBtn = modal.querySelector(".typed-confirmation-confirm-btn");
+    const cancelBtn = modal.querySelector(".cancel");
+    const previousActiveElement = document.activeElement;
+
+    // The confirm button only ever becomes enabled once the typed text is
+    // an EXACT match — no trimming, no case-folding. Matching _confirm's
+    // wording so the app has one consistent word for "abort", but this
+    // button's disabled-by-default state is what actually prevents the
+    // misclick this whole component exists to stop; the label alone
+    // (unlike the single-button _confirm step) was never the safeguard.
+    const updateConfirmState = () => {
+      const isExactMatch = input.value === confirmPhrase;
+      confirmBtn.disabled = !isExactMatch;
+    };
+    input.addEventListener("input", updateConfirmState);
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      modal.classList.add("show");
+      input.focus();
+    });
+
+    const cleanup = () => {
+      window.removeEventListener("keydown", handleKeydown);
+      overlay.classList.remove("show");
+      modal.classList.remove("show");
+      setTimeout(() => {
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (
+          previousActiveElement &&
+          document.body.contains(previousActiveElement)
+        ) {
+          previousActiveElement.focus();
+        }
+      }, 300);
+    };
+
+    const handleConfirm = () => {
+      // Re-check on submit too (not just via the disabled attribute) — a
+      // form-adjacent Enter keypress firing before the input's own "input"
+      // handler settles state should never be able to slip a non-matching
+      // value through.
+      if (input.value !== confirmPhrase) return;
+      cleanup();
+      resolve(true);
+    };
+
+    const handleCancel = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    const handleKeydown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        handleCancel();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleConfirm(); // no-op if the phrase doesn't match yet
+      } else if (e.key === "Tab") {
+        const focusable = [input, confirmBtn, cancelBtn];
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    confirmBtn.addEventListener("click", handleConfirm);
+    cancelBtn.addEventListener("click", handleCancel);
+    window.addEventListener("keydown", handleKeydown);
+
+    // Click outside treats as cancel — same semantics as every other modal
+    // here, and important precisely because this is the destructive step.
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) handleCancel();
     });

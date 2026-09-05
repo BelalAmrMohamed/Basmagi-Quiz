@@ -1,6 +1,6 @@
 // public/src/features/home/user-quizzes-folders.js
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
-import { _prompt, _confirm, showNotification } from "../../components/notifications/notifications.js";
+import { _prompt, _confirm, _confirmTyped, showNotification } from "../../components/notifications/notifications.js";
 import { isAdminAuthenticated } from "../../shared/adminAuth.js";
 import { renderUserQuizzesView, updateBulkActionBar } from "./user-quizzes-view.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
@@ -379,15 +379,28 @@ export async function deleteFolder(folderId) {
  * unrelated view-layer bug — this button is the deliberately blunter, fully
  * manual alternative for exactly that residual case.
  *
- * Uses a much stronger, explicit confirmation than the normal `_confirm`
- * wording used elsewhere (deleteFolder above, bulk-delete in
- * user-quizzes-view.js) since this is irreversible and total rather than
- * scoped to one item/selection.
+ * BUG FIX (double verification): a single button-press _confirm() dialog
+ * was the original safeguard here, but "حذف الكل" and the far more common,
+ * far less dangerous per-item "حذف" both live in the same #userQuizContextMenu
+ * — a user who has learned to reflexively click through the "هل أنت متأكد؟"
+ * dialog for routine single-item deletes can just as easily click through
+ * it here without reading it, and wipe their entire collection by mistake.
+ * Now routed through _confirmTyped() (notifications.js) instead: the
+ * button-press step still happens first (identical UI to every other
+ * destructive confirmation in the app), but only unlocks a second step
+ * where the destructive button stays disabled until the user retypes the
+ * literal phrase "حذف الكل" — the same text as the menu item they clicked —
+ * exactly. This mirrors GitHub's "type the repo name to confirm deletion"
+ * pattern and can't be clicked through on autopilot the way a single
+ * yes/no dialog can.
  */
 export async function deleteAllUserQuizzes() {
-  const confirmed = await _confirm(
-    "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ولا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟",
-  );
+  const confirmed = await _confirmTyped({
+    message:
+      "سيتم حذف كل امتحاناتك ومجلداتك نهائياً ولا يمكن التراجع عن هذا الإجراء.\nللمتابعة، اضغط \"نعم\" ثم اكتب العبارة المطلوبة في الخطوة التالية.",
+    confirmPhrase: "حذف الكل",
+    confirmButtonLabel: "حذف كل شيء نهائياً",
+  });
   if (!confirmed) return;
 
   setInStorage("user_quizzes", "[]");

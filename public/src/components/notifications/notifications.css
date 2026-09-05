@@ -12,17 +12,20 @@
   bottom: 24px;
   right: 24px;
   display: flex;
-  flex-direction: column-reverse; /* Newest items at the bottom visually */
+  flex-direction: column-reverse;
+  /* Newest items at the bottom visually */
   gap: 12px;
   z-index: var(--z-notification);
-  pointer-events: none; /* Click-through empty space */
+  pointer-events: none;
+  /* Click-through empty space */
 }
 
 /* =========================
      Glass Notification Base
      ========================= */
 .notification.glass-toast {
-  pointer-events: auto; /* Re-enable clicks on the toast itself */
+  pointer-events: auto;
+  /* Re-enable clicks on the toast itself */
   position: relative;
   display: flex;
 
@@ -50,7 +53,8 @@
      ========================= */
 .notification-content {
   display: flex;
-  align-items: center; /* Center icon vertically with text */
+  align-items: center;
+  /* Center icon vertically with text */
   gap: 16px;
   width: 100%;
 }
@@ -72,7 +76,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 1; /* Take up remaining space */
+  flex: 1;
+  /* Take up remaining space */
 }
 
 .notification-content strong {
@@ -127,12 +132,15 @@
 .notification.success {
   border-left: 4px solid #4caf50;
 }
+
 .notification.error {
   border-left: 4px solid #f44336;
 }
+
 .notification.warning {
   border-left: 4px solid #ff9800;
 }
+
 .notification.info {
   border-left: 4px solid #2196f3;
 }
@@ -145,6 +153,7 @@
     transform: translateX(120%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -156,6 +165,7 @@
     transform: translateX(0);
     opacity: 1;
   }
+
   to {
     transform: translateX(120%);
     opacity: 0;
@@ -169,12 +179,15 @@
   #notification-container {
     bottom: 12px;
     right: 12px;
-    left: 12px; /* Constrain container to viewport width */
+    left: 12px;
+    /* Constrain container to viewport width */
   }
 
   .notification.glass-toast {
-    min-width: 0; /* Let the toast shrink instead of forcing 320px */
-    max-width: 100%; /* Never exceed the container/viewport */
+    min-width: 0;
+    /* Let the toast shrink instead of forcing 320px */
+    max-width: 100%;
+    /* Never exceed the container/viewport */
     width: 100%;
     padding: 12px;
     box-sizing: border-box;
@@ -200,6 +213,7 @@
     word-break: break-word;
   }
 }
+
 /* ===========================
      Confirmation Modal Styles
      =========================== */
@@ -210,7 +224,8 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.4); /* Fallback */
+  background: rgba(0, 0, 0, 0.4);
+  /* Fallback */
   backdrop-filter: blur(4px);
   z-index: var(--z-modal-top);
   display: flex;
@@ -218,7 +233,8 @@
   justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
-  pointer-events: none; /* Prevent interaction while hidden */
+  pointer-events: none;
+  /* Prevent interaction while hidden */
 }
 
 .confirmation-overlay.show {
@@ -236,7 +252,8 @@
   width: 90%;
   transform: scale(0.9);
   opacity: 0;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Bouncy scale */
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Bouncy scale */
 }
 
 .confirmation-modal.show {
@@ -256,6 +273,17 @@
   text-align: center;
   line-height: 1.5;
   margin: 0;
+  /* BUG FIX: _confirm()/_alert()/_prompt() escape the message via
+     escapeHtml() (textContent → innerHTML) and drop it straight into this
+     <p>, but default HTML whitespace collapsing still applies to that
+     resulting text — every "\n" a caller passes in (e.g. the multi-line
+     "حذف الكل" warning) was rendering as a plain space instead of an actual
+     line break. white-space: pre-line preserves "\n"/"\r\n" as real line
+     breaks while still collapsing runs of plain spaces/tabs the normal way,
+     so callers can keep writing template-literal messages with embedded
+     newlines without needing <br> tags (which escapeHtml would strip
+     anyway, by design — see its own doc comment). */
+  white-space: pre-line;
 }
 
 .prompt-input {
@@ -312,6 +340,25 @@
   outline-offset: 2px;
 }
 
+/* Disabled state for the typed-confirmation step's confirm button (see
+   _confirmTyped in notifications.js) — stays disabled until the typed text
+   exactly matches the required phrase, so it needs a visibly "not usable
+   yet" look distinct from its normal enabled gradient, with no hover/focus
+   affordances that would suggest it's clickable. */
+.confirmation-btn.confirm:disabled {
+  background: var(--color-background-secondary);
+  color: var(--color-text-tertiary, var(--color-text-secondary));
+  box-shadow: none;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.confirmation-btn.confirm:disabled:hover {
+  filter: none;
+  transform: none;
+  box-shadow: none;
+}
+
 .confirmation-btn.cancel {
   background: transparent;
   border: 1px solid var(--color-border);
@@ -350,4 +397,33 @@
   background: rgba(30, 41, 59, 0.9);
   border-color: rgba(255, 255, 255, 0.2);
   color: #fff;
+}
+
+/* ===========================
+     Typed-Confirmation Modal (double verification)
+     Second step of _confirmTyped() in notifications.js — shows the exact
+     phrase the user must retype, styled as a distinct, monospaced "chip"
+     so it visually reads as literal text to copy/match rather than as part
+     of the sentence above it (same idea as GitHub's repo-name confirmation
+     chip on its delete-repo dialog).
+     =========================== */
+
+.typed-confirmation-phrase {
+  margin: -8px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-background-secondary);
+  border: 1px dashed var(--color-border);
+  font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-error, #dc2626);
+  text-align: center;
+  /* Preserve exactly what escapeHtml() produced, including any leading/
+     trailing whitespace in the phrase itself — this text exists specifically
+     so the user can visually compare it character-for-character against
+     what they type. */
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: all;
 }
