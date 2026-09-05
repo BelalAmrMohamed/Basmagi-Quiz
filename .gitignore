@@ -3,7 +3,8 @@
 
 !robots.txt
 !README.md
-!CHANGELOG.MD
+!CHANGELOG.md
+!Database-Schema-Context.md
 
 # Local FilesStudio files
 .git/
