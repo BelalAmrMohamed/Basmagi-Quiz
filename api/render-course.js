@@ -1,17 +1,20 @@
 // =============================================================================
 // api/render-course.js
 //
-// Serverless function (Node.js runtime) that handles all requests to
-// /course/:name. Mirrors render-quiz.js's structure (Supabase lookup, HTML
-// template read + meta-tag injection, caching headers) but differs in one
-// key way: course pages are NOT a separate HTML file — they render inside
-// the existing SPA (public/index.html), so this function injects OG tags
-// and a data-island into index.html itself rather than a dedicated template,
-// and index.html's own client-side router (navigation.js) takes over from
-// there to actually render the course view.
+// Serverless function (Node.js runtime, flat file) that handles all requests
+// to /course/:name and /course/:name/:sub1/:sub2/... Mirrors render-quiz.js's
+// structure (Supabase lookup, HTML template read + meta-tag injection,
+// caching headers) but differs in one key way: course pages are NOT a
+// separate HTML file — they render inside the existing SPA
+// (public/index.html), so this function injects OG tags and a data-island
+// into index.html itself rather than a dedicated template, and index.html's
+// own client-side router (navigation.js) takes over from there to actually
+// render the course view.
 //
 // What it does:
-//   1. Reads the course name from :name (injected by the vercel.json rewrite).
+//   1. Reads the course slug + any nested folder slugs from req.query.full
+//      (a single "/"-joined string — see the handler below for why this
+//      shape was chosen over a path-segment catch-all route file).
 //   2. Looks up the course by name (+ education_type disambiguation via
 //      ?education_type= if present) in the `courses` table.
 //   3. Counts folders + quizzes under that course via relational count
@@ -24,9 +27,13 @@
 //   6. Returns the modified HTML with edge-cache headers.
 //
 // URL contract:
-//   /course/NAME  →  (vercel.json rewrite)  →  /api/render-course?name=NAME
-//   Browser URL stays /course/NAME. navigation.js reads the course id from
-//   <meta name="course:id"> to render the right view without a hash.
+//   /course/NAME[/SUB1/SUB2/...]  →  (vercel.json rewrite: a single
+//   "/course/:full(.*)" → "/api/render-course?full=:full" rule, matching
+//   any depth in one shot)  →  this file, with
+//   req.query.full = "NAME[/SUB1/SUB2/...]" (one string, split below).
+//   Browser URL stays /course/NAME/.... navigation.js reads the course id
+//   (and folder path, when present) from the injected <meta> tags to render
+//   the right view without a hash.
 // =============================================================================
 
 import fs from "fs";
@@ -64,26 +71,30 @@ export default async function handler(req, res) {
         return res.status(405).end();
     }
 
-    // vercel.json rewrites the entire /course/... subtree with a single rule
-    // ("/course/:path*" → "/api/render-course/:path*"), rather than a
-    // separate ":name" rewrite plus a ":name/:path*" one, and rather than a
-    // "?path=:path*" query-string destination — this Vercel CLI version's
-    // path compiler rejects both of those shapes outright as soon as a
-    // repeating (":x*") param either follows another dynamic segment, or is
-    // glued directly after a "?key=" in the destination ("Can not repeat
-    // 'x' without a prefix and suffix" / "Unexpected MODIFIER"). The only
-    // shape it accepts is a single wildcard directly after a literal
-    // prefix, substituted as literal path segments in the destination too
-    // (matching Vercel's own documented "/api/:path*" → ".../:path*"
-    // example) — which means the segments arrive as real extra path
-    // segments on req.url (e.g. "/api/render-course/Website-Demo/All-
-    // Features"), NOT as req.query.path, since api/render-course.js is a
-    // single fixed-name file, not a "[...path].js" catch-all route file.
-    // So this handler parses req.url's pathname itself, splits the first
-    // segment (course slug) from any remaining segments (folder path).
-    const urlPath = (req.url || "").split("?")[0]; // strip any query string
-    const allSegments = urlPath
-        .replace(/^\/api\/render-course\/?/, "") // strip the fixed function path prefix
+    // This file lives at api/render-course.js (a flat file). vercel.json
+    // rewrites the /course/... subtree with a single named-param capture
+    // that matches ANY depth in one shot:
+    //   "/course/:full(.*)" -> "/api/render-course?full=:full"
+    // ":full(.*)" is a single, non-repeating custom-regex param (not a
+    // repeating ":x*" token), so Vercel is happy putting it directly after
+    // "?full=" in the destination -- the earlier "PATH TO REGEXP ERROR" was
+    // specifically about repeating params glued after "?key=", which this
+    // isn't. Because the destination is a query string (not literal path
+    // segments), Vercel matches this flat file unambiguously regardless of
+    // how many real segments were in the URL -- there's no dynamic-route
+    // filename depth-matching involved at all, which is what made an
+    // earlier "[...path].js" catch-all file version unreliable for 2+
+    // segments specifically in `vercel dev` (1-segment requests worked;
+    // 2+ segments 404'd, even though this handler has no code path capable
+    // of producing a 404 itself -- only a 302 redirect or a 200 response --
+    // meaning the catch-all route file wasn't being matched consistently at
+    // that depth by this Vercel CLI version, despite the rewrite's own
+    // source pattern provably matching any depth via path-to-regexp).
+    //
+    // req.query.full is a single string like "Website-Demo" or
+    // "Website-Demo/All-Features" -- split it ourselves.
+    const fullParam = typeof req.query.full === "string" ? req.query.full : "";
+    const allSegments = fullParam
         .split("/")
         .filter(Boolean)
         .map((seg) => {
