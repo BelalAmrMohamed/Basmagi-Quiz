@@ -122,7 +122,7 @@ export function showCourseInfoModal(course) {
   const stats = document.createElement("div");
   stats.className = "course-info-stats";
   stats.innerHTML = `
-    <div class="course-info-stat"><strong>${quizCount}</strong><span>اختبار</span></div>
+    <div class="course-info-stat"><strong>${quizCount}</strong><span>امتحان</span></div>
     <div class="course-info-stat"><strong>${subfolderCount}</strong><span>مجلد فرعي</span></div>
   `;
 

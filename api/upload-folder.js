@@ -232,7 +232,7 @@ export default async function handler(req, res) {
           .maybeSingle();
 
         if (existing) {
-          results.failed.push({ name: item.name || cleanQuiz.meta.title, reason: "يوجد اختبار بنفس الاسم في هذا المسار" });
+          results.failed.push({ name: item.name || cleanQuiz.meta.title, reason: "يوجد امتحان بنفس الاسم في هذا المسار" });
           continue;
         }
 

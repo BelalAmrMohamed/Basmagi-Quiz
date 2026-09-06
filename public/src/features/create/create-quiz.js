@@ -734,18 +734,17 @@ function renderQuestion(question, insertAtIndex = null) {
                     ${renderOptions(question)}
                 </div>
                 <div id="option-btn-${question.id}">
-                  ${
-                    isEssay
-                      ? `<button class="add-option-btn add-option-btn--convert" onclick="convertEssayToMcq(${question.id})">
+                  ${isEssay
+      ? `<button class="add-option-btn add-option-btn--convert" onclick="convertEssayToMcq(${question.id})">
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> تحويل إلى اختيار متعدد
                        </button>`
-                      : `<button class="add-option-btn" onclick="addOption(${question.id})">
+      : `<button class="add-option-btn" onclick="addOption(${question.id})">
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg> إضافة خيار
                        </button>
                        <button class="add-option-btn add-option-btn--convert" onclick="convertMcqToEssay(${question.id})">
                          <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg> تحويل إلى سؤال مقالي
                        </button>`
-                  }
+    }
                 </div>
             </div>
             
@@ -1363,11 +1362,10 @@ function renderOptions(question) {
           <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
           سؤال مقالي
         </div>
-        <div class="essay-answer-label">نموذج الإجابة ${
-          question.options?.[0]?.trim()
-            ? `<span class="essay-answer-note">(يُستخدم لتصحيح إجابات الطلاب تلقائيًا وتقييمها من 5)</span>`
-            : `<span class="essay-answer-missing">(مطلوب — بدونه لن يمكن تصحيح إجابات الطلاب تلقائيًا)</span>`
-        }</div>
+        <div class="essay-answer-label">نموذج الإجابة ${question.options?.[0]?.trim()
+        ? `<span class="essay-answer-note">(يُستخدم لتصحيح إجابات الطلاب تلقائيًا وتقييمها من 5)</span>`
+        : `<span class="essay-answer-missing">(مطلوب — بدونه لن يمكن تصحيح إجابات الطلاب تلقائيًا)</span>`
+      }</div>
         <div class="essay-answer-editor">
           ${mdEditorHtml(optId, question.options[0], "اكتب نموذج إجابة هنا...", 5)}
         </div>
@@ -1395,11 +1393,10 @@ function renderOptions(question) {
             <div class="option-md-wrap">
                 ${mdEditorHtml(optId, option, `إختيار ${index + 1}`, 1)}
             </div>
-            ${
-              question.options.length >= 2
-                ? `<button class="option-delete" onclick="removeOption(${question.id}, ${index})" title="حذف الخيار" aria-label="حذف الخيار ${index + 1}"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`
-                : ""
-            }
+            ${question.options.length >= 2
+          ? `<button class="option-delete" onclick="removeOption(${question.id}, ${index})" title="حذف الخيار" aria-label="حذف الخيار ${index + 1}"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`
+          : ""
+        }
         </div>
       `;
     })
@@ -1828,7 +1825,7 @@ function validateQuiz() {
   const errors = [];
 
   if (!quizData.title || quizData.title.trim() === "") {
-    errors.push("عنوان الاختبار مطلوب");
+    errors.push("عنوان الامتحان مطلوب");
   }
 
   if (quizData.questions.length === 0) {
@@ -2236,8 +2233,8 @@ function loadQuizFromLocalStorage(quizId) {
 
     if (quiz) {
       const headerTitle = document.querySelector(".header h1");
-      if (headerTitle) headerTitle.textContent = "تعديل الاختبار";
-      document.title = "تعديل الاختبار - منصة بصمجي";
+      if (headerTitle) headerTitle.textContent = "تعديل الامتحان";
+      document.title = "تعديل الامتحان - منصة بصمجي";
 
       // Support both old flat schema and new (meta.title)
       quizData.title = quiz.meta?.title || quiz.title || "";
@@ -2300,14 +2297,14 @@ function loadQuizFromLocalStorage(quizId) {
         renderQuestion(question);
       });
 
-      showNotification("أهلاً بك", "تم تحميل الاختبار للتعديل", "success");
+      showNotification("أهلاً بك", "تم تحميل الامتحان للتعديل", "success");
     } else {
-      showNotification("خطأ", "لم يتم العثور على الاختبار", "error");
+      showNotification("خطأ", "لم يتم العثور على الامتحان", "error");
       setTimeout(() => (window.location.href = "/"), 1500);
     }
   } catch (error) {
     console.error("Error loading quiz for edit:", error);
-    showNotification("خطأ", "حدث خطأ أثناء تحميل الاختبار", "error");
+    showNotification("خطأ", "حدث خطأ أثناء تحميل الامتحان", "error");
   }
 }
 
@@ -2563,7 +2560,7 @@ window.saveLocally = function () {
         setTimeout(() => (window.location.href = "/"), 1000);
       }
     } else {
-      showNotification("خطأ", "فشل حفظ الاختبار", "error");
+      showNotification("خطأ", "فشل حفظ الامتحان", "error");
     }
   }, 500);
 };
@@ -2606,11 +2603,11 @@ window.previewQuiz = function () {
         ${q.image ? `<img src="${escapeHtml(q.image)}" class="preview-image" alt="صورة السؤال" onerror="this.style.display='none'">` : ""}
         <ul class="preview-options">
           ${q.options
-            .map(
-              (opt, i) =>
-                `<li class="${correctSet.includes(i) ? "correct" : ""}">${renderMarkdown(opt)}${correctSet.includes(i) ? " ✓" : ""}</li>`,
-            )
-            .join("")}
+        .map(
+          (opt, i) =>
+            `<li class="${correctSet.includes(i) ? "correct" : ""}">${renderMarkdown(opt)}${correctSet.includes(i) ? " ✓" : ""}</li>`,
+        )
+        .join("")}
         </ul>
         ${q.explanation ? `<div class="preview-explanation"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em;margin-left:4px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> ${renderMarkdown(q.explanation)}</div>` : ""}
       </div>
@@ -2893,7 +2890,7 @@ window.processImport = async function () {
     if (allImportedQuestions.length > 0)
       parts.push(`استيراد ${allImportedQuestions.length} سؤال`);
     if (savedQuizzesCount > 0)
-      parts.push(`حفظ ${savedQuizzesCount} اختبار في المكتبة`);
+      parts.push(`حفظ ${savedQuizzesCount} امتحان في المكتبة`);
     showNotification("تم الاستيراد!", parts.join(" و") || "اكتمل", "success");
   } catch (error) {
     hideLoading();
@@ -2923,7 +2920,7 @@ window.processImport = async function () {
  * editingQuizId pointing at that quiz — the next manual "Save" would
  * silently overwrite it with the now-empty draft instead of creating a
  * fresh, unlinked quiz. Also updates the page header back to "New quiz"
- * mode for the same reason (it was previously set to "تعديل الاختبار" by
+ * mode for the same reason (it was previously set to "تعديل الامتحان" by
  * loadQuizFromLocalStorage() and never reverted).
  */
 function resetPageData() {
@@ -2940,8 +2937,8 @@ function resetPageData() {
   editingQuizId = null;
 
   const headerTitle = document.querySelector(".header h1");
-  if (headerTitle) headerTitle.textContent = "إنشاء اختبار جديد";
-  document.title = "إنشاء اختبار - منصة بصمجي";
+  if (headerTitle) headerTitle.textContent = "إنشاء امتحان جديد";
+  document.title = "إنشاء امتحان - منصة بصمجي";
 
   document.getElementById("quizTitle").value = "";
   document.getElementById("quizSource").value = "";

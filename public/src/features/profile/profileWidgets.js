@@ -36,7 +36,7 @@ export function dateKey(d) {
 
 function heatmapHoverHtml(date, count) {
   const dateLabel = date.toLocaleDateString("ar-EG");
-  const countLabel = `${count} ${count === 1 ? "اختبار" : "اختبارات"}`;
+  const countLabel = `${count} ${count === 1 ? "امتحان" : "امتحانات"}`;
   return `
     <span class="heatmap-hover-date">${dateLabel}</span>
     <span class="heatmap-hover-count">${countLabel}</span>`;
@@ -166,7 +166,7 @@ export function renderActivityHeatmap(user) {
             return `<span class="heatmap-cell heatmap-cell-disabled" aria-hidden="true" style="animation-delay:${delay}ms"></span>`;
           }
           const level = levelFor(d.count);
-          const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "اختبار" : "اختبارات"}`;
+          const ariaLabel = `${d.date.toLocaleDateString("ar-EG")} • ${d.count} ${d.count === 1 ? "امتحان" : "امتحانات"}`;
           return `<span class="heatmap-cell js-has-hover" data-level="${level}" data-date="${d.key}" data-count="${d.count}" aria-label="${ariaLabel}" style="animation-delay:${delay}ms"></span>`;
         })
         .join("");
@@ -259,7 +259,7 @@ export async function renderCategoryMastery(user, examList) {
   const examIds = Object.keys(progress);
 
   if (examIds.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📊</div><p>أكمل اختباراً واحداً على الأقل لعرض نقاط قوتك</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📊</div><p>أكمل امتحاناً واحداً على الأقل لعرض نقاط قوتك</p></div>`;
     return;
   }
 
@@ -335,12 +335,12 @@ function getBadgeProgress(badgeId, user) {
     "point-collector": { current: points, goal: 1000, unit: "نقطة" },
     "point-hoarder": { current: points, goal: 5000, unit: "نقطة" },
     "point-master": { current: points, goal: 10000, unit: "نقطة" },
-    beginner: { current: quizzes, goal: 3, unit: "اختبار" },
-    "quick-learner": { current: quizzes, goal: 5, unit: "اختبار" },
-    dedicated: { current: quizzes, goal: 10, unit: "اختبار" },
-    scholar: { current: quizzes, goal: 25, unit: "اختبار" },
-    academic: { current: quizzes, goal: 50, unit: "اختبار" },
-    professor: { current: quizzes, goal: 100, unit: "اختبار" },
+    beginner: { current: quizzes, goal: 3, unit: "امتحان" },
+    "quick-learner": { current: quizzes, goal: 5, unit: "امتحان" },
+    dedicated: { current: quizzes, goal: 10, unit: "امتحان" },
+    scholar: { current: quizzes, goal: 25, unit: "امتحان" },
+    academic: { current: quizzes, goal: 50, unit: "امتحان" },
+    professor: { current: quizzes, goal: 100, unit: "امتحان" },
     organizer: { current: bookmarks, goal: 10, unit: "سؤال محفوظ" },
     bookworm: { current: bookmarks, goal: 25, unit: "سؤال محفوظ" },
     completionist: { current: bookmarks, goal: 50, unit: "سؤال محفوظ" },
@@ -470,7 +470,7 @@ function uploadedQuizItemHtml(quiz) {
   return `
       <div class="history-item">
         <div class="history-info">
-          <h4>${quiz.title || "اختبار بدون عنوان"}</h4>
+          <h4>${quiz.title || "امتحان بدون عنوان"}</h4>
           <small>${subtitleParts.join(" • ")}${subtitleParts.length && date ? " • " : ""}${date}</small>
         </div>
         <div class="history-actions">
@@ -509,7 +509,7 @@ export async function renderUploadedQuizzes(handle = null) {
       containerEl: container,
       items: uploads,
       renderItem: uploadedQuizItemHtml,
-      emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📤</div><p>لم يتم رفع أي اختبارات بعد</p></div>`,
+      emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📤</div><p>لم يتم رفع أي امتحانات بعد</p></div>`,
       mode: "button",
     });
     uploadedQuizzesListInstance.mount();

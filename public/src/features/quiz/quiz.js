@@ -1055,7 +1055,7 @@ async function init() {
   // Validate quiz data exists
   if (!examId && !quizType) {
     console.error("No quiz selected");
-    _alert("لم يتم اختيار اختبار. سيتم توجيهك للصفحة الرئيسية.");
+    _alert("لم يتم اختيار امتحان. سيتم توجيهك للصفحة الرئيسية.");
     window.location.href = "/";
     return;
   }
@@ -1067,7 +1067,7 @@ async function init() {
     if (now - parseInt(startTime) > maxSessionAge) {
       console.warn("Quiz session expired");
       localStorage.removeItem("quiz_start_time");
-      _alert("انتهت صلاحية الجلسة. يرجى بدء الاختبار من جديد.");
+      _alert("انتهت صلاحية الجلسة. يرجى بدء الامتحان من جديد.");
       window.location.href = "/";
       return;
     }

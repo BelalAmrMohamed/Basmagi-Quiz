@@ -169,7 +169,7 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
         : null;
       const quiz = resolveUserItemById(requestedId, readUserQuizzes());
       if (!directAttachedQuiz && !attachedQuiz && (!quiz || quiz.kind !== "quiz")) {
-        throw new Error("الاختبار المطلوب غير موجود في المرفق الحالي.");
+        throw new Error("الامتحان المطلوب غير موجود في المرفق الحالي.");
       }
       let payload = directAttachedQuiz?.payload || attachedQuiz?.payload || quiz?.payload;
       if (!payload && attachedQuiz?.dbId) {
@@ -180,7 +180,7 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
           questions: loaded.questions || [],
         };
       }
-      return `بيانات الاختبار ${directAttachedQuiz?.title || attachedQuiz?.title || quiz?.title} (المعرّف ${requestedId}):\n${JSON.stringify(payload || {})}`;
+      return `بيانات الامتحان ${directAttachedQuiz?.title || attachedQuiz?.title || quiz?.title} (المعرّف ${requestedId}):\n${JSON.stringify(payload || {})}`;
     },
     ...pageOptions,
   };

@@ -89,7 +89,7 @@ export function createExamCard(exam) {
   btn.style.flex = "1";
   btn.style.minWidth = "0";
   btn.textContent = "إبدأ";
-  btn.setAttribute("aria-label", `بدء اختبار ${exam.title || exam.id}`);
+  btn.setAttribute("aria-label", `بدء امتحان ${exam.title || exam.id}`);
   btn.onclick = (ev) => {
     ev.stopPropagation();
     startQuiz(exam.id);
@@ -370,7 +370,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
           { defaultSystemPrompt: HOME_PAGE_SYSTEM_PROMPT },
         );
       } catch (err) {
-        showNotification("تعذر الإرفاق", "تعذر تحميل محتوى الاختبار حاليًا.", "error");
+        showNotification("تعذر الإرفاق", "تعذر تحميل محتوى الامتحان حاليًا.", "error");
       } finally {
         askAiOpt.disabled = false;
       }

@@ -9,7 +9,7 @@
 // (a Cancel button, a Create/Confirm button, etc.) called `close()` without
 // removing that listener, so a dead `keydown` listener stayed attached to
 // `document` forever every time one of those modals was dismissed via a
-// button. Repeated use of "احفظ اختبار" / "برومبت الذكاء الاصطناعي" would
+// button. Repeated use of "احفظ امتحان" / "برومبت الذكاء الاصطناعي" would
 // accumulate stray listeners over a session.
 //
 // Fix: centralize the wiring so there is exactly ONE way to close a modal,

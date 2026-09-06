@@ -266,7 +266,7 @@ export function createChatPanel(options = {}) {
   panel.appendChild(messagesEl);
 
   function extractQuizTitle(value) {
-    if (!value || typeof value !== "object") return "اختبار";
+    if (!value || typeof value !== "object") return "امتحان";
     const keys = ["title", "name", "quizTitle", "quizName"];
     for (const key of keys) {
       if (typeof value[key] === "string" && value[key].trim()) return value[key].trim();
@@ -274,31 +274,31 @@ export function createChatPanel(options = {}) {
     for (const child of Object.values(value)) {
       if (child && typeof child === "object") {
         const title = extractQuizTitle(child);
-        if (title !== "اختبار") return title;
+        if (title !== "امتحان") return title;
       }
     }
-    return "اختبار";
+    return "امتحان";
   }
 
   function sanitizeToolOutput(content) {
     if (typeof content !== "string") return String(content ?? "");
     const trimmed = content.trim();
     const looksLikeQuizPayload =
-      trimmed.startsWith("بيانات الاختبار") ||
-      trimmed.startsWith("{") && /questions|quiz|اختبار/i.test(trimmed) ||
-      trimmed.length > 800 && /questions|quiz|اختبار|أسئلة/i.test(trimmed);
+      trimmed.startsWith("بيانات الامتحان") ||
+      trimmed.startsWith("{") && /questions|quiz|امتحان/i.test(trimmed) ||
+      trimmed.length > 800 && /questions|quiz|امتحان|أسئلة/i.test(trimmed);
     if (!looksLikeQuizPayload) return content;
 
     const firstBrace = trimmed.indexOf("{");
     const lastBrace = trimmed.lastIndexOf("}");
     const jsonCandidate = firstBrace >= 0 && lastBrace > firstBrace
       ? trimmed.slice(firstBrace, lastBrace + 1)
-      : trimmed.replace(/^بيانات الاختبار\s*:?\s*/i, "");
+      : trimmed.replace(/^بيانات الامتحان\s*:?\s*/i, "");
     try {
-      return `[تم الحصول على بيانات اختبار: ${extractQuizTitle(JSON.parse(jsonCandidate))}]`;
+      return `[تم الحصول على بيانات امتحان: ${extractQuizTitle(JSON.parse(jsonCandidate))}]`;
     } catch {
-      const titleMatch = content.match(/(?:title|name|اسم الاختبار)\s*["'=:]+\s*([^,"'{}\n]+)/i);
-      return `[تم الحصول على بيانات اختبار: ${titleMatch?.[1]?.trim() || "اختبار"}]`;
+      const titleMatch = content.match(/(?:title|name|اسم الامتحان)\s*["'=:]+\s*([^,"'{}\n]+)/i);
+      return `[تم الحصول على بيانات امتحان: ${titleMatch?.[1]?.trim() || "امتحان"}]`;
     }
   }
 
@@ -511,7 +511,7 @@ export function createChatPanel(options = {}) {
    * @param {{kind: "quiz"|"course"|"folder", title: string, summary?: string}} att
    */
   function expandPlatformAttachment(att) {
-    const kindLabelAr = { quiz: "اختبار", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
+    const kindLabelAr = { quiz: "امتحان", course: "مادة", folder: "مجلد" }[att.kind] || att.kind;
     const body = att.payload
       ? JSON.stringify(att.payload)
       : att.summary || "(لا تفاصيل إضافية متاحة عن هذا العنصر)";
@@ -701,7 +701,7 @@ export function createChatPanel(options = {}) {
         // position to anchor to from a menu click) instead of a
         // freshly-typed trigger character.
         icon: ATTACHMENT_QUIZ_ICON_SVG,
-        label: "إرفاق اختبار أو مجلد",
+        label: "إرفاق امتحان أو مجلد",
         onClick: () => {
           textarea.focus();
           // Inserts a literal trigger character at the caret rather than
@@ -922,7 +922,7 @@ export function createChatPanel(options = {}) {
       micStream = null;
     }
     if (audioCtx) {
-      audioCtx.close().catch(() => {});
+      audioCtx.close().catch(() => { });
       audioCtx = null;
     }
     dictationWaveEl.classList.remove("ai-agent-dictation-wave--live");
@@ -962,7 +962,7 @@ export function createChatPanel(options = {}) {
       .then((result) => {
         isBraveBrowser = !!result;
       })
-      .catch(() => {});
+      .catch(() => { });
   }
 
   let micBtn = null;
@@ -1740,8 +1740,8 @@ export function createChatPanel(options = {}) {
     const el = document.createElement("div");
     el.className = "ai-agent-msg ai-agent-msg--assistant ai-agent-msg--tool-result";
     const isRawQuizPayload = typeof text === "string" &&
-      (text.startsWith("بيانات الاختبار") || text.length > 800 || text.trim().startsWith("{"));
-    el.textContent = isRawQuizPayload ? "تم استرجاع بيانات الاختبار بنجاح." : text;
+      (text.startsWith("بيانات الامتحان") || text.length > 800 || text.trim().startsWith("{"));
+    el.textContent = isRawQuizPayload ? "تم استرجاع بيانات الامتحان بنجاح." : text;
     if (messagesEl.querySelector(".ai-agent-msg--empty")) {
       messagesEl.innerHTML = "";
     }
@@ -1757,14 +1757,14 @@ export function createChatPanel(options = {}) {
   // importing that module, since this is presentation-only and the two
   // are already independently versioned across the network boundary.
   const TOOL_DISPLAY_NAMES = {
-    create_quiz: "إنشاء اختبار",
-    edit_quiz: "تعديل الاختبار",
-    delete_quiz: "حذف الاختبار",
+    create_quiz: "إنشاء امتحان",
+    edit_quiz: "تعديل الامتحان",
+    delete_quiz: "حذف الامتحان",
     create_folder: "إنشاء مجلد",
     create_course: "إنشاء مادة",
     move_item: "نقل عنصر",
     reset_quiz_page: "إعادة تعيين الصفحة",
-    fetch_attached_quiz: "استرجاع بيانات الاختبار",
+    fetch_attached_quiz: "استرجاع بيانات الامتحان",
   };
 
   function describeToolCall(toolCall) {
@@ -2023,8 +2023,8 @@ export function createChatPanel(options = {}) {
     const summaryText =
       Array.isArray(resolvedContextSummary) && resolvedContextSummary.length
         ? `امتحانات المستخدم الحالية:\n${resolvedContextSummary
-            .map((q) => `- ${q.title} (${q.questionCount} سؤال، ${q.types || "غير محدد"})`)
-            .join("\n")}`
+          .map((q) => `- ${q.title} (${q.questionCount} سؤال، ${q.types || "غير محدد"})`)
+          .join("\n")}`
         : "";
     const combinedContext = [resolvedContextPrompt, summaryText].filter(Boolean).join("\n\n");
 
@@ -2440,7 +2440,7 @@ export function createChatPanel(options = {}) {
       empty.className = "ai-agent-trigger-menu-empty";
       empty.textContent = query
         ? "لا توجد نتائج مطابقة."
-        : "لا توجد اختبارات أو مجلدات محفوظة بعد.";
+        : "لا توجد امتحانات أو مجلدات محفوظة بعد.";
       triggerMenuEl.appendChild(empty);
       return;
     }

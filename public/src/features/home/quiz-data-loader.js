@@ -31,7 +31,7 @@ async function loadDbQuizData(dbId) {
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new Error("الاختبار غير موجود");
+  if (!data) throw new Error("الامتحان غير موجود");
 
   return {
     ...(data.data || {}),

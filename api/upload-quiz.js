@@ -213,7 +213,7 @@ async function handleSingleUpload(req, res, adminPayload) {
 
   if (existing) {
     return res.status(409).json({
-      error: `يوجد اختبار بنفس الاسم في هذا المسار:\n${fullPath}/${filename}`,
+      error: `يوجد امتحان بنفس الاسم في هذا المسار:\n${fullPath}/${filename}`,
     });
   }
 
@@ -245,7 +245,7 @@ async function handleSingleUpload(req, res, adminPayload) {
 
   if (error) {
     console.error("[upload-quiz] Supabase error:", error.message);
-    return res.status(500).json({ error: "فشل رفع الاختبار. حاول مجددًا." });
+    return res.status(500).json({ error: "فشل رفع الامتحان. حاول مجددًا." });
   }
 
   if (adminId) {
@@ -449,7 +449,7 @@ async function handleFolderUpload(req, res, adminPayload) {
           .maybeSingle();
 
         if (existing) {
-          results.failed.push({ name: item.name || cleanQuiz.meta.title, reason: "يوجد اختبار بنفس الاسم في هذا المسار" });
+          results.failed.push({ name: item.name || cleanQuiz.meta.title, reason: "يوجد امتحان بنفس الاسم في هذا المسار" });
           continue;
         }
 

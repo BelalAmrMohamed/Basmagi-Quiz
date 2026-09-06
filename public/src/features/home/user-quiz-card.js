@@ -128,7 +128,7 @@ export function createUserQuizCard(quiz, index) {
   playBtn.style.flex = "1";
   playBtn.style.minWidth = "0";
   playBtn.textContent = "إبدأ";
-  playBtn.setAttribute("aria-label", `بدء اختبار ${qz(quiz, "title")}`);
+  playBtn.setAttribute("aria-label", `بدء امتحان ${qz(quiz, "title")}`);
   playBtn.onclick = (e) => {
     e.stopPropagation();
     playUserQuiz(quiz);
@@ -153,8 +153,8 @@ export function createUserQuizCard(quiz, index) {
   downloadBtn.setAttribute(
     "aria-label",
     userQuizPassword
-      ? `تحميل اختبار ${qz(quiz, "title")} (محمي بكلمة مرور)`
-      : `تحميل اختبار ${qz(quiz, "title")}`,
+      ? `تحميل امتحان ${qz(quiz, "title")} (محمي بكلمة مرور)`
+      : `تحميل امتحان ${qz(quiz, "title")}`,
   );
   if (userQuizPassword) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
   downloadBtn.onclick = (e) => {
@@ -248,7 +248,7 @@ export function playUserQuiz(quiz) {
     window.location.href = `/quiz/${encodeURIComponent(quiz.id)}?type=user`;
   } catch (error) {
     console.error("Error playing user quiz:", error);
-    _alert("حدث خطأ أثناء بدء الاختبار. حاول مرة أخرى.");
+    _alert("حدث خطأ أثناء بدء الامتحان. حاول مرة أخرى.");
   }
 }
 
@@ -269,7 +269,7 @@ export async function deleteUserQuiz(quizId) {
     renderRootCategories();
     renderUserQuizzesView();
 
-    showNotification("تم الحذف", "تم حذف الاختبار بنجاح", "./favicon.png");
+    showNotification("تم الحذف", "تم حذف الامتحان بنجاح", "./favicon.png");
   } catch (error) {
     console.error("Error deleting quiz:", error);
     _alert("Error deleting quiz. Please try again.");

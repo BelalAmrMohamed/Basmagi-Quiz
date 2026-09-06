@@ -148,7 +148,7 @@ const BOT_LORE = {
   "سيد سِكّة": "يمشي في دروب الأسئلة كأنه رسمها بنفسه من زمان.",
   "زيزو حركات": "سريع البديهة، يقفز بين الأسئلة كالعصفور بين الأغصان.",
   "علي علكّه": "هادئ الظاهر، لكنه لا يترك سؤالاً إلا وحلّه بابتسامة.",
-  "شيكو الغلبان": "يحارب كل اختبار وكأنه المعركة الأخيرة، ولا يكل.",
+  "شيكو الغلبان": "يحارب كل امتحان وكأنه المعركة الأخيرة، ولا يكل.",
   "زيزي على الهادي": "خطوة بخطوة، بلا عجلة، يصعد نحو القمة بصبر جميل.",
 };
 const DEFAULT_LORE = "اسم جديد يظهر في السجلات، ولمن يعرف حكايته الكاملة؟";
@@ -219,7 +219,7 @@ export function adminHoverCardHtml(entry) {
     <span class="lb-hover-name">${name}</span>
     <span class="lb-hover-stats">
       <span class="lb-hover-stat"><strong>${level}</strong> المستوى</span>
-      <span class="lb-hover-stat"><strong>${quizzes}</strong> اختبار مرفوع</span>
+      <span class="lb-hover-stat"><strong>${quizzes}</strong> امتحان مرفوع</span>
       ${points !== null ? `<span class="lb-hover-stat"><strong>${points}</strong> نقطة</span>` : ""}
     </span>
     ${profileHref ? `<a class="lb-hover-profile-link" href="${profileHref}">عرض الملف الشخصي</a>` : ""}`;

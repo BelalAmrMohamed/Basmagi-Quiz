@@ -37,7 +37,7 @@ const TRACK_LABELS = {
   High: "ثانوي",
   Middle: "إعدادي",
   Primary: "ابتدائي",
-  Featured: "كورسات مميزة",
+  Featured: "مادة مميزة",
 };
 
 // University requires a College; school tracks do not.
@@ -395,7 +395,7 @@ function renderStep1(saved = {}) {
     ${hdr("رفع إلى قاعدة البيانات")}
     ${stepsHTML(1)}
     <div class="adm-body">
-      <p class="adm-hint">حدّد نوع المسار وموقع الاختبار في مكتبة المنصة</p>
+      <p class="adm-hint">حدّد نوع المسار وموقع الامتحان في مكتبة المنصة</p>
 
       <div class="adm-field">
         <label for="adm-edu-type">نوع المسار التعليمي <span class="adm-badge adm-badge-fixed">مطلوب</span></label>
@@ -659,7 +659,7 @@ async function renderStep2({ educationType, college, year, term }) {
     ${hdr("رفع إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">اختر المادة ومكان الاختبار داخلها</p>
+      <p class="adm-hint">اختر المادة ومكان الامتحان داخلها</p>
 
       <div class="adm-field">
         <label for="adm-subject">المادة / الكورس</label>
@@ -669,7 +669,7 @@ async function renderStep2({ educationType, college, year, term }) {
       </div>
       <p class="adm-hint" id="adm-no-subjects-hint" style="display:none;">
         لا توجد مادة مطابقة هنا بعد. المواد والمجلدات تُنشأ الآن من صفحة
-        امتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الاختبار داخلها.
+        امتحاناتك مباشرة — أنشئ المادة هناك أولاً ثم عد لرفع الامتحان داخلها.
       </p>
 
       <div class="adm-field">
@@ -677,7 +677,7 @@ async function renderStep2({ educationType, college, year, term }) {
         <select id="adm-subfolder" disabled><option value="">— بدون مجلد فرعي —</option></select>
       </div>
 
-      ${_quizzes.length > 1 ? `<p class="adm-hint" style="margin-top:2px;">سيتم رفع ${_quizzes.length} اختبارات إلى نفس المادة/المجلد المحدد هنا.</p>` : ""}
+      ${_quizzes.length > 1 ? `<p class="adm-hint" style="margin-top:2px;">سيتم رفع ${_quizzes.length} امتحانات إلى نفس المادة/المجلد المحدد هنا.</p>` : ""}
 
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-s2-back">→ رجوع</button>
@@ -751,7 +751,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
     const qT = q?.meta?.title || q?.title || "";
     const qC = q?.stats?.questionCount ?? q?.questions?.length ?? 0;
     listHTML = `
-      <div class="adm-preview-row"><span class="adm-preview-lbl">عنوان الاختبار</span><span class="adm-preview-val">${qT}</span></div>
+      <div class="adm-preview-row"><span class="adm-preview-lbl">عنوان الامتحان</span><span class="adm-preview-val">${qT}</span></div>
       <div class="adm-preview-row"><span class="adm-preview-lbl">عدد الأسئلة</span><span class="adm-preview-val">${qC} سؤال</span></div>`;
   }
 
@@ -759,7 +759,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
     ${hdr("بيانات المشرف")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint">راجع بيانات ${isBatch ? "الرفعة" : "الاختبار"} واسم المشرف الذي سيظهر عليه</p>
+      <p class="adm-hint">راجع بيانات ${isBatch ? "الرفعة" : "الامتحان"} واسم المشرف الذي سيظهر عليه</p>
 
       <span class="adm-path-chip">${locationLabel}</span>
 
@@ -776,7 +776,7 @@ function renderStep3({ educationType, college, year, term, subject, subfolder })
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-s3-back">→ رجوع</button>
         <button class="adm-btn adm-btn-primary" id="adm-s3-upload">
-          ${isBatch ? `رفع ${_quizzes.length} اختبارات ☁️` : "رفع الاختبار ☁️"}
+          ${isBatch ? `رفع ${_quizzes.length} امتحانات ☁️` : "رفع الامتحان ☁️"}
         </button>
       </div>
     </div>
@@ -862,11 +862,11 @@ function renderThreadTree(items, root, rootChain) {
         const { folders, quizzes } = countDescendants(childKey);
         const badgeParts = [];
         if (folders) badgeParts.push(`${folders} مجلد`);
-        if (quizzes) badgeParts.push(`${quizzes} اختبار`);
+        if (quizzes) badgeParts.push(`${quizzes} امتحان`);
         li.appendChild(makeRow("📁", item.name, badgeParts.join(" · "), true));
         appendGroup(li, childKey, depth + 1);
       } else {
-        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "اختبار", "", true));
+        li.appendChild(makeRow("📝", item.quiz?.meta?.title || item.name || "امتحان", "", true));
       }
       sublist.appendChild(li);
     }
@@ -919,7 +919,7 @@ function renderFolderReviewStep(step1Vals) {
     ${hdr("رفع مجلد إلى قاعدة البيانات")}
     ${stepsHTML(2)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} اختبار</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-back">→ رجوع</button>
@@ -984,13 +984,13 @@ async function doFolderUpload({ educationType, college, year, term }) {
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${quizzesUploaded} اختبار بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد/مادة ورفع ${quizzesUploaded} امتحان بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
     } else {
       hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} اختبار (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
     }
   }
 
@@ -1042,7 +1042,7 @@ function renderCourseUploadReviewStep(step1Vals) {
     const quizCount = items.filter((i) => i.type === "quiz").length;
     const badgeParts = [];
     if (folderCount) badgeParts.push(`${folderCount} مجلد`);
-    if (quizCount) badgeParts.push(`${quizCount} اختبار`);
+    if (quizCount) badgeParts.push(`${quizCount} امتحان`);
     treeHolder.appendChild(
       renderThreadTree(items, { icon: "📚", label: courseName, badge: badgeParts.join(" · ") }, [courseName]),
     );
@@ -1097,14 +1097,14 @@ async function doCourseUpload({ educationType, college, year, term }) {
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} اختبار بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${coursesCount} مادة و${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
       hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} اختبار (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1224,7 +1224,7 @@ function renderFolderUploadReviewStep(step1Vals) {
     ${hdr("رفع المجلد إلى المنصة")}
     ${stepsHTML(3)}
     <div class="adm-body">
-      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} اختبار داخل "${destinationLabel}"</p>
+      <p class="adm-hint">راجع البنية قبل الرفع — سيتم إنشاء ${folderCount} مجلد ورفع ${quizCount} امتحان داخل "${destinationLabel}"</p>
       <div id="adm-tree-holder" style="max-height:320px;overflow-y:auto;"></div>
       <div class="adm-btns">
         <button class="adm-btn adm-btn-ghost" id="adm-folder-target-back">→ رجوع</button>
@@ -1287,14 +1287,14 @@ async function doFolderUploadToExisting({ educationType, college, year, term }) 
 
   if (hintEl) {
     if (failed.length === 0) {
-      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} اختبار بنجاح!`;
+      hintEl.textContent = `✅ تم إنشاء ${foldersCreated} مجلد ورفع ${quizzesUploaded} امتحان بنجاح!`;
       hintEl.style.color = "var(--color-success)";
       showNotification("تم الرفع بنجاح ✅", "success");
       invalidateManifestCache();
     } else {
       hintEl.textContent = `تم رفع ${quizzesUploaded} • فشل ${failed.length}`;
       hintEl.style.color = quizzesUploaded > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} اختبار (فشل ${failed.length})`, "warning");
+      if (quizzesUploaded > 0) showNotification(`تم رفع ${quizzesUploaded} امتحان (فشل ${failed.length})`, "warning");
       invalidateManifestCache();
     }
   }
@@ -1321,11 +1321,11 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   const items = _quizzes.map((q, i) => ({
     quiz: q,
     id: `adm-prog-${i}`,
-    title: q.meta?.title || q.title || `اختبار ${i + 1}`,
+    title: q.meta?.title || q.title || `امتحان ${i + 1}`,
   }));
 
   _overlay.innerHTML = `<div class="adm-card">
-    ${hdr(isBatch ? `رفع ${_quizzes.length} اختبارات` : "رفع الاختبار")}
+    ${hdr(isBatch ? `رفع ${_quizzes.length} امتحانات` : "رفع الامتحان")}
     ${stepsHTML(4)}
     <div class="adm-body">
       <p class="adm-hint" id="adm-s4-hint">جارٍ رفع الامتحانات…</p>
@@ -1411,13 +1411,13 @@ async function doUpload({ educationType, college, subject, year, term, subfolder
   const hintEl = document.getElementById("adm-s4-hint");
   if (hintEl) {
     if (errorCount === 0) {
-      hintEl.textContent = `✅ تم رفع ${successCount} اختبار بنجاح!`;
+      hintEl.textContent = `✅ تم رفع ${successCount} امتحان بنجاح!`;
       hintEl.style.color = "var(--color-success)";
-      showNotification(`تم الرفع بنجاح ✅ (${successCount} اختبار)`, "success");
+      showNotification(`تم الرفع بنجاح ✅ (${successCount} امتحان)`, "success");
     } else {
       hintEl.textContent = `تم رفع ${successCount} • فشل ${errorCount}`;
       hintEl.style.color = successCount > 0 ? "var(--color-text-secondary)" : "var(--color-error)";
-      if (successCount > 0) showNotification(`تم ${successCount} اختبار (فشل ${errorCount})`, "warning");
+      if (successCount > 0) showNotification(`تم ${successCount} امتحان (فشل ${errorCount})`, "warning");
     }
   }
 
@@ -1454,7 +1454,7 @@ function renderConfirmationLinks(container, links) {
   const note = document.createElement("p");
   note.className = "adm-hint";
   note.style.margin = "10px 0 6px";
-  note.textContent = "⏱️ يستغرق ظهور الاختبار على المنصة حوالي 60 ثانية بعد الرفع.";
+  note.textContent = "⏱️ يستغرق ظهور الامتحان على المنصة حوالي 60 ثانية بعد الرفع.";
   container.appendChild(note);
 
   if (links.length === 1) {
@@ -1463,7 +1463,7 @@ function renderConfirmationLinks(container, links) {
     btn.className = "adm-path-chip adm-copy-btn";
     btn.style.cssText = "border:none;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:.85rem;";
     btn.dataset.url = quizLinkHref(links[0].quizId);
-    btn.innerHTML = `<span>نسخ رابط الاختبار: ${links[0].title}</span><span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>`;
+    btn.innerHTML = `<span>نسخ رابط الامتحان: ${links[0].title}</span><span style="font-size:1.1rem;" title="نسخ الرابط">📋</span>`;
     btn.addEventListener("click", () => copyLinkToClipboard(btn.dataset.url));
     container.appendChild(btn);
     return;
@@ -1548,7 +1548,7 @@ async function _openWizard(quizzes) {
   }
 
   // Defense in depth: this wizard is quiz-only (see renderStep3's
-  // "عنوان الاختبار"/"رفع الاختبار" labels, and normalizeQuizSchema
+  // "عنوان الامتحان"/"رفع الامتحان" labels, and normalizeQuizSchema
   // below) — it has no course/folder concept, so an item with
   // meta.type "course"/"folder" ending up in here always means some
   // caller's selection wasn't filtered (the intended filtering happens
@@ -1558,7 +1558,7 @@ async function _openWizard(quizzes) {
   // ever handing them to this wizard).
   // Re-checking here means a future caller that forgets that filtering
   // step fails loudly instead of silently mislabeling a course as
-  // "اختبار" in the Admin Info step — the exact bug this was reported
+  // "امتحان" in the Admin Info step — the exact bug this was reported
   // as. Courses are created from userQuizzesView directly now (see the
   // "legacy" note on the old create-course-via-upload path), not
   // through this wizard, so there is no in-wizard way to fix this up —

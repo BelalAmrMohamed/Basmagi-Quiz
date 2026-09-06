@@ -14,7 +14,7 @@ export const HOME_PAGE_SUGGESTED_PROMPTS = [
   "اعمل امتحان جديد من الملف ده",
 ];
 
-// Create-quiz page ("إنشاء اختبار") — scoped to the single in-progress
+// Create-quiz page ("إنشاء امتحان") — scoped to the single in-progress
 // quiz on that page, unlike HOME_PAGE_SUGGESTED_PROMPTS above which talks
 // about "your quizzes" (plural, picked from a list).
 export const CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS = [

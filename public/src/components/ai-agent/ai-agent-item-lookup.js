@@ -63,7 +63,7 @@ export function summarizeQuiz(quiz) {
 export function summarizeFolder(userQuizzes, folderId) {
   const { subfolderCount, quizCount } = getFolderContentsCount(userQuizzes, folderId);
   const parts = [];
-  if (quizCount) parts.push(`${quizCount} اختبار`);
+  if (quizCount) parts.push(`${quizCount} امتحان`);
   if (subfolderCount) parts.push(`${subfolderCount} مجلد فرعي`);
   return parts.length ? `يحتوي على: ${parts.join(" و")}` : "مجلد فارغ حاليًا";
 }

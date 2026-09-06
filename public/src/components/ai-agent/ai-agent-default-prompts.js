@@ -38,7 +38,7 @@ You can also help the user organize their quizzes into folders and courses (you'
 Always reply in the same language the user writes their message in — if they write in English, reply in English; if they write in Arabic, reply in Arabic; and so on for any other language. Be concise and helpful.`;
 
 /**
- * Create-quiz page ("إنشاء اختبار") default system prompt. Unlike the home
+ * Create-quiz page ("إنشاء امتحان") default system prompt. Unlike the home
  * page, there is exactly one quiz in scope here — the one currently being
  * edited in the page's own form — so this page is offered a dedicated
  * edit_quiz schema (EDIT_CURRENT_QUIZ_TOOL, requested via toolNames:

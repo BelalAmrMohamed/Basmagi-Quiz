@@ -346,7 +346,7 @@ export function createCategoryCard(
         const counts = document.createElement("div");
         counts.className = "exam-action-btn";
         counts.disabled = true;
-        counts.textContent = `${itemCount} اختبار · ${(courseData.subcategories || []).length} مجلد فرعي`;
+        counts.textContent = `${itemCount} امتحان · ${(courseData.subcategories || []).length} مجلد فرعي`;
         menu.appendChild(counts);
       });
     };

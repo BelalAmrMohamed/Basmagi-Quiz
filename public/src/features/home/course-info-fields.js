@@ -15,10 +15,10 @@ export const EDU_TYPE_AR = {
   High: "ثانوي",
   Middle: "إعدادي",
   Primary: "إبتدائي",
-  Featured: "كورسات مميزة",
+  Featured: "مادة مميزة",
 };
 
-/** True if this course is in the "كورسات مميزة" (Featured) bucket — used to
+/** True if this course is in the "مادة مميزة" (Featured) bucket — used to
  * apply the highlighted label style wherever education type is shown. */
 export function isFeaturedCourse(course) {
   return course?.education_type === "Featured";

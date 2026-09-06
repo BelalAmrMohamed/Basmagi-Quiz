@@ -629,7 +629,7 @@ function renderVisitorAvatar(avatarUrl, handle) {
 
 // Delete history entry
 window.deleteHistory = async function (index) {
-  if (!(await _confirm("هل أنت متأكد من حذف هذا الاختبار؟ "))) return;
+  if (!(await _confirm("هل أنت متأكد من حذف هذا الامتحان؟ "))) return;
 
   const user = gameEngine.getUserData();
   user.history.splice(index, 1);
@@ -901,7 +901,7 @@ function renderWeeklyRecap(user) {
   });
 
   if (recent.length === 0) {
-    el.textContent = "لم تقم بأي اختبار هذا الأسبوع، ابدأ الآن!";
+    el.textContent = "لم تقم بأي امتحان هذا الأسبوع، ابدأ الآن!";
     return;
   }
 
@@ -910,12 +910,12 @@ function renderWeeklyRecap(user) {
   );
   const points = recent.reduce((sum, h) => sum + (h.pointsEarned || 0), 0);
 
-  el.textContent = `هذا الأسبوع: ${recent.length} ${recent.length === 1 ? "اختبار" : "اختبارات"} • متوسط ${avgPct}% • +${points.toLocaleString()} نقطة`;
+  el.textContent = `هذا الأسبوع: ${recent.length} ${recent.length === 1 ? "امتحان" : "امتحانات"} • متوسط ${avgPct}% • +${points.toLocaleString()} نقطة`;
 }
 
 function historyItemHtml(attempt, index) {
   const exam = examById.get(attempt.examId);
-  const title = exam ? exam.title : "اختبار محذوف";
+  const title = exam ? exam.title : "امتحان محذوف";
   const date = new Date(attempt.date).toLocaleDateString();
   const percentage =
     attempt.percentage || Math.round((attempt.score / attempt.total) * 100);
@@ -924,13 +924,13 @@ function historyItemHtml(attempt, index) {
       <div class="history-item">
         <div class="history-info">
           <h4>${title}</h4>
-          <small>${date} • ${attempt.mode || "اختبار"}</small>
+          <small>${date} • ${attempt.mode || "امتحان"}</small>
         </div>
         <div class="history-actions">
           <div class="history-score ${percentage >= 60 ? "pass" : "fail"
     }">${percentage}%</div>
           ${exam ? `<a href="/quiz/${attempt.examId}" class="nav-btn primary" style="padding:8px 14px;font-size:0.8rem;text-decoration:none;">اذهب إلى الامتحان</a>` : ""}
-          <button class="delete-btn" data-action="delete-history" data-index="${index}" aria-label="حذف هذا الاختبار من السجل"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          <button class="delete-btn" data-action="delete-history" data-index="${index}" aria-label="حذف هذا الامتحان من السجل"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-icon lucide-trash" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
         </div>
       </div>`;
 }
@@ -945,7 +945,7 @@ function renderHistory(user) {
     containerEl: container,
     items: user.history || [],
     renderItem: historyItemHtml,
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>لا يوجد سجل اختبارات بعد</h3></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
     mode: "button",
   });
   historyList.mount();
@@ -1149,7 +1149,7 @@ async function renderAdminLeaderboard(
         const avatar = adminAvatarUrl(entry);
 
         return `
-          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} اختبار">
+          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} امتحان">
             <span class="lb-rank" aria-hidden="true">${i + 1}</span>
             <span class="lb-avatar-hover">
               <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">

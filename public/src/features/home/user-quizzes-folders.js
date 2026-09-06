@@ -1097,7 +1097,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
   if (parsedFiles.length === 0) {
     showNotification(
       "تعذر الرفع",
-      "لم يتمكن أي من الملفات من الانضمام — تأكد أنها ملفات اختبار صالحة.",
+      "لم يتمكن أي من الملفات من الانضمام — تأكد أنها ملفات امتحان صالحة.",
       "warning",
     );
     return;
@@ -1273,7 +1273,7 @@ function quizToPayload(entry) {
       meta[key] = typeof val === "string" ? val.trim() : val;
     }
   }
-  if (!meta.title) meta.title = "اختبار";
+  if (!meta.title) meta.title = "امتحان";
 
   const questions = entry.questions || [];
   // Must mirror api/_validateQuiz.js's inferQuestionType exactly (options
@@ -1317,7 +1317,7 @@ function appendSubtree(userQuizzes, node, ancestorNames, rootName, items) {
       // A plain quiz leaf.
       items.push({
         type: "quiz",
-        name: childName || child.meta?.title || "اختبار",
+        name: childName || child.meta?.title || "امتحان",
         folderSegments: [...ancestorNames],
         rootName,
         quiz: quizToPayload(child),
@@ -1380,7 +1380,7 @@ export function buildFolderUploadPayload(userQuizzes, folderItems, additionalQui
   for (const quiz of additionalQuizzes || []) {
     items.push({
       type: "quiz",
-      name: (quiz.meta?.title || "").trim() || "اختبار",
+      name: (quiz.meta?.title || "").trim() || "امتحان",
       folderSegments: [...baseChain],
       rootName: targetCourseName,
       quiz: quizToPayload(quiz),
@@ -1460,10 +1460,10 @@ export function formatFolderAndQuizCount(subfolderCount, quizCount) {
   }
 
   if (quizCount > 0) {
-    if (quizCount === 1) parts.push("اختبار واحد");
-    else if (quizCount === 2) parts.push("اختباران");
-    else if (quizCount >= 3 && quizCount <= 10) parts.push(`${quizCount} اختبارات`);
-    else parts.push(`${quizCount} اختبار`);
+    if (quizCount === 1) parts.push("امتحان واحد");
+    else if (quizCount === 2) parts.push("امتحانان");
+    else if (quizCount >= 3 && quizCount <= 10) parts.push(`${quizCount} امتحانات`);
+    else parts.push(`${quizCount} امتحان`);
   }
 
   return parts.join(" · ");

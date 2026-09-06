@@ -520,7 +520,7 @@ body.sidebar-expanded {
   font-weight: 500;
 }
 
-/* Highlighted "كورسات مميزة" value — stands out from regular education-type
+/* Highlighted "مادة مميزة" value — stands out from regular education-type
    values (جامعي/ثانوي/إعدادي/إبتدائي) in both the full modal table and the
    dropdown submenu preview. */
 /* BUG FIX: the modal table's "featured-value" class used to go directly on

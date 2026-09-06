@@ -130,7 +130,7 @@ export class SearchManager {
       if (currentCategory.name === "امتحاناتك") {
         this.currentContext = "userQuizzes";
         if (this.elements.searchInput) {
-          this.elements.searchInput.placeholder = "ابحث في اختباراتك...";
+          this.elements.searchInput.placeholder = "ابحث في امتحاناتك...";
         }
         if (this.elements.headerSearchBtn) {
           this.elements.headerSearchBtn.style.display = "flex";
@@ -145,7 +145,7 @@ export class SearchManager {
 
         if (hasExams) {
           if (this.elements.searchInput) {
-            this.elements.searchInput.placeholder = "ابحث عن اختبار...";
+            this.elements.searchInput.placeholder = "ابحث عن امتحان...";
           }
           if (this.elements.headerSearchBtn) {
             this.elements.headerSearchBtn.style.display = "flex";
@@ -288,15 +288,15 @@ export class SearchManager {
       scopedCourses.forEach((course) => {
         allExams.push(...this.collectAllExams(course, visited));
       });
-      
+
       const quizResults = this.filterQuizzesBySearchQuery(allExams);
       this.addToSearchHistory(this.filters.searchQuery);
-      
+
       const sortedQuizzes = this.sortQuizzes(quizResults);
-      
+
       this.filteredCourses = sortedQuizzes;
       this.updateUI(sortedQuizzes);
-      
+
       if (this.onSearchCallback) {
         this.onSearchCallback(sortedQuizzes, "quizzes");
       }
@@ -505,11 +505,11 @@ export class SearchManager {
 
   filterByTrackScope(courses) {
     if (this.filters.scope === "all") return courses;
-    
+
     const profile = userProfile.getProfile();
     const education_type = profile ? profile.education_type : null;
     const ids = userProfile.getSubscribedCourseIds();
-    
+
     return courses.filter((c) => {
       if (c.education_type === "Featured") return ids.includes(c.id);
       if (!ids.includes(c.id)) return false;

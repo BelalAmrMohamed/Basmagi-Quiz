@@ -57,7 +57,7 @@ async function handleDeleteQuiz(req, res) {
 
     const { id } = req.body || {};
     if (!id) {
-        return res.status(400).json({ error: "معرف الاختبار مطلوب" });
+        return res.status(400).json({ error: "معرف الامتحان مطلوب" });
     }
 
     // Fetch admin profile to get ID
@@ -83,7 +83,7 @@ async function handleDeleteQuiz(req, res) {
         .maybeSingle();
 
     if (fetchErr || !quiz) {
-        return res.status(404).json({ error: "الاختبار غير موجود" });
+        return res.status(404).json({ error: "الامتحان غير موجود" });
     }
 
     // Authorization checks
@@ -100,7 +100,7 @@ async function handleDeleteQuiz(req, res) {
     }
 
     if (!isAuthorized) {
-        return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا الاختبار" });
+        return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا الامتحان" });
     }
 
     const { error: deleteErr } = await supabase
@@ -110,7 +110,7 @@ async function handleDeleteQuiz(req, res) {
 
     if (deleteErr) {
         console.error("[delete-quiz] Supabase error:", deleteErr.message);
-        return res.status(500).json({ error: "فشل حذف الاختبار. حاول مجددًا." });
+        return res.status(500).json({ error: "فشل حذف الامتحان. حاول مجددًا." });
     }
 
     // Decrement admin's upload count if they were the uploader

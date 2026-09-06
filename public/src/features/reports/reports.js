@@ -90,7 +90,7 @@ async function initReportsPage() {
   isAdmin = isAdminAuthenticated();
   try {
     adminRole = getAdminRoleInfo();
-  } catch (_) {}
+  } catch (_) { }
 
   renderShell();
   loadReports();
@@ -162,19 +162,18 @@ function renderShell() {
       <!-- CONTROLS -->
       <div class="reports-controls">
         <div class="controls-row-top">
-          ${
-            isAdmin
-              ? `
+          ${isAdmin
+      ? `
             <div class="scope-tabs" id="scopeTabs">
               <button class="scope-tab-btn ${currentScope === "my" ? "active" : ""}" data-scope="my">
-                <span>بلاغات اختباراتي</span>
+                <span>بلاغات امتحاناتي</span>
               </button>
               <button class="scope-tab-btn ${currentScope === "all" ? "active" : ""}" data-scope="all">
                 <span>جميع البلاغات</span>
               </button>
             </div>`
-              : `<div style="font-weight: 600; font-size: 1rem; color: var(--text-primary);">سجل بلاغاتي السابقة</div>`
-          }
+      : `<div style="font-weight: 600; font-size: 1rem; color: var(--text-primary);">سجل بلاغاتي السابقة</div>`
+    }
 
           <div class="search-filter-wrap">
             <svg class="search-icon-svg" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -417,12 +416,12 @@ function renderReportsList() {
     const emptyTitle = searchQuery
       ? "لا توجد نتائج مطابقة للبحث"
       : currentStatus === "pending"
-      ? "لا توجد بلاغات قيد الانتظار حالياً 🎉"
-      : "لا توجد بلاغات في هذه الفئة";
+        ? "لا توجد بلاغات قيد الانتظار حالياً 🎉"
+        : "لا توجد بلاغات في هذه الفئة";
 
     const emptyDesc = isAdmin
       ? "سيتم إدراج البلاغات الجديدة هنا فور تقديمها من الطلاب والمستخدمين."
-      : "عند مواجهة أي خطأ أو سؤال غير واضح في الامتحانات، يمكنك الإبلاغ عنه من خلال زر الإبلاغ داخل الاختبار وستتمكن من متابعة حله هنا.";
+      : "عند مواجهة أي خطأ أو سؤال غير واضح في الامتحانات، يمكنك الإبلاغ عنه من خلال زر الإبلاغ داخل الامتحان وستتمكن من متابعة حله هنا.";
 
     container.innerHTML = `
       <div class="reports-empty-state">
@@ -434,14 +433,13 @@ function renderReportsList() {
         </div>
         <div class="empty-title">${emptyTitle}</div>
         <div class="empty-desc">${emptyDesc}</div>
-        ${
-          !isAdmin
-            ? `<a href="/" class="empty-btn-action">
+        ${!isAdmin
+        ? `<a href="/" class="empty-btn-action">
                 <span>تصفح الامتحانات</span>
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                </a>`
-            : ""
-        }
+        : ""
+      }
       </div>
     `;
     return;
@@ -449,7 +447,7 @@ function renderReportsList() {
 
   let html = "";
   filtered.forEach((rep) => {
-    const quizTitle = rep.quizzes?.title || rep.quiz_title || "اختبار";
+    const quizTitle = rep.quizzes?.title || rep.quiz_title || "امتحان";
     const qIndex = rep.question_index ?? 0;
     const rawQuestionText = getQuestionText(rep);
     const dateFormatted = formatDate(rep.created_at);
@@ -509,9 +507,8 @@ function renderReportsList() {
             ${resolvedTimeHtml}
           </div>
 
-          ${
-            isAdmin && isPending
-              ? `
+          ${isAdmin && isPending
+        ? `
             <div class="report-actions">
               <button class="btn-resolve" onclick="window.resolveReport('${rep.id}', 'resolved')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -522,8 +519,8 @@ function renderReportsList() {
                 تجاهل
               </button>
             </div>`
-              : ""
-          }
+        : ""
+      }
         </div>
       </div>
     `;

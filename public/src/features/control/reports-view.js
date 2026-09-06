@@ -108,7 +108,7 @@ function renderReports(reports) {
   let html = "";
   reports.forEach((rep) => {
     const quiz = rep.quizzes || {};
-    const quizTitle = quiz.title || "اختبار غير معروف";
+    const quizTitle = quiz.title || "امتحان غير معروف";
     const questions = quiz.data?.questions || [];
     const qObj = questions[rep.question_index] || {};
     const rawQuestionText = qObj.q || qObj.question || qObj.text || "نص السؤال غير متوفر";
@@ -143,9 +143,8 @@ function renderReports(reports) {
           <div class="report-q-content">${renderMarkdown(rawQuestionText)}</div>
         </div>
 
-        ${
-          isPending
-            ? `
+        ${isPending
+        ? `
           <div class="report-actions">
             <button class="btn-resolve" onclick="window.resolveReport(${rep.id}, 'resolved')">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -156,11 +155,11 @@ function renderReports(reports) {
               تجاهل
             </button>
           </div>`
-            : `
+        : `
           <div class="report-status-badge ${rep.status}">
             ${rep.status === "resolved" ? "✓ تم الحل" : "✕ تم التجاهل"}
           </div>`
-        }
+      }
       </div>
     `;
   });

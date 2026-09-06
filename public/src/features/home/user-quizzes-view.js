@@ -15,16 +15,16 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { isAdminAuthenticated, fullSignOut } from "../../shared/adminAuth.js";
 import { _prompt } from "../../components/notifications/notifications.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
-import { 
-  currentFolderId, 
-  getChildren, 
-  getCurrentFolderPathStack, 
-  navigateToFolder, 
-  showContextMenu, 
-  handleDragStart, 
-  handleDragEnd, 
-  handleDragOver, 
-  handleDragLeave, 
+import {
+  currentFolderId,
+  getChildren,
+  getCurrentFolderPathStack,
+  navigateToFolder,
+  showContextMenu,
+  handleDragStart,
+  handleDragEnd,
+  handleDragOver,
+  handleDragLeave,
   handleDrop,
   createNewFolderOrCourse,
   createFolderOrCourseCard,
@@ -657,7 +657,7 @@ export function renderUserQuizzesView() {
       `;
       emptyState.innerHTML = `
         <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;" aria-hidden="true">📝</div>
-        <h3 style="margin-bottom: 10px;">${currentFolderId ? "هذا المجلد فارغ" : "لم تقم بإنشاء أي اختبارات أو مجلدات حتى الآن"}</h3>
+        <h3 style="margin-bottom: 10px;">${currentFolderId ? "هذا المجلد فارغ" : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن"}</h3>
         <p style="color: var(--color-text-secondary);">انقر على الزر الذي في الأعلى للبدء</p>
       `;
       quizzesContainer.appendChild(emptyState);

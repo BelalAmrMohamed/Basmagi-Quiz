@@ -101,11 +101,21 @@ export function restoreViewFromURL() {
   // links shared before this change.
   const courseMatch = pathname.match(/^\/course\/([^/]+)((?:\/[^/]+)*)\/?$/);
   if (courseMatch) {
-    let courseName;
+    // NOTE: this is already a slug (dashes for spaces, "--" for literal
+    // hyphens) straight from the URL path segment — NOT a raw display name.
+    // It must be compared directly against toSlug(node.name), the same way
+    // subSlugParts is compared a few lines below. Do NOT run it through
+    // toSlug() again: toSlug() isn't idempotent (it double-encodes an
+    // existing "-" as "--"), so re-slugging an already-slugged segment like
+    // "Artificial-Intelligence" produces "Artificial--Intelligence", which
+    // never matches any real course and silently falls through to
+    // renderRootCategories() below — this was a real bug (the root-view
+    // reset), not just a hypothetical one.
+    let courseSlug;
     try {
-      courseName = decodeURIComponent(courseMatch[1]);
+      courseSlug = decodeURIComponent(courseMatch[1]);
     } catch {
-      courseName = courseMatch[1];
+      courseSlug = courseMatch[1];
     }
 
     // Extra path segments (new scheme) take priority; fall back to the
@@ -136,7 +146,6 @@ export function restoreViewFromURL() {
 
     const categoryTree = getCategoryTree();
     if (categoryTree) {
-      const courseSlug = toSlug(courseName);
       const courseKey = Object.keys(categoryTree).find((key) => {
         const node = categoryTree[key];
         return !node.parent && toSlug(node.name) === courseSlug;

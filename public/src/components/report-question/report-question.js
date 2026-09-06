@@ -116,15 +116,15 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
   const submitBtn = document.getElementById("reportSubmitBtn");
 
   preview.textContent = questionText || "سؤال غير متوفر";
-  
+
   // Remove any old submit listeners
   const newForm = form.cloneNode(true);
   form.parentNode.replaceChild(newForm, form);
-  
+
   // Re-attach change listeners for the new form
   const radios = newForm.querySelectorAll('input[name="reportReason"]');
   const otherInput = newForm.querySelector("#reportReasonOther");
-  
+
   radios.forEach(radio => {
     radio.addEventListener('change', (e) => {
       if (e.target.value === 'أخرى') {
@@ -140,7 +140,7 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
 
   newForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
+
     const selectedReason = newForm.querySelector('input[name="reportReason"]:checked')?.value;
     let finalReason = selectedReason;
     if (selectedReason === 'أخرى') {
@@ -179,7 +179,7 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
         const reportRecord = {
           id: data.report?.id || crypto.randomUUID?.() || Date.now().toString(),
           quiz_id: quizId,
-          quiz_title: quizTitle || document.title.replace(" | منصة امتحانات بصمجي", "").trim() || "اختبار",
+          quiz_title: quizTitle || document.title.replace(" | منصة امتحانات بصمجي", "").trim() || "امتحان",
           question_index: questionIndex,
           question_text: questionText || `سؤال رقم ${questionIndex + 1}`,
           reason: finalReason,
@@ -194,9 +194,9 @@ export function openReportModal({ quizId, questionIndex, questionText, quizTitle
       }
 
       showNotification("تم إرسال البلاغ بنجاح. شكراً لك!");
-      
+
       overlay.classList.remove("show");
-      
+
       if (typeof onSuccess === 'function') {
         onSuccess(data.report);
       }

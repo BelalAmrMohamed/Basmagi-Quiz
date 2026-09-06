@@ -46,7 +46,7 @@ const sidebarMarkup = `
     const expanded = window.innerWidth > 768 && localStorage.getItem("sidebar_expanded") === "true";
     window.__sidebarExpandedInit = expanded;
     if (expanded) document.body.classList.add("sidebar-expanded");
-  } catch (_) {}
+  } catch (_) { }
 })();
 
 document.body.insertAdjacentHTML("afterbegin", sidebarMarkup);
@@ -82,7 +82,7 @@ if (sidebarNav) {
     "beforeend",
     `<button onclick="changeUsername()" class="menu-item mobile-only-menu-item" title="تغيير الإسم" data-tooltip="تغيير الإسم"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg><span class="menu-label">تغيير الإسم: <span class="change-username" id="userNameDisplay"></span></span></button>`,
   );
-    sidebar.insertAdjacentHTML("beforeend", `<div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية"><a href="/settings.html" class="menu-item" id="sidebarSettingsBtn" title="الإعدادات" data-tooltip="الإعدادات"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg><span class="menu-label">الإعدادات</span></a><button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span class="menu-label">تثبيت التطبيق</span></button></div>`);
+  sidebar.insertAdjacentHTML("beforeend", `<div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية"><a href="/settings.html" class="menu-item" id="sidebarSettingsBtn" title="الإعدادات" data-tooltip="الإعدادات"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg><span class="menu-label">الإعدادات</span></a><button class="menu-item install-app" title="تثبيت التطبيق" data-action="installApp" data-tooltip="تثبيت التطبيق" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><path d="M12 18h.01" /></svg><span class="menu-label">تثبيت التطبيق</span></button></div>`);
 }
 
 // ── "المستندات" (Docs) links ────────────────────────────────────────────
@@ -111,14 +111,14 @@ const DOCS_LINKS = [
   },
   {
     href: "/how-to-create-a-quiz.html",
-    label: "إنشاء اختبار",
+    label: "إنشاء امتحان",
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m15 5 3 3"/></svg>`,
   },
   // Still marked "قريباً" (Coming Soon) here, same soft-launch signal the
   // old per-page docs-switcher used to show for this doc specifically.
   {
     href: "/how-to-upload-a-quiz.html",
-    label: "رفع اختبار",
+    label: "رفع امتحان",
     soon: true,
     icon: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
   },
@@ -141,20 +141,20 @@ if (sidebarNav) {
   sidebarNav.insertAdjacentHTML(
     "beforeend",
     `<div class="menu-divider" role="separator" aria-hidden="true"></div>` +
-      `<div class="docs-menu-heading sidebar-expanded-only" aria-hidden="true">المستندات</div>` +
-      // Search only makes sense once the sidebar is wide enough to show an
-      // input + labels — hidden on the collapsed icon-rail via
-      // sidebar-expanded-only, same convention every other text control in
-      // this sidebar already follows (see the theme controls section
-      // above). With only six links this is a small convenience, not a
-      // necessity, but it's cheap and scales naturally if more docs are
-      // added later.
-      `<div class="docs-menu-search-wrap sidebar-expanded-only">` +
-      `<input type="search" id="docsMenuSearch" class="docs-menu-search" placeholder="بحث في المستندات" aria-label="بحث في المستندات" autocomplete="off">` +
-      `</div>` +
-      `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}` +
-      `<p class="docs-menu-empty" hidden>لا توجد نتائج</p>` +
-      `</div>`,
+    `<div class="docs-menu-heading sidebar-expanded-only" aria-hidden="true">المستندات</div>` +
+    // Search only makes sense once the sidebar is wide enough to show an
+    // input + labels — hidden on the collapsed icon-rail via
+    // sidebar-expanded-only, same convention every other text control in
+    // this sidebar already follows (see the theme controls section
+    // above). With only six links this is a small convenience, not a
+    // necessity, but it's cheap and scales naturally if more docs are
+    // added later.
+    `<div class="docs-menu-search-wrap sidebar-expanded-only">` +
+    `<input type="search" id="docsMenuSearch" class="docs-menu-search" placeholder="بحث في المستندات" aria-label="بحث في المستندات" autocomplete="off">` +
+    `</div>` +
+    `<div class="docs-menu-section" role="navigation" aria-label="مستندات المنصة">${docsLinksHtml}` +
+    `<p class="docs-menu-empty" hidden>لا توجد نتائج</p>` +
+    `</div>`,
   );
 
   // Mark the current page's link active via location.pathname, generically,

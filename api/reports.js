@@ -97,7 +97,7 @@ export default async function handler(req, res) {
         .eq("uploaded_by", adminId);
 
       if (quizError) {
-        return res.status(500).json({ error: "فشل جلب اختبارات المشرف" });
+        return res.status(500).json({ error: "فشل جلب امتحانات المشرف" });
       }
 
       myQuizIds = (adminQuizzes || []).map((q) => q.id);
@@ -170,7 +170,7 @@ export default async function handler(req, res) {
       const { quiz_id, question_index, reason } = payload;
 
       if (!quiz_id || !isValidUUID(quiz_id)) {
-        return res.status(400).json({ error: "معرف الاختبار غير صالح" });
+        return res.status(400).json({ error: "معرف الامتحان غير صالح" });
       }
       if (typeof question_index !== "number" || question_index < 0) {
         return res.status(400).json({ error: "رقم السؤال غير صالح" });
