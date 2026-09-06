@@ -292,7 +292,7 @@ window.handleSelectForQuestion = (qIdx, optIdx) => {
   maybeAutoSubmit();
 };
 
-// Vertical style: check answer for a specific question
+// Vertical style: تحقق من الإجابة for a specific question
 window.checkAnswerForQuestion = (qIdx) => {
   const q = questions[qIdx];
   const isEssay = isEssayQuestion(q);
@@ -1873,7 +1873,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         <div class="essay-container">
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
-        <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>Check Answer</button>
+        <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>تحقق من الإجابة</button>
         ${isLocked
           ? `<div class="formal-answer">            
           <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
@@ -1925,7 +1925,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     html: `
       ${header}
       <div class="options-grid">${optionsHtml}</div>
-      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${checkDisabled ? "disabled" : ""}>Check Answer</button>
+      <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${checkDisabled ? "disabled" : ""}>تحقق من الإجابة</button>
       <div class="${feedbackClass}">${feedbackText}</div>
     `,
   };
@@ -2200,7 +2200,7 @@ function buildQuestionBodyHTML(q, idx) {
           ? "disabled"
           : ""
         }>
-          Check Answer
+          تحقق من الإجابة
         </button>
         ${isLocked
           ? `
@@ -2264,7 +2264,7 @@ function buildQuestionBodyHTML(q, idx) {
       }"
               id="checkBtn" onclick="window.checkAnswer()"
               ${userSelected === undefined || (isMultiple && (!Array.isArray(userSelected) || userSelected.length === 0)) ? "disabled" : ""}>
-        Check Answer
+        تحقق من الإجابة
       </button>
       <div class="${feedbackClass}">${feedbackText}</div>
     `,
