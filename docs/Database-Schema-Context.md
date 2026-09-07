@@ -1,5 +1,7 @@
-## What is this file?
+# What is this file?
 This file is for context only. It's copied from supabase directly after running the latest migration `supabase\migrations\20260904010000_public_relational_reads.sql`.
+
+# Database 
 
 ## Table `quizzes`
 
