@@ -16,6 +16,7 @@ import { showNotification } from "../../components/notifications/notifications.j
 import {
   gradeEssay,
   isEssayQuestion,
+  isAnswerCorrect,
   calculateQuizMetrics,
 } from "../../shared/rate-answers.js";
 
@@ -297,6 +298,30 @@ export async function exportToPptx(
         code{background:rgba(99,102,241,0.1);border:1px solid #e2e8f0;border-radius:4px;
              padding:1px 6px;font-family:Consolas,monospace;font-size:0.88em}
         pre code{background:none;border:none;padding:0;color:inherit}
+        /* Fix #6: syntax-highlighting token colors. highlightCode() (shared/
+           markdown.js) wraps fenced-code tokens in <span class="sh-*">, whose
+           colors normally come from shared/markdown-css.js's MARKDOWN_CSS —
+           which is NOT imported here (it leans on var(--...) custom
+           properties that only resolve on the live page's :root, so
+           injecting it wholesale into this isolated off-screen wrapper would
+           just trade one invisible-text bug for another). These are the same
+           token colors hardcoded as plain hex instead, so code blocks render
+           with real syntax coloring on the dark pre background rather than
+           silently inheriting the surrounding text's color (which is
+           whatever the caller's own textHex is — often a dark navy meant for
+           a light background — producing the reported "black on black". */
+        .sh-comment   { color: #636370; font-style: italic; }
+        .sh-keyword   { color: #ff79c6; font-weight: 600; }
+        .sh-string    { color: #50fa7b; }
+        .sh-number    { color: #bd93f9; }
+        .sh-type      { color: #8be9fd; }
+        .sh-function  { color: #ffb86c; }
+        .sh-property  { color: #f1fa8c; }
+        .sh-builtin   { color: #8be9fd; font-style: italic; }
+        .sh-operator  { color: #ff79c6; }
+        .sh-variable  { color: #f8f8f2; }
+        .sh-tag       { color: #ff79c6; }
+        .sh-attr      { color: #50fa7b; }
         strong{font-weight:700} em{font-style:italic} del{text-decoration:line-through}
         ul,ol{padding-left:22px;margin:4px 0} li{margin:2px 0}
         blockquote{border-left:3px solid #4f46e5;margin:6px 0;
@@ -884,27 +909,52 @@ export async function exportToPptx(
       const questionText = sanitizeText(question.q || "");
 
       // ── Per-question mutable slide state ──
-      let slide = addContentSlide();
+      // Fix #7 (empty slides): `slide` is created LAZILY on first real
+      // content write instead of eagerly here. pptxgenjs@3.12.0 has no
+      // removeSlide()/deleteSlide() API (confirmed against its source), so
+      // the only reliable way to guarantee a slide is never shipped with
+      // nothing drawn on it (just header/footer/background chrome) is to
+      // never call addContentSlide() speculatively in the first place —
+      // "create, then maybe delete if unused" isn't available, so this
+      // does "only create once something is actually about to be drawn."
+      // getSlide() is what every content-writing call below should go
+      // through instead of reading `slide` directly.
+      let slide = null;
       let currentY = CONTENT_TOP;
+      let pendingContinuationLabel = false;
+
+      const getSlide = () => {
+        if (!slide) {
+          slide = addContentSlide();
+          if (pendingContinuationLabel) {
+            slide.addText(`Q${index + 1} — continued`, {
+              x: MARGIN,
+              y: CONTENT_TOP,
+              w: 2.5,
+              h: 0.22,
+              fontSize: 9,
+              color: COLORS.textLight,
+              italic: true,
+            });
+            pendingContinuationLabel = false;
+          }
+        }
+        return slide;
+      };
 
       /**
        * Ensures there is at least `neededH` inches of vertical space remaining.
-       * If not, a new continuation slide is created and currentY is reset.
-       * Because `slide` and `currentY` are captured by reference in this closure,
-       * the caller always reads the updated values after calling maybeNewSlide().
+       * If not, the CURRENT slide reference is cleared (rather than a new
+       * slide being created immediately) and currentY is reset — the actual
+       * addContentSlide() call is deferred to getSlide(), the next time
+       * something is really drawn. Because `slide`/`currentY` are captured
+       * by reference in this closure, the caller always reads the updated
+       * values after calling maybeNewSlide().
        */
       const maybeNewSlide = (neededH) => {
-        if (currentY + neededH > CONTENT_BOTTOM) {
-          slide = addContentSlide();
-          slide.addText(`Q${index + 1} — continued`, {
-            x: MARGIN,
-            y: CONTENT_TOP,
-            w: 2.5,
-            h: 0.22,
-            fontSize: 9,
-            color: COLORS.textLight,
-            italic: true,
-          });
+        if (slide !== null && currentY + neededH > CONTENT_BOTTOM) {
+          slide = null;
+          pendingContinuationLabel = true;
           currentY = CONTENT_TOP + 0.27;
         }
       };
@@ -958,7 +1008,7 @@ export async function exportToPptx(
             maybeNewSlide(totalH);
 
             if (bgHex) {
-              slide.addShape(pptx.shapes.RECTANGLE, {
+              getSlide().addShape(pptx.shapes.RECTANGLE, {
                 x,
                 y: currentY,
                 w,
@@ -967,7 +1017,7 @@ export async function exportToPptx(
                 line: { color: bgHex },
               });
             }
-            slide.addImage({
+            getSlide().addImage({
               data: img.dataUrl,
               x: x + insetIn,
               y: currentY + insetIn,
@@ -1001,7 +1051,7 @@ export async function exportToPptx(
           ...(bgHex && { fill: { color: bgHex } }),
           ...(insetIn > 0 && { inset: insetIn }),
         };
-        slide.addText(plain, textOpts);
+        getSlide().addText(plain, textOpts);
         currentY += estimatedH;
         return estimatedH;
       };
@@ -1010,7 +1060,7 @@ export async function exportToPptx(
       const addLabel = (labelText, colorHex = COLORS.textMedium, fsPt = 10) => {
         const h = 0.28;
         maybeNewSlide(h);
-        slide.addText(labelText, {
+        getSlide().addText(labelText, {
           x: MARGIN,
           y: currentY,
           w: USABLE_WIDTH,
@@ -1037,7 +1087,7 @@ export async function exportToPptx(
           if (!hasUserAnswer) {
             statusText = "SKIPPED";
             statusBg = COLORS.textLight;
-          } else if (userAns === (question.correct ?? question.answer)) {
+          } else if (isAnswerCorrect(userAns, question.correct ?? question.answer)) {
             statusText = "CORRECT";
             statusBg = COLORS.success;
           } else {
@@ -1047,7 +1097,7 @@ export async function exportToPptx(
         }
 
         maybeNewSlide(0.3);
-        slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+        getSlide().addShape(pptx.shapes.ROUNDED_RECTANGLE, {
           x: MARGIN,
           y: currentY,
           w: 1.2,
@@ -1055,7 +1105,7 @@ export async function exportToPptx(
           r: 0.14,
           fill: { color: statusBg },
         });
-        slide.addText(statusText, {
+        getSlide().addText(statusText, {
           x: MARGIN,
           y: currentY,
           w: 1.2,
@@ -1067,7 +1117,7 @@ export async function exportToPptx(
         });
       }
 
-      slide.addText(`Question ${index + 1}`, {
+      getSlide().addText(`Question ${index + 1}`, {
         x: isResultsMode ? MARGIN + 1.3 : MARGIN,
         y: currentY,
         w: 4,
@@ -1110,7 +1160,7 @@ export async function exportToPptx(
             const imgY =
               currentY -
               estimateTextHeight(sanitizeText(questionText), 16, textWidth);
-            slide.addImage({
+            getSlide().addImage({
               path: question.image,
               x: MARGIN + textWidth + 0.2,
               y: Math.max(imgY, CONTENT_TOP + 0.35),
@@ -1122,7 +1172,7 @@ export async function exportToPptx(
           } else {
             // Stacked: image then text
             maybeNewSlide(imgSize.height + 0.2);
-            slide.addImage({
+            getSlide().addImage({
               path: question.image,
               x: (SLIDE_WIDTH - imgSize.width) / 2,
               y: currentY,
@@ -1189,7 +1239,7 @@ export async function exportToPptx(
 
           const scoreH = 0.38;
           maybeNewSlide(scoreH);
-          slide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+          getSlide().addShape(pptx.shapes.ROUNDED_RECTANGLE, {
             x: MARGIN,
             y: currentY,
             w: USABLE_WIDTH,
@@ -1198,7 +1248,7 @@ export async function exportToPptx(
             fill: { color: scoreBg },
             line: { color: scoreColor, width: 1 },
           });
-          slide.addText(
+          getSlide().addText(
             [
               {
                 text: `Score: ${essayScore}/5  `,
@@ -1240,12 +1290,23 @@ export async function exportToPptx(
         const useTwoCols = !anyMdOrMath && options.length > 3;
         const colWidth = useTwoCols ? (USABLE_WIDTH - 0.2) / 2 : USABLE_WIDTH;
 
+        // Multi-select support: question.correct may be an array (e.g. [0, 2])
+        // instead of a single index, and userAns follows the same shape for
+        // multi-select questions (see shared/rate-answers.js's isAnswerCorrect,
+        // the single source of truth for this comparison used by the live
+        // quiz UI and results page — reused here rather than reimplemented).
+        const isIdxCorrect = (idx) =>
+          Array.isArray(correctIdx) ? correctIdx.includes(idx) : idx === correctIdx;
+        const isIdxUserSelected = (idx) =>
+          Array.isArray(userAns) ? userAns.includes(idx) : idx === userAns;
+
         for (let idx = 0; idx < options.length; idx++) {
           const opt = options[idx];
           const optText = String(opt);
           const label = String.fromCharCode(65 + idx);
-          const isCorrect = idx === correctIdx;
-          const isUserSel = isResultsMode && hasUserAnswer && idx === userAns;
+          const isCorrect = isIdxCorrect(idx);
+          const isUserSel =
+            isResultsMode && hasUserAnswer && isIdxUserSelected(idx);
 
           let highlightBg = COLORS.surface;
           let borderColor = COLORS.border;
@@ -1268,6 +1329,12 @@ export async function exportToPptx(
               ? await renderTextToImage(prefixedText, {
                 maxWidthIn: USABLE_WIDTH - 0.2,
                 bgHex: highlightBg,
+                // Explicit rather than relying on renderTextToImage's own
+                // default — highlightBg is always a light tone
+                // (correctBg/userWrong/surface) so COLORS.textDark reads
+                // fine on all three, but that should be asserted here, not
+                // assumed silently via an unset param.
+                textHex: COLORS.textDark,
                 fontSizePt: 12,
               }).catch(() => null)
               : null;
@@ -1276,7 +1343,7 @@ export async function exportToPptx(
               const optH = Math.max(img.heightIn + 0.12, 0.38);
               maybeNewSlide(optH + 0.06);
 
-              slide.addShape(pptx.shapes.RECTANGLE, {
+              getSlide().addShape(pptx.shapes.RECTANGLE, {
                 x: MARGIN,
                 y: currentY,
                 w: USABLE_WIDTH,
@@ -1284,7 +1351,7 @@ export async function exportToPptx(
                 fill: { color: highlightBg },
                 line: { color: borderColor, width: borderWidth },
               });
-              slide.addImage({
+              getSlide().addImage({
                 data: img.dataUrl,
                 x: MARGIN + 0.08,
                 y: currentY + 0.06,
@@ -1300,7 +1367,7 @@ export async function exportToPptx(
                 0.35,
               );
               maybeNewSlide(optH + 0.06);
-              slide.addText(plain, {
+              getSlide().addText(plain, {
                 x: MARGIN,
                 y: currentY,
                 w: USABLE_WIDTH,
@@ -1336,7 +1403,7 @@ export async function exportToPptx(
                 ? currentY - (optH + 0.06) // align with the left cell in the same row
                 : currentY;
 
-            slide.addText(plain, {
+            getSlide().addText(plain, {
               x: optX,
               y: optY,
               w: colWidth,
