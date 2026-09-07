@@ -159,7 +159,7 @@ export function createUserQuizCard(quiz, index) {
   if (userQuizPassword) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
   downloadBtn.onclick = (e) => {
     e.stopPropagation();
-    showUserQuizDownloadPopup(quiz);
+    showUserQuizDownloadPopup(quiz, downloadBtn);
   };
 
   // ── More (⋮) button — opens the Action Overlay ──────────────────────────

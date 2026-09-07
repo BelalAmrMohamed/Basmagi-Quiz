@@ -11,7 +11,10 @@ import { isRecentlyAdded } from "./date-utils.js";
 import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
 import { qz } from "./quiz-schema.js";
 import { ensureDownloadAllowed } from "./download-password.js";
-import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
+import {
+  showDownloadModal,
+  withDownloadLoading,
+} from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
@@ -202,7 +205,10 @@ export function createExamCard(exam) {
   if (exam.password) downloadBtn.title = "هذا الامتحان محمي بكلمة مرور";
   downloadBtn.onclick = (ev) => {
     ev.stopPropagation();
-    showDownloadPopup();
+    // showDownloadPopup() awaits ensureDownloadAllowed()/loadFullQuizData()
+    // before the modal ever appears — without a loading state here, that
+    // gap reads as unresponsive lag on click (the delay users reported).
+    withDownloadLoading(downloadBtn, showDownloadPopup);
   };
 
   const moreBtn = document.createElement("button");

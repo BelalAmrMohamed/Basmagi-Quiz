@@ -386,44 +386,44 @@ export const _HL_KEYWORDS = {
 // Programming languages
 _HL_KEYWORDS.javascript = _HL_KEYWORDS.js;
 _HL_KEYWORDS.typescript = _HL_KEYWORDS.ts;
-_HL_KEYWORDS.jsx        = _HL_KEYWORDS.js;
-_HL_KEYWORDS.tsx        = _HL_KEYWORDS.ts;
-_HL_KEYWORDS.cpp        = _HL_KEYWORDS.c;
-_HL_KEYWORDS["c++"]     = _HL_KEYWORDS.c;
-_HL_KEYWORDS.cxx        = _HL_KEYWORDS.c;
-_HL_KEYWORDS.cs         = _HL_KEYWORDS.csharp;
-_HL_KEYWORDS["c#"]      = _HL_KEYWORDS.csharp;
-_HL_KEYWORDS.py         = _HL_KEYWORDS.python;
-_HL_KEYWORDS.rb         = _HL_KEYWORDS.ruby;
-_HL_KEYWORDS.kt         = _HL_KEYWORDS.kotlin;
-_HL_KEYWORDS.rs         = _HL_KEYWORDS.rust;
-_HL_KEYWORDS.golang     = _HL_KEYWORDS.go;
-_HL_KEYWORDS.ex         = _HL_KEYWORDS.elixir;
-_HL_KEYWORDS.exs        = _HL_KEYWORDS.elixir;
-_HL_KEYWORDS.scala      = _HL_KEYWORDS.scala; // keep explicit for look-up clarity
-_HL_KEYWORDS.sc         = _HL_KEYWORDS.scala;
-_HL_KEYWORDS.pl         = _HL_KEYWORDS.perl;
-_HL_KEYWORDS.pm         = _HL_KEYWORDS.perl;
-_HL_KEYWORDS.ps1        = _HL_KEYWORDS.powershell;
-_HL_KEYWORDS.psm1       = _HL_KEYWORDS.powershell;
-_HL_KEYWORDS.psd1       = _HL_KEYWORDS.powershell;
+_HL_KEYWORDS.jsx = _HL_KEYWORDS.js;
+_HL_KEYWORDS.tsx = _HL_KEYWORDS.ts;
+_HL_KEYWORDS.cpp = _HL_KEYWORDS.c;
+_HL_KEYWORDS["c++"] = _HL_KEYWORDS.c;
+_HL_KEYWORDS.cxx = _HL_KEYWORDS.c;
+_HL_KEYWORDS.cs = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS["c#"] = _HL_KEYWORDS.csharp;
+_HL_KEYWORDS.py = _HL_KEYWORDS.python;
+_HL_KEYWORDS.rb = _HL_KEYWORDS.ruby;
+_HL_KEYWORDS.kt = _HL_KEYWORDS.kotlin;
+_HL_KEYWORDS.rs = _HL_KEYWORDS.rust;
+_HL_KEYWORDS.golang = _HL_KEYWORDS.go;
+_HL_KEYWORDS.ex = _HL_KEYWORDS.elixir;
+_HL_KEYWORDS.exs = _HL_KEYWORDS.elixir;
+_HL_KEYWORDS.scala = _HL_KEYWORDS.scala; // keep explicit for look-up clarity
+_HL_KEYWORDS.sc = _HL_KEYWORDS.scala;
+_HL_KEYWORDS.pl = _HL_KEYWORDS.perl;
+_HL_KEYWORDS.pm = _HL_KEYWORDS.perl;
+_HL_KEYWORDS.ps1 = _HL_KEYWORDS.powershell;
+_HL_KEYWORDS.psm1 = _HL_KEYWORDS.powershell;
+_HL_KEYWORDS.psd1 = _HL_KEYWORDS.powershell;
 // Shell
-_HL_KEYWORDS.sh         = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.shell      = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.zsh        = _HL_KEYWORDS.bash;
-_HL_KEYWORDS.fish       = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.sh = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.shell = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.zsh = _HL_KEYWORDS.bash;
+_HL_KEYWORDS.fish = _HL_KEYWORDS.bash;
 // Data / config formats  (handled by dedicated highlighters; stub entries so
 // _HL_KEYWORDS look-up returns a truthy value and highlightCode doesn't skip them)
-_HL_KEYWORDS.yml        = _HL_KEYWORDS.yaml;
-_HL_KEYWORDS.json5      = _HL_KEYWORDS.yaml; // close-enough subset for now
-_HL_KEYWORDS.gql        = _HL_KEYWORDS.graphql;
+_HL_KEYWORDS.yml = _HL_KEYWORDS.yaml;
+_HL_KEYWORDS.json5 = _HL_KEYWORDS.yaml; // close-enough subset for now
+_HL_KEYWORDS.gql = _HL_KEYWORDS.graphql;
 // Markup (also handled by dedicated highlighters — stubs make aliases work)
-_HL_KEYWORDS.md         = null; // markdown → dedicated highlighter (no kw set)
-_HL_KEYWORDS.markdown   = null;
+_HL_KEYWORDS.md = null; // markdown → dedicated highlighter (no kw set)
+_HL_KEYWORDS.markdown = null;
 
 // JS/TS built-ins worth highlighting
 export const _HL_BUILTINS_JS = new Set([
-  "console",   "Math",   "Object",   "Array",   "String",   "Number",   "Boolean",   "Promise",   "JSON",   "Date",   "RegExp",   "Error",   "Map",   "Set",   "WeakMap",   "WeakSet",   "Symbol",   "Proxy",   "Reflect",   "Intl",   "URL",   "fetch",   "setTimeout",   "setInterval",   "clearTimeout",   "clearInterval",   "parseInt",   "parseFloat",   "isNaN",   "isFinite",   "encodeURIComponent",   "decodeURIComponent",   "document",   "window",   "navigator",
+  "console", "Math", "Object", "Array", "String", "Number", "Boolean", "Promise", "JSON", "Date", "RegExp", "Error", "Map", "Set", "WeakMap", "WeakSet", "Symbol", "Proxy", "Reflect", "Intl", "URL", "fetch", "setTimeout", "setInterval", "clearTimeout", "clearInterval", "parseInt", "parseFloat", "isNaN", "isFinite", "encodeURIComponent", "decodeURIComponent", "document", "window", "navigator",
 ]);
 
 // CSS value-position keywords (color/layout keywords like "auto", "flex",
@@ -432,22 +432,22 @@ export const _HL_BUILTINS_JS = new Set([
 // PERF: hoisted to module scope — previously re-allocated as a `new Set()`
 // on every single matched identifier inside the CSS tokenizer's hot loop.
 export const _CSS_VALUE_KEYWORDS = new Set([
-  "auto","none","inherit","initial","unset","revert","normal","bold",
-  "italic","block","inline","flex","grid","inline-block","inline-flex",
-  "inline-grid","contents","flow-root","table","absolute","relative",
-  "fixed","sticky","static","center","left","right","top","bottom",
-  "middle","baseline","stretch","start","end","space-between",
-  "space-around","space-evenly","wrap","nowrap","row","column",
-  "row-reverse","column-reverse","visible","hidden","scroll",
-  "clip","overflow","pointer","default","text","crosshair","grab",
-  "grabbing","transparent","currentColor","solid","dashed","dotted",
-  "double","groove","ridge","inset","outset","underline","overline",
-  "line-through","uppercase","lowercase","capitalize","ease","linear",
-  "ease-in","ease-out","ease-in-out","forwards","backwards","both",
-  "infinite","alternate","reverse","paused","running","serif",
-  "sans-serif","monospace","cursive","fantasy","system-ui",
-  "max-content","min-content","fit-content","contain","cover",
-  "no-repeat","repeat","repeat-x","repeat-y","round","space",
+  "auto", "none", "inherit", "initial", "unset", "revert", "normal", "bold",
+  "italic", "block", "inline", "flex", "grid", "inline-block", "inline-flex",
+  "inline-grid", "contents", "flow-root", "table", "absolute", "relative",
+  "fixed", "sticky", "static", "center", "left", "right", "top", "bottom",
+  "middle", "baseline", "stretch", "start", "end", "space-between",
+  "space-around", "space-evenly", "wrap", "nowrap", "row", "column",
+  "row-reverse", "column-reverse", "visible", "hidden", "scroll",
+  "clip", "overflow", "pointer", "default", "text", "crosshair", "grab",
+  "grabbing", "transparent", "currentColor", "solid", "dashed", "dotted",
+  "double", "groove", "ridge", "inset", "outset", "underline", "overline",
+  "line-through", "uppercase", "lowercase", "capitalize", "ease", "linear",
+  "ease-in", "ease-out", "ease-in-out", "forwards", "backwards", "both",
+  "infinite", "alternate", "reverse", "paused", "running", "serif",
+  "sans-serif", "monospace", "cursive", "fantasy", "system-ui",
+  "max-content", "min-content", "fit-content", "contain", "cover",
+  "no-repeat", "repeat", "repeat-x", "repeat-y", "round", "space",
 ]);
 
 /**
@@ -461,11 +461,11 @@ export function highlightCode(code, lang) {
   // ── Specialised language routing ──────────────────────────────────────────
   const isHtmlLike =
     langKey === "html" || langKey === "xml" || langKey === "svg";
-  const isCss    = langKey === "css" || langKey === "scss" || langKey === "less";
-  const isJson   = langKey === "json" || langKey === "json5";
-  const isMd     = langKey === "markdown" || langKey === "md";
-  const isYaml   = langKey === "yaml" || langKey === "yml";
-  const isToml   = langKey === "toml";
+  const isCss = langKey === "css" || langKey === "scss" || langKey === "less";
+  const isJson = langKey === "json" || langKey === "json5";
+  const isMd = langKey === "markdown" || langKey === "md";
+  const isYaml = langKey === "yaml" || langKey === "yml";
+  const isToml = langKey === "toml";
   const isDockerfile = langKey === "dockerfile" || langKey === "docker";
   const keywords = _HL_KEYWORDS[langKey] ?? null; // may be null for md/markdown
 
@@ -968,25 +968,25 @@ export function highlightCode(code, lang) {
     // We use named indices based on whether isJsLike is true.
     const G = isJsLike
       ? {
-          lineComment: 1,
-          blockComment: 2,
-          templateLit: 3,
-          dqString: 4,
-          sqString: 5,
-          num: 6,
-          word: 7,
-          op: 8,
-        }
+        lineComment: 1,
+        blockComment: 2,
+        templateLit: 3,
+        dqString: 4,
+        sqString: 5,
+        num: 6,
+        word: 7,
+        op: 8,
+      }
       : {
-          lineComment: 1,
-          blockComment: 2,
-          templateLit: -1,
-          dqString: 3,
-          sqString: 4,
-          num: 5,
-          word: 6,
-          op: 7,
-        };
+        lineComment: 1,
+        blockComment: 2,
+        templateLit: -1,
+        dqString: 3,
+        sqString: 4,
+        num: 5,
+        word: 6,
+        op: 7,
+      };
 
     const lineComment = m[G.lineComment];
     const blockComment = m[G.blockComment];
@@ -1077,7 +1077,7 @@ export function detectLang(code) {
   if (/^\s*<!DOCTYPE\s+html/i.test(t) || /^\s*<(?:html|head|body|div|span|p|h[1-6])[\s>]/i.test(t)) return "html";
   // JSON
   if (/^\s*[{\[]/.test(t) && /[}\]]\s*$/.test(t)) {
-    try { JSON.parse(t); return "json"; } catch {/* not json */}
+    try { JSON.parse(t); return "json"; } catch {/* not json */ }
   }
   // YAML (loose check)
   if (/^---\s*$/m.test(t) || /^[a-zA-Z_][\w.\-]*\s*:/m.test(t)) return "yaml";
@@ -1157,15 +1157,15 @@ export function _renderMarkdownCore(str) {
 
       return stashPush(
         `<div class="code-block-wrapper">` +
-          langLabel +
-          `<button class="copy-code-btn"
+        langLabel +
+        `<button class="copy-code-btn"
                  onclick="window.copyCodeBlock(this)"
                  aria-label="Copy code">` +
-          ICON_COPY +
-          `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
-          `</button>` +
-          `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
-          `</div>`,
+        ICON_COPY +
+        `<span class="copy-label">${escHtml(COPY_LABEL)}</span>` +
+        `</button>` +
+        `<pre class="code-block ltr${langClass}"><code>${highlighted}</code></pre>` +
+        `</div>`,
       );
     },
   );
@@ -1234,8 +1234,8 @@ export function _renderMarkdownCore(str) {
 
       return stashPush(
         `<div class="md-table-wrapper">` +
-          `<table class="md-table">${thead}${tbody}</table>` +
-          `</div>`,
+        `<table class="md-table">${thead}${tbody}</table>` +
+        `</div>`,
       );
     },
   );
@@ -1619,7 +1619,7 @@ export function _processByLine(element) {
  * @param {HTMLElement} element
  * @returns {string}
  */
-function _ownText(element) {
+export function _ownText(element) {
   let text = "";
   element.childNodes.forEach((node) => {
     if (node.nodeType === 3) {

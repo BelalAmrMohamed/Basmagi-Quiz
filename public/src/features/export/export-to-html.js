@@ -19,6 +19,89 @@ import {
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
+// Same reasoning as export-to-quiz.js's resolveMediaUrl(): some question
+// videos/audio are stored as paths relative to the platform's own origin
+// (to save Supabase space). That resolves fine on the live site but breaks
+// once the same path ends up in a downloaded file (opened via file:// or —
+// for PDF — printed from a detached iframe with no meaningful base URL).
+const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
+const resolveMediaUrl = (url) => {
+    if (!url || typeof url !== "string") return url;
+    if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    const origin =
+        (typeof window !== "undefined" && window.location && window.location.origin) ||
+        PLATFORM_ORIGIN;
+    try {
+        return new URL(url, origin).href;
+    } catch {
+        return url;
+    }
+};
+
+const YOUTUBE_RE =
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+
+/**
+ * Renders a question's audio as an inline <audio> player (works both when
+ * viewed live in a browser and when opened as a downloaded .html file,
+ * since the URL is already resolved to an absolute one by the time this
+ * runs). Not shown in the print/PDF pipeline in any special way — an
+ * <audio> control simply doesn't print, so PDF export instead prints the
+ * fallback link text below it.
+ * @param {string} audioUrl
+ * @returns {string}
+ */
+function renderQuestionAudio(audioUrl) {
+    if (!audioUrl) return "";
+    const resolved = resolveMediaUrl(audioUrl);
+    return `
+    <div class="question-media-container question-audio-container">
+        <audio controls preload="metadata" class="question-audio">
+            <source src="${resolved}" />
+            Your browser doesn't support audio playback.
+        </audio>
+        <div class="question-media-print-link">🎵 Audio: <a href="${resolved}" target="_blank" rel="noopener noreferrer">${resolved}</a></div>
+    </div>`;
+}
+
+/**
+ * Renders a question's video. YouTube links get a linked thumbnail
+ * (img.youtube.com always exists for any valid video ID and is a real
+ * <img>, so — unlike an <iframe> embed — it actually shows up when
+ * printed to PDF). Direct video files get a real <video> for on-screen/
+ * interactive-HTML use, plus the same printable fallback link.
+ * @param {string} videoUrl
+ * @returns {string}
+ */
+function renderQuestionVideo(videoUrl) {
+    if (!videoUrl) return "";
+    const resolved = resolveMediaUrl(videoUrl);
+    const ytMatch = String(videoUrl).match(YOUTUBE_RE);
+
+    if (ytMatch) {
+        const videoId = ytMatch[1];
+        const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        return `
+    <div class="question-media-container question-video-container">
+        <a href="${watchUrl}" target="_blank" rel="noopener noreferrer" class="question-video-thumb-link">
+            <img src="${thumbUrl}" alt="YouTube video thumbnail" class="question-video-thumb">
+            <span class="question-video-play-badge">▶</span>
+        </a>
+        <div class="question-media-print-link">🎬 Video: <a href="${watchUrl}" target="_blank" rel="noopener noreferrer">${watchUrl}</a></div>
+    </div>`;
+    }
+
+    return `
+    <div class="question-media-container question-video-container">
+        <video controls preload="metadata" playsinline class="question-video">
+            <source src="${resolved}" />
+            Your browser doesn't support video playback.
+        </video>
+        <div class="question-media-print-link">🎬 Video: <a href="${resolved}" target="_blank" rel="noopener noreferrer">${resolved}</a></div>
+    </div>`;
+}
+
 export async function buildQuizHtml(config, questions, userAnswers = []) {
     // Convert local images to base64
     const processedQuestions = await convertImagesToBase64(questions);
@@ -269,6 +352,8 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
               <span>${isEssayQuestion(q) ? "Essay" : "MCQ"}</span>
           </div>
           ${q.image ? `<img src="${q.image}" class="question-image" alt="Question Image" onerror="this.alt='[Image not available]'; this.style.border='2px dashed #666';">` : ""}
+          ${renderQuestionAudio(q.audio)}
+          ${renderQuestionVideo(q.video)}
           <div class="q-text">${renderMarkdown(q.q)}</div>`;
 
         if (isEssayQuestion(q)) {

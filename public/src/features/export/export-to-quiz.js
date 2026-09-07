@@ -16,11 +16,13 @@ import {
   applyInline,
   escHtml,
   highlightCode,
+  _ownText,
   _processElement,
   _processByLine,
   _applyDirectionClass,
   _HL_KEYWORDS,
   _HL_BUILTINS_JS,
+  _CSS_VALUE_KEYWORDS,
   _SKIP_TAGS,
   _LTR_ONLY_SELECTOR,
   _BLOCK_CHILD_SELECTOR,
@@ -108,10 +110,22 @@ export async function buildStandaloneQuizHtml(config, questions) {
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
   <script type="module">
-        const ICON_CHECK = \`\${ICON_CHECK}\`;
-        const ICON_COPY = \`\${ICON_COPY}\`;
-        const COPY_LABEL = \`\${COPY_LABEL}\`;
+        // NOTE: these are plain string literals baked in at export time from
+        // the live markdown.js module's ICON_CHECK/ICON_COPY/COPY_LABEL —
+        // NOT references to those exports (this file has no import/module
+        // binding for them). Do not rewrite as \`const ICON_CHECK = \${ICON_CHECK}\`
+        // — that self-references the const being declared and throws
+        // "Cannot access 'ICON_CHECK' before initialization".
+        const ICON_CHECK = ${JSON.stringify(ICON_CHECK)};
+        const ICON_COPY = ${JSON.stringify(ICON_COPY)};
+        const COPY_LABEL = ${JSON.stringify(COPY_LABEL)};
 
+        // window.copyCodeBlock is registered here (rather than relying on
+        // markdown.js's own module-level \`window.copyCodeBlock = ...\` side
+        // effect) because that assignment is not a named function — the
+        // .toString()-based serialization used for every other markdown.js
+        // helper further down this file can't capture a bare arrow-function
+        // assignment statement, only function declarations/expressions.
         window.copyCodeBlock = (btn) => {
           const wrapper = btn.closest(".code-block-wrapper");
           if (!wrapper) return;
@@ -1963,6 +1977,18 @@ ${quizInfoModalHtml}
 
   const _HL_BUILTINS_JS = ${serializeHlBuiltinsJs(_HL_BUILTINS_JS)};
 
+  // highlightCode's CSS branch reads this Set too — same bare-closure-
+  // reference situation as _HL_KEYWORDS/_HL_BUILTINS_JS above.
+  const _CSS_VALUE_KEYWORDS = ${serializeHlBuiltinsJs(_CSS_VALUE_KEYWORDS)};
+
+  // _renderMarkdownCore's fenced-code-block branch references ICON_COPY /
+  // COPY_LABEL by bare closure reference (not as params), same story as
+  // _HL_KEYWORDS/_HL_BUILTINS_JS above — .toString() can't carry them, so
+  // they're baked in here as plain string literals from the live
+  // markdown.js module's exports at export time.
+  const ICON_COPY = ${JSON.stringify(ICON_COPY)};
+  const COPY_LABEL = ${JSON.stringify(COPY_LABEL)};
+
   ${highlightCode.toString()}
 
   ${escHtml.toString()}
@@ -1993,6 +2019,8 @@ ${quizInfoModalHtml}
   ${unescapeHtmlEntities.toString()}
   
   ${detectLang.toString()}
+
+  ${_ownText.toString()}
 
   ${_processElement.toString()}
 
@@ -3119,6 +3147,47 @@ export async function exportToQuiz(config, questions) {
   );
 }
 
+// ============================================================================
+// MEDIA URL RESOLUTION
+// ============================================================================
+// Some question videos/audio are stored as paths *relative to the platform's
+// own origin* (done deliberately to save space in the free-tier Supabase DB —
+// the files live alongside the app's own static assets on Vercel instead of
+// in the DB). That's fine while viewing the quiz live on the site, since
+// relative URLs resolve against window.location.origin automatically. But a
+// standalone exported .html file opened from disk (file:///...) has no such
+// origin, so the same relative path resolves against the local filesystem
+// instead and 404s. Images already avoid this by being converted to base64
+// (see convertImagesToBase64 below); video/audio are too large to inline as
+// base64, so instead we rewrite relative paths to absolute URLs against the
+// platform's real origin here, at export time.
+const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
+
+/**
+ * Resolves a possibly-relative media URL (video/audio) to an absolute URL
+ * against the platform's origin. Leaves absolute http(s)/data/blob URLs
+ * untouched. Safe to call with the live site's own origin too (falls back
+ * to window.location.origin there instead of hardcoding basmagi's domain),
+ * so this doesn't misbehave on a fork/staging deploy.
+ * @param {string} url
+ * @returns {string}
+ */
+const resolveMediaUrl = (url) => {
+  if (!url || typeof url !== "string") return url;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+
+  const origin =
+    (typeof window !== "undefined" && window.location && window.location.origin) ||
+    PLATFORM_ORIGIN;
+
+  try {
+    return new URL(url, origin).href;
+  } catch {
+    // Malformed URL — leave as-is rather than throwing during export.
+    return url;
+  }
+};
+
 // Image Helpers
 const convertImagesToBase64 = async (questions) => {
   const processedQuestions = [];
@@ -3139,6 +3208,16 @@ const convertImagesToBase64 = async (questions) => {
         }
       }
       // Remote URLs or already base64 - keep as is
+    }
+
+    // Video/audio can't be feasibly inlined as base64 (file size), so
+    // relative paths are rewritten to absolute URLs against the platform's
+    // origin instead — see resolveMediaUrl() above.
+    if (question.video) {
+      processedQuestion.video = resolveMediaUrl(question.video);
+    }
+    if (question.audio) {
+      processedQuestion.audio = resolveMediaUrl(question.audio);
     }
 
     processedQuestions.push(processedQuestion);

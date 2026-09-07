@@ -98,6 +98,9 @@ See [Plan](ai-agent-update-prompt.md)
 - Allow users to switch view on the home page, when there is not a compulsory view.
 
 ### Home Page Loading
+*Important Note: This update comes after converting the platform to have DB quizzes only. Before that, it depended on relative-path quizzes updated with the code, and a relative path manifest with logic to merge them with quizzes coming from the DB. Now the Platform depends on the DB only, with all legacy code deleted*
+
 - امتحاناتك section should load independantly.
-- Don't load the whole DB for the manifest, just the courses, then when the initial view (which is top view, which is courses only) loads, start loading their subfolder in the background.
+- Don't load the whole DB for the manifest, just the courses, then when the initial view loads (which is top view, which is courses only), start loading their subfolder in the background.
+- When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
