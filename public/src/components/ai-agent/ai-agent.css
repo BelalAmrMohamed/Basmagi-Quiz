@@ -422,18 +422,38 @@
 /* File chip shown inside a user's own message bubble when they sent an
    attachment (see appendMessage()'s attachmentName param in
    ai-agent-chat.js) — makes the sent file visible in the chat itself
-   (and in reopened history), not just something the AI silently saw. */
+   (and in reopened history), not just something the AI silently saw.
+   Now a real <button> (was a <div>) so it's clickable to open the same
+   preview modal as a pending .ai-agent-attachment-tile — restyled to
+   match that tile's bordered/tinted look (see .ai-agent-attachment-tile
+   below) rather than the old plain translucent pill, per that shared
+   visual language being the actual ask (both surfaces represent "an
+   attachment", so they should read as the same kind of element). Stays a
+   horizontal chip rather than literally becoming a square tile, since
+   this one sits inline inside message text rather than in its own row. */
 .ai-agent-msg-attachment {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 8px;
+  max-width: 100%;
+  padding: 6px 10px;
   margin-bottom: 6px;
-  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
   direction: rtl;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.ai-agent-msg-attachment:hover,
+.ai-agent-msg-attachment:focus-visible {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .ai-agent-msg-attachment svg {
@@ -768,6 +788,19 @@
   border-radius: 12px;
   background: var(--color-surface);
   overflow: hidden;
+  /* Clickable now (opens the attachment preview modal — see
+     openAttachmentPreviewModal) — cursor + a subtle hover/focus lift so
+     that's discoverable, without disturbing the remove button's own
+     hover state (that button stops click propagation, see its own
+     listener in buildAttachmentTile). */
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.ai-agent-attachment-tile:hover,
+.ai-agent-attachment-tile:focus-visible {
+  border-color: var(--color-primary, #2563eb);
+  transform: translateY(-1px);
 }
 
 /* Distinct tint per attachment kind so a file vs. a quiz/course/folder
@@ -2354,11 +2387,20 @@ body.sidebar-expanded .ai-agent-fab {
   overflow: hidden;
   width: 100%;
   text-align: start;
+  /* Quick-Access rows can be tall (title + description on 2 lines) while
+     database rows are single-line; align icon/check to the top of the row
+     rather than the old .exam-action-btn center alignment so a two-line
+     row doesn't push the icon down to its vertical middle, which read as
+     "misaligned" alongside single-line rows right above/below it. */
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .ai-agent-mention-row-text {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
   overflow: hidden;
   flex: 1;
@@ -2368,14 +2410,28 @@ body.sidebar-expanded .ai-agent-fab {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Quick-Access labels are literal Latin identifiers ("@Last_Created_Quiz")
+     shown inside this menu's inherited RTL layout (.exam-action-btn) —
+     without an explicit direction they visually reverse (the `@` renders
+     trailing instead of leading, e.g. "Quiz_Last_Created@"). dir="auto" on
+     the element (see buildRow) already picks the right per-string
+     direction; this just makes sure the browser also aligns the text to
+     that same detected side rather than the row's own RTL start-alignment. */
+  unicode-bidi: plaintext;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.35;
 }
 
 .ai-agent-mention-row-desc {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.75rem;
+  unicode-bidi: plaintext;
+  font-size: 0.76rem;
+  font-weight: 400;
   color: var(--color-text-tertiary);
+  line-height: 1.3;
 }
 
 .ai-agent-mention-row[disabled] {
@@ -2395,6 +2451,16 @@ body.sidebar-expanded .ai-agent-fab {
   color: var(--color-accent, #2563eb);
   font-weight: 700;
   flex-shrink: 0;
+  visibility: hidden;
+  margin-top: 2px;
+}
+
+.ai-agent-mention-row.is-attached .ai-agent-mention-row-check {
+  visibility: visible;
+}
+
+.ai-agent-mention-row svg {
+  margin-top: 1px;
 }
 
 .ai-agent-mention-loading,
@@ -2461,4 +2527,100 @@ body.sidebar-expanded .ai-agent-fab {
   max-height: calc(100vh - 16px);
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+/* ── Attachment preview modal (openAttachmentPreviewModal, ai-agent-chat.js) ──
+   Opened by clicking either a pending .ai-agent-attachment-tile or a sent
+   .ai-agent-msg-attachment chip — shows the full title (untruncated,
+   unlike the tile's ellipsized name) plus whatever context is available
+   (summary for platform items, mime/size for plain files). Reuses
+   .modal-overlay/.modal-card (index.css) for the same overlay/card chrome
+   every other modal in this app uses; these rules only add what's
+   specific to this modal's own content. */
+.ai-agent-attachment-preview-overlay {
+  /* .modal-overlay's own z-index (--z-modal) sits below the AI Agent
+     panel this preview is opened from — use the app's existing
+     "modal-above-a-modal" token (--z-modal-top, themes.css) instead of
+     inventing a one-off value here. */
+  z-index: var(--z-modal-top, 11000);
+}
+
+.ai-agent-attachment-preview-card {
+  position: relative;
+  max-width: 380px;
+}
+
+.ai-agent-attachment-preview-close {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary, currentColor);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ai-agent-attachment-preview-close:hover {
+  background: var(--color-danger, #dc2626);
+  color: #fff;
+}
+
+.ai-agent-attachment-preview-image {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  background: var(--color-background-secondary);
+}
+
+.ai-agent-attachment-preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary, currentColor);
+}
+
+.ai-agent-attachment-preview-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.ai-agent-attachment-preview-kind {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-tertiary);
+  margin-bottom: 6px;
+}
+
+.ai-agent-attachment-preview-title {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ai-agent-attachment-preview-context {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }

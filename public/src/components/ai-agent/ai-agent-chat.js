@@ -19,6 +19,7 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 import { openExamDropdownMenu, closeAllExamDropdownMenus } from "../../features/home/exam-dropdown-menu.js";
 import { positionExamDropdownMenu } from "../../features/home/floating-position.js";
 import { createMentionMenu } from "./ai-agent-mention-menu.js";
+import { fadeOutAndRemove } from "../../features/home/modal-utils.js";
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
 // chain in a single agent turn (see its `agentDepth` param) before giving
@@ -529,6 +530,117 @@ export function createChatPanel(options = {}) {
     return att.kind === "file" ? att.name : att.title;
   }
 
+  const ATTACHMENT_KIND_LABEL_AR = { quiz: "امتحان", course: "مادة", folder: "مجلد", file: "ملف" };
+
+  /**
+   * Shows a full preview of one attachment (file or platform-item) on
+   * click, matching the "click a chip to see more" pattern of default
+   * chat UIs (Gemini/Claude's own attachment previews) — this app's own
+   * tiles/chips only ever showed a truncated name before this, with no
+   * way to see the rest of a long title or any of the attached context.
+   * Reuses the same .modal-overlay/.modal-card base every other modal in
+   * this app already relies on (see ai-agent.js's own header comment) —
+   * no new modal chrome invented just for this.
+   * @param {object} att - a pendingAttachments entry OR a persisted/
+   *   in-history attachments[] entry; both share the same
+   *   {kind, title|name, summary?, payload?, mimeType?, base64?} shape.
+   */
+  function openAttachmentPreviewModal(att) {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay ai-agent-attachment-preview-overlay";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+
+    const card = document.createElement("div");
+    card.className = "modal-card ai-agent-attachment-preview-card";
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "ai-agent-attachment-preview-close";
+    closeBtn.setAttribute("aria-label", "إغلاق");
+    closeBtn.innerHTML = ATTACHMENT_REMOVE_ICON_SVG;
+    card.appendChild(closeBtn);
+
+    const isImage = att.kind === "file" && att.mimeType?.startsWith("image/") && att.base64;
+    if (isImage) {
+      const img = document.createElement("img");
+      img.className = "ai-agent-attachment-preview-image";
+      img.src = `data:${att.mimeType};base64,${att.base64}`;
+      img.alt = "";
+      card.appendChild(img);
+    } else {
+      const iconWrap = document.createElement("div");
+      iconWrap.className = "ai-agent-attachment-preview-icon";
+      iconWrap.innerHTML = iconForAttachment(att.kind ? att : { kind: "file" });
+      card.appendChild(iconWrap);
+    }
+
+    const kindBadge = document.createElement("div");
+    kindBadge.className = "ai-agent-attachment-preview-kind";
+    kindBadge.textContent = ATTACHMENT_KIND_LABEL_AR[att.kind] || att.kind || "مرفق";
+    card.appendChild(kindBadge);
+
+    const titleEl = document.createElement("h2");
+    titleEl.className = "ai-agent-attachment-preview-title";
+    titleEl.dir = "auto";
+    titleEl.textContent = labelForAttachment(att) || "بدون عنوان";
+    card.appendChild(titleEl);
+
+    // Related context: prefer a human-written summary (already built at
+    // attach time by ai-agent-library-search.js / ai-agent-item-lookup.js
+    // for platform items), fall back to file metadata for plain files —
+    // there's no summary for those, but size/type is still useful context.
+    let contextText = att.summary || "";
+    if (!contextText && att.kind === "file") {
+      const sizeLabel = typeof att.base64 === "string"
+        ? `${Math.max(1, Math.round((att.base64.length * 0.75) / 1024))} كيلوبايت تقريبًا`
+        : null;
+      contextText = [att.mimeType, sizeLabel].filter(Boolean).join(" — ");
+    }
+    if (contextText) {
+      const contextEl = document.createElement("p");
+      contextEl.className = "ai-agent-attachment-preview-context";
+      contextEl.dir = "auto";
+      contextEl.textContent = contextText;
+      card.appendChild(contextEl);
+    }
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // Capture-phase (the `true` 3rd arg), not the same bubble-phase
+    // approach ai-agent.js's own settings modal uses (onSettingsKeydown +
+    // stopImmediatePropagation): that pattern only works if the *earlier*-
+    // registered listener is the one calling stopImmediatePropagation, but
+    // here it's the OPPOSITE — the underlying AI Agent panel's Escape
+    // listener (ai-agent.js's onKeydown) is already attached from when the
+    // panel opened, long before this preview ever exists, so a later
+    // bubble-phase listener here can't stop it from having already run
+    // closeModal() on the same Escape press (stopImmediatePropagation only
+    // blocks listeners registered AFTER the one calling it). Capture phase
+    // runs top-down before any bubble-phase listener fires at all, so this
+    // reliably intercepts Escape first regardless of when the panel's own
+    // listener was registered.
+    let closed = false;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      document.removeEventListener("keydown", onPreviewKeydown, true);
+      fadeOutAndRemove(overlay, card);
+    };
+    const onPreviewKeydown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+      }
+    };
+    document.addEventListener("keydown", onPreviewKeydown, true);
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+    closeBtn.addEventListener("click", close);
+  }
+
   /**
    * Builds one square tile (~64-72px, per Phase 3b) for a single pending
    * attachment — an image file gets a real thumbnail (base64 data URL,
@@ -545,6 +657,15 @@ export function createChatPanel(options = {}) {
     const tile = document.createElement("div");
     tile.className = `ai-agent-attachment-tile ai-agent-attachment-tile--${att.kind}`;
     tile.title = labelForAttachment(att) || "";
+    tile.setAttribute("role", "button");
+    tile.setAttribute("tabindex", "0");
+    tile.addEventListener("click", () => openAttachmentPreviewModal(att));
+    tile.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openAttachmentPreviewModal(att);
+      }
+    });
 
     const preview = document.createElement("div");
     preview.className = "ai-agent-attachment-tile-preview";
@@ -1602,13 +1723,23 @@ export function createChatPanel(options = {}) {
       attachmentsForDisplay.forEach((att) => {
         const label = att?.name || att?.title;
         if (!label) return;
-        const chip = document.createElement("div");
+        const chip = document.createElement("button");
+        chip.type = "button";
         chip.className = "ai-agent-msg-attachment";
         chip.innerHTML = iconForAttachment(att.kind ? att : { kind: "file" });
         const nameSpan = document.createElement("span");
         nameSpan.className = "ai-agent-msg-attachment-name";
         nameSpan.textContent = label;
         chip.appendChild(nameSpan);
+        // Same preview as a pending tile (see buildAttachmentTile) — a sent
+        // message's attachment carries the same {kind, title|name, summary,
+        // payload} shape, whether it's a fresh in-memory `history` entry or
+        // one reloaded from IndexedDB history (see toPersistedMessages/
+        // loadConversation, which both preserve at least kind+name/title).
+        chip.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openAttachmentPreviewModal(att);
+        });
         el.appendChild(chip);
       });
     }
@@ -2317,14 +2448,14 @@ export function createChatPanel(options = {}) {
   textarea.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // Trigger menu is mouse/touch-selection only (see this file's own
-      // Phase 4 comment on reduced scope — no keyboard navigation into
-      // the list) — but sending the message with the menu still open
-      // behind it would look broken, so Enter closes the menu first,
-      // same as it would for any other floating popover, rather than
-      // sending a half-typed `/query` straight through.
-      if (triggerMenuEl) {
-        closeTriggerMenu();
+      // The mention menu has its own keyboard nav (arrows/Enter select an
+      // item — see handleKeydown), so Enter reaching this far means the
+      // menu isn't open; nothing else to guard here. Kept as an explicit
+      // check (rather than assuming handleKeydown always consumes Enter
+      // while open) so a half-typed `@query` can never slip through as a
+      // sent message if that assumption ever breaks.
+      if (mentionMenu.isOpen()) {
+        mentionMenu.close();
         return;
       }
       sendMessage();

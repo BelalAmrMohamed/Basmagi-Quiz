@@ -211,15 +211,27 @@ export function createMentionMenu(options) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.setAttribute("data-mention-row", "");
+        // id/checked recorded as data attributes (not just baked into the
+        // click closure) so markRowAttached can find and flip THIS row in
+        // place after a pick, without rebuilding the whole list — see that
+        // function's own comment for why a full render() here caused the
+        // "menu resets/pops" visual bug.
+        if (id != null) btn.setAttribute("data-mention-row-id", id);
         btn.className = "exam-action-btn ai-agent-mention-row" + (checked ? " is-attached" : "");
         if (disabled) btn.setAttribute("disabled", "");
+        // Latin/ASCII labels (Quick-Access rows: "@Last_Created_Quiz" etc.)
+        // must stay LTR even inside this RTL menu, or the `@` and word order
+        // visually reverse (see this module's own bug history — the `@`
+        // rendering trailing/last was exactly this). Arabic titles/
+        // descriptions from searched items are unaffected since `dir="auto"`
+        // reads their own script direction per line.
         btn.innerHTML = `
       ${iconFor(kind)}
       <span class="ai-agent-mention-row-text">
-        <span class="ai-agent-mention-row-title">${title}</span>
-        ${description ? `<span class="ai-agent-mention-row-desc">${description}</span>` : ""}
+        <span class="ai-agent-mention-row-title" dir="auto">${title}</span>
+        ${description ? `<span class="ai-agent-mention-row-desc" dir="auto">${description}</span>` : ""}
       </span>
-      ${checked ? '<span class="ai-agent-mention-row-check" aria-hidden="true">✓</span>' : ""}
+      <span class="ai-agent-mention-row-check" aria-hidden="true">✓</span>
     `;
         if (!disabled) {
             btn.addEventListener("click", (e) => {
@@ -230,6 +242,25 @@ export function createMentionMenu(options) {
         return btn;
     }
 
+    /**
+     * Flips a single already-rendered row to "attached" in place — the
+     * fix for the "menu resets/pops after picking an item" bug. The old
+     * code called render("") on every pick, which rebuilt Quick-Access AND
+     * both database sections from scratch: local results flashed, the
+     * platform section briefly showed its loading text again, and a brand
+     * new debounced search fired even though the query was already empty.
+     * Since a pick only ever changes ONE row's checked state (the query
+     * always becomes "" after consuming the trigger text, and Quick-Access
+     * rows are unfiltered anyway), the other rows never actually need to
+     * change — just this one.
+     * @param {string} id
+     */
+    function markRowAttached(id) {
+        if (!menuEl) return;
+        const row = menuEl.querySelector(`[data-mention-row-id="${CSS.escape(String(id))}"]`);
+        if (row) row.classList.add("is-attached");
+    }
+
     function renderSectionHeader(text) {
         const header = document.createElement("div");
         header.className = "ai-agent-mention-section-header";
@@ -237,7 +268,7 @@ export function createMentionMenu(options) {
         return header;
     }
 
-    function pickAndKeepOpen(attachment, query) {
+    function pickAndKeepOpen(attachment, rowId) {
         if (!attachment) return;
         if (getPendingCount() >= maxPending) return;
         onPick(attachment);
@@ -245,12 +276,15 @@ export function createMentionMenu(options) {
         // every pick) — otherwise it lingers in the input alongside the chip
         // that now represents it. triggerStart - 1 is the literal `@` index
         // (see open()'s own comment on the triggerStart convention). Unlike
-        // the old menu, DON'T close(): the menu re-renders in place so the
-        // picked row flips to "attached" and the user can immediately pick a
-        // second item (see this module's own header comment on multi-select).
+        // the old menu, DON'T close(): the picked row flips to "attached" in
+        // place (markRowAttached) and the user can immediately pick a second
+        // item (see this module's own header comment on multi-select) —
+        // deliberately NOT a full render(""), which used to rebuild every
+        // section from scratch on every single pick (see markRowAttached's
+        // own comment for why that read as the menu "resetting/popping").
         onConsumeTriggerText(triggerStart - 1, textarea.selectionStart);
         justConsumedByPick = true;
-        render("");
+        markRowAttached(rowId);
     }
 
     async function render(query) {
@@ -281,7 +315,7 @@ export function createMentionMenu(options) {
                     disabled: !item,
                     checked: attachedAlready,
                 },
-                () => pickAndKeepOpen(item ? { ...item, id: item.id || qa.quickAccessId } : null, query),
+                () => pickAndKeepOpen(item ? { ...item, id: item.id || qa.quickAccessId } : null, qa.quickAccessId),
             );
             menuEl.appendChild(row);
         });
@@ -299,7 +333,7 @@ export function createMentionMenu(options) {
             items.forEach((it) => {
                 const row = buildRow(
                     { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
-                    () => pickAndKeepOpen(resolveUserItemById(it.id), query),
+                    () => pickAndKeepOpen(resolveUserItemById(it.id), it.id),
                 );
                 localResultsHost.appendChild(row);
             });
@@ -330,7 +364,7 @@ export function createMentionMenu(options) {
                     platformItems.forEach((it) => {
                         const row = buildRow(
                             { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
-                            () => pickAndKeepOpen({ ...it }, query),
+                            () => pickAndKeepOpen({ ...it }, it.id),
                         );
                         platformResultsHost.appendChild(row);
                     });
