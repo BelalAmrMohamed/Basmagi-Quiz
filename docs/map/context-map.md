@@ -45,6 +45,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── docs/
 │   ├── map/
 │   │   ├── context-map.md
+│   │   ├── map-2.js
 │   │   └── map.js
 │   │   
 │   ├── plans/
@@ -459,18 +460,18 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code |
 |-----------|-------|---------------|
-| .js | 139 | 59158 |
-| .css | 24 | 30082 |
+| .js | 140 | 60134 |
+| .css | 24 | 30127 |
 | .html | 19 | 9257 |
-| .md | 8 | 2066 |
-| .json | 4 | 213 |
+| .md | 8 | 2097 |
+| .json | 4 | 215 |
 | .sql | 4 | 375 |
 | (no extension) | 1 | 22 |
 | .yml | 1 | 41 |
 | .txt | 1 | 4 |
 | .xml | 1 | 45 |
 | .toml | 1 | 415 |
-| **Total** | **203** | **101678** |
+| **Total** | **204** | **102732** |
 
 ### Binary / Media Files
 
@@ -485,5 +486,5 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .svg | 1 |
 | **Total** | **148** |
 
-**Grand Total Files:** 351  
-**Total Lines of Code (code files only):** 101678
+**Grand Total Files:** 352  
+**Total Lines of Code (code files only):** 102732

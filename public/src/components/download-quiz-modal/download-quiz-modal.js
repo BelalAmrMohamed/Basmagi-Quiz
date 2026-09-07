@@ -22,7 +22,7 @@ import {
   JSON_FILE_ICON_SVG,
   DOWNLOAD_SOURCE_ICON_SVG,
 } from "../../features/home/icons.js";
-import { showNotification, _confirm } from "../notifications/notifications.js";
+import { showNotification } from "../notifications/notifications.js";
 import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
 import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
@@ -136,8 +136,10 @@ export function buildExportCard({
       e.stopPropagation();
       const originalHtml = copyBtn.innerHTML;
       try {
+        // Fix #loading-spinner: same issue as withDownloadLoading() —
+        // <i data-lucide> never renders without the Lucide JS library.
         copyBtn.innerHTML =
-          '<i data-lucide="loader-circle" class="spin" style="width:14px;height:14px;"></i>';
+          '<span class="dl-btn-spinner" style="width:14px;height:14px;" aria-hidden="true"></span>';
         const textToCopy = await onCopy();
         await copyTextWithFallback(textToCopy);
 
@@ -220,9 +222,20 @@ export async function executeExport(
         userAnswers,
         onProgress,
         signal,
+        {
+          includeAnswers: exportOptions.includeAnswers,
+          includeUserAnswers: exportOptions.includeUserAnswers,
+          includeExplanations: exportOptions.includeExplanations,
+          answerPlacement: exportOptions.answerPlacement,
+        },
       );
     case "md":
-      exportToMarkdown(config, questions, userAnswers);
+      exportToMarkdown(config, questions, userAnswers, {
+        includeAnswers: exportOptions.includeAnswers,
+        includeUserAnswers: exportOptions.includeUserAnswers,
+        includeExplanations: exportOptions.includeExplanations,
+        answerPlacement: exportOptions.answerPlacement,
+      });
       break;
   }
 }
@@ -253,8 +266,17 @@ export async function withDownloadLoading(buttonEl, asyncFn) {
   buttonEl.disabled = true;
   buttonEl.style.width = `${originalWidth > 0 ? originalWidth : buttonEl.getBoundingClientRect().width}px`;
   buttonEl.style.justifyContent = "center";
-  buttonEl.innerHTML =
-    '<i data-lucide="loader-circle" class="spin"></i> جاري التحميل...';
+  // Fix #loading-spinner: previously this inserted a
+  // `<i data-lucide="loader-circle" class="spin">` PLUS the text "جاري
+  // التحميل...". Lucide's JS (which turns [data-lucide] into real SVG
+  // icons) isn't loaded on every page that uses this helper — index.html
+  // in particular uses plain inline <svg> everywhere and never calls
+  // lucide.createIcons() — so the <i> tag rendered as nothing at all,
+  // and the extra text alone was enough to overflow/reflow the button's
+  // fixed width. Replaced with a small pure-CSS spinner (a bordered
+  // circle animated via @keyframes, defined below) and no text at all,
+  // so the button never needs to be wider than its normal content.
+  buttonEl.innerHTML = '<span class="dl-btn-spinner" aria-hidden="true"></span>';
   try {
     await asyncFn();
   } finally {
@@ -318,7 +340,8 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
     const rows = document.createElement("div");
     rows.className = "dl-settings-rows";
 
-    // ── Row: Include correct answers (button + confirmation, NOT a toggle) ──
+    // ── Row: Include correct answers (plain toggle, per feedback — no
+    // confirmation dialog, consistent with the other rows). ──
     const answersRow = document.createElement("div");
     answersRow.className = "dl-settings-row";
     answersRow.innerHTML = `
@@ -326,14 +349,15 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
         <div class="dl-settings-row-title">تضمين الإجابات الصحيحة</div>
         <div class="dl-settings-row-sub">يكشف الإجابة الصحيحة لكل سؤال في الملف المُصدَّر</div>
       </div>
-      <button type="button" class="dl-settings-answers-btn" aria-pressed="false">إظهار الإجابات</button>
     `;
-    const answersBtn = answersRow.querySelector(".dl-settings-answers-btn");
+    const answersToggle = buildSwitch(false);
+    answersRow.appendChild(answersToggle.el);
 
     // ── Row: Include user's answers (only when hasUserAnswers) ──
     let userAnswersToggle = null;
+    let userAnswersRow = null;
     if (hasUserAnswers) {
-      const userAnswersRow = document.createElement("div");
+      userAnswersRow = document.createElement("div");
       userAnswersRow.className = "dl-settings-row";
       userAnswersRow.innerHTML = `
         <div class="dl-settings-row-text">
@@ -344,7 +368,6 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
       const toggle = buildSwitch(false);
       userAnswersRow.appendChild(toggle.el);
       userAnswersToggle = toggle;
-      rows.appendChild(userAnswersRow);
     }
 
     // ── Row: Include explanations/feedback ──
@@ -387,28 +410,18 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
       placementRow.style.display = state.includeAnswers ? "flex" : "none";
     };
 
-    answersBtn.onclick = async () => {
-      if (state.includeAnswers) {
-        // Turning off never needs confirmation.
-        state.includeAnswers = false;
-        answersBtn.classList.remove("active");
-        answersBtn.setAttribute("aria-pressed", "false");
-        answersBtn.textContent = "إظهار الإجابات";
-        updatePlacementVisibility();
-        return;
-      }
-      const confirmed = await _confirm(
-        "سيؤدي هذا إلى كشف الإجابة الصحيحة لكل سؤال في الملف الذي سيتم تصديره. هل تريد المتابعة؟",
-      );
-      if (!confirmed) return;
-      state.includeAnswers = true;
-      answersBtn.classList.add("active");
-      answersBtn.setAttribute("aria-pressed", "true");
-      answersBtn.textContent = "إخفاء الإجابات";
+    // Toggling answers on/off no longer needs a confirmation dialog —
+    // it behaves exactly like the other toggle rows now.
+    answersToggle.el.addEventListener("click", () => {
+      // buildSwitch already flipped its own internal state by the time
+      // this listener runs (its own onclick fires first since it was
+      // attached first) — read it back via .get() rather than guessing.
+      state.includeAnswers = answersToggle.get();
       updatePlacementVisibility();
-    };
+    });
 
     rows.appendChild(answersRow);
+    if (userAnswersRow) rows.appendChild(userAnswersRow);
     rows.appendChild(explanationsRow);
     rows.appendChild(placementRow);
 
@@ -451,6 +464,7 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
 
     actions.querySelector(".dl-settings-back").onclick = () => resolve(null);
     actions.querySelector(".dl-settings-continue").onclick = () => {
+      state.includeAnswers = answersToggle.get();
       state.includeUserAnswers = userAnswersToggle
         ? userAnswersToggle.get()
         : false;

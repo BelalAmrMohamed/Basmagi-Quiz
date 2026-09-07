@@ -7,6 +7,11 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Broken Elements
 
+### Exports
+- Questions from the 2nd page and on, don't have any top margin, they stick to the border or the page.
+- no export includes the answers at the end.
+- `تضمين الإجابات الصحيحة` and the `تضمين الشروحات` don't do anything.
+
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
 - What I expected? Something similar to how YouTube structures its comment section nowadays (great, functional, expected, and elegant) ![screenshot](image.png).

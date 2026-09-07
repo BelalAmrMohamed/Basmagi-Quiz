@@ -28,7 +28,24 @@ const mdLineBreaks = (str) => {
   return String(str).replace(/\n/g, "  \n");
 };
 
-export function buildQuizMarkdown(config, questions, userAnswers = []) {
+/**
+ * @param {object} config
+ * @param {Array} questions
+ * @param {Array|object} [userAnswers]
+ * @param {object} [mdOptions] — settings collected from the download
+ *   modal's Settings Panel: { includeAnswers, includeUserAnswers,
+ *   includeExplanations, answerPlacement: "inline" | "final-page" }.
+ *   Defaults preserve the previous always-on behavior when omitted (e.g.
+ *   the instant "copy as markdown" button, which has no settings step).
+ */
+export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions = {}) {
+  const {
+    includeAnswers = true,
+    includeUserAnswers = true,
+    includeExplanations = true,
+    answerPlacement = "inline",
+  } = mdOptions;
+
   let hasMCQ = false,
     hasTrueFalse = false,
     hasEssay = false;
@@ -46,19 +63,27 @@ export function buildQuizMarkdown(config, questions, userAnswers = []) {
   else if (hasTrueFalse) questionType = "True/False only";
   else questionType = "MCQ only";
 
-  // Determine if we are in "Summary Mode" (user answers provided)
+  // Determine if we are in "Summary Mode" (user answers provided AND
+  // the person exporting chose to include them — includeUserAnswers
+  // gates this the same way it does for PPTX).
   const isResultsMode =
+    includeUserAnswers &&
     userAnswers &&
     (Array.isArray(userAnswers)
       ? userAnswers.length > 0
       : Object.keys(userAnswers).length > 0);
 
-  let markdown = `# ${config.title || "Quiz"}\n- **Number of questions:** ${
-    questions.length
-  }\n- **Questions' type:** ${questionType}\n\n`;
+  // Collected while iterating questions below, used to build a grouped
+  // "Answer Key" section at the end when answerPlacement === "final-page".
+  const answerKeyEntries = [];
 
-  // ── Score summary (only in results mode) ──────────────────────────────────
-  if (isResultsMode) {
+  let markdown = `# ${config.title || "Quiz"}\n- **Number of questions:** ${questions.length
+    }\n- **Questions' type:** ${questionType}\n\n`;
+
+  // ── Score summary (only in results mode, and only when answers are
+  // included — a score summary inherently reveals how many the user got
+  // right/wrong, which is itself an answer-adjacent reveal). ──
+  if (isResultsMode && includeAnswers) {
     const {
       mcqCorrect,
       mcqWrong,
@@ -107,15 +132,30 @@ export function buildQuizMarkdown(config, questions, userAnswers = []) {
     markdown += `## Question ${index + 1}: ${mdLineBreaks(q.q)}\n${imageLink}\n\n`;
 
     if (isEssayQuestion(q)) {
+      // Fix #exportOptions: user's essay answer/score still needs
+      // includeUserAnswers (already folded into isResultsMode above), but
+      // the score itself reveals correctness so it's additionally gated
+      // by includeAnswers.
       if (isResultsMode) {
         const userText = userAns || "";
-        const score = gradeEssay(userText, q.answer);
-        const stars = "★".repeat(score) + "☆".repeat(5 - score);
-        const scoreLabel = score >= 3 ? "✅" : score >= 1 ? "⚠️" : "❌";
         markdown += `**Your Answer:**\n\n${mdLineBreaks(userText || "لم تُجِب")}\n\n`;
-        markdown += `**Score:** ${scoreLabel} ${score}/5  ${stars}\n\n`;
+        if (includeAnswers) {
+          const score = gradeEssay(userText, q.answer);
+          const stars = "★".repeat(score) + "☆".repeat(5 - score);
+          const scoreLabel = score >= 3 ? "✅" : score >= 1 ? "⚠️" : "❌";
+          markdown += `**Score:** ${scoreLabel} ${score}/5  ${stars}\n\n`;
+        }
       }
-      markdown += `**Formal Answer:** ${mdLineBreaks(q.answer)}\n\n`;
+      if (includeAnswers) {
+        if (answerPlacement === "final-page") {
+          answerKeyEntries.push({
+            index,
+            text: `**Q${index + 1} Formal Answer:** ${mdLineBreaks(q.answer)}`,
+          });
+        } else {
+          markdown += `**Formal Answer:** ${mdLineBreaks(q.answer)}\n\n`;
+        }
+      }
     } else {
       q.options.forEach((opt, i) => {
         const letter = String.fromCharCode(48 + i + 1);
@@ -123,38 +163,72 @@ export function buildQuizMarkdown(config, questions, userAnswers = []) {
       });
       markdown += `\n`;
 
-      const isSkipped = userAns === undefined || userAns === null;
+      // Fix #multi-correct: q.correct can be an array (e.g. [0, 2]) for
+      // multi-select questions — the old code treated it as a scalar
+      // index everywhere, so multi-select questions rendered a garbage
+      // "Correct Answer" letter (String.fromCharCode on a non-numeric
+      // array) and a skip/match check that never worked.
+      const correctIdxRaw = q.correct ?? q.answer;
+      const correctIdxList = Array.isArray(correctIdxRaw)
+        ? correctIdxRaw
+        : [correctIdxRaw];
+      const userAnsList = Array.isArray(userAns) ? userAns : [userAns];
+      const isSkipped =
+        userAns === undefined ||
+        userAns === null ||
+        (Array.isArray(userAns) && userAns.length === 0);
 
       // Only append "Your Answer" if we are in summary mode
       if (isResultsMode) {
-        const userLetter = isSkipped
+        const userLetters = isSkipped
           ? "Skipped"
-          : String.fromCharCode(48 + userAns + 1);
-        const userAnswerText = isSkipped
-          ? "Skipped"
-          : mdLineBreaks(q.options[userAns]);
-
-        markdown += `**Your Answer:** ${userLetter}${
-          isSkipped ? "" : `. ${userAnswerText}`
-        }\n\n`;
+          : userAnsList
+            .filter((i) => Number.isInteger(i))
+            .map((i) => `${String.fromCharCode(48 + i + 1)}. ${mdLineBreaks(q.options[i])}`)
+            .join("; ");
+        markdown += `**Your Answer:** ${userLetters || "Skipped"}\n\n`;
       }
 
-      const correctLetter = String.fromCharCode(48 + q.correct + 1);
-      markdown += `**Correct Answer:** ${correctLetter}. ${mdLineBreaks(
-        q.options[q.correct],
-      )}\n\n`;
+      if (includeAnswers) {
+        const correctText = correctIdxList
+          .filter((i) => Number.isInteger(i) && q.options[i] !== undefined)
+          .map((i) => `${String.fromCharCode(48 + i + 1)}. ${mdLineBreaks(q.options[i])}`)
+          .join("; ");
+        if (answerPlacement === "final-page") {
+          answerKeyEntries.push({
+            index,
+            text: `**Q${index + 1} Correct Answer:** ${correctText}`,
+          });
+        } else {
+          markdown += `**Correct Answer:** ${correctText}\n\n`;
+        }
+      }
     }
 
-    if (q.explanation)
+    if (includeExplanations && q.explanation)
       markdown += `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
     markdown += `---\n\n`;
   });
 
+  // ── Grouped Answer Key section (answerPlacement === "final-page") ──
+  if (includeAnswers && answerPlacement === "final-page" && answerKeyEntries.length) {
+    markdown += `## 🔑 Answer Key\n\n`;
+    answerKeyEntries.forEach((entry) => {
+      markdown += `${entry.text}\n\n`;
+    });
+  }
+
   return markdown;
 }
 
-export function exportToMarkdown(config, questions, userAnswers = []) {
-  const markdown = buildQuizMarkdown(config, questions, userAnswers);
+/**
+ * @param {object} config
+ * @param {Array} questions
+ * @param {Array|object} [userAnswers]
+ * @param {object} [mdOptions] — see buildQuizMarkdown's docstring.
+ */
+export function exportToMarkdown(config, questions, userAnswers = [], mdOptions = {}) {
+  const markdown = buildQuizMarkdown(config, questions, userAnswers, mdOptions);
   const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

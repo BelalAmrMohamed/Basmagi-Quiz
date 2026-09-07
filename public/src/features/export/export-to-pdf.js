@@ -49,6 +49,37 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     max-width: none;
   }
   ${backgroundChoice === "dark" ? "" : `
+  /* Fix #pdf-contrast: light background needs the CSS custom properties
+     that shared/markdown-css.js's MARKDOWN_CSS relies on throughout
+     (--color-text-primary, --color-background, etc.) flipped too — the
+     previous fix only overrode a handful of hardcoded-hex selectors
+     directly in export-to-html.js's own <style> block, but every
+     markdown-rendered question/option/explanation body still resolved
+     --color-text-primary to the dark-theme "#fff" default declared in
+     that file's :root block, which is invisible on the new white page.
+     Redeclaring the variables here (after the original :root block, so
+     these win on source order) fixes every var(--...)-based rule at
+     once instead of chasing each one individually. */
+  :root {
+    --color-primary: #3b82f6 !important;
+    --color-primary-light: rgba(59, 130, 246, 0.12) !important;
+    --color-border: #ddd !important;
+    --color-border-light: #ccc !important;
+    --color-text-primary: #1a1a1a !important;
+    --color-text-secondary: #555 !important;
+    --color-background: #ffffff !important;
+    --color-background-secondary: #f4f4f5 !important;
+    --color-success: #16a34a !important;
+    --color-error: #dc2626 !important;
+    --color-code: #1a1a1a !important;
+  }
+  /* Also flip the [data-theme="light"]-scoped rules already defined in
+     markdown-css.js (table striping, code syntax-highlight colors, the
+     inline-code block) by actually setting data-theme so they apply —
+     they were previously written but unreachable since the exported
+     <html> tag never carried this attribute. */
+  html { color-scheme: light; }
+
   /* Light background: the on-screen dark theme's card/text colors need
      flipping too, or content is unreadable (dark text on dark card,
      etc. inherited from the interactive-HTML dark theme). */
@@ -56,12 +87,25 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
   .q-header, .rd-label { color: #555 !important; }
   .q-text, h1, .score-label, .rd-value { color: #1a1a1a !important; }
   .option { background: #f0f1f3 !important; color: #1a1a1a !important; border-color: #ddd !important; }
+  .option-letter { background: #e2e4e8 !important; color: #444 !important; }
   .code-block { background: #f4f4f5 !important; border-color: #ccc !important; }
   .code-block code { color: #1a1a1a !important; }
+  .code-block-wrapper { background: #f4f4f5 !important; border-color: #ccc !important; box-shadow: none !important; }
+  .inline-code { background: #eef0f4 !important; border-color: #ccc !important; color: #b91c1c !important; }
+  .math-raw { background: #f4f4f5 !important; border-color: #ccc !important; color: #1a1a1a !important; }
+  .md-blockquote { background: #f4f4f5 !important; color: #333 !important; }
   .essay-box { background: #f0f1f3 !important; }
+  .essay-score.correct { background: rgba(16,185,129,0.12) !important; color: #047857 !important; }
+  .essay-score.partial { background: rgba(245,158,11,0.12) !important; color: #b45309 !important; }
+  .essay-score.wrong   { background: rgba(239,68,68,0.12) !important;  color: #b91c1c !important; }
   .score-block { background: #f8f9fa !important; border-color: #ddd !important; }
-  .results-detail { background: #f0f1f3 !important; border-color: #ddd !important; }
+  .results-detail { background: #f4f4f5 !important; border-color: #ddd !important; }
+  .rd-row { border-bottom-color: #e2e4e8 !important; }
+  .rd-value { color: #1a1a1a !important; }
+  .rd-highlight { background: rgba(59,130,246,0.08) !important; }
+  .rd-highlight .rd-label, .rd-highlight .rd-value { color: #1d4ed8 !important; }
   .meta, .footer { color: #666 !important; }
+  .footer { border-top-color: #ddd !important; }
   `}
 
   /* ── Code blocks: never clip, never force a horizontal scrollbar ──

@@ -23,6 +23,30 @@
   flex-shrink: 0;
 }
 
+/* ── Download-button loading spinner ──
+   Used by withDownloadLoading() (download-quiz-modal.js) — a small,
+   dependency-free spinner (no Lucide/icon-font required, unlike the
+   previous <i data-lucide> approach, which silently failed to render on
+   pages that never load the Lucide JS library, e.g. index.html). Sized
+   to sit comfortably inside a normal button without widening it, so no
+   accompanying loading text is needed. */
+.dl-btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  opacity: 0.85;
+  animation: dl-btn-spin 0.7s linear infinite;
+}
+
+@keyframes dl-btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── Export cards with split download / copy actions ── */
 
 .mode-grid {
@@ -305,7 +329,14 @@
 .dl-settings-rows {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  /* Fix #separator: previously this gap PLUS every row's own
+     border-bottom combined to look like two separator lines stacked
+     with a gap between them, especially visible on exports that don't
+     reach a `:last-child` row with content (e.g. no PDF-only background
+     row), so the last two *visible* rows each ended up bordered with a
+     gap in between. Rows now rely on the border alone for separation;
+     the gap collapses to 0 so there's exactly one line between rows. */
+  gap: 0;
 }
 
 .dl-settings-row {
@@ -317,7 +348,21 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Fix #separator: the previous `:last-child` rule only ever matched the
+   row that happened to be last in DOM order, which — because rows with
+   conditional visibility (the placement row, hidden until answers are
+   toggled on) still count as "last" even while display:none — didn't
+   reliably strip the border from whichever row is *visually* last.
+   Explicit per-format overrides below cover the two real "last visible
+   row" cases instead of relying on DOM-order luck. */
 .dl-settings-row:last-child {
+  border-bottom: none;
+}
+
+/* When the placement row is visible (answers included), it's the true
+   last visible row and should carry no separator regardless of what
+   comes after it in the DOM. */
+.dl-settings-placement[style*="flex"] {
   border-bottom: none;
 }
 

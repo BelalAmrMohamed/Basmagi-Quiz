@@ -4,11 +4,25 @@
 // `PptxGenJS` library used, included in this file.
 
 /* ============== Issues ==============
-1. Score page has missplaced the score table
-2. Some text is gray, which makes it unreadable.
-3. Everything is rendered RTL. It should be LTR
-4. It attpemts to render a useless copy button for code blocks for some reason!.
-5. The language name for code blocks is missplaced out of the code block itself
+All items from the original list here (score-table placement, gray
+unreadable text, RTL flipping, stray copy buttons, misplaced code-block
+language labels) are resolved — see the `Fix #1`–`Fix #6` comments
+throughout this file for where each was addressed.
+
+All items from docs/plans/plan-to-fix-pptx-bugs.md are now also
+addressed: multi-correct-answer support (isIdxCorrect/isIdxUserSelected),
+the html2canvas contrast sweep, empty-slide prevention (lazy getSlide()),
+long-question overflow + markdown-detection gaps (hasMarkdownOrMath /
+estimateTextHeight), two-column option layout (row-major Fix #two-col),
+video/audio/YouTube placeholders, and progress-bar granularity (per-
+question weighted reporting). A separate, previously unreported bug was
+also found and fixed while working the contrast/overflow items: the
+off-screen html2canvas wrapper's injected <style> used unscoped
+`button`/`[class*="copy"]` selectors, which — combined with a missing
+try/finally around the canvas capture — could leak a page-wide
+"hide every button" rule if a single render failed, explaining reports
+of buttons vanishing elsewhere on the site after a PPTX export. See
+Fix #critical near renderTextToImage().
    ============== End ============== */
 
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -22,6 +36,39 @@ import {
 
 // Markdown + KaTeX renderer (same engine used by the live quiz UI and HTML export)
 import { renderMarkdown } from "../../shared/markdown.js";
+
+// ===========================
+// MEDIA URL HELPERS (mirrors export-to-html.js / export-to-quiz.js)
+// ===========================
+// This is now the THIRD file needing this exact logic (export-to-quiz.js,
+// export-to-html.js, and this one) — per the plan doc's own note, a third
+// duplicate is the point where extracting a shared module stops being a
+// "nice to have" and starts being worth doing. Kept as a local duplicate
+// for now to avoid widening this session's blast radius across files, but
+// flagged here for a follow-up `shared/media-url.js` extraction.
+const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
+const resolveMediaUrl = (url) => {
+  if (!url || typeof url !== "string") return url;
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  const origin =
+    (typeof window !== "undefined" && window.location && window.location.origin) ||
+    PLATFORM_ORIGIN;
+  try {
+    return new URL(url, origin).href;
+  } catch {
+    return url;
+  }
+};
+
+const YOUTUBE_RE =
+  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+
+/** Returns the 11-char YouTube video ID if `url` is a YouTube link, else null. */
+const extractYoutubeId = (url) => {
+  if (!url || typeof url !== "string") return null;
+  const m = url.match(YOUTUBE_RE);
+  return m ? m[1] : null;
+};
 
 // ===========================
 // LAZY LOADERS
@@ -110,20 +157,74 @@ async function warmKatexFonts() {
 // ===========================
 // MAIN EXPORT FUNCTION
 // ===========================
+/**
+ * @param {object} config
+ * @param {Array} questions
+ * @param {Array|object} [userAnswers]
+ * @param {Function} [onProgress]
+ * @param {AbortSignal} [signal]
+ * @param {object} [pptxOptions] — settings collected from the download
+ *   modal's Settings Panel: { includeAnswers, includeUserAnswers,
+ *   includeExplanations, answerPlacement: "inline" | "final-page" }.
+ *   Defaults preserve the previous always-on behavior when omitted, so
+ *   existing call sites that don't pass this keep working unchanged.
+ */
 export async function exportToPptx(
   config,
   questions,
   userAnswers = [],
   onProgress = null,
   signal = null,
+  pptxOptions = {},
 ) {
+  const {
+    includeAnswers = true,
+    includeUserAnswers = true,
+    includeExplanations = true,
+    answerPlacement = "inline",
+  } = pptxOptions;
   try {
+    // ── Fix #progress-7c: small sub-progress ticks for the CDN-loading
+    // phase, so the bar doesn't sit at a dead 0% while pptxgenjs/
+    // html2canvas/KaTeX fonts are still downloading — previously it
+    // jumped straight from 0 to the first chunk's percentage once these
+    // resolved. Only pre-warm html2canvas/KaTeX eagerly when the quiz
+    // actually contains markdown/math content, so plain quizzes don't
+    // pay for a network fetch they'll never use.
+    if (typeof onProgress === "function") onProgress(2);
+    const needsRichRender = (questions || []).some((q) => {
+      const isEssay = isEssayQuestion(q);
+      const opts = isEssay ? [] : q.options || [];
+      return (
+        /\$|[*_]{1,3}[^\s]|~~[^\s]|`|^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\||\[[^\]]*\]\([^)]*\)|^\s*>\s|\\\[|\\\]/m.test(
+          String(q.q || ""),
+        ) ||
+        opts.some((o) =>
+          /\$|[*_]{1,3}[^\s]|~~[^\s]|`|^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\||\[[^\]]*\]\([^)]*\)|^\s*>\s|\\\[|\\\]/m.test(
+            String(o),
+          ),
+        ) ||
+        /\$|[*_]{1,3}[^\s]|~~[^\s]|`|^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\||\[[^\]]*\]\([^)]*\)|^\s*>\s|\\\[|\\\]/m.test(
+          String(q.explanation || ""),
+        )
+      );
+    });
+
     // ── Parallel: load CDN libs + pre-warm KaTeX fonts simultaneously ──────
-    const [pptxgen] = await Promise.all([
-      loadPptxGen(),
-      loadHtml2Canvas(), // warm the module cache now, not on first render
-      warmKatexFonts(), // kick off font downloads immediately
-    ]);
+    const pptxgenPromise = loadPptxGen().then((mod) => {
+      if (typeof onProgress === "function") onProgress(4);
+      return mod;
+    });
+    const auxPromises = needsRichRender
+      ? [
+        loadHtml2Canvas().then(() => {
+          if (typeof onProgress === "function") onProgress(6);
+        }),
+        warmKatexFonts(),
+      ]
+      : [];
+    const [pptxgen] = await Promise.all([pptxgenPromise, ...auxPromises]);
+    if (typeof onProgress === "function") onProgress(8);
 
     // ===========================
     // VALIDATION
@@ -208,7 +309,14 @@ export async function exportToPptx(
      */
     const hasMarkdownOrMath = (text) => {
       if (!text) return false;
-      return /\$|[*_]{1,3}[^\s]|~~[^\s]|`|^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\|/m.test(
+      // Fix #overflow-4a: widened to cover syntax the editor actually
+      // allows (per shared/markdown.js's _renderMarkdownCore) that the
+      // original regex missed entirely:
+      //  - [text](url) / ![alt](url) — links & images
+      //  - ^\s*>  — blockquotes (markdown-css.js explicitly styles
+      //    `blockquote`, so the renderer supports it — this was a real gap)
+      //  - \\\[ / \\\] — alternate display-math delimiters some editors emit
+      return /\$|[*_]{1,3}[^\s]|~~[^\s]|`|^#{1,6}\s|^\s*[-*+]\s|^\s*\d+\.\s|\||\[[^\]]*\]\([^)]*\)|^\s*>\s|\\\[|\\\]/m.test(
         text,
       );
     };
@@ -218,18 +326,41 @@ export async function exportToPptx(
      * PptxGenJS text box. Used as the fallback when hasMarkdownOrMath is false so
      * we avoid PptxGenJS clipping text that overflows its fixed-height box.
      *
-     * The formula is intentionally generous (+20 %) so short estimates never cause
-     * clipping — any excess whitespace at the bottom is harmless.
+     * Fix #overflow-4b: the safety margin now scales with line count (an
+     * actual ~8% per line) instead of a flat +0.1in — a flat constant is
+     * negligible once you're 15-20 lines in, which is how long questions
+     * were getting cut off even though each individual line's estimate
+     * only under-shot by a little. Also explicit newlines in the source
+     * text are counted as forced line breaks in addition to the
+     * width-based wrap estimate, since a flat char-count/charsPerLine
+     * division alone undercounts height for text with manual line breaks.
      */
     const estimateTextHeight = (text, fontSizePt, widthInches) => {
       const lineHeightIn = (fontSizePt / 72) * 1.7;
-      // Approximate average character width ≈ 0.55 × em
+      // Approximate average character width ≈ 0.55 × em. NOTE: this is a
+      // deliberately conservative (wide) ratio for the default Segoe UI
+      // body font PptxGenJS renders with — if a future font change makes
+      // real glyphs narrower, estimates simply end up more generous, which
+      // is the safe direction to be wrong in for this formula.
       const charsPerLine = Math.max(
         Math.floor((widthInches * 72) / (fontSizePt * 0.55)),
         8,
       );
-      const lines = Math.max(Math.ceil((text || "").length / charsPerLine), 1);
-      return lines * lineHeightIn + 0.1; // +0.1 in padding
+      const raw = text || "";
+      // Count wrapped lines per explicit paragraph separately, then sum —
+      // a string with several manual newlines wraps each segment on its
+      // own, it doesn't pool all characters into one continuous wrap.
+      const paragraphs = raw.split("\n");
+      const wrappedLines = paragraphs.reduce(
+        (sum, p) => sum + Math.max(Math.ceil(p.length / charsPerLine), 1),
+        0,
+      );
+      const lines = Math.max(wrappedLines, 1);
+      // ~8% per-line safety margin (was a flat +0.1in, which is fine for a
+      // 2-line string but negligible for a 20-line one) plus a small fixed
+      // padding term so very short strings still get a touch of breathing
+      // room.
+      return lines * lineHeightIn * 1.08 + 0.06;
     };
 
     /**
@@ -266,7 +397,21 @@ export async function exportToPptx(
       const h2c = await loadHtml2Canvas();
       const widthPx = Math.floor(maxWidthIn * 96);
 
+      // Fix #critical: unique per-call scope class. Previously the <style>
+      // injected below used bare `button`/`[class*="copy"]` selectors —
+      // since <style> tags are NOT scoped by DOM ancestry, those rules
+      // applied to the ENTIRE host page for as long as the wrapper stayed
+      // attached to document.body. Combined with the missing try/finally
+      // around the h2c() call below (any failure meant removeChild() never
+      // ran), this could permanently hide every button on the page —
+      // exactly the "buttons disappeared after PPTX export" bug. Scoping
+      // every rule under a unique class fixes the leak at the source;
+      // the try/finally below is a second, independent safety net so a
+      // thrown error can never leave the node attached at all.
+      const scopeClass = `pptx-render-scope-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
       const wrapper = document.createElement("div");
+      wrapper.className = scopeClass;
       Object.assign(wrapper.style, {
         position: "fixed",
         left: "-99999px",
@@ -288,16 +433,19 @@ export async function exportToPptx(
       wrapper.setAttribute("dir", "ltr");
 
       // Minimal styles so tables, code blocks, lists, and KaTeX render legibly.
+      // Fix #critical: every selector is now scoped under `.${scopeClass}`
+      // so these rules can never leak onto the rest of the page, no matter
+      // how long the wrapper stays attached to document.body.
       const style = document.createElement("style");
       style.textContent = `
-        table{border-collapse:collapse;width:100%;margin:6px 0}
-        td,th{border:1px solid #cbd5e1;padding:5px 10px;text-align:left;font-size:0.92em}
-        th{background:#f1f5f9;font-weight:700}
-        pre{background:#1e293b;color:#e2e8f0;padding:10px 14px;border-radius:7px;
+        .${scopeClass} table{border-collapse:collapse;width:100%;margin:6px 0}
+        .${scopeClass} td,.${scopeClass} th{border:1px solid #cbd5e1;padding:5px 10px;text-align:left;font-size:0.92em}
+        .${scopeClass} th{background:#f1f5f9;font-weight:700}
+        .${scopeClass} pre{background:#1e293b;color:#e2e8f0;padding:10px 14px;border-radius:7px;
             overflow:hidden;font-family:Consolas,monospace;font-size:0.85em;margin:6px 0}
-        code{background:rgba(99,102,241,0.1);border:1px solid #e2e8f0;border-radius:4px;
+        .${scopeClass} code{background:rgba(99,102,241,0.1);border:1px solid #e2e8f0;border-radius:4px;
              padding:1px 6px;font-family:Consolas,monospace;font-size:0.88em}
-        pre code{background:none;border:none;padding:0;color:inherit}
+        .${scopeClass} pre code{background:none;border:none;padding:0;color:inherit}
         /* Fix #6: syntax-highlighting token colors. highlightCode() (shared/
            markdown.js) wraps fenced-code tokens in <span class="sh-*">, whose
            colors normally come from shared/markdown-css.js's MARKDOWN_CSS —
@@ -310,36 +458,34 @@ export async function exportToPptx(
            silently inheriting the surrounding text's color (which is
            whatever the caller's own textHex is — often a dark navy meant for
            a light background — producing the reported "black on black". */
-        .sh-comment   { color: #636370; font-style: italic; }
-        .sh-keyword   { color: #ff79c6; font-weight: 600; }
-        .sh-string    { color: #50fa7b; }
-        .sh-number    { color: #bd93f9; }
-        .sh-type      { color: #8be9fd; }
-        .sh-function  { color: #ffb86c; }
-        .sh-property  { color: #f1fa8c; }
-        .sh-builtin   { color: #8be9fd; font-style: italic; }
-        .sh-operator  { color: #ff79c6; }
-        .sh-variable  { color: #f8f8f2; }
-        .sh-tag       { color: #ff79c6; }
-        .sh-attr      { color: #50fa7b; }
-        strong{font-weight:700} em{font-style:italic} del{text-decoration:line-through}
-        ul,ol{padding-left:22px;margin:4px 0} li{margin:2px 0}
-        blockquote{border-left:3px solid #4f46e5;margin:6px 0;
-                   padding:4px 12px;background:#f5f3ff;border-radius:0 4px 4px 0}
-        h1,h2,h3,h4{margin:6px 0 3px;line-height:1.3;font-weight:700}
-        .katex{font-size:1.1em} .katex-display{margin:4px 0;text-align:center}
-        .math-block{text-align:center;margin:6px 0;overflow:hidden}
-        p{margin:3px 0}
-        button{display:none!important}
-        [class*="copy"]{display:none!important}
-        [class*="lang"],[class*="language-label"],pre>span:first-child{display:none!important}
+        .${scopeClass} .sh-comment   { color: #636370; font-style: italic; }
+        .${scopeClass} .sh-keyword   { color: #ff79c6; font-weight: 600; }
+        .${scopeClass} .sh-string    { color: #50fa7b; }
+        .${scopeClass} .sh-number    { color: #bd93f9; }
+        .${scopeClass} .sh-type      { color: #8be9fd; }
+        .${scopeClass} .sh-function  { color: #ffb86c; }
+        .${scopeClass} .sh-property  { color: #f1fa8c; }
+        .${scopeClass} .sh-builtin   { color: #8be9fd; font-style: italic; }
+        .${scopeClass} .sh-operator  { color: #ff79c6; }
+        .${scopeClass} .sh-variable  { color: #f8f8f2; }
+        .${scopeClass} .sh-tag       { color: #ff79c6; }
+        .${scopeClass} .sh-attr      { color: #50fa7b; }
+        .${scopeClass} strong{font-weight:700} .${scopeClass} em{font-style:italic} .${scopeClass} del{text-decoration:line-through}
+        .${scopeClass} ul,.${scopeClass} ol{padding-left:22px;margin:4px 0} .${scopeClass} li{margin:2px 0}
+        .${scopeClass} blockquote{border-left:3px solid #4f46e5;margin:6px 0;
+                   padding:4px 12px;background:#f5f3ff;border-radius:0 4px 4px 0;color:#1e293b}
+        .${scopeClass} h1,.${scopeClass} h2,.${scopeClass} h3,.${scopeClass} h4{margin:6px 0 3px;line-height:1.3;font-weight:700}
+        .${scopeClass} .katex{font-size:1.1em} .${scopeClass} .katex-display{margin:4px 0;text-align:center}
+        .${scopeClass} .math-block{text-align:center;margin:6px 0;overflow:hidden}
+        .${scopeClass} p{margin:3px 0}
+        .${scopeClass} button{display:none!important}
+        .${scopeClass} [class*="copy"]{display:none!important}
+        .${scopeClass} [class*="lang"],.${scopeClass} [class*="language-label"],.${scopeClass} pre>span:first-child{display:none!important}
       `;
       // Fix #4: Hide all buttons (catches any class name the renderer assigns to copy buttons)
-      // TODO: narrow the `button` / `[class*="copy"]` selector once the exact class
-      //       emitted by renderMarkdown is confirmed in DevTools.
       // Fix #5: Hide language badges that float outside the code block due to missing
       //         host-page CSS; selector uses [class*="lang"] to catch common variants.
-      //         TODO: replace with the precise class name from renderMarkdown's output.
+      // Both now scoped under scopeClass — see Fix #critical above.
       wrapper.appendChild(style);
 
       const content = document.createElement("div");
@@ -347,40 +493,47 @@ export async function exportToPptx(
       wrapper.appendChild(content);
       document.body.appendChild(wrapper);
 
-      // Wait for KaTeX SVG layout
-      await new Promise((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(r)),
-      );
+      // Fix #critical: guarantee cleanup even if html2canvas (or anything
+      // else below) throws — previously a failure here left `wrapper` (and
+      // its page-wide-leaking <style>, before the scoping fix above) stuck
+      // in the DOM forever, which is how buttons across the whole site
+      // could vanish after a single failed render.
+      try {
+        // Wait for KaTeX SVG layout
+        await new Promise((r) =>
+          requestAnimationFrame(() => requestAnimationFrame(r)),
+        );
 
-      // Force-load any font still not fully loaded — same reasoning as warmKatexFonts.
-      // This is the last line of defence right before html2canvas captures the element.
-      const pendingFonts = [];
-      document.fonts.forEach((face) => {
-        if (face.status !== "loaded") {
-          pendingFonts.push(face.load().catch(() => { }));
-        }
-      });
-      if (pendingFonts.length) await Promise.allSettled(pendingFonts);
+        // Force-load any font still not fully loaded — same reasoning as warmKatexFonts.
+        // This is the last line of defence right before html2canvas captures the element.
+        const pendingFonts = [];
+        document.fonts.forEach((face) => {
+          if (face.status !== "loaded") {
+            pendingFonts.push(face.load().catch(() => { }));
+          }
+        });
+        if (pendingFonts.length) await Promise.allSettled(pendingFonts);
 
-      const canvas = await h2c(wrapper, {
-        backgroundColor: bgHex ? `#${bgHex}` : "#ffffff",
-        scale: 1.5,
-        logging: false,
-        useCORS: true,
-        allowTaint: false,
-        onclone: async (_clonedDoc) => {
-          // Ensure the cloned document's fonts are also ready
-          await _clonedDoc.fonts.ready;
-        },
-      });
+        const canvas = await h2c(wrapper, {
+          backgroundColor: bgHex ? `#${bgHex}` : "#ffffff",
+          scale: 1.5,
+          logging: false,
+          useCORS: true,
+          allowTaint: false,
+          onclone: async (_clonedDoc) => {
+            // Ensure the cloned document's fonts are also ready
+            await _clonedDoc.fonts.ready;
+          },
+        });
 
-      document.body.removeChild(wrapper);
+        const dataUrl = canvas.toDataURL("image/png");
+        // Convert pixel height back to inches (canvas is at scale 1.5 × 96 DPI = 144 DPI)
+        const heightIn = canvas.height / 144;
 
-      const dataUrl = canvas.toDataURL("image/png");
-      // Convert pixel height back to inches (canvas is at scale 1.5 × 96 DPI = 144 DPI)
-      const heightIn = canvas.height / 144;
-
-      return { dataUrl, widthIn: maxWidthIn, heightIn };
+        return { dataUrl, widthIn: maxWidthIn, heightIn };
+      } finally {
+        if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+      }
     };
 
     // ===========================
@@ -412,11 +565,23 @@ export async function exportToPptx(
     const userName = localStorage.getItem("username") || "User";
     const documentTitle = sanitizeText(config.title || "Quiz Quest");
 
+    // Fix #exportOptions: `isResultsMode` now also requires
+    // includeUserAnswers — if the person exporting turned that setting
+    // off in the download modal's settings panel, the deck should render
+    // as a plain answer-key-style export (no per-user status
+    // badges/highlighting/score summary), even when userAnswers was
+    // technically passed in by the caller (e.g. exporting from the
+    // Results page but choosing not to bake in this specific attempt).
     const isResultsMode =
+      includeUserAnswers &&
       userAnswers &&
       (Array.isArray(userAnswers)
         ? userAnswers.length > 0
         : Object.keys(userAnswers).length > 0);
+
+    // Collected while iterating the question loop below, used to build a
+    // final "Answer Key" slide when answerPlacement === "final-page".
+    const answerKeyEntries = [];
 
     /**
      * scoreData now comes from the shared calculateQuizMetrics function,
@@ -894,8 +1059,29 @@ export async function exportToPptx(
     // for a while on a large quiz. We force a yield every PPTX_RENDER_CHUNK
     // questions regardless, and check `signal` at each question so Cancel
     // takes effect within a question or two instead of only at the end.
-    const PPTX_RENDER_CHUNK = 3;
+    // Fix #progress-7: reduced from 3 to 1 — report (and yield) after
+    // EVERY question instead of every third one. This also directly
+    // improves Cancel responsiveness (the yield below is what lets a
+    // click actually register), not just visual smoothness.
+    const PPTX_RENDER_CHUNK = 1;
     const totalQuestions = questions.length;
+    // Weight each question's share of the 0-85% question-slide progress
+    // band by whether it needs an html2canvas render (meaningfully
+    // slower) so a run of markdown/math-heavy questions doesn't read as
+    // "stalled then jumps" — a plain question is 1 unit of work, one with
+    // any markdown/math (question text, options, or explanation) is ~3.5.
+    const questionWorkUnits = questions.map((q) => {
+      const isEssay = isEssayQuestion(q);
+      const opts = isEssay ? [] : (q.options || []);
+      const anyMd =
+        hasMarkdownOrMath(String(q.q || "")) ||
+        opts.some((o) => hasMarkdownOrMath(String(o))) ||
+        hasMarkdownOrMath(String(q.explanation || "")) ||
+        (isEssay && hasMarkdownOrMath(String(q.answer || "")));
+      return anyMd ? 3.5 : 1;
+    });
+    const totalWorkUnits = questionWorkUnits.reduce((a, b) => a + b, 0) || 1;
+    let completedWorkUnits = 0;
 
     for (const [index, question] of questions.entries()) {
       if (signal?.aborted) {
@@ -1076,10 +1262,56 @@ export async function exportToPptx(
         currentY += heightIn;
       };
 
+      /**
+       * Draws a labeled rounded-rectangle placeholder for direct (non-
+       * YouTube) video/audio files — no thumbnail is available for these,
+       * so this is a fixed-height box with a centered icon/label and a
+       * hyperlink text run pointing at the resolved URL, so clicking it
+       * in PowerPoint/Impress opens the file/stream in a browser.
+       */
+      const addMediaPlaceholder = (label, url) => {
+        const h = 1.2;
+        maybeNewSlide(h);
+        getSlide().addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+          x: MARGIN,
+          y: currentY,
+          w: USABLE_WIDTH,
+          h,
+          r: 0.08,
+          fill: { color: COLORS.background },
+          line: { color: COLORS.border, width: 1 },
+        });
+        getSlide().addText(
+          [
+            { text: `${label}\n`, options: { fontSize: 20, bold: true, color: COLORS.textDark, breakLine: true } },
+            { text: "Click to open", options: { fontSize: 11, color: COLORS.info } },
+          ],
+          {
+            x: MARGIN,
+            y: currentY,
+            w: USABLE_WIDTH,
+            h,
+            align: "center",
+            valign: "middle",
+            hyperlink: { url, tooltip: url },
+          },
+        );
+        currentY += h;
+      };
+
       // ===========================
       // STATUS BADGE + QUESTION NUMBER
       // ===========================
-      if (isResultsMode) {
+      // Fix #exportOptions: CORRECT/WRONG inherently reveals whether the
+      // user's answer matches the correct one, so this badge only shows
+      // when includeAnswers is also on — with answers withheld, a "wrong"
+      // badge would leak which questions were missed without ever
+      // showing what the right answer was, which is a half-measure the
+      // settings panel isn't supposed to allow. "SKIPPED" is safe to
+      // keep either way since it reveals nothing about correctness, so
+      // it still needs its own branch below when answers are off.
+      const showStatusBadge = isResultsMode && includeAnswers;
+      if (showStatusBadge || (isResultsMode && !hasUserAnswer)) {
         let statusText = "ESSAY";
         let statusBg = COLORS.warning;
 
@@ -1087,6 +1319,9 @@ export async function exportToPptx(
           if (!hasUserAnswer) {
             statusText = "SKIPPED";
             statusBg = COLORS.textLight;
+          } else if (!includeAnswers) {
+            statusText = "ANSWERED";
+            statusBg = COLORS.info;
           } else if (isAnswerCorrect(userAns, question.correct ?? question.answer)) {
             statusText = "CORRECT";
             statusBg = COLORS.success;
@@ -1094,6 +1329,9 @@ export async function exportToPptx(
             statusText = "WRONG";
             statusBg = COLORS.error;
           }
+        } else if (!includeAnswers) {
+          statusText = "ANSWERED";
+          statusBg = COLORS.info;
         }
 
         maybeNewSlide(0.3);
@@ -1205,6 +1443,71 @@ export async function exportToPptx(
       addSpacer(0.15);
 
       // ===========================
+      // QUESTION VIDEO / AUDIO / YOUTUBE (if present)
+      // ===========================
+      // Mirrors the approach already shipped in export-to-html.js: PPTX
+      // can't embed remote playable video/audio, so we draw a placeholder
+      // instead. YouTube gets its real thumbnail (same img.youtube.com
+      // trick); direct video/audio files get a labeled placeholder box.
+      // Both are hyperlinked so clicking them in PowerPoint/Impress opens
+      // the resolved URL in a browser. Always stacked above the question
+      // text's own image handling (no side-by-side special case here —
+      // that's only worth the complexity for the image path already
+      // handled above). Schema doesn't combine question.image with
+      // question.video/audio in practice, so this is a simple sequential
+      // block rather than an if/else with the image branch above.
+      const mediaUrl = question.video || question.audio;
+      if (mediaUrl) {
+        const resolvedMediaUrl = resolveMediaUrl(mediaUrl);
+        const youtubeId = extractYoutubeId(mediaUrl);
+
+        if (youtubeId) {
+          // ── YouTube: real thumbnail + "Watch on YouTube" hyperlink ──
+          const thumbUrl = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+          try {
+            const imgDims = await getImageDimensions(thumbUrl);
+            const imgSize = calculateImageSize(
+              imgDims.width,
+              imgDims.height,
+              USABLE_WIDTH * 0.6,
+              MAX_IMAGE_HEIGHT,
+            );
+            const totalH = imgSize.height + 0.3;
+            maybeNewSlide(totalH);
+            getSlide().addImage({
+              path: thumbUrl,
+              x: (SLIDE_WIDTH - imgSize.width) / 2,
+              y: currentY,
+              w: imgSize.width,
+              h: imgSize.height,
+            });
+            getSlide().addText("▶ Watch on YouTube", {
+              x: (SLIDE_WIDTH - imgSize.width) / 2,
+              y: currentY + imgSize.height + 0.02,
+              w: imgSize.width,
+              h: 0.24,
+              fontSize: 11,
+              bold: true,
+              color: COLORS.info,
+              align: "center",
+              hyperlink: { url: resolvedMediaUrl, tooltip: "Watch on YouTube" },
+            });
+            currentY += totalH;
+          } catch (err) {
+            console.warn("[PPTX] Failed to load YouTube thumbnail:", err);
+            // Fall through to the generic placeholder below if the
+            // thumbnail itself fails to load (e.g. network blocked it).
+            addMediaPlaceholder("🎬 Video", resolvedMediaUrl);
+          }
+        } else {
+          // ── Direct video/audio file: labeled placeholder + hyperlink ──
+          const isAudio = Boolean(question.audio) && !question.video;
+          addMediaPlaceholder(isAudio ? "🎵 Audio" : "🎬 Video", resolvedMediaUrl);
+        }
+        addSpacer(0.15);
+      }
+
+      // ===========================
       // OPTIONS / ESSAY ANSWER AREA
       // ===========================
       if (isEssay) {
@@ -1271,20 +1574,55 @@ export async function exportToPptx(
           currentY += scoreH + 0.12;
         }
 
-        // Model / correct answer
-        addLabel("CORRECT ANSWER / KEY POINTS:", COLORS.success, 10);
-        await addRichBlock(sanitizeText(question.answer), {
-          fontSizePt: 12,
-          colorHex: COLORS.textDark,
-          bgHex: COLORS.correctBg,
-          insetIn: 0.1,
-        });
+        // Fix #exportOptions: the model/correct answer is itself an
+        // answer reveal, so it's gated by includeAnswers. When
+        // answerPlacement is "final-page", defer it to the Answer Key
+        // slide built after the question loop instead of rendering
+        // inline here.
+        if (includeAnswers) {
+          if (answerPlacement === "final-page") {
+            answerKeyEntries.push({
+              index,
+              type: "essay",
+              answer: sanitizeText(question.answer),
+            });
+          } else {
+            addLabel("CORRECT ANSWER / KEY POINTS:", COLORS.success, 10);
+            await addRichBlock(sanitizeText(question.answer), {
+              fontSizePt: 12,
+              colorHex: COLORS.textDark,
+              bgHex: COLORS.correctBg,
+              insetIn: 0.1,
+            });
+          }
+        }
       } else {
         // ── Multiple-choice options ─────────────────────────────────────────
 
         const options = question.options || [];
         const correctIdx = question.correct ?? question.answer;
         const anyMdOrMath = options.some((o) => hasMarkdownOrMath(String(o)));
+
+        // Fix #exportOptions: when answers are on AND placement is
+        // "final-page", record the correct-answer text for the Answer
+        // Key slide built after the question loop, and render options
+        // WITHOUT correct-answer highlighting inline (only the user's
+        // own selection, neutrally, still shows here — the reveal itself
+        // is deferred to the final page).
+        const deferAnswerToFinalPage =
+          includeAnswers && answerPlacement === "final-page";
+        if (deferAnswerToFinalPage) {
+          const idxList = Array.isArray(correctIdx) ? correctIdx : [correctIdx];
+          const letters = idxList
+            .filter((i) => Number.isInteger(i) && options[i] !== undefined)
+            .map((i) => `${String.fromCharCode(65 + i)}. ${sanitizeText(String(options[i]))}`)
+            .join("; ");
+          answerKeyEntries.push({ index, type: "mcq", answer: letters || "—" });
+        }
+        // Effective "reveal answers inline" flag used by the highlighting
+        // logic below — false whenever the reveal is deferred to the
+        // final page, even though includeAnswers itself is true.
+        const revealInline = includeAnswers && !deferAnswerToFinalPage;
 
         // Only use two-column layout when options are plain text (easier height math)
         const useTwoCols = !anyMdOrMath && options.length > 3;
@@ -1300,11 +1638,18 @@ export async function exportToPptx(
         const isIdxUserSelected = (idx) =>
           Array.isArray(userAns) ? userAns.includes(idx) : idx === userAns;
 
+        // Fix #exportOptions: when includeAnswers is off, we must not
+        // reveal correctness at all — that includes not highlighting the
+        // user's own selection as "wrong", since a red highlight next to
+        // an unmarked correct option still leaks which one was right by
+        // elimination. The user's selection can still be shown, just in
+        // a neutral "you picked this" tone with no correct/incorrect
+        // implication.
         for (let idx = 0; idx < options.length; idx++) {
           const opt = options[idx];
           const optText = String(opt);
           const label = String.fromCharCode(65 + idx);
-          const isCorrect = isIdxCorrect(idx);
+          const isCorrect = revealInline && isIdxCorrect(idx);
           const isUserSel =
             isResultsMode && hasUserAnswer && isIdxUserSelected(idx);
 
@@ -1316,9 +1661,13 @@ export async function exportToPptx(
             highlightBg = COLORS.correctBg;
             borderColor = COLORS.success;
             borderWidth = 2;
-          } else if (isUserSel && !isCorrect) {
+          } else if (isUserSel && !isCorrect && revealInline) {
             highlightBg = COLORS.userWrong;
             borderColor = COLORS.error;
+            borderWidth = 2;
+          } else if (isUserSel && !revealInline) {
+            highlightBg = COLORS.userAnswerBg;
+            borderColor = COLORS.info;
             borderWidth = 2;
           }
 
@@ -1382,30 +1731,17 @@ export async function exportToPptx(
               });
               currentY += optH + 0.06;
             }
-          } else {
-            // ── Plain text options: native PptxGenJS text (fast, no canvas) ──
+          } else if (!useTwoCols) {
+            // ── Single-column plain text: native PptxGenJS text ──
             const plain = `${label}. ${sanitizeText(optText)}`;
             const optH = Math.max(
               estimateTextHeight(plain, 12, colWidth - 0.2),
               0.35,
             );
-
-            const col = idx % (useTwoCols ? 2 : 1);
-            const row = Math.floor(idx / (useTwoCols ? 2 : 1));
-
-            if (col === 0) {
-              maybeNewSlide(optH + 0.06);
-            }
-            // Recalculate y after potential slide break (currentY may have changed)
-            const optX = MARGIN + col * (colWidth + 0.2);
-            const optY =
-              useTwoCols && col === 1
-                ? currentY - (optH + 0.06) // align with the left cell in the same row
-                : currentY;
-
+            maybeNewSlide(optH + 0.06);
             getSlide().addText(plain, {
-              x: optX,
-              y: optY,
+              x: MARGIN,
+              y: currentY,
               w: colWidth,
               h: optH,
               fontSize: 12,
@@ -1416,14 +1752,107 @@ export async function exportToPptx(
               valign: "middle",
               wrap: true,
             });
+            currentY += optH + 0.06;
+          }
+          // Two-column plain-text options are handled in a separate
+          // row-major pass below (see Fix #two-col) instead of inline
+          // here, since drawing both cells of a row requires knowing
+          // both cells' heights up front.
+        }
 
-            if (
-              !useTwoCols ||
-              col === (useTwoCols ? 1 : 0) ||
-              idx === options.length - 1
-            ) {
-              currentY += optH + 0.06;
+        // ── Fix #two-col: row-major two-column rendering ──
+        // The old per-option loop above alternated options into columns
+        // one at a time and advanced currentY by whichever option was
+        // drawn last in the row, which (a) assumed column 1's height
+        // equalled column 0's height when computing column 1's Y, and
+        // (b) advanced by the last-drawn height instead of the row's max
+        // — both compounding into visibly misaligned rows once options'
+        // lengths varied. Fixed by computing both cells' styling/height
+        // up front, then drawing both at the same row Y using the row's
+        // tallest cell height for both boxes and for the Y advance.
+        if (useTwoCols && !anyMdOrMath) {
+          const styleFor = (idx) => {
+            const isCorrect = revealInline && isIdxCorrect(idx);
+            const isUserSel =
+              isResultsMode && hasUserAnswer && isIdxUserSelected(idx);
+            let highlightBg = COLORS.surface;
+            let borderColor = COLORS.border;
+            let borderWidth = 1;
+            if (isCorrect) {
+              highlightBg = COLORS.correctBg;
+              borderColor = COLORS.success;
+              borderWidth = 2;
+            } else if (isUserSel && !isCorrect && revealInline) {
+              highlightBg = COLORS.userWrong;
+              borderColor = COLORS.error;
+              borderWidth = 2;
+            } else if (isUserSel && !revealInline) {
+              highlightBg = COLORS.userAnswerBg;
+              borderColor = COLORS.info;
+              borderWidth = 2;
             }
+            return { highlightBg, borderColor, borderWidth };
+          };
+
+          for (let row = 0; row * 2 < options.length; row++) {
+            const leftIdx = row * 2;
+            const rightIdx = row * 2 + 1;
+            const hasRight = rightIdx < options.length;
+
+            const leftLabel = String.fromCharCode(65 + leftIdx);
+            const leftText = `${leftLabel}. ${sanitizeText(String(options[leftIdx]))}`;
+            const leftH = Math.max(
+              estimateTextHeight(leftText, 12, colWidth - 0.2),
+              0.35,
+            );
+
+            let rightText = "";
+            let rightH = 0;
+            if (hasRight) {
+              const rightLabel = String.fromCharCode(65 + rightIdx);
+              rightText = `${rightLabel}. ${sanitizeText(String(options[rightIdx]))}`;
+              rightH = Math.max(
+                estimateTextHeight(rightText, 12, colWidth - 0.2),
+                0.35,
+              );
+            }
+
+            const rowH = Math.max(leftH, rightH);
+            maybeNewSlide(rowH + 0.06);
+
+            const leftStyle = styleFor(leftIdx);
+            getSlide().addText(leftText, {
+              x: MARGIN,
+              y: currentY,
+              w: colWidth,
+              h: rowH,
+              fontSize: 12,
+              color: COLORS.textDark,
+              fill: { color: leftStyle.highlightBg },
+              line: { color: leftStyle.borderColor, width: leftStyle.borderWidth },
+              inset: 0.1,
+              valign: "middle",
+              wrap: true,
+            });
+
+            if (hasRight) {
+              const rightStyle = styleFor(rightIdx);
+              getSlide().addText(rightText, {
+                x: MARGIN + colWidth + 0.2,
+                y: currentY,
+                w: colWidth,
+                h: rowH,
+                fontSize: 12,
+                color: COLORS.textDark,
+                fill: { color: rightStyle.highlightBg },
+                line: { color: rightStyle.borderColor, width: rightStyle.borderWidth },
+                inset: 0.1,
+                valign: "middle",
+                wrap: true,
+              });
+            }
+
+            currentY += rowH + 0.06;
           }
         }
       }
@@ -1433,7 +1862,13 @@ export async function exportToPptx(
       // ===========================
       // EXPLANATION
       // ===========================
-      if (question.explanation && question.explanation.trim()) {
+      // Fix #exportOptions: gated by includeExplanations from the
+      // settings panel.
+      if (
+        includeExplanations &&
+        question.explanation &&
+        question.explanation.trim()
+      ) {
         addLabel("💡 EXPLANATION:", COLORS.primary, 10);
         await addRichBlock(sanitizeText(question.explanation), {
           fontSizePt: 11,
@@ -1445,17 +1880,68 @@ export async function exportToPptx(
 
       // Report progress (0–85% reserved for question slides; the
       // remaining 15% covers the CTA slide + pptx.writeFile() below).
+      // Fix #progress-7: weighted by estimated work (see
+      // questionWorkUnits above) rather than a flat (index+1)/total, so
+      // the bar reflects that markdown/math-heavy questions genuinely
+      // take longer instead of appearing to stall then jump.
+      completedWorkUnits += questionWorkUnits[index];
       const isChunkEnd = (index + 1) % PPTX_RENDER_CHUNK === 0;
       const isLast = index === totalQuestions - 1;
       if (isChunkEnd || isLast) {
         if (typeof onProgress === "function") {
-          onProgress(Math.round(((index + 1) / totalQuestions) * 85));
+          onProgress(Math.round((completedWorkUnits / totalWorkUnits) * 85));
         }
         // Yield to the browser event loop so it can paint and process
         // input/cancel-click events before we resume CPU/canvas work.
         await new Promise((r) => setTimeout(r, 0));
       }
     } // end question loop
+
+    // ===========================
+    // ANSWER KEY SLIDE(S) — only when answerPlacement === "final-page"
+    // ===========================
+    // Fix #exportOptions: when the settings panel's "answer key placement"
+    // is set to "grouped on a final page" instead of "below each
+    // question", every correct answer collected during the question loop
+    // (answerKeyEntries) is rendered here instead, on one or more
+    // dedicated slides, rather than inline per-question.
+    if (includeAnswers && answerPlacement === "final-page" && answerKeyEntries.length) {
+      let akSlide = addContentSlide();
+      let akY = CONTENT_TOP;
+      akSlide.addText("ANSWER KEY", {
+        x: MARGIN,
+        y: akY,
+        w: USABLE_WIDTH,
+        h: 0.4,
+        fontSize: 20,
+        bold: true,
+        color: COLORS.textDark,
+        align: "center",
+      });
+      akY += 0.55;
+
+      for (const entry of answerKeyEntries) {
+        const text = `Q${entry.index + 1}: ${entry.answer}`;
+        const rowH = Math.max(estimateTextHeight(text, 12, USABLE_WIDTH - 0.2), 0.32);
+        if (akY + rowH + 0.06 > CONTENT_BOTTOM) {
+          akSlide = addContentSlide();
+          akY = CONTENT_TOP;
+        }
+        akSlide.addText(text, {
+          x: MARGIN,
+          y: akY,
+          w: USABLE_WIDTH,
+          h: rowH,
+          fontSize: 12,
+          color: COLORS.textDark,
+          fill: { color: COLORS.correctBg },
+          inset: 0.1,
+          valign: "middle",
+          wrap: true,
+        });
+        akY += rowH + 0.06;
+      }
+    }
 
     // ===========================
     // CTA SLIDE
