@@ -34,6 +34,10 @@ import {
   buildUserRootAttachment,
 } from "./ai-agent-item-lookup.js";
 import { loadFullQuizData } from "../../features/home/quiz-data-loader.js";
+import {
+  handleReadOnlyLibraryToolCall,
+  READONLY_LIBRARY_TOOL_NAMES,
+} from "./ai-agent-readonly-tools.js";
 
 /**
  * Resolves a user-created quiz/folder/course id (from `user_quizzes`) into
@@ -122,14 +126,22 @@ export function buildUserRootAttachmentForAskAi() {
  * own doc comment) — the user stays in control of when/whether to
  * actually send.
  *
- * Deliberately mirrors "home" pageKey's system prompt but WITHOUT
- * enableTools/toolNames: the home page's tool-enabled actions
- * (create_quiz/edit_quiz) depend on live folder-tree context
+ * Deliberately mirrors "home" pageKey's system prompt but only enables
+ * `fetch_attached_quiz` plus the three read-only lookup tools
+ * (search_library/parse_item_info/get_user_activity, via
+ * ai-agent-readonly-tools.js) — never the write-side actions
+ * (create_quiz/edit_quiz/delete_quiz/create_folder/create_course/
+ * move_item). Those depend on live folder-tree context
  * (buildFolderTreeContextPrompt) that's private to user-quizzes-view.js
  * and not safely reconstructable from a card/tooltip click handler
  * without real risk of circular imports or stale/wrong tool wiring — see
- * this module's own header comment. A minimal, safe, read/discuss-only
- * chat is judged better than a broken or duplicated tool config.
+ * this module's own header comment. The read-only tools have no such
+ * dependency (they're pure lookups against already-shared, DOM-free
+ * modules), and are needed here because this panel shares pageKey "home"
+ * — and therefore HOME_PAGE_SYSTEM_PROMPT, which tells the model these
+ * tools exist — with the main home-page panel; the user types free-text
+ * search queries into this launcher too, so it must be able to actually
+ * answer them rather than throw "Unknown attachment tool".
  * @param {{kind: "quiz"|"course"|"folder", id: string, title: string, summary?: string, source: "local"|"platform"}} attachment
  * @param {{defaultSystemPrompt?: string, placeholder?: string}} [pageOptions] -
  *   HOME_PAGE_SYSTEM_PROMPT/placeholder, passed by the caller (see
@@ -143,8 +155,21 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
     pageKey: "home",
     enableFileUpload: true,
     enableTools: true,
-    toolNames: ["fetch_attached_quiz"],
+    // This panel shares pageKey "home" with the main home-page panel, so
+    // it also shares HOME_PAGE_SYSTEM_PROMPT (see getSystemPrompt in
+    // ai-agent-settings.js — the persisted per-pageKey prompt, which every
+    // caller of openAIAgentWithAttachment sets to HOME_PAGE_SYSTEM_PROMPT,
+    // or falls back to the same stored "home" prompt if unset). That
+    // prompt already tells the model search_library/parse_item_info/
+    // get_user_activity exist — the user types free-text search queries
+    // into this launcher, so it needs to actually be able to answer them,
+    // not just fetch_attached_quiz. See ai-agent-readonly-tools.js for the
+    // shared handlers (same ones the home-page panel uses).
+    toolNames: ["fetch_attached_quiz", ...READONLY_LIBRARY_TOOL_NAMES],
     onToolCall: async (toolCall) => {
+      if (READONLY_LIBRARY_TOOL_NAMES.includes(toolCall?.name)) {
+        return handleReadOnlyLibraryToolCall(toolCall);
+      }
       if (toolCall?.name !== "fetch_attached_quiz") {
         throw new Error("Unknown attachment tool");
       }
@@ -189,6 +214,19 @@ export function openAIAgentWithAttachment(attachment, pageOptions = {}) {
   // openAIAgentModal builds (or reuses) the "home" pageKey's cached panel
   // synchronously before returning, so it's available immediately via
   // getChatPanelForPageKey — no need to await/poll for it.
+  //
+  // NOTE (pre-existing, not introduced by this file): getOrCreateChatPanel
+  // (ai-agent.js) only uses `options` the very FIRST time pageKey "home"
+  // is created; a later openAIAgentModal call for the same pageKey reuses
+  // that cached panel as-is, ignoring its own toolNames/onToolCall/
+  // contextSummary/contextPrompt/defaultSystemPrompt. So if this launcher
+  // is opened before the home page's own FAB ever is, the "home" panel
+  // gets built with THIS options object (fetch_attached_quiz + the
+  // read-only tools, no create/edit/delete/folder tools) and stays that
+  // way for the rest of the page's lifetime — the home FAB's write-side
+  // tools won't work until a reload rebuilds the cache. This ordering
+  // hazard predates and is unrelated to the read-only-tools fix below;
+  // flagged here rather than silently worked around.
   const panel = getChatPanelForPageKey("home");
   if (panel && typeof panel.addPendingAttachment === "function") {
     panel.setAttachmentToolHandler?.(options.onToolCall);

@@ -12,12 +12,12 @@
 //     typed query since they're commands, not searchable content.
 //   - Database items — the user's own library (instant, local) AND the
 //     platform's main-page content (async, via ai-agent-library-search.js).
-//   - Multi-select: picking an item attaches it and keeps the menu open
-//     (marking that item as attached), instead of closing on first pick —
-//     needed now that quick-access items and specific database items are
-//     both reachable from the same keystroke and a user very plausibly
-//     wants both in one prompt (e.g. "@Last_Quiz_Results" + a specific
-//     course to ask about it against).
+//   - Single-select: picking any row (Quick-Access or a database item)
+//     attaches it and immediately closes the menu — the same "click =
+//     done" behavior as every other dropdown in this app
+//     (.exam-dropdown-menu). A second `@` reopens it for another
+//     attachment. Rows already in pendingAttachments render disabled
+//     (see isAttached/buildRow) so the same item can't be attached twice.
 //
 // Zero dependency on ai-agent.js (openAIAgentModal/getChatPanelForPageKey) —
 // same cycle-avoidance reasoning as ai-agent-item-lookup.js's own header
@@ -156,13 +156,6 @@ export function createMentionMenu(options) {
 
     let menuEl = null;
     let triggerStart = -1;
-    // True right after a pick, until the next keystroke — the `@`+query text
-    // was just removed from the textarea (see pickAndKeepOpen), so there's
-    // momentarily no `@` character at triggerStart for handleInput's normal
-    // "did the trigger char survive" check to find. Multi-select needs the
-    // menu to stay open and armed at the (now-empty) query position rather
-    // than requiring the user to type a fresh `@` for every additional pick.
-    let justConsumedByPick = false;
     let platformDebounceTimer = null;
     let platformSearchToken = 0; // guards against a stale slow search overwriting a newer one
     let activeIndex = -1; // keyboard nav
@@ -211,14 +204,13 @@ export function createMentionMenu(options) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.setAttribute("data-mention-row", "");
-        // id/checked recorded as data attributes (not just baked into the
-        // click closure) so markRowAttached can find and flip THIS row in
-        // place after a pick, without rebuilding the whole list — see that
-        // function's own comment for why a full render() here caused the
-        // "menu resets/pops" visual bug.
         if (id != null) btn.setAttribute("data-mention-row-id", id);
         btn.className = "exam-action-btn ai-agent-mention-row" + (checked ? " is-attached" : "");
-        if (disabled) btn.setAttribute("disabled", "");
+        // `checked` (already in pendingAttachments) makes the row disabled
+        // too, not just visually checked — prevents attaching the exact
+        // same item twice. `disabled` can also be true for its original
+        // reason (an empty Quick-Access item, e.g. no quiz taken yet).
+        if (disabled || checked) btn.setAttribute("disabled", "");
         // Latin/ASCII labels (Quick-Access rows: "@Last_Created_Quiz" etc.)
         // must stay LTR even inside this RTL menu, or the `@` and word order
         // visually reverse (see this module's own bug history — the `@`
@@ -233,32 +225,13 @@ export function createMentionMenu(options) {
       </span>
       <span class="ai-agent-mention-row-check" aria-hidden="true">✓</span>
     `;
-        if (!disabled) {
+        if (!disabled && !checked) {
             btn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 onClick();
             });
         }
         return btn;
-    }
-
-    /**
-     * Flips a single already-rendered row to "attached" in place — the
-     * fix for the "menu resets/pops after picking an item" bug. The old
-     * code called render("") on every pick, which rebuilt Quick-Access AND
-     * both database sections from scratch: local results flashed, the
-     * platform section briefly showed its loading text again, and a brand
-     * new debounced search fired even though the query was already empty.
-     * Since a pick only ever changes ONE row's checked state (the query
-     * always becomes "" after consuming the trigger text, and Quick-Access
-     * rows are unfiltered anyway), the other rows never actually need to
-     * change — just this one.
-     * @param {string} id
-     */
-    function markRowAttached(id) {
-        if (!menuEl) return;
-        const row = menuEl.querySelector(`[data-mention-row-id="${CSS.escape(String(id))}"]`);
-        if (row) row.classList.add("is-attached");
     }
 
     function renderSectionHeader(text) {
@@ -268,36 +241,26 @@ export function createMentionMenu(options) {
         return header;
     }
 
-    function pickAndKeepOpen(attachment, rowId) {
+    /**
+     * Attaches the picked item and closes the menu immediately — same
+     * "click = done" behavior as every other dropdown in this app
+     * (.exam-dropdown-menu). A second `@` reopens the menu for another
+     * attachment; isAttached (see buildRow's `checked`/`disabled` wiring)
+     * keeps an already-picked item from being picked again in that next
+     * session.
+     * @param {object} attachment
+     */
+    function pickAndClose(attachment) {
         if (!attachment) return;
         if (getPendingCount() >= maxPending) return;
         onPick(attachment);
-        // Consume the `@`+query text immediately (same as the old menu did on
-        // every pick) — otherwise it lingers in the input alongside the chip
-        // that now represents it. triggerStart - 1 is the literal `@` index
-        // (see open()'s own comment on the triggerStart convention). Unlike
-        // the old menu, DON'T close(): the picked row flips to "attached" in
-        // place (markRowAttached) and the user can immediately pick a second
-        // item (see this module's own header comment on multi-select) —
-        // deliberately NOT a full render(""), which used to rebuild every
-        // section from scratch on every single pick (see markRowAttached's
-        // own comment for why that read as the menu "resetting/popping").
+        // Consume the `@`+query text (see open()'s own comment on the
+        // triggerStart convention for why it's triggerStart - 1) so it
+        // doesn't linger in the input alongside the chip that now
+        // represents it.
         onConsumeTriggerText(triggerStart - 1, textarea.selectionStart);
-        justConsumedByPick = true;
-        markRowAttached(rowId);
-        // THE OTHER HALF of the "resets/pops" bug: onPick (ai-agent-chat.js)
-        // calls renderAttachmentChips(), which inserts a new attachment-tile
-        // row as the FIRST child of inputRow — directly above the textarea.
-        // That shifts the textarea's on-screen bounding rect (it gets pushed
-        // down), but this menu is `position: fixed` and was anchored to the
-        // textarea's PRE-pick position. Without repositioning here, the menu
-        // stays visually frozen at the old coordinates while everything
-        // below it shifts — which reads exactly like "the menu reset/jumped"
-        // even though its actual row contents didn't change. Deferred one
-        // frame so it runs after the browser has applied the new layout
-        // (querying getBoundingClientRect synchronously here could still
-        // observe the pre-insertion layout in some browsers).
-        requestAnimationFrame(reposition);
+        close();
+        textarea.focus();
     }
 
     async function render(query) {
@@ -328,7 +291,7 @@ export function createMentionMenu(options) {
                     disabled: !item,
                     checked: attachedAlready,
                 },
-                () => pickAndKeepOpen(item ? { ...item, id: item.id || qa.quickAccessId } : null, qa.quickAccessId),
+                () => pickAndClose(item ? { ...item, id: item.id || qa.quickAccessId } : null),
             );
             menuEl.appendChild(row);
         });
@@ -336,24 +299,21 @@ export function createMentionMenu(options) {
         // ── "مكتبتك" (your library) — instant, local ──
         const localSectionHeader = renderSectionHeader("مكتبتك");
         menuEl.appendChild(localSectionHeader);
-        const localResultsHost = document.createElement("div");
-        menuEl.appendChild(localResultsHost);
 
         const renderLocal = () => {
-            localResultsHost.innerHTML = "";
             const items = searchMyLibrary(query, 6);
             if (items.length === 0) {
                 const empty = document.createElement("div");
                 empty.className = "ai-agent-trigger-menu-empty";
                 empty.textContent = query ? "لا توجد نتائج في مكتبتك." : "لا يوجد شيء في مكتبتك بعد.";
-                localResultsHost.appendChild(empty);
+                menuEl.appendChild(empty);
             } else {
                 items.forEach((it) => {
                     const row = buildRow(
                         { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
-                        () => pickAndKeepOpen(resolveUserItemById(it.id), it.id),
+                        () => pickAndClose(resolveUserItemById(it.id)),
                     );
-                    localResultsHost.appendChild(row);
+                    menuEl.appendChild(row);
                 });
             }
         };
@@ -367,9 +327,9 @@ export function createMentionMenu(options) {
         // single shared loading/empty message that didn't actually reflect
         // "مكتبتك" (which is never loading — it's synchronous).
         menuEl.appendChild(renderSectionHeader("الصفحة الرئيسية"));
-        const platformResultsHost = document.createElement("div");
-        menuEl.appendChild(platformResultsHost);
-        platformResultsHost.innerHTML = '<div class="ai-agent-mention-loading">جارٍ البحث في الصفحة الرئيسية…</div>';
+        const loadingPlatformResultsHost = document.createElement("div");
+        menuEl.appendChild(loadingPlatformResultsHost);
+        loadingPlatformResultsHost.innerHTML = '<div class="ai-agent-mention-loading">جارٍ البحث في الصفحة الرئيسية…</div>';
         reposition();
 
         // Debounced: only the network half. Local results above already
@@ -383,24 +343,24 @@ export function createMentionMenu(options) {
             try {
                 const platformItems = await searchPlatformLibrary(query, 6);
                 if (myToken !== platformSearchToken || !menuEl) return; // stale / menu closed meanwhile
-                platformResultsHost.innerHTML = "";
+                loadingPlatformResultsHost.innerHTML = "";
                 if (platformItems.length === 0) {
                     const empty = document.createElement("div");
                     empty.className = "ai-agent-trigger-menu-empty";
                     empty.textContent = query ? "لا توجد نتائج في الصفحة الرئيسية." : "لا يوجد شيء لعرضه هنا حاليًا.";
-                    platformResultsHost.appendChild(empty);
+                    menuEl.appendChild(empty);
                 } else {
                     platformItems.forEach((it) => {
                         const row = buildRow(
                             { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
-                            () => pickAndKeepOpen({ ...it }, it.id),
+                            () => pickAndClose({ ...it }),
                         );
-                        platformResultsHost.appendChild(row);
+                        menuEl.appendChild(row);
                     });
                 }
             } catch {
                 if (myToken !== platformSearchToken || !menuEl) return;
-                platformResultsHost.innerHTML = '<div class="ai-agent-trigger-menu-empty">تعذّر البحث في الصفحة الرئيسية حاليًا.</div>';
+                loadingPlatformResultsHost.innerHTML = '<div class="ai-agent-trigger-menu-empty">تعذّر البحث في الصفحة الرئيسية حاليًا.</div>';
             }
             reposition();
         }, PLATFORM_SEARCH_DEBOUNCE_MS);
@@ -408,9 +368,7 @@ export function createMentionMenu(options) {
 
     // `atCharIndex` is the index of the literal `@` character in
     // textarea.value. Internally, triggerStart is normalized to point one
-    // past it (the first query character) — the same convention re-arming
-    // after a pick uses (see handleInput's justConsumedByPick branch), so
-    // both code paths that set triggerStart agree on what it means.
+    // past it (the first query character).
     function open(atCharIndex) {
         close();
         triggerStart = atCharIndex + 1;
@@ -433,18 +391,6 @@ export function createMentionMenu(options) {
     function handleInput() {
         if (!menuEl) return false;
         const caret = textarea.selectionStart;
-
-        if (justConsumedByPick) {
-            // Right after a pick, the `@`+query text was already removed from
-            // the textarea (see pickAndKeepOpen) and the caret sits exactly
-            // where it was removed from. Re-anchor triggerStart there — as if a
-            // fresh `@` had just been typed at that position — so multi-select
-            // keeps working without the user retyping `@`. Only re-arms once per
-            // pick: any keystroke (including ones that immediately close the
-            // menu below) clears this flag.
-            justConsumedByPick = false;
-            triggerStart = caret;
-        }
 
         if (caret <= triggerStart) {
             close();
@@ -481,7 +427,35 @@ export function createMentionMenu(options) {
             setActiveIndex(activeIndex - 1);
             return true;
         }
-        if (e.key === "Enter" && activeIndex >= 0) {
+        if (e.key === "Enter") {
+            // Explicit choice for "nothing highlighted yet" (the brief's own
+            // open question): swallow Enter rather than either (a) falling
+            // through to the textarea's default Enter-sends-the-message
+            // behavior while the menu is still visibly open with an
+            // unconsumed "@query" in the text, or (b) silently picking row
+            // 0 on the user's behalf — attaching an item they never
+            // highlighted just because they hit Enter out of chat muscle
+            // memory would be a surprising, hard-to-undo side effect. An
+            // arrow key first (landing on index 0 via setActiveIndex's own
+            // wrap math) is the explicit way to select the first row.
+            if (activeIndex < 0) return true;
+            const rows = currentRows().filter((row) => !row.hasAttribute("disabled"));
+            rows[activeIndex]?.click();
+            return true;
+        }
+        if (e.key === "Tab") {
+            // Tab has no other job while this menu is open (the textarea is
+            // a single-field form, so there's nothing further to tab to
+            // inside the modal that would make sense to jump to instead).
+            // Same "don't act without an explicit highlight" reasoning as
+            // Enter above: with nothing highlighted, swallow it rather than
+            // falling through to the browser's default focus-move (which
+            // would silently shift focus off the textarea while the menu
+            // stayed open) or silently picking row 0.
+            // preventDefault/stopPropagation both happen at the call site
+            // (ai-agent-chat.js's keydown listener) whenever this function
+            // returns true, same as every other handled key here.
+            if (activeIndex < 0) return true;
             const rows = currentRows().filter((row) => !row.hasAttribute("disabled"));
             rows[activeIndex]?.click();
             return true;

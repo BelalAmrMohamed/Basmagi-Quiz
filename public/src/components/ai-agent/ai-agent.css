@@ -2360,15 +2360,33 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 /* ── `@` mention menu (ai-agent-mention-menu.js) ──
-   Reuses .exam-dropdown-menu's positioning/chrome (fixed, z-index,
-   surface/border/radius/shadow — see index.css) via the shared class on
-   the element itself (createMentionMenu's open() sets
-   className="exam-dropdown-menu ai-agent-mention-menu"); these rules only
-   add what's specific to THIS menu's own content — section headers
-   separating Quick-Access from searched results, a scrollable cap for a
-   longer combined list, the "attached" checkmark state for multi-select,
-   and the empty/loading-state message styles. Replaces the older
-   .ai-agent-trigger-menu rules this menu itself replaced. */
+   Base chrome (fixed position, z-index, surface/border/radius/shadow,
+   RTL, padding, the .exam-action-btn row shape, and — importantly —
+   display:flex/flex-direction:column/gap:6px) is inherited from
+   .exam-dropdown-menu / .exam-dropdown-menu .exam-action-btn (index.css)
+   via the shared classes createMentionMenu's open() sets on the element
+   itself and buildRow() sets on every row. Everything below only adds
+   what's specific to this menu's content, PLUS explicit flex-sizing rules
+   the earlier pass of this file was missing (see the .ai-agent-mention-row
+   and .ai-agent-mention-section-header comments below for why those
+   caused real, screenshot-visible clipping/bleed rather than being
+   theoretical).
+
+   Structural note the fixes below depend on: .ai-agent-mention-menu's
+   DIRECT children are the Quick-Access section header, each Quick-Access
+   row, the "مكتبتك" section header, a plain results-host <div>, the
+   "الصفحة الرئيسية" section header, and its own results-host <div> — see
+   ai-agent-mention-menu.js's render(). Only those are real flex items of
+   this flex column; database-item rows rendered INSIDE a results-host div
+   are ordinary block children of that div, not flex items themselves. The
+   two categories need different treatment below.
+
+   Every var(--color-...) used below was checked against a real search of
+   themes.css (all three themes: light, dark, dark-slate) — none are
+   invented. --color-selected-bg / --color-hover-overlay / --color-focus-ring
+   are the theme's own "interactive state" tokens, used for the persistent
+   attached / hover / keyboard-focus states respectively so they read as
+   three distinct, real states rather than one recolored blob. */
 .ai-agent-mention-menu {
   max-height: 320px;
   overflow-y: auto;
@@ -2378,11 +2396,12 @@ body.sidebar-expanded .ai-agent-fab {
   padding: 10px 8px 4px;
   margin-top: 4px;
   font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--color-text-tertiary);
+  font-weight: 700;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
 .ai-agent-mention-section-header:first-child {
@@ -2391,18 +2410,62 @@ body.sidebar-expanded .ai-agent-fab {
   border-top: none;
 }
 
+/* Quick-Access rows are direct flex-item children of .ai-agent-mention-menu
+   (see this block's own header comment) — THE rows that were visibly
+   squished/truncated in testing. Root cause: a flex item's automatic
+   minimum size resolves against its own content only while its overflow
+   is `visible`; this row sets `overflow: hidden` (needed for the
+   ellipsis rules below), which makes its automatic minimum drop to 0 —
+   so the flex column was free to compress these rows far below their
+   actual content height whenever the menu's own max-height / gap made
+   space tight, squashing the two-line title+description into a sliver.
+   flex-shrink:0 + min-height opt these rows out of that shrinking
+   entirely: they always render at (at least) their natural height, and
+   the MENU scrolls for anything that doesn't fit, rather than the ROWS
+   silently compressing. */
 .ai-agent-mention-row {
   overflow: hidden;
   width: 100%;
   text-align: start;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  min-height: 40px;
   /* Quick-Access rows can be tall (title + description on 2 lines) while
      database rows are single-line; align icon/check to the top of the row
-     rather than the old .exam-action-btn center alignment so a two-line
-     row doesn't push the icon down to its vertical middle, which read as
-     "misaligned" alongside single-line rows right above/below it. */
+     rather than .exam-action-btn's inherited vertical-center alignment,
+     so a two-line row doesn't push its icon down to the row's vertical
+     middle — which read as "misaligned" next to the single-line rows
+     immediately above/below it. */
   align-items: flex-start;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 10px 12px;
+}
+
+/* Database-item rows (inside a results-host <div> — see this block's own
+   header comment) are block children, never flex items, so they can't
+   suffer the same automatic-minimum-size collapse Quick-Access rows can.
+   Still given the same floor/box-sizing explicitly rather than relying on
+   that difference silently continuing to save them — a future change to
+   how results-hosts render shouldn't quietly reintroduce this bug. */
+.ai-agent-mention-row {
+  min-height: 40px;
+}
+
+/* Deliberate override, not inheritance, for hover: .exam-action-btn:hover
+   (index.css) sets background/border-color/color all to the primary
+   accent — correct for a short list of a handful of distinct actions
+   (like the real exam dropdown menu), but wrong here: with 3 sections and
+   up to ~20 rows, recoloring the row's TEXT on hover as well as its
+   background reads as much noisier, and it previously fully overrode this
+   menu's own title/description colors (see the .ai-agent-mention-row-title/
+   -desc rules below) since :hover's (0,2,0) specificity beat this menu's
+   original single-class rules. Hovering here only tints the background
+   (via --color-hover-overlay, the theme's own token for exactly this) and
+   leaves text color alone — title/description keep their own colors in
+   every state, defined once below rather than fought over per-state. */
+.ai-agent-mention-row:hover {
+  background: var(--color-hover-overlay);
+  border-color: var(--color-border);
+  color: inherit;
 }
 
 .ai-agent-mention-row-text {
@@ -2414,8 +2477,7 @@ body.sidebar-expanded .ai-agent-fab {
   flex: 1;
 }
 
-.ai-agent-mention-row.ai-agent-mention-row-title,
-.ai-agent-mention-row .ai-agent-mention-row-title {
+.ai-agent-mention-row-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2429,22 +2491,10 @@ body.sidebar-expanded .ai-agent-fab {
   unicode-bidi: plaintext;
   font-weight: 600;
   line-height: 1.35;
-  /* BUG FIX: .exam-action-btn:hover (index.css) sets `color:
-     var(--color-primary)` on the whole button — a (0,2,0)-specificity
-     rule (class+pseudo-class) that beat this element's own plain
-     single-class color, so hovering ANY row silently recolored both the
-     title and the (smaller, meant-to-be-muted) description to the exact
-     same saturated accent blue, over that same hover state's own
-     light-blue-tinted background — reading as "the text isn't visible."
-     The doubled selector here (.ai-agent-mention-row.ai-agent-mention-row-title,
-     .ai-agent-mention-row .ai-agent-mention-row-title) raises this rule's
-     class-count to 2, matching :hover's specificity, and CSS falls back to
-     source order — this rule is declared after index.css loads, so it
-     wins without needing !important. */
-  color: var(--color-text-primary) !important;
+  color: var(--color-text-primary);
 }
 
-.ai-agent-mention-row .ai-agent-mention-row-desc {
+.ai-agent-mention-row-desc {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2452,40 +2502,45 @@ body.sidebar-expanded .ai-agent-fab {
   font-size: 0.76rem;
   font-weight: 400;
   line-height: 1.3;
-  /* Same fix as -title above — must survive .exam-action-btn:hover's
-     color override, and needs !important since this description text is
-     specifically meant to read as visually SECONDARY to the title (muted
-     tertiary color), which the hover rule would otherwise flatten both
-     lines into the same accent blue, erasing that hierarchy entirely. */
-  color: var(--color-text-tertiary) !important;
+  color: var(--color-text-secondary);
 }
 
+/* Disabled — either an empty Quick-Access item (no quiz taken yet) or an
+   item already in pendingAttachments (see buildRow's checked||disabled
+   wiring, the fix for duplicate attachments: an already-attached item is
+   both visually checked AND unclickable, so it can't be picked twice).
+   Fully inert — no hover tint, no pointer — with just enough opacity drop
+   to read as unavailable without losing legibility of the description
+   text (which, for the empty-Quick-Access case, explains WHY). */
 .ai-agent-mention-row[disabled] {
   opacity: 0.55;
   cursor: default;
+  pointer-events: none;
 }
 
+/* Attached (already in pendingAttachments) — see buildRow: this class is
+   set at row-build time from `checked`, together with `disabled` above,
+   so an attached row reads as both permanently checked and inert.
+   --color-selected-bg is every theme's own token for exactly a persistent
+   selected/checked state (distinct from --color-hover-overlay's transient
+   hover tint above), confirmed present in light/dark/dark-slate. */
 .ai-agent-mention-row.is-attached {
-  /* --color-surface-active never existed as a real token anywhere in this
-     app (was invented here) — using the same --color-primary-light this
-     button's own :hover state already uses, so "attached" reads as a
-     natural persistent version of the hover highlight rather than an
-     unrelated color no other state in this app uses. */
-  background: var(--color-primary-light);
+  background: var(--color-selected-bg);
 }
 
+/* Keyboard-active (arrow-key highlighted) row — a visible outline rather
+   than another background color, so it stays distinguishable from
+   .is-attached even in the moment before a picked/disabled row has
+   scrolled out of the keyboard-nav set. --color-focus-ring is this app's
+   own token for exactly a keyboard-focus ring elsewhere; reused here
+   instead of inventing a new one. */
 .ai-agent-mention-row.is-active {
-  /* Same fix as .is-attached above — --color-surface-hover was likewise
-     never a real token. var(--color-background-secondary) is this same
-     component's own resting background (.exam-action-btn), lightened by
-     the theme's normal hover mechanics rather than a made-up value. */
-  background: var(--color-background-secondary);
-  outline: 1.5px solid var(--color-border);
-  outline-offset: -1.5px;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: -2px;
 }
 
 .ai-agent-mention-row-check {
-  color: var(--color-accent, #2563eb) !important;
+  color: var(--color-primary);
   font-weight: 700;
   flex-shrink: 0;
   visibility: hidden;
@@ -2498,14 +2553,34 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-mention-row svg {
   margin-top: 1px;
+  flex-shrink: 0;
 }
 
 .ai-agent-mention-loading,
 .ai-agent-trigger-menu-empty {
   padding: 10px 8px;
   font-size: 0.85rem;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   text-align: center;
+}
+
+@media (max-width: 640px) {
+
+  /* Narrow widths: the menu already goes full-clamped-width via
+     .exam-dropdown-menu's max-width: calc(100vw - 16px), so there's no
+     extra horizontal-narrowing rule needed here. What DOES need help at
+     this width is vertical space — the on-screen keyboard eats a large
+     chunk of the viewport, so rows stay compact (never below the same
+     40px floor — see .ai-agent-mention-row above, which this doesn't
+     lower any further, since going below it is exactly what caused the
+     clipping bug) while the sticky headers still separate the sections. */
+  .ai-agent-mention-menu {
+    max-height: min(320px, 55vh);
+  }
+
+  .ai-agent-mention-row {
+    padding: 8px 12px;
+  }
 }
 
 .ai-agent-sidebar--collapsed .ai-agent-sidebar-history-panel,
