@@ -1,4 +1,5 @@
 // docs/map/map.js
+// node docs/map/map.js
 import fs from "fs";
 import path from "path";
 

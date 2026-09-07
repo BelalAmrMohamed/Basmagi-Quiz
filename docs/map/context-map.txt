@@ -18,23 +18,22 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── _validateQuiz.js
 │   ├── admin.js
 │   ├── auth.js
-│   ├── colleges.js
-│   ├── delete-quiz.js
+│   ├── college-quiz.js
 │   ├── og.js
+│   ├── render-course.js
 │   ├── render-profile.js
 │   ├── render-quiz.js
 │   ├── reports.js
 │   ├── upload-folder.js
 │   ├── upload-quiz.js
+│   ├── user-profile.js
 │   ├── ai-agent/
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
 │   │   ├── _tools.js
 │   │   └── chat.js
 │   └── user-profile/
-│       ├── _levelMath.js
-│       ├── identify.js
-│       └── sync-progress.js
+│       └── _levelMath.js
 ├── docs/
 │   ├── image.png
 │   └── map/
@@ -233,6 +232,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │       │   │   ├── ai-agent-history-idb.js
 │       │   │   ├── ai-agent-history.js
 │       │   │   ├── ai-agent-item-lookup.js
+│       │   │   ├── ai-agent-library-search.js
+│       │   │   ├── ai-agent-mention-menu.js
 │       │   │   ├── ai-agent-settings.js
 │       │   │   ├── ai-agent-suggested-prompts.js
 │       │   │   ├── ai-agent.css
