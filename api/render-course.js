@@ -50,7 +50,12 @@ const supabase = createClient(
 const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
 
 // Bump when /api/og's course-image layout changes, to bust platforms' cache.
-const OG_IMAGE_VERSION = 1;
+// Bumped to 2: course/folder OG images were redesigned (icon card + course-
+// info rows layout, see api/og.js renderCourseImage) and the description's
+// "across 0 folders" wording was fixed below — both need every platform
+// (Facebook/LinkedIn/X, and any CDN edge) to refetch rather than serve a
+// year-old cached image/description under the same URL.
+const OG_IMAGE_VERSION = 2;
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
@@ -397,6 +402,16 @@ function buildTitle(meta, courseName) {
 function buildDescription(meta, courseName) {
     const label = displayPath(courseName, meta);
     const isArabic = isArabicText(meta.name);
+    // Branch on folderCount rather than always saying "across N folders" —
+    // "across 0 folders" reads like an error rather than a legitimate
+    // count of zero, so a course/folder with no subfolders gets its own
+    // sentence shape instead of the folder clause being force-filled with
+    // "0".
+    if (meta.folderCount === 0) {
+        return isArabic
+            ? `تصفح ${meta.quizCount} امتحان في ${label} على منصة امتحانات بصمجي.`
+            : `Browse ${meta.quizCount} quizzes in ${label} on Basmagi Quiz Platform.`;
+    }
     return isArabic
         ? `تصفح ${meta.quizCount} امتحان ضمن ${meta.folderCount} مجلد في ${label} على منصة امتحانات بصمجي.`
         : `Browse ${meta.quizCount} quizzes across ${meta.folderCount} folders in ${label} on Basmagi Quiz Platform.`;

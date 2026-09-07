@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.2.1] - 2026-7-9
+
+### Updated OG Images
+- Folders and Courses get custom URLs now.
+
+### Changed URLs
+- `/quiz/` for quizzes and `/course/` for courses
+
+### Updated the امتحاناتك section
+- Copying rules and more 
+
 ## [2.1.0] - 2026-02-11
 
 ### 🌍 Localization

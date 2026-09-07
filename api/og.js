@@ -98,6 +98,51 @@ const TITLE_MAX_CHARS_ARABIC = 34;
 const TITLE_MAX_CHARS_LATIN = 55;
 const DESCRIPTION_MAX_CHARS = 90;
 
+// ── Course info fields (mirrors public/src/features/home/course-info-fields.js) ─
+// This is a small server-side adapter, not a verbatim reuse: the client's
+// buildCourseInfoRows() reads a tree-shaped `course` object (property
+// `.faculty`) built client-side from the category tree, while this Edge
+// function reads the raw Supabase `courses` row shape (`education_type`,
+// `college`, `year`, `term`) fetched in fetchCourseMeta() above. The
+// label set, ordering, and "hide empty" rules are kept identical to the
+// client version so the OG image visually matches the in-app "معلومات
+// المادة" modal.
+const EDU_TYPE_AR = {
+  University: "جامعي",
+  High: "ثانوي",
+  Middle: "إعدادي",
+  Primary: "إبتدائي",
+  Featured: "مادة مميزة",
+};
+
+/**
+ * Builds course-info rows from the raw Supabase course fields, matching
+ * buildCourseInfoRows()'s label set/ordering/omission rules exactly:
+ * نوع التعليم (always), الكلية (only if set and not "All"), العام and
+ * الترم (each only if actually set).
+ *
+ * @param {{educationType:string|null, college:string|null, year:string|null, term:string|null}} course
+ * @returns {{label:string, val:string}[]}
+ */
+function buildCourseInfoRowsFromRow(course) {
+  const rows = [
+    {
+      label: "نوع التعليم",
+      val: EDU_TYPE_AR[course.educationType] || course.educationType || "-",
+    },
+  ];
+  if (course.college && course.college !== "All") {
+    rows.push({ label: "الكلية", val: course.college });
+  }
+  if (course.year) {
+    rows.push({ label: "العام", val: course.year });
+  }
+  if (course.term) {
+    rows.push({ label: "الترم", val: course.term });
+  }
+  return rows;
+}
+
 // ── Question type translation (Arabic) ────────────────────────────────────────
 // The quiz-scanning script (see inferQuestionType) always emits these exact,
 // case-sensitive English labels. We translate them for display only.
@@ -795,15 +840,30 @@ function formatQuestionTypes(qt) {
 }
 
 // =============================================================================
-// Course OG image (used by /api/og?course=<id>) — see handler() dispatch above.
-// Flat brand-gradient layout (no background PNG — the quiz thumbnail's
-// bulb/button/pill artwork doesn't apply to a course page), reusing this
-// file's font loading + Arabic bidi helpers.
+// Course / folder OG image (used by /api/og?course=<id>[&folder=...]) — see
+// handler() dispatch above. Deliberately mirrors the quiz thumbnail's own
+// composition (white background, rotated card holding a big icon on the
+// left, content column on the right) instead of the old flat brand-gradient
+// layout, so course/folder previews read as the same product as quiz
+// previews rather than a completely different visual language. No
+// background PNG is fetched here — the icon "card" is drawn from plain
+// Satori shapes + a large emoji glyph, so a course/folder image needs no
+// extra network round-trip beyond the font + Supabase metadata fetch.
+// Reuses this file's font loading + Arabic bidi helpers.
 // =============================================================================
 
-const COURSE_BRAND_DARK = "#0f172a";
-const COURSE_TITLE_MAX_CHARS_ARABIC = 34;
-const COURSE_TITLE_MAX_CHARS_LATIN = 55;
+const COURSE_TITLE_MAX_CHARS_ARABIC = 26;
+const COURSE_TITLE_MAX_CHARS_LATIN = 42;
+
+// Icon card geometry — deliberately matching the quiz thumbnail's own bulb
+// card bounds (x 0–408, y 25–490 on the 1200×630 canvas — see the header
+// comment at the top of this file) so course/folder images share the same
+// visual rhythm as quiz images despite having no shared background asset.
+const ICON_CARD = { left: 24, top: 25, width: 380, height: 465, rotationDeg: -6 };
+
+// Right-hand content column — starts just past the icon card, same right
+// margin as the quiz thumbnail's TEXT_COLUMN.
+const COURSE_CONTENT = { left: 470, right: 1140, top: 60 };
 
 async function renderCourseImage(courseId, folderPath) {
   const [fontData, meta] = await Promise.all([
@@ -814,55 +874,81 @@ async function renderCourseImage(courseId, folderPath) {
     fetchCourseMeta(courseId, folderPath),
   ]);
 
-  // meta.name is the deepest folder's own name when a path resolved (for
-  // isArabic detection / stats), while meta.breadcrumb is the full
-  // "Course / Sub / Sub2" display string used as the actual title below —
-  // so a folder several levels deep still shows which course it belongs to.
-  const rawTitle = meta ? meta.breadcrumb : "منصة امتحانات بصمجي";
-  const isArabic = detectArabic(meta ? meta.name : rawTitle);
+  const isFolder = !!(meta && meta.isFolder);
+
+  // Title is the item's OWN name — the folder's own name for a folder
+  // image, or the course's own name for a course image — never the full
+  // concatenated breadcrumb. The parent course (for a folder) is shown
+  // as its own labeled line in the info block below, per spec: folder
+  // name + parent COURSE's info, not a smashed-together path string.
+  const rawTitle = meta ? meta.name : "منصة امتحانات بصمجي";
+  const isArabic = detectArabic(rawTitle);
   const title = truncateTitle(
     rawTitle,
     isArabic ? COURSE_TITLE_MAX_CHARS_ARABIC : COURSE_TITLE_MAX_CHARS_LATIN,
   );
 
   const titleFontSize = isArabic
-    ? title.length > 22
-      ? "48px"
-      : title.length > 17
-        ? "56px"
-        : "64px"
-    : title.length > 33
-      ? "44px"
-      : title.length > 27
-        ? "52px"
-        : "60px";
+    ? title.length > 20
+      ? "40px"
+      : title.length > 15
+        ? "48px"
+        : "56px"
+    : title.length > 30
+      ? "36px"
+      : title.length > 24
+        ? "44px"
+        : "52px";
 
-  const stats = [];
-  if (meta) {
-    stats.push({ value: String(meta.folderCount), label: isArabic ? "مجلد" : "Folders" });
-    stats.push({ value: String(meta.quizCount), label: isArabic ? "امتحان" : "Quizzes" });
-    if (meta.questionCount != null) {
-      stats.push({ value: String(meta.questionCount), label: isArabic ? "سؤال" : "Questions" });
-    }
-    if (meta.lastUpdated) {
-      stats.push({ value: meta.lastUpdated, label: isArabic ? "آخر تحديث" : "Updated" });
-    }
-  }
+  // Course-info rows — always the top-level COURSE's own fields (see
+  // fetchCourseMeta's comment: a folder has no education_type/college/
+  // year/term of its own), matching buildCourseInfoRows()'s label set,
+  // order, and "hide empty" rules exactly.
+  const infoRows = meta ? buildCourseInfoRowsFromRow(meta) : [];
+
+  // For a folder image, the course name gets its own small line above the
+  // info rows so it's unambiguous which course "نوع التعليم"/"الكلية"/etc.
+  // belong to (they're the course's, not the folder's).
+  const parentCourseLine =
+    isFolder && meta && meta.courseName ? meta.courseName : null;
+
+  const countsLabel = meta
+    ? isArabic
+      ? `${meta.folderCount} مجلد · ${meta.quizCount} امتحان`
+      : `${meta.folderCount} Folders · ${meta.quizCount} Quizzes`
+    : null;
+
+  // Human-readable link line, mirroring the actual /course/:slug[/...] URL
+  // shape render-course.js builds (course name -> slug via toSlug(), then
+  // raw folder names joined by "/"). This is a readable approximation for
+  // display purposes only — the real canonical URL (with proper
+  // encodeURIComponent + toSlug on each segment) is what's actually set as
+  // og:url by render-course.js; this line just needs to look right, not be
+  // clickable.
+  const slugify = (s) => (s || "").trim().replace(/-/g, "--").replace(/\s+/g, "-");
+  const courseSlug = meta ? slugify(meta.courseName || meta.name) : "";
+  const linkPath =
+    folderPath && folderPath.length > 0
+      ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath.map(slugify).join("/")}`
+      : `basmagi-quiz.vercel.app/course/${courseSlug}`;
+
+  const contentWidth = COURSE_CONTENT.right - COURSE_CONTENT.left;
 
   const element = {
     type: "div",
     props: {
       style: {
         display: "flex",
-        flexDirection: "column",
         width: "100%",
         height: "100%",
         position: "relative",
         fontFamily: FONT_FAMILY_STACK,
-        backgroundColor: COURSE_BRAND_DARK,
-        backgroundImage: `linear-gradient(135deg, ${COURSE_BRAND_DARK} 0%, #142850 55%, ${BRAND_BLUE} 130%)`,
+        backgroundColor: "#ffffff",
+        backgroundImage:
+          "radial-gradient(circle at 0% 0%, rgba(124,58,237,0.10) 0%, rgba(124,58,237,0) 45%)",
       },
       children: [
+        // ── Domain label — top-right corner, matches quiz thumbnail ──────
         {
           type: "div",
           props: {
@@ -870,7 +956,7 @@ async function renderCourseImage(courseId, folderPath) {
               display: "flex",
               position: "absolute",
               right: "40px",
-              top: "36px",
+              top: "24px",
               fontSize: "16px",
               color: "#9ca3af",
               fontWeight: "400",
@@ -879,98 +965,192 @@ async function renderCourseImage(courseId, folderPath) {
             children: "basmagi-quiz.vercel.app",
           },
         },
+
+        // ── Icon card — mirrors the quiz thumbnail's rotated bulb card,
+        // holding a large emoji instead of the bulb PNG. 🎓 distinguishes
+        // a course, 📁 a folder — this is the "big, distinguishing icon"
+        // requested, sized to match the bulb's own visual weight rather
+        // than a small badge. ────────────────────────────────────────────
         {
           type: "div",
           props: {
             style: {
               display: "flex",
               position: "absolute",
-              left: "80px",
-              top: "90px",
-              fontSize: "22px",
-              color: "#7dd3fc",
-              fontWeight: "700",
-              direction: "ltr",
+              left: `${ICON_CARD.left}px`,
+              top: `${ICON_CARD.top}px`,
+              width: `${ICON_CARD.width}px`,
+              height: `${ICON_CARD.height}px`,
+              borderRadius: "36px",
+              backgroundColor: "#ffffff",
+              boxShadow: "0 30px 60px rgba(15,23,42,0.12)",
+              border: "1px solid rgba(15,23,42,0.06)",
+              transform: `rotate(${ICON_CARD.rotationDeg}deg)`,
+              alignItems: "center",
+              justifyContent: "center",
             },
-            children: folderPath && folderPath.length > 0
-              ? (isArabic ? "مجلد" : "FOLDER")
-              : (isArabic ? "مقرر دراسي" : "COURSE"),
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    fontSize: "220px",
+                    lineHeight: "1",
+                    transform: `rotate(${-ICON_CARD.rotationDeg}deg)`,
+                  },
+                  children: isFolder ? "📁" : "🎓",
+                },
+              },
+            ],
           },
         },
+
+        // ── Content column ────────────────────────────────────────────────
         {
           type: "div",
           props: {
             style: {
               display: "flex",
+              flexDirection: "column",
               position: "absolute",
-              left: "80px",
-              right: "80px",
-              top: "150px",
-              fontSize: titleFontSize,
-              color: "#ffffff",
-              fontWeight: "700",
-              lineHeight: 1.25,
+              left: `${COURSE_CONTENT.left}px`,
+              top: `${COURSE_CONTENT.top}px`,
+              width: `${contentWidth}px`,
               direction: "ltr",
+              alignItems: isArabic ? "flex-end" : "flex-start",
               textAlign: isArabic ? "right" : "left",
             },
-            children: renderBidiText(title, isArabic),
-          },
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              display: "flex",
-              position: "absolute",
-              left: "80px",
-              right: "80px",
-              bottom: "80px",
-              flexDirection: isArabic ? "row-reverse" : "row",
-              gap: "28px",
-            },
-            children: stats.map((stat) => ({
-              type: "div",
-              props: {
-                style: {
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: isArabic ? "flex-end" : "flex-start",
-                  backgroundColor: "rgba(255,255,255,0.08)",
-                  borderRadius: "16px",
-                  padding: "18px 26px",
-                  minWidth: "150px",
+            children: [
+              // Kind label — COURSE / FOLDER
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    fontSize: "22px",
+                    color: BRAND_BLUE,
+                    fontWeight: "700",
+                    letterSpacing: "1px",
+                    direction: "ltr",
+                  },
+                  children: isFolder
+                    ? isArabic ? "مجلد" : "FOLDER"
+                    : isArabic ? "مقرر دراسي" : "COURSE",
                 },
-                children: [
-                  {
-                    type: "div",
-                    props: {
-                      style: {
-                        display: "flex",
-                        fontSize: "40px",
-                        color: "#ffffff",
-                        fontWeight: "700",
-                        direction: "ltr",
-                      },
-                      children: stat.value,
-                    },
-                  },
-                  {
-                    type: "div",
-                    props: {
-                      style: {
-                        display: "flex",
-                        fontSize: "18px",
-                        color: "#cbd5e1",
-                        fontWeight: "400",
-                        marginTop: "4px",
-                        direction: "ltr",
-                      },
-                      children: stat.label,
-                    },
-                  },
-                ],
               },
-            })),
+
+              // Parent-course line — folder images only.
+              parentCourseLine
+                ? {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      marginTop: "10px",
+                      fontSize: "22px",
+                      color: "#6b7280",
+                      fontWeight: "400",
+                      direction: "ltr",
+                    },
+                    children: renderBidiText(
+                      `${isArabic ? "في" : "in"} ${parentCourseLine}`,
+                      isArabic,
+                    ),
+                  },
+                }
+                : null,
+
+              // Title — the item's own name.
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    marginTop: "14px",
+                    fontSize: titleFontSize,
+                    fontWeight: "700",
+                    color: "#111827",
+                    lineHeight: "1.25",
+                    direction: "ltr",
+                    width: "100%",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                  },
+                  children: renderBidiText(title, isArabic),
+                },
+              },
+
+              // Course-info rows — نوع التعليم / الكلية / العام / الترم,
+              // same label set + ordering as the in-app "معلومات المادة"
+              // modal.
+              infoRows.length > 0
+                ? {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      flexDirection: "column",
+                      marginTop: "22px",
+                      gap: "8px",
+                    },
+                    children: infoRows.map((row) => ({
+                      type: "div",
+                      props: {
+                        style: {
+                          display: "flex",
+                          fontSize: "20px",
+                          color: "#4b5563",
+                          fontWeight: "400",
+                          direction: "ltr",
+                        },
+                        children: renderBidiText(`${row.label}: ${row.val}`, isArabic),
+                      },
+                    })),
+                  },
+                }
+                : null,
+
+              // Counts pill — reuses the quiz thumbnail badge styling for
+              // visual consistency between quiz and course/folder previews.
+              countsLabel
+                ? {
+                  type: "div",
+                  props: {
+                    style: {
+                      display: "flex",
+                      marginTop: "26px",
+                      alignItems: "center",
+                      background: "rgba(0,136,204,0.12)",
+                      border: "1px solid rgba(0,136,204,0.3)",
+                      borderRadius: "10px",
+                      padding: "8px 22px",
+                      fontSize: "20px",
+                      color: BRAND_BLUE,
+                      fontWeight: "700",
+                      direction: "ltr",
+                    },
+                    children: renderBidiText(countsLabel, isArabic),
+                  },
+                }
+                : null,
+
+              // Link line — small, muted, always LTR.
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    marginTop: "20px",
+                    fontSize: "16px",
+                    color: "#9ca3af",
+                    fontWeight: "400",
+                    direction: "ltr",
+                  },
+                  children: linkPath,
+                },
+              },
+            ].filter(Boolean),
           },
         },
       ],
@@ -1023,7 +1203,7 @@ async function fetchCourseMeta(courseId, folderPath) {
 
   try {
     const courseUrl = new URL(`${SUPABASE_URL}/rest/v1/courses`);
-    courseUrl.searchParams.set("select", "id,name");
+    courseUrl.searchParams.set("select", "id,name,education_type,college,year,term");
     courseUrl.searchParams.set("id", `eq.${courseId}`);
     courseUrl.searchParams.set("limit", "1");
 
@@ -1135,8 +1315,30 @@ async function fetchCourseMeta(courseId, folderPath) {
     }
 
     return {
+      // The item this image is actually about — the deepest resolved
+      // folder's own name when a folder path was given, otherwise the
+      // course's own name. Used as the big title.
       name: targetName || "Course",
+      isFolder: targetFolderId !== null,
+      // Full "Course / Sub / Sub2" chain — kept for callers that still
+      // want the old breadcrumb string (e.g. logs), not used as the
+      // title directly anymore (see renderCourseImage).
       breadcrumb: breadcrumbParts.join(" / "),
+      // The top-level course's own name — always the *course's*, never
+      // the immediate parent folder's, so a folder several levels deep
+      // still shows which course it belongs to.
+      courseName: course.name,
+      // Course-info fields — mirrors buildCourseInfoRows() in
+      // course-info-fields.js exactly (نوع التعليم/الكلية/العام/الترم),
+      // but read from the raw Supabase row shape (education_type/college/
+      // year/term) rather than the client's tree-shaped course object
+      // (which calls the same field `faculty`, not `college`). These are
+      // always the COURSE's own fields, never the folder's — a folder has
+      // no education_type/college/year/term of its own.
+      educationType: course.education_type || null,
+      college: course.college || null,
+      year: course.year != null ? String(course.year) : null,
+      term: course.term != null ? String(course.term) : null,
       folderCount,
       quizCount,
       questionCount,
