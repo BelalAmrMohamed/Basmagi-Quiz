@@ -640,25 +640,32 @@ function openSettingsModal(options, onClose) {
 
   function closeSettingsModal() {
     overlay.remove();
-    document.removeEventListener("keydown", onSettingsKeydown);
+    document.removeEventListener("keydown", onSettingsKeydown, true);
     if (typeof onClose === "function") onClose();
   }
 
+  // BUG FIX: this used to be a bubble-phase listener calling
+  // stopImmediatePropagation(). That only prevents listeners registered
+  // AFTER this one (on the same target) from also firing — but the
+  // underlying AI Agent panel's own Escape listener (openAIAgentModal's
+  // `onKeydown`, further down this file) is registered BEFORE this one
+  // (the panel has to already be open for its settings button to exist),
+  // so stopImmediatePropagation() here was too late: the panel's listener
+  // had already run and closed the whole panel on the very same Escape
+  // press this handler was trying to intercept. In practice this meant
+  // Escape closed BOTH the settings modal and the panel underneath it at
+  // once — the exact bug this handler's own (incorrect) comment claimed
+  // to prevent. Capture phase (the trailing `true`) fixes this for real:
+  // capture-phase listeners on `document` all run, top-down, before ANY
+  // bubble-phase listener fires — so this reliably intercepts Escape
+  // first regardless of which listener was attached first.
   const onSettingsKeydown = (e) => {
     if (e.key === "Escape") {
-      // Both this modal's own Escape handler AND the underlying AI Agent
-      // modal's onKeydown (still attached — see openAIAgentModal) listen
-      // on the SAME `document` target, so plain stopPropagation() (meant
-      // for parent/child bubbling) doesn't stop the other — only
-      // stopImmediatePropagation() prevents a later-registered sibling
-      // listener on the same target from also firing. Without it, one
-      // Escape press while this stacked modal is open would close BOTH
-      // layers at once instead of just this one.
-      e.stopImmediatePropagation();
+      e.stopPropagation();
       closeSettingsModal();
     }
   };
-  document.addEventListener("keydown", onSettingsKeydown);
+  document.addEventListener("keydown", onSettingsKeydown, true);
 
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeSettingsModal();

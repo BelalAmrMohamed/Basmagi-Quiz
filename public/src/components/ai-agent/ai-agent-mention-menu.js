@@ -285,6 +285,19 @@ export function createMentionMenu(options) {
         onConsumeTriggerText(triggerStart - 1, textarea.selectionStart);
         justConsumedByPick = true;
         markRowAttached(rowId);
+        // THE OTHER HALF of the "resets/pops" bug: onPick (ai-agent-chat.js)
+        // calls renderAttachmentChips(), which inserts a new attachment-tile
+        // row as the FIRST child of inputRow — directly above the textarea.
+        // That shifts the textarea's on-screen bounding rect (it gets pushed
+        // down), but this menu is `position: fixed` and was anchored to the
+        // textarea's PRE-pick position. Without repositioning here, the menu
+        // stays visually frozen at the old coordinates while everything
+        // below it shifts — which reads exactly like "the menu reset/jumped"
+        // even though its actual row contents didn't change. Deferred one
+        // frame so it runs after the browser has applied the new layout
+        // (querying getBoundingClientRect synchronously here could still
+        // observe the pre-insertion layout in some browsers).
+        requestAnimationFrame(reposition);
     }
 
     async function render(query) {
@@ -320,26 +333,42 @@ export function createMentionMenu(options) {
             menuEl.appendChild(row);
         });
 
-        // ── Database section — local results instant, platform results async ──
-        menuEl.appendChild(renderSectionHeader("مكتبتك والصفحة الرئيسية"));
+        // ── "مكتبتك" (your library) — instant, local ──
+        const localSectionHeader = renderSectionHeader("مكتبتك");
+        menuEl.appendChild(localSectionHeader);
         const localResultsHost = document.createElement("div");
         menuEl.appendChild(localResultsHost);
-        const platformResultsHost = document.createElement("div");
-        menuEl.appendChild(platformResultsHost);
 
         const renderLocal = () => {
             localResultsHost.innerHTML = "";
             const items = searchMyLibrary(query, 6);
-            items.forEach((it) => {
-                const row = buildRow(
-                    { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
-                    () => pickAndKeepOpen(resolveUserItemById(it.id), it.id),
-                );
-                localResultsHost.appendChild(row);
-            });
+            if (items.length === 0) {
+                const empty = document.createElement("div");
+                empty.className = "ai-agent-trigger-menu-empty";
+                empty.textContent = query ? "لا توجد نتائج في مكتبتك." : "لا يوجد شيء في مكتبتك بعد.";
+                localResultsHost.appendChild(empty);
+            } else {
+                items.forEach((it) => {
+                    const row = buildRow(
+                        { id: it.id, kind: it.kind, title: it.title, checked: isAttached(it.id) },
+                        () => pickAndKeepOpen(resolveUserItemById(it.id), it.id),
+                    );
+                    localResultsHost.appendChild(row);
+                });
+            }
         };
         renderLocal();
 
+        // ── "الصفحة الرئيسية" (main page/platform) — async, own header+state ──
+        // Kept as its own section (own header, own empty/loading message)
+        // rather than sharing one combined header+message with "مكتبتك"
+        // above — the old combined section made it look like one bucket of
+        // results with no way to tell which item came from where, and a
+        // single shared loading/empty message that didn't actually reflect
+        // "مكتبتك" (which is never loading — it's synchronous).
+        menuEl.appendChild(renderSectionHeader("الصفحة الرئيسية"));
+        const platformResultsHost = document.createElement("div");
+        menuEl.appendChild(platformResultsHost);
         platformResultsHost.innerHTML = '<div class="ai-agent-mention-loading">جارٍ البحث في الصفحة الرئيسية…</div>';
         reposition();
 
@@ -355,10 +384,10 @@ export function createMentionMenu(options) {
                 const platformItems = await searchPlatformLibrary(query, 6);
                 if (myToken !== platformSearchToken || !menuEl) return; // stale / menu closed meanwhile
                 platformResultsHost.innerHTML = "";
-                if (platformItems.length === 0 && searchMyLibrary(query, 1).length === 0 && query) {
+                if (platformItems.length === 0) {
                     const empty = document.createElement("div");
                     empty.className = "ai-agent-trigger-menu-empty";
-                    empty.textContent = "لا توجد نتائج مطابقة.";
+                    empty.textContent = query ? "لا توجد نتائج في الصفحة الرئيسية." : "لا يوجد شيء لعرضه هنا حاليًا.";
                     platformResultsHost.appendChild(empty);
                 } else {
                     platformItems.forEach((it) => {

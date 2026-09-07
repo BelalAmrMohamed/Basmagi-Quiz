@@ -476,23 +476,36 @@ export function createChatPanel(options = {}) {
    * (after a normal turn, and after a tool-result) — maps in-memory
    * `history` (which can carry base64 file data + platform-item objects
    * in `attachments`) down to the lightweight persisted shape IndexedDB
-   * actually stores. Only `attachmentName` (a single display label)
-   * survives a save — same "v1: one file at a time" persisted shape as
-   * before Phase 2a/3, just now also covering a platform-item's `.title`
-   * as a fallback source for that label, so a quiz/course/folder-only
-   * opener (no file) still gets a sensible chip on reload and a sensible
-   * derived history title (see deriveConversationTitle's own matching
-   * fallback in ai-agent-history-idb.js).
+   * actually stores.
+   *
+   * BUG FIX: this used to persist ONLY `attachmentName` (a bare display
+   * string) — enough for the old plain-text chip, but openAttachmentPreviewModal
+   * needs `kind` (to pick an icon/kind-badge and know whether to treat
+   * `name` as a file name vs a platform-item title) and `summary` (the
+   * actual context text the preview shows) too. Without them, every
+   * attachment in a RELOADED conversation fell back through
+   * labelForAttachment/ATTACHMENT_KIND_LABEL_AR's "nothing matched"
+   * paths straight to "مرفق"/"بدون عنوان", even though the original
+   * title/context was known perfectly well at save time — it just wasn't
+   * being written down. `payload` (the full quiz/course JSON, or a raw
+   * file's base64) is deliberately still NOT persisted: nothing ever
+   * re-attaches or re-sends a past conversation's attachment as new
+   * context (loadConversation's own comment confirms reloaded history is
+   * display-only), so keeping payload out keeps saved records small
+   * without losing anything the preview modal actually shows.
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {
     return historyToPersist.map(({ role, content, attachments, type }) => {
-      const firstLabel = attachments?.[0]?.name || attachments?.[0]?.title;
+      const first = attachments?.[0];
+      const firstLabel = first?.name || first?.title;
       return {
         role,
         content,
         ...(type ? { type } : {}),
         ...(firstLabel ? { attachmentName: firstLabel } : {}),
+        ...(first?.kind ? { attachmentKind: first.kind } : {}),
+        ...(first?.summary ? { attachmentSummary: first.summary } : {}),
       };
     });
   }
@@ -2639,23 +2652,32 @@ export function createChatPanel(options = {}) {
     conversationId = conversation.id;
     conversationCreatedAt = conversation.createdAt || Date.now();
     history.length = 0;
-    // Reconstruct the `attachments` shape appendMessage/sendMessage expect
-    // from the persisted `attachmentName` (see saveConversation call in
-    // sendMessage) — no base64 data available after a reload, but the
-    // filename is enough to redraw the same chip the user originally saw.
-    // A platform-item attachment persists as `attachmentName` too (see
-    // deriveConversationTitle/saveConversation's fallback for `.title`) —
-    // reconstructed here as a generic `{name}` chip since the original
-    // kind isn't preserved across a reload; good enough for display,
-    // which is all a reloaded past conversation needs (nothing gets
-    // re-sent from history on load).
+    // Reconstruct the `attachments` shape appendMessage/openAttachmentPreviewModal
+    // expect from the persisted attachmentName/attachmentKind/attachmentSummary
+    // (see toPersistedMessages' own comment on why kind+summary are now
+    // saved too, not just the name) — no base64 data available after a
+    // reload for a real file, but everything the PREVIEW actually shows
+    // (title, kind badge/icon, context text) survives. `name` vs `title`
+    // is picked based on the persisted kind so labelForAttachment (which
+    // branches on att.kind === "file") keeps working the same way it does
+    // for a live, never-reloaded attachment.
     history.push(
-      ...conversation.messages.map(({ role, content, attachmentName, type }) => ({
-        role,
-        content,
-        ...(type ? { type } : {}),
-        ...(attachmentName ? { attachments: [{ name: attachmentName }] } : {}),
-      })),
+      ...conversation.messages.map(({ role, content, attachmentName, attachmentKind, attachmentSummary, type }) => {
+        const kind = attachmentKind || "file"; // older saved records predate attachmentKind — file was the only kind that ever existed before platform-item attachments
+        const attachment = attachmentName
+          ? {
+            kind,
+            ...(kind === "file" ? { name: attachmentName } : { title: attachmentName }),
+            ...(attachmentSummary ? { summary: attachmentSummary } : {}),
+          }
+          : null;
+        return {
+          role,
+          content,
+          ...(type ? { type } : {}),
+          ...(attachment ? { attachments: [attachment] } : {}),
+        };
+      }),
     );
 
     messagesEl.innerHTML = "";

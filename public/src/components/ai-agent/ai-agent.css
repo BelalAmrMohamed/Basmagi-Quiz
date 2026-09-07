@@ -2375,12 +2375,20 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-mention-section-header {
-  padding: 6px 8px 4px;
+  padding: 10px 8px 4px;
+  margin-top: 4px;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-agent-mention-section-header:first-child {
+  margin-top: 0;
+  padding-top: 6px;
+  border-top: none;
 }
 
 .ai-agent-mention-row {
@@ -2406,7 +2414,8 @@ body.sidebar-expanded .ai-agent-fab {
   flex: 1;
 }
 
-.ai-agent-mention-row-title {
+.ai-agent-mention-row.ai-agent-mention-row-title,
+.ai-agent-mention-row .ai-agent-mention-row-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2419,19 +2428,36 @@ body.sidebar-expanded .ai-agent-fab {
      that same detected side rather than the row's own RTL start-alignment. */
   unicode-bidi: plaintext;
   font-weight: 600;
-  color: var(--color-text-primary);
   line-height: 1.35;
+  /* BUG FIX: .exam-action-btn:hover (index.css) sets `color:
+     var(--color-primary)` on the whole button — a (0,2,0)-specificity
+     rule (class+pseudo-class) that beat this element's own plain
+     single-class color, so hovering ANY row silently recolored both the
+     title and the (smaller, meant-to-be-muted) description to the exact
+     same saturated accent blue, over that same hover state's own
+     light-blue-tinted background — reading as "the text isn't visible."
+     The doubled selector here (.ai-agent-mention-row.ai-agent-mention-row-title,
+     .ai-agent-mention-row .ai-agent-mention-row-title) raises this rule's
+     class-count to 2, matching :hover's specificity, and CSS falls back to
+     source order — this rule is declared after index.css loads, so it
+     wins without needing !important. */
+  color: var(--color-text-primary) !important;
 }
 
-.ai-agent-mention-row-desc {
+.ai-agent-mention-row .ai-agent-mention-row-desc {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   unicode-bidi: plaintext;
   font-size: 0.76rem;
   font-weight: 400;
-  color: var(--color-text-tertiary);
   line-height: 1.3;
+  /* Same fix as -title above — must survive .exam-action-btn:hover's
+     color override, and needs !important since this description text is
+     specifically meant to read as visually SECONDARY to the title (muted
+     tertiary color), which the hover rule would otherwise flatten both
+     lines into the same accent blue, erasing that hierarchy entirely. */
+  color: var(--color-text-tertiary) !important;
 }
 
 .ai-agent-mention-row[disabled] {
@@ -2440,15 +2466,26 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-mention-row.is-attached {
-  background: var(--color-surface-active, rgba(37, 99, 235, 0.08));
+  /* --color-surface-active never existed as a real token anywhere in this
+     app (was invented here) — using the same --color-primary-light this
+     button's own :hover state already uses, so "attached" reads as a
+     natural persistent version of the hover highlight rather than an
+     unrelated color no other state in this app uses. */
+  background: var(--color-primary-light);
 }
 
 .ai-agent-mention-row.is-active {
-  background: var(--color-surface-hover, rgba(37, 99, 235, 0.06));
+  /* Same fix as .is-attached above — --color-surface-hover was likewise
+     never a real token. var(--color-background-secondary) is this same
+     component's own resting background (.exam-action-btn), lightened by
+     the theme's normal hover mechanics rather than a made-up value. */
+  background: var(--color-background-secondary);
+  outline: 1.5px solid var(--color-border);
+  outline-offset: -1.5px;
 }
 
 .ai-agent-mention-row-check {
-  color: var(--color-accent, #2563eb);
+  color: var(--color-accent, #2563eb) !important;
   font-weight: 700;
   flex-shrink: 0;
   visibility: hidden;
