@@ -278,3 +278,219 @@
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* ── Settings panel (Step 5: answers/explanations/placement/background) ──
+   Shown in place of the format grid, right after a pdf/pptx/docx/md card
+   is clicked and before generation actually starts. */
+.dl-settings-host {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.dl-settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 24px 20px;
+}
+
+.dl-settings-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  padding: 12px 4px 4px;
+}
+
+.dl-settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dl-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dl-settings-row:last-child {
+  border-bottom: none;
+}
+
+.dl-settings-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.dl-settings-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dl-settings-row-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dl-settings-row-sub {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* "Include answers" is deliberately a confirm-gated button, not a
+   toggle — flipping it on is a one-way reveal decision the user should
+   consciously make, per explicit product feedback. */
+.dl-settings-answers-btn {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.dl-settings-answers-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.dl-settings-answers-btn.active {
+  border-color: var(--color-success, #16a34a);
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success, #16a34a);
+}
+
+/* Generic on/off switch, used for the ordinary toggle rows
+   (user's answers / explanations) — kept visually distinct from the
+   answers-reveal button above. */
+.dl-switch {
+  flex-shrink: 0;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  border-radius: 999px;
+  border: none;
+  background: var(--color-border-light, var(--color-border));
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.18s;
+}
+
+.dl-switch.on {
+  background: var(--color-primary);
+}
+
+.dl-switch-knob {
+  position: absolute;
+  top: 3px;
+  inset-inline-start: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: inset-inline-start 0.18s;
+}
+
+.dl-switch.on .dl-switch-knob {
+  inset-inline-start: 21px;
+}
+
+/* Two-way segmented control (answer placement / pdf background) */
+.dl-settings-segmented {
+  display: flex;
+  gap: 6px;
+}
+
+.dl-segmented-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+
+.dl-segmented-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.dl-segmented-btn.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.dl-settings-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.dl-settings-back,
+.dl-settings-continue {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    opacity 0.15s;
+}
+
+.dl-settings-back {
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.dl-settings-back:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.dl-settings-continue {
+  border: 1.5px solid var(--color-primary);
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.dl-settings-continue:hover {
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .dl-settings-panel {
+    padding: 4px 16px 16px;
+  }
+}

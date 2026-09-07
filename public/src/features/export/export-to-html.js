@@ -214,6 +214,19 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
           .essay-score.partial { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #fcd34d; }
           .essay-score.wrong   { background: rgba(239,68,68,0.15);  border-color: #ef4444; color: #f87171; }
           .question-image { max-width: 100%; height: auto; display: block; margin: 10px auto; border-radius: 8px; border: 1px solid #333; }
+          /* ── Question media (audio / video / YouTube) ──
+             On screen: real <audio>/<video> controls, or a linked
+             thumbnail (YouTube) with a centered play badge. The print
+             fallback link is hidden on screen (interactive controls
+             already cover that need) and only shown via @media print
+             below, since <audio>/<video> controls don't print. */
+          .question-media-container { margin: 10px 0 20px; }
+          .question-audio-container .question-audio,
+          .question-video-container .question-video { width: 100%; max-width: 100%; border-radius: 8px; display: block; background: #000; }
+          .question-video-thumb-link { position: relative; display: block; max-width: 100%; width: fit-content; margin: 0 auto; border-radius: 8px; overflow: hidden; line-height: 0; }
+          .question-video-thumb { display: block; max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #333; }
+          .question-video-play-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; border-radius: 50%; background: rgba(0,0,0,0.65); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; line-height: 1; pointer-events: none; }
+          .question-media-print-link { display: none; }
           .footer { text-align: center; margin-top: 50px; color: #888; font-size: 0.8rem; border-top: 1px solid #333; padding-top: 20px; }
           .code-block { background: #0d0d0d; border: 1px solid #444; border-radius: 8px; padding: 12px 16px; margin: 10px 0; overflow-x: auto; font-family: "SF Mono", "Fira Code", Consolas, monospace; font-size: 0.88rem; line-height: 1.6; white-space: pre; text-align: left; direction: ltr; }
           .code-block code { background: none; padding: 0; color: #e2e8f0; font-size: inherit; }
@@ -257,7 +270,17 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
             --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
           }
-          ${MARKDOWN_CSS}          
+          ${MARKDOWN_CSS}
+          /* ── Print rules for question media ──
+             <audio>/<video> controls render as an empty gray box on
+             paper, so hide them in print and show the plain-text
+             fallback link instead. The YouTube thumbnail is a real
+             <img> either way, so it stays visible on screen AND print. */
+          @media print {
+            .question-audio-container .question-audio,
+            .question-video-container .question-video { display: none !important; }
+            .question-media-print-link { display: block !important; }
+          }
           </style>
   </head>
   <body>

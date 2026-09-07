@@ -5,7 +5,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ------------------------------------------------
 
 ```text
-منصة إمتحانات بصمجي/
+project-منصة إمتحانات بصمجي/
 ├── CHANGELOG.md
 ├── LICENSE
 ├── README.md
@@ -19,10 +19,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   ├── _providerClients.js
 │   │   ├── _tools.js
 │   │   └── chat.js
-│   │
+│   
 │   ├── user-profile/
 │   │   └── _levelMath.js
-│   │
+│   
 │   ├── _courseFolders.js
 │   ├── _middleware.js
 │   ├── _rateLimit.js
@@ -43,11 +43,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── map/
 │   │   ├── context-map.md
 │   │   └── map.js
-│   │
+│   
 │   ├── plans/
 │   │   ├── ai-agent-on-quiz-page-prompt.md
 │   │   └── plan-to-update-exports.md
-│   │
+│   
 │   ├── Database-Schema-Context.md
 │   ├── image.png
 │   └── issues.md
@@ -69,7 +69,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── sign-in-thumbnail.png
 │   │   │   │   ├── terms-of-service-thumbnail.png
 │   │   │   │   └── thumbnail.png
-│   │   │   │
+│   │   │   
 │   │   │   ├── HTML_Icon.png
 │   │   │   ├── PDF_Icon.png
 │   │   │   ├── el-bash-mebasmag--no-bg.png
@@ -93,7 +93,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── word_icon.png
 │   │   │   ├── السلام عليكم.png
 │   │   │   └── صلى_على_النبي_2.png
-│   │   │
+│   │   
 │   │   ├── profile-featured/
 │   │   │   ├── pictures/
 │   │   │   │   ├── 1.jpg
@@ -112,7 +112,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── 7.jpg
 │   │   │   │   ├── 8.jpg
 │   │   │   │   └── 9.jpg
-│   │   │   │
+│   │   │   
 │   │   │   └── thumbnails/
 │   │   │       ├── 1.jpg
 │   │   │       ├── 10.jpg
@@ -126,7 +126,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── 7.jpg
 │   │   │       ├── 8.jpg
 │   │   │       └── 9.jpg
-│   │   │
+│   │   
 │   │   ├── quiz-media/
 │   │   │   ├── Cambridge_2019/
 │   │   │   │   ├── Test1 Part1.mp3
@@ -145,32 +145,32 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── Test4 Part2.mp3
 │   │   │   │   ├── Test4 Part3.mp3
 │   │   │   │   └── Test4 Part4.mp3
-│   │   │   │
+│   │   │   
 │   │   │   ├── TEST_1/
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   ├── Part_4.mp4
 │   │   │   │   └── Recording.mp3
-│   │   │   │
+│   │   │   
 │   │   │   ├── TEST_2/
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │
+│   │   │   
 │   │   │   ├── TEST_3/
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │
+│   │   │   
 │   │   │   ├── TEST_4/
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │
+│   │   │   
 │   │   │   ├── 1d-formula.jpg
 │   │   │   ├── 2020_2021-summer-final-2.jpg
 │   │   │   ├── 2020_2021-summer-final-6.jpg
@@ -210,7 +210,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── shifting-process.jpg
 │   │   │   ├── university-as-a-system.jpg
 │   │   │   └── volume-of-sales.jpg
-│   │   │
+│   │   
 │   │   ├── quiz-sources/
 │   │   │   ├── 2020 - 2021 Final.pdf
 │   │   │   ├── 2020 - 2021 Summer Final.pdf
@@ -219,10 +219,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── 2023 - 2024 Final.pdf
 │   │   │   ├── 2024 - 2025 Final.pdf
 │   │   │   └── Mid 2025.pdf
-│   │   │
+│   │   
 │   │   └── videos/
 │   │       └── AD.mp4
-│   │
+│   
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ai-agent/
@@ -239,46 +239,46 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── ai-agent-suggested-prompts.js
 │   │   │   │   ├── ai-agent.css
 │   │   │   │   └── ai-agent.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── download-quiz-modal/
 │   │   │   │   ├── download-quiz-modal.css
 │   │   │   │   └── download-quiz-modal.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── log-in/
 │   │   │   │   └── sign-in.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── notifications/
 │   │   │   │   ├── notifications.css
 │   │   │   │   └── notifications.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── offline-banner/
 │   │   │   │   ├── offline-banner.css
 │   │   │   │   └── offline-banner.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── quiz-info-modal/
 │   │   │   │   ├── quiz-info-html.js
 │   │   │   │   ├── quiz-info-modal-css.js
 │   │   │   │   └── quiz-info-modal.css
-│   │   │   │
+│   │   │   
 │   │   │   ├── report-question/
 │   │   │   │   ├── report-question.css
 │   │   │   │   └── report-question.js
-│   │   │   │
+│   │   │   
 │   │   │   └── side-menu/
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
-│   │   │
+│   │   
 │   │   ├── features/
 │   │   │   ├── control/
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
 │   │   │   │   └── reports-view.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── create/
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── export/
 │   │   │   │   ├── export-to-html.js
 │   │   │   │   ├── export-to-markdown.js
@@ -286,7 +286,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-pptx.js
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── home/
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
@@ -338,17 +338,17 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── user-quizzes-folders.js
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── onboarding/
 │   │   │   │   ├── onboarding.css
 │   │   │   │   └── onboarding.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── privacy-and-terms/
 │   │   │   │   ├── about.css
 │   │   │   │   ├── doc-toc.js
 │   │   │   │   ├── documentation-shell.js
 │   │   │   │   └── privacy-and-terms.css
-│   │   │   │
+│   │   │   
 │   │   │   ├── profile/
 │   │   │   │   ├── heatmapOverflow.js
 │   │   │   │   ├── infiniteScroll.js
@@ -357,24 +357,24 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── profile.css
 │   │   │   │   ├── profile.js
 │   │   │   │   └── profileWidgets.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── quiz/
 │   │   │   │   ├── keyboard-nav.js
 │   │   │   │   ├── quiz.css
 │   │   │   │   └── quiz.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── reports/
 │   │   │   │   ├── reports.css
 │   │   │   │   └── reports.js
-│   │   │   │
+│   │   │   
 │   │   │   ├── result/
 │   │   │   │   ├── result.css
 │   │   │   │   └── result.js
-│   │   │   │
+│   │   │   
 │   │   │   └── settings/
 │   │   │       ├── settings.css
 │   │   │       └── settings.js
-│   │   │
+│   │   
 │   │   ├── shared/
 │   │   │   ├── adminAuth.js
 │   │   │   ├── adminBadgeSync.js
@@ -401,12 +401,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── user-name-validation.js
 │   │   │   ├── userLevel.js
 │   │   │   └── userProfile.js
-│   │   │
+│   │   
 │   │   └── styles/
 │   │       ├── advanced-liquid-metal-animations.css
 │   │       ├── markdown.css
 │   │       └── themes.css
-│   │
+│   
 │   ├── about.html
 │   ├── control.html
 │   ├── create-quiz.html
@@ -455,10 +455,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code |
 |-----------|-------|---------------|
-| .js | 139 | 58753 |
-| .css | 24 | 29866 |
+| .js | 139 | 59091 |
+| .css | 24 | 30082 |
 | .html | 19 | 9257 |
-| .md | 7 | 1416 |
+| .md | 7 | 1537 |
 | .json | 4 | 213 |
 | .sql | 4 | 375 |
 | (no extension) | 1 | 22 |
@@ -466,7 +466,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .txt | 1 | 4 |
 | .xml | 1 | 45 |
 | .toml | 1 | 415 |
-| **Total** | **202** | **100407** |
+| **Total** | **202** | **101082** |
 
 ### Binary / Media Files
 
@@ -482,4 +482,4 @@ The map is useful for quickly identifying the layout of the project, understandi
 | **Total** | **148** |
 
 **Grand Total Files:** 350  
-**Total Lines of Code (code files only):** 100407
+**Total Lines of Code (code files only):** 101082

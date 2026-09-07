@@ -22,7 +22,7 @@ import {
   JSON_FILE_ICON_SVG,
   DOWNLOAD_SOURCE_ICON_SVG,
 } from "../../features/home/icons.js";
-import { showNotification } from "../notifications/notifications.js";
+import { showNotification, _confirm } from "../notifications/notifications.js";
 import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
 import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
@@ -175,10 +175,16 @@ export function buildExportCard({
  *   through only to exportToPdf (score summary in the PDF). Only the result
  *   page has this; other callers omit it.
  * @param {Function} [onProgress] — optional (pct: 0–100) => void. Only
- *   consumed by the chunked generators (pptx/docx) — ignored by formats
- *   that already resolve near-instantly.
+ *   consumed by the chunked generators (pptx/docx) and pdf — ignored by
+ *   formats that already resolve near-instantly.
  * @param {AbortSignal} [signal] — optional cancellation signal. Same
- *   pptx/docx-only scope as onProgress.
+ *   pptx/docx-only scope as onProgress (pdf's native-print pipeline has
+ *   no meaningful mid-flight cancellation point).
+ * @param {object} [exportOptions] — settings collected from the
+ *   Settings Panel (see buildSettingsPanel below) for pdf/pptx/docx/md:
+ *   { includeAnswers, includeUserAnswers, includeExplanations,
+ *     answerPlacement: "inline" | "final-page", pdfBackground: "light" | "dark" }.
+ *   Formats/exporters that don't yet consume a given field simply ignore it.
  */
 export async function executeExport(
   format,
@@ -188,13 +194,16 @@ export async function executeExport(
   resultMeta,
   onProgress,
   signal,
+  exportOptions = {},
 ) {
   switch (format) {
     case "quiz":
       await exportToQuiz(config, questions);
       break;
     case "pdf":
-      await exportToPdf(config, questions, userAnswers, resultMeta);
+      await exportToPdf(config, questions, userAnswers, resultMeta, onProgress, {
+        backgroundColor: exportOptions.pdfBackground,
+      });
       break;
     case "docx":
       return await exportToWord(
@@ -254,6 +263,226 @@ export async function withDownloadLoading(buttonEl, asyncFn) {
     buttonEl.style.width = "";
     buttonEl.style.justifyContent = "";
   }
+}
+
+// ============================================================================
+// SETTINGS PANEL — shown before generation for pdf/pptx/docx/md
+// ============================================================================
+// Bakes "what state should this static file be generated in" choices in
+// at export time (decided by the person exporting), as opposed to
+// export-to-quiz.js's in-file "Show All Answers" toggle, which the
+// eventual *reader* of the exported standalone .html/quiz flips
+// themselves after the fact. Those are two separate, deliberately
+// independent features — see plan doc for the full reasoning.
+//
+// Formats that stay instant/unchanged (quiz, json) never see this panel.
+
+const FORMATS_WITH_SETTINGS = new Set(["pdf", "pptx", "docx", "md"]);
+
+/**
+ * Builds the settings step shown before generation. Resolves to `null`
+ * if the user closes/cancels the panel (caller should abort the export),
+ * or an options object otherwise:
+ *   { includeAnswers, includeUserAnswers, includeExplanations,
+ *     answerPlacement: "inline" | "final-page", pdfBackground: "light" | "dark" }
+ *
+ * @param {object} params
+ * @param {string} params.format — "pdf" | "pptx" | "docx" | "md"
+ * @param {string} params.label — display label (e.g. "PDF") for the header.
+ * @param {boolean} params.hasUserAnswers — whether userAnswers was passed
+ *   into showDownloadModal() (only true from the Results page flow) — the
+ *   "include user's answers" row only renders when this is true.
+ * @param {(panelEl: HTMLElement) => void} params.onPanelReady — called
+ *   synchronously with the built panel element so the caller can mount it
+ *   before the promise resolves (the promise only resolves on user action).
+ * @returns {Promise<object|null>}
+ */
+function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
+  return new Promise((resolve) => {
+    const state = {
+      includeAnswers: false,
+      includeUserAnswers: false,
+      includeExplanations: false,
+      answerPlacement: "inline",
+      pdfBackground: "light",
+    };
+
+    const panel = document.createElement("div");
+    panel.className = "dl-settings-panel";
+
+    const heading = document.createElement("div");
+    heading.className = "dl-settings-heading";
+    heading.textContent = `إعدادات تصدير ${label}`;
+    panel.appendChild(heading);
+
+    const rows = document.createElement("div");
+    rows.className = "dl-settings-rows";
+
+    // ── Row: Include correct answers (button + confirmation, NOT a toggle) ──
+    const answersRow = document.createElement("div");
+    answersRow.className = "dl-settings-row";
+    answersRow.innerHTML = `
+      <div class="dl-settings-row-text">
+        <div class="dl-settings-row-title">تضمين الإجابات الصحيحة</div>
+        <div class="dl-settings-row-sub">يكشف الإجابة الصحيحة لكل سؤال في الملف المُصدَّر</div>
+      </div>
+      <button type="button" class="dl-settings-answers-btn" aria-pressed="false">إظهار الإجابات</button>
+    `;
+    const answersBtn = answersRow.querySelector(".dl-settings-answers-btn");
+
+    // ── Row: Include user's answers (only when hasUserAnswers) ──
+    let userAnswersToggle = null;
+    if (hasUserAnswers) {
+      const userAnswersRow = document.createElement("div");
+      userAnswersRow.className = "dl-settings-row";
+      userAnswersRow.innerHTML = `
+        <div class="dl-settings-row-text">
+          <div class="dl-settings-row-title">تضمين إجاباتك</div>
+          <div class="dl-settings-row-sub">يُظهر إجاباتك الفعلية بجانب كل سؤال</div>
+        </div>
+      `;
+      const toggle = buildSwitch(false);
+      userAnswersRow.appendChild(toggle.el);
+      userAnswersToggle = toggle;
+      rows.appendChild(userAnswersRow);
+    }
+
+    // ── Row: Include explanations/feedback ──
+    const explanationsRow = document.createElement("div");
+    explanationsRow.className = "dl-settings-row";
+    explanationsRow.innerHTML = `
+      <div class="dl-settings-row-text">
+        <div class="dl-settings-row-title">تضمين الشروحات</div>
+        <div class="dl-settings-row-sub">يعرض شرح كل سؤال (إن وُجد)</div>
+      </div>
+    `;
+    const explanationsToggle = buildSwitch(false);
+    explanationsRow.appendChild(explanationsToggle.el);
+
+    // ── Row: Answer key placement (only meaningful once answers included) ──
+    const placementRow = document.createElement("div");
+    placementRow.className = "dl-settings-row dl-settings-row-stack dl-settings-placement";
+    placementRow.style.display = "none";
+    placementRow.innerHTML = `
+      <div class="dl-settings-row-text">
+        <div class="dl-settings-row-title">مكان الإجابات</div>
+      </div>
+      <div class="dl-settings-segmented" role="radiogroup" aria-label="مكان الإجابات">
+        <button type="button" class="dl-segmented-btn active" data-value="inline" role="radio" aria-checked="true">أسفل كل سؤال</button>
+        <button type="button" class="dl-segmented-btn" data-value="final-page" role="radio" aria-checked="false">مجمّعة في صفحة أخيرة</button>
+      </div>
+    `;
+    const placementBtns = placementRow.querySelectorAll(".dl-segmented-btn");
+    placementBtns.forEach((btn) => {
+      btn.onclick = () => {
+        state.answerPlacement = btn.dataset.value;
+        placementBtns.forEach((b) => {
+          b.classList.toggle("active", b === btn);
+          b.setAttribute("aria-checked", String(b === btn));
+        });
+      };
+    });
+
+    const updatePlacementVisibility = () => {
+      placementRow.style.display = state.includeAnswers ? "flex" : "none";
+    };
+
+    answersBtn.onclick = async () => {
+      if (state.includeAnswers) {
+        // Turning off never needs confirmation.
+        state.includeAnswers = false;
+        answersBtn.classList.remove("active");
+        answersBtn.setAttribute("aria-pressed", "false");
+        answersBtn.textContent = "إظهار الإجابات";
+        updatePlacementVisibility();
+        return;
+      }
+      const confirmed = await _confirm(
+        "سيؤدي هذا إلى كشف الإجابة الصحيحة لكل سؤال في الملف الذي سيتم تصديره. هل تريد المتابعة؟",
+      );
+      if (!confirmed) return;
+      state.includeAnswers = true;
+      answersBtn.classList.add("active");
+      answersBtn.setAttribute("aria-pressed", "true");
+      answersBtn.textContent = "إخفاء الإجابات";
+      updatePlacementVisibility();
+    };
+
+    rows.appendChild(answersRow);
+    rows.appendChild(explanationsRow);
+    rows.appendChild(placementRow);
+
+    // ── PDF-only: background color ──
+    let bgBtns = null;
+    if (format === "pdf") {
+      const bgRow = document.createElement("div");
+      bgRow.className = "dl-settings-row dl-settings-row-stack";
+      bgRow.innerHTML = `
+        <div class="dl-settings-row-text">
+          <div class="dl-settings-row-title">لون الخلفية</div>
+        </div>
+        <div class="dl-settings-segmented" role="radiogroup" aria-label="لون الخلفية">
+          <button type="button" class="dl-segmented-btn active" data-value="light" role="radio" aria-checked="true">أبيض</button>
+          <button type="button" class="dl-segmented-btn" data-value="dark" role="radio" aria-checked="false">داكن</button>
+        </div>
+      `;
+      bgBtns = bgRow.querySelectorAll(".dl-segmented-btn");
+      bgBtns.forEach((btn) => {
+        btn.onclick = () => {
+          state.pdfBackground = btn.dataset.value;
+          bgBtns.forEach((b) => {
+            b.classList.toggle("active", b === btn);
+            b.setAttribute("aria-checked", String(b === btn));
+          });
+        };
+      });
+      rows.appendChild(bgRow);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "dl-settings-actions";
+    actions.innerHTML = `
+      <button type="button" class="dl-settings-back">رجوع</button>
+      <button type="button" class="dl-settings-continue">متابعة</button>
+    `;
+
+    panel.appendChild(rows);
+    panel.appendChild(actions);
+
+    actions.querySelector(".dl-settings-back").onclick = () => resolve(null);
+    actions.querySelector(".dl-settings-continue").onclick = () => {
+      state.includeUserAnswers = userAnswersToggle
+        ? userAnswersToggle.get()
+        : false;
+      state.includeExplanations = explanationsToggle.get();
+      resolve({ ...state });
+    };
+
+    onPanelReady(panel);
+  });
+}
+
+/**
+ * Small on/off switch control (used for settings rows that ARE meant to
+ * be simple toggles — unlike "include answers", which per explicit user
+ * feedback must be a confirmation button instead).
+ * @param {boolean} initial
+ * @returns {{ el: HTMLElement, get: () => boolean }}
+ */
+function buildSwitch(initial) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "dl-switch" + (initial ? " on" : "");
+  btn.setAttribute("role", "switch");
+  btn.setAttribute("aria-checked", String(initial));
+  btn.innerHTML = `<span class="dl-switch-knob"></span>`;
+  let value = initial;
+  btn.onclick = () => {
+    value = !value;
+    btn.classList.toggle("on", value);
+    btn.setAttribute("aria-checked", String(value));
+  };
+  return { el: btn, get: () => value };
 }
 
 // ============================================================================
@@ -440,12 +669,46 @@ export function showDownloadModal({
     progressTrack.setAttribute("aria-valuenow", String(clamped));
   };
 
+  // ── Settings panel host ── swapped in for the grid, same pattern as
+  // progressPanel below, while the user picks answers/explanations/
+  // placement/background options for pdf/pptx/docx/md.
+  const settingsPanelHost = document.createElement("div");
+  settingsPanelHost.className = "dl-settings-host";
+  settingsPanelHost.style.display = "none";
+
   /**
-   * Runs a chunked export (pptx/docx) with the grid replaced by the
+   * Shows the settings step for a format, swapping the grid out and
+   * settingsPanelHost in. Resolves to the collected options object, or
+   * null if the user clicked "back".
+   */
+  const showSettingsStep = (opt) =>
+    new Promise((resolve) => {
+      settingsPanelHost.innerHTML = "";
+      grid.style.display = "none";
+      settingsPanelHost.style.display = "flex";
+      buildSettingsPanel({
+        format: opt.format,
+        label: opt.label,
+        hasUserAnswers: Boolean(
+          userAnswers &&
+          (Array.isArray(userAnswers)
+            ? userAnswers.length > 0
+            : Object.keys(userAnswers).length > 0),
+        ),
+        onPanelReady: (panelEl) => settingsPanelHost.appendChild(panelEl),
+      }).then((result) => {
+        settingsPanelHost.style.display = "none";
+        grid.style.display = "";
+        resolve(result);
+      });
+    });
+
+  /**
+   * Runs a chunked export (pptx/docx/pdf) with the grid replaced by the
    * progress panel. Resolves once the export settles (success, failure,
    * or user cancellation) and always restores the grid afterwards.
    */
-  const runWithProgressPanel = async (opt, iconUrl, label) => {
+  const runWithProgressPanel = async (opt, iconUrl, label, exportOptions) => {
     const controller = new AbortController();
     activeController = controller;
 
@@ -476,6 +739,7 @@ export function showDownloadModal({
         resultMeta,
         setProgress,
         controller.signal,
+        exportOptions,
       );
       if (result && result.cancelled) {
         showNotification("تم الإلغاء", "تم إلغاء عملية التصدير.", "info");
@@ -501,7 +765,9 @@ export function showDownloadModal({
     const iconHtml = opt.iconSvg
       ? opt.iconSvg
       : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
-    const usesProgressPanel = opt.format === "pptx" || opt.format === "docx";
+    const usesProgressPanel =
+      opt.format === "pptx" || opt.format === "docx" || opt.format === "pdf";
+    const usesSettingsPanel = FORMATS_WITH_SETTINGS.has(opt.format);
     const card = buildExportCard({
       format: opt.format,
       label: opt.label,
@@ -509,8 +775,14 @@ export function showDownloadModal({
       icon: iconHtml,
       canCopy: opt.canCopy,
       onDownload: async () => {
+        let exportOptions;
+        if (usesSettingsPanel) {
+          exportOptions = await showSettingsStep(opt);
+          if (!exportOptions) return; // user hit "back" — stay on the grid
+        }
+
         if (usesProgressPanel) {
-          await runWithProgressPanel(opt, opt.iconUrl, opt.label);
+          await runWithProgressPanel(opt, opt.iconUrl, opt.label, exportOptions);
         } else if (opt.format === "json") {
           const fileContent = await buildJsonString();
           const blob = new Blob([fileContent], { type: "application/json" });
@@ -518,7 +790,16 @@ export function showDownloadModal({
           modal.remove();
         } else {
           const { config: c, questions: q } = await getExportData();
-          await executeExport(opt.format, c, q, userAnswers, resultMeta);
+          await executeExport(
+            opt.format,
+            c,
+            q,
+            userAnswers,
+            resultMeta,
+            undefined,
+            undefined,
+            exportOptions,
+          );
           modal.remove();
         }
       },
@@ -550,6 +831,7 @@ export function showDownloadModal({
 
   modalCard.appendChild(header);
   modalCard.appendChild(grid);
+  modalCard.appendChild(settingsPanelHost);
   modalCard.appendChild(progressPanel);
   modal.appendChild(modalCard);
 

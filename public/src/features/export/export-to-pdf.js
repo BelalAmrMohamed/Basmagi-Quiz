@@ -36,17 +36,33 @@ import { buildQuizHtml } from "./export-to-html.js";
 // into buildQuizHtml's <style>), so these rules win on specificity/order,
 // and only apply inside `@media print` so on-screen previewing of the
 // same iframe (if ever shown) isn't affected.
-const PDF_PRINT_CSS = `
+const PDF_PRINT_CSS = (backgroundChoice = "light") => `
 @media print {
   @page { size: A4; margin: 14mm 12mm; }
 
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   html, body {
-    background: #121212 !important;
+    background: ${backgroundChoice === "dark" ? "#121212" : "#ffffff"} !important;
+    ${backgroundChoice === "dark" ? "" : "color: #1a1a1a !important;"}
     width: auto;
     max-width: none;
   }
+  ${backgroundChoice === "dark" ? "" : `
+  /* Light background: the on-screen dark theme's card/text colors need
+     flipping too, or content is unreadable (dark text on dark card,
+     etc. inherited from the interactive-HTML dark theme). */
+  .question-card { background: #f8f9fa !important; border-color: #ddd !important; }
+  .q-header, .rd-label { color: #555 !important; }
+  .q-text, h1, .score-label, .rd-value { color: #1a1a1a !important; }
+  .option { background: #f0f1f3 !important; color: #1a1a1a !important; border-color: #ddd !important; }
+  .code-block { background: #f4f4f5 !important; border-color: #ccc !important; }
+  .code-block code { color: #1a1a1a !important; }
+  .essay-box { background: #f0f1f3 !important; }
+  .score-block { background: #f8f9fa !important; border-color: #ddd !important; }
+  .results-detail { background: #f0f1f3 !important; border-color: #ddd !important; }
+  .meta, .footer { color: #666 !important; }
+  `}
 
   /* ── Code blocks: never clip, never force a horizontal scrollbar ──
      On screen these rely on overflow/scroll — the printed page has no
@@ -88,8 +104,23 @@ const PDF_PRINT_CSS = `
 
   /* Never split a question card across a page boundary if it can
      reasonably fit on one page; if it can't, allow the break rather
-     than shrinking/clipping content. */
-  .question-card { break-inside: avoid-page; page-break-inside: avoid; }
+     than shrinking/clipping content. Spacing is tightened vs. the
+     on-screen version (which uses generous padding/margins meant for
+     mouse/touch interaction) specifically so two short questions
+     (True/False, short MCQ) can share a page instead of each one
+     nearly filling a page on its own. */
+  .question-card {
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+    padding: 12px 14px !important;
+    margin-bottom: 10px !important;
+  }
+  .q-header { margin-bottom: 8px !important; }
+  .q-text { margin-bottom: 10px !important; }
+  .options-list { gap: 5px !important; margin-bottom: 10px !important; }
+  .option { padding: 6px 10px !important; margin-bottom: 0 !important; }
+  .user-answer, .correct-answer { margin-top: 8px !important; padding: 8px 10px !important; }
+  .explanation { margin-top: 8px !important; padding: 8px 10px !important; }
   .score-block { break-inside: avoid-page; }
 
   /* Copy-code buttons and other purely-interactive chrome are
@@ -232,6 +263,9 @@ function printHtmlViaHiddenIframe(htmlContent, title) {
  *   userAnswers is non-empty); kept in the signature so callers
  *   (download-quiz-modal.js) don't need to change.
  * @param {Function} [onProgress] — optional (pct: 0–100) => void.
+ * @param {object} [pdfOptions] — { backgroundColor?: "light" | "dark" }.
+ *   backgroundColor defaults to "light" (uniform white) — the old
+ *   hardcoded dark background is now opt-in via the settings panel.
  */
 export async function exportToPdf(
   config,
@@ -239,7 +273,9 @@ export async function exportToPdf(
   userAnswers = [],
   resultMeta = {},
   onProgress = null,
+  pdfOptions = {},
 ) {
+  const backgroundChoice = pdfOptions.backgroundColor === "dark" ? "dark" : "light";
   try {
     if (!config || !questions || !Array.isArray(questions)) {
       throw new Error(
@@ -258,12 +294,13 @@ export async function exportToPdf(
 
     // Splice our print-only overrides in right before </head> so they
     // load after (and therefore override) MARKDOWN_CSS.
+    const printCss = PDF_PRINT_CSS(backgroundChoice);
     const htmlWithPrintCss = htmlContent.includes("</head>")
       ? htmlContent.replace(
-          "</head>",
-          `<style>${PDF_PRINT_CSS}</style></head>`,
-        )
-      : htmlContent + `<style>${PDF_PRINT_CSS}</style>`;
+        "</head>",
+        `<style>${printCss}</style></head>`,
+      )
+      : htmlContent + `<style>${printCss}</style>`;
 
     const filenameBase = (config.title || "quiz").trim() || "quiz";
 

@@ -134,3 +134,109 @@ Confirm the settings panel (once built) and the progress panel both render corre
 - Keep responses focused on code; this project is far enough along that broad re-explanations of already-settled architecture aren't needed unless something in the zip contradicts what's described above (flag it if so — the zip is the source of truth, this prompt is a summary of it).
 
 Please start by unzipping the attached project, reading `public/src/features/export/export-to-html.js` and `public/src/components/download-quiz-modal/download-quiz-modal.js` to get current-state context, then continue with item 1 (media CSS) and item 2 (settings panel) from the list above.
+
+## Progress update (this session)
+
+Items 1, 2, and most of 3 are now done:
+
+1. **Media CSS — DONE.** Added all the missing rules in `export-to-html.js`'s
+   `<style>` block: `.question-media-container`, `.question-audio-container`/
+   `.question-video-container` (full-width `<audio>`/`<video>`), the
+   YouTube-thumbnail link + centered play badge, and `.question-media-print-link`
+   (hidden on screen, shown only under `@media print`, where the interactive
+   `<audio>`/`<video>` elements are hidden instead — the `<img>` thumbnail is
+   untouched by print rules since it's a real image on both).
+
+2. **Settings panel — DONE** (collection UI; not yet consumed by every
+   exporter — see caveat below). Added `buildSettingsPanel()` +
+   `buildSwitch()` + `FORMATS_WITH_SETTINGS` to `download-quiz-modal.js`,
+   wired in as a new step swapped in for the grid (`settingsPanelHost`,
+   mirroring the existing `progressPanel` swap pattern) right after a
+   pdf/pptx/docx/md card is clicked, before generation starts (quiz/json
+   are unaffected). Panel has: "Include correct answers" as a **button**
+   (`.dl-settings-answers-btn`, not a toggle) gated behind the existing
+   `_confirm()` helper from `notifications.js` (reused rather than
+   reinvented) with the exact wording feedback asked for; "Include user's
+   answers" toggle (only rendered when `hasUserAnswers` is true — i.e. only
+   reachable with `userAnswers` passed into `showDownloadModal()`);
+   "Include explanations" toggle; "Answer key placement" segmented control
+   (only visible once answers are toggled on); and, PDF-only, a
+   "Background color" segmented control. "Back" resolves `null` (caller
+   aborts and returns to the grid); "Continue" resolves the collected
+   options object. `executeExport()` now takes a trailing `exportOptions`
+   param and is called with it from both the instant path and
+   `runWithProgressPanel()`.
+   - **Caveat / not yet done**: only `exportToPdf` actually *consumes*
+     `exportOptions` so far (background color — see item 3). PPTX/Word/
+     Markdown still ignore `includeAnswers`/`includeUserAnswers`/
+     `includeExplanations`/`answerPlacement` — those exporters need their
+     own render-time branching added before this panel's other options do
+     anything. That's real remaining work, not just wiring.
+
+3. **PDF fixes — mostly DONE.**
+   - Background: `PDF_PRINT_CSS` is now a function of `backgroundChoice`
+     ("light" default / "dark"), threaded from the settings panel through
+     `executeExport` → `exportToPdf(..., onProgress, { backgroundColor })`.
+     "light" mode also flips the on-screen dark-theme card/text colors
+     (`.question-card`, `.option`, `.code-block`, etc.) to readable
+     light-mode equivalents — the old bug wasn't just the `html,body`
+     background, the cards/text underneath are dark-theme colors too, so a
+     naive white-background swap alone would've produced light-on-light
+     invisible text.
+   - Spacing: tightened `.question-card`/`.q-header`/`.q-text`/`.options-list`/
+     `.option`/`.user-answer`/`.correct-answer`/`.explanation` padding+margins
+     under `@media print` so short questions can share a page. No forced
+     page-break rules were touched (per the original diagnosis that this was
+     pure spacing, not pagination logic).
+   - Progress panel: `usesProgressPanel` in `download-quiz-modal.js` now
+     includes `"pdf"` — `exportToPdf`'s existing internal `onProgress(10/40/
+     60/100)` calls are now actually wired through `runWithProgressPanel()`.
+   - **NOT done**: video/audio/YouTube thumbnails in the PDF — item 1's CSS
+     covers the shared interactive-HTML renderer, and since `exportToPdf`
+     reuses `buildQuizHtml()`, the YouTube `<img>` thumbnail should now
+     survive into the PDF for free, but this has NOT been visually verified
+     with a real print/save-as-PDF pass yet. Flag for the verification pass
+     (item 5).
+
+## What's left to do, in priority order (revised)
+
+1. **Verify item 1 + item 3 visually** — actually open a quiz with audio,
+   direct-video, and YouTube questions, and run PDF export (both light and
+   dark background choices) to confirm: thumbnail shows up on the printed
+   page, play badge is centered on screen, print-fallback link appears only
+   in the PDF/print view, and light-mode PDF text is readable everywhere
+   (not just the color list already patched in `PDF_PRINT_CSS` — sweep for
+   any other on-screen-only dark-theme color that might have been missed).
+
+2. **Make PPTX/Word/Markdown exporters actually consume `exportOptions`**
+   (the settings panel currently collects `includeAnswers`/
+   `includeUserAnswers`/`includeExplanations`/`answerPlacement` but only
+   the PDF exporter's `pdfBackground` field is wired to an actual behavior
+   change). This means:
+   - `exportToMarkdown`/`buildQuizMarkdown` (`export-to-markdown.js`): branch
+     on `includeAnswers`/`includeExplanations`/`answerPlacement` instead of
+     its current fixed behavior (check what it does today before assuming).
+   - `exportToPptx` (`export-to-pptx.js`): same, plus this is where original
+     plan item 4's remaining PPTX bugs still live untouched (multi-correct
+     support, contrast sweep, empty slides, markdown-detection/overflow,
+     two-column layout, video/audio placeholders, progress granularity —
+     none of these were touched this session, they're still open).
+   - `exportToWord` — per Ground Rules, DO NOT TOUCH unless the user asks
+     directly in-session.
+
+3. **PPTX export fixes** (`export-to-pptx.js`) — untouched this session,
+   still fully open. See the original numbered list above (multi-correct,
+   contrast, empty slides, overflow/markdown-detection, two-column layout,
+   media placeholders, progress granularity).
+
+4. **Verification pass across all three entry points** (`index.html`,
+   `create-quiz.html`, `result.html`) — also untouched this session. Note
+   the settings panel specifically needs checking on `result.html`, since
+   that's the only entry point where `hasUserAnswers` is true and the
+   "include user's answers" toggle actually renders.
+
+## Ground rules (unchanged, repeated for emphasis)
+- Still do NOT touch `export-to-word.js`.
+- Re-run a dependency audit if touching `export-to-quiz.js`'s serialized
+  function block again.
+- Windows/`file:///` sanity-check still applies to any new code.

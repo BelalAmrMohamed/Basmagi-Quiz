@@ -83,7 +83,6 @@ function generateTree() {
 
   // Open code block for the tree
   outputStream.write("```text\n");
-
   outputStream.write(`${path.basename(rootDir)}/\n`);
 
   // Statistics
@@ -96,7 +95,6 @@ function generateTree() {
     const ext = path.extname(filePath);
     const name = path.basename(filePath);
 
-    // Skip binary extensions and lockfiles
     if (BINARY_EXTENSIONS.has(ext)) return 0;
     if (LOCKFILES.has(name)) return 0;
 
@@ -122,11 +120,10 @@ function generateTree() {
       else files.push(item);
     });
 
-    // Sort each group alphabetically
     files.sort();
     dirs.sort();
 
-    // Order: at root, files first; elsewhere, directories first
+    // Root: files first; everywhere else: directories first
     let sortedItems;
     if (currentPath === rootDir) {
       sortedItems = [...files, ...dirs];
@@ -141,26 +138,30 @@ function generateTree() {
       const fullPath = path.join(currentPath, item);
       const isDir = fs.statSync(fullPath).isDirectory();
 
-      // Write the item line
       outputStream.write(`${prefix}${connector}${item}${isDir ? "/" : ""}\n`);
 
       if (isDir) {
-        // Recurse into directory
         const newPrefix = prefix + (isLast ? "    " : "│   ");
         walkDir(fullPath, newPrefix);
 
-        // Add a blank line after this directory's subtree if there are more siblings
+        // Insert a blank line after this directory's subtree if there are more siblings
         if (!isLast) {
           if (prefix === "") {
-            // Root level – just an empty line
+            // Root level: just an empty line
             outputStream.write("\n");
           } else {
-            // Deeper level – preserve the vertical pipe chain
-            outputStream.write(prefix + "│\n");
+            // Preserve the vertical pipe chain.
+            // If the prefix already contains a pipe, use it as-is.
+            // Otherwise, add a pipe to maintain the visual structure.
+            if (prefix.includes("│")) {
+              outputStream.write(prefix + "\n");
+            } else {
+              outputStream.write(prefix + "│\n");
+            }
           }
         }
       } else {
-        // Process file for statistics
+        // File – gather stats
         stats.totalFiles++;
         const ext = path.extname(item) || "(no extension)";
         if (!stats.extensions[ext]) {
@@ -181,7 +182,6 @@ function generateTree() {
   // ----- Write summary -----
   outputStream.write("## Codebase Summary\n\n");
 
-  // Separate code vs binary extensions
   const codeExtensions = {};
   const binaryExtensions = {};
   let codeTotalFiles = 0;
@@ -189,7 +189,6 @@ function generateTree() {
   let totalLoc = 0;
 
   for (const [ext, data] of Object.entries(stats.extensions)) {
-    // Determine if binary
     if (BINARY_EXTENSIONS.has(ext)) {
       binaryExtensions[ext] = data;
       binaryTotalFiles += data.count;
@@ -200,11 +199,8 @@ function generateTree() {
     }
   }
 
-  // Sort code extensions by count descending
-  const sortedCode = Object.entries(codeExtensions).sort((a, b) => b[1].count - a[1].count);
-  const sortedBinary = Object.entries(binaryExtensions).sort((a, b) => b[1].count - a[1].count);
-
   // Code table
+  const sortedCode = Object.entries(codeExtensions).sort((a, b) => b[1].count - a[1].count);
   if (sortedCode.length > 0) {
     outputStream.write("### Code Files\n\n");
     outputStream.write("| Extension | Files | Lines of Code |\n");
@@ -216,6 +212,7 @@ function generateTree() {
   }
 
   // Binary table
+  const sortedBinary = Object.entries(binaryExtensions).sort((a, b) => b[1].count - a[1].count);
   if (sortedBinary.length > 0) {
     outputStream.write("### Binary / Media Files\n\n");
     outputStream.write("| Extension | Files |\n");
@@ -226,7 +223,6 @@ function generateTree() {
     outputStream.write(`| **Total** | **${binaryTotalFiles}** |\n\n`);
   }
 
-  // Grand total
   outputStream.write(`**Grand Total Files:** ${stats.totalFiles}  \n`);
   outputStream.write(`**Total Lines of Code (code files only):** ${totalLoc}\n`);
 
