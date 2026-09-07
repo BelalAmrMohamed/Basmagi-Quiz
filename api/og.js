@@ -117,20 +117,26 @@ const EDU_TYPE_AR = {
 
 /**
  * Builds course-info rows from the raw Supabase course fields, matching
- * buildCourseInfoRows()'s label set/ordering/omission rules exactly:
- * نوع التعليم (always), الكلية (only if set and not "All"), العام and
- * الترم (each only if actually set).
+ * buildCourseInfoRows()'s label set/ordering/omission rules, EXCEPT: for
+ * "Featured" (مادة مميزة) courses, the نوع التعليم row is omitted entirely
+ * rather than shown as "نوع التعليم: مادة مميزة" — "Featured" isn't a real
+ * education-level distinction, so labeling it as one on a shareable image
+ * reads as a mistake rather than useful info. (The in-app modal still
+ * shows it, highlighted, since it's operating in a denser table context —
+ * this is a thumbnail-specific simplification per user request, not a
+ * client-side change.)
  *
  * @param {{educationType:string|null, college:string|null, year:string|null, term:string|null}} course
  * @returns {{label:string, val:string}[]}
  */
 function buildCourseInfoRowsFromRow(course) {
-  const rows = [
-    {
+  const rows = [];
+  if (course.educationType !== "Featured") {
+    rows.push({
       label: "نوع التعليم",
       val: EDU_TYPE_AR[course.educationType] || course.educationType || "-",
-    },
-  ];
+    });
+  }
   if (course.college && course.college !== "All") {
     rows.push({ label: "الكلية", val: course.college });
   }
@@ -852,8 +858,8 @@ function formatQuestionTypes(qt) {
 // Reuses this file's font loading + Arabic bidi helpers.
 // =============================================================================
 
-const COURSE_TITLE_MAX_CHARS_ARABIC = 26;
-const COURSE_TITLE_MAX_CHARS_LATIN = 42;
+const COURSE_TITLE_MAX_CHARS_ARABIC = 22;
+const COURSE_TITLE_MAX_CHARS_LATIN = 36;
 
 // Icon card geometry — deliberately matching the quiz thumbnail's own bulb
 // card bounds (x 0–408, y 25–490 on the 1200×630 canvas — see the header
@@ -861,9 +867,11 @@ const COURSE_TITLE_MAX_CHARS_LATIN = 42;
 // visual rhythm as quiz images despite having no shared background asset.
 const ICON_CARD = { left: 24, top: 25, width: 380, height: 465, rotationDeg: -6 };
 
-// Right-hand content column — starts just past the icon card, same right
-// margin as the quiz thumbnail's TEXT_COLUMN.
-const COURSE_CONTENT = { left: 470, right: 1140, top: 60 };
+// Right-hand content column — starts just past the icon card, runs the
+// full remaining height of the canvas (not just a short top band) so the
+// larger text sizes below have room to breathe and the link line can sit
+// pinned to the bottom instead of immediately under the info rows.
+const COURSE_CONTENT = { left: 470, right: 1152, top: 56, bottom: 630 - 40 };
 
 async function renderCourseImage(courseId, folderPath) {
   const [fontData, meta] = await Promise.all([
@@ -888,22 +896,26 @@ async function renderCourseImage(courseId, folderPath) {
     isArabic ? COURSE_TITLE_MAX_CHARS_ARABIC : COURSE_TITLE_MAX_CHARS_LATIN,
   );
 
+  // Sized up from the first pass — the old tiers (56/48/40) left a lot of
+  // the card's height unused. These top out at 72px (course/folder titles
+  // are short, 1-3 words, so the common case hits the largest tier).
   const titleFontSize = isArabic
-    ? title.length > 20
-      ? "40px"
-      : title.length > 15
-        ? "48px"
-        : "56px"
-    : title.length > 30
-      ? "36px"
-      : title.length > 24
-        ? "44px"
-        : "52px";
+    ? title.length > 18
+      ? "48px"
+      : title.length > 13
+        ? "58px"
+        : "72px"
+    : title.length > 26
+      ? "44px"
+      : title.length > 20
+        ? "56px"
+        : "68px";
 
   // Course-info rows — always the top-level COURSE's own fields (see
   // fetchCourseMeta's comment: a folder has no education_type/college/
   // year/term of its own), matching buildCourseInfoRows()'s label set,
-  // order, and "hide empty" rules exactly.
+  // order, and "hide empty" rules (except the Featured special-case, see
+  // buildCourseInfoRowsFromRow's own doc comment).
   const infoRows = meta ? buildCourseInfoRowsFromRow(meta) : [];
 
   // For a folder image, the course name gets its own small line above the
@@ -924,7 +936,8 @@ async function renderCourseImage(courseId, folderPath) {
   // display purposes only — the real canonical URL (with proper
   // encodeURIComponent + toSlug on each segment) is what's actually set as
   // og:url by render-course.js; this line just needs to look right, not be
-  // clickable.
+  // clickable. Rendered at the bottom of the card (see layout below), not
+  // immediately under the info rows, so it always reads as a footer.
   const slugify = (s) => (s || "").trim().replace(/-/g, "--").replace(/\s+/g, "-");
   const courseSlug = meta ? slugify(meta.courseName || meta.name) : "";
   const linkPath =
@@ -933,6 +946,52 @@ async function renderCourseImage(courseId, folderPath) {
       : `basmagi-quiz.vercel.app/course/${courseSlug}`;
 
   const contentWidth = COURSE_CONTENT.right - COURSE_CONTENT.left;
+
+  /**
+   * Builds one course-info row as TWO separate flex children (label,
+   * value) instead of one pre-joined "label: value" string run through
+   * renderBidiText(). renderBidiText() mirrors word order by splitting on
+   * spaces — fine for a sentence, but "نوع التعليم: جامعي" has its OWN
+   * internal word order (نوع التعليم is a two-word label) that must stay
+   * intact; running it through the same word-reversal that page-level
+   * sentences use tears the label apart and misplaces the colon (see bug
+   * report — rows rendered as "جامعي التعليم: نوع"). A label/value pair is
+   * structurally a two-item list, not a sentence, so it's mirrored the
+   * same safe way flexbox row-order is mirrored elsewhere in this file
+   * (e.g. the old stats row): as two sibling elements under
+   * `flexDirection: row-reverse` for Arabic, each showing its own text
+   * verbatim with no word-order manipulation at all.
+   */
+  function buildInfoRowChildren(row) {
+    return {
+      type: "div",
+      props: {
+        style: {
+          display: "flex",
+          flexDirection: isArabic ? "row-reverse" : "row",
+          alignItems: "baseline",
+          gap: "8px",
+          direction: "ltr",
+        },
+        children: [
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", color: "#6b7280", fontWeight: "400" },
+              children: `${row.label}:`,
+            },
+          },
+          {
+            type: "div",
+            props: {
+              style: { display: "flex", color: "#111827", fontWeight: "700" },
+              children: String(row.val),
+            },
+          },
+        ],
+      },
+    };
+  }
 
   const element = {
     type: "div",
@@ -1007,142 +1066,176 @@ async function renderCourseImage(courseId, folderPath) {
         },
 
         // ── Content column ────────────────────────────────────────────────
+        // justifyContent: space-between + absolute top/bottom pinning
+        // spreads the header block and the link footer across the full
+        // available height, instead of everything bunching up near the
+        // top and leaving a large empty band below it (the "unused white
+        // space" issue).
         {
           type: "div",
           props: {
             style: {
               display: "flex",
               flexDirection: "column",
+              justifyContent: "space-between",
               position: "absolute",
               left: `${COURSE_CONTENT.left}px`,
               top: `${COURSE_CONTENT.top}px`,
+              bottom: `${630 - COURSE_CONTENT.bottom}px`,
               width: `${contentWidth}px`,
               direction: "ltr",
               alignItems: isArabic ? "flex-end" : "flex-start",
               textAlign: isArabic ? "right" : "left",
             },
             children: [
-              // Kind label — COURSE / FOLDER
+              // ── Header block (kind label, parent line, title, info
+              // rows, counts pill) — grouped together so the space-between
+              // above only inserts one gap: between this block and the
+              // link footer. ──────────────────────────────────────────────
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
-                    fontSize: "22px",
-                    color: BRAND_BLUE,
-                    fontWeight: "700",
-                    letterSpacing: "1px",
-                    direction: "ltr",
-                  },
-                  children: isFolder
-                    ? isArabic ? "مجلد" : "FOLDER"
-                    : isArabic ? "مقرر دراسي" : "COURSE",
-                },
-              },
-
-              // Parent-course line — folder images only.
-              parentCourseLine
-                ? {
-                  type: "div",
-                  props: {
-                    style: {
-                      display: "flex",
-                      marginTop: "10px",
-                      fontSize: "22px",
-                      color: "#6b7280",
-                      fontWeight: "400",
-                      direction: "ltr",
-                    },
-                    children: renderBidiText(
-                      `${isArabic ? "في" : "in"} ${parentCourseLine}`,
-                      isArabic,
-                    ),
-                  },
-                }
-                : null,
-
-              // Title — the item's own name.
-              {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    marginTop: "14px",
-                    fontSize: titleFontSize,
-                    fontWeight: "700",
-                    color: "#111827",
-                    lineHeight: "1.25",
-                    direction: "ltr",
+                    flexDirection: "column",
+                    alignItems: isArabic ? "flex-end" : "flex-start",
                     width: "100%",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
                   },
-                  children: renderBidiText(title, isArabic),
-                },
-              },
-
-              // Course-info rows — نوع التعليم / الكلية / العام / الترم,
-              // same label set + ordering as the in-app "معلومات المادة"
-              // modal.
-              infoRows.length > 0
-                ? {
-                  type: "div",
-                  props: {
-                    style: {
-                      display: "flex",
-                      flexDirection: "column",
-                      marginTop: "22px",
-                      gap: "8px",
-                    },
-                    children: infoRows.map((row) => ({
+                  children: [
+                    // Kind label — COURSE / FOLDER
+                    {
                       type: "div",
                       props: {
                         style: {
                           display: "flex",
-                          fontSize: "20px",
-                          color: "#4b5563",
-                          fontWeight: "400",
+                          fontSize: "24px",
+                          color: BRAND_BLUE,
+                          fontWeight: "700",
+                          letterSpacing: "1px",
                           direction: "ltr",
                         },
-                        children: renderBidiText(`${row.label}: ${row.val}`, isArabic),
+                        children: isFolder
+                          ? isArabic ? "مجلد" : "FOLDER"
+                          : isArabic ? "مقرر دراسي" : "COURSE",
                       },
-                    })),
-                  },
-                }
-                : null,
-
-              // Counts pill — reuses the quiz thumbnail badge styling for
-              // visual consistency between quiz and course/folder previews.
-              countsLabel
-                ? {
-                  type: "div",
-                  props: {
-                    style: {
-                      display: "flex",
-                      marginTop: "26px",
-                      alignItems: "center",
-                      background: "rgba(0,136,204,0.12)",
-                      border: "1px solid rgba(0,136,204,0.3)",
-                      borderRadius: "10px",
-                      padding: "8px 22px",
-                      fontSize: "20px",
-                      color: BRAND_BLUE,
-                      fontWeight: "700",
-                      direction: "ltr",
                     },
-                    children: renderBidiText(countsLabel, isArabic),
-                  },
-                }
-                : null,
 
-              // Link line — small, muted, always LTR.
+                    // Parent-course line — folder images only.
+                    parentCourseLine
+                      ? {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            flexDirection: isArabic ? "row-reverse" : "row",
+                            marginTop: "12px",
+                            fontSize: "26px",
+                            color: "#6b7280",
+                            fontWeight: "400",
+                            gap: "8px",
+                            direction: "ltr",
+                          },
+                          children: [
+                            {
+                              type: "div",
+                              props: { style: { display: "flex" }, children: isArabic ? "في" : "in" },
+                            },
+                            {
+                              type: "div",
+                              props: {
+                                style: { display: "flex", fontWeight: "700", color: "#374151" },
+                                children: parentCourseLine,
+                              },
+                            },
+                          ],
+                        },
+                      }
+                      : null,
+
+                    // Title — the item's own name.
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          display: "flex",
+                          marginTop: "18px",
+                          fontSize: titleFontSize,
+                          fontWeight: "700",
+                          color: "#111827",
+                          lineHeight: "1.2",
+                          direction: "ltr",
+                          width: "100%",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                        },
+                        children: renderBidiText(title, isArabic),
+                      },
+                    },
+
+                    // Course-info rows — نوع التعليم / الكلية / العام /
+                    // الترم, same label set + ordering as the in-app
+                    // "معلومات المادة" modal (minus نوع التعليم for
+                    // Featured courses — see buildCourseInfoRowsFromRow).
+                    // Each row is two separate flex children, not a
+                    // word-reversed joined string — see
+                    // buildInfoRowChildren's doc comment for why.
+                    infoRows.length > 0
+                      ? {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: isArabic ? "flex-end" : "flex-start",
+                            marginTop: "28px",
+                            gap: "12px",
+                            fontSize: "26px",
+                          },
+                          children: infoRows.map(buildInfoRowChildren),
+                        },
+                      }
+                      : null,
+
+                    // Counts pill — reuses the quiz thumbnail badge
+                    // styling for visual consistency between quiz and
+                    // course/folder previews. Bumped up in size to match
+                    // the larger text used everywhere else in this
+                    // layout.
+                    countsLabel
+                      ? {
+                        type: "div",
+                        props: {
+                          style: {
+                            display: "flex",
+                            marginTop: "32px",
+                            alignItems: "center",
+                            background: "rgba(0,136,204,0.12)",
+                            border: "1px solid rgba(0,136,204,0.3)",
+                            borderRadius: "12px",
+                            padding: "12px 26px",
+                            fontSize: "26px",
+                            color: BRAND_BLUE,
+                            fontWeight: "700",
+                            direction: "ltr",
+                          },
+                          children: renderBidiText(countsLabel, isArabic),
+                        },
+                      }
+                      : null,
+                  ].filter(Boolean),
+                },
+              },
+
+              // ── Link footer — pinned to the bottom of the card by the
+              // space-between on the parent column, per request (was
+              // previously right under the info rows, floating in the
+              // middle of a lot of empty space below it). ────────────────
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
-                    marginTop: "20px",
-                    fontSize: "16px",
+                    fontSize: "20px",
                     color: "#9ca3af",
                     fontWeight: "400",
                     direction: "ltr",
@@ -1150,7 +1243,7 @@ async function renderCourseImage(courseId, folderPath) {
                   children: linkPath,
                 },
               },
-            ].filter(Boolean),
+            ],
           },
         },
       ],
