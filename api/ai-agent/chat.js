@@ -73,7 +73,7 @@
 import { applyCors, requireAdmin, handleAuthError } from "../_middleware.js";
 import { getNextKey, hasPlatformKeys } from "./_keyPool.js";
 import { callProvider, isSupportedProvider } from "./_providerClients.js";
-import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL } from "./_tools.js";
+import { CREATE_QUIZ_TOOL, EDIT_QUIZ_TOOL, EDIT_CURRENT_QUIZ_TOOL, DELETE_QUIZ_TOOL, RESET_QUIZ_PAGE_TOOL, CREATE_FOLDER_TOOL, CREATE_COURSE_TOOL, MOVE_ITEM_TOOL, FETCH_ATTACHED_QUIZ_TOOL, SEARCH_LIBRARY_TOOL, PARSE_ITEM_INFO_TOOL, GET_USER_ACTIVITY_TOOL } from "./_tools.js";
 import jwt from "jsonwebtoken";
 import mammoth from "mammoth";
 
@@ -260,6 +260,14 @@ const TOOLS_BY_NAME = {
   create_course: CREATE_COURSE_TOOL,
   move_item: MOVE_ITEM_TOOL,
   fetch_attached_quiz: FETCH_ATTACHED_QUIZ_TOOL,
+  // Read-only discovery tools — schemas only. Always resolved client-side
+  // (see _tools.js's own comment on these three) — this map exists only so
+  // a page can opt in by name; chat.js itself never branches on these
+  // names for server-side execution the way it might for a future
+  // server-resolved tool.
+  search_library: SEARCH_LIBRARY_TOOL,
+  parse_item_info: PARSE_ITEM_INFO_TOOL,
+  get_user_activity: GET_USER_ACTIVITY_TOOL,
 };
 
 // Historical default — the home page's original three tools — kept so

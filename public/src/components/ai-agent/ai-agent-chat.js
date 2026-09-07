@@ -18,7 +18,7 @@ import { saveConversation, deriveConversationTitle } from "./ai-agent-history-id
 // third distinct dropdown-menu visual style in this codebase.
 import { openExamDropdownMenu, closeAllExamDropdownMenus } from "../../features/home/exam-dropdown-menu.js";
 import { positionExamDropdownMenu } from "../../features/home/floating-position.js";
-import { listRecentUserItems, resolveUserItemById } from "./ai-agent-item-lookup.js";
+import { createMentionMenu } from "./ai-agent-mention-menu.js";
 
 // Safety cap on how many tool-driven rounds resendLastUserTurn() will
 // chain in a single agent turn (see its `agentDepth` param) before giving
@@ -690,38 +690,35 @@ export function createChatPanel(options = {}) {
         onClick: () => fileInput.click(),
       },
       {
-        // PHASE 4: surfaces the same `/`/`@` trigger-menu attachment
-        // picker from inside "more" too — so a user who never notices
-        // the `/`/`@` shortcut still has a discoverable way to attach
-        // one of their own quizzes/folders/courses (see this file's own
-        // header comment for the full trigger-menu rationale). Opens the
-        // exact same openTriggerMenu()/closeTriggerMenu() pair the
-        // textarea trigger uses, just anchored to the textarea's current
-        // caret position (end of the field, since there's no "typed `/`"
-        // position to anchor to from a menu click) instead of a
-        // freshly-typed trigger character.
+        // Surfaces the `@` mention menu from inside "more" too — so a
+        // user who never notices the `@` shortcut still has a
+        // discoverable way to attach one of their own quizzes/folders or
+        // platform content (see ai-agent-mention-menu.js's own header
+        // comment for the full rationale). Opens the exact same
+        // mentionMenu the textarea's own `@` keystroke uses, just anchored
+        // to the textarea's current caret position (end of the field,
+        // since there's no "typed `@`" position to anchor to from a menu
+        // click) instead of a freshly-typed trigger character.
         icon: ATTACHMENT_QUIZ_ICON_SVG,
         label: "إرفاق امتحان أو مجلد",
         onClick: () => {
           textarea.focus();
-          // Inserts a literal trigger character at the caret rather than
-          // opening the menu "bare" — keeps one single invariant true
-          // everywhere else in this feature (openTriggerMenu/the `input`
-          // handler's re-render branch both assume
-          // textarea.value[triggerMenuStart] IS the `/`/`@` that opened
-          // the menu) instead of adding a second no-real-character code
-          // path that every other function here would also need to
-          // special-case.
+          // Inserts a literal `@` at the caret rather than opening the
+          // menu "bare" — keeps one single invariant true everywhere else
+          // in this feature (mentionMenu.open()'s own convention assumes
+          // it's given the index of an actual `@` character that exists
+          // in textarea.value) instead of adding a second no-real-
+          // character code path the module would also need to special-case.
           const caret = textarea.selectionStart;
           const before = textarea.value.slice(0, caret);
           const after = textarea.value.slice(caret);
           const needsSpace = before.length > 0 && !/\s$/.test(before);
-          const insert = (needsSpace ? " " : "") + "/";
+          const insert = (needsSpace ? " " : "") + "@";
           textarea.value = before + insert + after;
           const newCaret = before.length + insert.length;
           textarea.setSelectionRange(newCaret, newCaret);
           updateSendBtnVisibility();
-          openTriggerMenu(newCaret - 1);
+          mentionMenu.open(newCaret - 1);
         },
       },
     ];
@@ -2370,178 +2367,72 @@ export function createChatPanel(options = {}) {
   });
   updateSendBtnVisibility();
 
-  // ── PHASE 4 (reduced scope): `/`/`@` attachment trigger menu ──
-  // Typing `/` or `@` as the FIRST character of a "word" (start of
-  // input, or right after whitespace — never mid-word, so e.g. an email
-  // address or a path fragment typed elsewhere in the message doesn't
-  // pop this open) opens a small anchored list of the user's own
-  // recent quizzes/folders/courses (see ai-agent-item-lookup.js's own
-  // header comment on why this pulls from a module with no dependency
-  // on ai-agent.js). Selecting one calls the same
-  // panel.addPendingAttachment used by Phase 2's card/tooltip entry
-  // points and Phase 3c's file-upload path, so all three attachment
-  // sources render as the same chip afterward.
-  //
-  // No fuzzy search, no keyboard-arrow navigation, no @-then-server-
-  // search for platform courses — per the plan's own explicit
-  // "reduced scope" instruction for this phase. Plain substring filter
-  // (see listRecentUserItems) against the text typed after the trigger
-  // character, mouse/touch selection only.
-  let triggerMenuEl = null;
-  let triggerMenuStart = -1; // index of the `/`/`@` character in textarea.value
-
-  function closeTriggerMenu() {
-    if (!triggerMenuEl) return;
-    triggerMenuEl.remove();
-    triggerMenuEl = null;
-    triggerMenuStart = -1;
-    window.removeEventListener("resize", repositionTriggerMenu);
-    document.removeEventListener("click", onTriggerMenuOutsideClick);
-  }
-
-  function repositionTriggerMenu() {
-    if (triggerMenuEl) positionExamDropdownMenu(triggerMenuEl, textarea);
-  }
-
-  function onTriggerMenuOutsideClick(e) {
-    if (!triggerMenuEl) return;
-    if (triggerMenuEl.contains(e.target) || e.target === textarea) return;
-    closeTriggerMenu();
-  }
-
-  function attachmentIconFor(kind) {
-    if (kind === "course") return ATTACHMENT_COURSE_ICON_SVG;
-    if (kind === "folder") return ATTACHMENT_FOLDER_ICON_SVG;
-    return ATTACHMENT_QUIZ_ICON_SVG;
-  }
-
-  /** (Re)renders the trigger menu's item list for the current query text
-   * typed after the `/`/`@` character — called on every keystroke while
-   * the menu is open, not just once at open time, so the list narrows
-   * live as the user keeps typing (unlike openExamDropdownMenu's
-   * buildContent, which only runs once — see this file's own note on why
-   * this trigger menu manages its own lifecycle instead of reusing that
-   * helper directly). */
-  function renderTriggerMenuItems(query) {
-    if (!triggerMenuEl) return;
-    triggerMenuEl.innerHTML = "";
-
-    if (pendingAttachments.length >= MAX_PENDING_ATTACHMENTS) {
-      const full = document.createElement("div");
-      full.className = "ai-agent-trigger-menu-empty";
-      full.textContent = "تم الوصول للحد الأقصى من المرفقات.";
-      triggerMenuEl.appendChild(full);
-      return;
-    }
-
-    const items = listRecentUserItems(query, 8);
-    if (items.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "ai-agent-trigger-menu-empty";
-      empty.textContent = query
-        ? "لا توجد نتائج مطابقة."
-        : "لا توجد امتحانات أو مجلدات محفوظة بعد.";
-      triggerMenuEl.appendChild(empty);
-      return;
-    }
-
-    items.forEach(({ kind, id, title }) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "exam-action-btn ai-agent-trigger-menu-item";
-      btn.innerHTML = `${attachmentIconFor(kind)}<span>${title}</span>`;
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const attachment = resolveUserItemById(id);
-        if (attachment) {
-          pendingAttachments.push(attachment);
-          renderAttachmentChips();
-          updateSendBtnVisibility();
-        }
-        // Remove the `/`/`@`+query text the menu was triggered from,
-        // same as the platform's own @-mention-style inputs elsewhere
-        // consume their trigger text on selection, so it doesn't linger
-        // in the message alongside the now-attached chip.
-        const before = textarea.value.slice(0, triggerMenuStart);
-        const after = textarea.value.slice(textarea.selectionStart);
-        textarea.value = before + after;
-        textarea.setSelectionRange(before.length, before.length);
-        textarea.focus();
-        closeTriggerMenu();
-      });
-      triggerMenuEl.appendChild(btn);
-    });
-  }
-
-  function openTriggerMenu(startIndex) {
-    closeTriggerMenu();
-    triggerMenuStart = startIndex;
-    triggerMenuEl = document.createElement("div");
-    triggerMenuEl.className = "exam-dropdown-menu ai-agent-trigger-menu";
-    triggerMenuEl.setAttribute("role", "menu");
-    triggerMenuEl.style.visibility = "hidden";
-    document.body.appendChild(triggerMenuEl);
-    renderTriggerMenuItems("");
-    positionExamDropdownMenu(triggerMenuEl, textarea);
-    triggerMenuEl.style.visibility = "visible";
-    window.addEventListener("resize", repositionTriggerMenu);
-    // Deferred one tick — otherwise the very keystroke that opened the
-    // menu (`/` or `@`, still bubbling) would immediately trigger this
-    // same "outside click" listener and close it right back (a click and
-    // a keydown are different event types, so this only matters when the
-    // trigger menu is opened via a path that also dispatches a click —
-    // defensive, since keydown alone never does, but consistent with how
-    // openExamDropdownMenu itself avoids this same race).
-    setTimeout(() => document.addEventListener("click", onTriggerMenuOutsideClick), 0);
-  }
+  // ── `@` mention menu ──────────────────────────────────────────────────
+  // Replaces the old shared `/`+`@` trigger menu (both characters used to
+  // open the same local-only, single-select list). `/` is dropped
+  // entirely — nothing else in this app used it, and keeping it as a
+  // second, narrower trigger for just the Quick-Access items would only
+  // move the "two triggers do almost the same thing" redundancy down a
+  // level instead of removing it (see ai-agent-mention-menu.js's own
+  // header comment for the full reasoning). `@` alone now opens a richer
+  // menu — Quick-Access commands, the user's own library, AND the
+  // platform's main-page content — that supports picking multiple items
+  // without closing. All the actual menu logic/state lives in
+  // ai-agent-mention-menu.js; this wiring only supplies the callbacks it
+  // needs into this panel's own pendingAttachments/render functions.
+  const mentionMenu = createMentionMenu({
+    textarea,
+    getPendingCount: () => pendingAttachments.length,
+    maxPending: MAX_PENDING_ATTACHMENTS,
+    isAttached: (id) => pendingAttachments.some((att) => att.id === id),
+    onPick: (attachment) => {
+      pendingAttachments.push(attachment);
+      renderAttachmentChips();
+      updateSendBtnVisibility();
+    },
+    onConsumeTriggerText: (startIndex, endIndexExclusive) => {
+      const before = textarea.value.slice(0, startIndex);
+      const after = textarea.value.slice(endIndexExclusive);
+      textarea.value = before + after;
+      textarea.setSelectionRange(before.length, before.length);
+      textarea.focus();
+    },
+    icons: {
+      quiz: ATTACHMENT_QUIZ_ICON_SVG,
+      course: ATTACHMENT_COURSE_ICON_SVG,
+      folder: ATTACHMENT_FOLDER_ICON_SVG,
+    },
+    positionMenu: positionExamDropdownMenu,
+  });
 
   textarea.addEventListener("keydown", (e) => {
-    // Escape closes the trigger menu first, same priority order as every
-    // other dismissible layer in this app (see openExamDropdownMenu's own
-    // onKeydown) — without this, Escape would fall through to whatever
-    // else listens for it (e.g. closing the whole AI Agent modal) while
-    // the user almost certainly just meant to back out of the menu.
-    if (e.key === "Escape" && triggerMenuEl) {
+    // Escape (and, when the menu is open, arrow keys / Enter for keyboard
+    // selection) are handled by the menu first — same priority order as
+    // every other dismissible layer in this app (see openExamDropdownMenu's
+    // own onKeydown): without this, Escape would fall through to whatever
+    // else listens for it (e.g. closing the whole AI Agent modal) while the
+    // user almost certainly just meant to back out of the menu.
+    if (mentionMenu.handleKeydown(e)) {
       e.stopPropagation();
-      closeTriggerMenu();
+      e.preventDefault();
     }
   });
 
   textarea.addEventListener("input", () => {
+    if (mentionMenu.handleInput()) return;
+
+    // Menu isn't open (or just closed itself above) — check whether the
+    // character just typed at the caret is `@` starting a new "word"
+    // (start of the field, or preceded by whitespace — never mid-word, so
+    // e.g. an email address typed elsewhere in the message doesn't pop
+    // this open).
     const caret = textarea.selectionStart;
     const valueBeforeCaret = textarea.value.slice(0, caret);
-
-    if (triggerMenuEl) {
-      // Menu already open — recompute the query text between the
-      // trigger character and the caret on every keystroke. Closes the
-      // menu if the trigger character itself got deleted, the caret
-      // moved before it, or a space was typed (ending the "word" the
-      // trigger started — matches how @-mentions behave elsewhere).
-      if (
-        caret <= triggerMenuStart ||
-        !"/@".includes(textarea.value[triggerMenuStart] || "")
-      ) {
-        closeTriggerMenu();
-      } else {
-        const query = valueBeforeCaret.slice(triggerMenuStart + 1);
-        if (/\s/.test(query)) {
-          closeTriggerMenu();
-        } else {
-          renderTriggerMenuItems(query);
-          repositionTriggerMenu();
-        }
-      }
-      return;
-    }
-
-    // Not open yet — check whether the character just typed at the caret
-    // is a trigger character starting a new "word" (start of the field,
-    // or preceded by whitespace).
     const lastChar = valueBeforeCaret.slice(-1);
-    if (lastChar === "/" || lastChar === "@") {
+    if (lastChar === "@") {
       const charBeforeTrigger = valueBeforeCaret.slice(-2, -1);
       if (charBeforeTrigger === "" || /\s/.test(charBeforeTrigger)) {
-        openTriggerMenu(caret - 1);
+        mentionMenu.open(caret - 1);
       }
     }
   });

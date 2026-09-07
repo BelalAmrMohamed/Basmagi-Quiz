@@ -2326,31 +2326,78 @@ body.sidebar-expanded .ai-agent-fab {
      de-duplication. */
 }
 
-/* ── PHASE 4: `/`/`@` attachment trigger menu ──
+/* ── `@` mention menu (ai-agent-mention-menu.js) ──
    Reuses .exam-dropdown-menu's positioning/chrome (fixed, z-index,
    surface/border/radius/shadow — see index.css) via the shared class on
-   the element itself (openTriggerMenu in ai-agent-chat.js sets
-   className="exam-dropdown-menu ai-agent-trigger-menu"); these rules only
-   add the couple of things specific to THIS menu's own content — a
-   scrollable cap for a longer recent-items list, and the empty-state
-   message style, neither of which exam-dropdown-menu needs for its own
-   short, fixed action lists. */
-.ai-agent-trigger-menu {
-  max-height: 260px;
+   the element itself (createMentionMenu's open() sets
+   className="exam-dropdown-menu ai-agent-mention-menu"); these rules only
+   add what's specific to THIS menu's own content — section headers
+   separating Quick-Access from searched results, a scrollable cap for a
+   longer combined list, the "attached" checkmark state for multi-select,
+   and the empty/loading-state message styles. Replaces the older
+   .ai-agent-trigger-menu rules this menu itself replaced. */
+.ai-agent-mention-menu {
+  max-height: 320px;
   overflow-y: auto;
 }
 
-.ai-agent-trigger-menu-item {
-  overflow: hidden;
+.ai-agent-mention-section-header {
+  padding: 6px 8px 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
-.ai-agent-trigger-menu-item span {
+.ai-agent-mention-row {
+  overflow: hidden;
+  width: 100%;
+  text-align: start;
+}
+
+.ai-agent-mention-row-text {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  flex: 1;
+}
+
+.ai-agent-mention-row-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.ai-agent-mention-row-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.ai-agent-mention-row[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.ai-agent-mention-row.is-attached {
+  background: var(--color-surface-active, rgba(37, 99, 235, 0.08));
+}
+
+.ai-agent-mention-row.is-active {
+  background: var(--color-surface-hover, rgba(37, 99, 235, 0.06));
+}
+
+.ai-agent-mention-row-check {
+  color: var(--color-accent, #2563eb);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ai-agent-mention-loading,
 .ai-agent-trigger-menu-empty {
   padding: 10px 8px;
   font-size: 0.85rem;

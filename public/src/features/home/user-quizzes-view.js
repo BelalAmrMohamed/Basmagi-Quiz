@@ -53,6 +53,8 @@ import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
+import { searchLibrary, resolveLibraryItemById } from "../../components/ai-agent/ai-agent-library-search.js";
+import { listRecentUserItems, resolveUserItemById } from "../../components/ai-agent/ai-agent-item-lookup.js";
 import { renderRootCategories } from "./root-view.js";
 import {
   importJsonQuizFiles,
@@ -353,10 +355,16 @@ function buildFolderTreeContextPrompt(userQuizzes) {
  * to the right handler by tool name. Keeps ai-agent-chat.js generic (it
  * just calls whatever onToolCall it was given) while each page decides
  * which tool names it actually supports.
+ *
+ * async because search_library/parse_item_info/get_user_activity resolve
+ * platform-side results via the client-side Supabase-backed manifest
+ * (ai-agent-library-search.js) — ai-agent-chat.js's call site already
+ * `await`s this handler unconditionally, so the existing synchronous
+ * handlers below are unaffected by this becoming async.
  * @param {{name: string, input: object}} toolCall
- * @returns {string} text shown in the chat as the tool-result bubble
+ * @returns {Promise<string>} text shown in the chat as the tool-result bubble
  */
-function handleQuizToolCall(toolCall) {
+async function handleQuizToolCall(toolCall) {
   switch (toolCall?.name) {
     case "create_quiz":
       return handleCreateQuizToolCall(toolCall);
@@ -370,12 +378,127 @@ function handleQuizToolCall(toolCall) {
       return handleCreateCourseToolCall(toolCall);
     case "move_item":
       return handleMoveItemToolCall(toolCall);
+    case "search_library":
+      return handleSearchLibraryToolCall(toolCall);
+    case "parse_item_info":
+      return handleParseItemInfoToolCall(toolCall);
+    case "get_user_activity":
+      return handleGetUserActivityToolCall(toolCall);
     default: {
       const err = new Error(`Unknown tool call: ${toolCall?.name}`);
       err.userMessage = "أداة غير معروفة.";
       throw err;
     }
   }
+}
+
+/**
+ * Handles `search_library` — see api/ai-agent/_tools.js's own comment on
+ * why this (and parse_item_info/get_user_activity below) are resolved
+ * entirely client-side rather than on the server: half the data
+ * (user_quizzes) only exists in this browser's localStorage, and the
+ * other half (platform courses/quizzes) is already fully
+ * client-resolvable via the manifest with no server round-trip needed.
+ *
+ * Formats a compact, model-readable listing rather than raw JSON —
+ * matches fetch_attached_quiz's own precedent of returning readable text
+ * (see openAIAgentWithAttachment in ai-agent-attach-launcher.js) rather
+ * than a JSON blob the model would have to re-parse conceptually anyway.
+ * @param {{name: string, input: {query: string, scope?: string}}} toolCall
+ * @returns {Promise<string>}
+ */
+async function handleSearchLibraryToolCall(toolCall) {
+  const { query, scope } = toolCall?.input || {};
+  if (!query || !query.trim()) {
+    const err = new Error("search_library called without a query");
+    err.userMessage = "الرجاء تحديد كلمة بحث.";
+    throw err;
+  }
+
+  const { mine, platform } = await searchLibrary(query.trim(), { scope });
+
+  const formatSection = (label, items) => {
+    if (!items.length) return `${label}: لا توجد نتائج.`;
+    const lines = items.map((it) => {
+      const kindLabelAr = { quiz: "امتحان", course: "مادة", folder: "مجلد" }[it.kind] || it.kind;
+      return `  - [${kindLabelAr}] ${it.title} (id: ${it.id})`;
+    });
+    return `${label}:\n${lines.join("\n")}`;
+  };
+
+  const sections = [];
+  if (scope !== "platform") sections.push(formatSection("نتائج من مكتبتك", mine));
+  if (scope !== "mine") sections.push(formatSection("نتائج من الصفحة الرئيسية", platform));
+
+  return `نتائج البحث عن "${query.trim()}":\n\n${sections.join("\n\n")}`;
+}
+
+/**
+ * Handles `parse_item_info` — resolves an id against the user's own
+ * library first (instant, no network), falling back to platform content
+ * (see resolveLibraryItemById's own doc comment). Returns the item's
+ * summary/payload as text, same shape principle as
+ * fetch_attached_quiz's own tool-result formatting.
+ * @param {{name: string, input: {id: string, kind?: string}}} toolCall
+ * @returns {Promise<string>}
+ */
+async function handleParseItemInfoToolCall(toolCall) {
+  const { id, kind } = toolCall?.input || {};
+  if (!id) {
+    const err = new Error("parse_item_info called without an id");
+    err.userMessage = "لم يتم تحديد العنصر المطلوب.";
+    throw err;
+  }
+
+  const item = await resolveLibraryItemById(id, kind);
+  if (!item) {
+    const err = new Error(`parse_item_info: no item with id "${id}" found`);
+    err.userMessage = "تعذر العثور على العنصر المطلوب.";
+    throw err;
+  }
+
+  const kindLabelAr = { quiz: "امتحان", course: "مادة", folder: "مجلد" }[item.kind] || item.kind;
+  const body = item.payload ? JSON.stringify(item.payload) : (item.summary || "(لا تفاصيل إضافية متاحة)");
+  return `[${kindLabelAr}: ${item.title}]\n${body}`;
+}
+
+/**
+ * Handles `get_user_activity`. "last_created" is a straightforward
+ * listRecentUserItems(limit=1) read; "last_taken_or_result" reads the
+ * single `last_quiz_result` localStorage key (see quiz.js's own write
+ * site) — this device tracks only the most recent attempt, not a full
+ * history (quiz_state_{id} is just in-progress state, cleared on
+ * completion, not a log), which GET_USER_ACTIVITY_TOOL's own description
+ * already tells the model up front so it doesn't need to be told again
+ * here as an apology — this handler just answers plainly from what
+ * exists.
+ * @param {{name: string, input: {which: string}}} toolCall
+ * @returns {Promise<string>}
+ */
+async function handleGetUserActivityToolCall(toolCall) {
+  const { which } = toolCall?.input || {};
+
+  if (which === "last_created") {
+    const [latest] = listRecentUserItems("", 1);
+    if (!latest) return "لم ينشئ المستخدم أي امتحان بعد.";
+    const item = resolveUserItemById(latest.id);
+    return `آخر امتحان تم إنشاؤه: ${item?.title || latest.title}${item?.summary ? ` — ${item.summary}` : ""}`;
+  }
+
+  if (which === "last_taken_or_result") {
+    let result = null;
+    try {
+      result = JSON.parse(getFromStorage("last_quiz_result", "null"));
+    } catch {
+      result = null;
+    }
+    if (!result) return "لم يقم المستخدم بحل أي امتحان على هذا الجهاز بعد.";
+    return `آخر امتحان تم حله: ${result.examTitle || "امتحان"} — الدرجة: ${result.score ?? "?"}/${result.total ?? "?"} — عدد الأسئلة: ${result.totalQuestions ?? result.questions?.length ?? 0}`;
+  }
+
+  const err = new Error(`get_user_activity called with unknown which="${which}"`);
+  err.userMessage = "طلب غير معروف.";
+  throw err;
 }
 
 /**
@@ -723,7 +846,7 @@ export function renderUserQuizzesView() {
         contextSummary: getLiveContextSummary,
         contextPrompt: getLiveFolderTreePrompt,
         enableTools: true,
-        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz"],
+        toolNames: ["create_quiz", "edit_quiz", "delete_quiz", "create_folder", "create_course", "move_item", "fetch_attached_quiz", "search_library", "parse_item_info", "get_user_activity"],
         onToolCall: handleQuizToolCall,
       }),
     );

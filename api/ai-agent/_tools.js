@@ -214,3 +214,70 @@ export const FETCH_ATTACHED_QUIZ_TOOL = {
     required: ["quizId"],
   },
 };
+
+// ── Conversational discovery tools (home page) ──────────────────────────
+// All three below are read-only and resolved entirely CLIENT-SIDE (see
+// ai-agent-attach-launcher.js / user-quizzes-view.js's onToolCall dispatch
+// and ai-agent-library-search.js) — never on the server, unlike this
+// file's own comment block up top might otherwise suggest for a "backend
+// tool". Two reasons:
+//   1. Half of what they search/read (user_quizzes) only ever lives in the
+//      browser's localStorage; the server has no access to it and never
+//      should (privacy — that data shouldn't need to transit this
+//      endpoint just to be searched).
+//   2. The other half (platform courses/quizzes) is ALREADY fully
+//      client-resolvable without a server round-trip at all — see
+//      quizManifest.js's own header comment: this project moved manifest
+//      loading off a serverless function specifically because of Vercel
+//      Hobby's 12-function cap, and a public RLS SELECT policy already
+//      permits the exact reads these tools need directly from the client.
+// So these tool schemas exist purely to tell the MODEL what it can ask
+// for; chat.js's TOOLS_BY_NAME map below never executes them — the
+// resulting tool_use always round-trips back to the client's onToolCall,
+// same as create_quiz/edit_quiz/etc. already do.
+export const SEARCH_LIBRARY_TOOL = {
+  name: "search_library",
+  description:
+    "Search both the user's personal quiz library and the platform's main-page content by keyword. Use this when the user asks a conversational question about content that isn't already attached (e.g. \"find some quizzes about data structures\"), instead of asking them to attach something manually. " +
+    "Returns up to a handful of matching quizzes/courses from each source, with id/title/kind. Call parse_item_info afterward with a specific result's id if you need its full contents rather than just its title.",
+  input_schema: {
+    type: "object",
+    properties: {
+      query: { type: "string" },
+      scope: {
+        type: "string",
+        enum: ["mine", "platform", "both"],
+        description: "\"mine\" searches only the user's own library, \"platform\" only the main-page content, \"both\" (default) searches everything.",
+      },
+    },
+    required: ["query"],
+  },
+};
+
+export const PARSE_ITEM_INFO_TOOL = {
+  name: "parse_item_info",
+  description:
+    "Fetch full contents and metadata for one specific quiz, folder, or course by id — from either the user's own library or the platform's main-page content. Use this after search_library (or an @-mention already in the conversation) has told you the id you need, when the user asks something the id/title alone doesn't answer.",
+  input_schema: {
+    type: "object",
+    properties: {
+      id: { type: "string" },
+      kind: { type: "string", enum: ["quiz", "folder", "course"] },
+    },
+    required: ["id"],
+  },
+};
+
+export const GET_USER_ACTIVITY_TOOL = {
+  name: "get_user_activity",
+  description:
+    "Look up the user's own recent activity on this device: their last created quiz, or the quiz they last took (including its score). Use when the user asks conversationally (e.g. \"how did I do on my last quiz?\" or \"what was the last quiz I made?\") instead of attaching it manually via @-mention. " +
+    "Note: \"last taken\" and \"last result\" both come from the same stored record (this device only tracks the single most recent attempt, not a full history) — if the user asks either question, answer from whichever fields are relevant (quiz identity vs. score).",
+  input_schema: {
+    type: "object",
+    properties: {
+      which: { type: "string", enum: ["last_created", "last_taken_or_result"] },
+    },
+    required: ["which"],
+  },
+};
