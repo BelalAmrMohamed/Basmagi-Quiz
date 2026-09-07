@@ -1868,6 +1868,16 @@ export async function buildStandaloneQuizHtml(config, questions) {
             <div class="toggle-slider"></div>
           </div>
         </div>
+
+        <div class="toggle-option" id="showAnswersToggle" role="switch" aria-checked="false" tabindex="0">
+          <div class="toggle-label">
+            <span aria-hidden="true">🔑</span>
+            <span>إظهار كل الإجابات</span>
+          </div>
+          <div class="toggle-switch" id="showAnswersSwitch">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
       </div>
       
       <div class="menu-section">
@@ -1999,6 +2009,7 @@ ${quizInfoModalHtml}
     submitted: false,
     currentQuestion: 0,
     darkMode: false,
+    showAllAnswers: false,
     flaggedQuestions: new Set(),
     quizStartTime: null,
     timerInterval: null,
@@ -2047,6 +2058,59 @@ ${quizInfoModalHtml}
       localStorage.setItem('quizTheme', this.darkMode ? 'dark' : 'light');
       this.applyTheme();
       this.announceToScreenReader(this.darkMode ? 'Dark mode enabled' : 'Light mode enabled');
+    },
+
+    // ── "Show All Answers" — turns this single file into an answer key ──
+    // Purely a display overlay: it marks the correct option(s) on every
+    // question and reveals essay model answers/explanations, but never
+    // touches userAnswers/submitted state, never disables inputs, and
+    // never runs grading — so it works before, during, or after a real
+    // attempt, and toggling it off returns the quiz to exactly the state
+    // the learner was in (their selections/typed essay text untouched).
+    toggleShowAllAnswers() {
+      this.showAllAnswers = !this.showAllAnswers;
+      const toggleSwitch = document.getElementById('showAnswersSwitch');
+      const toggleOption = document.getElementById('showAnswersToggle');
+      toggleSwitch.classList.toggle('active', this.showAllAnswers);
+      toggleOption.setAttribute('aria-checked', String(this.showAllAnswers));
+
+      if (this.showAllAnswers) {
+        this.revealAllAnswers();
+      } else {
+        this.hideAllAnswers();
+      }
+      this.announceToScreenReader(this.showAllAnswers ? 'All answers shown' : 'All answers hidden');
+    },
+
+    revealAllAnswers() {
+      questions.forEach((q, i) => {
+        const card = document.getElementById(\`q\${i}\`);
+        if (!card) return;
+
+        if (isEssayQuestion(q)) {
+          const modelEl = document.getElementById(\`modelAns\${i}\`);
+          if (modelEl) modelEl.classList.add('show', 'answer-key-reveal');
+        } else {
+          const isMultiple = Array.isArray(q.correct);
+          card.querySelectorAll('.option-btn').forEach((btn, k) => {
+            const isCorrectOption = isMultiple ? q.correct.includes(k) : k === q.correct;
+            if (isCorrectOption) btn.classList.add('correct', 'answer-key-reveal');
+          });
+        }
+
+        const exp = document.getElementById(\`exp\${i}\`);
+        if (exp) exp.classList.add('show', 'answer-key-reveal');
+      });
+    },
+
+    hideAllAnswers() {
+      // Only strips what revealAllAnswers() itself added (tagged via the
+      // answer-key-reveal marker class), so a genuinely-submitted
+      // question's real correct/wrong/show state — which uses the same
+      // classes without the marker — is left exactly as it was.
+      document.querySelectorAll('.answer-key-reveal').forEach((el) => {
+        el.classList.remove('answer-key-reveal', 'correct', 'show');
+      });
     },
   
     saveProgress() {
@@ -2188,6 +2252,17 @@ ${quizInfoModalHtml}
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           darkModeToggle.click();
+        }
+      });
+
+      const showAnswersToggle = document.getElementById('showAnswersToggle');
+
+      showAnswersToggle.addEventListener('click', () => this.toggleShowAllAnswers());
+
+      showAnswersToggle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          showAnswersToggle.click();
         }
       });
     },
@@ -2387,6 +2462,9 @@ ${quizInfoModalHtml}
       const html = questions.map((q, i) => this.renderQuestion(q, i)).join("");
       quizBody.innerHTML = html;
       scanDirections(quizBody);
+      // renderQuestion() built fresh nodes with no reveal markers on them —
+      // if the answer key was switched on, re-apply it to the new DOM.
+      if (this.showAllAnswers) this.revealAllAnswers();
     },
   
     renderQuestion(q, i) {

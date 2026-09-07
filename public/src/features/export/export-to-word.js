@@ -35,7 +35,13 @@ async function loadDocx() {
   return docx;
 }
 
-export async function exportToWord(config, questions, userAnswers = []) {
+export async function exportToWord(
+  config,
+  questions,
+  userAnswers = [],
+  onProgress = null,
+  signal = null,
+) {
   try {
     await loadDocx();
 
@@ -505,10 +511,23 @@ export async function exportToWord(config, questions, userAnswers = []) {
     }
 
     // ===========================
-    // RENDER QUESTIONS
+    // RENDER QUESTIONS  — chunked for UI responsiveness + cancellable
     // ===========================
+    // The loop body below is pure synchronous CPU work (building `docx`
+    // Paragraph/Table objects). On a large quiz that blocks the main
+    // thread for a long stretch, freezing scroll/input and triggering
+    // "page unresponsive" warnings. We yield back to the event loop every
+    // WORD_RENDER_CHUNK questions so the browser can paint/handle input,
+    // and check `signal` at each chunk boundary so Cancel takes effect
+    // promptly instead of only after the whole loop finishes.
+    const WORD_RENDER_CHUNK = 4;
+    const totalQuestions = questions.length;
 
     for (const [index, question] of questions.entries()) {
+      if (signal?.aborted) {
+        throw new DOMException("Export cancelled", "AbortError");
+      }
+
       const isEssay = isEssayQuestion(question);
       const userAns = userAnswers[index];
       const questionText = sanitizeText(question.q);
@@ -845,6 +864,19 @@ export async function exportToWord(config, questions, userAnswers = []) {
         }),
       );
       children.push(questionCard);
+
+      // Report progress (0–85% reserved for question rendering; the
+      // remaining 15% covers CTA page + Packer.toBlob(), both below).
+      const isChunkEnd = (index + 1) % WORD_RENDER_CHUNK === 0;
+      const isLast = index === totalQuestions - 1;
+      if (isChunkEnd || isLast) {
+        if (typeof onProgress === "function") {
+          onProgress(Math.round(((index + 1) / totalQuestions) * 85));
+        }
+        // Yield to the browser event loop so it can paint and process
+        // input/cancel-click events before we resume CPU work.
+        await new Promise((r) => setTimeout(r, 0));
+      }
     }
 
     // ===========================
@@ -1036,6 +1068,11 @@ export async function exportToWord(config, questions, userAnswers = []) {
     // SAVE DOCUMENT
     // ===========================
 
+    if (signal?.aborted) {
+      throw new DOMException("Export cancelled", "AbortError");
+    }
+    if (typeof onProgress === "function") onProgress(90);
+
     const blob = await Packer.toBlob(doc);
     const filename = `${config.title}.docx`;
 
@@ -1051,6 +1088,8 @@ export async function exportToWord(config, questions, userAnswers = []) {
 
     console.log(`Gamified Word document exported: ${filename}`);
 
+    if (typeof onProgress === "function") onProgress(100);
+
     showNotification(
       "Word document downloaded.",
       "You have it now",
@@ -1059,6 +1098,10 @@ export async function exportToWord(config, questions, userAnswers = []) {
 
     return { success: true, filename };
   } catch (error) {
+    if (error.name === "AbortError") {
+      console.log("Word Export cancelled by user");
+      return { success: false, cancelled: true };
+    }
     console.error("Word Export Error:", error);
     _alert(`Failed to export Word document: ${error.message}`);
     return { success: false, error: error.message };

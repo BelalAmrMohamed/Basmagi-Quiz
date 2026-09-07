@@ -14,22 +14,17 @@
 // ============================================================================
 
 import { exportToQuiz } from "../../features/export/export-to-quiz.js";
-import { exportToHtml } from "../../features/export/export-to-html.js";
 import { exportToPdf } from "../../features/export/export-to-pdf.js";
 import { exportToWord } from "../../features/export/export-to-word.js";
 import { exportToPptx } from "../../features/export/export-to-pptx.js";
 import { exportToMarkdown } from "../../features/export/export-to-markdown.js";
 import {
-  COPY_TEXT_ICON_SVG,
-  DOWNLOAD_TXT_ICON_SVG,
   JSON_FILE_ICON_SVG,
   DOWNLOAD_SOURCE_ICON_SVG,
 } from "../../features/home/icons.js";
 import { showNotification } from "../notifications/notifications.js";
 import { buildStandaloneQuizHtml } from "../../features/export/export-to-quiz.js";
-import { buildQuizHtml } from "../../features/export/export-to-html.js";
 import { buildQuizMarkdown } from "../../features/export/export-to-markdown.js";
-import { buildQuizText } from "../../features/export/export-to-text.js";
 import { buildJsonQuizExport } from "../../shared/quiz-json.js";
 
 /**
@@ -170,7 +165,7 @@ export function buildExportCard({
 
 /**
  * Dispatches an export operation to the correct export module.
- * @param {string} format — one of: "quiz" | "html" | "md" | "pdf" | "pptx" | "docx"
+ * @param {string} format — one of: "quiz" | "md" | "pdf" | "pptx" | "docx"
  * @param {object} config — { id, title, description, path?, source? }
  * @param {Array}  questions
  * @param {object} [userAnswers] — optional answer map. When provided (e.g.
@@ -179,6 +174,11 @@ export function buildExportCard({
  * @param {object} [resultMeta] — optional full result/score object, passed
  *   through only to exportToPdf (score summary in the PDF). Only the result
  *   page has this; other callers omit it.
+ * @param {Function} [onProgress] — optional (pct: 0–100) => void. Only
+ *   consumed by the chunked generators (pptx/docx) — ignored by formats
+ *   that already resolve near-instantly.
+ * @param {AbortSignal} [signal] — optional cancellation signal. Same
+ *   pptx/docx-only scope as onProgress.
  */
 export async function executeExport(
   format,
@@ -186,23 +186,32 @@ export async function executeExport(
   questions,
   userAnswers,
   resultMeta,
+  onProgress,
+  signal,
 ) {
   switch (format) {
     case "quiz":
       await exportToQuiz(config, questions);
       break;
-    case "html":
-      await exportToHtml(config, questions, userAnswers);
-      break;
     case "pdf":
       await exportToPdf(config, questions, userAnswers, resultMeta);
       break;
     case "docx":
-      await exportToWord(config, questions, userAnswers);
-      break;
+      return await exportToWord(
+        config,
+        questions,
+        userAnswers,
+        onProgress,
+        signal,
+      );
     case "pptx":
-      await exportToPptx(config, questions, userAnswers);
-      break;
+      return await exportToPptx(
+        config,
+        questions,
+        userAnswers,
+        onProgress,
+        signal,
+      );
     case "md":
       exportToMarkdown(config, questions, userAnswers);
       break;
@@ -260,24 +269,10 @@ const DOWNLOAD_FORMAT_OPTIONS = [
     canCopy: true,
   },
   {
-    format: "html",
-    label: "HTML",
-    extension: ".html",
-    iconUrl: "./assets/images/HTML_Icon.png",
-    canCopy: true,
-  },
-  {
     format: "md",
     label: "Markdown",
     extension: ".md",
     iconUrl: "./assets/images/mardownIcon.png",
-    canCopy: true,
-  },
-  {
-    format: "text",
-    label: "Text",
-    extension: ".txt",
-    iconSvg: COPY_TEXT_ICON_SVG,
     canCopy: true,
   },
   {
@@ -324,7 +319,7 @@ const DOWNLOAD_FORMAT_OPTIONS = [
  * @param {Array}  options.questions — quiz questions array.
  * @param {object} [options.userAnswers] — optional answer map (keyed the
  *   same way as questions). When provided, every "with answers" export
- *   format (html/md/text/pdf/docx/pptx) includes it — used by the result
+ *   format (html/md/pdf/docx/pptx) includes it — used by the result
  *   page so downloads reflect the user's own answers. Callers that don't
  *   pass this (home page, create-quiz page) get plain answer-free exports,
  *   exactly as before.
@@ -413,10 +408,100 @@ export function showDownloadModal({
   grid.setAttribute("role", "group");
   grid.setAttribute("aria-label", "خيارات التنزيل");
 
+  // ── Generation progress panel (Step 4: PPTX/Word) ──────────────────────
+  // Swapped in for the format grid while a chunked, cancellable export is
+  // in flight. Built once and toggled via display, rather than
+  // torn down/rebuilt, so its AbortController survives across renders.
+  const progressPanel = document.createElement("div");
+  progressPanel.className = "dl-progress-panel";
+  progressPanel.style.display = "none";
+  progressPanel.innerHTML = `
+    <img class="dl-progress-icon" src="" alt="" aria-hidden="true">
+    <div class="dl-progress-label"></div>
+    <div class="dl-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <div class="dl-progress-fill"></div>
+    </div>
+    <div class="dl-progress-pct">0%</div>
+    <button type="button" class="dl-progress-cancel">إلغاء</button>
+  `;
+  const progressIcon = progressPanel.querySelector(".dl-progress-icon");
+  const progressLabel = progressPanel.querySelector(".dl-progress-label");
+  const progressTrack = progressPanel.querySelector(".dl-progress-track");
+  const progressFill = progressPanel.querySelector(".dl-progress-fill");
+  const progressPct = progressPanel.querySelector(".dl-progress-pct");
+  const progressCancelBtn = progressPanel.querySelector(".dl-progress-cancel");
+
+  let activeController = null;
+
+  const setProgress = (pct) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(pct)));
+    progressFill.style.width = `${clamped}%`;
+    progressPct.textContent = `${clamped}%`;
+    progressTrack.setAttribute("aria-valuenow", String(clamped));
+  };
+
+  /**
+   * Runs a chunked export (pptx/docx) with the grid replaced by the
+   * progress panel. Resolves once the export settles (success, failure,
+   * or user cancellation) and always restores the grid afterwards.
+   */
+  const runWithProgressPanel = async (opt, iconUrl, label) => {
+    const controller = new AbortController();
+    activeController = controller;
+
+    grid.style.display = "none";
+    progressPanel.style.display = "flex";
+    progressIcon.src = iconUrl;
+    progressLabel.textContent = label;
+    progressCancelBtn.disabled = false;
+    progressCancelBtn.textContent = "إلغاء";
+    progressCancelBtn.classList.remove("dl-progress-cancelling");
+    setProgress(0);
+
+    const onCancelClick = () => {
+      controller.abort();
+      progressCancelBtn.disabled = true;
+      progressCancelBtn.textContent = "جاري الإلغاء...";
+      progressCancelBtn.classList.add("dl-progress-cancelling");
+    };
+    progressCancelBtn.addEventListener("click", onCancelClick, { once: true });
+
+    try {
+      const { config: c, questions: q } = await getExportData();
+      const result = await executeExport(
+        opt.format,
+        c,
+        q,
+        userAnswers,
+        resultMeta,
+        setProgress,
+        controller.signal,
+      );
+      if (result && result.cancelled) {
+        showNotification("تم الإلغاء", "تم إلغاء عملية التصدير.", "info");
+      } else if (!result || result.success !== false) {
+        modal.remove();
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        showNotification("تم الإلغاء", "تم إلغاء عملية التصدير.", "info");
+      } else {
+        console.error(err);
+        showNotification("خطأ", "فشل التنزيل.", "error");
+      }
+    } finally {
+      progressCancelBtn.removeEventListener("click", onCancelClick);
+      activeController = null;
+      progressPanel.style.display = "none";
+      grid.style.display = "";
+    }
+  };
+
   DOWNLOAD_FORMAT_OPTIONS.forEach((opt) => {
     const iconHtml = opt.iconSvg
       ? opt.iconSvg
       : `<img src="${opt.iconUrl}" alt="" class="icon" aria-hidden="true">`;
+    const usesProgressPanel = opt.format === "pptx" || opt.format === "docx";
     const card = buildExportCard({
       format: opt.format,
       label: opt.label,
@@ -424,29 +509,23 @@ export function showDownloadModal({
       icon: iconHtml,
       canCopy: opt.canCopy,
       onDownload: async () => {
-        if (opt.format === "text") {
-          const { config: c, questions: q } = await getExportData();
-          const text = await buildQuizText(c, q, userAnswers);
-          const blob = new Blob([text], { type: "text/plain" });
-          triggerDownload(blob, `${safeBase}.txt`);
+        if (usesProgressPanel) {
+          await runWithProgressPanel(opt, opt.iconUrl, opt.label);
         } else if (opt.format === "json") {
           const fileContent = await buildJsonString();
           const blob = new Blob([fileContent], { type: "application/json" });
           triggerDownload(blob, `${safeBase}.json`);
+          modal.remove();
         } else {
           const { config: c, questions: q } = await getExportData();
           await executeExport(opt.format, c, q, userAnswers, resultMeta);
+          modal.remove();
         }
-        modal.remove();
       },
       onCopy: async () => {
         const { config: c, questions: q } = await getExportData();
         if (opt.format === "quiz") return await buildStandaloneQuizHtml(c, q);
-        if (opt.format === "html")
-          return await buildQuizHtml(c, q, userAnswers);
         if (opt.format === "md") return buildQuizMarkdown(c, q, userAnswers);
-        if (opt.format === "text")
-          return await buildQuizText(c, q, userAnswers);
         if (opt.format === "json") return await buildJsonString();
       },
     });
@@ -471,9 +550,19 @@ export function showDownloadModal({
 
   modalCard.appendChild(header);
   modalCard.appendChild(grid);
+  modalCard.appendChild(progressPanel);
   modal.appendChild(modalCard);
 
-  modal.querySelector(".dl-close").onclick = () => modal.remove();
+  // Closing the modal (✕ button, backdrop click, or the click-outside
+  // handler registered above) while a chunked export is still running
+  // should abort it — otherwise its setTimeout-chunked loop keeps
+  // running invisibly in the background after the UI is gone.
+  const closeModal = () => {
+    if (activeController) activeController.abort();
+    modal.remove();
+  };
+
+  modal.querySelector(".dl-close").onclick = closeModal;
 
   document.body.appendChild(modal);
 

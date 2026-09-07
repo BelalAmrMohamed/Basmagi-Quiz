@@ -203,3 +203,78 @@
     padding: 16px 16px 12px;
   }
 }
+
+/* ── Generation progress panel (PPTX/Word) ──────────────────────────────
+   Shown in place of the format grid while a chunked, cancellable export
+   (see export-to-pptx.js / export-to-word.js) is running. */
+.dl-progress-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 24px 28px;
+  text-align: center;
+}
+
+.dl-progress-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.dl-progress-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dl-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-border-light, var(--color-border));
+  overflow: hidden;
+}
+
+.dl-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--color-primary);
+  transition: width 0.2s ease-out;
+}
+
+.dl-progress-pct {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dl-progress-cancel {
+  margin-top: 4px;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+
+.dl-progress-cancel:hover {
+  border-color: var(--color-error, #ef4444);
+  color: var(--color-error, #ef4444);
+}
+
+.dl-progress-cancelling {
+  opacity: 0.6;
+  pointer-events: none;
+}

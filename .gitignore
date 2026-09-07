@@ -1,11 +1,11 @@
-*.md
-*.txt
+# *.md
+# *.txt
 
 !robots.txt
 !README.md
 !CHANGELOG.md
-!Database-Schema-Context.md
-!context-map.txt
+# !Database-Schema-Context.md
+# !context-map.txt
 
 # Local FilesStudio files
 .git/

@@ -81,9 +81,9 @@ async function warmKatexFonts() {
   // Cover as many KaTeX font variants as possible in one probe:
   // Main, Math italic, bold, SansSerif, Caligraphic, fractions, Greek, operators
   probe.innerHTML = renderMarkdown(
-        "$E = mc^2$, $\\alpha + \\beta + \\gamma$, $\\mathbf{A}$, $\\mathcal{L}$\n\n" +
-        "$$\\int_0^\\infty e^{-x}\\,dx = 1 \\quad \\sum_{i=0}^{n} \\frac{i^2}{n}$$\n\n" +
-        "$$\\sqrt{x^2+y^2} \\leq \\|\\mathbf{v}\\| \\cdot \\cos\\theta$$");
+    "$E = mc^2$, $\\alpha + \\beta + \\gamma$, $\\mathbf{A}$, $\\mathcal{L}$\n\n" +
+    "$$\\int_0^\\infty e^{-x}\\,dx = 1 \\quad \\sum_{i=0}^{n} \\frac{i^2}{n}$$\n\n" +
+    "$$\\sqrt{x^2+y^2} \\leq \\|\\mathbf{v}\\| \\cdot \\cos\\theta$$");
   document.body.appendChild(probe);
 
   // Step 1 — let the browser decide what fonts it needs
@@ -109,7 +109,13 @@ async function warmKatexFonts() {
 // ===========================
 // MAIN EXPORT FUNCTION
 // ===========================
-export async function exportToPptx(config, questions, userAnswers = []) {
+export async function exportToPptx(
+  config,
+  questions,
+  userAnswers = [],
+  onProgress = null,
+  signal = null,
+) {
   try {
     // ── Parallel: load CDN libs + pre-warm KaTeX fonts simultaneously ──────
     const [pptxgen] = await Promise.all([
@@ -326,7 +332,7 @@ export async function exportToPptx(config, questions, userAnswers = []) {
       const pendingFonts = [];
       document.fonts.forEach((face) => {
         if (face.status !== "loaded") {
-          pendingFonts.push(face.load().catch(() => {}));
+          pendingFonts.push(face.load().catch(() => { }));
         }
       });
       if (pendingFonts.length) await Promise.allSettled(pendingFonts);
@@ -855,9 +861,22 @@ export async function exportToPptx(config, questions, userAnswers = []) {
     }
 
     // ===========================
-    // QUESTION SLIDES
+    // QUESTION SLIDES  — chunked for UI responsiveness + cancellable
     // ===========================
+    // Each iteration already awaits real async work (html2canvas renders
+    // for Markdown/KaTeX-bearing questions), but a run of plain-text-only
+    // questions has no await at all and can still block the main thread
+    // for a while on a large quiz. We force a yield every PPTX_RENDER_CHUNK
+    // questions regardless, and check `signal` at each question so Cancel
+    // takes effect within a question or two instead of only at the end.
+    const PPTX_RENDER_CHUNK = 3;
+    const totalQuestions = questions.length;
+
     for (const [index, question] of questions.entries()) {
+      if (signal?.aborted) {
+        throw new DOMException("Export cancelled", "AbortError");
+      }
+
       const isEssay = isEssayQuestion(question);
       const userAns = userAnswers[index];
       const hasUserAnswer =
@@ -1247,10 +1266,10 @@ export async function exportToPptx(config, questions, userAnswers = []) {
             const prefixedText = `**${label}.** ${optText}`;
             const img = hasMarkdownOrMath(prefixedText)
               ? await renderTextToImage(prefixedText, {
-                  maxWidthIn: USABLE_WIDTH - 0.2,
-                  bgHex: highlightBg,
-                  fontSizePt: 12,
-                }).catch(() => null)
+                maxWidthIn: USABLE_WIDTH - 0.2,
+                bgHex: highlightBg,
+                fontSizePt: 12,
+              }).catch(() => null)
               : null;
 
             if (img) {
@@ -1356,6 +1375,19 @@ export async function exportToPptx(config, questions, userAnswers = []) {
           insetIn: 0.1,
         });
       }
+
+      // Report progress (0–85% reserved for question slides; the
+      // remaining 15% covers the CTA slide + pptx.writeFile() below).
+      const isChunkEnd = (index + 1) % PPTX_RENDER_CHUNK === 0;
+      const isLast = index === totalQuestions - 1;
+      if (isChunkEnd || isLast) {
+        if (typeof onProgress === "function") {
+          onProgress(Math.round(((index + 1) / totalQuestions) * 85));
+        }
+        // Yield to the browser event loop so it can paint and process
+        // input/cancel-click events before we resume CPU/canvas work.
+        await new Promise((r) => setTimeout(r, 0));
+      }
     } // end question loop
 
     // ===========================
@@ -1401,8 +1433,15 @@ export async function exportToPptx(config, questions, userAnswers = []) {
     // ===========================
     // SAVE FILE
     // ===========================
+    if (signal?.aborted) {
+      throw new DOMException("Export cancelled", "AbortError");
+    }
+    if (typeof onProgress === "function") onProgress(90);
+
     const fileName = `${documentTitle}.pptx`;
     await pptx.writeFile({ fileName });
+
+    if (typeof onProgress === "function") onProgress(100);
 
     showNotification(
       "PowerPoint file downloaded.",
@@ -1412,6 +1451,10 @@ export async function exportToPptx(config, questions, userAnswers = []) {
 
     return true;
   } catch (error) {
+    if (error.name === "AbortError") {
+      console.log("[PPTX] Export cancelled by user");
+      return { success: false, cancelled: true };
+    }
     console.error("[PPTX] Export Error:", error);
     throw error;
   }

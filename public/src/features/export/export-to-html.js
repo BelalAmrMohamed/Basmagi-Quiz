@@ -7,38 +7,38 @@ import { showNotification } from "../../components/notifications/notifications.j
 
 // Question helpers
 import {
-  gradeEssay,
-  isEssayQuestion,
-  calculateQuizMetrics,
+    gradeEssay,
+    isEssayQuestion,
+    calculateQuizMetrics,
 } from "../../shared/rate-answers.js";
 
 import {
-  renderMarkdown,
-  _renderMarkdownCore,
+    renderMarkdown,
+    _renderMarkdownCore,
 } from "../../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
 export async function buildQuizHtml(config, questions, userAnswers = []) {
-  // Convert local images to base64
-  const processedQuestions = await convertImagesToBase64(questions);
+    // Convert local images to base64
+    const processedQuestions = await convertImagesToBase64(questions);
 
-  let hasMCQ = false,
-    hasTrueFalse = false,
-    hasEssay = false;
-  processedQuestions.forEach((q) => {
-    if (isEssayQuestion(q)) hasEssay = true;
-    else if (q.options.length === 2) hasTrueFalse = true;
-    else hasMCQ = true;
-  });
+    let hasMCQ = false,
+        hasTrueFalse = false,
+        hasEssay = false;
+    processedQuestions.forEach((q) => {
+        if (isEssayQuestion(q)) hasEssay = true;
+        else if (q.options.length === 2) hasTrueFalse = true;
+        else hasMCQ = true;
+    });
 
-  let questionType = "إختياري";
-  if (hasEssay && !hasMCQ && !hasTrueFalse) questionType = "مقالي";
-  else if (hasEssay) questionType = "Mixed (MCQ, True/False, Essay)";
+    let questionType = "إختياري";
+    if (hasEssay && !hasMCQ && !hasTrueFalse) questionType = "مقالي";
+    else if (hasEssay) questionType = "Mixed (MCQ, True/False, Essay)";
 
-  const date = new Date().toLocaleDateString();
+    const date = new Date().toLocaleDateString();
 
-  let htmlContent = `<!DOCTYPE html>
+    let htmlContent = `<!DOCTYPE html>
   <html lang="en">
   <head>
       <meta charset="UTF-8">
@@ -179,75 +179,74 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
   </head>
   <body>
       <h1>${config.title || "Quiz Examination"}</h1>
-      <div class="meta">Total Questions: ${
-        processedQuestions.length
-      } • Type: ${questionType} • Date: ${date}</div>
+      <div class="meta">Total Questions: ${processedQuestions.length
+        } • Type: ${questionType} • Date: ${date}</div>
   `;
 
-  // Determine if we are in "Summary Mode" (user answers provided)
-  const isResultsMode =
-    userAnswers &&
-    (Array.isArray(userAnswers)
-      ? userAnswers.length > 0
-      : Object.keys(userAnswers).length > 0);
+    // Determine if we are in "Summary Mode" (user answers provided)
+    const isResultsMode =
+        userAnswers &&
+        (Array.isArray(userAnswers)
+            ? userAnswers.length > 0
+            : Object.keys(userAnswers).length > 0);
 
-  // ── Score summary block (only in results mode) ──────────────────────────────
-  if (isResultsMode) {
-    const {
-      mcqCorrect,
-      mcqWrong,
-      mcqSkipped,
-      mcqTotal,
-      essayCount,
-      essayScoreTotal,
-      essayMaxTotal,
-      isEssayOnly,
-      percentage,
-      actualPercentage,
-    } = calculateQuizMetrics(processedQuestions, userAnswers);
-    const totalScore = mcqCorrect + essayScoreTotal;
-    const totalPoss = mcqTotal + essayMaxTotal;
-    // Use actualPercentage (holistic) for the hero circle; fall back to percentage for safety.
-    const displayPct =
-      actualPercentage !== undefined ? actualPercentage : percentage;
-    const passed = displayPct >= 70;
-    const circleClass = passed ? "pass" : "fail";
-    const label = passed ? "🎉 Great Job!" : "📚 Keep Practicing!";
+    // ── Score summary block (only in results mode) ──────────────────────────────
+    if (isResultsMode) {
+        const {
+            mcqCorrect,
+            mcqWrong,
+            mcqSkipped,
+            mcqTotal,
+            essayCount,
+            essayScoreTotal,
+            essayMaxTotal,
+            isEssayOnly,
+            percentage,
+            actualPercentage,
+        } = calculateQuizMetrics(processedQuestions, userAnswers);
+        const totalScore = mcqCorrect + essayScoreTotal;
+        const totalPoss = mcqTotal + essayMaxTotal;
+        // Use actualPercentage (holistic) for the hero circle; fall back to percentage for safety.
+        const displayPct =
+            actualPercentage !== undefined ? actualPercentage : percentage;
+        const passed = displayPct >= 70;
+        const circleClass = passed ? "pass" : "fail";
+        const label = passed ? "🎉 Great Job!" : "📚 Keep Practicing!";
 
-    // ── Build score breakdown rows (mirrors export-to-quiz results-detail) ──
-    const hasMcq = mcqTotal > 0;
-    const hasEssay = essayCount > 0;
+        // ── Build score breakdown rows (mirrors export-to-quiz results-detail) ──
+        const hasMcq = mcqTotal > 0;
+        const hasEssay = essayCount > 0;
 
-    let scoreRows = "";
-    if (hasMcq && hasEssay) {
-      const essayStars =
-        "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
-        "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
-      scoreRows += `
+        let scoreRows = "";
+        if (hasMcq && hasEssay) {
+            const essayStars =
+                "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+                "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
+            scoreRows += `
         <div class="rd-row"><span class="rd-label">Total Score</span><span class="rd-value">${totalScore} / ${totalPoss} pts</span></div>
         <div class="rd-row"><span class="rd-label">MCQ</span><span class="rd-value">${mcqCorrect} / ${mcqTotal} correct</span></div>
         <div class="rd-row"><span class="rd-label">Essays</span><span class="rd-value">${essayScoreTotal} / ${essayMaxTotal} pts &nbsp;<span class="stars">${essayStars}</span></span></div>
         <div class="rd-row"><span class="rd-label">MCQ Score</span><span class="rd-value">${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></div>`;
-    } else if (hasEssay) {
-      const essayStars =
-        "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
-        "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
-      scoreRows += `
+        } else if (hasEssay) {
+            const essayStars =
+                "★".repeat(Math.round((essayScoreTotal / essayMaxTotal) * 5)) +
+                "☆".repeat(5 - Math.round((essayScoreTotal / essayMaxTotal) * 5));
+            scoreRows += `
         <div class="rd-row"><span class="rd-label">Essay Score</span><span class="rd-value">${essayScoreTotal} / ${essayMaxTotal} pts</span></div>
         <div class="rd-row"><span class="rd-label">Rating</span><span class="rd-value stars">${essayStars}</span></div>`;
-    } else {
-      scoreRows += `
+        } else {
+            scoreRows += `
         <div class="rd-row"><span class="rd-label">Score</span><span class="rd-value">${mcqCorrect} / ${mcqTotal} correct</span></div>
         <div class="rd-row"><span class="rd-label">Wrong</span><span class="rd-value">${mcqWrong}</span></div>
         <div class="rd-row"><span class="rd-label">Skipped</span><span class="rd-value">${mcqSkipped}</span></div>`;
-    }
+        }
 
-    scoreRows += `
+        scoreRows += `
       <div class="rd-row rd-highlight"><span class="rd-label">Overall Score</span><span class="rd-value">${displayPct}%</span></div>
       <div class="rd-row"><span class="rd-label">Status</span><span class="rd-value ${passed ? "rd-pass" : "rd-fail"}">${passed ? "✓ Passed" : "✗ Not Passed"}</span></div>
       <div class="rd-row rd-last"><span class="rd-label">Questions</span><span class="rd-value">${mcqTotal + essayCount} total</span></div>`;
 
-    htmlContent += `
+        htmlContent += `
     <div class="score-block">
       <div class="score-circle ${circleClass}">${displayPct}%</div>
       <div class="score-label">${label}</div>
@@ -255,15 +254,15 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
         ${scoreRows}
       </div>
     </div>`;
-  }
+    }
 
-  processedQuestions.forEach((q, index) => {
-    const userAns = userAnswers[index];
-    const isSkipped = userAns === undefined || userAns === null;
-    const isCorrect =
-      !isSkipped && userAns === q.correct && !isEssayQuestion(q);
+    processedQuestions.forEach((q, index) => {
+        const userAns = userAnswers[index];
+        const isSkipped = userAns === undefined || userAns === null;
+        const isCorrect =
+            !isSkipped && userAns === q.correct && !isEssayQuestion(q);
 
-    htmlContent += `
+        htmlContent += `
       <div class="question-card">
           <div class="q-header">
               <span>Question ${index + 1}</span>
@@ -272,14 +271,14 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
           ${q.image ? `<img src="${q.image}" class="question-image" alt="Question Image" onerror="this.alt='[Image not available]'; this.style.border='2px dashed #666';">` : ""}
           <div class="q-text">${renderMarkdown(q.q)}</div>`;
 
-    if (isEssayQuestion(q)) {
-      const userText = userAns || "";
-      if (isResultsMode) {
-        const score = gradeEssay(userText, q.answer);
-        const stars = "★".repeat(score) + "☆".repeat(5 - score);
-        const scoreClass =
-          score >= 3 ? "correct" : score >= 1 ? "partial" : "wrong";
-        htmlContent += `
+        if (isEssayQuestion(q)) {
+            const userText = userAns || "";
+            if (isResultsMode) {
+                const score = gradeEssay(userText, q.answer);
+                const stars = "★".repeat(score) + "☆".repeat(5 - score);
+                const scoreClass =
+                    score >= 3 ? "correct" : score >= 1 ? "partial" : "wrong";
+                htmlContent += `
           <div class="essay-box" style="border-left: 3px solid #3b82f6;">
               <strong style="color: #60a5fa; display:block; margin-bottom:5px;">Your Answer:</strong>
               ${renderMarkdown(userText || "لم تُجِب")}
@@ -287,124 +286,124 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
           <div class="essay-score ${scoreClass}">
             Score: ${score}/5 &nbsp;<span style="font-size:1.1em;color:#f59e0b">${stars}</span>
           </div>`;
-      }
+            }
 
-      htmlContent += `<div class="essay-box">
+            htmlContent += `<div class="essay-box">
               <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Formal Answer / Key Points:</strong>
               ${renderMarkdown(q.answer)}
           </div>`;
-    } else {
-      htmlContent += `<div class="options-list">`;
-      q.options.forEach((opt, i) => {
-        const letter = String.fromCharCode(65 + i);
-        htmlContent += `<div class="option"><span class="option-letter">${letter}</span><span>${renderMarkdown(opt)}</span></div>`;
-      });
-      htmlContent += `</div>`;
+        } else {
+            htmlContent += `<div class="options-list">`;
+            q.options.forEach((opt, i) => {
+                const letter = String.fromCharCode(65 + i);
+                htmlContent += `<div class="option"><span class="option-letter">${letter}</span><span>${renderMarkdown(opt)}</span></div>`;
+            });
+            htmlContent += `</div>`;
 
-      const userClass = isSkipped ? "skipped" : isCorrect ? "" : "wrong";
-      const userLetter = isSkipped ? "" : String.fromCharCode(65 + userAns);
-      const userAnswer = isSkipped
-        ? "Skipped"
-        : `${userLetter}. ${renderMarkdown(q.options[userAns])}`;
-      const userIcon = isSkipped ? "⚪" : isCorrect ? "✅" : "❌";
+            const userClass = isSkipped ? "skipped" : isCorrect ? "" : "wrong";
+            const userLetter = isSkipped ? "" : String.fromCharCode(65 + userAns);
+            const userAnswer = isSkipped
+                ? "Skipped"
+                : `${userLetter}. ${renderMarkdown(q.options[userAns])}`;
+            const userIcon = isSkipped ? "⚪" : isCorrect ? "✅" : "❌";
 
-      if (isResultsMode)
-        htmlContent += `<div class="user-answer ${userClass}">${userIcon} Your Answer: ${userAnswer}</div>`;
+            if (isResultsMode)
+                htmlContent += `<div class="user-answer ${userClass}">${userIcon} Your Answer: ${userAnswer}</div>`;
 
-      const correctLetter = String.fromCharCode(65 + q.correct);
-      htmlContent += `<div class="correct-answer">✓ Correct Answer: ${correctLetter}. ${renderMarkdown(
-        q.options[q.correct],
-      )}</div>`;
-    }
+            const correctLetter = String.fromCharCode(65 + q.correct);
+            htmlContent += `<div class="correct-answer">✓ Correct Answer: ${correctLetter}. ${renderMarkdown(
+                q.options[q.correct],
+            )}</div>`;
+        }
 
-    if (q.explanation) {
-      htmlContent += `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(q.explanation)}</div>`;
-    }
+        if (q.explanation) {
+            htmlContent += `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(q.explanation)}</div>`;
+        }
 
-    htmlContent += `</div>`;
-  });
+        htmlContent += `</div>`;
+    });
 
-  htmlContent += `<div class="footer">Generated by Quiz App</div></body></html>`;
-  return htmlContent;
+    htmlContent += `<div class="footer">Generated by Quiz App</div></body></html>`;
+    return htmlContent;
 }
 
 export async function exportToHtml(config, questions, userAnswers = []) {
-  const htmlContent = await buildQuizHtml(config, questions, userAnswers);
-  const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${config.title || "quiz_export"}.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showNotification(
-    "HTML file Downloaded",
-    "You have it now",
-    "./assets/images/HTML_Icon.png",
-  );
+    const htmlContent = await buildQuizHtml(config, questions, userAnswers);
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${config.title || "quiz_export"}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification(
+        "HTML file Downloaded",
+        "You have it now",
+        "./assets/images/HTML_Icon.png",
+    );
 }
 
 // Image Helpers
 const convertImagesToBase64 = async (questions) => {
-  const processedQuestions = [];
+    const processedQuestions = [];
 
-  for (const question of questions) {
-    const processedQuestion = { ...question };
+    for (const question of questions) {
+        const processedQuestion = { ...question };
 
-    if (question.image) {
-      // If it's a local path or needs conversion
-      if (isLocalPath(question.image)) {
-        console.log(`Converting local image to base64: ${question.image}`);
-        const base64 = await getDataUrl(question.image);
-        if (base64) {
-          processedQuestion.image = base64;
-        } else {
-          console.warn(`Failed to convert ${question.image}, keeping original`);
-          // Keep original - will show alt text if broken
+        if (question.image) {
+            // If it's a local path or needs conversion
+            if (isLocalPath(question.image)) {
+                console.log(`Converting local image to base64: ${question.image}`);
+                const base64 = await getDataUrl(question.image);
+                if (base64) {
+                    processedQuestion.image = base64;
+                } else {
+                    console.warn(`Failed to convert ${question.image}, keeping original`);
+                    // Keep original - will show alt text if broken
+                }
+            }
+            // Remote URLs or already base64 - keep as is
         }
-      }
-      // Remote URLs or already base64 - keep as is
+
+        processedQuestions.push(processedQuestion);
     }
 
-    processedQuestions.push(processedQuestion);
-  }
-
-  return processedQuestions;
+    return processedQuestions;
 };
 
 const isLocalPath = (url) => {
-  if (!url) return false;
-  // Check for relative paths (./, ../, or no protocol)
-  if (url.startsWith("./") || url.startsWith("../") || url.startsWith("/")) {
-    return true;
-  }
-  // Check if it lacks a protocol (http://, https://, data:)
-  return !/^(https?:|data:)/i.test(url);
+    if (!url) return false;
+    // Check for relative paths (./, ../, or no protocol)
+    if (url.startsWith("./") || url.startsWith("../") || url.startsWith("/")) {
+        return true;
+    }
+    // Check if it lacks a protocol (http://, https://, data:)
+    return !/^(https?:|data:)/i.test(url);
 };
 
 const getDataUrl = (url) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = "Anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0);
-      try {
-        resolve(canvas.toDataURL("image/jpeg"));
-      } catch (e) {
-        console.warn("Failed to convert image to data URL", e);
-        resolve(null);
-      }
-    };
-    img.onerror = () => {
-      console.warn("Failed to load image for PDF export", url);
-      resolve(null);
-    };
-    img.src = url;
-  });
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            try {
+                resolve(canvas.toDataURL("image/jpeg"));
+            } catch (e) {
+                console.warn("Failed to convert image to data URL", e);
+                resolve(null);
+            }
+        };
+        img.onerror = () => {
+            console.warn("Failed to load image for PDF export", url);
+            resolve(null);
+        };
+        img.src = url;
+    });
 };
