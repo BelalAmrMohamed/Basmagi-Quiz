@@ -10,7 +10,7 @@
     "dev:vercel": "npx vercel dev --local --listen 8080",
     "dev:static": "npx http-server public -p 8080 -o -c-1",
     "vercel": "vercel dev",
-    "map-project": "node scripts/map.js"
+    "map": "node scripts/map.js"
   },
   "keywords": [
     "examination",

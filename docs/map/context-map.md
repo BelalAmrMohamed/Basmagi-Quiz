@@ -9,23 +9,23 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 ```text
 منصة إمتحانات بصمجي/
+├── _config.yml
 ├── CHANGELOG.md
 ├── LICENSE
-├── README.md
-├── _config.yml
 ├── package-lock.json
 ├── package.json
+├── README.md
 ├── vercel.json
-├── api/
-│   ├── ai-agent/
+├── api/ [256.09 KB, 6317 LOC]
+│   ├── ai-agent/ [47.99 KB, 1042 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
 │   │   ├── _tools.js
 │   │   └── chat.js
-│   │   
-│   ├── user-profile/
+│   │
+│   ├── user-profile/ [1.15 KB, 28 LOC]
 │   │   └── _levelMath.js
-│   │   
+│   │
 │   ├── _courseFolders.js
 │   ├── _middleware.js
 │   ├── _rateLimit.js
@@ -42,25 +42,22 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/
-│   ├── map/
+├── docs/ [744.35 KB, 1068 LOC]
+│   ├── map/ [27.57 KB, 726 LOC]
 │   │   ├── context-map.md
-│   │   ├── map-2.js
 │   │   └── map.js
-│   │   
-│   ├── plans/
-│   │   ├── ai-agent-on-quiz-page-prompt.md
-│   │   ├── plan-to-fix-pptx-bugs.md
-│   │   └── plan-to-update-exports.md
-│   │   
+│   │
+│   ├── plans/ [4.95 KB, 48 LOC]
+│   │   └── ai-agent-on-quiz-page-prompt.md
+│   │
 │   ├── Database-Schema-Context.md
 │   ├── image.png
 │   └── issues.md
 │
-├── public/
-│   ├── assets/
-│   │   ├── images/
-│   │   │   ├── thumbnails/
+├── public/ [199.5 MB, 92922 LOC]
+│   ├── assets/ [196.07 MB, 0 LOC]
+│   │   ├── images/ [3.84 MB, 0 LOC]
+│   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
 │   │   │   │   ├── control-thumbnail.png
 │   │   │   │   ├── create-thumbnail.png
 │   │   │   │   ├── onboarding-thumbnail.png
@@ -74,14 +71,13 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── sign-in-thumbnail.png
 │   │   │   │   ├── terms-of-service-thumbnail.png
 │   │   │   │   └── thumbnail.png
-│   │   │   │   
-│   │   │   ├── HTML_Icon.png
-│   │   │   ├── PDF_Icon.png
+│   │   │   │
 │   │   │   ├── el-bash-mebasmag--no-bg.png
+│   │   │   ├── el-bash-mebasmag--no-bg1.png
 │   │   │   ├── el-bash-mebasmag--no-bg2.png
 │   │   │   ├── el-bash-mebasmag--no-bg3.png
-│   │   │   ├── el-bash-mebasmag--no-bg4.png
 │   │   │   ├── el-bash-mebasmag--no-bg5.png
+│   │   │   ├── HTML_Icon.png
 │   │   │   ├── icon-16.png
 │   │   │   ├── icon-180.png
 │   │   │   ├── icon-192.png
@@ -90,6 +86,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── mardownIcon.png
 │   │   │   ├── maskable-icon-192x192.png
 │   │   │   ├── maskable-icon.png
+│   │   │   ├── PDF_Icon.png
 │   │   │   ├── pptx_icon.png
 │   │   │   ├── quiz.png
 │   │   │   ├── screenshot-desktop.png
@@ -98,9 +95,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── word_icon.png
 │   │   │   ├── السلام عليكم.png
 │   │   │   └── صلى_على_النبي_2.png
-│   │   │   
-│   │   ├── profile-featured/
-│   │   │   ├── pictures/
+│   │   │
+│   │   ├── profile-featured/ [7.06 MB, 0 LOC]
+│   │   │   ├── pictures/ [545.56 KB, 0 LOC]
 │   │   │   │   ├── 1.jpg
 │   │   │   │   ├── 10.jpg
 │   │   │   │   ├── 11.jpg
@@ -117,8 +114,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── 7.jpg
 │   │   │   │   ├── 8.jpg
 │   │   │   │   └── 9.jpg
-│   │   │   │   
-│   │   │   └── thumbnails/
+│   │   │   │
+│   │   │   └── thumbnails/ [6.53 MB, 0 LOC]
 │   │   │       ├── 1.jpg
 │   │   │       ├── 10.jpg
 │   │   │       ├── 11.jpg
@@ -131,9 +128,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── 7.jpg
 │   │   │       ├── 8.jpg
 │   │   │       └── 9.jpg
-│   │   │   
-│   │   ├── quiz-media/
-│   │   │   ├── Cambridge_2019/
+│   │   │
+│   │   ├── quiz-media/ [177.9 MB, 0 LOC]
+│   │   │   ├── Cambridge_2019/ [103.65 MB, 0 LOC]
 │   │   │   │   ├── Test1 Part1.mp3
 │   │   │   │   ├── Test1 Part2.mp3
 │   │   │   │   ├── Test1 Part3.mp3
@@ -150,73 +147,73 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── Test4 Part2.mp3
 │   │   │   │   ├── Test4 Part3.mp3
 │   │   │   │   └── Test4 Part4.mp3
-│   │   │   │   
-│   │   │   ├── TEST_1/
+│   │   │   │
+│   │   │   ├── TEST_1/ [18.17 MB, 0 LOC]
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   ├── Part_4.mp4
 │   │   │   │   └── Recording.mp3
-│   │   │   │   
-│   │   │   ├── TEST_2/
+│   │   │   │
+│   │   │   ├── TEST_2/ [18.33 MB, 0 LOC]
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │   
-│   │   │   ├── TEST_3/
+│   │   │   │
+│   │   │   ├── TEST_3/ [19.06 MB, 0 LOC]
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │   
-│   │   │   ├── TEST_4/
+│   │   │   │
+│   │   │   ├── TEST_4/ [17.41 MB, 0 LOC]
 │   │   │   │   ├── Part_1.mp4
 │   │   │   │   ├── Part_2.mp4
 │   │   │   │   ├── Part_3.mp4
 │   │   │   │   └── Part_4.mp4
-│   │   │   │   
+│   │   │   │
 │   │   │   ├── 1d-formula.jpg
+│   │   │   ├── 2_2_AI_Mid_Sinai.jpg
+│   │   │   ├── 2_2_AI_Mid.jpg
+│   │   │   ├── 2_2_DB_erd_2.jpg
+│   │   │   ├── 2_2_DB_erd_3.jpg
+│   │   │   ├── 2_2_DB_erd.jpg
 │   │   │   ├── 2020_2021-summer-final-2.jpg
 │   │   │   ├── 2020_2021-summer-final-6.jpg
 │   │   │   ├── 2020_2021-summer-final-7.jpg
 │   │   │   ├── 2020_2021-summer-final-8.jpg
 │   │   │   ├── 2020_2021-summer-final.jpg
-│   │   │   ├── 2_2_AI_Mid.jpg
-│   │   │   ├── 2_2_AI_Mid_Sinai.jpg
-│   │   │   ├── 2_2_DB_erd.jpg
-│   │   │   ├── 2_2_DB_erd_2.jpg
-│   │   │   ├── 2_2_DB_erd_3.jpg
-│   │   │   ├── Exercise-6-22.jpg
-│   │   │   ├── Exercise-6-23.jpg
-│   │   │   ├── Exercise-6-24.jpg
-│   │   │   ├── Exercise-6-25.jpg
-│   │   │   ├── Exercise-7-C2.jpg
-│   │   │   ├── IBM.png
-│   │   │   ├── Partition-of-Sample-Space-S.jpg
-│   │   │   ├── Tree-diagram-for-Example-2.jpg
 │   │   │   ├── adding-element.jpg
 │   │   │   ├── array-memory-diagram.jpg
 │   │   │   ├── backtrack-graph.png
 │   │   │   ├── case-tools.jpg
 │   │   │   ├── comp-storage.jpg
 │   │   │   ├── dashboard-thumbnail.jpg
+│   │   │   ├── Exercise-6-22.jpg
+│   │   │   ├── Exercise-6-23.jpg
+│   │   │   ├── Exercise-6-24.jpg
+│   │   │   ├── Exercise-6-25.jpg
+│   │   │   ├── Exercise-7-C2.jpg
 │   │   │   ├── final-2022-2023.jpg
 │   │   │   ├── final-2023-2024.jpg
 │   │   │   ├── final-2024-2025-2.jpg
 │   │   │   ├── final-2024-2025-3.jpg
+│   │   │   ├── IBM.png
 │   │   │   ├── icon-512.png
 │   │   │   ├── mid-2025-2.jpg
 │   │   │   ├── mid-2025.jpg
 │   │   │   ├── multi-dimen-array.jpg
+│   │   │   ├── Partition-of-Sample-Space-S.jpg
 │   │   │   ├── permutation_table.png
 │   │   │   ├── rad-sdlc.jpg
 │   │   │   ├── salesman-graph.png
 │   │   │   ├── shifting-process.jpg
+│   │   │   ├── Tree-diagram-for-Example-2.jpg
 │   │   │   ├── university-as-a-system.jpg
 │   │   │   └── volume-of-sales.jpg
-│   │   │   
-│   │   ├── quiz-sources/
+│   │   │
+│   │   ├── quiz-sources/ [6.92 MB, 0 LOC]
 │   │   │   ├── 2020 - 2021 Final.pdf
 │   │   │   ├── 2020 - 2021 Summer Final.pdf
 │   │   │   ├── 2021 - 2022 Mid.pdf
@@ -224,13 +221,13 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── 2023 - 2024 Final.pdf
 │   │   │   ├── 2024 - 2025 Final.pdf
 │   │   │   └── Mid 2025.pdf
-│   │   │   
-│   │   └── videos/
+│   │   │
+│   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
-│   │   
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ai-agent/
+│   │
+│   ├── src/ [2.83 MB, 83328 LOC]
+│   │   ├── components/ [619.23 KB, 16390 LOC]
+│   │   │   ├── ai-agent/ [374.55 KB, 8806 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
 │   │   │   │   ├── ai-agent-chat.js
 │   │   │   │   ├── ai-agent-default-prompts.js
@@ -244,55 +241,55 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── ai-agent-suggested-prompts.js
 │   │   │   │   ├── ai-agent.css
 │   │   │   │   └── ai-agent.js
-│   │   │   │   
-│   │   │   ├── download-quiz-modal/
+│   │   │   │
+│   │   │   ├── download-quiz-modal/ [48.18 KB, 1423 LOC]
 │   │   │   │   ├── download-quiz-modal.css
 │   │   │   │   └── download-quiz-modal.js
-│   │   │   │   
-│   │   │   ├── log-in/
+│   │   │   │
+│   │   │   ├── log-in/ [4.62 KB, 26 LOC]
 │   │   │   │   └── sign-in.js
-│   │   │   │   
-│   │   │   ├── notifications/
+│   │   │   │
+│   │   │   ├── notifications/ [32.3 KB, 1081 LOC]
 │   │   │   │   ├── notifications.css
 │   │   │   │   └── notifications.js
-│   │   │   │   
-│   │   │   ├── offline-banner/
+│   │   │   │
+│   │   │   ├── offline-banner/ [18.23 KB, 486 LOC]
 │   │   │   │   ├── offline-banner.css
 │   │   │   │   └── offline-banner.js
-│   │   │   │   
-│   │   │   ├── quiz-info-modal/
+│   │   │   │
+│   │   │   ├── quiz-info-modal/ [23.55 KB, 866 LOC]
 │   │   │   │   ├── quiz-info-html.js
 │   │   │   │   ├── quiz-info-modal-css.js
 │   │   │   │   └── quiz-info-modal.css
-│   │   │   │   
-│   │   │   ├── report-question/
+│   │   │   │
+│   │   │   ├── report-question/ [12.59 KB, 415 LOC]
 │   │   │   │   ├── report-question.css
 │   │   │   │   └── report-question.js
-│   │   │   │   
-│   │   │   └── side-menu/
+│   │   │   │
+│   │   │   └── side-menu/ [105.22 KB, 3287 LOC]
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
-│   │   │   
-│   │   ├── features/
-│   │   │   ├── control/
+│   │   │
+│   │   ├── features/ [1.9 MB, 57455 LOC]
+│   │   │   ├── control/ [41.98 KB, 1583 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
 │   │   │   │   └── reports-view.js
-│   │   │   │   
-│   │   │   ├── create/
+│   │   │   │
+│   │   │   ├── create/ [198.79 KB, 6795 LOC]
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
-│   │   │   │   
-│   │   │   ├── export/
+│   │   │   │
+│   │   │   ├── export/ [286.31 KB, 7878 LOC]
 │   │   │   │   ├── export-to-html.js
 │   │   │   │   ├── export-to-markdown.js
 │   │   │   │   ├── export-to-pdf.js
 │   │   │   │   ├── export-to-pptx.js
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
-│   │   │   │   
-│   │   │   ├── home/
+│   │   │   │
+│   │   │   ├── home/ [745.35 KB, 19871 LOC]
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
 │   │   │   │   ├── app-state.js
@@ -343,18 +340,18 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── user-quizzes-folders.js
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
-│   │   │   │   
-│   │   │   ├── onboarding/
+│   │   │   │
+│   │   │   ├── onboarding/ [36.8 KB, 1290 LOC]
 │   │   │   │   ├── onboarding.css
 │   │   │   │   └── onboarding.js
-│   │   │   │   
-│   │   │   ├── privacy-and-terms/
+│   │   │   │
+│   │   │   ├── privacy-and-terms/ [75.4 KB, 1850 LOC]
 │   │   │   │   ├── about.css
 │   │   │   │   ├── doc-toc.js
 │   │   │   │   ├── documentation-shell.js
 │   │   │   │   └── privacy-and-terms.css
-│   │   │   │   
-│   │   │   ├── profile/
+│   │   │   │
+│   │   │   ├── profile/ [151.62 KB, 4785 LOC]
 │   │   │   │   ├── heatmapOverflow.js
 │   │   │   │   ├── infiniteScroll.js
 │   │   │   │   ├── leaderboardIdentity.js
@@ -362,25 +359,25 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── profile.css
 │   │   │   │   ├── profile.js
 │   │   │   │   └── profileWidgets.js
-│   │   │   │   
-│   │   │   ├── quiz/
+│   │   │   │
+│   │   │   ├── quiz/ [227.56 KB, 7040 LOC]
 │   │   │   │   ├── keyboard-nav.js
 │   │   │   │   ├── quiz.css
 │   │   │   │   └── quiz.js
-│   │   │   │   
-│   │   │   ├── reports/
+│   │   │   │
+│   │   │   ├── reports/ [38.01 KB, 1315 LOC]
 │   │   │   │   ├── reports.css
 │   │   │   │   └── reports.js
-│   │   │   │   
-│   │   │   ├── result/
+│   │   │   │
+│   │   │   ├── result/ [100.25 KB, 3416 LOC]
 │   │   │   │   ├── result.css
 │   │   │   │   └── result.js
-│   │   │   │   
-│   │   │   └── settings/
+│   │   │   │
+│   │   │   └── settings/ [38.77 KB, 1632 LOC]
 │   │   │       ├── settings.css
 │   │   │       └── settings.js
-│   │   │   
-│   │   ├── shared/
+│   │   │
+│   │   ├── shared/ [290.37 KB, 7887 LOC]
 │   │   │   ├── adminAuth.js
 │   │   │   ├── adminBadgeSync.js
 │   │   │   ├── avatarEngine.js
@@ -406,12 +403,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── user-name-validation.js
 │   │   │   ├── userLevel.js
 │   │   │   └── userProfile.js
-│   │   │   
-│   │   └── styles/
+│   │   │
+│   │   └── styles/ [51.07 KB, 1596 LOC]
 │   │       ├── advanced-liquid-metal-animations.css
 │   │       ├── markdown.css
 │   │       └── themes.css
-│   │   
+│   │
 │   ├── about.html
 │   ├── control.html
 │   ├── create-quiz.html
@@ -439,52 +436,80 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── sitemap.xml
 │   └── terms-of-service.html
 │
-├── scripts/
-│   └── lib/
-│       ├── quizId.js
-│       └── quizPath.js
+├── scripts/ [19.26 KB, 566 LOC]
+│   ├── lib/ [7.45 KB, 227 LOC]
+│   │   ├── quizId.js
+│   │   └── quizPath.js
+│   │
+│   └── map.js
 │
-└── supabase/
-    ├── migrations/
+└── supabase/ [33.16 KB, 790 LOC]
+    ├── migrations/ [17.55 KB, 375 LOC]
     │   ├── 20260828051811_user_profiles_server_side_identity.sql
     │   ├── 20260901195646_courses_and_folders.sql
     │   ├── 20260904000000_colleges.sql
     │   └── 20260904010000_public_relational_reads.sql
-    │   
+    │
     └── config.toml
 ```
 
 ## Codebase Summary
 
+### Directory-Level LOC Breakdown
+
+| Directory | Lines of Code |
+|-----------|---------------|
+| `public` | 92922 |
+| `api` | 6317 |
+| `docs` | 1068 |
+| `supabase` | 790 |
+| `(root)` | 625 |
+| `scripts` | 566 |
+
+### Top 10 Largest Code Files
+
+| File | Lines of Code |
+|------|---------------|
+| `public/src/features/home/index.css` | 4993 |
+| `public/src/features/create/create-quiz.css` | 3610 |
+| `public/src/features/quiz/quiz.js` | 3374 |
+| `public/src/features/export/export-to-quiz.js` | 3320 |
+| `public/src/features/quiz/quiz.css` | 3198 |
+| `public/src/features/create/create-quiz.js` | 3185 |
+| `public/src/components/ai-agent/ai-agent-chat.js` | 2799 |
+| `public/src/components/ai-agent/ai-agent.css` | 2738 |
+| `public/src/features/profile/profile.css` | 2501 |
+| `public/src/components/side-menu/side-menu.css` | 2149 |
+
 ### Code Files
 
-| Extension | Files | Lines of Code |
-|-----------|-------|---------------|
-| .js | 140 | 60134 |
-| .css | 24 | 30127 |
-| .html | 19 | 9257 |
-| .md | 8 | 2097 |
-| .json | 4 | 215 |
-| .sql | 4 | 375 |
-| (no extension) | 1 | 22 |
-| .yml | 1 | 41 |
-| .txt | 1 | 4 |
-| .xml | 1 | 45 |
-| .toml | 1 | 415 |
-| **Total** | **204** | **102732** |
+| Extension | Files | Lines of Code | Size |
+|-----------|-------|---------------|------------|
+| .js | 140 | 60469 | 2.37 MB |
+| .css | 24 | 30139 | 760.01 KB |
+| .html | 19 | 9257 | 552.14 KB |
+| .md | 6 | 1307 | 53.98 KB |
+| .json | 4 | 214 | 76.13 KB |
+| .sql | 4 | 375 | 17.55 KB |
+| (no extension) | 1 | 22 | 1.06 KB |
+| .txt | 1 | 4 | 79 B |
+| .xml | 1 | 45 | 1.36 KB |
+| .toml | 1 | 415 | 15.61 KB |
+| .yml | 1 | 41 | 1.02 KB |
+| **Total** | **202** | **102288** | **3.82 MB** |
 
-### Binary / Media Files
+### Binary / Media Files (Physical Size)
 
-| Extension | Files |
-|-----------|-------|
-| .jpg | 62 |
-| .png | 43 |
-| .mp3 | 17 |
-| .mp4 | 17 |
-| .pdf | 7 |
-| .ico | 1 |
-| .svg | 1 |
-| **Total** | **148** |
+| Extension | Files | Size |
+|-----------|-------|------------|
+| .jpg | 62 | 8.11 MB |
+| .png | 43 | 4.79 MB |
+| .mp3 | 17 | 103.72 MB |
+| .mp4 | 17 | 73.24 MB |
+| .pdf | 7 | 6.92 MB |
+| .ico | 1 | 4.19 KB |
+| .svg | 1 | 19.48 KB |
+| **Total** | **148** | **196.8 MB** |
 
-**Grand Total Files:** 352  
-**Total Lines of Code (code files only):** 102732
+**Grand Total Files:** 350  
+**Total Repository Size:** 200.62 MB

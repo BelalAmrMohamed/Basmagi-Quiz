@@ -1,7 +1,7 @@
 // =============================
-// docs/map/map.js
+// scripts/map.js
 // 
-// Type this in the terminal: `node docs/map/map.js`
+// Type this in the terminal: `node scripts/map.js`
 // =============================
 
 import fs from "fs";
@@ -41,7 +41,7 @@ const LOCKFILES = new Set([
 
 // ===== Determine paths =====
 const scriptDir = import.meta.dirname;
-const rootDir = path.resolve(scriptDir, "../../");
+const rootDir = path.resolve(scriptDir, "../");
 const outputFile = path.join(rootDir, outputMapPath);
 
 // ===== Helpers =====
@@ -247,7 +247,7 @@ async function generateContextMap() {
 
         // Blank line visual separator for directories
         if (child.isDir && !childIsLast) {
-          outputStream.write((newPrefix === "" ? "│" : newPrefix) + "\n");
+          outputStream.write(newPrefix + "│\n");
         }
       }
     } else if (node.isDir && currentDepth >= MAX_DEPTH && node.children.length > 0) {
@@ -299,7 +299,7 @@ async function generateContextMap() {
   codeExts.sort((a, b) => b[1].count - a[1].count);
   if (codeExts.length > 0) {
     outputStream.write("### Code Files\n\n");
-    outputStream.write("| Extension | Files | Lines of Code | Total Size |\n");
+    outputStream.write("| Extension | Files | Lines of Code | Size |\n");
     outputStream.write("|-----------|-------|---------------|------------|\n");
     let codeFiles = 0;
     let codeSize = 0;
@@ -315,7 +315,7 @@ async function generateContextMap() {
   binExts.sort((a, b) => b[1].count - a[1].count);
   if (binExts.length > 0) {
     outputStream.write("### Binary / Media Files (Physical Size)\n\n");
-    outputStream.write("| Extension | Files | Total Size |\n");
+    outputStream.write("| Extension | Files | Size |\n");
     outputStream.write("|-----------|-------|------------|\n");
     let binFiles = 0;
     let binSize = 0;
