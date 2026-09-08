@@ -11,6 +11,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - Questions from the 2nd page and on, don't have any top margin, they stick to the border or the page.
 - no export includes the answers at the end.
 - `تضمين الإجابات الصحيحة` and the `تضمين الشروحات` don't do anything.
+- modal cards flicker when mouse stands on their borders.
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
