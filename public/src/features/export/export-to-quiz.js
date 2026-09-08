@@ -1955,6 +1955,8 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   /* ── Mobile ──────────────────────────────────────────────────── */
   @media (max-width: 600px) {
+    .desktop-only { display: none; }
+
     body { padding: 0; }
 
     .container { border-radius: 0; }
@@ -2120,7 +2122,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
         <button class="btn btn-secondary btn-block" onclick="quizApp.printQuiz()">
           🖨️ إطبع الامتحان
         </button>
-        <button class="btn btn-secondary btn-block" onclick="quizApp.toggleShortcutModal()" style="margin-top: 8px;">
+        <button class="btn btn-secondary btn-block desktop-only" onclick="quizApp.toggleShortcutModal()" style="margin-top: 8px;">
           ⌨️ اختصارات لوحة المفاتيح
         </button>
         <div class="menu-controls-slot" id="menuControlsSlot"></div>
