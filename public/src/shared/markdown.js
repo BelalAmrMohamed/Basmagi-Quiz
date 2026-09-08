@@ -1521,7 +1521,17 @@ export const _LTR_ONLY_SELECTOR = "pre, code, .code-block, .code-block-wrapper, 
 // Form controls: CSS unicode-bidi:plaintext handles direction natively.
 // Media elements: _processByLine sets textContent="" which destroys
 // <source> children and breaks audio/video playback entirely.
-export const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURCE", "IFRAME", "IMG", "TRACK"]);
+// BUTTON: buttons only ever carry a short, static, developer-authored
+// label (e.g. "تحقق من الإجابة" / "Show All Answers") — never
+// user-generated or markdown-rendered content — so per-line direction
+// detection buys nothing. Worse, _processByLine() rewrites textContent
+// into `<span class="text-line" style="display:block">` and applies a
+// direction class to the button itself; that in turn overrides the
+// button's own `text-align: center` rule (RTL/LTR direction has no
+// bearing on text-align, but the injected block-display span combined
+// with the direction class was visually decentering button labels).
+// Skipping BUTTON here keeps its plain textContent and CSS untouched.
+export const _SKIP_TAGS = new Set(["INPUT", "TEXTAREA", "AUDIO", "VIDEO", "SOURCE", "IFRAME", "IMG", "TRACK", "BUTTON"]);
 
 /**
  * Detects the base direction of a text string by finding its first strong

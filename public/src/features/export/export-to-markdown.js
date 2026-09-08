@@ -11,15 +11,13 @@ import {
   calculateQuizMetrics,
 } from "../../shared/rate-answers.js";
 
-const isLocalPath = (url) => {
-  if (!url) return false;
-  // Check for relative paths (./, ../, or no protocol)
-  if (url.startsWith("./") || url.startsWith("../") || url.startsWith("/")) {
-    return true;
-  }
-  // Check if it lacks a protocol (http://, https://, data:)
-  return !/^(https?:|data:)/i.test(url);
-};
+// Shared media URL resolution (relative-to-platform-origin -> absolute URL).
+// Local paths here are NOT actually unavailable — they're stored relative
+// to the platform's own origin (to save space in the free-tier Supabase
+// DB) but the files are hosted live on Vercel at a fixed origin, so they
+// just need that origin prepended to become a working absolute link.
+// See public/src/shared/media-url.js for the full rationale.
+import { resolveMediaUrl } from "../../shared/media-url.js";
 
 // Same YouTube detection/ID-extraction as quiz.js, duplicated here since
 // this module is loaded standalone (no shared import) and only needs the
@@ -34,9 +32,11 @@ const getYouTubeVideoId = (url) => {
 
 // Builds the markdown line(s) for a question's audio/video media, if any.
 // - YouTube links become a plain watch link (markdown can't embed players).
-// - Other video/audio links become a link when remote, or a note when the
-//   path is local and won't resolve outside the platform (same treatment
-//   already given to q.image just above).
+// - Other video/audio links are resolved to an absolute URL (platform-
+//   relative paths get the platform's real origin prepended — see
+//   resolveMediaUrl) and rendered as a working link. A "not available"
+//   note is only used as a genuine fallback, for paths that fail to
+//   resolve into a usable URL at all.
 const mdMediaLink = (q) => {
   let out = "";
   if (q.video) {
@@ -46,16 +46,18 @@ const mdMediaLink = (q) => {
         ? `https://www.youtube.com/watch?v=${videoId}`
         : q.video;
       out += `> 🎬 [Watch on YouTube](${watchUrl})\n\n`;
-    } else if (!isLocalPath(q.video)) {
-      out += `> 🎬 [Video](${q.video})\n\n`;
     } else {
-      out += `> 🎬 *Video not available in exported file (local path)*  \n\n`;
+      const resolvedVideo = resolveMediaUrl(q.video);
+      out += resolvedVideo
+        ? `> 🎬 [Video](${resolvedVideo})\n\n`
+        : `> 🎬 *Video not available in exported file*  \n\n`;
     }
   }
   if (q.audio) {
-    out += !isLocalPath(q.audio)
-      ? `> 🔊 [Audio](${q.audio})\n\n`
-      : `> 🔊 *Audio not available in exported file (local path)*  \n\n`;
+    const resolvedAudio = resolveMediaUrl(q.audio);
+    out += resolvedAudio
+      ? `> 🔊 [Audio](${resolvedAudio})\n\n`
+      : `> 🔊 *Audio not available in exported file*  \n\n`;
   }
   return out;
 };
@@ -163,9 +165,10 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
     let imageLink = "";
 
     if (q.image) {
-      imageLink = !isLocalPath(q.image)
-        ? `![Question Image](${q.image})\n\n`
-        : `> 📷 *Image not available in exported file (local path)*  \n\n`;
+      const resolvedImage = resolveMediaUrl(q.image);
+      imageLink = resolvedImage
+        ? `![Question Image](${resolvedImage})\n\n`
+        : `> 📷 *Image not available in exported file*  \n\n`;
     }
 
     const mediaLink = mdMediaLink(q);

@@ -514,7 +514,7 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
           <div class="dl-settings-row-title">شكل عرض الأسئلة</div>
         </div>
         <div class="dl-settings-segmented" role="radiogroup" aria-label="شكل عرض الأسئلة">
-          <button type="button" class="dl-segmented-btn" data-value="vertical" role="radio" aria-checked="false">تمرير رأسي</button>
+          <button type="button" class="dl-segmented-btn" data-value="vertical" role="radio" aria-checked="false">قائمة</button>
           <button type="button" class="dl-segmented-btn active" data-value="pagination" role="radio" aria-checked="true">صفحة لكل سؤال</button>
         </div>
       `;

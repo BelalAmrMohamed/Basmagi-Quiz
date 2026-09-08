@@ -2,6 +2,10 @@
 // JSON-only quiz import/export helpers. Document/text parsers were removed —
 // quizzes are authored and exchanged as JSON.
 import { generateQuizId } from "./quizId.js";
+// Relative-to-platform-origin media paths need to become absolute URLs in
+// the JSON export too, since the JSON is meant to be usable outside the
+// platform's own origin. See ./media-url.js for the full rationale.
+import { resolveMediaUrl } from "./media-url.js";
 
 /**
  * Parse quiz JSON text into { questions, meta }.
@@ -87,7 +91,13 @@ export async function buildJsonQuizExport(
 ) {
   const exportQuestions = questions.map((q) => {
     const out = { q: q.q };
-    if (q.image?.trim()) out.image = q.image;
+    // Resolve relative (platform-origin) media paths to absolute URLs so
+    // the exported JSON stays usable outside the platform itself. Falls
+    // back to the original string on a genuine resolution failure rather
+    // than silently dropping the field.
+    if (q.image?.trim()) out.image = resolveMediaUrl(q.image) || q.image;
+    if (q.video) out.video = resolveMediaUrl(q.video) || q.video;
+    if (q.audio) out.audio = resolveMediaUrl(q.audio) || q.audio;
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] || "";
     } else if (!Array.isArray(q.options) || q.options.length === 0) {

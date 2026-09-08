@@ -67,10 +67,6 @@ sendMessage @ ai-agent-chat.js:2455
 (anonymous) @ ai-agent-chat.js:2472
 ```
 
-#### Bad PDF Export
-![screenshot 3](image-3.png)
-The pdf export doesn't have any margin on the top, bottom, or right and left by default.
-
 #### User Prompt
 Makrdown rendering gets applied on the AI Agent Answer but not the user prompt. 
 

@@ -8,6 +8,10 @@ import { showNotification } from "../../components/notifications/notifications.j
 // Question helpers
 import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../../shared/rate-answers.js";
 
+// Shared media URL resolution (relative-to-platform-origin -> absolute URL).
+// See public/src/shared/media-url.js for the full rationale.
+import { resolveMediaUrl, isLocalPath } from "../../shared/media-url.js";
+
 import {
   renderMarkdown,
   _renderMarkdownCore,
@@ -67,6 +71,29 @@ const serializeHlKeywords = (hlKeywords) => {
 const serializeHlBuiltinsJs = (set) =>
   `new Set([${Array.from(set).map((w) => JSON.stringify(w)).join(", ")}])`;
 
+// Deterministic short hash used to namespace this quiz's localStorage
+// progress key when config.id isn't available (see progressKeySuffix in
+// buildStandaloneQuizHtml). Not cryptographic — just needs to be stable
+// across re-exports of the exact same quiz content and different across
+// distinct quizzes. FNV-1a over title + question count + every question's
+// own text, so two quizzes sharing a title still hash differently.
+const hashQuizIdentity = (title, processedQuestions) => {
+  const identity =
+    (title || "") +
+    "|" +
+    processedQuestions.length +
+    "|" +
+    processedQuestions.map((q) => q.q || "").join("|");
+
+  let hash = 0x811c9dc5; // FNV-1a 32-bit offset basis
+  for (let i = 0; i < identity.length; i++) {
+    hash ^= identity.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193); // FNV prime
+  }
+  // Unsigned, base36 for compactness.
+  return (hash >>> 0).toString(36);
+};
+
 export async function buildStandaloneQuizHtml(config, questions, exportOptions = {}) {
   const {
     showAnswersButton = false,
@@ -90,6 +117,25 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
       }
     }
   }
+
+  // ── Per-quiz progress-storage namespace ──────────────────────────
+  // Every exported .html file is opened from the same browser/origin
+  // (or the same file:// context), so a single hardcoded localStorage
+  // key like 'quiz_progress' would collide across every quiz the
+  // reader has ever downloaded — opening a brand-new quiz could
+  // incorrectly restore answers left over from a completely different
+  // quiz. config.id is the ideal namespace when the quiz has one (a
+  // saved/published quiz on the platform), but a fresh quiz exported
+  // straight from the create-quiz page has no id at all — so this
+  // falls back to a short deterministic hash derived from content
+  // that's fixed for this quiz forever (title + question count + the
+  // literal text of every question, so two same-titled quizzes with
+  // different content still get different keys). Baked in once here
+  // at export time, exactly like EXPORT_LAYOUT below — never
+  // recomputed client-side, so it can't drift from run to run.
+  const progressKeySuffix =
+    config.id ||
+    hashQuizIdentity(config.title, processedQuestions);
 
   const quizInfoModalHtml = buildQuizInfoModalHtml(config, processedQuestions.length, creatorProfile);
 
@@ -195,11 +241,6 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     border-radius: 8px;
   }
 
-  ::selection {
-    background: rgba(99, 102, 241, 0.12);
-    color: #6366f1;
-  }
-
   /* ── Design Tokens ───────────────────────────────────────────── */
   :root {
     color-scheme: light;
@@ -290,6 +331,64 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     --shadow-lg: 0 20px 60px rgba(0,0,0,0.8);
   }
 
+  /* ── Dark-mode glow/shadow neutralization ────────────────────────
+     The brand purple/indigo (--gradient-start/--gradient-end) is kept
+     on interactive elements in dark mode (buttons, links, selected/
+     focus borders) intentionally — that's a normal accent color and
+     reads fine on true black. What doesn't read well is the *ambient*
+     ombre glow these hardcoded rgba(102,126,234,...) shadows/rings
+     create when spread across large ombre ambient chrome (the menu
+     toggle's floating shadow, the current-nav-question badge glow,
+     the primary button's drop shadow, the essay textarea's focus
+     ring, text selection tint, and the scrollbar thumb) — on a true
+     black background these read as a purple/blue haze bleeding across
+     the UI rather than a normal, contained shadow. Dimming their
+     alpha and, for the largest ambient ones, tightening spread keeps
+     the same brand hue as a subtle cue without the glow. */
+  [data-theme="dark"] ::selection {
+    background: rgba(102, 126, 234, 0.28);
+  }
+
+  [data-theme="dark"] .menu-toggle {
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+  }
+
+  [data-theme="dark"] .menu-toggle:hover {
+    box-shadow: 0 6px 22px rgba(102, 126, 234, 0.28);
+  }
+
+  [data-theme="dark"] .nav-btn.current {
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.22);
+  }
+
+  [data-theme="dark"] .question-num {
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.18);
+  }
+
+  [data-theme="dark"] .essay-input:focus {
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.16);
+  }
+
+  [data-theme="dark"] .btn-primary {
+    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.2);
+  }
+
+  [data-theme="dark"] .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+  }
+
+  [data-theme="dark"] .btn-primary:active:not(:disabled) {
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+  }
+
+  [data-theme="dark"] html {
+    scrollbar-color: #4a4d8f transparent;
+  }
+
+  [data-theme="dark"] html::-webkit-scrollbar-thumb {
+    background-color: #4a4d8f;
+  }
+
   /* ── Base ────────────────────────────────────────────────────── */
   [data-theme="dark"] body { background: #000000; }
 
@@ -376,7 +475,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   .menu-toggle.active span:nth-child(1) {
-    transform: rotate(45deg) translate(5.5px, 5.5px);
+    transform: translateY(7.5px) rotate(45deg);
   }
 
   .menu-toggle.active span:nth-child(2) {
@@ -385,7 +484,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   .menu-toggle.active span:nth-child(3) {
-    transform: rotate(-45deg) translate(5.5px, -5.5px);
+    transform: translateY(-7.5px) rotate(-45deg);
   }
 
   /* ── Side Menu ───────────────────────────────────────────────── */
@@ -1419,6 +1518,22 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     border-top: 1px solid var(--border-color);
   }
 
+  /* When relocated into the side menu (pagination mode — see
+     setupPager()), the bar drops its fixed-footer chrome and stacks
+     its buttons full-width like the rest of the menu's actions. */
+  .menu-controls-slot .controls.controls-in-menu {
+    padding: 0;
+    border-top: none;
+    background: transparent;
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 10px;
+  }
+
+  .menu-controls-slot .controls.controls-in-menu .btn {
+    width: 100%;
+  }
+
   /* ── Pagination mode ─────────────────────────────────────────────
      When EXPORT_LAYOUT === "pagination", quizApp.applyPagerVisibility()
      toggles this class on .quiz-body and adds .pg-active to exactly one
@@ -1799,7 +1914,17 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     body { background: white; padding: 0; }
 
     .menu-toggle, .side-menu, .side-menu-overlay,
-    .controls, .toast, .skip-link { display: none !important; }
+    .controls, .toast, .skip-link, .pager-controls { display: none !important; }
+
+    /* Pagination mode only ever keeps the current .pg-active card
+       visible on screen (see .quiz-body.paginated .question-card
+       above) — printing would otherwise print just that single
+       question. Force every card visible for print regardless of
+       EXPORT_LAYOUT/pagination state, so printQuiz() always prints
+       the whole exam. */
+    .quiz-body.paginated .question-card {
+      display: block !important;
+    }
 
     .container { box-shadow: none; border-radius: 0; }
 
@@ -1988,6 +2113,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
         <button class="btn btn-secondary btn-block" onclick="quizApp.printQuiz()">
           🖨️ إطبع الامتحان
         </button>
+        <div class="menu-controls-slot" id="menuControlsSlot"></div>
       </div>
       
       <div class="menu-section">
@@ -2026,7 +2152,7 @@ ${quizInfoModalHtml}
       <button class="btn btn-primary pager-btn" id="pagerNextBtn" onclick="quizApp.pagerGo(1)">التالي</button>
     </div>
     
-    <div class="controls">      
+    <div class="controls" id="controlsBar">      
       <button class="btn btn-primary" onclick="quizApp.submit()" id="submitBtn">
         <span class="btn-text">✓ تسليم الامتحان</span>
         <span class="btn-loader">
@@ -2069,6 +2195,16 @@ ${quizInfoModalHtml}
   // show-answers *value* toggles, which remain fully reader-side).
   const EXPORT_SHOW_ANSWERS_BUTTON = ${JSON.stringify(!!showAnswersButton)};
   const EXPORT_LAYOUT = ${JSON.stringify(layout === "vertical" ? "vertical" : "pagination")};
+
+  // Namespaces this quiz's saved progress so it can't collide with any
+  // other quiz previously downloaded and opened from the same browser/
+  // origin (see hashQuizIdentity()/progressKeySuffix at export time —
+  // this value is fixed for this specific exported file forever).
+  // quizTheme and quiz_high_performance_pref are intentionally left
+  // un-namespaced/shared below — those are reader display preferences,
+  // not per-quiz answer state, so sharing them across every downloaded
+  // quiz is the desired behavior.
+  const PROGRESS_STORAGE_KEY = ${JSON.stringify(`quiz_progress_${progressKeySuffix}`)};
 
   // ── Safe localStorage wrapper ──
   // Downloaded quizzes are routinely opened straight from disk
@@ -2202,11 +2338,30 @@ ${quizInfoModalHtml}
     // ── Pagination mode ── EXPORT_LAYOUT is baked in at export time (see
     // download-quiz-modal.js's settings panel); "vertical" leaves the
     // pager controls hidden and every card visible (previous behavior).
+    // In pagination mode, the exam actions (تسليم الامتحان / إعادة
+    // الامتحان / مراجعة) move into the side menu's "الإجراءات" section
+    // instead of sitting as a fixed footer bar under the single active
+    // question — the footer bar reads as "attached to every question"
+    // in that context since it's the only thing below the lone visible
+    // card. This physically relocates the existing #controlsBar element
+    // (keeping its real ids/onclick handlers intact, so submit()/reset()/
+    // enterReviewMode() and their DOM lookups by id keep working
+    // unchanged) into the side menu's slot, rather than duplicating the
+    // markup — duplicating would mean two #submitBtn/#reviewBtn elements
+    // sharing the same id, which breaks every getElementById() call site.
     setupPager() {
       if (EXPORT_LAYOUT !== "pagination") return;
       const quizBody = document.querySelector(".quiz-body");
       quizBody.classList.add("paginated");
       document.getElementById("pagerControls").style.display = "flex";
+
+      const controlsBar = document.getElementById("controlsBar");
+      const menuSlot = document.getElementById("menuControlsSlot");
+      if (controlsBar && menuSlot) {
+        controlsBar.classList.add("controls-in-menu");
+        menuSlot.appendChild(controlsBar);
+      }
+
       this.applyPagerVisibility();
     },
 
@@ -2272,8 +2427,32 @@ ${quizInfoModalHtml}
     // never runs grading — so it works before, during, or after a real
     // attempt, and toggling it off returns the quiz to exactly the state
     // the learner was in (their selections/typed essay text untouched).
+    //
+    // Turning it ON is confirmed first (via the same showModal()/onConfirm
+    // pattern used by reset()/submit()) since it's a one-click spoiler that
+    // can ruin the quiz for the learner — turning it back OFF needs no
+    // confirmation since it's simply undoing a display state.
     toggleShowAllAnswers() {
-      this.showAllAnswers = !this.showAllAnswers;
+      if (this.showAllAnswers) {
+        this.setShowAllAnswers(false);
+        return;
+      }
+
+      this.showModal(
+        "إظهار كل الإجابات",
+        "<p>هل أنت متأكد من إظهار كل الإجابات؟ سيتم كشف كل الإجابات الصحيحة الآن.</p>",
+        () => {
+          this.closeModal();
+          this.setShowAllAnswers(true);
+        }
+      );
+    },
+
+    // Actually applies the show/hide-all-answers state. Split out of
+    // toggleShowAllAnswers() so the confirmation modal above can gate only
+    // the reveal path, not the hide path.
+    setShowAllAnswers(value) {
+      this.showAllAnswers = value;
       const toggleSwitch = document.getElementById('showAnswersSwitch');
       const toggleOption = document.getElementById('showAnswersToggle');
       if (toggleSwitch) toggleSwitch.classList.toggle('active', this.showAllAnswers);
@@ -2325,11 +2504,11 @@ ${quizInfoModalHtml}
         currentQuestion: this.currentQuestion,
         timestamp: Date.now()
       };
-      safeStorage.set('quiz_progress', JSON.stringify(state));
+      safeStorage.set(PROGRESS_STORAGE_KEY, JSON.stringify(state));
     },
   
     loadProgress() {
-      const saved = safeStorage.get('quiz_progress');
+      const saved = safeStorage.get(PROGRESS_STORAGE_KEY);
       if (saved) {
         try {
           const state = JSON.parse(saved);
@@ -3117,7 +3296,7 @@ ${quizInfoModalHtml}
         submitBtn.classList.remove('loading');
         document.getElementById('reviewBtn').disabled = true;
         
-        safeStorage.remove('quiz_progress');
+        safeStorage.remove(PROGRESS_STORAGE_KEY);
         
         this.announceToScreenReader('Quiz submitted. Check results below.');
       }, 800);
@@ -3261,7 +3440,7 @@ ${quizInfoModalHtml}
       this.stopTimer();
       this.startQuizTimer();
       
-      safeStorage.remove('quiz_progress');
+      safeStorage.remove(PROGRESS_STORAGE_KEY);
       
       window.scrollTo({ top: 0, behavior: "smooth" });
       this.showToast('Quiz reset', 'info');
@@ -3464,8 +3643,8 @@ ${quizInfoModalHtml}
   </html>`;
 }
 
-export async function exportToQuiz(config, questions) {
-  const quizHTML = await buildStandaloneQuizHtml(config, questions);
+export async function exportToQuiz(config, questions, exportOptions = {}) {
+  const quizHTML = await buildStandaloneQuizHtml(config, questions, exportOptions);
   const blob = new Blob([quizHTML], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -3482,60 +3661,6 @@ export async function exportToQuiz(config, questions) {
     "./favicon.png",
   );
 }
-
-// ============================================================================
-// MEDIA URL RESOLUTION
-// ============================================================================
-// Some question videos/audio are stored as paths *relative to the platform's
-// own origin* (done deliberately to save space in the free-tier Supabase DB —
-// the files live alongside the app's own static assets on Vercel instead of
-// in the DB). That's fine while viewing the quiz live on the site, since
-// relative URLs resolve against window.location.origin automatically. But a
-// standalone exported .html file opened from disk (file:///...) has no such
-// origin, so the same relative path resolves against the local filesystem
-// instead and 404s. Images already avoid this by being converted to base64
-// (see convertImagesToBase64 below); video/audio are too large to inline as
-// base64, so instead we rewrite relative paths to absolute URLs against the
-// platform's real origin here, at export time.
-const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
-
-/**
- * Resolves a possibly-relative media URL (video/audio) to an absolute URL
- * against the platform's origin. Leaves absolute http(s)/data/blob URLs
- * untouched. Safe to call with the live site's own origin too (falls back
- * to window.location.origin there instead of hardcoding basmagi's domain),
- * so this doesn't misbehave on a fork/staging deploy.
- * @param {string} url
- * @returns {string}
- */
-const resolveMediaUrl = (url) => {
-  if (!url || typeof url !== "string") return url;
-  if (/^(https?:|data:|blob:)/i.test(url)) return url;
-
-  // Fix #file-origin: window.location.origin is NOT falsy when the export
-  // is opened via file:///... — per spec, a file: URL's origin serializes
-  // to the literal string "null" (browser-dependent, but Chrome/Firefox/
-  // Edge all do this), which is truthy and previously defeated the
-  // `|| PLATFORM_ORIGIN` fallback entirely. That made new URL(relativePath,
-  // "null") throw, hit the catch below, and return the UNRESOLVED relative
-  // path — reproducing the exact "video path breaks when downloaded and
-  // opened from file:///D:/Downloads/..." bug this was meant to fix.
-  // Explicitly reject file:/null/empty origins so the real platform origin
-  // is used instead whenever the page itself has no usable origin.
-  const winOrigin =
-    typeof window !== "undefined" && window.location && window.location.origin;
-  const origin =
-    winOrigin && winOrigin !== "null" && !/^file:/i.test(winOrigin)
-      ? winOrigin
-      : PLATFORM_ORIGIN;
-
-  try {
-    return new URL(url, origin).href;
-  } catch {
-    // Malformed URL — leave as-is rather than throwing during export.
-    return url;
-  }
-};
 
 // Image Helpers
 const convertImagesToBase64 = async (questions) => {
@@ -3561,12 +3686,14 @@ const convertImagesToBase64 = async (questions) => {
 
     // Video/audio can't be feasibly inlined as base64 (file size), so
     // relative paths are rewritten to absolute URLs against the platform's
-    // origin instead — see resolveMediaUrl() above.
+    // origin instead — see shared/media-url.js. Fall back to the original
+    // string on a genuine resolution failure (empty/malformed URL) so a
+    // broken value doesn't get silently wiped out.
     if (question.video) {
-      processedQuestion.video = resolveMediaUrl(question.video);
+      processedQuestion.video = resolveMediaUrl(question.video) || question.video;
     }
     if (question.audio) {
-      processedQuestion.audio = resolveMediaUrl(question.audio);
+      processedQuestion.audio = resolveMediaUrl(question.audio) || question.audio;
     }
 
     processedQuestions.push(processedQuestion);
@@ -3598,14 +3725,4 @@ const getDataUrl = (url) => {
     };
     img.src = url;
   });
-};
-
-const isLocalPath = (url) => {
-  if (!url) return false;
-  // Check for relative paths (./, ../, or no protocol)
-  if (url.startsWith("./") || url.startsWith("../") || url.startsWith("/")) {
-    return true;
-  }
-  // Check if it lacks a protocol (http://, https://, data:)
-  return !/^(https?:|data:)/i.test(url);
 };
