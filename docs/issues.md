@@ -19,13 +19,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
-### App icon
-- The app icon on mobile phones still touches the borders of the app icon, even though it became white now, so I know it's using the maskable icon. So, I don't know whether should I increase the empty margin on the maskable icons or not.
-
-### Outdated Export Features 
-
-See `docs/plan-to-update-exports.md`
-
 ### Export Improvements
 - Update and Improve Quiz Export (export-to-quiz.js). Here are suggestions:
   - The `🔑 إظهار كل الإجابات`. Do one of these: 

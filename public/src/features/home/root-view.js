@@ -294,36 +294,25 @@ export async function renderRootCategories() {
             menu.appendChild(warningEl);
           }
 
-          // No "نسخ الرابط"/"مشاركة الرابط" here — this card's contents are
-          // strictly local (localStorage), so there is no shareable link for
-          // it, unlike manifest courses/folders/quizzes which live on the
-          // server and have a real, shareable URL.
-
-          // const alreadyMine = document.createElement("button");
-          // alreadyMine.type = "button";
-          // alreadyMine.className = "exam-action-btn";
-          // alreadyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
-          // alreadyMine.onclick = () => {
-          //   closeMenu();
-          //   showNotification("امتحاناتك", "هذا المجلد موجود بالفعل في امتحاناتك.", "info");
-          // };
-          // menu.appendChild(alreadyMine);
-
           // Export-as-JSON (Part D): a low-key, no-devtools-required way to
           // get the raw "user_quizzes" data out, both for debugging (what
           // this session previously needed a manual console `copy(...)` for)
           // and as a manual backup before a destructive action like the
-          // "حذف الكل" button right below it.
-          const exportBtn = document.createElement("button");
-          exportBtn.type = "button";
-          exportBtn.className = "exam-action-btn";
-          exportBtn.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تصدير بيانات امتحاناتك</span>`;
-          exportBtn.onclick = (clickEvent) => {
-            clickEvent.stopPropagation();
-            closeMenu();
-            exportUserQuizzesAsJson();
-          };
-          menu.appendChild(exportBtn);
+          // Hidden entirely once "امتحاناتك" is already empty (freshBreakdown
+          // computed above) — nothing to export, mirroring the "حذف الكل"
+          // visibility rule right below it.
+          if (freshBreakdown.total > 0) {
+            const exportBtn = document.createElement("button");
+            exportBtn.type = "button";
+            exportBtn.className = "exam-action-btn";
+            exportBtn.innerHTML = `${DOWNLOAD_ICON_SVG}<span>تصدير بيانات امتحاناتك</span>`;
+            exportBtn.onclick = (clickEvent) => {
+              clickEvent.stopPropagation();
+              closeMenu();
+              exportUserQuizzesAsJson();
+            };
+            menu.appendChild(exportBtn);
+          }
 
           // "حذف الكل" (Part C, item 1) — a fully destructive, collection-
           // wide wipe, kept separate from every other action here with its

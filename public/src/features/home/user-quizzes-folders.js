@@ -354,7 +354,7 @@ export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
 }
 
 export async function deleteFolder(folderId) {
-  if (!(await _confirm("هل أنت متأكد من حذف هذا المجلد/المادة وكل ما بداخله؟"))) return;
+  if (!(await _confirm("هل أنت متأكد من الحذف"))) return;
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userQuizzes);
 
@@ -867,13 +867,6 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         }),
       );
     }
-    if (targetType === "folder" || targetType === "course") {
-      contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
-    }
-    // Divider before global actions
-    const divider = document.createElement("div");
-    divider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
-    contextMenuEl.appendChild(divider);
 
     contextMenuEl.appendChild(
       createMenuItem(ASK_AI_SVG, "اسأل الباشـمبصمج", async () => {
@@ -884,6 +877,13 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         if (attachment) openAIAgentWithAttachment(attachment);
       }),
     );
+
+    contextMenuEl.appendChild(createMenuItem(DELETE_SVG, "حذف", () => deleteFolder(targetId), true));
+
+    // Divider before global actions
+    const divider = document.createElement("div");
+    divider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
+    contextMenuEl.appendChild(divider);
   }
 
   // Global actions — always visible regardless of what was right-clicked
