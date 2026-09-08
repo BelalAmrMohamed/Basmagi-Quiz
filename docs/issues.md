@@ -37,7 +37,9 @@ See `docs/plan-to-update-exports.md`
 ### `تصدير بيانات امتحاناتك` on the امتحاناتك card should be invisible when the `حذف الكل` is invisible
 - Since `حذف الكل` is invisible when there are no quizzes to be deleted, `تصدير بيانات امتحاناتك` should be invisible for the same reason.
 
-### Remove the TXT export from the AI Agent's `تصدير المحادثة`
+### Remove the TXT export from the AI Agent's `تصدير المحادثة` Keep the MD Export.
+
+### Sign in title on Google Sign in.
 
 ## New Features
 
