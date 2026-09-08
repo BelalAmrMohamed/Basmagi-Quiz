@@ -273,21 +273,23 @@ export function initKeyboardNav({
  * (`--glass-bg-light`, `--glass-border`, `--glass-blur`, `--glass-inset`,
  * and other existing design-system variables).  No new CSS rules are required.
  *
+ * @param {Array<[string, string]>} [rows] — [key, description] pairs shown
+ *   in the table. Defaults to the platform's full shortcut set. Callers
+ *   whose keyboard wiring differs (e.g. the standalone .html export, which
+ *   has no bookmark concept) can pass their own list instead so the modal
+ *   never documents a shortcut that doesn't actually exist for them.
  * @returns {string}
  */
-export function getShortcutModalHTML() {
-  /** @type {Array<[string, string]>} */
-  const rows = [
-    ["→", "Next question"],
-    ["←", "Previous question"],
-    ["↑ / ↓", "Select neighbouring option"],
-    ["1 – 9", "Select option by index"],
-    ["Enter", "Check / submit answer"],
-    ["B", "Bookmark question"],
-    ["F", "Flag question"],
-    ["?", "Toggle this help"],
-  ];
-
+export function getShortcutModalHTML(rows = [
+  ["→", "Next question"],
+  ["←", "Previous question"],
+  ["↑ / ↓", "Select neighbouring option"],
+  ["1 – 9", "Select option by index"],
+  ["Enter", "Check / submit answer"],
+  ["B", "Bookmark question"],
+  ["F", "Flag question"],
+  ["?", "Toggle this help"],
+]) {
   const tableRows = rows
     .map(
       ([key, desc]) => `

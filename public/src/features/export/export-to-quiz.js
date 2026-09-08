@@ -45,6 +45,13 @@ import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { buildQuizInfoModalHtml, fetchCreatorProfile } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { QuizInfoModalCSS } from "../../components/quiz-info-modal/quiz-info-modal-css.js";
 
+// Keyboard-shortcut help modal markup (⌨️ Keyboard Shortcuts dialog) —
+// generated once at export time since it's pure/static HTML with no
+// dependency on quiz content. The wiring (initKeyboardNav-equivalent
+// keydown listener) is baked in separately below, adapted to this
+// export's own DOM shape — see setupKeyboardNavigation().
+import { getShortcutModalHTML } from "../quiz/keyboard-nav.js";
+
 // Builds the <tr> rows for the quiz-info dialog at export time (the dialog
 // content is static once downloaded, so this runs once here rather than
 // being re-derived client-side). Field set and Arabic labels match the
@@ -2113,6 +2120,9 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
         <button class="btn btn-secondary btn-block" onclick="quizApp.printQuiz()">
           🖨️ إطبع الامتحان
         </button>
+        <button class="btn btn-secondary btn-block" onclick="quizApp.toggleShortcutModal()" style="margin-top: 8px;">
+          ⌨️ اختصارات لوحة المفاتيح
+        </button>
         <div class="menu-controls-slot" id="menuControlsSlot"></div>
       </div>
       
@@ -2182,6 +2192,17 @@ ${quizInfoModalHtml}
       </div>
     </div>
   </div>
+
+  ${getShortcutModalHTML([
+    ["→", "السؤال التالي"],
+    ["←", "السؤال السابق"],
+    ["↑ / ↓", "اختيار الخيار المجاور"],
+    ["1 – 9", "اختيار خيار برقمه"],
+    ["Enter", "تحقق من الإجابة"],
+    ["F", "علّم السؤال للمراجعة"],
+    ["M", "فتح/إغلاق القائمة"],
+    ["?", "إظهار/إخفاء هذه القائمة"],
+  ])}
   
   <script>
   const questions = ${JSON.stringify(processedQuestions)};
@@ -3118,10 +3139,13 @@ ${quizInfoModalHtml}
       this.lockedQuestions.add(qIndex);
 
       if (isEssay) {
-        const textarea = document.getElementById(\`essay\${qIndex}\`);
-        if (textarea) textarea.readOnly = true;
-        const modelEl = document.getElementById(\`modelAns\${qIndex}\`);
-        if (modelEl) modelEl.classList.add("show");
+        // Reuses handleEssaySubmission's exact grading path (gradeEssay,
+        // stars, #essayScore population, model-answer reveal) so a
+        // per-question "check" shows the same (score/5) breakdown that
+        // whole-quiz submit() already shows — previously this only
+        // locked the textarea and revealed the model answer with no
+        // grade at all.
+        this.handleEssaySubmission(qIndex);
       } else {
         const card = document.getElementById(\`q\${qIndex}\`);
         const buttons = card ? card.querySelectorAll(".option-btn") : [];
@@ -3480,58 +3504,213 @@ ${quizInfoModalHtml}
       });
     },
   
+    // ── Keyboard navigation (ported from keyboard-nav.js) ──────────────
+    // The platform's keyboard-nav.js targets its own DOM shape (radio/
+    // checkbox <input> elements inside .option-row, cards carrying a
+    // data-question-index attribute). This export uses a different shape
+    // (.option-btn <button> elements, .question-card with id="q{i}") —
+    // so SHORTCUT_MAP/isSuppressed/toggleShortcutModal are ported
+    // verbatim (they're DOM-shape-agnostic), while getActiveQuestionCard/
+    // moveOptionFocus/initKeyboardNav are re-implemented here against the
+    // export's actual markup, preserving the same keys and behavior.
+    SHORTCUT_MAP: {
+      ArrowRight: "next",
+      ArrowLeft: "prev",
+      ArrowDown: "option-next",
+      ArrowUp: "option-prev",
+      1: "select-0",
+      2: "select-1",
+      3: "select-2",
+      4: "select-3",
+      5: "select-4",
+      6: "select-5",
+      7: "select-6",
+      8: "select-7",
+      9: "select-8",
+      Enter: "check",
+      f: "flag",
+      "?": "help",
+    },
+
+    isShortcutSuppressed() {
+      const el = document.activeElement;
+      const tag = el?.tagName;
+      if (tag === "TEXTAREA") return true;
+      if (tag === "INPUT") {
+        const type = (el.type || "text").toLowerCase();
+        if (type !== "radio" && type !== "checkbox") return true;
+      }
+      const modal = document.getElementById("modal");
+      if (modal && modal.classList.contains("show")) return true;
+      return false;
+    },
+
+    // Returns the .question-card that keyboard interaction should target:
+    // the single visible card in pagination mode, or — in vertical mode,
+    // where every card is stacked in the DOM at once — whichever card
+    // contains focus, falling back to whichever card's vertical center is
+    // closest to the viewport's vertical center (the one being read).
+    getActiveQuestionCard() {
+      const cards = Array.from(document.querySelectorAll(".question-card"));
+      if (cards.length === 0) return null;
+      if (EXPORT_LAYOUT === "pagination") {
+        return cards.find((c) => c.classList.contains("pg-active")) || cards[0];
+      }
+      if (cards.length === 1) return cards[0];
+
+      const focused = document.activeElement?.closest(".question-card");
+      if (focused) return focused;
+
+      const viewportCenter = window.innerHeight / 2;
+      let closest = null;
+      let closestDistance = Infinity;
+      cards.forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+        const cardCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(cardCenter - viewportCenter);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closest = card;
+        }
+      });
+      return closest || cards[0];
+    },
+
+    getActiveQuestionIndex() {
+      const card = this.getActiveQuestionCard();
+      if (!card) return this.currentQuestion;
+      const match = /^q(\d+)$/.exec(card.id || "");
+      return match ? parseInt(match[1], 10) : this.currentQuestion;
+    },
+
+    // Moves focus between .option-btn elements within the active card,
+    // wrapping at the ends. Returns the option index moved to, or -1 if
+    // there's nothing to move between (essay cards, cards with no
+    // options) so native page scroll is left intact.
+    moveOptionFocus(direction) {
+      const card = this.getActiveQuestionCard();
+      if (!card) return -1;
+
+      const buttons = Array.from(
+        card.querySelectorAll(".option-btn:not(.disabled)"),
+      );
+      if (buttons.length === 0) return -1;
+
+      const currentIndex = buttons.indexOf(document.activeElement);
+      let nextIndex;
+      if (currentIndex === -1) {
+        const selectedIndex = buttons.findIndex((b) => b.classList.contains("selected"));
+        nextIndex = selectedIndex >= 0
+          ? (selectedIndex + direction + buttons.length) % buttons.length
+          : (direction === 1 ? 0 : buttons.length - 1);
+      } else {
+        nextIndex = (currentIndex + direction + buttons.length) % buttons.length;
+      }
+
+      buttons[nextIndex].focus();
+      return nextIndex;
+    },
+
+    handleOptionKeydown(event, qIndex, optIndex) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        this.selectAnswer(qIndex, optIndex);
+      }
+    },
+
     setupKeyboardNavigation() {
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
           this.closeModal();
           this.closeMenu();
+          return;
         }
-        
-        if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey) {
+
+        if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !this.isShortcutSuppressed()) {
           const modal = document.getElementById("modal");
           if (!modal.classList.contains("show")) {
             this.toggleMenu();
           }
+          return;
         }
-        
-        if (e.key >= '1' && e.key <= '4' && !this.submitted) {
-          const optIndex = parseInt(e.key) - 1;
-          const q = questions[this.currentQuestion];
-          if (!this.isEssayQuestion(q) && optIndex < q.options.length) {
-            this.selectAnswer(this.currentQuestion, optIndex);
-          }
-        }
-        
-        if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) {
-          const targetEl = e.target;
-          if (targetEl.tagName !== 'TEXTAREA' && targetEl.tagName !== 'INPUT') {
+
+        if (this.isShortcutSuppressed()) return;
+
+        const action = this.SHORTCUT_MAP[e.key];
+        if (!action) return;
+
+        // ArrowUp/ArrowDown: move focus to (and, for single-choice
+        // questions, select) the neighbouring option. Multi-select
+        // buttons only move focus so arrows don't toggle answers on/off
+        // while navigating.
+        if (action === "option-next" || action === "option-prev") {
+          const index = this.moveOptionFocus(action === "option-next" ? 1 : -1);
+          if (index >= 0) {
             e.preventDefault();
+            const qIndex = this.getActiveQuestionIndex();
+            const q = questions[qIndex];
+            if (q && !Array.isArray(q.correct)) {
+              this.selectAnswer(qIndex, index);
+            }
+          }
+          return;
+        }
+
+        e.preventDefault();
+
+        switch (action) {
+          case "next":
             this.jumpToQuestion(Math.min(this.currentQuestion + 1, questions.length - 1));
-          }
-        }
-        
-        if ((e.key === 'p' || e.key === 'P') && !e.ctrlKey && !e.metaKey) {
-          const targetEl = e.target;
-          if (targetEl.tagName !== 'TEXTAREA' && targetEl.tagName !== 'INPUT') {
-            e.preventDefault();
+            break;
+
+          case "prev":
             this.jumpToQuestion(Math.max(this.currentQuestion - 1, 0));
+            break;
+
+          case "select-0":
+          case "select-1":
+          case "select-2":
+          case "select-3":
+          case "select-4":
+          case "select-5":
+          case "select-6":
+          case "select-7":
+          case "select-8": {
+            const qIndex = this.getActiveQuestionIndex();
+            const q = questions[qIndex];
+            const optIndex = Number(action.split("-")[1]);
+            if (q && Array.isArray(q.options) && optIndex < q.options.length) {
+              this.selectAnswer(qIndex, optIndex);
+            }
+            break;
           }
-        }
-        
-        if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey) {
-          const targetEl = e.target;
-          if (targetEl.tagName !== 'TEXTAREA' && targetEl.tagName !== 'INPUT') {
-            e.preventDefault();
-            this.toggleFlag(this.currentQuestion);
-          }
+
+          case "check":
+            this.checkAnswerForQuestion(this.getActiveQuestionIndex());
+            break;
+
+          case "flag":
+            this.toggleFlag(this.getActiveQuestionIndex());
+            break;
+
+          case "help":
+            this.toggleShortcutModal();
+            break;
         }
       });
     },
-  
-    handleOptionKeydown(event, qIndex, optIndex) {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        this.selectAnswer(qIndex, optIndex);
+
+    toggleShortcutModal() {
+      const modal = document.getElementById("shortcutModal");
+      if (!modal) return;
+      const isHidden = modal.hasAttribute("hidden");
+      if (isHidden) {
+        modal.removeAttribute("hidden");
+        modal.style.display = "flex";
+      } else {
+        modal.setAttribute("hidden", "");
+        modal.style.display = "none";
       }
     },
   

@@ -21,23 +21,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
-### Export Fixes
-#### export-to-markdown.js
-- Local Path (Relative to the platform) media doesn't get included in the markdown! `🎬 Video not available in exported file (local path)`. It should be included aftre resolving the path.
-- The reason I have some "relative-path" quizzes, is to save space in the free-tier supabase DB. But they are being hosted on Vercel. 
-
-#### export-to-json.js
-- JSON Export should include all links to media, too (images, videos, audio), and it should solve relative path ones.
-
-#### export-to-quiz.js
-- `🔑 زر إظهار كل الإجابات`: Should have a confirmation modal.
-- `check-answer-btn`'s text should be centered.
-- Dark mode hurts the eye, because alot of elements stay purple.
-- On Pagination Mode, the `.controls` buttons should be inside the side-menu, instead of being under every single question.
-- The Print Button doesn't work on Pagination mode.
+### export-to-quiz.js
+- `check-answer-btn`'s should show the grading on Essay questions (out of 5).
+- Add Keyboard Navigation (similar to `quiz.js` and `keyboard-nav.js`)
 - The `.menu-toggle` isn't perfectly aligned when `.active`
-- When I download a brand new quiz, and enter it, the first thing I see is `تم استعادة إجاباتك السابقة`, even though I didn't solve it before, I just downloaded it now, and when I go to the navigation in the side-menu, I find that alot of questions are pre-answred. So the memory that recovers user progress is shared through out all quizzes that the user downloads, this is so messed up.
-- Downloading a quiz as `تمرير رأسي` doesn't work anymore, and I don't know why did AI call it `تمرير رأسي` anyways.
 
 ### Sign in title on Google Sign in.
 - When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something.
