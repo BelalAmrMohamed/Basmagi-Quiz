@@ -82,11 +82,22 @@
 .export-card:focus-visible {
   border-color: var(--color-primary);
   background: var(--color-primary-light);
-  transform: translateY(-3px);
   box-shadow: var(--shadow-md);
 }
+/* Fix #flicker: the hover "lift" must move the CONTENT, not the card box.
+   When `transform: translateY(-3px)` was applied to .export-card itself,
+   the whole bounding box jumped 3px up on hover, so a cursor close to the
+   bottom edge left the box → :hover dropped → the card slid back down →
+   :hover re-engaged — the reported "flickers when the mouse crosses the
+   hover/normal boundary". Moving the transform to the pointer-events:none
+   content child (which contributes no hit area) preserves the lift while
+   keeping the card's hit box stationary. */
+.export-card:hover .export-card-content,
+.export-card:focus-visible .export-card-content {
+  transform: translateY(-3px);
+}
 
-.export-card:active {
+.export-card:active .export-card-content {
   transform: translateY(0);
 }
 
@@ -96,6 +107,7 @@
   align-items: center;
   gap: 5px;
   pointer-events: none;
+  transition: transform 0.18s;
 }
 
 .export-icon {

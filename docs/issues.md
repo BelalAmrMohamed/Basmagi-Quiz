@@ -27,12 +27,17 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 See `docs/plan-to-update-exports.md`
 
 ### Export Improvements
-- Update and Improve Quiz Export. Here are suggestions:
-  - The `🔑 إظهار كل الإجابات` should be a button not a toggle, and do one of these: 
+- Update and Improve Quiz Export (export-to-quiz.js). Here are suggestions:
+  - The `🔑 إظهار كل الإجابات`. Do one of these: 
     - A confirmation modal before showing all answers.
-    - A setting in the export settings panel to include that button or not.
+    - A setting in the export settings panel on whether to include that button or not.
   - `تحقق من الإجابة` on each question (similar to the quiz.html page)
   - Pagination view instead of vertical view (similar to the quiz page's default view)
+  - True Black Dark Mode, not this blue one.
+  - Add the "الأداء الفائق" from the platform to this export, too.
+- Markdown Export
+  - Copyign instead of downloading, doesn't show the settings panel
+  - Audio and video and YouTube links aren't being included
 
 ### `تصدير بيانات امتحاناتك` on the امتحاناتك card should be invisible when the `حذف الكل` is invisible
 - Since `حذف الكل` is invisible when there are no quizzes to be deleted, `تصدير بيانات امتحاناتك` should be invisible for the same reason.

@@ -448,8 +448,26 @@ export async function exportToPptx(
       style.textContent = `
         .${scopeClass} table{border-collapse:collapse;width:100%;margin:6px 0}
         .${scopeClass} td,.${scopeClass} th{border:1px solid #cbd5e1;padding:5px 10px;text-align:left;font-size:0.92em}
-        .${scopeClass} th{background:#f1f5f9;font-weight:700}
-        .${scopeClass} pre{background:#1e293b;color:#e2e8f0;padding:10px 14px;border-radius:7px;
+        .${scopeClass} td,.${scopeClass} th{color:#1e293b!important;background-color:transparent!important}
+        .${scopeClass} th{background:#f1f5f9!important;font-weight:700}
+        /* Fix #contrast-3 (fresh LibreOffice Impress repro screenshot — a
+           table with a purple header row and near-invisible body text):
+           the HOST page's MARKDOWN_CSS [data-theme="..."] rules leak into
+           this off-screen capture wrapper, and their specificity ((0,2,1)
+           for \`[data-theme] .md-table th\` / \`.md-table-wrapper\`) beats
+           these scoped rules ((0,1,1)), so on a dark-theme host page the
+           wrapper's \`.md - table - wrapper\` filled with the dark
+           var(--color-background) and the light `.th` background lost to
+           the indigo tint — dark-navy cell text on a near-black table
+           reads as "no content" and the tinted header looks purple.
+           html2canvas renders the clone inside the SAME document, so host
+           selectors really do apply; pin the light chrome + explicit dark
+           cell text with !important so they can't be overridden. */
+        .${scopeClass} .md-table-wrapper{background:#ffffff!important;background-image:none!important;background-color:#ffffff!important;box-shadow:none!important}
+        .${scopeClass} .md-table{background:transparent!important}
+        .${scopeClass} .md-table thead tr{background:transparent!important}
+        .${scopeClass} .md-table tbody tr{background:transparent!important}
+        .${scopeClass} pre{background:#1e293b!important;color:#e2e8f0!important;padding:10px 14px;border-radius:7px;
             overflow:hidden;font-family:Consolas,monospace;font-size:0.85em;margin:6px 0}
         .${scopeClass} code{background:rgba(99,102,241,0.1);border:1px solid #e2e8f0;border-radius:4px;
              padding:1px 6px;font-family:Consolas,monospace;font-size:0.88em}
@@ -1905,13 +1923,37 @@ export async function exportToPptx(
         question.explanation &&
         question.explanation.trim()
       ) {
-        addLabel("💡 EXPLANATION:", COLORS.primary, 10);
-        await addRichBlock(sanitizeText(question.explanation), {
-          fontSizePt: 11,
-          colorHex: COLORS.textDark, // Fix #2b: was COLORS.textMedium (low contrast on explanationBg)
-          bgHex: COLORS.explanationBg,
-          insetIn: 0.1,
-        });
+        // Fix #explanations-follow-placement: when answers are deferred
+        // to the final-page Answer Key, the explanation is bundled with
+        // that question's key entry instead of staying inline — an
+        // explanation that restates the answer would otherwise defeat the
+        // point of deferring the reveal. includeExplanations still
+        // controls whether explanations appear at all.
+        if (answerPlacement === "final-page" && includeAnswers) {
+          const entry = answerKeyEntries.find((e) => e.index === index);
+          if (entry) {
+            entry.explanation = sanitizeText(question.explanation);
+          } else {
+            // No key entry for this question (its answer wasn't recorded)
+            // — fall through to the inline render rather than silently
+            // dropping the explanation.
+            addLabel("💡 EXPLANATION:", COLORS.primary, 10);
+            await addRichBlock(sanitizeText(question.explanation), {
+              fontSizePt: 11,
+              colorHex: COLORS.textDark, // Fix #2b: was COLORS.textMedium (low contrast on explanationBg)
+              bgHex: COLORS.explanationBg,
+              insetIn: 0.1,
+            });
+          }
+        } else {
+          addLabel("💡 EXPLANATION:", COLORS.primary, 10);
+          await addRichBlock(sanitizeText(question.explanation), {
+            fontSizePt: 11,
+            colorHex: COLORS.textDark, // Fix #2b: was COLORS.textMedium (low contrast on explanationBg)
+            bgHex: COLORS.explanationBg,
+            insetIn: 0.1,
+          });
+        }
       }
 
       // Report progress (0–85% reserved for question slides; the
@@ -1958,23 +2000,61 @@ export async function exportToPptx(
 
       for (const entry of answerKeyEntries) {
         const text = `Q${entry.index + 1}: ${entry.answer}`;
-        const rowH = Math.max(estimateTextHeight(text, 12, USABLE_WIDTH - 0.2), 0.32);
+        // Fix #explanations-follow-placement: entries may carry a bundled
+        // explanation (only when the person exporting turned it on) —
+        // render it as a second, smaller line and size the box to fit both.
+        const explanationText = entry.explanation
+          ? `\nExplanation: ${entry.explanation}`
+          : "";
+        const rowH =
+          Math.max(estimateTextHeight(text, 12, USABLE_WIDTH - 0.2), 0.32) +
+          (explanationText
+            ? Math.max(
+                estimateTextHeight(explanationText, 11, USABLE_WIDTH - 0.2),
+                0.28,
+              )
+            : 0);
         if (akY + rowH + 0.06 > CONTENT_BOTTOM) {
           akSlide = addContentSlide();
           akY = CONTENT_TOP;
         }
-        akSlide.addText(text, {
-          x: MARGIN,
-          y: akY,
-          w: USABLE_WIDTH,
-          h: rowH,
-          fontSize: 12,
-          color: COLORS.textDark,
-          fill: { color: COLORS.correctBg },
-          inset: 0.1,
-          valign: "middle",
-          wrap: true,
-        });
+        if (entry.explanation) {
+          akSlide.addText(
+            [
+              {
+                text: `Q${entry.index + 1}: ${entry.answer}`,
+                options: { color: COLORS.textDark, fontSize: 12, breakLine: true },
+              },
+              {
+                text: `Explanation: ${entry.explanation}`,
+                options: { color: COLORS.info, fontSize: 11 },
+              },
+            ],
+            {
+              x: MARGIN,
+              y: akY,
+              w: USABLE_WIDTH,
+              h: rowH,
+              fill: { color: COLORS.correctBg },
+              inset: 0.1,
+              valign: "middle",
+              wrap: true,
+            },
+          );
+        } else {
+          akSlide.addText(text, {
+            x: MARGIN,
+            y: akY,
+            w: USABLE_WIDTH,
+            h: rowH,
+            fontSize: 12,
+            color: COLORS.textDark,
+            fill: { color: COLORS.correctBg },
+            inset: 0.1,
+            valign: "middle",
+            wrap: true,
+          });
+        }
         akY += rowH + 0.06;
       }
     }

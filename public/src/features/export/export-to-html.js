@@ -110,7 +110,26 @@ function renderQuestionVideo(videoUrl) {
     </div>`;
 }
 
-export async function buildQuizHtml(config, questions, userAnswers = []) {
+export async function buildQuizHtml(
+    config,
+    questions,
+    userAnswers = [],
+    htmlOptions = {},
+) {
+    // Fix #settings-panel: buildQuizHtml() is shared by the standalone
+    // "results" HTML export and the PDF exporter, and PDF reaches it
+    // through download-quiz-modal.js's Settings Panel. The panel's
+    // collected options are forwarded here so the PDF output honours
+    // them; defaults below preserve the previous always-on behaviour
+    // whenever a caller passes no options (e.g. the direct HTML export
+    // path, which has no settings step).
+    const {
+        includeAnswers = true,
+        includeUserAnswers = true,
+        includeExplanations = true,
+        answerPlacement = "inline",
+    } = htmlOptions;
+
     // Convert local images to base64
     const processedQuestions = await convertImagesToBase64(questions);
 
@@ -119,7 +138,11 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
         hasEssay = false;
     processedQuestions.forEach((q) => {
         if (isEssayQuestion(q)) hasEssay = true;
-        else if (q.options.length === 2) hasTrueFalse = true;
+        // Fix #classification-crash: same isEssayQuestion blind spot as
+        // the per-question loop below — a question with neither options
+        // NOR answer isn't essay, so `q.options.length` used to throw on
+        // undefined here and abort the whole build (crashing PDF too).
+        else if (q.options && q.options.length === 2) hasTrueFalse = true;
         else hasMCQ = true;
     });
 
@@ -297,15 +320,30 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
         } • Type: ${questionType} • Date: ${date}</div>
   `;
 
-    // Determine if we are in "Summary Mode" (user answers provided)
+    // Determine if we are in "Summary Mode" (user answers provided AND the
+    // person exporting chose to include them — includeUserAnswers gates it
+    // the same way it does for PPTX/Markdown, so the Settings Panel's
+    // "include user's answers" toggle is honoured by PDF).
     const isResultsMode =
+        includeUserAnswers &&
         userAnswers &&
         (Array.isArray(userAnswers)
             ? userAnswers.length > 0
             : Object.keys(userAnswers).length > 0);
 
+    // Collected while iterating questions below, used to build a grouped
+    // "Answer Key" section before the footer when answerPlacement ===
+    // "final-page" (answers — and, per the explanations-follow-answer-
+    // placement decision, explanations — are deferred here, never inline).
+    const answerKeyEntries = [];
+
+    // Fix #settings-panel: like Markdown/PPTX, the score summary is an
+    // answer-adjacent reveal (it says how many the user got right/wrong),
+    // so it only renders when answers themselves are included.
+    const includeScoreSummary = isResultsMode && includeAnswers;
+
     // ── Score summary block (only in results mode) ──────────────────────────────
-    if (isResultsMode) {
+    if (includeScoreSummary) {
         const {
             mcqCorrect,
             mcqWrong,
@@ -373,8 +411,15 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
     processedQuestions.forEach((q, index) => {
         const userAns = userAnswers[index];
         const isSkipped = userAns === undefined || userAns === null;
+        // Fix #multi-correct: q.correct may be an array (e.g. [0, 2]) for
+        // multi-select questions — compare membership, not scalar equality
+        // (mirrors shared/rate-answers.js's isAnswerCorrect).
         const isCorrect =
-            !isSkipped && userAns === q.correct && !isEssayQuestion(q);
+            !isSkipped &&
+            !isEssayQuestion(q) &&
+            (Array.isArray(q.correct)
+                ? q.correct.includes(userAns)
+                : userAns === q.correct);
 
         htmlContent += `
       <div class="question-card">
@@ -404,10 +449,17 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
           </div>`;
             }
 
-            htmlContent += `<div class="essay-box">
+            if (includeAnswers) {
+                const formalAnswerBox = `<div class="essay-box">
               <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Formal Answer / Key Points:</strong>
               ${renderMarkdown(q.answer)}
           </div>`;
+                if (answerPlacement === "final-page") {
+                    answerKeyEntries.push({ index, html: formalAnswerBox });
+                } else {
+                    htmlContent += formalAnswerBox;
+                }
+            }
         } else if (!Array.isArray(q.options) || q.options.length === 0) {
             // Fix #empty-render-fallback: neither essay (no q.answer) nor a
             // valid MCQ (no options) — e.g. a multi-part free-response
@@ -417,11 +469,16 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
             // and PDF both reuse this function), or silently render nothing
             // if options was merely an empty array. Render whatever we can
             // instead of crashing/going blank.
-            if (q.answer) {
-                htmlContent += `<div class="essay-box">
+            if (includeAnswers && q.answer) {
+                const fallbackAnswerBox = `<div class="essay-box">
               <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Answer:</strong>
               ${renderMarkdown(q.answer)}
           </div>`;
+                if (answerPlacement === "final-page") {
+                    answerKeyEntries.push({ index, html: fallbackAnswerBox });
+                } else {
+                    htmlContent += fallbackAnswerBox;
+                }
             } else {
                 htmlContent += `<div class="essay-box" style="opacity:0.7;">
               <em>No answer options available for this question.</em>
@@ -436,27 +493,71 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
             htmlContent += `</div>`;
 
             const userClass = isSkipped ? "skipped" : isCorrect ? "" : "wrong";
-            const userLetter = isSkipped ? "" : String.fromCharCode(65 + userAns);
+            // Fix #multi-correct: userAns may itself be an array for
+            // multi-select questions — render every selected option.
+            const userSelList = isSkipped
+                ? []
+                : Array.isArray(userAns) ? userAns : [userAns];
             const userAnswer = isSkipped
                 ? "Skipped"
-                : `${userLetter}. ${renderMarkdown(q.options[userAns])}`;
+                : userSelList
+                    .filter((i) => Number.isInteger(i) && q.options[i] !== undefined)
+                    .map((i) => `${String.fromCharCode(65 + i)}. ${renderMarkdown(q.options[i])}`)
+                    .join("; ");
             const userIcon = isSkipped ? "⚪" : isCorrect ? "✅" : "❌";
 
             if (isResultsMode)
                 htmlContent += `<div class="user-answer ${userClass}">${userIcon} Your Answer: ${userAnswer}</div>`;
 
-            const correctLetter = String.fromCharCode(65 + q.correct);
-            htmlContent += `<div class="correct-answer">✓ Correct Answer: ${correctLetter}. ${renderMarkdown(
-                q.options[q.correct],
-            )}</div>`;
+            // Fix #settings-panel + #multi-correct: the correct-answer
+            // reveal is gated by includeAnswers and, on "final-page"
+            // placement, deferred to the grouped Answer Key section
+            // instead of rendered inline. q.correct may be an array —
+            // render every correct option.
+            if (includeAnswers) {
+                const correctIdxRaw = q.correct ?? q.answer;
+                const correctIdxList = Array.isArray(correctIdxRaw)
+                    ? correctIdxRaw
+                    : [correctIdxRaw];
+                const correctText = correctIdxList
+                    .filter((i) => Number.isInteger(i) && q.options[i] !== undefined)
+                    .map((i) => `${String.fromCharCode(65 + i)}. ${renderMarkdown(q.options[i])}`)
+                    .join("; ");
+                const rendered = `<div class="correct-answer">✓ Correct Answer: ${correctText}</div>`;
+                if (answerPlacement === "final-page") {
+                    answerKeyEntries.push({ index, html: rendered });
+                } else {
+                    htmlContent += rendered;
+                }
+            }
         }
 
-        if (q.explanation) {
-            htmlContent += `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(q.explanation)}</div>`;
+        // Fix #explanations-follow-placement: when answers are deferred
+        // to the final-page Answer Key, explanations travel with them
+        // (bundled into that question's key entry) instead of staying
+        // inline — an explanation that restates the answer would otherwise
+        // defeat the whole point of deferring the reveal.
+        // `includeExplanations` still controls whether they appear AT ALL.
+        if (includeExplanations && q.explanation) {
+            const explanationHtml = `<div class="explanation"><strong>💡 Explanation:</strong> ${renderMarkdown(q.explanation)}</div>`;
+            const keyEntry = answerKeyEntries.find((e) => e.index === index);
+            if (answerPlacement === "final-page" && keyEntry) {
+                keyEntry.html += explanationHtml;
+            } else {
+                htmlContent += explanationHtml;
+            }
         }
 
         htmlContent += `</div>`;
     });
+
+    // ── Grouped Answer Key section (answerPlacement === "final-page") ──
+    if (includeAnswers && answerPlacement === "final-page" && answerKeyEntries.length) {
+        htmlContent += `<h1>🔑 Answer Key</h1>`;
+        answerKeyEntries.forEach((entry) => {
+            htmlContent += `<div class="question-card"><div class="q-header"><span>Question ${entry.index + 1}</span></div>${entry.html}</div>`;
+        });
+    }
 
     htmlContent += `<div class="footer">Generated by Quiz App</div></body></html>`;
     return htmlContent;

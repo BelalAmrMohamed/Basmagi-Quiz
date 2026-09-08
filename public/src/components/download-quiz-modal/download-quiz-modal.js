@@ -205,6 +205,10 @@ export async function executeExport(
     case "pdf":
       await exportToPdf(config, questions, userAnswers, resultMeta, onProgress, {
         backgroundColor: exportOptions.pdfBackground,
+        includeAnswers: exportOptions.includeAnswers,
+        includeUserAnswers: exportOptions.includeUserAnswers,
+        includeExplanations: exportOptions.includeExplanations,
+        answerPlacement: exportOptions.answerPlacement,
       });
       break;
     case "docx":

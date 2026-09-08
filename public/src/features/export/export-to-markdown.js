@@ -52,7 +52,7 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
 
   questions.forEach((q) => {
     if (isEssayQuestion(q)) hasEssay = true;
-    else if (q.options.length === 2) hasTrueFalse = true;
+    else if (q.options && q.options.length === 2) hasTrueFalse = true;
     else hasMCQ = true;
   });
 
@@ -156,6 +156,19 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
           markdown += `**Formal Answer:** ${mdLineBreaks(q.answer)}\n\n`;
         }
       }
+    } else if (!Array.isArray(q.options) || q.options.length === 0) {
+      if (includeAnswers && q.answer) {
+        if (answerPlacement === "final-page") {
+          answerKeyEntries.push({
+            index,
+            text: `**Q${index + 1} Answer:** ${mdLineBreaks(q.answer)}`,
+          });
+        } else {
+          markdown += `**Answer:** ${mdLineBreaks(q.answer)}\n\n`;
+        }
+      } else {
+        markdown += `*No answer options available for this question.*\n\n`;
+      }
     } else {
       q.options.forEach((opt, i) => {
         const letter = String.fromCharCode(48 + i + 1);
@@ -205,8 +218,16 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
       }
     }
 
-    if (includeExplanations && q.explanation)
-      markdown += `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
+    if (includeExplanations && q.explanation) {
+      const explanationMd = `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
+      if (answerPlacement === "final-page") {
+        const entry = answerKeyEntries.find((e) => e.index === index);
+        if (entry) entry.text += `\n${explanationMd}`;
+        else markdown += explanationMd;
+      } else {
+        markdown += explanationMd;
+      }
+    }
     markdown += `---\n\n`;
   });
 

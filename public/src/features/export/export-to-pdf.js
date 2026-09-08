@@ -46,7 +46,9 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     background: ${backgroundChoice === "dark" ? "#121212" : "#ffffff"} !important;
     ${backgroundChoice === "dark" ? "" : "color: #1a1a1a !important;"}
     width: auto;
-    max-width: none;
+    max-width: none;    
+    margin: 0 !important;
+    padding: 0 !important;
   }
   ${backgroundChoice === "dark" ? "" : `
   /* Fix #pdf-contrast: light background needs the CSS custom properties
@@ -97,6 +99,9 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
   .inline-code { background: #eef0f4 !important; border-color: #ccc !important; color: #b91c1c !important; }
   .math-raw { background: #f4f4f5 !important; border-color: #ccc !important; color: #1a1a1a !important; }
   .md-blockquote { background: #f4f4f5 !important; color: #333 !important; }
+  .user-answer, .user-answer.wrong, .user-answer.skipped { color: #1a1a1a !important; }
+  .correct-answer { color: #1a1a1a !important; }
+  .explanation { color: #1a1a1a !important; }
   .essay-box { background: #f0f1f3 !important; }
   .essay-score.correct { background: rgba(16,185,129,0.12) !important; color: #047857 !important; }
   .essay-score.partial { background: rgba(245,158,11,0.12) !important; color: #b45309 !important; }
@@ -310,9 +315,14 @@ function printHtmlViaHiddenIframe(htmlContent, title) {
  *   userAnswers is non-empty); kept in the signature so callers
  *   (download-quiz-modal.js) don't need to change.
  * @param {Function} [onProgress] — optional (pct: 0–100) => void.
- * @param {object} [pdfOptions] — { backgroundColor?: "light" | "dark" }.
- *   backgroundColor defaults to "light" (uniform white) — the old
- *   hardcoded dark background is now opt-in via the settings panel.
+ * @param {object} [pdfOptions] — { backgroundColor?: "light" | "dark",
+ *   includeAnswers?, includeUserAnswers?, includeExplanations?,
+ *   answerPlacement?: "inline" | "final-page" }. backgroundColor defaults
+ *   to "light" (uniform white) — the old hardcoded dark background is now
+ *   opt-in via the settings panel. The remaining fields are the Settings
+ *   Panel's collected options, forwarded verbatim into buildQuizHtml() so
+ *   the printed page honours them (buildQuizHtml's own defaults preserve
+ *   prior behavior when any field is absent).
  */
 export async function exportToPdf(
   config,
@@ -335,7 +345,12 @@ export async function exportToPdf(
     // Reuse the same markdown/KaTeX/RTL-aware HTML builder as the
     // "Interactive HTML" export — one renderer, one set of Arabic/RTL/
     // code-block/math fixes to maintain instead of two.
-    const htmlContent = await buildQuizHtml(config, questions, userAnswers);
+    const htmlContent = await buildQuizHtml(config, questions, userAnswers, {
+      includeAnswers: pdfOptions.includeAnswers,
+      includeUserAnswers: pdfOptions.includeUserAnswers,
+      includeExplanations: pdfOptions.includeExplanations,
+      answerPlacement: pdfOptions.answerPlacement,
+    });
 
     if (typeof onProgress === "function") onProgress(40);
 
