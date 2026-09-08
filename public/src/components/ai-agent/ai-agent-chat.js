@@ -381,9 +381,7 @@ export function createChatPanel(options = {}) {
     if (!history.length) return false;
     const transcript = getTranscript();
     try {
-      if (format === "txt") {
-        downloadExport(new Blob([transcript], { type: "text/plain;charset=utf-8" }), "txt");
-      } else if (format === "json") {
+      if (format === "json") {
         downloadExport(new Blob([getJsonExport()], { type: "application/json" }), "json");
       } else if (format === "md") {
         downloadExport(new Blob([transcript], { type: "text/markdown;charset=utf-8" }), "md");

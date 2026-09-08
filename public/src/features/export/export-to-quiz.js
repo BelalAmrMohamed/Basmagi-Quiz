@@ -67,7 +67,11 @@ const serializeHlKeywords = (hlKeywords) => {
 const serializeHlBuiltinsJs = (set) =>
   `new Set([${Array.from(set).map((w) => JSON.stringify(w)).join(", ")}])`;
 
-export async function buildStandaloneQuizHtml(config, questions) {
+export async function buildStandaloneQuizHtml(config, questions, exportOptions = {}) {
+  const {
+    showAnswersButton = false,
+    layout = "pagination",
+  } = exportOptions;
   const processedQuestions = await convertImagesToBase64(questions);
 
   const authorIdentifier = config.authorId || config.authorHandle;
@@ -220,7 +224,6 @@ export async function buildStandaloneQuizHtml(config, questions) {
     --gradient-end:       #764ba2;
     --gradient:           linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
     --gradient-body:      var(--gradient);
-    --gradient-body-dark: linear-gradient(135deg, #1a1b3e 0%, #2d1654 100%);
 
     /* Typography */
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
@@ -263,32 +266,32 @@ export async function buildStandaloneQuizHtml(config, questions) {
   [data-theme="dark"] {
     color-scheme: dark;
 
-    --bg-primary:    #0f172a;
-    --bg-secondary:  #1e293b;
-    --bg-tertiary:   #334155;
-    --text-primary:  #f1f5f9;
-    --text-secondary:#cbd5e1;
-    --text-muted:    #94a3b8;
-    --border-color:  #334155;
-    --card-bg:       #1e293b;
-    --card-answered: #1e2d4a;
+    --bg-primary:    #000000;
+    --bg-secondary:  #0a0a0a;
+    --bg-tertiary:   #1a1a1a;
+    --text-primary:  #f5f5f5;
+    --text-secondary:#c4c4c4;
+    --text-muted:    #8a8a8a;
+    --border-color:  #262626;
+    --card-bg:       #0a0a0a;
+    --card-answered: #14140f;
 
-    --success-bg:   #022c22;
+    --success-bg:   #051b12;
     --success-text: #6ee7b7;
-    --error-bg:     #2d0a0a;
+    --error-bg:     #200606;
     --error-text:   #fca5a5;
-    --warning-bg:   #1c1007;
+    --warning-bg:   #1a1206;
     --warning-text: #fcd34d;
-    --info-bg:      #0c1e3f;
+    --info-bg:      #06121f;
     --info-text:    #93c5fd;
 
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2);
-    --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.8);
   }
 
   /* ── Base ────────────────────────────────────────────────────── */
-  [data-theme="dark"] body { background: var(--gradient-body-dark) center / cover fixed; }
+  [data-theme="dark"] body { background: #000000; }
 
   body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -1278,6 +1281,37 @@ export async function buildStandaloneQuizHtml(config, questions) {
     opacity: 0.8;
   }
 
+  /* ── Per-question "تحقق من الإجابة" (Check Answer) button ──────── */
+  .check-answer-btn {
+    background: var(--gradient);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--t-fast), box-shadow var(--t-fast), opacity var(--t-fast);
+    box-shadow: var(--shadow-sm);
+    width: 100%;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  .check-answer-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .check-answer-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .check-answer-btn.hidden {
+    display: none;
+  }
+
   /* ── Ripple ──────────────────────────────────────────────────── */
   .ripple {
     position: absolute;
@@ -1383,6 +1417,51 @@ export async function buildStandaloneQuizHtml(config, questions) {
     background: var(--bg-secondary);
     flex-wrap: wrap;
     border-top: 1px solid var(--border-color);
+  }
+
+  /* ── Pagination mode ─────────────────────────────────────────────
+     When EXPORT_LAYOUT === "pagination", quizApp.applyPagerVisibility()
+     toggles this class on .quiz-body and adds .pg-active to exactly one
+     .question-card at a time — every other card is hidden outright
+     (not just scrolled away) so the file behaves like a real
+     one-question-per-page flow instead of a long scroll. Vertical mode
+     (the previous/default behavior) never gets this class, so every
+     card stays visible exactly as before. ─────────────────────────── */
+  .quiz-body.paginated .question-card {
+    display: none;
+  }
+
+  .quiz-body.paginated .question-card.pg-active {
+    display: block;
+    margin-bottom: 0;
+  }
+
+  .pager-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 16px 24px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+  }
+
+  .pager-status {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 64px;
+    text-align: center;
+  }
+
+  .pager-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 600px) {
+    .pager-controls { padding: 12px 16px; gap: 10px; }
+    .pager-btn { flex: 1; }
   }
 
   /* ── Buttons ─────────────────────────────────────────────────── */
@@ -1883,7 +1962,17 @@ export async function buildStandaloneQuizHtml(config, questions) {
           </div>
         </div>
 
-        <div class="toggle-option" id="showAnswersToggle" role="switch" aria-checked="false" tabindex="0">
+        <div class="toggle-option high-performance-toggle-container" id="highPerformanceToggleOption" role="switch" aria-checked="false" tabindex="0">
+          <div class="toggle-label">
+            <span aria-hidden="true">⚡</span>
+            <span>الأداء الفائق</span>
+          </div>
+          <div class="toggle-switch" id="highPerformanceSwitch">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+
+        ${showAnswersButton ? `<div class="toggle-option" id="showAnswersToggle" role="switch" aria-checked="false" tabindex="0">
           <div class="toggle-label">
             <span aria-hidden="true">🔑</span>
             <span>إظهار كل الإجابات</span>
@@ -1891,7 +1980,7 @@ export async function buildStandaloneQuizHtml(config, questions) {
           <div class="toggle-switch" id="showAnswersSwitch">
             <div class="toggle-slider"></div>
           </div>
-        </div>
+        </div>` : ""}
       </div>
       
       <div class="menu-section">
@@ -1930,6 +2019,12 @@ ${quizInfoModalHtml}
     </dialog>
 
     <main id="main-content" class="quiz-body"></main>
+
+    <div class="pager-controls" id="pagerControls" style="display:none;">
+      <button class="btn btn-secondary pager-btn" id="pagerPrevBtn" onclick="quizApp.pagerGo(-1)">السابق</button>
+      <span class="pager-status" id="pagerStatus">1 / ${processedQuestions.length}</span>
+      <button class="btn btn-primary pager-btn" id="pagerNextBtn" onclick="quizApp.pagerGo(1)">التالي</button>
+    </div>
     
     <div class="controls">      
       <button class="btn btn-primary" onclick="quizApp.submit()" id="submitBtn">
@@ -1964,6 +2059,16 @@ ${quizInfoModalHtml}
   
   <script>
   const questions = ${JSON.stringify(processedQuestions)};
+
+  // Export-time settings baked in from the download modal's settings
+  // panel (see download-quiz-modal.js) — these decide whether the
+  // "🔑 Show All Answers" button exists at all, and whether questions
+  // are laid out as one continuous vertical scroll or one-at-a-time with
+  // Next/Previous pagination. Both are fixed once the file is generated;
+  // the reader has no in-file control over either (unlike the dark-mode/
+  // show-answers *value* toggles, which remain fully reader-side).
+  const EXPORT_SHOW_ANSWERS_BUTTON = ${JSON.stringify(!!showAnswersButton)};
+  const EXPORT_LAYOUT = ${JSON.stringify(layout === "vertical" ? "vertical" : "pagination")};
 
   // ── Safe localStorage wrapper ──
   // Downloaded quizzes are routinely opened straight from disk
@@ -2069,6 +2174,11 @@ ${quizInfoModalHtml}
     darkMode: false,
     showAllAnswers: false,
     flaggedQuestions: new Set(),
+    // Per-question "تحقق من الإجابة" state — indices the reader has
+    // checked. Purely a display lock (reveals correct/wrong + explanation
+    // for that one question) that's independent of the whole-quiz
+    // submit()/submitted flow, mirroring quiz.js's checkAnswerForQuestion.
+    lockedQuestions: new Set(),
     quizStartTime: null,
     timerInterval: null,
     init() {
@@ -2085,9 +2195,46 @@ ${quizInfoModalHtml}
       this.setupImageLoading();
       this.setupQuizTitle();
       this.setupInfoDialog();
+      this.setupPager();
       this.announceToScreenReader('Quiz loaded. ' + questions.length + ' questions available.');
     },
-  
+
+    // ── Pagination mode ── EXPORT_LAYOUT is baked in at export time (see
+    // download-quiz-modal.js's settings panel); "vertical" leaves the
+    // pager controls hidden and every card visible (previous behavior).
+    setupPager() {
+      if (EXPORT_LAYOUT !== "pagination") return;
+      const quizBody = document.querySelector(".quiz-body");
+      quizBody.classList.add("paginated");
+      document.getElementById("pagerControls").style.display = "flex";
+      this.applyPagerVisibility();
+    },
+
+    // Shows only the .question-card matching this.currentQuestion and
+    // updates the pager status/button states to match. Safe to call any
+    // time currentQuestion changes (jumpToQuestion, pagerGo, nav clicks,
+    // review-mode "go to question", reset) — a no-op in vertical mode.
+    applyPagerVisibility() {
+      if (EXPORT_LAYOUT !== "pagination") return;
+      document.querySelectorAll(".question-card").forEach((card, i) => {
+        card.classList.toggle("pg-active", i === this.currentQuestion);
+      });
+      const status = document.getElementById("pagerStatus");
+      if (status) status.textContent = \`\${this.currentQuestion + 1} / \${questions.length}\`;
+      const prevBtn = document.getElementById("pagerPrevBtn");
+      const nextBtn = document.getElementById("pagerNextBtn");
+      if (prevBtn) prevBtn.disabled = this.currentQuestion === 0;
+      if (nextBtn) nextBtn.disabled = this.currentQuestion === questions.length - 1;
+    },
+
+    pagerGo(delta) {
+      const target = Math.min(
+        Math.max(this.currentQuestion + delta, 0),
+        questions.length - 1,
+      );
+      this.jumpToQuestion(target);
+    },
+
     loadPreferences() {
       const savedTheme = safeStorage.get('quizTheme');
       
@@ -2129,8 +2276,8 @@ ${quizInfoModalHtml}
       this.showAllAnswers = !this.showAllAnswers;
       const toggleSwitch = document.getElementById('showAnswersSwitch');
       const toggleOption = document.getElementById('showAnswersToggle');
-      toggleSwitch.classList.toggle('active', this.showAllAnswers);
-      toggleOption.setAttribute('aria-checked', String(this.showAllAnswers));
+      if (toggleSwitch) toggleSwitch.classList.toggle('active', this.showAllAnswers);
+      if (toggleOption) toggleOption.setAttribute('aria-checked', String(this.showAllAnswers));
 
       if (this.showAllAnswers) {
         this.revealAllAnswers();
@@ -2313,16 +2460,50 @@ ${quizInfoModalHtml}
         }
       });
 
+      // ── "الأداء الفائق" (High Performance Mode) — global motion
+      // kill-switch, ported from the main platform's theme-controller.js.
+      // Persisted separately from dark mode so it survives across visits
+      // to this standalone file the same way it does on the live site.
+      const highPerformanceToggle = document.getElementById('highPerformanceToggleOption');
+      if (highPerformanceToggle) {
+        const applyHighPerformance = (enabled) => {
+          document.documentElement.setAttribute('data-motion', enabled ? 'reduced' : 'normal');
+          safeStorage.set('quiz_high_performance_pref', enabled ? 'enabled' : 'disabled');
+          const sw = document.getElementById('highPerformanceSwitch');
+          if (sw) sw.classList.toggle('active', enabled);
+          highPerformanceToggle.setAttribute('aria-checked', String(enabled));
+        };
+        const savedHighPerformance = safeStorage.get('quiz_high_performance_pref') === 'enabled';
+        applyHighPerformance(savedHighPerformance);
+
+        highPerformanceToggle.addEventListener('click', () => {
+          const enabled = document.documentElement.getAttribute('data-motion') !== 'reduced';
+          applyHighPerformance(enabled);
+          this.announceToScreenReader(enabled ? 'High performance mode enabled' : 'High performance mode disabled');
+        });
+
+        highPerformanceToggle.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            highPerformanceToggle.click();
+          }
+        });
+      }
+
+      // Only present in the DOM when EXPORT_SHOW_ANSWERS_BUTTON was
+      // enabled at export time (see the side-menu markup above) — the
+      // control (and its wiring) is skipped entirely otherwise.
       const showAnswersToggle = document.getElementById('showAnswersToggle');
+      if (showAnswersToggle) {
+        showAnswersToggle.addEventListener('click', () => this.toggleShowAllAnswers());
 
-      showAnswersToggle.addEventListener('click', () => this.toggleShowAllAnswers());
-
-      showAnswersToggle.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          showAnswersToggle.click();
-        }
-      });
+        showAnswersToggle.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            showAnswersToggle.click();
+          }
+        });
+      }
     },
   
     toggleMenu() {
@@ -2523,6 +2704,9 @@ ${quizInfoModalHtml}
       // renderQuestion() built fresh nodes with no reveal markers on them —
       // if the answer key was switched on, re-apply it to the new DOM.
       if (this.showAllAnswers) this.revealAllAnswers();
+      // Fresh nodes also have no .pg-active marker — reapply pagination
+      // (a no-op in vertical mode).
+      this.applyPagerVisibility();
     },
   
     renderQuestion(q, i) {
@@ -2530,6 +2714,19 @@ ${quizInfoModalHtml}
       const isTrueFalse = !isEssay && Array.isArray(q.options) && q.options.length === 2;
       const badgeText = isEssay ? "مقالي" : (isTrueFalse ? "صح أم خطأ" : "إختياري");
       const badgeClass = isEssay ? "essay" : (isTrueFalse ? "truefalse" : "");
+      const isLocked = this.lockedQuestions.has(i);
+      const hasOptions = !isEssay && Array.isArray(q.options) && q.options.length > 0;
+      // "Check Answer" only makes sense once submission itself is still
+      // meaningful (before the whole quiz is submitted) and there's an
+      // actual answer to check against — essay questions and MCQ/T-F
+      // both qualify; the "no options, no essay answer" fallback case
+      // does not (nothing to check).
+      const canCheckAnswer = !this.submitted && (isEssay || hasOptions);
+      const userAnswerForCheck = this.userAnswers[i];
+      const hasUserResponse = isEssay
+        ? typeof userAnswerForCheck === "string" && userAnswerForCheck.trim() !== ""
+        : userAnswerForCheck !== null && userAnswerForCheck !== undefined &&
+          (!Array.isArray(userAnswerForCheck) || userAnswerForCheck.length > 0);
   
       let optionsHtml = "";
       if (isEssay) {
@@ -2541,11 +2738,12 @@ ${quizInfoModalHtml}
             placeholder="اكتب إجابتك هنا..."
             oninput="quizApp.handleEssayInput(\${i}, this.value)"
             aria-label="Essay answer for question \${i + 1}"
+            \${isLocked ? "readonly" : ""}
           >\${savedAnswer}</textarea>
           <div class="char-count" id="charCount\${i}">
             \${savedAnswer.length} حروف
           </div>
-          <div class="model-answer" id="modelAns\${i}">
+          <div class="model-answer\${isLocked ? " show" : ""}" id="modelAns\${i}">
             <strong class="answer-label">✓ Model Answer</strong><br>
             \${renderMarkdown(q.answer)}
           </div>
@@ -2568,19 +2766,33 @@ ${quizInfoModalHtml}
             </div>\`;
       } else {
         const isMultiple = Array.isArray(q.correct);
+        const userSelected = this.userAnswers[i];
         optionsHtml = \`<div class="options">\${
           q.options.map((opt, j) => {
             const letter = String.fromCharCode(65 + j);
             const prefix = isMultiple 
               ? '<input type="checkbox" class="export-checkbox" disabled style="pointer-events: none; margin-right: 12px; transform: scale(1.2); accent-color: var(--gradient-start);">' 
               : \`<span class="option-letter">\${letter}</span>\`;
+            // When locked (checked, not full-submit), reflect correct/wrong
+            // the same way handleMCQSubmission does at whole-quiz submit —
+            // but scoped to just this question's buttons.
+            let lockedClass = "";
+            if (isLocked) {
+              const isCorrectOption = isMultiple ? q.correct.includes(j) : j === q.correct;
+              const wasSelected = isMultiple
+                ? Array.isArray(userSelected) && userSelected.includes(j)
+                : j === userSelected;
+              if (isCorrectOption) lockedClass = " correct";
+              else if (wasSelected) lockedClass = " wrong";
+            }
             return \`
               <button 
-                class="option-btn" 
+                class="option-btn\${lockedClass}\${isLocked ? " disabled" : ""}" 
                 id="btn\${i}_\${j}" 
                 onclick="quizApp.selectAnswer(\${i}, \${j})"
                 onkeydown="quizApp.handleOptionKeydown(event, \${i}, \${j})"
                 aria-label="Option \${letter}: \${this.escapeHTML(opt)}"
+                \${isLocked ? "disabled" : ""}
               >
                 \${prefix}
                 <span class="option-label">\${renderMarkdown(opt)}</span>
@@ -2591,9 +2803,19 @@ ${quizInfoModalHtml}
       }
   
       const explanationHtml = q.explanation ? 
-        \`<div class="explanation" id="exp\${i}">
+        \`<div class="explanation\${isLocked ? " show" : ""}" id="exp\${i}">
           <strong class="answer-label">💡 Explanation</strong> \${renderMarkdown(q.explanation)}
         </div>\` : "";
+
+      const checkAnswerBtnHtml = canCheckAnswer
+        ? \`<button class="check-answer-btn\${isLocked ? " hidden" : ""}" 
+                    id="checkBtn\${i}"
+                    title="إظهار الإجابة الصحيحة"
+                    onclick="quizApp.checkAnswerForQuestion(\${i})"
+                    \${!hasUserResponse ? "disabled" : ""}>
+             تحقق من الإجابة
+           </button>\`
+        : "";
   
       return \`
         <div class="question-card" id="q\${i}">
@@ -2611,13 +2833,14 @@ ${quizInfoModalHtml}
           <div class="question-text">\${renderMarkdown(q.q)}</div>
           \${this.renderQuestionMedia(q, i)}
           \${optionsHtml}
+          \${checkAnswerBtnHtml}
           \${explanationHtml}
         </div>
       \`;
     },
   
     selectAnswer(qIndex, optIndex) {
-      if (this.submitted) return;
+      if (this.submitted || this.lockedQuestions.has(qIndex)) return;
   
       const q = questions[qIndex];
       const isMultiple = Array.isArray(q.correct);
@@ -2665,9 +2888,11 @@ ${quizInfoModalHtml}
       this.updateProgress();
       this.updateNavButton(qIndex);
       this.saveProgress();
+      this.updateCheckAnswerButton(qIndex);
     },
   
     handleEssayInput(qIndex, value) {
+      if (this.lockedQuestions.has(qIndex)) return;
       const trimmed = value.trim();
       this.userAnswers[qIndex] = trimmed || null;
       
@@ -2678,6 +2903,67 @@ ${quizInfoModalHtml}
       this.updateProgress();
       this.updateNavButton(qIndex);
       this.saveProgress();
+      this.updateCheckAnswerButton(qIndex);
+    },
+
+    // Keeps the per-question "تحقق من الإجابة" button's disabled state in
+    // sync with whether there's currently an answer to check — mirrors
+    // handleEssayInputForQuestion's check-button sync in quiz.js.
+    updateCheckAnswerButton(qIndex) {
+      const btn = document.getElementById(\`checkBtn\${qIndex}\`);
+      if (!btn) return;
+      const q = questions[qIndex];
+      const ans = this.userAnswers[qIndex];
+      const hasResponse = isEssayQuestion(q)
+        ? typeof ans === "string" && ans.trim() !== ""
+        : ans !== null && ans !== undefined && (!Array.isArray(ans) || ans.length > 0);
+      btn.disabled = !hasResponse;
+    },
+
+    // Per-question "تحقق من الإجابة" — locks just this one question and
+    // reveals whether the reader's current answer is correct, without
+    // touching submitted/userAnswers state or running whole-quiz grading.
+    // Ported from quiz.js's window.checkAnswerForQuestion.
+    checkAnswerForQuestion(qIndex) {
+      if (this.submitted || this.lockedQuestions.has(qIndex)) return;
+      const q = questions[qIndex];
+      const isEssay = isEssayQuestion(q);
+      const ans = this.userAnswers[qIndex];
+      if (isEssay) {
+        if (typeof ans !== "string" || !ans.trim()) return;
+      } else {
+        if (ans === null || ans === undefined) return;
+        if (Array.isArray(ans) && ans.length === 0) return;
+      }
+
+      this.lockedQuestions.add(qIndex);
+
+      if (isEssay) {
+        const textarea = document.getElementById(\`essay\${qIndex}\`);
+        if (textarea) textarea.readOnly = true;
+        const modelEl = document.getElementById(\`modelAns\${qIndex}\`);
+        if (modelEl) modelEl.classList.add("show");
+      } else {
+        const card = document.getElementById(\`q\${qIndex}\`);
+        const buttons = card ? card.querySelectorAll(".option-btn") : [];
+        const isMultiple = Array.isArray(q.correct);
+        buttons.forEach((btn, k) => {
+          btn.classList.add("disabled");
+          btn.disabled = true;
+          const isCorrectOption = isMultiple ? q.correct.includes(k) : k === q.correct;
+          const wasSelected = isMultiple ? Array.isArray(ans) && ans.includes(k) : k === ans;
+          if (isCorrectOption) btn.classList.add("correct");
+          else if (wasSelected) btn.classList.add("wrong");
+        });
+      }
+
+      const checkBtn = document.getElementById(\`checkBtn\${qIndex}\`);
+      if (checkBtn) checkBtn.classList.add("hidden");
+
+      const exp = document.getElementById(\`exp\${qIndex}\`);
+      if (exp) exp.classList.add("show");
+
+      this.announceToScreenReader(\`Question \${qIndex + 1} checked\`);
     },
   
     updateCharCount(qIndex, value) {
@@ -2719,10 +3005,11 @@ ${quizInfoModalHtml}
     },
   
     jumpToQuestion(qIndex) {
+      this.currentQuestion = qIndex;
+      this.applyPagerVisibility();
       const card = document.getElementById(\`q\${qIndex}\`);
       if (card) {
         card.scrollIntoView({ behavior: "smooth", block: "center" });
-        this.currentQuestion = qIndex;
         this.updateAllNavButtons();
         this.closeMenu();
         
@@ -2812,6 +3099,9 @@ ${quizInfoModalHtml}
   
           const exp = document.getElementById(\`exp\${i}\`);
           if (exp) exp.classList.add("show");
+
+          const checkBtn = document.getElementById(\`checkBtn\${i}\`);
+          if (checkBtn) checkBtn.classList.add("hidden");
         });
 
         ({
@@ -2956,6 +3246,7 @@ ${quizInfoModalHtml}
       this.userAnswers = new Array(questions.length).fill(null);
       this.currentQuestion = 0;
       this.flaggedQuestions.clear();
+      this.lockedQuestions.clear();
   
       document.getElementById("results").classList.remove("show");
       document.getElementById("submitBtn").disabled = false;

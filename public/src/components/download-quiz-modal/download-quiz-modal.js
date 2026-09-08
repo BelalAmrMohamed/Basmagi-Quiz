@@ -153,8 +153,11 @@ export function buildExportCard({
           copyBtn.classList.remove("copied");
         }, 2000);
       } catch (err) {
-        console.error(err);
         copyBtn.innerHTML = copyIconSvg;
+        // User backed out of the pre-copy settings step (md format) —
+        // not a real failure, so no error toast.
+        if (err && err.message === "COPY_CANCELLED") return;
+        console.error(err);
         showNotification("خطأ", "فشل النسخ.", "error");
       }
     };
@@ -200,7 +203,10 @@ export async function executeExport(
 ) {
   switch (format) {
     case "quiz":
-      await exportToQuiz(config, questions);
+      await exportToQuiz(config, questions, {
+        showAnswersButton: exportOptions.quizShowAnswersButton,
+        layout: exportOptions.quizLayout,
+      });
       break;
     case "pdf":
       await exportToPdf(config, questions, userAnswers, resultMeta, onProgress, {
@@ -292,7 +298,7 @@ export async function withDownloadLoading(buttonEl, asyncFn) {
 }
 
 // ============================================================================
-// SETTINGS PANEL — shown before generation for pdf/pptx/docx/md
+// SETTINGS PANEL — shown before generation for pdf/pptx/docx/md/quiz
 // ============================================================================
 // Bakes "what state should this static file be generated in" choices in
 // at export time (decided by the person exporting), as opposed to
@@ -301,19 +307,30 @@ export async function withDownloadLoading(buttonEl, asyncFn) {
 // themselves after the fact. Those are two separate, deliberately
 // independent features — see plan doc for the full reasoning.
 //
-// Formats that stay instant/unchanged (quiz, json) never see this panel.
+// "quiz" is a deliberate partial exception to that split: it still has no
+// includeAnswers/includeExplanations/answerPlacement rows (those stay
+// reader-side, via the in-file toggle), but it DOES get its own
+// export-time rows for two things that can only be decided once, at
+// generation time, because they change what's baked into the file itself
+// (whether the "show all answers" button exists at all; vertical vs
+// paginated layout) — see the quiz-only rows below.
+//
+// Formats that stay instant/unchanged (json) never see this panel.
 
-const FORMATS_WITH_SETTINGS = new Set(["pdf", "pptx", "docx", "md"]);
+const FORMATS_WITH_SETTINGS = new Set(["pdf", "pptx", "docx", "md", "quiz"]);
 
 /**
  * Builds the settings step shown before generation. Resolves to `null`
  * if the user closes/cancels the panel (caller should abort the export),
  * or an options object otherwise:
  *   { includeAnswers, includeUserAnswers, includeExplanations,
- *     answerPlacement: "inline" | "final-page", pdfBackground: "light" | "dark" }
+ *     answerPlacement: "inline" | "final-page", pdfBackground: "light" | "dark",
+ *     quizShowAnswersButton: boolean, quizLayout: "vertical" | "pagination" }
+ * quizShowAnswersButton/quizLayout are only meaningful (and only rendered)
+ * for format === "quiz"; every other format ignores them.
  *
  * @param {object} params
- * @param {string} params.format — "pdf" | "pptx" | "docx" | "md"
+ * @param {string} params.format — "pdf" | "pptx" | "docx" | "md" | "quiz"
  * @param {string} params.label — display label (e.g. "PDF") for the header.
  * @param {boolean} params.hasUserAnswers — whether userAnswers was passed
  *   into showDownloadModal() (only true from the Results page flow) — the
@@ -331,6 +348,9 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
       includeExplanations: false,
       answerPlacement: "inline",
       pdfBackground: "light",
+      // quiz-only — see docstring above.
+      quizShowAnswersButton: false,
+      quizLayout: "pagination",
     };
 
     const panel = document.createElement("div");
@@ -343,6 +363,15 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
 
     const rows = document.createElement("div");
     rows.className = "dl-settings-rows";
+
+    // The shared answers/user-answers/explanations/placement rows below
+    // are "what should be baked into the file, permanently" choices —
+    // meaningful for static exports (pdf/pptx/docx/md) that have no
+    // in-file way to change their mind afterwards. "quiz" already offers
+    // an in-file reader-side "Show All Answers" toggle for that exact
+    // purpose (see export-to-quiz.js), so it skips these entirely and
+    // gets its own two rows further below instead.
+    const isQuiz = format === "quiz";
 
     // ── Row: Include correct answers (plain toggle, per feedback — no
     // confirmation dialog, consistent with the other rows). ──
@@ -360,7 +389,7 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
     // ── Row: Include user's answers (only when hasUserAnswers) ──
     let userAnswersToggle = null;
     let userAnswersRow = null;
-    if (hasUserAnswers) {
+    if (hasUserAnswers && !isQuiz) {
       userAnswersRow = document.createElement("div");
       userAnswersRow.className = "dl-settings-row";
       userAnswersRow.innerHTML = `
@@ -424,10 +453,12 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
       updatePlacementVisibility();
     });
 
-    rows.appendChild(answersRow);
-    if (userAnswersRow) rows.appendChild(userAnswersRow);
-    rows.appendChild(explanationsRow);
-    rows.appendChild(placementRow);
+    if (!isQuiz) {
+      rows.appendChild(answersRow);
+      if (userAnswersRow) rows.appendChild(userAnswersRow);
+      rows.appendChild(explanationsRow);
+      rows.appendChild(placementRow);
+    }
 
     // ── PDF-only: background color ──
     let bgBtns = null;
@@ -456,6 +487,50 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
       rows.appendChild(bgRow);
     }
 
+    // ── Quiz-only: whether the "🔑 Show All Answers" button exists at
+    // all in the exported file (disabled by default — an answer-key
+    // button embedded in a file meant to be shared/attempted by others
+    // is an opt-in, not a default), and vertical-scroll vs paginated
+    // layout (pagination by default). ──
+    let showAnswersBtnToggle = null;
+    let layoutBtns = null;
+    if (isQuiz) {
+      const showAnswersBtnRow = document.createElement("div");
+      showAnswersBtnRow.className = "dl-settings-row";
+      showAnswersBtnRow.innerHTML = `
+        <div class="dl-settings-row-text">
+          <div class="dl-settings-row-title">🔑 زر إظهار كل الإجابات</div>
+          <div class="dl-settings-row-sub">يضيف زرًا في القائمة الجانبية يكشف كل الإجابات دفعة واحدة</div>
+        </div>
+      `;
+      showAnswersBtnToggle = buildSwitch(false);
+      showAnswersBtnRow.appendChild(showAnswersBtnToggle.el);
+      rows.appendChild(showAnswersBtnRow);
+
+      const layoutRow = document.createElement("div");
+      layoutRow.className = "dl-settings-row dl-settings-row-stack";
+      layoutRow.innerHTML = `
+        <div class="dl-settings-row-text">
+          <div class="dl-settings-row-title">شكل عرض الأسئلة</div>
+        </div>
+        <div class="dl-settings-segmented" role="radiogroup" aria-label="شكل عرض الأسئلة">
+          <button type="button" class="dl-segmented-btn" data-value="vertical" role="radio" aria-checked="false">تمرير رأسي</button>
+          <button type="button" class="dl-segmented-btn active" data-value="pagination" role="radio" aria-checked="true">صفحة لكل سؤال</button>
+        </div>
+      `;
+      layoutBtns = layoutRow.querySelectorAll(".dl-segmented-btn");
+      layoutBtns.forEach((btn) => {
+        btn.onclick = () => {
+          state.quizLayout = btn.dataset.value;
+          layoutBtns.forEach((b) => {
+            b.classList.toggle("active", b === btn);
+            b.setAttribute("aria-checked", String(b === btn));
+          });
+        };
+      });
+      rows.appendChild(layoutRow);
+    }
+
     const actions = document.createElement("div");
     actions.className = "dl-settings-actions";
     actions.innerHTML = `
@@ -473,6 +548,9 @@ function buildSettingsPanel({ format, label, hasUserAnswers, onPanelReady }) {
         ? userAnswersToggle.get()
         : false;
       state.includeExplanations = explanationsToggle.get();
+      if (showAnswersBtnToggle) {
+        state.quizShowAnswersButton = showAnswersBtnToggle.get();
+      }
       resolve({ ...state });
     };
 
@@ -823,8 +901,26 @@ export function showDownloadModal({
       },
       onCopy: async () => {
         const { config: c, questions: q } = await getExportData();
-        if (opt.format === "quiz") return await buildStandaloneQuizHtml(c, q);
-        if (opt.format === "md") return buildQuizMarkdown(c, q, userAnswers);
+        if (opt.format === "quiz") {
+          const exportOptions = await showSettingsStep(opt);
+          if (!exportOptions) throw new Error("COPY_CANCELLED");
+          return await buildStandaloneQuizHtml(c, q, {
+            showAnswersButton: exportOptions.quizShowAnswersButton,
+            layout: exportOptions.quizLayout,
+          });
+        }
+        if (opt.format === "md") {
+          // Copy used to always export with every option silently forced
+          // on (answers/user answers/explanations/inline placement),
+          // skipping the same settings step the Download path shows for
+          // this format. Route copy through it too so the two paths stay
+          // consistent — "back" here throws COPY_CANCELLED, which
+          // buildExportCard's copy handler treats as a silent no-op
+          // rather than an error toast.
+          const exportOptions = await showSettingsStep(opt);
+          if (!exportOptions) throw new Error("COPY_CANCELLED");
+          return buildQuizMarkdown(c, q, userAnswers, exportOptions);
+        }
         if (opt.format === "json") return await buildJsonString();
       },
     });

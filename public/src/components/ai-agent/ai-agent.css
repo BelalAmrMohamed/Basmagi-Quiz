@@ -1482,7 +1482,7 @@
   right: calc(20px + var(--sidebar-collapsed-width, 0px));
   bottom: 20px;
   z-index: var(--z-tooltip, 6000);
-  transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease;
+  /* transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease; */
   width: 56px;
   height: 56px;
   border: none;
@@ -1490,17 +1490,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%);
-  color: #fff;
+  /* background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%); */
+  background: transparent;
+  /* color: #fff; */
   cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* box-shadow: var(--shadow-lg); */
+  /* transition: transform 0.2s ease, box-shadow 0.2s ease; */
 }
 
 .ai-agent-fab:hover {
-  transform: translateY(-2px) scale(1.05);
-  /* box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35); */
-  box-shadow: 0 6px 16px rgba(255, 107, 122, 0.5), 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px) scale(1.05) rotate(5deg);
 }
 
 .ai-agent-fab:active {

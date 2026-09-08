@@ -8,32 +8,71 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Broken Elements
 
 ### Courses & Folders OG Images
-- Don't show the info  
+- Don't show the info: Last update on the og images made the Arabic labels (المادة ، السنة ، الترم) be RTL, it's that update where they stopped showing.
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
 - What I expected? Something similar to how YouTube structures its comment section nowadays (great, functional, expected, and elegant) ![screenshot](image.png).
   - Vertical lines & Horizontal lines that are **Connected together** to visualize the folder structure of the course or folder. 
+- Expected Design:
+  - A dialog guide that visualize the structure similar to a context map of a project: ![./map/context-map.md](image-4.png)
 
 ### User experience improvements in quiz creation
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
-### Export Improvements
-- Update and Improve Quiz Export (export-to-quiz.js). Here are suggestions:
-  - The `🔑 إظهار كل الإجابات`: 
-  - A setting in the export settings panel on whether to include that button or not (Toggle). It should be disabled by default
-  - `تحقق من الإجابة` on each question (similar to the quiz.html page)
-  - A setting in the export settings panel on whether the .html file should be vertical (Current, all queations scrollable in the same page) or pagination ("التالي" and "السابق" buttons, user can go through them.). This setting should be pagination by default.
-  - True Black Dark Mode, not this blue one. Update the current theme to be true black.
-  - Add the "الأداء الفائق" from the platform to this export, too.
-- Markdown Export
-  - Copyign instead of downloading, doesn't show the settings panel
-  - Audio and video and YouTube links aren't being included
+### Export Fixes
+#### export-to-markdown.js
+- Local Path (Relative to the platform) media doesn't get included in the markdown! `🎬 Video not available in exported file (local path)`. It should be included aftre resolving the path.
+- The reason I have some "relative-path" quizzes, is to save space in the free-tier supabase DB. But they are being hosted on Vercel. 
 
-### Remove the TXT export from the AI Agent's `تصدير المحادثة` Keep the MD Export.
+#### export-to-json.js
+- JSON Export should include all links to media, too (images, videos, audio), and it should solve relative path ones.
+
+#### export-to-quiz.js
+- `🔑 زر إظهار كل الإجابات`: Should have a confirmation modal.
+- `check-answer-btn`'s text should be centered.
+- Dark mode hurts the eye, because alot of elements stay purple.
+- On Pagination Mode, the `.controls` buttons should be inside the side-menu, instead of being under every single question.
+- The Print Button doesn't work on Pagination mode.
+- The `.menu-toggle` isn't perfectly aligned when `.active`
+- When I download a brand new quiz, and enter it, the first thing I see is `تم استعادة إجاباتك السابقة`, even though I didn't solve it before, I just downloaded it now, and when I go to the navigation in the side-menu, I find that alot of questions are pre-answred. So the memory that recovers user progress is shared through out all quizzes that the user downloads, this is so messed up.
+- Downloading a quiz as `تمرير رأسي` doesn't work anymore, and I don't know why did AI call it `تمرير رأسي` anyways.
 
 ### Sign in title on Google Sign in.
+- When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something.
+- Signing in doesn't work on localhost for somereason.
+
+
+### AI Agnet Error 
+- ![screenshot 1](image-1.png)
+- ![screenshot 2](image-2.png)
+
+
+Tested on localhost:
+```
+hook.js:1  POST http://localhost:8080/api/ai-agent/chat 502 (Bad Gateway)
+apply @ hook.js:1
+resendLastUserTurn @ ai-agent-chat.js:2231
+resendLastUserTurn @ ai-agent-chat.js:2395
+await in resendLastUserTurn
+sendMessage @ ai-agent-chat.js:2455
+(anonymous) @ ai-agent-chat.js:2472
+ai-agent-chat.js:2257 [ai-agent-chat] /api/ai-agent/chat responded 502: {error: 'فشل الاتصال بمزوّد الذكاء الاصطناعي', detail: 'fetch failed'}detail: "fetch failed"error: "فشل الاتصال بمزوّد الذكاء الاصطناعي"[[Prototype]]: Object
+resendLastUserTurn @ ai-agent-chat.js:2257
+await in resendLastUserTurn
+resendLastUserTurn @ ai-agent-chat.js:2395
+await in resendLastUserTurn
+sendMessage @ ai-agent-chat.js:2455
+(anonymous) @ ai-agent-chat.js:2472
+```
+
+#### Bad PDF Export
+![screenshot 3](image-3.png)
+The pdf export doesn't have any margin on the top, bottom, or right and left by default.
+
+#### User Prompt
+Makrdown rendering gets applied on the AI Agent Answer but not the user prompt. 
 
 ## New Features
 
@@ -52,11 +91,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - Deleting a quiz must remove all associated media files as well.
 - Similar consideration should be given to the “امتحاناتك” section.
 - So new trash can for main quizzes (shared), and new trash can for users “امتحاناتك” section
-
-### AI Agent "الباشــمبصمج"
-
-See [Plan](ai-agent-update-prompt.md)
-
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.

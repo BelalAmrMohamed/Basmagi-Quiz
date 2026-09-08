@@ -346,7 +346,6 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
       title.textContent = "تصدير المحادثة";
       menu.appendChild(title);
       [
-        ["txt", "TXT", "نص عادي", "copy"],
         ["md", "MD", "Markdown منسّق", "copy"],
         ["html", "HTML", "عرض غني مع التنسيق", "copy-html"],
         ["json", "JSON", "نسخة بيانات منظمة", "copy-json"],
