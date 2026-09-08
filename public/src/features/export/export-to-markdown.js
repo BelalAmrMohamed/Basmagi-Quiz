@@ -21,6 +21,45 @@ const isLocalPath = (url) => {
   return !/^(https?:|data:)/i.test(url);
 };
 
+// Same YouTube detection/ID-extraction as quiz.js, duplicated here since
+// this module is loaded standalone (no shared import) and only needs the
+// URL-parsing half, not the player-rendering half.
+const YOUTUBE_RE =
+  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
+const getYouTubeVideoId = (url) => {
+  const match = String(url || "").match(YOUTUBE_RE);
+  return match ? match[1] : null;
+};
+
+// Builds the markdown line(s) for a question's audio/video media, if any.
+// - YouTube links become a plain watch link (markdown can't embed players).
+// - Other video/audio links become a link when remote, or a note when the
+//   path is local and won't resolve outside the platform (same treatment
+//   already given to q.image just above).
+const mdMediaLink = (q) => {
+  let out = "";
+  if (q.video) {
+    if (isYouTubeUrl(q.video)) {
+      const videoId = getYouTubeVideoId(q.video);
+      const watchUrl = videoId
+        ? `https://www.youtube.com/watch?v=${videoId}`
+        : q.video;
+      out += `> 🎬 [Watch on YouTube](${watchUrl})\n\n`;
+    } else if (!isLocalPath(q.video)) {
+      out += `> 🎬 [Video](${q.video})\n\n`;
+    } else {
+      out += `> 🎬 *Video not available in exported file (local path)*  \n\n`;
+    }
+  }
+  if (q.audio) {
+    out += !isLocalPath(q.audio)
+      ? `> 🔊 [Audio](${q.audio})\n\n`
+      : `> 🔊 *Audio not available in exported file (local path)*  \n\n`;
+  }
+  return out;
+};
+
 // Converts \n to markdown line breaks (two trailing spaces + newline).
 // Backtick code blocks and inline code pass through as-is since .md renders them natively.
 const mdLineBreaks = (str) => {
@@ -129,7 +168,10 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
         : `> 📷 *Image not available in exported file (local path)*  \n\n`;
     }
 
-    markdown += `## Question ${index + 1}: ${mdLineBreaks(q.q)}\n${imageLink}\n\n`;
+    const mediaLink = mdMediaLink(q);
+
+    markdown += `## Question ${index + 1}\n`;
+    markdown += `${mdLineBreaks(q.q)}\n${imageLink}${mediaLink}\n\n`;
 
     if (isEssayQuestion(q)) {
       // Fix #exportOptions: user's essay answer/score still needs
@@ -150,7 +192,7 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
         if (answerPlacement === "final-page") {
           answerKeyEntries.push({
             index,
-            text: `**Q${index + 1} Formal Answer:** ${mdLineBreaks(q.answer)}`,
+            answerText: `**Formal Answer:** ${mdLineBreaks(q.answer)}`,
           });
         } else {
           markdown += `**Formal Answer:** ${mdLineBreaks(q.answer)}\n\n`;
@@ -161,7 +203,7 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
         if (answerPlacement === "final-page") {
           answerKeyEntries.push({
             index,
-            text: `**Q${index + 1} Answer:** ${mdLineBreaks(q.answer)}`,
+            answerText: `**Answer:** ${mdLineBreaks(q.answer)}`,
           });
         } else {
           markdown += `**Answer:** ${mdLineBreaks(q.answer)}\n\n`;
@@ -210,7 +252,7 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
         if (answerPlacement === "final-page") {
           answerKeyEntries.push({
             index,
-            text: `**Q${index + 1} Correct Answer:** ${correctText}`,
+            answerText: `**Correct Answer:** ${correctText}`,
           });
         } else {
           markdown += `**Correct Answer:** ${correctText}\n\n`;
@@ -219,23 +261,30 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
     }
 
     if (includeExplanations && q.explanation) {
-      const explanationMd = `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
       if (answerPlacement === "final-page") {
         const entry = answerKeyEntries.find((e) => e.index === index);
-        if (entry) entry.text += `\n${explanationMd}`;
-        else markdown += explanationMd;
+        if (entry) entry.explanationText = mdLineBreaks(q.explanation);
+        else markdown += `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
       } else {
-        markdown += explanationMd;
+        markdown += `> **Explanation:**\n${mdLineBreaks(q.explanation)}\n\n`;
       }
     }
     markdown += `---\n\n`;
   });
 
   // ── Grouped Answer Key section (answerPlacement === "final-page") ──
+  // Each entry gets its own heading + bullet list rather than a flat run
+  // of bold-label lines, so the answer/explanation pairing per question
+  // stays visually distinct once separated from the question text itself.
   if (includeAnswers && answerPlacement === "final-page" && answerKeyEntries.length) {
     markdown += `## 🔑 Answer Key\n\n`;
     answerKeyEntries.forEach((entry) => {
-      markdown += `${entry.text}\n\n`;
+      markdown += `### Question ${entry.index + 1}\n\n`;
+      markdown += `- ${entry.answerText}\n`;
+      if (entry.explanationText) {
+        markdown += `- **Explanation:** ${entry.explanationText}\n`;
+      }
+      markdown += `\n`;
     });
   }
 
