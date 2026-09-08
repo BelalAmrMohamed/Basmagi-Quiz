@@ -1963,9 +1963,32 @@ ${quizInfoModalHtml}
   </div>
   
   <script>
-  const ICON_COPY = \`<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>\`;
   const questions = ${JSON.stringify(processedQuestions)};
-  
+
+  // ── Safe localStorage wrapper ──
+  // Downloaded quizzes are routinely opened straight from disk
+  // (file:///D:/Downloads/...), and file:// pages have an OPAQUE origin in
+  // every major browser — any localStorage access on an opaque origin
+  // throws a synchronous, UNCAUGHT SecurityError, not just a quota/privacy
+  // warning. loadPreferences() calls localStorage.getItem() unconditionally
+  // during init(), so without this wrapper the entire quiz app crashes
+  // before a single question renders whenever the file is opened locally
+  // rather than served over http(s). Every direct localStorage.* call below
+  // goes through this instead so dark-mode/progress-saving simply becomes a
+  // no-op (rather than a page-breaking crash) in that environment, while
+  // behaving completely normally when the quiz is hosted/served normally.
+  const safeStorage = {
+    get(key) {
+      try { return localStorage.getItem(key); } catch { return null; }
+    },
+    set(key, value) {
+      try { localStorage.setItem(key, value); } catch { /* opaque origin or storage disabled — ignore */ }
+    },
+    remove(key) {
+      try { localStorage.removeItem(key); } catch { /* opaque origin or storage disabled — ignore */ }
+    },
+  };
+
   // ── Markdown + KaTeX integration (mirrored from create-quiz) ──
   // All functions are serialised from module scope via .toString() so the
   // generated file is self-contained with no build step needed.
@@ -1985,7 +2008,14 @@ ${quizInfoModalHtml}
   // COPY_LABEL by bare closure reference (not as params), same story as
   // _HL_KEYWORDS/_HL_BUILTINS_JS above — .toString() can't carry them, so
   // they're baked in here as plain string literals from the live
-  // markdown.js module's exports at export time.
+  // markdown.js module's exports at export time. This is the ONLY
+  // declaration of ICON_COPY in this script — it used to also be
+  // separately declared near the top (for the app's own copy-button UI,
+  // before this markdown dependency was discovered), which caused a
+  // same-scope "Identifier 'ICON_COPY' has already been declared"
+  // SyntaxError that broke every exported quiz .html file at parse time.
+  // Do not add another const ICON_COPY = ... anywhere else in this
+  // script — reuse this one.
   const ICON_COPY = ${JSON.stringify(ICON_COPY)};
   const COPY_LABEL = ${JSON.stringify(COPY_LABEL)};
 
@@ -2059,7 +2089,7 @@ ${quizInfoModalHtml}
     },
   
     loadPreferences() {
-      const savedTheme = localStorage.getItem('quizTheme');
+      const savedTheme = safeStorage.get('quizTheme');
       
       this.darkMode = savedTheme === 'dark';
       
@@ -2083,7 +2113,7 @@ ${quizInfoModalHtml}
   
     toggleDarkMode() {
       this.darkMode = !this.darkMode;
-      localStorage.setItem('quizTheme', this.darkMode ? 'dark' : 'light');
+      safeStorage.set('quizTheme', this.darkMode ? 'dark' : 'light');
       this.applyTheme();
       this.announceToScreenReader(this.darkMode ? 'Dark mode enabled' : 'Light mode enabled');
     },
@@ -2148,11 +2178,11 @@ ${quizInfoModalHtml}
         currentQuestion: this.currentQuestion,
         timestamp: Date.now()
       };
-      localStorage.setItem('quiz_progress', JSON.stringify(state));
+      safeStorage.set('quiz_progress', JSON.stringify(state));
     },
   
     loadProgress() {
-      const saved = localStorage.getItem('quiz_progress');
+      const saved = safeStorage.get('quiz_progress');
       if (saved) {
         try {
           const state = JSON.parse(saved);
@@ -2521,6 +2551,21 @@ ${quizInfoModalHtml}
           </div>
           <div class="essay-score" id="essayScore\${i}"></div>
         \`;
+      } else if (!Array.isArray(q.options) || q.options.length === 0) {
+        // Fix #empty-render-fallback: neither essay (isEssayQuestion needs
+        // q.answer !== undefined) nor valid MCQ (no options array) — e.g. a
+        // multi-part free-response question. q.options.map() below would
+        // otherwise throw on undefined and crash renderQuiz() for the
+        // ENTIRE quiz (not just this one question), since renderQuestion()
+        // is called synchronously for every question in one .map() chain.
+        optionsHtml = q.answer
+          ? \`<div class="model-answer" style="display:block;">
+              <strong class="answer-label">✓ Answer</strong><br>
+              \${renderMarkdown(q.answer)}
+            </div>\`
+          : \`<div class="model-answer" style="display:block; opacity:0.7;">
+              <em>لا توجد خيارات إجابة متاحة لهذا السؤال</em>
+            </div>\`;
       } else {
         const isMultiple = Array.isArray(q.correct);
         optionsHtml = \`<div class="options">\${
@@ -2782,7 +2827,7 @@ ${quizInfoModalHtml}
         submitBtn.classList.remove('loading');
         document.getElementById('reviewBtn').disabled = true;
         
-        localStorage.removeItem('quiz_progress');
+        safeStorage.remove('quiz_progress');
         
         this.announceToScreenReader('Quiz submitted. Check results below.');
       }, 800);
@@ -2925,7 +2970,7 @@ ${quizInfoModalHtml}
       this.stopTimer();
       this.startQuizTimer();
       
-      localStorage.removeItem('quiz_progress');
+      safeStorage.remove('quiz_progress');
       
       window.scrollTo({ top: 0, behavior: "smooth" });
       this.showToast('Quiz reset', 'info');
@@ -3176,9 +3221,22 @@ const resolveMediaUrl = (url) => {
   if (!url || typeof url !== "string") return url;
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
 
+  // Fix #file-origin: window.location.origin is NOT falsy when the export
+  // is opened via file:///... — per spec, a file: URL's origin serializes
+  // to the literal string "null" (browser-dependent, but Chrome/Firefox/
+  // Edge all do this), which is truthy and previously defeated the
+  // `|| PLATFORM_ORIGIN` fallback entirely. That made new URL(relativePath,
+  // "null") throw, hit the catch below, and return the UNRESOLVED relative
+  // path — reproducing the exact "video path breaks when downloaded and
+  // opened from file:///D:/Downloads/..." bug this was meant to fix.
+  // Explicitly reject file:/null/empty origins so the real platform origin
+  // is used instead whenever the page itself has no usable origin.
+  const winOrigin =
+    typeof window !== "undefined" && window.location && window.location.origin;
   const origin =
-    (typeof window !== "undefined" && window.location && window.location.origin) ||
-    PLATFORM_ORIGIN;
+    winOrigin && winOrigin !== "null" && !/^file:/i.test(winOrigin)
+      ? winOrigin
+      : PLATFORM_ORIGIN;
 
   try {
     return new URL(url, origin).href;

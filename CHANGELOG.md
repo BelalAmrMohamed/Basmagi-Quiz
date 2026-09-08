@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [8.2.1] - 2026-7-9
+## [] - 2026-9-8
+
+## [8.2.1] - 2026-9-7
 
 ### Updated OG Images
 - Folders and Courses get custom URLs now.

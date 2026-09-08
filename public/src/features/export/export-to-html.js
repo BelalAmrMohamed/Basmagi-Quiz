@@ -28,9 +28,17 @@ const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
 const resolveMediaUrl = (url) => {
     if (!url || typeof url !== "string") return url;
     if (/^(https?:|data:|blob:)/i.test(url)) return url;
+    // Fix #file-origin: a file:// page's window.location.origin serializes to
+    // the literal (truthy) string "null" per spec, which silently defeated
+    // the `|| PLATFORM_ORIGIN` fallback and let a relative path survive
+    // unresolved into the exported file — see export-to-quiz.js's
+    // resolveMediaUrl for the full explanation.
+    const winOrigin =
+        typeof window !== "undefined" && window.location && window.location.origin;
     const origin =
-        (typeof window !== "undefined" && window.location && window.location.origin) ||
-        PLATFORM_ORIGIN;
+        winOrigin && winOrigin !== "null" && !/^file:/i.test(winOrigin)
+            ? winOrigin
+            : PLATFORM_ORIGIN;
     try {
         return new URL(url, origin).href;
     } catch {
@@ -400,6 +408,25 @@ export async function buildQuizHtml(config, questions, userAnswers = []) {
               <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Formal Answer / Key Points:</strong>
               ${renderMarkdown(q.answer)}
           </div>`;
+        } else if (!Array.isArray(q.options) || q.options.length === 0) {
+            // Fix #empty-render-fallback: neither essay (no q.answer) nor a
+            // valid MCQ (no options) — e.g. a multi-part free-response
+            // question whose answer lives under a field this renderer
+            // doesn't read. q.options.forEach() below would otherwise throw
+            // on undefined and abort the ENTIRE export (interactive HTML
+            // and PDF both reuse this function), or silently render nothing
+            // if options was merely an empty array. Render whatever we can
+            // instead of crashing/going blank.
+            if (q.answer) {
+                htmlContent += `<div class="essay-box">
+              <strong style="color: #f59e0b; display:block; margin-bottom:5px;">Answer:</strong>
+              ${renderMarkdown(q.answer)}
+          </div>`;
+            } else {
+                htmlContent += `<div class="essay-box" style="opacity:0.7;">
+              <em>No answer options available for this question.</em>
+          </div>`;
+            }
         } else {
             htmlContent += `<div class="options-list">`;
             q.options.forEach((opt, i) => {

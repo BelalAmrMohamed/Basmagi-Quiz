@@ -50,9 +50,17 @@ const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
 const resolveMediaUrl = (url) => {
   if (!url || typeof url !== "string") return url;
   if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  // Fix #file-origin: a file:// page's window.location.origin serializes to
+  // the literal (truthy) string "null" per spec, which silently defeated
+  // the `|| PLATFORM_ORIGIN` fallback and let a relative path survive
+  // unresolved into the exported file — see export-to-quiz.js's
+  // resolveMediaUrl for the full explanation.
+  const winOrigin =
+    typeof window !== "undefined" && window.location && window.location.origin;
   const origin =
-    (typeof window !== "undefined" && window.location && window.location.origin) ||
-    PLATFORM_ORIGIN;
+    winOrigin && winOrigin !== "null" && !/^file:/i.test(winOrigin)
+      ? winOrigin
+      : PLATFORM_ORIGIN;
   try {
     return new URL(url, origin).href;
   } catch {
@@ -1595,6 +1603,34 @@ export async function exportToPptx(
               insetIn: 0.1,
             });
           }
+        }
+      } else if (!Array.isArray(question.options) || question.options.length === 0) {
+        // Fix #empty-slide-fallback: this question is neither classified as
+        // essay (isEssayQuestion requires question.answer !== undefined) nor
+        // does it have any options to render as MCQ — e.g. a multi-part
+        // free-response/math question whose expected answer lives under a
+        // field this exporter doesn't otherwise read, or genuinely has no
+        // answer data at all. Previously this fell through to the MCQ
+        // branch below with options = [], which rendered NOTHING after the
+        // "Question N" label — producing an entirely blank-looking slide
+        // (only header/footer/label), which is exactly the reported bug.
+        // Render whatever we do have instead of silently drawing nothing:
+        // question.answer if present (even though isEssayQuestion said no —
+        // a truthy-but-somehow-still-undefined edge case is defensive here),
+        // otherwise a neutral placeholder so the slide is never blank.
+        if (includeAnswers && question.answer) {
+          addLabel("ANSWER:", COLORS.success, 10);
+          await addRichBlock(sanitizeText(String(question.answer)), {
+            fontSizePt: 12,
+            colorHex: COLORS.textDark,
+            bgHex: COLORS.correctBg,
+            insetIn: 0.1,
+          });
+        } else {
+          await addRichBlock("(No answer options available for this question.)", {
+            fontSizePt: 12,
+            colorHex: COLORS.textMedium,
+          });
         }
       } else {
         // ── Multiple-choice options ─────────────────────────────────────────

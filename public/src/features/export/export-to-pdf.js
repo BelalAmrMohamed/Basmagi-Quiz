@@ -73,11 +73,14 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     --color-error: #dc2626 !important;
     --color-code: #1a1a1a !important;
   }
-  /* Also flip the [data-theme="light"]-scoped rules already defined in
+  /* The [data-theme="light"]-scoped rules already defined in
      markdown-css.js (table striping, code syntax-highlight colors, the
-     inline-code block) by actually setting data-theme so they apply —
-     they were previously written but unreachable since the exported
-     <html> tag never carried this attribute. */
+     inline-code block) are activated by exportToPdf() actually setting
+     data-theme="light" on the <html> tag before printing (see
+     export-to-pdf.js, right after this CSS is spliced in) — that
+     attribute can't be set from inside this CSS string, only from the
+     caller that has the full HTML string to splice into. color-scheme
+     below only affects native form-control/scrollbar rendering. */
   html { color-scheme: light; }
 
   /* Light background: the on-screen dark theme's card/text colors need
@@ -339,12 +342,33 @@ export async function exportToPdf(
     // Splice our print-only overrides in right before </head> so they
     // load after (and therefore override) MARKDOWN_CSS.
     const printCss = PDF_PRINT_CSS(backgroundChoice);
-    const htmlWithPrintCss = htmlContent.includes("</head>")
+    let htmlWithPrintCss = htmlContent.includes("</head>")
       ? htmlContent.replace(
         "</head>",
         `<style>${printCss}</style></head>`,
       )
       : htmlContent + `<style>${printCss}</style>`;
+
+    // Fix #pdf-data-theme: markdown-css.js defines a whole set of
+    // [data-theme="light"] rules (table striping, code syntax-highlight
+    // colors, inline-code) that PDF_PRINT_CSS's own comment claims to
+    // "actually apply" — but `html { color-scheme: light }` only affects
+    // native form-control/scrollbar rendering, it does NOT set the
+    // data-theme attribute, so those [data-theme="light"] selectors were
+    // still completely unreachable. buildQuizHtml() always emits a bare
+    // `<html lang="en">` with no data-theme, regardless of background
+    // choice, since it's shared with the (dark-only) interactive export.
+    // Set the attribute here, at the PDF layer, only for the light
+    // background choice, so the dark interactive-HTML export is untouched.
+    if (backgroundChoice === "light") {
+      htmlWithPrintCss = htmlWithPrintCss.replace(
+        /<html([^>]*)>/,
+        (match, attrs) =>
+          /data-theme=/.test(attrs)
+            ? match.replace(/data-theme="[^"]*"/, 'data-theme="light"')
+            : `<html${attrs} data-theme="light">`,
+      );
+    }
 
     const filenameBase = (config.title || "quiz").trim() || "quiz";
 

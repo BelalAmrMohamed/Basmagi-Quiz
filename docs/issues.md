@@ -7,11 +7,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Broken Elements
 
-### Exports
-- Questions from the 2nd page and on, don't have any top margin, they stick to the border or the page.
-- no export includes the answers at the end.
-- `تضمين الإجابات الصحيحة` and the `تضمين الشروحات` don't do anything.
-- modal cards flicker when mouse stands on their borders.
+### Courses & Folders OG Images
+- Don't show the info  
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
@@ -31,7 +28,10 @@ See `docs/plan-to-update-exports.md`
 
 ### Export Improvements
 - Update and Improve Quiz Export. Here are suggestions:
-  - `تحقق من الإجابة` on each question (similar to the quiz page)
+  - The `🔑 إظهار كل الإجابات` should be a button not a toggle, and do one of these: 
+    - A confirmation modal before showing all answers.
+    - A setting in the export settings panel to include that button or not.
+  - `تحقق من الإجابة` on each question (similar to the quiz.html page)
   - Pagination view instead of vertical view (similar to the quiz page's default view)
 
 ### `تصدير بيانات امتحاناتك` on the امتحاناتك card should be invisible when the `حذف الكل` is invisible
@@ -112,3 +112,6 @@ See [Plan](ai-agent-update-prompt.md)
 - Don't load the whole DB for the manifest, just the courses, then when the initial view loads (which is top view, which is courses only), start loading their subfolder in the background.
 - When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
+
+### App SEO and GEO 
+- List all unlisted pages (document pages, and reports page)
