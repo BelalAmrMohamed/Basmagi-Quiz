@@ -1,11 +1,9 @@
 // public/src/features/create/create-quiz.js
 
-// Temporary | For performance debugging
-console.log("create-quiz.js loaded successfully");
-
 import {
   showNotification,
   _confirm,
+  _prompt
 } from "../../components/notifications/notifications.js";
 
 import {
@@ -46,6 +44,9 @@ let bulkModeActive = false;
 let selectedQuestions = new Set();
 let isTemplatesPanelOpen = false;
 let editingQuizId = null;
+// ID of the current draft entry in user_quizzes (meta.type = "draft").
+// null when editing an already-published quiz via ?edit=<id>.
+let currentDraftId = null;
 
 // ── Admin detection ──────────────────────────────────────────────────────────
 // Set once on DOMContentLoaded; controls whether media-upload tabs are shown.
@@ -186,9 +187,6 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
           placeholder="${placeholder}"
         >${escaped}</textarea>
         <div class="wp-preview-pane ltr" id="preview-${id}" style="display:none;"></div>
-      </div>
-      <div class="wp-footer">
-        <span class="wp-hint"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M9 15h6"/><path d="M6 9h1"/><path d="M6 12h1"/></svg> يدعم Markdown و LaTeX</span>
       </div>
     </div>`;
 }
@@ -400,64 +398,139 @@ function renderEntryItemsGrid() {
   const grid = document.getElementById("entryItemsGrid");
   if (!grid) return;
 
-  let draft = null;
+  // Migrate legacy single-key draft to a proper draft entry, then clean up
   try {
-    draft = JSON.parse(localStorage.getItem("quiz_draft") || "null");
-  } catch (e) {
-    draft = null;
+    const legacyDraft = localStorage.getItem("quiz_draft");
+    if (legacyDraft) {
+      const d = JSON.parse(legacyDraft);
+      const hasContent = d && (d.meta?.title || d.title || d.questions?.length);
+      if (hasContent) {
+        const id = "draft-" + Date.now();
+        const entry = {
+          id,
+          meta: {
+            type: "draft",
+            title: d.meta?.title || d.title || "مسودة غير مُعنونة",
+            description: d.meta?.description || d.description || "",
+            source: d.meta?.source || d.source || "",
+            updatedAt: d.lastModified || new Date().toISOString(),
+          },
+          questions: d.questions || [],
+        };
+        const quizzes = _readUserQuizzes();
+        quizzes.push(entry);
+        localStorage.setItem("user_quizzes", JSON.stringify(quizzes));
+      }
+      localStorage.removeItem("quiz_draft");
+    }
+  } catch (e) { /* ignore migration errors */ }
+
+  let userQuizzes = _readUserQuizzes();
+
+  // ── Helper: render a single tile ──────────────────────────────────────────
+  function makeTile(item) {
+    const title = escapeHtml(item.title);
+    const countLabel = `${item.count} ${item.count === 1 ? "سؤال" : "أسئلة"}`;
+    const dateLabel = formatEntryItemDate(item.updatedAt);
+    const meta = [countLabel, dateLabel].filter(Boolean).join(" · ");
+    const clickHandler = `chooseUserQuizToEdit('${item.id}')`;
+    const moreMenu =
+      item.kind === "mine" || item.kind === "draft"
+        ? `
+        <div class="entry-item-more-wrap">
+          <button type="button" class="entry-item-more-btn" onclick="toggleEntryItemMenu(event, '${item.id}')"
+            aria-label="خيارات إضافية" title="خيارات إضافية">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="19" cy="12" r="1" />
+              <circle cx="5" cy="12" r="1" />
+            </svg>
+          </button>
+          <div class="entry-item-menu" id="entryItemMenu-${item.id}">
+            <button type="button" class="entry-item-menu-option" onclick="renameEntryItem(event, '${item.id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+              </svg>
+              <span>إعادة تسمية</span>
+            </button>
+            <button type="button" class="entry-item-menu-option entry-item-menu-option-danger"
+              onclick="deleteEntryItem(event, '${item.id}')">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18" />
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              <span>حذف</span>
+            </button>
+          </div>
+        </div>`
+        : "";
+    return `
+      <div class="entry-item-wrap">
+        <button type="button" class="entry-item${item.kind === "draft" ? " entry-item-draft" : ""}" onclick="${clickHandler}">
+          <span class="entry-item-thumb">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <path d="M12 11h4" />
+              <path d="M12 16h4" />
+              <path d="M8 11h.01" />
+              <path d="M8 16h.01" />
+            </svg>
+          </span>
+          <span class="entry-item-title">${title}</span>
+          <span class="entry-item-meta">${meta}</span>
+        </button>
+        ${moreMenu}
+      </div>`;
   }
 
-  let userQuizzes = [];
-  try {
-    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
-  } catch (e) {
-    userQuizzes = [];
-  }
-
-  const items = [];
-
-  const draftHasContent =
-    draft && (draft.meta?.title || draft.title || draft.questions?.length);
-  if (draftHasContent) {
-    items.push({
+  // ── Drafts section ────────────────────────────────────────────────────────
+  const draftItems = userQuizzes
+    .filter((q) => q.meta?.type === "draft")
+    .map((q) => ({
       kind: "draft",
-      id: null,
-      title: draft.meta?.title || draft.title || "بدون عنوان",
-      count: draft.questions?.length || 0,
-      updatedAt: draft.lastModified || null,
+      id: q.id,
+      title: q.meta?.title || q.title || "مسودة غير مُعنونة",
+      count: q.questions?.length || 0,
+      updatedAt: q.meta?.updatedAt || null,
+    }))
+    .sort((a, b) => {
+      if (!a.updatedAt && !b.updatedAt) return 0;
+      if (!a.updatedAt) return 1;
+      if (!b.updatedAt) return -1;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
-  }
 
-  userQuizzes.forEach((quiz) => {
-    // Skip folders/courses — user_quizzes holds those alongside real quizzes
-    // (same pattern used across the app, e.g. navigation.js/
-    // user-quizzes-folders.js: a plain quiz row carries no meta.type at
-    // all). This is an "edit a quiz" screen, not a file browser, so only
-    // real quizzes belong in the grid.
-    const itemType = quiz.meta?.type;
-    if (itemType === "folder" || itemType === "course") return;
-
-    items.push({
+  // ── Saved quizzes section ─────────────────────────────────────────────────
+  const savedItems = userQuizzes
+    .filter((quiz) => {
+      const t = quiz.meta?.type;
+      return t !== "folder" && t !== "course" && t !== "draft";
+    })
+    .map((quiz) => ({
       kind: "mine",
       id: quiz.id,
       title: quiz.meta?.title || quiz.title || "بدون عنوان",
       count: quiz.stats?.questionCount ?? quiz.questions?.length ?? 0,
-      // Only the new ISO meta.updatedAt is safe to parse as a Date — the
-      // legacy meta.createdAt is a locale display string (see
-      // quiz-info-html.js's formatDateForInfo), not reliably parseable, so
-      // older quizzes without updatedAt simply show no date, not a wrong one.
       updatedAt: quiz.meta?.updatedAt || null,
+    }))
+    .sort((a, b) => {
+      if (!a.updatedAt && !b.updatedAt) return 0;
+      if (!a.updatedAt) return 1;
+      if (!b.updatedAt) return -1;
+      return new Date(b.updatedAt) - new Date(a.updatedAt);
     });
-  });
 
-  // Newest first, unknown dates last.
-  items.sort((a, b) => {
-    if (!a.updatedAt && !b.updatedAt) return 0;
-    if (!a.updatedAt) return 1;
-    if (!b.updatedAt) return -1;
-    return new Date(b.updatedAt) - new Date(a.updatedAt);
-  });
+  // ── Assemble sections ─────────────────────────────────────────────────────
+  const draftTiles = draftItems.map((item) => makeTile(item)).join("");
+  const savedTiles = savedItems.map(makeTile).join("");
 
+  // ── New-quiz tile (always shown) ────────────────────────────────────────────
   const newTile = `
     <div class="entry-item-wrap">
       <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
@@ -472,83 +545,32 @@ function renderEntryItemsGrid() {
       </button>
     </div>`;
 
-  const itemTiles = items
-    .map((item) => {
-      const title = escapeHtml(item.title);
-      const countLabel = `${item.count} ${item.count === 1 ? "سؤال" : "أسئلة"}`;
-      const dateLabel = formatEntryItemDate(item.updatedAt);
-      const meta = [countLabel, dateLabel].filter(Boolean).join(" · ");
-      const clickHandler =
-        item.kind === "draft"
-          ? "chooseEntryAction('draft')"
-          : `chooseUserQuizToEdit('${item.id}')`;
-      const badge =
-        item.kind === "draft"
-          ? '<span class="entry-item-badge">مسودة</span>'
-          : "";
-      // The "more" menu only applies to real saved quizzes (kind === "mine")
-      // — a local draft has no id in user_quizzes to rename/delete against,
-      // and renaming/deleting "the draft" isn't a request that maps onto
-      // this storage shape the same way.
-      const moreMenu =
-        item.kind === "mine"
-          ? `
-          <div class="entry-item-more-wrap">
-            <button type="button" class="entry-item-more-btn" onclick="toggleEntryItemMenu(event, '${item.id}')"
-              aria-label="خيارات إضافية" title="خيارات إضافية">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-            </button>
-            <div class="entry-item-menu" id="entryItemMenu-${item.id}">
-              <button type="button" class="entry-item-menu-option" onclick="renameEntryItem(event, '${item.id}')">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-                <span>إعادة تسمية</span>
-              </button>
-              <button type="button" class="entry-item-menu-option entry-item-menu-option-danger"
-                onclick="deleteEntryItem(event, '${item.id}')">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
-                <span>حذف</span>
-              </button>
-            </div>
-          </div>`
-          : "";
-      return `
-        <div class="entry-item-wrap">
-          <button type="button" class="entry-item" onclick="${clickHandler}">
-            <span class="entry-item-thumb">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-                <path d="M12 11h4" />
-                <path d="M12 16h4" />
-                <path d="M8 11h.01" />
-                <path d="M8 16h.01" />
-              </svg>
-              ${badge}
-            </span>
-            <span class="entry-item-title">${title}</span>
-            <span class="entry-item-meta">${meta}</span>
-          </button>
-          ${moreMenu}
-        </div>`;
-    })
-    .join("");
+  let html = `
+    <div class="entry-section">
+      <h2 class="entry-screen-heading">أنشئ امتحانًا جديدًا</h2>
+      <div class="entry-items-grid">${newTile}</div>
+    </div>`;
 
-  grid.innerHTML = newTile + itemTiles;
+  if (draftTiles) {
+    html += `
+    <div class="entry-section">
+      <h2 class="entry-screen-heading">المسودات</h2>
+      <div class="entry-items-grid">${draftTiles}</div>
+    </div>`;
+  }
+
+  if (savedTiles) {
+    html += `
+    <div class="entry-section">
+      <h2 class="entry-screen-heading">الامتحانات المحفوظة</h2>
+      <div class="entry-items-grid">${savedTiles}</div>
+    </div>`;
+  }
+
+  grid.innerHTML = html;
 }
+
+
 
 /** "منذ ٣ أيام"-style relative label, falling back to a short date. */
 function formatEntryItemDate(isoString) {
@@ -661,30 +683,61 @@ function finishFormInit() {
   updateStatistics();
 }
 
-/** Handles taps on entry-screen tiles ("new" | "draft" | "exit"). */
+// ============================================================================
+// SHARED LOCALSTORAGE HELPERS
+// ============================================================================
+
+/** Safe read of user_quizzes from localStorage. Always returns an array. */
+function _readUserQuizzes() {
+  try {
+    return JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+/** Safe write of user_quizzes to localStorage. */
+function _writeUserQuizzes(quizzes) {
+  localStorage.setItem("user_quizzes", JSON.stringify(quizzes));
+}
+
+/** Generate a simple unique ID (timestamp + random suffix). */
+function _generateId(prefix = "draft") {
+  return prefix + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+}
+
+
+
+/** Handles taps on entry-screen tiles ("new" | "exit"). */
 window.chooseEntryAction = function (action) {
   if (action === "new") {
-    resetPageData();
+    resetPageData();    // clears quizData, generates a new currentDraftId
     finishFormInit();
-    return;
-  }
-
-  if (action === "draft") {
-    finishFormInit();
-    loadDraftFromLocalStorage();
     return;
   }
 
   if (action === "exit") {
-    // The app-bar "home" button: go back to the entry screen without
-    // discarding anything — autosave already keeps quiz_draft current.
+    // The app-bar "هوم" button: go back to the entry screen without
+    // discarding anything — autosave already persisted the current draft.
     showEntryScreen();
   }
 };
 
-/** User picked a specific saved quiz tile from the entry screen. */
+/** User picked a specific saved quiz OR draft tile from the entry screen. */
 window.chooseUserQuizToEdit = function (quizId) {
-  editingQuizId = quizId;
+  const quizzes = _readUserQuizzes();
+  const quiz = quizzes.find((q) => q.id === quizId);
+  if (!quiz) return;
+
+  if (quiz.meta?.type === "draft") {
+    // Opening a draft: track it as currentDraftId so autosave updates it
+    currentDraftId = quizId;
+    editingQuizId = null;
+  } else {
+    // Opening a published quiz for editing: no draft tracking
+    editingQuizId = quizId;
+    currentDraftId = null;
+  }
   finishFormInit();
   loadQuizFromLocalStorage(quizId);
 };
@@ -2597,20 +2650,41 @@ function autosave() {
 
   autosaveTimeout = setTimeout(() => {
     try {
-      const dataToSave = {
-        title: quizData.title,
-        description: quizData.description,
-        source: quizData.source, // FIX: persist source in draft
-        questions: quizData.questions,
-        lastModified: new Date().toISOString(),
-      };
-
-      localStorage.setItem("quiz_draft", JSON.stringify(dataToSave));
+      // If we have a currentDraftId, upsert into user_quizzes as a draft entry.
+      // If editing a published quiz (?edit=<id>), fall back to the old single-key
+      // quiz_draft behaviour so the editor's state is preserved across refreshes.
+      if (currentDraftId) {
+        const quizzes = _readUserQuizzes();
+        const idx = quizzes.findIndex((q) => q.id === currentDraftId);
+        const entry = {
+          id: currentDraftId,
+          meta: {
+            type: "draft",
+            title: quizData.title?.trim() || "",
+            description: quizData.description?.trim() || "",
+            source: quizData.source?.trim() || "",
+            updatedAt: new Date().toISOString(),
+          },
+          questions: quizData.questions,
+        };
+        if (idx >= 0) {
+          quizzes[idx] = entry;
+        } else {
+          quizzes.push(entry);
+        }
+        _writeUserQuizzes(quizzes);
+      } else {
+        // Editing a published quiz — keep a local recovery copy under quiz_draft
+        const dataToSave = {
+          title: quizData.title,
+          description: quizData.description,
+          source: quizData.source,
+          questions: quizData.questions,
+          lastModified: new Date().toISOString(),
+        };
+        localStorage.setItem("quiz_draft", JSON.stringify(dataToSave));
+      }
       updateAutosaveIndicator("saved");
-
-      setTimeout(() => {
-        updateAutosaveIndicator("saved");
-      }, 1000);
     } catch (error) {
       console.error("Autosave error:", error);
       updateAutosaveIndicator("error");
@@ -2795,6 +2869,8 @@ function loadDraftFromLocalStorage() {
         updateStatistics();
         showNotification("تم التحميل", "تم تحميل المسودة المحفوظة", "success");
       }
+      // Sync the app-bar title now that quizData.title is populated
+      updateAppTitleBar();
     }
   } catch (error) {
     console.error("Error loading from localStorage:", error);
@@ -2815,8 +2891,11 @@ function loadQuizFromLocalStorage(quizId) {
 
       // Support both old flat schema and new (meta.title)
       quizData.title = quiz.meta?.title || quiz.title || "";
-      document.getElementById("quizTitle").value = quizData.title;
-      updateCharCount("titleCharCount", quizData.title.length, 100);
+      const qTitleEl = document.getElementById("quizTitle");
+      if (qTitleEl) {
+        qTitleEl.value = quizData.title;
+        updateCharCount("titleCharCount", quizData.title.length, 100);
+      }
 
       quizData.description = quiz.meta?.description || quiz.description || "";
       document.getElementById("quizDescription").value = quizData.description;
@@ -2875,6 +2954,8 @@ function loadQuizFromLocalStorage(quizId) {
       });
 
       showNotification("أهلاً بك", "تم تحميل الامتحان للتعديل", "success");
+      // Sync the app-bar title now that quizData.title is populated
+      updateAppTitleBar();
     } else {
       showNotification("خطأ", "لم يتم العثور على الامتحان", "error");
       setTimeout(() => (window.location.href = "/"), 1500);
@@ -3127,7 +3208,15 @@ window.saveLocally = function () {
     if (editingQuizId) {
       quizId = updateInUserQuizzes(editingQuizId, quizData);
     } else {
+      // New quiz (possibly from a draft) — save as a real published entry
       quizId = saveToUserQuizzes(quizData);
+      // Promote: remove the draft entry that was tracking this work-in-progress
+      if (currentDraftId) {
+        const quizzes = _readUserQuizzes();
+        _writeUserQuizzes(quizzes.filter((q) => q.id !== currentDraftId));
+        currentDraftId = null;
+      }
+      editingQuizId = quizId;
     }
     hideLoading();
 
@@ -3505,6 +3594,7 @@ window.processImport = async function () {
  * loadQuizFromLocalStorage() and never reverted).
  */
 function resetPageData() {
+  // Clear the old single-key draft (backwards compat)
   localStorage.removeItem("quiz_draft");
 
   quizData = {
@@ -3516,14 +3606,19 @@ function resetPageData() {
 
   questionIdCounter = 0;
   editingQuizId = null;
+  // Every new session gets its own draft ID so old drafts are never overwritten
+  currentDraftId = _generateId("draft");
 
   const headerTitle = document.querySelector(".header h1");
   if (headerTitle) headerTitle.textContent = "إنشاء امتحان جديد";
   document.title = "إنشاء امتحان - منصة بصمجي";
 
-  document.getElementById("quizTitle").value = "";
-  document.getElementById("quizSource").value = "";
-  document.getElementById("quizDescription").value = "";
+  const qTitleEl = document.getElementById("quizTitle");
+  if (qTitleEl) qTitleEl.value = "";
+  const qSrcEl = document.getElementById("quizSource");
+  if (qSrcEl) qSrcEl.value = "";
+  const qDescEl = document.getElementById("quizDescription");
+  if (qDescEl) qDescEl.value = "";
   document.getElementById("questionsContainer").innerHTML = "";
 
   updateCharCount("titleCharCount", 0, 100);

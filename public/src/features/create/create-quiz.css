@@ -81,14 +81,21 @@ body.quiz-form-active {
 .autosave-indicator {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 3px 10px;
   border-radius: 20px;
   background: var(--color-success-light);
   color: var(--color-success);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   transition: all 0.3s ease;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.autosave-indicator .save-icon svg {
+  width: 13px;
+  height: 13px;
 }
 
 .autosave-indicator.saving {
@@ -157,8 +164,8 @@ body.sidebar-expanded .menu-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -166,32 +173,37 @@ body.sidebar-expanded .menu-bar {
   cursor: pointer;
   flex-shrink: 0;
   transition: background-color 0.15s ease, color 0.15s ease;
+  padding: 0;
 }
 
 .app-title-home svg {
   width: 18px;
   height: 18px;
+  display: block;
 }
 
 .app-title-home:hover,
 .app-title-home:focus-visible {
-  background: var(--color-background);
+  background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
 .app-title-text {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 320px;
-  padding: 4px 8px;
+  max-width: 360px;
+  padding: 3px 8px;
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
+  outline: none;
   transition: border-color 0.15s ease, background-color 0.15s ease;
+  /* Prevent the span from being taller than the bar */
+  line-height: 1.4;
 }
 
 .app-title-text:hover {
@@ -204,6 +216,7 @@ body.sidebar-expanded .menu-bar {
   overflow: visible;
   white-space: nowrap;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
   background: var(--color-surface);
   outline: none;
 }
@@ -287,6 +300,14 @@ body.quiz-form-active .container {
   position: relative;
 }
 
+/* Show the submenu on HOVER of the parent row (not on click) — this
+   matches native OS menu UX and avoids the "can't get to the submenu"
+   problem with click-toggle implementations. */
+.menu-item-submenu:hover > .menu-submenu-dropdown,
+.menu-item-submenu.menu-item-open > .menu-submenu-dropdown {
+  display: block;
+}
+
 /* The inner .menu-submenu-dropdown pops out to the LEFT in RTL layout
    (i.e., towards the content, away from the sidebar). `right: 100%` puts
    its right edge flush with the parent item's left edge. */
@@ -306,10 +327,12 @@ body.quiz-form-active .container {
   transition: transform 0.15s ease;
 }
 
+.menu-item-submenu:hover .menu-submenu-caret,
 .menu-item-submenu.menu-item-open .menu-submenu-caret {
   transform: rotate(-90deg);
 }
 
+.menu-item-submenu:hover > .menu-option,
 .menu-item-submenu.menu-item-open > .menu-option {
   background: var(--color-background);
 }
@@ -447,14 +470,26 @@ body.quiz-form-active .container {
    ============================================================================ */
 
 .entry-screen {
-  padding: 8px 0 24px 0;
+  /* Flex column so that if a footer exists, it's pushed to the bottom */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+  padding: 8px 0 0 0;
+}
+
+.entry-section {
+  margin-bottom: 32px;
 }
 
 .entry-screen-heading {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-bottom: 16px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 14px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .entry-items-grid {
@@ -463,6 +498,22 @@ body.quiz-form-active .container {
   gap: 20px;
 }
 
+/* Draft tile — subtle warm tint to distinguish from saved quizzes */
+.entry-item.entry-item-draft .entry-item-thumb {
+  background: color-mix(in srgb, var(--color-warning-light) 30%, var(--color-surface));
+  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
+}
+
+.entry-item.entry-item-draft:hover .entry-item-thumb,
+.entry-item.entry-item-draft:focus-visible .entry-item-thumb {
+  border-color: var(--color-warning);
+}
+
+/* Push footer to bottom of entry screen */
+.entry-screen-footer {
+  margin-top: auto;
+  padding-top: 24px;
+}
 /* Grid cell wrapper — holds the clickable tile plus the sibling "more" (⋮)
    button. .entry-item is itself a <button>, so the ⋮ trigger can't nest
    inside it (buttons can't nest); it lives here instead, positioned over

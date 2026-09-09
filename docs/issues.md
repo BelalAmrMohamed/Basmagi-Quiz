@@ -60,6 +60,9 @@ sendMessage @ ai-agent-chat.js:2455
 #### User Prompt
 Makrdown rendering gets applied on the AI Agent Answer but not the user prompt. 
 
+#### Creating Quizzes
+- The AI Agent doesn't have the ability to set the place where the quiz gets put, it always get put inside `/#my-quizzes` directly. It should be able to set it's initial place (e.g., `/#my-quizzes/math/` or `/#my-quizzes/math/algebra/`).
+
 ## New Features
 
 ### Search and navigation refinements (Home Page)

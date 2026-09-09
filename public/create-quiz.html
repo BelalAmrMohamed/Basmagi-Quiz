@@ -1020,14 +1020,11 @@
                         <path d="M8 11h.01" />
                         <path d="M8 16h.01" />
                     </svg> معلومات عن الامتحان</h2>
-                <div class="form-group">
-                    <label for="quizTitle">
-                        عنوان الامتحان *
-                        <span class="char-count" id="titleCharCount">0/100</span>
-                    </label>
-                    <input type="text" id="quizTitle" class="ltr" placeholder="Arrays in C++" maxlength="100" required
-                        aria-required="true" aria-describedby="titleHelp">
-                </div>
+                <!-- Title is now edited via the app-bar click-to-rename title;
+                     the hidden input keeps the existing data-binding and char
+                     counter logic intact without showing a redundant field. -->
+                <input type="text" id="quizTitle" class="ltr" maxlength="100"
+                    style="display:none;" aria-hidden="true" tabindex="-1">
                 <div class="form-group">
                     <label for="quizSource">المصدر (اختياري)</label>
                     <input type="text" id="quizSource" class="ltr"
