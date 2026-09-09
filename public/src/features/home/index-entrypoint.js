@@ -54,6 +54,17 @@ document.addEventListener("click", (e) => {
 // ── Global error boundary ─────────────────────────────────────────────────────
 // Ported from original lines 5401-5404.
 window.addEventListener("unhandledrejection", (event) => {
+  // supabase-js fires-and-forgets its auth token-refresh promise whenever it
+  // finds a stored session on init (autoRefreshToken). During a Supabase
+  // outage those refreshes fail at the network layer ("Failed to fetch" /
+  // AuthRetryableFetchError) and surface here as unhandled rejections.
+  // Expected and harmless — the manifest load has its own timeout, retry
+  // path, and last-good snapshot cache — so report them concisely instead
+  // of dumping a full stack trace on every outage request.
+  if (event.reason instanceof Error && /Failed to fetch/.test(event.reason.message)) {
+    console.warn("Supabase auth refresh suppressed (edge unreachable):", event.reason.message);
+    return;
+  }
   console.error("Unhandled promise rejection:", event.reason);
   // In production, send to error tracking service
 });

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `quizManifest.js`: wrapped the three Supabase manifest queries (`quizzes`/`courses`/`folders`) in a 15-second timeout — a hung request now fails fast instead of wedging the page.
 - `navigation.js`: a manifest load failure now sets the category tree to `null` (reserved `{}` for a genuinely empty catalog) and adds `retryLoadManifest()` so the page can retry without a full reload.
 - `root-view.js`: `renderRootCategories()` detects the `null` tree and shows a clear "تعذّر تحميل المحتوى" error state with **إعادة المحاولة** + **تحديث الصفحة** buttons instead of the misleading "لا توجد مواد متاحة حالياً" empty state or the perpetual skeleton.
+- **Last-good snapshot fallback**: `quizManifest.js` now persists the last successful catalog load (slimmed metadata only — never full quiz bodies, and capped well under localStorage's quota) and serves it when Supabase is unreachable, so returning users still see their courses during an outage instead of an error. A snapshot-aware fast timeout (~5 s) means the fallback kicks in quickly, and a healthy load always refreshes the snapshot. When serving from cache, the home page shows a "وضع عدم الاتصال" toast.
+- `index-entrypoint.js`: expected auth-refresh rejections during a Supabase outage ("Failed to fetch" from supabase-js's auto-refresh of a stored session) are now logged as a single concise warning instead of a full stack trace.
 
 ## [8.2.1] - 2026-9-7
 

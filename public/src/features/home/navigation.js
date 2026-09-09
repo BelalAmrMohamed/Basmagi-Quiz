@@ -14,10 +14,9 @@
 //   initApp                ~748-808
 //   finalizeAppRender      ~785-808
 // ============================================================================
-// NOTE: showNotification and _confirm are NOT ES exports —
-// they are runtime globals loaded via a non-module <script> tag from
-// src/components/notifications.js. Referenced below as bare globals with
-// this comment so future readers don't try to add an import for them.
+// NOTE: notifications are provided by src/components/notifications.js; this
+// module imports showNotification directly where it needs it. `_confirm` is a
+// runtime global loaded via a non-module <script> tag — no import for it.
 // ============================================================================
 
 import { getManifest } from "../../shared/quizManifest.js";
@@ -38,6 +37,7 @@ import { renderLandingScreen } from "./landing-screen.js";
 import { toSlug, fromSlug } from "./slug-utils.js";
 import { setFolderState } from "./user-quizzes-folders.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
+import { showNotification } from "../../components/notifications/notifications.js";
 
 // ============================================================================
 // findCategoryAncestors — original lines 1321-1343
@@ -371,6 +371,17 @@ export async function initApp() {
     const manifest = await getManifest();
     setCategoryTree(manifest.categoryTree);
     initializeSearchManager();
+    if (manifest.fromCache) {
+      // Supabase is unreachable/timing out — getManifest() fell back to the
+      // last-good snapshot from localStorage. The catalog is still usable;
+      // tell the user why it might be slightly stale.
+      console.warn("[initApp] Supabase unreachable — showing last-good catalog from local snapshot.");
+      showNotification(
+        "وضع عدم الاتصال",
+        "تعذّر الوصول للخادم حالياً — يتم عرض المواد من نسخة محفوظة مسبقاً.",
+        "warning",
+      );
+    }
   } catch (err) {
     console.error("Failed to load quiz manifest:", err);
     // null (NOT {}) signals "load failed" so renderRootCategories() shows a
@@ -394,8 +405,10 @@ export async function initApp() {
  * renderRootCategories() (see root-view.js); a dynamic import from that
  * module avoids the navigation.js <-> root-view.js circular import.
  *
- * The manifest is only cached on success, so a retry after a timeout/failure
- * genuinely re-fetches from Supabase.
+ * The manifest is only cached in memory on success, so a retry after a
+ * timeout/failure re-fetches from Supabase — falling back to the last-good
+ * snapshot if it is still unreachable, or reaching the error state if no
+ * snapshot exists yet.
  */
 export async function retryLoadManifest() {
   try {

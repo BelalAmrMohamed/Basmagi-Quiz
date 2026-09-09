@@ -3,8 +3,9 @@
 // Loads the quiz manifest — DB-only. Queries Supabase for `quizzes`,
 // `courses`, and `folders` directly, then reconstructs each quiz's
 // subject/subfolder placement by walking course_id → course row and
-// folder_id → parent_folder_id chain. Nothing here reads a local file or
-// a bundled/static manifest.
+// folder_id → parent_folder_id chain. Apart from the last-good snapshot
+// cache described below, nothing here reads a local file or a bundled/
+// static manifest.
 //
 // Manifest shape
 // ──────────────
@@ -22,6 +23,7 @@
 
 import { generateQuizId } from "./quizId.js";
 import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
+import { SUPABASE_URL } from "./public-config.js";
 
 let cached = null;
 
@@ -30,6 +32,23 @@ let cached = null;
 // CloudFlare can manifest as requests that simply HANG (never resolve, never
 // reject) — without this bound the skeleton loader would spin forever.
 const MANIFEST_FETCH_TIMEOUT_MS = 15000;
+
+// ── Local last-good snapshot (resilience fallback) ───────────────────────────
+// When the live manifest fetch fails — Supabase outage, dropped gateway, slow
+// network — the home page falls back to this localStorage snapshot of the
+// last successful load so returning users still see the course catalog
+// instead of an error/skeleton. Only the lightweight metadata needed to
+// render the catalog is stored (never the full quiz `data` blob, which can
+// be megabytes); quiz content itself still requires a live fetch.
+const MANIFEST_CACHE_KEY = "bq_manifest_cache_v1";
+// Hard upper bound for the serialized snapshot — comfortably below
+// localStorage's ~5 MB per-origin quota so it can never evict other app
+// keys when saving.
+const MANIFEST_CACHE_MAX_BYTES = 2_500_000;
+// When a usable snapshot already exists we don't need to wait the full
+// 15 s for a dead Supabase: give the live fetch a short grace period, then
+// fall back to the snapshot immediately.
+const CACHE_FALLBACK_FAST_TIMEOUT_MS = 5000;
 
 // Races a promise against a hard deadline so a hung network request (e.g.
 // Cloudflare 522 / connection timeout against Supabase) can never wedge the
@@ -50,6 +69,67 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
 }
 
+// ── Local snapshot persistence ────────────────────────────────────────────────
+
+/** Stores the last-good catalog (slimmed: quiz metadata only, no quiz bodies). */
+function saveManifestCache({ quizzes, courses, folders }) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const slimQuizzes = (quizzes || []).map((q) => ({
+      id: q.id,
+      course_id: q.course_id,
+      folder_id: q.folder_id,
+      title: q.title,
+      password: q.password,
+      meta: q.data?.meta,
+      stats: q.data?.stats,
+    }));
+    const payload = JSON.stringify({
+      v: 1,
+      project: SUPABASE_URL,
+      savedAt: new Date().toISOString(),
+      quizzes: slimQuizzes,
+      courses,
+      folders,
+    });
+    if (payload.length > MANIFEST_CACHE_MAX_BYTES) {
+      console.warn("[quizManifest] Manifest snapshot too large to cache — skipping.");
+      return;
+    }
+    localStorage.setItem(MANIFEST_CACHE_KEY, payload);
+  } catch (err) {
+    console.warn("[quizManifest] Could not save manifest snapshot:", err);
+  }
+}
+
+/**
+ * Loads the last-good catalog snapshot, or null if absent/invalid/stale.
+ * The snapshot stores raw rows under a "slim" shape (meta/stats hoisted to
+ * the row top level instead of nested inside `data`), which buildSubjects()
+ * handles transparently via its `row.data ?? row` normalization.
+ */
+function tryRestoreManifestCache() {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(MANIFEST_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || data.v !== 1 || data.project !== SUPABASE_URL) return null;
+    if (
+      !Array.isArray(data.courses) ||
+      !Array.isArray(data.folders) ||
+      !Array.isArray(data.quizzes)
+    ) {
+      return null;
+    }
+    return data;
+  } catch (err) {
+    // Corrupt snapshot — discard it so it can't wedge future loads.
+    try { localStorage.removeItem(MANIFEST_CACHE_KEY); } catch (_) {}
+    return null;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -59,9 +139,36 @@ function withTimeout(promise, ms, label) {
  */
 export async function getManifest() {
   if (cached) return cached;
-  const { subjects } = await fetchDbManifest();
+
+  // If a usable snapshot already exists, fail fast on the live fetch so an
+  // outage is served from cache in ~5 s instead of after the full 15 s.
+  const snapshot = tryRestoreManifestCache();
+  const liveTimeout = snapshot
+    ? CACHE_FALLBACK_FAST_TIMEOUT_MS
+    : MANIFEST_FETCH_TIMEOUT_MS;
+
+  let fromCache = false;
+  let subjects;
+  try {
+    const { quizzes, courses, folders } = await fetchDbManifest(liveTimeout);
+    saveManifestCache({ quizzes, courses, folders });
+    subjects = await buildSubjects(quizzes, courses, folders);
+  } catch (err) {
+    if (!snapshot) throw err;
+    console.warn(
+      "[quizManifest] Live manifest failed — serving last-good snapshot:",
+      err,
+    );
+    subjects = await buildSubjects(
+      snapshot.quizzes,
+      snapshot.courses,
+      snapshot.folders,
+    );
+    fromCache = true;
+  }
+
   const { categoryTree, examList } = buildCompatStructures(subjects);
-  cached = { subjects, categoryTree, examList };
+  cached = { subjects, categoryTree, examList, fromCache };
   return cached;
 }
 
@@ -75,15 +182,18 @@ export function invalidateManifestCache() {
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
 /**
- * Queries Supabase directly and shapes rows into the compatibility manifest.
- * queries Supabase directly (public SELECT is allowed by the `quizzes`
- * table's RLS policy) and shapes the rows into the
- * { subjects: [...] } structure used by the client. Kept in this
- * module (rather than a shared helper) since it's the only caller.
- * See CHANGELOG for why this moved off a serverless function (Vercel
- * Hobby's 12-function cap).
+ * Queries Supabase directly for the raw `quizzes`, `courses`, and `folders`
+ * rows (public SELECT is allowed by each table's RLS policy) and returns
+ * them unshaped — buildSubjects() turns them into the compatibility
+ * manifest. Kept in this module (rather than a shared helper) since it's
+ * the only caller. See CHANGELOG for why this moved off a serverless
+ * function (Vercel Hobby's 12-function cap).
+ *
+ * @param {number} [timeoutMs] - upper bound for the whole fetch (defaults
+ *   to MANIFEST_FETCH_TIMEOUT_MS); callers with a snapshot fallback pass a
+ *   shorter budget so an outage is served from cache fast.
  */
-async function fetchDbManifest() {
+async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
@@ -102,7 +212,7 @@ async function fetchDbManifest() {
         .select("id, course_id, name, parent_folder_id")
         .order("name", { ascending: true }),
     ]),
-    MANIFEST_FETCH_TIMEOUT_MS,
+    timeoutMs,
     "quiz manifest",
   );
 
@@ -110,6 +220,16 @@ async function fetchDbManifest() {
   if (coursesError) throw coursesError;
   if (foldersError) throw foldersError;
 
+  return { quizzes, courses, folders };
+}
+
+/**
+ * Shapes raw quiz/course/folder rows into the { subjects: [...] } manifest.
+ * Works for BOTH live Supabase rows (quiz `data` JSON with meta/stats keys)
+ * and slimmed snapshot rows from saveManifestCache() (meta/stats hoisted to
+ * the row top level) — see the `row.data ?? row` normalization below.
+ */
+async function buildSubjects(quizzes, courses, folders) {
   const courseById = new Map((courses || []).map((course) => [course.id, course]));
   const folderById = new Map((folders || []).map((folder) => [folder.id, folder]));
 
@@ -168,8 +288,10 @@ async function fetchDbManifest() {
     }
 
     const subjectEntry = subjectsMap.get(course.id);
-    const quizMeta = row.data?.meta || {};
-    const quizStats = row.data?.stats || {};
+    // Live rows nest meta/stats inside the `data` JSON column; slimmed
+    // snapshot rows hoist them to the row top level — support both.
+    const quizMeta = row.data?.meta || row.meta || {};
+    const quizStats = row.data?.stats || row.stats || {};
 
     const quizEntry = {
       id: quizMeta.id || (await generateQuizId(String(row.id))),
@@ -200,7 +322,7 @@ async function fetchDbManifest() {
  *   { [subjectName]: { id, name, faculty, year, term, path, parent, subcategories, exams } }
  *
  * Each quiz's `folderSegments` (walked from folder_id's parent chain in
- * fetchDbManifest()) is used to reconstruct nested subfolder nodes.
+ * buildSubjects()) is used to reconstruct nested subfolder nodes.
  *
  * @param {Subject[]} subjects
  * @returns {{ categoryTree: object, examList: object[] }}
