@@ -119,45 +119,32 @@ body.quiz-form-active {
 }
 
 /* ============================================================================
-   APP TITLE BAR + MENU BAR (Google-Docs-style)
-   True position: fixed to the viewport (not sticky inside body) — this is
-   what actually guarantees "starts at the very top" and "full width"
-   regardless of body's own padding, which a sticky element inside a padded
-   body cannot do (sticky only kicks in once scrolled past its normal flow
-   position, so on initial load it still sits below body's padding-top).
-   Fixed positioning also lets these bars ignore body's padding-left
-   entirely: left/right here are literal viewport edges, with the sidebar
-   gap applied on the right only, tracking the same --sidebar-*-width
-   variables body itself uses so it stays in sync with the sidebar's
-   expand/collapse transition.
-   Each bar is a compact single row — 44px tall — not a "hero" bar.
+   UNIFIED TOP BAR (merged app-title-bar + menu-bar)
+   Single 48px fixed bar spanning full width (left:0 → right:sidebar-width).
+   Contains: home button + title (RTL start) | embedded menu nav (center) |
+   autosave indicator (far left).
    ============================================================================ */
 
-.app-title-bar,
-.menu-bar {
+.app-title-bar {
   position: fixed;
+  top: 0;
   left: 0;
   right: var(--sidebar-collapsed-width);
-  padding-left: 24px;
-  padding-right: 16px;
+  height: 48px;
+  padding-left: 12px;
+  padding-right: 12px;
   transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   z-index: 50;
-  height: 44px;
   box-sizing: border-box;
-}
-
-body.sidebar-expanded .app-title-bar,
-body.sidebar-expanded .menu-bar {
-  right: var(--sidebar-expanded-width);
-}
-
-.app-title-bar {
-  top: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid var(--color-border);
+  gap: 8px;
+}
+
+body.sidebar-expanded .app-title-bar {
+  right: var(--sidebar-expanded-width);
 }
 
 .app-title-home {
@@ -195,15 +182,15 @@ body.sidebar-expanded .menu-bar {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 360px;
+  max-width: 260px;
   padding: 3px 8px;
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s ease, background-color 0.15s ease;
-  /* Prevent the span from being taller than the bar */
   line-height: 1.4;
+  flex-shrink: 0;
 }
 
 .app-title-text:hover {
@@ -221,24 +208,27 @@ body.sidebar-expanded .menu-bar {
   outline: none;
 }
 
-.menu-bar {
-  top: 44px;
-  /* sits directly under the 44px-tall app-title-bar */
+/* The embedded menu nav inside the unified bar — fills remaining space */
+.app-bar-menu {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid var(--color-border);
+  overflow: hidden;
 }
 
-/* Content spacer: since both bars are position: fixed (removed from normal
-   flow), .container needs an explicit top margin equal to their combined
-   real height (44px + 44px) plus a little breathing room, or the form's
-   content would render underneath them. Scoped to body.quiz-form-active
-   (see above) so the entry screen — shown while the bars are hidden —
-   isn't pushed down by a gap it doesn't need. */
+/* Legacy: .menu-bar is now a <nav> inside .app-title-bar
+   but keep selector for JS that queries it */
+.menu-bar {
+  /* overridden — no longer a fixed top-level bar */
+  all: unset;
+  display: contents;
+}
+
+/* Content spacer: unified bar is 48px + global md bar is 40px = 88px total
+   plus 10px breathing room = 98px. Scoped to body.quiz-form-active. */
 body.quiz-form-active .container {
-  margin-top: 104px;
+  margin-top: 98px;
 }
 
 .menu-bar-inner {
@@ -252,16 +242,17 @@ body.quiz-form-active .container {
 }
 
 .menu-trigger {
-  padding: 6px 14px;
+  padding: 5px 12px;
   background: transparent;
   border: none;
   border-radius: 6px;
   color: var(--color-text-primary);
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  white-space: nowrap;
 }
 
 .menu-trigger:hover {
@@ -293,32 +284,32 @@ body.quiz-form-active .container {
 
 /* ── Submenu (nested dropdown inside a .menu-dropdown) ───────────────────── */
 
-/* The submenu trigger row occupies its own .menu-item inside the parent
-   dropdown — it needs position:relative so the child .menu-dropdown can
-   absolutely position itself relative to it. */
+/* The submenu trigger row: position:relative so child dropdown positions relative to it.
+   CRITICAL FIX: The hover is on the entire .menu-item-submenu row, including the
+   .menu-submenu-dropdown child — so moving the mouse directly into the submenu
+   keeps the parent .menu-item open (because the submenu is a descendant that inherits
+   the hover). We do NOT attach a mouseleave close-listener to .menu-dropdown itself;
+   only the outer click listener and Escape key close menus. */
 .menu-item-submenu {
   position: relative;
 }
 
-/* Show the submenu on HOVER of the parent row (not on click) — this
-   matches native OS menu UX and avoids the "can't get to the submenu"
-   problem with click-toggle implementations. */
+/* Show the submenu on HOVER of the parent row (CSS-only, no JS required).
+   The submenu child is positioned next to its trigger; because it remains
+   inside the hovered subtree, moving into it preserves the :hover chain. */
 .menu-item-submenu:hover > .menu-submenu-dropdown,
 .menu-item-submenu.menu-item-open > .menu-submenu-dropdown {
   display: block;
 }
 
-/* The inner .menu-submenu-dropdown pops out to the LEFT in RTL layout
-   (i.e., towards the content, away from the sidebar). `right: 100%` puts
-   its right edge flush with the parent item's left edge. */
+/* Submenu pops out to the LEFT in RTL layout (away from the sidebar). */
 .menu-submenu-dropdown {
-  top: -6px !important;   /* align with the first option row */
+  top: -6px !important;
   right: calc(100% + 2px) !important;
   left: auto !important;
   min-width: 200px;
 }
 
-/* Caret chevron on the submenu trigger — rotates 90° when open */
 .menu-submenu-caret {
   width: 14px !important;
   height: 14px !important;
@@ -366,10 +357,6 @@ body.quiz-form-active .container {
   background: var(--color-background);
 }
 
-.menu-option span:first-of-type {
-  /* the label — placed after the icon span in source order */
-}
-
 .menu-option-shortcut {
   margin-right: auto;
   font-size: 0.75rem;
@@ -396,54 +383,129 @@ body.quiz-form-active .container {
   margin: 6px 4px;
 }
 
-.menu-bar-quick-actions {
+/* ============================================================================
+   GLOBAL MARKDOWN + LATEX TOOLBAR (#globalMdBar)
+   Fixed below the unified top bar (top: 48px). Visible only while
+   body.quiz-form-active. Applies formatting to the last focused .md-source.
+   ============================================================================ */
+
+.global-md-bar {
+  position: fixed;
+  top: 48px;
+  left: 0;
+  right: var(--sidebar-collapsed-width);
+  height: 40px;
+  z-index: 49;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
   gap: 4px;
+  padding: 0 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.global-md-bar::-webkit-scrollbar {
+  display: none;
+}
+
+body.sidebar-expanded .global-md-bar {
+  right: var(--sidebar-expanded-width);
+}
+
+.gmd-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-.menu-quick-btn {
-  display: flex;
+.gmd-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.gmd-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  padding: 3px 8px;
+  min-width: 28px;
+  height: 26px;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   background: transparent;
   color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background 0.12s ease, color 0.12s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.menu-quick-btn svg {
-  width: 17px;
-  height: 17px;
-}
-
-.menu-quick-btn:hover,
-.menu-quick-btn:focus-visible {
-  background: var(--color-background);
-  color: var(--color-text-primary);
-}
-
-.menu-quick-btn-primary {
-  color: var(--color-primary);
-}
-
-.menu-quick-btn-primary:hover,
-.menu-quick-btn-primary:focus-visible {
+.gmd-btn:hover,
+.gmd-btn:focus-visible {
   background: var(--color-primary-light);
   color: var(--color-primary);
+  outline: none;
+}
+
+.gmd-btn:active {
+  transform: scale(0.93);
+}
+
+/* LaTeX buttons — slightly different accent so they're distinguishable */
+.gmd-btn-latex {
+  color: var(--color-text-tertiary);
+  font-family: "Fira Code", "Courier New", monospace;
+  font-size: 0.78rem;
+}
+
+.gmd-btn-latex:hover,
+.gmd-btn-latex:focus-visible {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-primary);
+}
+
+/* Tooltip for "no field focused" state — shown via JS as a brief flash */
+.gmd-no-field-tip {
+  position: fixed;
+  top: calc(48px + 40px + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text-primary);
+  color: var(--color-surface);
+  font-size: 0.82rem;
+  padding: 5px 14px;
+  border-radius: 6px;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  white-space: nowrap;
+}
+
+.gmd-no-field-tip.visible {
+  opacity: 1;
 }
 
 @media (max-width: 640px) {
+  .app-title-bar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
 
-  .app-title-bar,
-  .menu-bar {
-    margin-left: -16px;
-    padding-left: 16px;
+  .app-title-text {
+    max-width: 120px;
   }
 
   .menu-bar-inner {

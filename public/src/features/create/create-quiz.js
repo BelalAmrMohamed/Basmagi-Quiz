@@ -161,6 +161,10 @@ document.addEventListener("click", (e) => {
 
 /**
  * Build the HTML for a Write/Preview markdown field.
+ * The per-card .wp-bar (tabs + toolbar) has been removed — formatting is
+ * applied via the global #globalMdBar fixed toolbar at the top of the page.
+ * The textarea is always directly accessible; the preview pane is still
+ * available for callers that switch to it programmatically.
  */
 function mdEditorHtml(id, value, placeholder, rows = 2) {
   const safeValue = (value || "").replace(/\\n/g, "\n");
@@ -170,15 +174,6 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
     .replace(/>/g, "&gt;");
   return `
     <div class="wp-field" id="wrap-${id}">
-      <div class="wp-bar">
-        <div class="wp-tabs" role="tablist">
-          <button type="button" class="wp-tab active" id="tab-write-${id}" role="tab" aria-selected="true"
-            onclick="switchMdTab('${id}', 'write')">كتابة</button>
-          <button type="button" class="wp-tab" id="tab-preview-${id}" role="tab" aria-selected="false"
-            onclick="switchMdTab('${id}', 'preview')">معاينة</button>
-        </div>
-        ${mdToolbarHtml(id)}
-      </div>
       <div class="wp-pane-wrap">
         <textarea
           class="md-source wp-textarea ltr"
@@ -336,6 +331,144 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
 };
 
 // ============================================================================
+// GLOBAL MARKDOWN + LATEX TOOLBAR (#globalMdBar)
+// A single fixed toolbar shared by all .md-source textareas on the page.
+// Tracks the last-focused textarea and applies formatting/insertion to it.
+// ============================================================================
+
+/** The currently (or last) focused .md-source textarea, or null. */
+let _activeMdSource = null;
+
+/** Track focus across all .md-source fields via event delegation. */
+function _trackMdSourceFocus() {
+  document.addEventListener("focusin", (e) => {
+    if (e.target.classList.contains("md-source")) {
+      _activeMdSource = e.target;
+    }
+  }, true);
+}
+
+/** Show a brief floating tooltip when no .md-source is focused. */
+let _gmdTipEl = null;
+let _gmdTipTimer = null;
+function _showNoFieldTip() {
+  if (!_gmdTipEl) {
+    _gmdTipEl = document.createElement("div");
+    _gmdTipEl.className = "gmd-no-field-tip";
+    _gmdTipEl.textContent = "انقر على حقل نصي أولاً";
+    document.body.appendChild(_gmdTipEl);
+  }
+  clearTimeout(_gmdTipTimer);
+  _gmdTipEl.classList.add("visible");
+  _gmdTipTimer = setTimeout(() => {
+    if (_gmdTipEl) _gmdTipEl.classList.remove("visible");
+  }, 2000);
+}
+
+/**
+ * Apply a markdown command or insert a LaTeX snippet into the active textarea.
+ * @param {string} cmd - Named markdown command or null for raw LaTeX insert
+ * @param {string|null} latex - Raw LaTeX string to insert at cursor (when cmd is null)
+ */
+function applyGlobalMdAction(cmd, latex = null) {
+  const ta = _activeMdSource;
+  if (!ta) {
+    _showNoFieldTip();
+    return;
+  }
+
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const value = ta.value;
+  const selected = value.slice(start, end);
+
+  // Helper: wrap selection (or placeholder) with prefix/suffix
+  const wrap = (prefix, suffix = prefix, placeholder = "") => {
+    const text = selected || placeholder;
+    ta.value = value.slice(0, start) + prefix + text + suffix + value.slice(end);
+    const cs = start + prefix.length;
+    ta.setSelectionRange(cs, cs + text.length);
+  };
+
+  // Helper: prepend prefix to the current line (or each selected line)
+  const linePrefix = (prefix) => {
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const affected = value.slice(lineStart, end || lineStart);
+    const lines = (affected || "").split("\n");
+    const newLines = lines
+      .map((line) => (line.startsWith(prefix) ? line : prefix + line))
+      .join("\n");
+    ta.value = value.slice(0, lineStart) + newLines + value.slice(end || lineStart);
+    ta.setSelectionRange(lineStart, lineStart + newLines.length);
+  };
+
+  if (latex !== null) {
+    // Raw LaTeX: insert at cursor, place cursor inside the first {}
+    const inserted = selected ? selected + latex : latex;
+    ta.value = value.slice(0, start) + inserted + value.slice(end);
+    // Try to place cursor inside the first {}
+    const braceIdx = inserted.indexOf("{}");
+    if (braceIdx !== -1) {
+      const pos = start + braceIdx + 1;
+      ta.setSelectionRange(pos, pos);
+    } else {
+      const pos = start + inserted.length;
+      ta.setSelectionRange(pos, pos);
+    }
+  } else {
+    switch (cmd) {
+      case "bold":        wrap("**", "**", "نص غامق"); break;
+      case "italic":      wrap("*",  "*",  "نص مائل"); break;
+      case "strike":      wrap("~~", "~~", "نص مشطوب"); break;
+      case "code":        wrap("`",  "`",  "كود"); break;
+      case "codeblock": {
+        const text = selected || "كود";
+        ta.value = value.slice(0, start) + "```\n" + text + "\n```" + value.slice(end);
+        const cs = start + 4;
+        ta.setSelectionRange(cs, cs + text.length);
+        break;
+      }
+      case "blockquote":  linePrefix("> "); break;
+      case "hr": {
+        const ins = "\n---\n";
+        ta.value = value.slice(0, start) + ins + value.slice(end);
+        const pos = start + ins.length;
+        ta.setSelectionRange(pos, pos);
+        break;
+      }
+      case "ul":          linePrefix("- "); break;
+      case "ol":          linePrefix("1. "); break;
+      case "inlinemath":  wrap("$", "$", "math"); break;
+      case "blockmath":   wrap("$$", "$$", "math"); break;
+    }
+  }
+
+  ta.focus();
+  autoResizeMdSource(ta);
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/**
+ * Wire up the global #globalMdBar: attach click handlers to every .gmd-btn
+ * and start tracking .md-source focus.
+ */
+function setupGlobalMdBar() {
+  _trackMdSourceFocus();
+
+  const bar = document.getElementById("globalMdBar");
+  if (!bar) return;
+
+  bar.querySelectorAll(".gmd-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const cmd   = btn.dataset.gmdCmd   || null;
+      const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
+      applyGlobalMdAction(cmd, latex);
+    });
+  });
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -359,6 +492,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupKeyboardShortcuts();
   setupMenuBarListeners();
   setupEntryItemMenuListeners();
+  setupGlobalMdBar();
   mountAIHelper();
 });
 
@@ -375,7 +509,7 @@ function showEntryScreen() {
   const entryScreen = document.getElementById("entryScreen");
   const form = document.getElementById("quizCreatorForm");
   const appTitleBar = document.getElementById("appTitleBar");
-  const menuBar = document.getElementById("menuBar");
+  const globalMdBar = document.getElementById("globalMdBar");
   if (!entryScreen || !form) {
     // Defensive fallback: if the entry screen markup is missing for any
     // reason, don't strand the user on a blank page — go straight in.
@@ -385,8 +519,10 @@ function showEntryScreen() {
   }
 
   form.style.display = "none";
+  // Hide the unified top bar (now contains both title + menu nav)
   if (appTitleBar) appTitleBar.style.display = "none";
-  if (menuBar) menuBar.style.display = "none";
+  // Hide the global markdown/LaTeX toolbar
+  if (globalMdBar) globalMdBar.style.display = "none";
   entryScreen.style.display = "block";
   document.body.classList.remove("quiz-form-active");
 
@@ -589,16 +725,18 @@ function formatEntryItemDate(isoString) {
   return date.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
 }
 
-/** Hide the entry screen and reveal the quiz-creator form + app bar underneath. */
+/** Hide the entry screen and reveal the quiz-creator form + unified bar. */
 function showQuizForm() {
   const entryScreen = document.getElementById("entryScreen");
   const form = document.getElementById("quizCreatorForm");
   const appTitleBar = document.getElementById("appTitleBar");
-  const menuBar = document.getElementById("menuBar");
+  const globalMdBar = document.getElementById("globalMdBar");
   if (entryScreen) entryScreen.style.display = "none";
   if (form) form.style.display = "flex";
+  // Show the unified top bar (merged title + menu nav)
   if (appTitleBar) appTitleBar.style.display = "flex";
-  if (menuBar) menuBar.style.display = "flex";
+  // Show the global markdown/LaTeX toolbar below the top bar
+  if (globalMdBar) globalMdBar.style.display = "flex";
   document.body.classList.add("quiz-form-active");
   updateAppTitleBar();
 }
@@ -893,15 +1031,19 @@ window.closeStatsModal = function () {
 };
 
 /** Click-outside and Escape-to-close wiring for the menu bar, plus
- * hover-to-switch between menus once one is already open (matches the
- * feel of Docs' own menu bar: click opens, then hovering a sibling
- * menu switches without a second click). */
+ * hover-to-switch between top-level menus once one is already open.
+ * NOTE: The menu bar is now embedded as .app-bar-menu inside #appTitleBar.
+ * We attach the close listener to #appTitleBar so that clicks anywhere
+ * INSIDE it (including submenu items) do NOT close the dropdown prematurely.
+ * The submenu UX is handled entirely by CSS :hover — no JS mouseleave needed. */
 function setupMenuBarListeners() {
-  const menuBar = document.getElementById("menuBar");
-  if (!menuBar) return;
+  // Reference the unified top bar (which contains the embedded menu nav)
+  const appTitleBar = document.getElementById("appTitleBar");
+  if (!appTitleBar) return;
 
+  // Click outside the entire top bar → close all menus
   document.addEventListener("click", (e) => {
-    if (!menuBar.contains(e.target)) {
+    if (!appTitleBar.contains(e.target)) {
       closeAllMenus();
     }
   });
@@ -910,9 +1052,14 @@ function setupMenuBarListeners() {
     if (e.key === "Escape") closeAllMenus();
   });
 
-  menuBar.querySelectorAll(".menu-item").forEach((item) => {
+  // Hover-to-switch: once any top-level menu is open, hovering another
+  // .menu-item (that has its own data-menu trigger) switches to it.
+  // We scope to .menu-bar-inner to avoid triggering on submenu rows.
+  const menuBarInner = appTitleBar.querySelector(".menu-bar-inner");
+  if (!menuBarInner) return;
+  menuBarInner.querySelectorAll(":scope > .menu-item").forEach((item) => {
     item.addEventListener("mouseenter", () => {
-      const anyOpen = menuBar.querySelector(".menu-item-open");
+      const anyOpen = menuBarInner.querySelector(".menu-item-open");
       if (anyOpen && anyOpen !== item) {
         anyOpen.classList.remove("menu-item-open");
         item.classList.add("menu-item-open");
