@@ -52,6 +52,35 @@ import { QuizInfoModalCSS } from "../../components/quiz-info-modal/quiz-info-mod
 // export's own DOM shape — see setupKeyboardNavigation().
 import { getShortcutModalHTML } from "../quiz/keyboard-nav.js";
 
+// ── Icon set for the export's own UI chrome ──────────────────────────
+// Matches the Lucide icon set already inlined elsewhere in the platform
+// (quiz.js's flag/star/report-question buttons use the same "lucide
+// lucide-<name>" markup shape) so a downloaded quiz's icons read as the
+// same visual language as the live site rather than a mismatched set.
+// All icons use stroke="currentColor" with no hardcoded fill/stroke
+// color, so they inherit whatever color the surrounding button/label
+// already sets — including automatically flipping for dark mode, since
+// nothing here needs a separate dark-mode variant the way a raster/emoji
+// icon would.
+const EXPORT_ICON = {
+  moon: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  sun: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+  zap: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-zap"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+  key: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-key-round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>',
+  printer: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-printer"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>',
+  keyboard: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-keyboard"><path d="M10 8h.01"/><path d="M12 12h.01"/><path d="M14 8h.01"/><path d="M16 12h.01"/><path d="M18 8h.01"/><path d="M6 8h.01"/><path d="M7 16h10"/><path d="M8 12h.01"/><rect width="20" height="16" x="2" y="4" rx="2"/></svg>',
+  check: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>',
+  refreshCw: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-refresh-cw"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+  eye: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>',
+  flag: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>',
+  flagOff: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-off-icon lucide-flag-off"><path d="M16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/><path d="m2 2 20 20"/><path d="M4 22V4"/><path d="M7.656 2H8c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10.347"/></svg>',
+  alertTriangle: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  partyPopper: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-party-popper"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></svg>',
+  bookOpen: '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>',
+  info: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-info"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+  x: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+};
+
 // Builds the <tr> rows for the quiz-info dialog at export time (the dialog
 // content is static once downloaded, so this runs once here rather than
 // being re-derived client-side). Field set and Arabic labels match the
@@ -225,7 +254,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   html {
     scroll-behavior: smooth;
     scrollbar-width: thin;
-    scrollbar-color: #6b6ed3 transparent;
+    scrollbar-color: var(--border-color) transparent;
   }
 
   html::-webkit-scrollbar {
@@ -237,13 +266,17 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   html::-webkit-scrollbar-thumb {
-    background-color: #6b6ed3;
+    background-color: var(--border-color);
     border-radius: 10px;
+  }
+
+  html::-webkit-scrollbar-thumb:hover {
+    background-color: var(--text-muted);
   }
 
   /* Accessibility */
   *:focus-visible {
-    outline: 3px solid rgba(99, 102, 241, 0.45);
+    outline: 3px solid rgba(var(--gradient-start-rgb), 0.45);
     outline-offset: 3px;
     border-radius: 8px;
   }
@@ -256,6 +289,10 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     --bg-primary:    #ffffff;
     --bg-secondary:  #f8fafc;
     --bg-tertiary:   #e8edf3;
+    /* Page backdrop behind the card — a quiet, neutral canvas so the
+       white card reads clearly as "the page," not another wash of the
+       accent color. */
+    --page-bg:       #eef1f4;
 
     /* Text */
     --text-primary:   #1a202c;
@@ -265,13 +302,26 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     /* Borders & Cards */
     --border-color:  #e2e8f0;
     --card-bg:       #f8fafc;
-    --card-answered: #eef2ff;
+    --card-answered: #ecfdfb;
 
-    /* Brand */
-    --gradient-start:     #667eea;
-    --gradient-end:       #764ba2;
+    /* Brand accent — a single deliberate teal, not gray and not the
+       purple this replaced. Teal reads calm and focused (fitting for an
+       exam/testing tool) and stays visually distinct from the semantic
+       success/error/warning/info colors below. --gradient-start-rgb
+       mirrors --gradient-start as raw "r, g, b" components so every
+       rgba(...) shadow/tint below can stay tied to this one accent
+       instead of hardcoding a color. */
+    --gradient-start:     #0d9488;
+    --gradient-end:       #0f766e;
+    --gradient-start-rgb: 13, 148, 136;
     --gradient:           linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-    --gradient-body:      var(--gradient);
+    --gradient-body:      var(--page-bg);
+    /* Darker than --gradient-start specifically for text-on-light use
+       (nav-btn.answered, dialog headings) — --gradient-start's 3.7:1
+       contrast on white reads fine as a fill/border but falls short of
+       AA (4.5:1) for text; this variant clears it while staying the
+       same hue. */
+    --gradient-start-text: #0b7c72;
 
     /* Typography */
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
@@ -316,13 +366,47 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
     --bg-primary:    #000000;
     --bg-secondary:  #0a0a0a;
-    --bg-tertiary:   #1a1a1a;
+    /* Raised from #1a1a1a: at that value the option-letter circle (A/B/C)
+       and toggle-switch track were nearly indistinguishable from
+       --bg-primary/--card-bg, which read as "invisible" unselected
+       options in dark mode. #26262c gives a clear one-step-lighter
+       surface while staying dark. */
+    --bg-tertiary:   #26262c;
+    /* Page backdrop stays true black in dark mode too — no gradient
+       wash, so the card's own dark surface (--card-bg) is what creates
+       depth against it. */
+    --page-bg:       #000000;
     --text-primary:  #f5f5f5;
     --text-secondary:#c4c4c4;
     --text-muted:    #8a8a8a;
-    --border-color:  #262626;
-    --card-bg:       #0a0a0a;
-    --card-answered: #14140f;
+    /* Brightened from #262626 so unselected .option-btn/.nav-btn borders
+       stay readable against a pure-black page instead of nearly
+       disappearing into it. */
+    --border-color:  #33333a;
+    --card-bg:       #0d0d10;
+    --card-answered: #062825;
+
+    /* Dark-mode brand accent — the same teal family, brightened so it
+       reads clearly against true black (a dark-on-dark accent would all
+       but disappear, which is what made the previous gray version look
+       muddy in both themes at once). Kept as one saturated gradient
+       fill for .header/.gradient surfaces (menu-toggle, side-menu
+       header, question-num badge, buttons, nav-btn.current — all paired
+       with white text), with a softer variant for *outline/border*
+       accents (answered question-card borders, the answered/current
+       nav-btn ring, toggle-switch "on" fill) so those read as a clear
+       but not overpowering ring against black. */
+    --gradient-start:     #2dd4bf;
+    --gradient-end:       #14b8a6;
+    --gradient-start-rgb: 45, 212, 191;
+    --accent-outline:      #5eead4;
+    --accent-outline-soft: #14b8a6;
+    --gradient-body:      var(--page-bg);
+    /* Text-on-dark counterpart to light mode's --gradient-start-text:
+       there the accent needed darkening to clear AA on white; here the
+       accent already clears AA on black (11:1+), so text uses it
+       directly rather than needing a separate shade. */
+    --gradient-start-text: var(--gradient-start);
 
     --success-bg:   #051b12;
     --success-text: #6ee7b7;
@@ -331,7 +415,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     --warning-bg:   #1a1206;
     --warning-text: #fcd34d;
     --info-bg:      #06121f;
-    --info-text:    #93c5fd;
+    --info-text:    #7db3f5;
 
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
     --shadow-md: 0 4px 16px rgba(0,0,0,0.6), 0 1px 4px rgba(0,0,0,0.4);
@@ -339,61 +423,97 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   /* ── Dark-mode glow/shadow neutralization ────────────────────────
-     The brand purple/indigo (--gradient-start/--gradient-end) is kept
-     on interactive elements in dark mode (buttons, links, selected/
-     focus borders) intentionally — that's a normal accent color and
-     reads fine on true black. What doesn't read well is the *ambient*
-     ombre glow these hardcoded rgba(102,126,234,...) shadows/rings
-     create when spread across large ombre ambient chrome (the menu
-     toggle's floating shadow, the current-nav-question badge glow,
-     the primary button's drop shadow, the essay textarea's focus
-     ring, text selection tint, and the scrollbar thumb) — on a true
-     black background these read as a purple/blue haze bleeding across
-     the UI rather than a normal, contained shadow. Dimming their
-     alpha and, for the largest ambient ones, tightening spread keeps
-     the same brand hue as a subtle cue without the glow. */
+     These ambient shadows/rings (menu toggle's floating shadow, the
+     current-nav-question badge glow, the primary button's drop shadow,
+     the essay textarea's focus ring, text selection tint) all derive
+     from rgba(var(--gradient-start-rgb), alpha) — the same neutral gray
+     accent as --gradient-start — so they automatically track whichever
+     theme is active instead of hardcoding a color. Dimming their alpha
+     here keeps them a subtle, contained shadow rather than a glow that
+     washes out against true black. */
   [data-theme="dark"] ::selection {
-    background: rgba(102, 126, 234, 0.28);
+    background: rgba(var(--gradient-start-rgb), 0.35);
   }
 
   [data-theme="dark"] .menu-toggle {
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.18);
+    box-shadow: 0 4px 16px rgba(var(--gradient-start-rgb), 0.35);
   }
 
   [data-theme="dark"] .menu-toggle:hover {
-    box-shadow: 0 6px 22px rgba(102, 126, 234, 0.28);
+    box-shadow: 0 6px 22px rgba(var(--gradient-start-rgb), 0.5);
   }
 
   [data-theme="dark"] .nav-btn.current {
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.22);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.4);
   }
 
   [data-theme="dark"] .question-num {
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.18);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.35);
   }
 
   [data-theme="dark"] .essay-input:focus {
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.16);
+    box-shadow: 0 0 0 3px rgba(var(--gradient-start-rgb), 0.3);
   }
 
   [data-theme="dark"] .btn-primary {
-    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 2px 12px rgba(var(--gradient-start-rgb), 0.4);
   }
 
   [data-theme="dark"] .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 6px 20px rgba(var(--gradient-start-rgb), 0.55);
   }
 
   [data-theme="dark"] .btn-primary:active:not(:disabled) {
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.3);
   }
 
-  [data-theme="dark"] html {
-    scrollbar-color: #4a4d8f transparent;
+  /* ── Dark-mode outline/fill accents ───────────────────────────────
+     These elements use a border or solid fill rather than a soft
+     shadow, so they're swapped to --accent-outline/--accent-outline-soft
+     (a lighter neutral gray, defined alongside the rest of the dark
+     palette above) rather than the darker --gradient-start, since a
+     dark fill used as a thin border/ring would nearly disappear against
+     true black. Gradient *fills* (the header, .btn-primary,
+     .question-num, .nav-btn.current) are left using --gradient/
+     --gradient-start directly — a solid gray block reads fine on black
+     the same way it does on white. */
+  [data-theme="dark"] .question-card.answered {
+    border-color: var(--accent-outline-soft);
   }
 
-  [data-theme="dark"] html::-webkit-scrollbar-thumb {
-    background-color: #4a4d8f;
+  [data-theme="dark"] .nav-btn.answered {
+    border-color: var(--accent-outline-soft);
+    color: var(--accent-outline);
+  }
+
+  [data-theme="dark"] .nav-btn:hover {
+    border-color: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .option-btn.selected {
+    border-color: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .option-btn.selected .option-letter {
+    background: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .option-btn:hover:not(.disabled) {
+    border-color: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .toggle-switch.active {
+    background: var(--accent-outline-soft);
+  }
+
+  [data-theme="dark"] .toggle-option:focus-visible,
+  [data-theme="dark"] .nav-btn:focus-visible,
+  [data-theme="dark"] .option-btn:focus-visible {
+    outline-color: var(--accent-outline);
+  }
+
+  [data-theme="dark"] .essay-input:focus {
+    border-color: var(--accent-outline-soft);
   }
 
   /* ── Base ────────────────────────────────────────────────────── */
@@ -417,7 +537,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
   /* Brand text selection */
   ::selection {
-    background: rgba(102, 126, 234, 0.22);
+    background: rgba(var(--gradient-start-rgb), 0.22);
     color: inherit;
   }
 
@@ -458,13 +578,13 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     align-items: center;
     justify-content: center;
     gap: 5px;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.45);
+    box-shadow: 0 4px 16px rgba(var(--gradient-start-rgb), 0.45);
     transition: transform var(--t-base), box-shadow var(--t-base);
   }
 
   .menu-toggle:hover {
     transform: scale(1.06);
-    box-shadow: 0 6px 22px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 6px 22px rgba(var(--gradient-start-rgb), 0.6);
   }
 
   .menu-toggle:focus-visible {
@@ -612,6 +732,22 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     font-weight: 500;
   }
 
+  /* Inline SVG icons used throughout the side-menu/controls in place of
+     emoji — sized to sit on the text baseline and inherit the
+     surrounding element's color (buttons, toggle labels) automatically,
+     including through dark mode, since these are plain currentColor
+     strokes rather than a raster/emoji glyph. */
+  .menu-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+    vertical-align: -3px;
+  }
+
+  .menu-icon svg { display: block; }
+
   .toggle-switch {
     position: relative;
     width: 46px;
@@ -679,23 +815,36 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .nav-btn.answered {
     background: var(--card-answered);
     border-color: var(--gradient-start);
-    color: var(--gradient-start);
+    color: var(--gradient-start-text);
   }
 
+  /* Small flag badge shown on flagged questions in the nav grid.
+     Replaces the previous emoji (content: '🚩') with a tiny inline SVG
+     dot so its color follows --warning (and thus the theme) instead of
+     being locked to the emoji's fixed red/orange rendering, which could
+     clash with a custom accent or dark background depending on the
+     platform's emoji font. */
   .nav-btn.flagged::after {
-    content: '🚩';
+    content: '';
     position: absolute;
-    top: -6px;
-    right: -6px;
-    font-size: 10px;
-    line-height: 1;
+    top: -5px;
+    right: -5px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: var(--warning);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528'/%3E%3C/svg%3E");
+    background-size: 60%;
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
   .nav-btn.current {
     background: var(--gradient);
     color: #fff;
     border-color: transparent;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.45);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.45);
   }
 
   /* ── Main Container ──────────────────────────────────────────── */
@@ -866,7 +1015,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     font-weight: 700;
     margin: 0 auto;
     line-height: 1.4;
-    color: var(--gradient-start);
+    color: var(--gradient-start-text);
     text-align: center;
     opacity: 0;
     transform: translateY(4px);
@@ -884,7 +1033,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   [data-theme="dark"] .quiz-info-dialog-header h2 {
-    color: #93c5fd;
+    color: var(--text-primary);
   }
 
   .quiz-info-dialog-close {
@@ -960,7 +1109,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   }
 
   .quiz-info-table td a {
-    color: var(--gradient-start);
+    color: var(--gradient-start-text);
     text-decoration: none;
     word-break: break-all;
   }
@@ -1103,7 +1252,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     padding: 5px 13px;
     border-radius: var(--radius-sm);
     letter-spacing: 0.3px;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.35);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.35);
   }
 
   .question-actions {
@@ -1150,6 +1299,11 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     color: var(--text-muted);
   }
 
+  .flag-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
   .flag-btn:hover {
     border-color: var(--warning);
     background: var(--warning-bg);
@@ -1159,6 +1313,12 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .flag-btn:focus-visible {
     outline: 2px solid var(--gradient-start);
     outline-offset: 2px;
+  }
+
+  .flag-btn.active {
+    border-color: var(--warning);
+    background: var(--warning-bg);
+    color: var(--warning-text);
   }
 
   .question-text {
@@ -1361,7 +1521,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     margin: 0;
   }
 
-  .option-btn.selected .option-letter { background: var(--gradient-start); color: #fff; }
+  .option-btn.selected .option-letter { background: var(--gradient-start-text); color: #fff; }
   .option-btn.correct  .option-letter { background: var(--success);         color: #fff; }
   .option-btn.wrong    .option-letter { background: var(--error);           color: #fff; }
 
@@ -1453,7 +1613,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .essay-input:focus {
     outline: none;
     border-color: var(--gradient-start);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
+    box-shadow: 0 0 0 3px rgba(var(--gradient-start-rgb), 0.12);
   }
 
   .essay-input.disabled {
@@ -1613,17 +1773,17 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .btn-primary {
     background: var(--gradient);
     color: #fff;
-    box-shadow: 0 2px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 2px 12px rgba(var(--gradient-start-rgb), 0.4);
   }
 
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.55);
+    box-shadow: 0 6px 20px rgba(var(--gradient-start-rgb), 0.55);
   }
 
   .btn-primary:active:not(:disabled) {
     transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 2px 8px rgba(var(--gradient-start-rgb), 0.3);
   }
 
   .btn-secondary {
@@ -1650,6 +1810,12 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .btn.loading .btn-text   { display: none; }
   .btn.loading .btn-loader { display: inline-flex !important; }
   .btn-loader              { display: none; }
+
+  .btn-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
 
   .spinner {
     width: 18px;
@@ -1890,7 +2056,8 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
   .toast-success { border-left: 4px solid var(--success); }
   .toast-info    { border-left: 4px solid var(--info); }
 
-  .toast-icon    { font-size: 16px; flex-shrink: 0; line-height: 1; }
+  .toast-icon    { display: inline-flex; flex-shrink: 0; line-height: 1; color: var(--success); }
+  .toast-info .toast-icon { color: var(--info); }
   .toast-message { color: var(--text-primary); font-size: 14px; font-weight: 500; }
 
   /* ── Markdown CSS Variables Mapping ── */
@@ -1900,17 +2067,36 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     --color-border: var(--border-color);
     --color-text-primary: var(--text-primary);
     --color-text-secondary: var(--text-secondary);
+    --color-text-tertiary: var(--text-muted);
     --color-background: var(--bg-primary);
     --color-background-secondary: var(--bg-secondary);
+    --color-hover-overlay: rgba(var(--gradient-start-rgb), 0.08);
     --color-success: var(--success);
     --color-error: var(--error);
     --color-code: var(--text-primary);
     --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
     --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.15);
+    --z-modal-top: 11000;
+
+    /* getShortcutModalHTML()'s panel (keyboard-nav.js) is styled entirely
+       with inline CSS var(--glass-*, "light fallback") values, since on
+       the live platform these come from themes.css. This export has no
+       such file, so without defining them here every fallback wins and
+       the shortcuts panel stays a light glass card even in dark mode. */
+    --glass-bg-light: rgba(255, 255, 255, 0.65);
+    --glass-border:   rgba(255, 255, 255, 0.12);
+    --glass-blur:     blur(12px);
+    --glass-inset:    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   
   [data-theme="dark"] {
     --color-code: #e2e8f0;
+    --color-hover-overlay: rgba(var(--gradient-start-rgb), 0.15);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.6);
+    --glass-bg-light: rgba(20, 20, 24, 0.75);
+    --glass-border:   rgba(255, 255, 255, 0.08);
+    --glass-inset:    inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   ${MARKDOWN_CSS}
@@ -1936,7 +2122,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     .container { box-shadow: none; border-radius: 0; }
 
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #3f3f46 0%, #18181b 100%);
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
@@ -1986,8 +2172,17 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
       left: 0;
       width: 100%;
       height: 72vh;
+      max-height: 92vh;
       border-radius: var(--radius-xl) var(--radius-xl) 0 0;
       transition: bottom var(--t-slow), visibility var(--t-slow);
+    }
+
+    /* While the sheet is actively being dragged, the JS drag handler sets
+       an inline height on every pointer move — the slow CSS transition
+       would otherwise lag a finger/thumb by ~350ms and feel unresponsive.
+       Re-enabled the instant the drag ends (see setupHeaderDrag()). */
+    .side-menu.dragging {
+      transition: none !important;
     }
 
     .side-menu.open { bottom: 0; right: 0; }
@@ -2002,6 +2197,21 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
       height: 4px;
       background: var(--border-color);
       border-radius: 2px;
+      pointer-events: none;
+    }
+
+    /* The header itself is the drag surface on phones (see
+       setupHeaderDrag()) — grab cursor communicates that, and
+       touch-action: none stops the browser's own scroll/refresh
+       gestures from fighting the manual drag. */
+    .side-menu-header {
+      touch-action: none;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .side-menu-header:active {
+      cursor: grabbing;
     }
 
     .nav-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
@@ -2088,7 +2298,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
         
         <div class="toggle-option" id="darkModeToggle" role="switch" aria-checked="false" tabindex="0">
           <div class="toggle-label">
-            <span id="themeIcon" aria-hidden="true">🌙</span>
+            <span id="themeIcon" class="menu-icon" aria-hidden="true">${EXPORT_ICON.moon}</span>
             <span>خلفية سوداء</span>
           </div>
           <div class="toggle-switch" id="darkModeSwitch">
@@ -2098,7 +2308,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
         <div class="toggle-option high-performance-toggle-container" id="highPerformanceToggleOption" role="switch" aria-checked="false" tabindex="0">
           <div class="toggle-label">
-            <span aria-hidden="true">⚡</span>
+            <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.zap}</span>
             <span>الأداء الفائق</span>
           </div>
           <div class="toggle-switch" id="highPerformanceSwitch">
@@ -2108,7 +2318,7 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
 
         ${showAnswersButton ? `<div class="toggle-option" id="showAnswersToggle" role="switch" aria-checked="false" tabindex="0">
           <div class="toggle-label">
-            <span aria-hidden="true">🔑</span>
+            <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.key}</span>
             <span>إظهار كل الإجابات</span>
           </div>
           <div class="toggle-switch" id="showAnswersSwitch">
@@ -2120,10 +2330,10 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
       <div class="menu-section">
         <h3>الإجراءات</h3>
         <button class="btn btn-secondary btn-block" onclick="quizApp.printQuiz()">
-          🖨️ إطبع الامتحان
+          <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.printer}</span> إطبع الامتحان
         </button>
         <button class="btn btn-secondary btn-block desktop-only" onclick="quizApp.toggleShortcutModal()" style="margin-top: 8px;">
-          ⌨️ اختصارات لوحة المفاتيح
+          <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.keyboard}</span> اختصارات لوحة المفاتيح
         </button>
         <div class="menu-controls-slot" id="menuControlsSlot"></div>
       </div>
@@ -2159,14 +2369,14 @@ ${quizInfoModalHtml}
     <main id="main-content" class="quiz-body"></main>
 
     <div class="pager-controls" id="pagerControls" style="display:none;">
-      <button class="btn btn-secondary pager-btn" id="pagerPrevBtn" onclick="quizApp.pagerGo(-1)">السابق</button>
-      <span class="pager-status" id="pagerStatus">1 / ${processedQuestions.length}</span>
       <button class="btn btn-primary pager-btn" id="pagerNextBtn" onclick="quizApp.pagerGo(1)">التالي</button>
+      <span class="pager-status" id="pagerStatus">${processedQuestions.length} / 1</span>
+      <button class="btn btn-secondary pager-btn" id="pagerPrevBtn" onclick="quizApp.pagerGo(-1)">السابق</button>
     </div>
     
     <div class="controls" id="controlsBar">      
       <button class="btn btn-primary" onclick="quizApp.submit()" id="submitBtn">
-        <span class="btn-text">✓ تسليم الامتحان</span>
+        <span class="btn-text"><span class="menu-icon" aria-hidden="true">${EXPORT_ICON.check}</span> تسليم الامتحان</span>
         <span class="btn-loader">
           <svg class="spinner" viewBox="0 0 50 50">
             <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5"></circle>
@@ -2174,10 +2384,10 @@ ${quizInfoModalHtml}
         </span>
       </button>
       <button class="btn btn-secondary" onclick="quizApp.reset()">
-        🔄 إعادة الامتحان
+        <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.refreshCw}</span> إعادة الامتحان
       </button>
       <button class="btn btn-secondary" onclick="quizApp.enterReviewMode()" id="reviewBtn">
-        👁️ مراجعة
+        <span class="menu-icon" aria-hidden="true">${EXPORT_ICON.eye}</span> مراجعة
       </button>      
     </div>
     
@@ -2207,6 +2417,21 @@ ${quizInfoModalHtml}
   ])}
   
   <script>
+  // Runtime copies of the moon/sun icons used for the dark-mode toggle
+  // (EXPORT_ICON exists only at build time, inside export-to-quiz.js —
+  // it's never serialized into the downloaded file itself, so the theme
+  // toggle needs its own copies to swap via .innerHTML on click).
+  const ICON_MOON = ${JSON.stringify(EXPORT_ICON.moon)};
+  const ICON_SUN = ${JSON.stringify(EXPORT_ICON.sun)};
+  const ICON_FLAG = ${JSON.stringify(EXPORT_ICON.flag)};
+  const ICON_FLAG_OFF = ${JSON.stringify(EXPORT_ICON.flagOff)};
+  const ICON_ALERT_TRIANGLE = ${JSON.stringify(EXPORT_ICON.alertTriangle)};
+  const ICON_UI_CHECK = ${JSON.stringify(EXPORT_ICON.check)};
+  const ICON_PARTY_POPPER = ${JSON.stringify(EXPORT_ICON.partyPopper)};
+  const ICON_BOOK_OPEN = ${JSON.stringify(EXPORT_ICON.bookOpen)};
+  const ICON_INFO = ${JSON.stringify(EXPORT_ICON.info)};
+  const ICON_X = ${JSON.stringify(EXPORT_ICON.x)};
+
   const questions = ${JSON.stringify(processedQuestions)};
 
   // Export-time settings baked in from the download modal's settings
@@ -2347,6 +2572,7 @@ ${quizInfoModalHtml}
       this.renderNav();
       this.updateProgress();
       this.setupMenuToggle();
+      this.setupHeaderDrag();
       this.setupToggles();
       this.setupKeyboardNavigation();
       this.setupModalClickOutside();
@@ -2398,7 +2624,7 @@ ${quizInfoModalHtml}
         card.classList.toggle("pg-active", i === this.currentQuestion);
       });
       const status = document.getElementById("pagerStatus");
-      if (status) status.textContent = \`\${this.currentQuestion + 1} / \${questions.length}\`;
+      if (status) status.textContent = \`سؤال \${this.currentQuestion + 1} من \${questions.length}\`;
       const prevBtn = document.getElementById("pagerPrevBtn");
       const nextBtn = document.getElementById("pagerNextBtn");
       if (prevBtn) prevBtn.disabled = this.currentQuestion === 0;
@@ -2422,13 +2648,14 @@ ${quizInfoModalHtml}
     },
   
     applyTheme() {
+      const themeIcon = document.getElementById('themeIcon');
       if (this.darkMode) {
         document.documentElement.setAttribute('data-theme', 'dark');
-        document.getElementById('themeIcon').textContent = '☀️';
+        if (themeIcon) themeIcon.innerHTML = ICON_SUN;
         document.getElementById('darkModeToggle').setAttribute('aria-checked', 'true');
       } else {
         document.documentElement.removeAttribute('data-theme');
-        document.getElementById('themeIcon').textContent = '🌙';
+        if (themeIcon) themeIcon.innerHTML = ICON_MOON;
         document.getElementById('darkModeToggle').setAttribute('aria-checked', 'false');
       }
       
@@ -2735,6 +2962,115 @@ ${quizInfoModalHtml}
       overlay.classList.remove('show');
       menuToggle.setAttribute('aria-expanded', 'false');
     },
+
+    // \u2500\u2500 Phone bottom-sheet drag (side-menu-header) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // Desktop keeps the side menu as a right-edge slide-in panel (see the
+    // base .side-menu rules); only the @media(max-width:600px) block turns
+    // it into a bottom sheet, so this handler checks the viewport width at
+    // drag-start time and no-ops on desktop rather than relying on a
+    // separate layout flag \u2014 dragging a right-edge panel up/down has no
+    // natural meaning there.
+    // Dragging the header down past a small threshold closes the sheet;
+    // dragging up "maximizes" it toward 92vh (matching .side-menu's
+    // max-height cap) so it behaves like a native bottom sheet without
+    // needing a separate expand button.
+    setupHeaderDrag() {
+      const header = document.querySelector('.side-menu-header');
+      const sideMenu = document.getElementById('sideMenu');
+      if (!header || !sideMenu) return;
+
+      const COLLAPSED_HEIGHT_VH = 72;
+      const EXPANDED_HEIGHT_VH = 92;
+      const CLOSE_THRESHOLD_PX = 90;
+
+      let dragging = false;
+      let startY = 0;
+      let startHeightPx = 0;
+
+      const vhToPx = (vh) => (vh / 100) * window.innerHeight;
+      const currentHeightPx = () => sideMenu.getBoundingClientRect().height;
+
+      const beginDrag = (clientY) => {
+        if (window.innerWidth > 600) return;
+        dragging = true;
+        startY = clientY;
+        startHeightPx = currentHeightPx();
+        sideMenu.classList.add('dragging');
+      };
+
+      const updateDrag = (clientY) => {
+        if (!dragging) return;
+        // Dragging the header UP (finger moves to smaller clientY) should
+        // grow the sheet, so the delta is inverted relative to raw pointer
+        // movement.
+        const deltaY = startY - clientY;
+        let nextHeightPx = startHeightPx + deltaY;
+        nextHeightPx = Math.max(0, Math.min(nextHeightPx, vhToPx(EXPANDED_HEIGHT_VH)));
+        sideMenu.style.height = \`\${nextHeightPx}px\`;
+      };
+
+      const endDrag = (clientY) => {
+        if (!dragging) return;
+        dragging = false;
+        sideMenu.classList.remove('dragging');
+
+        const draggedDownBy = clientY - startY;
+        const finalHeightPx = currentHeightPx();
+
+        if (draggedDownBy > CLOSE_THRESHOLD_PX || finalHeightPx < vhToPx(COLLAPSED_HEIGHT_VH) / 2) {
+          // Dragged down far enough (or collapsed below half the resting
+          // height) \u2014 snap-close instead of settling back open, matching
+          // native bottom-sheet "flick to dismiss" behavior.
+          sideMenu.style.height = '';
+          this.closeMenu();
+          return;
+        }
+
+        // Snap to whichever resting height (collapsed/expanded) the drag
+        // ended closer to, rather than leaving it at an arbitrary
+        // in-between height.
+        const collapsedPx = vhToPx(COLLAPSED_HEIGHT_VH);
+        const expandedPx = vhToPx(EXPANDED_HEIGHT_VH);
+        const snapToExpanded = Math.abs(finalHeightPx - expandedPx) < Math.abs(finalHeightPx - collapsedPx);
+        sideMenu.style.height = snapToExpanded ? \`\${expandedPx}px\` : '';
+      };
+
+      header.addEventListener('touchstart', (e) => beginDrag(e.touches[0].clientY), { passive: true });
+      header.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        updateDrag(e.touches[0].clientY);
+      }, { passive: false });
+      header.addEventListener('touchend', (e) => endDrag(e.changedTouches[0].clientY));
+      header.addEventListener('touchcancel', () => {
+        dragging = false;
+        sideMenu.classList.remove('dragging');
+        sideMenu.style.height = '';
+      });
+
+      // Mouse/pointer support (desktop devtools phone emulation, touch-
+      // enabled laptops) mirrors the touch handlers above.
+      header.addEventListener('mousedown', (e) => {
+        beginDrag(e.clientY);
+        const onMouseMove = (moveEvent) => updateDrag(moveEvent.clientY);
+        const onMouseUp = (upEvent) => {
+          endDrag(upEvent.clientY);
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      // If the viewport is resized past the phone breakpoint mid-drag
+      // (e.g. rotating a tablet), drop any inline height override so the
+      // desktop panel isn't left pinned to a stray pixel height.
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 600 && !dragging) {
+          sideMenu.style.height = '';
+        }
+      });
+    },
   
     toggleFlag(qIndex) {
       if (this.flaggedQuestions.has(qIndex)) {
@@ -2756,7 +3092,8 @@ ${quizInfoModalHtml}
       const flagBtn = document.getElementById(\`flag\${qIndex}\`);
       if (flagBtn) {
         const isFlagged = this.flaggedQuestions.has(qIndex);
-        flagBtn.textContent = isFlagged ? '🚩' : '⚑';
+        flagBtn.innerHTML = isFlagged ? ICON_FLAG_OFF : ICON_FLAG;
+        flagBtn.classList.toggle('active', isFlagged);
         flagBtn.setAttribute('aria-label', 
           isFlagged ? 'Unflag question' : 'Flag question for review');
       }
@@ -3027,7 +3364,7 @@ ${quizInfoModalHtml}
               <div class="question-badge \${badgeClass}">\${badgeText}</div>
               <button class="flag-btn" id="flag\${i}" 
                       onclick="quizApp.toggleFlag(\${i})"
-                      aria-label="Flag question for review">⚑</button>
+                      aria-label="Flag question for review">\${ICON_FLAG}</button>
             </div>
           </div>
           
@@ -3214,13 +3551,27 @@ ${quizInfoModalHtml}
       this.applyPagerVisibility();
       const card = document.getElementById(\`q\${qIndex}\`);
       if (card) {
-        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        // In pagination mode, applyPagerVisibility() already swaps which
+        // single card is shown — there's nothing stacked to scroll to, so
+        // centering it here only produced an unwanted scroll jump each
+        // time the page changed. Just reset the scroll position to the
+        // top of the (single) visible card instead. Vertical mode still
+        // has every card stacked in the DOM at once, so scrolling the
+        // target card into view there is still correct and kept as-is.
+        if (EXPORT_LAYOUT === "pagination") {
+          window.scrollTo(0, 0);
+        } else {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
         this.updateAllNavButtons();
         this.closeMenu();
         
         setTimeout(() => {
           const firstBtn = card.querySelector('.option-btn, .essay-input, .flag-btn');
-          if (firstBtn) firstBtn.focus();
+          // preventScroll avoids the browser's default "scroll focused
+          // element into view" behavior re-introducing a jump right after
+          // we've just positioned the page for pagination mode above.
+          if (firstBtn) firstBtn.focus({ preventScroll: true });
         }, 500);
       }
     },
@@ -3240,15 +3591,15 @@ ${quizInfoModalHtml}
       summaryHTML += \`<p><strong>أسئلة مجابة:</strong> \${this.userAnswers.filter(a => a !== null && (!Array.isArray(a) || a.length > 0)).length}/\${questions.length}</p>\`;
       
       if (unanswered.length > 0) {
-        summaryHTML += \`<p class="warning">⚠️ <strong>أسئلة غير مجابة:</strong> \${unanswered.join(', ')}</p>\`;
+        summaryHTML += \`<p class="warning"><span class="menu-icon" aria-hidden="true">\${ICON_ALERT_TRIANGLE}</span> <strong>أسئلة غير مجابة:</strong> \${unanswered.join(', ')}</p>\`;
       }
       
       if (flagged.length > 0) {
-        summaryHTML += \`<p>🚩 <strong>أسئلة عليها علامة مراجعة:</strong> \${flagged.join(', ')}</p>\`;
+        summaryHTML += \`<p><span class="menu-icon" aria-hidden="true">\${ICON_FLAG}</span> <strong>أسئلة عليها علامة مراجعة:</strong> \${flagged.join(', ')}</p>\`;
       }
       
       if (unanswered.length === 0 && flagged.length === 0) {
-        summaryHTML += '<p style="color: var(--success);">✓ كل الأسئلة مجابة ، ولا يوجد علامات للمراجعة</p>';
+        summaryHTML += \`<p style="color: var(--success);"><span class="menu-icon" aria-hidden="true">\${ICON_UI_CHECK}</span> كل الأسئلة مجابة ، ولا يوجد علامات للمراجعة</p>\`;
       }
       
       summaryHTML += \`
@@ -3418,12 +3769,12 @@ ${quizInfoModalHtml}
         <div class="score-circle \${passed ? "pass" : "fail"}">
           \${percent}%
         </div>
-        <h2>\${passed ? "🎉 Great Job!" : "📚 استمر في المذاكرة!"}</h2>
+        <h2><span class="menu-icon" aria-hidden="true">\${passed ? ICON_PARTY_POPPER : ICON_BOOK_OPEN}</span> \${passed ? "Great Job!" : "استمر في المذاكرة!"}</h2>
         <div class="results-detail">
           \${scoreBreakdown}
           <p><strong>الدرجة النهائية:</strong> <span>\${percent}%</span></p>
           \${(hasMcq && hasEssay) ? \`<p><strong>درجة الإختياري:</strong> <span>\${mcqTotal > 0 ? Math.round((mcqCorrect / mcqTotal) * 100) : 0}%</span></p>\` : ""}
-          <p><strong>الحالة:</strong> <span>\${passed ? "✓ ناجح" : "✗ ساقط"}</span></p>
+          <p><strong>الحالة:</strong> <span class="menu-icon" style="gap:4px;" aria-hidden="false">\${passed ? ICON_UI_CHECK : ICON_X} \${passed ? "ناجح" : "ساقط"}</span></p>
           <p><strong>الوقت:</strong> <span>\${document.getElementById('timerDisplay').textContent}</span></p>
         </div>
         <p style="margin-top:20px;color:var(--text-muted)">اذهب للأعلى لمراجعة الإجابات الصحيحة</p>
@@ -3759,7 +4110,7 @@ ${quizInfoModalHtml}
       const toast = document.createElement('div');
       toast.className = \`toast toast-\${type}\`;
       toast.innerHTML = \`
-        <span class="toast-icon" aria-hidden="true">\${type === 'success' ? '✓' : 'ℹ'}</span>
+        <span class="toast-icon" aria-hidden="true">\${type === 'success' ? ICON_UI_CHECK : ICON_INFO}</span>
         <span class="toast-message">\${message}</span>
       \`;
       

@@ -22,9 +22,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
 ### export-to-quiz.js
-- `check-answer-btn`'s should show the grading on Essay questions (out of 5).
-- Add Keyboard Navigation (similar to `quiz.js` and `keyboard-nav.js`)
-- The `.menu-toggle` isn't perfectly aligned when `.active`
+- Improve dark mode and light mode to be true dark and true light by removing all purple from the styles, the header at the top, the header of the side-menu, question borders, active states on question navigation items, scrollbars should match the theme.
+- When moving between questions on pagination mode, the page scrolls up and down in an annoying way.
 
 ### Sign in title on Google Sign in.
 - When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something.

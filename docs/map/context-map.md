@@ -42,19 +42,22 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [744.35 KB, 1068 LOC]
-│   ├── map/ [27.57 KB, 726 LOC]
-│   │   ├── context-map.md
-│   │   └── map.js
+├── docs/ [1.72 MB, 875 LOC]
+│   ├── map/ [21.29 KB, 516 LOC]
+│   │   └── context-map.md
 │   │
 │   ├── plans/ [4.95 KB, 48 LOC]
 │   │   └── ai-agent-on-quiz-page-prompt.md
 │   │
 │   ├── Database-Schema-Context.md
+│   ├── image-1.png
+│   ├── image-2.png
+│   ├── image-3.png
+│   ├── image-4.png
 │   ├── image.png
 │   └── issues.md
 │
-├── public/ [199.5 MB, 92922 LOC]
+├── public/ [199.53 MB, 93751 LOC]
 │   ├── assets/ [196.07 MB, 0 LOC]
 │   │   ├── images/ [3.84 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -225,9 +228,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [2.83 MB, 83328 LOC]
-│   │   ├── components/ [619.23 KB, 16390 LOC]
-│   │   │   ├── ai-agent/ [374.55 KB, 8806 LOC]
+│   ├── src/ [2.87 MB, 84157 LOC]
+│   │   ├── components/ [623.84 KB, 16482 LOC]
+│   │   │   ├── ai-agent/ [374.31 KB, 8802 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
 │   │   │   │   ├── ai-agent-chat.js
 │   │   │   │   ├── ai-agent-default-prompts.js
@@ -242,7 +245,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── ai-agent.css
 │   │   │   │   └── ai-agent.js
 │   │   │   │
-│   │   │   ├── download-quiz-modal/ [48.18 KB, 1423 LOC]
+│   │   │   ├── download-quiz-modal/ [53.03 KB, 1519 LOC]
 │   │   │   │   ├── download-quiz-modal.css
 │   │   │   │   └── download-quiz-modal.js
 │   │   │   │
@@ -270,7 +273,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [1.9 MB, 57455 LOC]
+│   │   ├── features/ [1.92 MB, 58097 LOC]
 │   │   │   ├── control/ [41.98 KB, 1583 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
@@ -281,7 +284,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
 │   │   │   │
-│   │   │   ├── export/ [286.31 KB, 7878 LOC]
+│   │   │   ├── export/ [313.65 KB, 8519 LOC]
 │   │   │   │   ├── export-to-html.js
 │   │   │   │   ├── export-to-markdown.js
 │   │   │   │   ├── export-to-pdf.js
@@ -360,7 +363,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── profile.js
 │   │   │   │   └── profileWidgets.js
 │   │   │   │
-│   │   │   ├── quiz/ [227.56 KB, 7040 LOC]
+│   │   │   ├── quiz/ [227.85 KB, 7041 LOC]
 │   │   │   │   ├── keyboard-nav.js
 │   │   │   │   ├── quiz.css
 │   │   │   │   └── quiz.js
@@ -377,7 +380,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── settings.css
 │   │   │       └── settings.js
 │   │   │
-│   │   ├── shared/ [290.37 KB, 7887 LOC]
+│   │   ├── shared/ [295.39 KB, 7982 LOC]
 │   │   │   ├── adminAuth.js
 │   │   │   ├── adminBadgeSync.js
 │   │   │   ├── avatarEngine.js
@@ -389,6 +392,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   ├── gameEngine.js
 │   │   │   ├── markdown-css.js
 │   │   │   ├── markdown.js
+│   │   │   ├── media-url.js
 │   │   │   ├── public-config.js
 │   │   │   ├── pwa-manager.js
 │   │   │   ├── quiz-idb.js
@@ -459,9 +463,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 92922 |
+| `public` | 93751 |
 | `api` | 6317 |
-| `docs` | 1068 |
+| `docs` | 875 |
 | `supabase` | 790 |
 | `(root)` | 625 |
 | `scripts` | 566 |
@@ -471,13 +475,13 @@ The map is useful for quickly identifying the layout of the project, understandi
 | File | Lines of Code |
 |------|---------------|
 | `public/src/features/home/index.css` | 4993 |
+| `public/src/features/export/export-to-quiz.js` | 3909 |
 | `public/src/features/create/create-quiz.css` | 3610 |
 | `public/src/features/quiz/quiz.js` | 3374 |
-| `public/src/features/export/export-to-quiz.js` | 3320 |
 | `public/src/features/quiz/quiz.css` | 3198 |
 | `public/src/features/create/create-quiz.js` | 3185 |
-| `public/src/components/ai-agent/ai-agent-chat.js` | 2799 |
-| `public/src/components/ai-agent/ai-agent.css` | 2738 |
+| `public/src/components/ai-agent/ai-agent-chat.js` | 2797 |
+| `public/src/components/ai-agent/ai-agent.css` | 2737 |
 | `public/src/features/profile/profile.css` | 2501 |
 | `public/src/components/side-menu/side-menu.css` | 2149 |
 
@@ -485,10 +489,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 140 | 60469 | 2.37 MB |
-| .css | 24 | 30139 | 760.01 KB |
+| .js | 140 | 61064 | 2.4 MB |
+| .css | 24 | 30138 | 759.94 KB |
 | .html | 19 | 9257 | 552.14 KB |
-| .md | 6 | 1307 | 53.98 KB |
+| .md | 6 | 1349 | 56.43 KB |
 | .json | 4 | 214 | 76.13 KB |
 | .sql | 4 | 375 | 17.55 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
@@ -496,20 +500,20 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .xml | 1 | 45 | 1.36 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **202** | **102288** | **3.82 MB** |
+| **Total** | **202** | **102924** | **3.85 MB** |
 
 ### Binary / Media Files (Physical Size)
 
 | Extension | Files | Size |
 |-----------|-------|------------|
 | .jpg | 62 | 8.11 MB |
-| .png | 43 | 4.79 MB |
+| .png | 47 | 5.79 MB |
 | .mp3 | 17 | 103.72 MB |
 | .mp4 | 17 | 73.24 MB |
 | .pdf | 7 | 6.92 MB |
 | .ico | 1 | 4.19 KB |
 | .svg | 1 | 19.48 KB |
-| **Total** | **148** | **196.8 MB** |
+| **Total** | **152** | **197.8 MB** |
 
-**Grand Total Files:** 350  
-**Total Repository Size:** 200.62 MB
+**Grand Total Files:** 354  
+**Total Repository Size:** 201.65 MB
