@@ -62,14 +62,55 @@ import { _alert } from "../components/notifications/notifications.js";
  *   register it as their page's "owned" client (see app-state.js) can do so
  *   without creating a second client instance.
  */
+// Upper bound for the getSession() call below. getSession() only reads
+// localStorage and, when autoRefreshToken is off (see
+// supabaseClientRegistry.js), does not itself perform a network refresh —
+// but supabase-js's internal lock/init sequencing can still await a
+// previous in-flight auth call, so this stays defensive against that
+// hanging during an outage instead of assuming it's always instant.
+const GET_SESSION_TIMEOUT_MS = 3000;
+
+/**
+ * True if any Supabase auth token is present in localStorage for this
+ * project. Used to skip getSession() entirely when there is clearly no
+ * session to reconcile — most page loads for anonymous visitors, which is
+ * the common case this function runs on.
+ */
+function hasStoredSupabaseSession() {
+  try {
+    return Object.keys(localStorage).some(
+      (k) => k.startsWith("sb-") && k.endsWith("-auth-token"),
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
+  // No stored Supabase session and no local admin JWT → nothing to
+  // reconcile in either direction. Skipping this avoids an unnecessary
+  // ensureSharedSupabaseClient() + getSession() round trip (and, during a
+  // Supabase outage, one less place that can stall) on every anonymous
+  // page load — by far the most common case.
+  if (!hasStoredSupabaseSession() && !isAdminAuthenticated()) {
+    return null;
+  }
+
   const client = await ensureSharedSupabaseClient();
   if (!client) return null;
 
   try {
     const {
       data: { session },
-    } = await client.auth.getSession();
+    } = await Promise.race([
+      client.auth.getSession(),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error("getSession() timed out")),
+          GET_SESSION_TIMEOUT_MS,
+        ),
+      ),
+    ]);
 
     if (session && !isAdminAuthenticated()) {
       // Supabase still has a live session but our local admin JWT is gone
@@ -93,7 +134,7 @@ export async function syncAdminSession({ onRecovered, onSignedOut } = {}) {
           Object.keys(localStorage)
             .filter((k) => k.startsWith("sb-") && k.endsWith("-auth-token"))
             .forEach((k) => localStorage.removeItem(k));
-        } catch (_) {}
+        } catch (_) { }
         if (typeof onSignedOut === "function") onSignedOut();
       }
     } else if (!session && isAdminAuthenticated()) {

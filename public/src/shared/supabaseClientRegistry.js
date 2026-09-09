@@ -45,9 +45,32 @@ export async function ensureSharedSupabaseClient() {
       try {
         const { SUPABASE_URL, SUPABASE_ANON_KEY } = await import("./public-config.js");
         if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+          // autoRefreshToken disabled, persistSession left ON:
+          //  - persistSession must stay true — sign-in.js's OAuth/OTP flow
+          //    and oauth-callback.html both rely on this same shared client
+          //    writing its session to localStorage, and adminBadgeSync.js's
+          //    syncAdminSession() cross-tab recovery reads that persisted
+          //    session back via getSession(). Disabling persistSession would
+          //    silently break sign-in and recovery, not just the outage case.
+          //  - autoRefreshToken is what actually caused the incident: on
+          //    every page load supabase-js starts a background timer that
+          //    proactively POSTs /auth/v1/token?grant_type=refresh_token for
+          //    any stored session, on every page, whether or not that page
+          //    has any active auth UI. During the Supabase outage those
+          //    requests just accumulated 504s and unhandled-rejection noise.
+          //    Turning it off removes the automatic timer; a session is
+          //    still refreshed on demand the next time something calls
+          //    getSession()/signIn(), which happens explicitly and rarely
+          //    enough not to matter.
           sharedSupabaseClient = window.supabase.createClient(
             SUPABASE_URL,
             SUPABASE_ANON_KEY,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: true,
+              },
+            },
           );
         }
       } catch (err) {

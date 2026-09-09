@@ -1,11 +1,12 @@
 // public/src/shared/quizManifest.js
 // =============================================================================
-// Loads the quiz manifest — DB-only. Queries Supabase for `quizzes`,
-// `courses`, and `folders` directly, then reconstructs each quiz's
-// subject/subfolder placement by walking course_id → course row and
-// folder_id → parent_folder_id chain. Apart from the last-good snapshot
-// cache described below, nothing here reads a local file or a bundled/
-// static manifest.
+// Loads the quiz manifest — DB-only. Supabase is the sole source of truth.
+// Queries Supabase for `quizzes`, `courses`, and `folders` directly, then
+// reconstructs each quiz's subject/subfolder placement by walking
+// course_id → course row and folder_id → parent_folder_id chain. Apart from
+// the last-good LOCALSTORAGE snapshot described below (a per-browser cache
+// of the last successful live fetch, not an independent data source), nothing
+// here reads a static file or bundled manifest.
 //
 // Manifest shape
 // ──────────────
@@ -125,7 +126,7 @@ function tryRestoreManifestCache() {
     return data;
   } catch (err) {
     // Corrupt snapshot — discard it so it can't wedge future loads.
-    try { localStorage.removeItem(MANIFEST_CACHE_KEY); } catch (_) {}
+    try { localStorage.removeItem(MANIFEST_CACHE_KEY); } catch (_) { }
     return null;
   }
 }
