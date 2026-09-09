@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [] - 2026-9-8
+## [8.2.2] - 2026-9-8
 
 ### Fixed Production Home-Page Freeze (Endless Skeleton)
 - **Root cause**: the Supabase project API was unreachable (Cloudflare `522: Connection timed out`; Supabase status reported "Partially Degraded Service"). The home page fired its manifest queries with no timeout, so when Supabase hung instead of erroring, `getManifest()` never settled and the skeleton spinner spun forever.
