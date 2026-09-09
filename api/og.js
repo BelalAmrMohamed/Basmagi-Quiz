@@ -418,12 +418,14 @@ export default async function handler(req) {
                 height: "41px", // matches old pill height (148–189)
                 alignItems: "center",
                 justifyContent: "flex-start",
-                // ltr here: this wrapper has a single child (no sibling
-                // order for flexbox to mirror), and the text inside has
-                // already been pre-mirrored by renderBidiText — leaving
-                // this as rtl double-handles direction and produces the
-                // oversized inter-word gaps Satori's Arabic shaper adds
-                // under an rtl context.
+                // ltr here: this wrapper has a single child (the badge
+                // div below), so there's no sibling order at this level
+                // for flexbox to mirror. The badge's own Arabic mirroring
+                // happens one level down, via flexDirection: row-reverse
+                // on its sibling token children — leaving this outer
+                // wrapper as rtl would double-handle direction and
+                // produce the oversized inter-word gaps Satori's Arabic
+                // shaper adds under an rtl context.
                 direction: "ltr",
               },
               children: [
@@ -432,7 +434,9 @@ export default async function handler(req) {
                   props: {
                     style: {
                       display: "flex",
+                      flexDirection: isArabic ? "row-reverse" : "row",
                       alignItems: "center",
+                      gap: "6px",
                       background: "rgba(0,136,204,0.12)",
                       border: `1px solid rgba(0,136,204,0.3)`,
                       borderRadius: "10px",
@@ -440,10 +444,16 @@ export default async function handler(req) {
                       fontSize: "20px",
                       color: BRAND_BLUE,
                       fontWeight: "700",
-                      // ltr: text already pre-mirrored by renderBidiText.
+                      // ltr: mirroring for Arabic now happens via
+                      // flexDirection: row-reverse above (sibling tokens
+                      // from renderBidiChildren), not via a pre-mirrored
+                      // text node — see renderBidiChildren's doc comment
+                      // for why a single joined string can't safely mix
+                      // Arabic words with the digits/"·" this badge
+                      // contains (e.g. "12 سؤال").
                       direction: "ltr",
                     },
-                    children: renderBidiText(details, isArabic),
+                    children: renderBidiChildren(details, isArabic),
                   },
                 },
               ],
@@ -481,6 +491,9 @@ export default async function handler(req) {
                 props: {
                   style: {
                     display: "flex",
+                    flexDirection: isArabic ? "row-reverse" : "row",
+                    flexWrap: "nowrap",
+                    gap: "0.25em",
                     fontSize: titleFontSize,
                     fontWeight: "700",
                     color: "#111827",
@@ -492,7 +505,14 @@ export default async function handler(req) {
                     overflow: "hidden",
                     justifyContent: "center",
                   },
-                  children: renderBidiText(title, isArabic),
+                  // Sibling tokens instead of one pre-mirrored string — a
+                  // title is free user text that can contain digits or
+                  // "·"/parenthesis punctuation next to Arabic words,
+                  // which hits the space-collapse bug documented on
+                  // renderBidiText() (confirmed: a title like "مراجعة
+                  // الفصل 3 النهائية" paints with several words glued
+                  // together with no visible gap). See renderBidiChildren.
+                  children: renderBidiChildren(title, isArabic),
                 },
               },
 
@@ -503,6 +523,9 @@ export default async function handler(req) {
                   props: {
                     style: {
                       display: "flex",
+                      flexDirection: isArabic ? "row-reverse" : "row",
+                      flexWrap: "nowrap",
+                      gap: "0.25em",
                       fontSize: "20px",
                       fontWeight: "400",
                       color: "#4b5563",
@@ -514,7 +537,7 @@ export default async function handler(req) {
                       overflow: "hidden",
                       justifyContent: "center",
                     },
-                    children: renderBidiText(description, isArabic),
+                    children: renderBidiChildren(description, isArabic),
                   },
                 }
                 : null,
@@ -811,12 +834,35 @@ function detectArabic(text) {
  * closing parens stay correctly paired with their contents after the
  * surrounding sentence is mirrored. This matters for strings built via
  * buildDetails(), e.g. "12 سؤال (مقالي · إختياري · صح/خطأ)".
+ *
+ * KNOWN LIMITATION — do not use this for strings mixing Arabic words with
+ * digits/Latin/"·" (rejoined with a plain " "): Satori's shaper silently
+ * collapses the space at any boundary where an Arabic-script character is
+ * the very next glyph in storage order (confirmed by direct Satori
+ * rendering, not just code reading — e.g. "12 سؤال" round-trips through
+ * this function fine as a STRING, but paints as "12سؤال" with zero visible
+ * gap, and reversing the boundary doesn't reliably fix it either — nor
+ * does substituting NBSP, which "fixes" the gap but then corrupts the
+ * digit's own internal shaping ("12" paints as "21"). There is no
+ * single-text-node fix. For any string that mixes Arabic words with
+ * digits, Latin, or "·"/parenthesis punctuation, use renderBidiChildren()
+ * instead, which sidesteps the bug entirely by never emitting a shared
+ * text node across that boundary. Reserve this function for strings that
+ * are pure Arabic-script words throughout (e.g. a title, a two-word
+ * label) — those have no such boundary and are unaffected.
  */
 function renderBidiText(text, isArabic) {
   if (!text || !isArabic) return text;
-  // Merge anything inside parentheses back into one token after the
-  // initial split, so the group moves as a unit instead of having its
-  // inner words individually reversed relative to each other.
+  return tokenizeBidiText(text).reverse().join(" ");
+}
+
+/**
+ * Splits text into bidi-reorderable tokens: whitespace-separated, with any
+ * "(...)" group merged back into one atomic token so its internal order
+ * survives the later reversal intact. Shared by renderBidiText() (string
+ * output) and renderBidiChildren() (sibling-node output).
+ */
+function tokenizeBidiText(text) {
   const rawTokens = text.split(" ");
   const tokens = [];
   let buffer = null;
@@ -836,7 +882,43 @@ function renderBidiText(text, isArabic) {
     tokens.push(tok);
   }
   if (buffer !== null) tokens.push(...buffer); // unterminated "(" — bail safely
-  return tokens.reverse().join(" ");
+  return tokens;
+}
+
+/**
+ * Bidi-safe alternative to renderBidiText() for any string that mixes
+ * Arabic words with digits, Latin, or "·"/parenthesis punctuation — see
+ * the KNOWN LIMITATION note on renderBidiText() for why a single joined
+ * text node can't be made to work here (confirmed by direct Satori
+ * rendering: no separator character both preserves the gap AND leaves
+ * digit shaping uncorrupted at every boundary direction).
+ *
+ * Returns an ARRAY of sibling `div` nodes — one per token, already in
+ * final (reversed, for Arabic) paint order — instead of one string. The
+ * caller must render these as flex children of a container with a `gap`
+ * (not a plain text node), so spacing between tokens comes from flexbox
+ * layout rather than a text-run space Satori can collapse. This is the
+ * same sibling-elements-plus-gap pattern already used elsewhere in this
+ * file (e.g. buildInfoRowChildren, the parent-course line) for exactly
+ * this reason.
+ *
+ * For non-Arabic text, still returns an array (of one token per
+ * whitespace-separated word, in original order) so callers can use one
+ * rendering path regardless of script — flex order for LTR content is
+ * just its natural left-to-right order, so no reversal is needed.
+ *
+ * Callers apply `flexDirection: isArabic ? "row-reverse" : "row"` — NOT a
+ * pre-reversed array with plain "row" — so alignment/gap math and any
+ * future RTL-aware flex features (e.g. wrapping) behave the same as this
+ * file's other sibling-based rows.
+ */
+function renderBidiChildren(text, isArabic) {
+  if (!text) return [];
+  const tokens = isArabic ? tokenizeBidiText(text) : text.split(" ");
+  return tokens.map((tok) => ({
+    type: "div",
+    props: { style: { display: "flex" }, children: tok },
+  }));
 }
 
 function formatQuestionTypes(qt) {
@@ -949,10 +1031,15 @@ async function renderCourseImage(courseId, folderPath) {
   const parentCourseLine =
     isFolder && meta && meta.courseName ? meta.courseName : null;
 
-  const countsLabel = meta
+  // Token array, not a joined string — "70 مجلد" mixes a digit with an
+  // Arabic word, which hits the space-collapse bug documented on
+  // renderBidiText() ("70سؤال" with zero visible gap). Rendered as sibling
+  // flex children with a `gap` at the call site instead (see
+  // renderBidiChildren's doc comment).
+  const countsTokens = meta
     ? isArabic
-      ? `${meta.folderCount} مجلد · ${meta.quizCount} امتحان`
-      : `${meta.folderCount} Folders · ${meta.quizCount} Quizzes`
+      ? [String(meta.folderCount), "مجلد", "·", String(meta.quizCount), "امتحان"]
+      : [String(meta.folderCount), "Folders", "·", String(meta.quizCount), "Quizzes"]
     : null;
 
   // Human-readable link line, mirroring the actual /course/:slug[/...] URL
@@ -1244,15 +1331,23 @@ async function renderCourseImage(courseId, folderPath) {
                     // styling for visual consistency between quiz and
                     // course/folder previews. Bumped up in size to match
                     // the larger text used everywhere else in this
-                    // layout.
-                    countsLabel
+                    // layout. Rendered as sibling tokens (renderBidiChildren)
+                    // + flexDirection: row-reverse rather than one
+                    // pre-mirrored string — "70 مجلد" mixes a digit with
+                    // an Arabic word, which hits the space-collapse bug
+                    // documented on renderBidiText() (paints as "70مجلد"
+                    // with no visible gap). See renderBidiChildren's doc
+                    // comment.
+                    countsTokens
                       ? {
                         type: "div",
                         props: {
                           style: {
                             display: "flex",
+                            flexDirection: isArabic ? "row-reverse" : "row",
                             marginTop: "32px",
                             alignItems: "center",
+                            gap: "8px",
                             background: "rgba(0,136,204,0.12)",
                             border: "1px solid rgba(0,136,204,0.3)",
                             borderRadius: "12px",
@@ -1262,7 +1357,10 @@ async function renderCourseImage(courseId, folderPath) {
                             fontWeight: "700",
                             direction: "ltr",
                           },
-                          children: renderBidiText(countsLabel, isArabic),
+                          children: countsTokens.map((tok) => ({
+                            type: "div",
+                            props: { style: { display: "flex" }, children: tok },
+                          })),
                         },
                       }
                       : null,
