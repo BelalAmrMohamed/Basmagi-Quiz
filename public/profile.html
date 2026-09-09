@@ -767,8 +767,52 @@
                                     <path d="M20 6 9 17l-5-5" />
                                 </svg>
                             </button>
+                            <!-- Owner-only; hidden by default, shown next to
+                                 the handle once refreshUI() confirms this is
+                                 the owner's own dashboard (see profile.js). -->
+                            <button id="editHandleBtn" class="inline-copy-link-btn" type="button" title="تعديل المعرّف"
+                                aria-label="تعديل المعرّف" style="display:none;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path
+                                        d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                                </svg>
+                            </button>
                         </div>
                         <span class="weekly-recap" id="weeklyRecap" style="margin-top: 8px;">جارِ التحميل...</span>
+
+                        <!-- Profile description / bio. Read-only display +
+                             edit button by default; hidden entirely on
+                             visitor view unless the visited admin has
+                             written a bio (see setupVisitorView() in
+                             profile.js). The edit form (textarea + save/
+                             cancel) is swapped in by setupBioEditor() and
+                             is never shown to visitors. -->
+                        <div id="profileBioWrap" class="profile-bio-wrap" style="display:none;">
+                            <p id="profileBioDisplay" class="profile-bio-display"></p>
+                            <button id="editBioBtn" class="inline-copy-link-btn profile-bio-edit-btn" type="button"
+                                title="تعديل الوصف" aria-label="تعديل الوصف">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" aria-hidden="true">
+                                    <path
+                                        d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="profileBioForm" class="profile-bio-form" style="display:none;">
+                            <textarea id="profileBioTextarea" class="profile-bio-textarea" dir="auto" maxlength="280"
+                                placeholder="أضف وصفاً عن نفسك..."></textarea>
+                            <div class="profile-bio-form-actions">
+                                <span id="profileBioCounter" class="profile-bio-counter">0/280</span>
+                                <div class="profile-bio-form-buttons">
+                                    <button id="cancelBioBtn" type="button"
+                                        class="profile-bio-cancel-btn">إلغاء</button>
+                                    <button id="saveBioBtn" type="button" class="profile-bio-save-btn">حفظ</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="identity-level" id="identityLevel" aria-label="مستوى المستخدم"></div>

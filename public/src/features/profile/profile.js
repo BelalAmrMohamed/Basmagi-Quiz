@@ -21,6 +21,7 @@ import {
   _prompt,
 } from "../../components/notifications/notifications.js";
 import { getAdminRoleInfo, getToken } from "../../shared/adminAuth.js";
+import { userProfile, MAX_BIO_LENGTH } from "../../shared/userProfile.js";
 import { renderLevelGauge } from "./levelGauge.js";
 import {
   generateBotAvatarDataUrl,
@@ -113,7 +114,13 @@ export function refreshUI(options = {}) {
 
   // Display Admin Handle
   const roleInfo = getAdminRoleInfo();
-  const currentHandle = roleInfo?.handle || window.fetchedAdminHandle;
+  // editedAdminHandle wins over the JWT's own `handle` claim once the
+  // owner edits their handle this session (see editAdminHandle()) — the
+  // JWT itself isn't reissued on edit (would need a re-login round trip),
+  // so without this override the page would keep showing the pre-edit
+  // handle from the token until the 4h JWT naturally expires.
+  const currentHandle =
+    window.editedAdminHandle || roleInfo?.handle || window.fetchedAdminHandle;
   const adminHandleWrap = document.getElementById("adminHandleDisplayWrap");
   if (adminHandleWrap && currentHandle) {
     document.getElementById("adminHandleDisplay").textContent =
@@ -137,7 +144,27 @@ export function refreshUI(options = {}) {
         }
       };
     }
+
+    // Editing is admin/dev-only (own dashboard, never on visitor view —
+    // setupVisitorView() below wires this same wrapper differently and
+    // never calls this block). roleInfo is only truthy on the owner's own
+    // dashboard, so gate the affordance on it rather than on currentHandle
+    // alone.
+    const editBtn = document.getElementById("editHandleBtn");
+    if (editBtn && roleInfo) {
+      editBtn.style.display = "inline-flex";
+      editBtn.onclick = () => editAdminHandle(currentHandle);
+    }
   }
+
+  // Profile description ("bio"). Admin/dev accounts get the server-backed
+  // editor (persisted on admin_users.bio, visible on /@handle visitor
+  // view); regular users have no server account at all here, so they get
+  // a purely localStorage-backed bio via userProfile (see
+  // setupBioEditor()'s isAdmin branch below) — visible only on their own
+  // dashboard, never shareable, since there's no public profile URL for
+  // an anonymous device-tracked user to view it on.
+  setupBioEditor(!!roleInfo);
 
   // Handle Admin/Developer Badges for Owner View
   if (roleInfo) {
@@ -269,6 +296,16 @@ async function fetchAndRenderAdminStats(
 
     if (res.ok) {
       if (data.handle) fetchedAdminHandle = data.handle;
+      // Own-dashboard bio (isVisitorContext=false): setupBioEditor() runs
+      // synchronously earlier in refreshUI(), before this fetch resolves,
+      // so it can't know the bio yet on first paint. Stash it for next
+      // time (same pattern fetchedAdminHandle uses above) AND patch the
+      // already-rendered display directly here, so the owner doesn't see
+      // the "أضف وصفاً..." empty state flash before a real bio loads.
+      if (!isVisitorContext) {
+        window.fetchedAdminBio = data.bio || "";
+        if (myToken === refreshToken) renderBioDisplay(window.fetchedAdminBio);
+      }
 
       document.getElementById("adminUploadedQuizzes").textContent =
         data.uploadedQuizzes || 0;
@@ -315,6 +352,7 @@ async function fetchAndRenderAdminStats(
         avatarUrl: data.avatarUrl || null,
         thumbnailUrl: data.thumbnailUrl || null,
         displayName: data.displayName || null,
+        bio: data.bio || null,
         totalPoints:
           typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
         totalQuizzes:
@@ -398,6 +436,173 @@ async function syncProgressToServer() {
   }
 }
 
+// Prompts the owner for a new handle, validates it client-side (mirrors
+// api/_handle.js's rules so obviously-invalid input never round-trips to
+// the server), then submits it. On success, overrides what's shown for
+// the rest of this session (see currentHandle's comment above) — the JWT
+// itself still carries the old handle until the next login.
+async function editAdminHandle(currentHandle) {
+  const input = await _prompt("أدخل معرّفك الجديد (بدون @):", currentHandle || "");
+  if (input === null) return; // cancelled
+
+  const trimmed = input.trim().replace(/^@+/, "");
+  if (!trimmed || trimmed === currentHandle) return;
+
+  const cleanHandle = trimmed
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, 30);
+
+  if (cleanHandle.length < 3) {
+    showNotification("المعرّف قصير جداً (الحد الأدنى 3 أحرف)", "", "error");
+    return;
+  }
+
+  const token = getToken();
+  if (!token) return;
+
+  try {
+    const res = await fetch("/api/admin-stats", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ handle: cleanHandle }),
+    });
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      showNotification(data.error || "تعذّر حفظ المعرّف", "", "error");
+      return;
+    }
+
+    window.editedAdminHandle = data.handle || cleanHandle;
+    showNotification("تم تحديث المعرّف بنجاح", "", "success");
+    refreshUI({ skipNetworkFetches: true });
+  } catch (err) {
+    console.error("Failed to update handle", err);
+    showNotification("تعذّر الاتصال بالخادم", "", "error");
+  }
+}
+
+// Renders the current bio (or empty state) into the read-only display and
+// wires the edit button to a save/cancel textarea, mirroring the
+// editable-username inline pattern above but as a dedicated small form
+// since a single-line _prompt() isn't a great fit for multi-line bio text.
+//
+// Two persistence paths, chosen by `isAdmin`:
+//   - Admin/dev accounts: server-backed (admin_users.bio via
+//     /api/admin-stats), also shown on the public /@handle visitor view.
+//   - Regular users: no server account exists for them at all (see
+//     api/user-profile.js — device_id there only tracks quiz progress,
+//     never identity fields), so this is purely a localStorage round trip
+//     through userProfile.getBio()/setBio(), own-dashboard only.
+function setupBioEditor(isAdmin) {
+  const wrapEl = document.getElementById("profileBioWrap");
+  const editBtn = document.getElementById("editBioBtn");
+  const formEl = document.getElementById("profileBioForm");
+  const textareaEl = document.getElementById("profileBioTextarea");
+  const saveBtn = document.getElementById("saveBioBtn");
+  const cancelBtn = document.getElementById("cancelBioBtn");
+  const counterEl = document.getElementById("profileBioCounter");
+  if (!wrapEl || !editBtn || !formEl || !textareaEl) return;
+
+  const currentBio = isAdmin ? window.fetchedAdminBio || "" : userProfile.getBio();
+  renderBioDisplay(currentBio);
+  // Own dashboard (admin or regular user) always shows the bio row, with
+  // its empty-state prompt when unset — unlike visitor view (admin/dev
+  // only; regular users have no shareable profile URL), which only
+  // reveals it once a real bio value comes back from the server. See
+  // setupVisitorView().
+  wrapEl.style.display = "flex";
+
+  editBtn.onclick = () => {
+    textareaEl.value = currentBio;
+    updateCounter();
+    wrapEl.style.display = "none";
+    formEl.style.display = "flex";
+    textareaEl.focus();
+  };
+
+  cancelBtn.onclick = () => {
+    formEl.style.display = "none";
+    wrapEl.style.display = "flex";
+  };
+
+  function updateCounter() {
+    if (!counterEl) return;
+    counterEl.textContent = `${textareaEl.value.length}/${MAX_BIO_LENGTH}`;
+  }
+  textareaEl.oninput = updateCounter;
+
+  saveBtn.onclick = async () => {
+    const newBio = textareaEl.value.trim();
+    if (newBio.length > MAX_BIO_LENGTH) {
+      showNotification(
+        `الوصف طويل جداً (الحد الأقصى ${MAX_BIO_LENGTH} حرف)`,
+        "",
+        "error",
+      );
+      return;
+    }
+
+    if (!isAdmin) {
+      // Local-only save — no network round trip, no auth required.
+      userProfile.setBio(newBio);
+      renderBioDisplay(newBio);
+      formEl.style.display = "none";
+      wrapEl.style.display = "flex";
+      showNotification("تم تحديث الوصف بنجاح", "", "success");
+      return;
+    }
+
+    const token = getToken();
+    if (!token) return;
+
+    saveBtn.disabled = true;
+    try {
+      const res = await fetch("/api/admin-stats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ bio: newBio || null }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showNotification(data.error || "تعذّر حفظ الوصف", "", "error");
+        return;
+      }
+
+      window.fetchedAdminBio = newBio;
+      renderBioDisplay(newBio);
+      formEl.style.display = "none";
+      wrapEl.style.display = "flex";
+      showNotification("تم تحديث الوصف بنجاح", "", "success");
+    } catch (err) {
+      console.error("Failed to update bio", err);
+      showNotification("تعذّر الاتصال بالخادم", "", "error");
+    } finally {
+      saveBtn.disabled = false;
+    }
+  };
+}
+
+function renderBioDisplay(bio) {
+  const displayEl = document.getElementById("profileBioDisplay");
+  if (!displayEl) return;
+  if (bio) {
+    displayEl.textContent = bio;
+    displayEl.classList.remove("profile-bio-empty");
+  } else {
+    displayEl.textContent = "أضف وصفاً عن نفسك...";
+    displayEl.classList.add("profile-bio-empty");
+  }
+}
+
 async function setupVisitorView(handle) {
   // Setup UI for visitor view
   document.querySelectorAll(".content-section").forEach((el) => {
@@ -423,6 +628,13 @@ async function setupVisitorView(handle) {
   document.getElementById("avatarEditBtn").style.display = "none";
   document.getElementById("thumbnailEditBtn").style.display = "none";
   document.getElementById("weeklyRecap").style.display = "none";
+  // Bio/handle editing is owner-only — visitor view only ever shows the
+  // read-only bio text (populated below once fetchAndRenderAdminStats
+  // resolves) and never renders the edit affordances at all.
+  const editBioBtn = document.getElementById("editBioBtn");
+  if (editBioBtn) editBioBtn.style.display = "none";
+  const editHandleBtn = document.getElementById("editHandleBtn");
+  if (editHandleBtn) editHandleBtn.style.display = "none";
 
   const displayNameMeta = document.querySelector(
     'meta[name="admin:display-name"]',
@@ -546,6 +758,18 @@ async function setupVisitorView(handle) {
       headerTitle.textContent = visitedRole.displayName;
       headerTitle.setAttribute("data-text", visitedRole.displayName);
     }
+  }
+
+  // Visitor bio — read-only, and the whole wrap stays hidden (its default
+  // state, set in profile.html) when the visited admin never wrote one,
+  // rather than showing the owner-dashboard "أضف وصفاً عن نفسك..." empty
+  // state prompt to someone who can't act on it.
+  const bioWrap = document.getElementById("profileBioWrap");
+  const bioDisplay = document.getElementById("profileBioDisplay");
+  if (bioWrap && bioDisplay && visitedRole && visitedRole.bio) {
+    bioDisplay.textContent = visitedRole.bio;
+    bioDisplay.classList.remove("profile-bio-empty");
+    bioWrap.style.display = "flex";
   }
 
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {

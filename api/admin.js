@@ -22,6 +22,9 @@
 // =============================================================================
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { createClient } from "@supabase/supabase-js";
+import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
+
+const MAX_BIO_LENGTH = 280;
 
 // ── admin-stats clients ──────────────────────────────────────────────────────
 // Public GET/read paths stay on the anon key so RLS keeps governing what's
@@ -270,6 +273,8 @@ async function handleStatsSync(req, res) {
     thumbnailUrl,
     displayName,
     activityHeatmap,
+    bio,
+    handle,
   } = req.body || {};
 
   const hasProgressFields =
@@ -355,30 +360,102 @@ async function handleStatsSync(req, res) {
     updates.display_name = displayName;
   }
 
-  if (Object.keys(updates).length === 0) {
+  // Profile description ("bio") — free text, editable any time from the
+  // owner's own dashboard. NULL/empty string clears it (matches the
+  // displayName/avatarUrl convention above: explicit null wipes the field
+  // rather than being ignored).
+  if (bio !== undefined) {
+    if (bio !== null && typeof bio !== "string") {
+      return res.status(400).json({ error: "Invalid bio payload" });
+    }
+    const cleanBio = bio === null ? null : bio.trim();
+    if (cleanBio && cleanBio.length > MAX_BIO_LENGTH) {
+      return res.status(400).json({
+        error: `الوصف طويل جداً (الحد الأقصى ${MAX_BIO_LENGTH} حرف)`,
+      });
+    }
+    updates.bio = cleanBio || null;
+  }
+
+  // Handle is claimed via claimHandle() below rather than a plain column
+  // update — see api/_handle.js. This needs to happen before the generic
+  // `updates` write below (or independently, if it's the only field being
+  // changed), since it has its own validation/collision-retry path and its
+  // own success/failure response shape.
+  let claimedHandle;
+  if (handle !== undefined) {
+    if (handle === null) {
+      return res.status(400).json({ error: "لا يمكن حذف المعرّف" });
+    }
+    const cleanHandle = slugifyHandle(handle);
+    const format = validateHandleFormat(cleanHandle);
+    if (!format.valid) {
+      return res.status(400).json({ error: format.message });
+    }
+
+    // requireAdmin() only gives us the email claim, not the row id — fetch
+    // it here (cheap, single lookup) since claimHandle needs the admin's
+    // own id both to skip "is this candidate already mine" and to scope
+    // the UPDATE.
+    const normalizedEmailForId = payload.email
+      .trim()
+      .toLowerCase()
+      .replace(/[%_\\]/g, "\\$&");
+    const { data: selfRow, error: selfErr } = await supabaseService
+      .from("admin_users")
+      .select("id")
+      .ilike("email", normalizedEmailForId)
+      .maybeSingle();
+
+    if (selfErr || !selfRow) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+
+    const { handle: newHandle, error: claimErr } = await claimHandle(
+      supabaseService,
+      selfRow.id,
+      cleanHandle,
+      // Editing is a single explicit candidate the user typed, not an
+      // auto-derived slug — don't silently rename it to "foo3" behind
+      // their back. Only retry to recover from the exact-candidate race
+      // with another request; a real conflict should be reported so the
+      // user can pick a different handle themselves.
+      1,
+    );
+    if (claimErr) {
+      return res.status(409).json({ error: claimErr });
+    }
+    claimedHandle = newHandle;
+  }
+
+  if (Object.keys(updates).length === 0 && claimedHandle === undefined) {
     return res.status(400).json({ error: "Nothing to sync" });
   }
 
-  const normalizedEmail = payload.email
-    .trim()
-    .toLowerCase()
-    .replace(/[%_\\]/g, "\\$&");
-  const { data: updated, error } = await supabaseService
-    .from("admin_users")
-    .update(updates)
-    .ilike("email", normalizedEmail)
-    .select("handle")
-    .maybeSingle();
+  let updatedHandle = claimedHandle;
+  if (Object.keys(updates).length > 0) {
+    const normalizedEmail = payload.email
+      .trim()
+      .toLowerCase()
+      .replace(/[%_\\]/g, "\\$&");
+    const { data: updated, error } = await supabaseService
+      .from("admin_users")
+      .update(updates)
+      .ilike("email", normalizedEmail)
+      .select("handle")
+      .maybeSingle();
 
-  if (error) {
-    console.error("[admin] stats sync write failed", error);
-    return res.status(500).json({ error: error.message });
-  }
-  if (!updated) {
-    return res.status(404).json({ error: "Admin not found" });
+    if (error) {
+      console.error("[admin] stats sync write failed", error);
+      return res.status(500).json({ error: error.message });
+    }
+    if (!updated) {
+      return res.status(404).json({ error: "Admin not found" });
+    }
+    if (updatedHandle === undefined) updatedHandle = updated.handle;
   }
 
-  return res.status(200).json({ synced: true });
+  return res.status(200).json({ synced: true, handle: updatedHandle });
 }
 
 async function handleStats(req, res) {
@@ -440,7 +517,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
       )
       .eq("id", id)
       .maybeSingle();
@@ -454,7 +531,7 @@ async function handleStats(req, res) {
     const { data } = await supabase
       .from("admin_users")
       .select(
-        "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+        "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
       )
       .ilike("handle", normalizedHandle)
       .maybeSingle();
@@ -483,7 +560,7 @@ async function handleStats(req, res) {
           const { data } = await supabase
             .from("admin_users")
             .select(
-              "id, display_name, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
+              "id, display_name, bio, total_points, passed_quizzes, total_badges, current_level, handle, email, avatar_url, thumbnail_url, uploaded_quizzes, activity_heatmap",
             )
             .ilike("email", normalizedEmail)
             .maybeSingle();
@@ -588,6 +665,7 @@ async function handleStats(req, res) {
     thumbnailUrl: adminUser.thumbnail_url || null,
     displayName: adminUser.display_name || null,
     activityHeatmap: adminUser.activity_heatmap || {},
+    bio: adminUser.bio || null,
     role,
     isOwner,
   });

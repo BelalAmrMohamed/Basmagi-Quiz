@@ -7,6 +7,16 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Broken Elements
 
+### Profile Description
+- Allow users to write a description/bio in their profile.html.
+- Admins description stored in the DB (you can write a migration and I'll run it).
+- People can edit their description at any time.
+
+### Profile Handles
+- The current logic for setting user handle isn't reliable.
+- It sets the handle based on the first part of the user email (belalamrofficial@gmail.com -> `@belalamrofficial`), but that logic has an issue, there might be 2 emails that share the first part (like `belalamrofficial@gmail` and `belalamrofficial@proton`). So make sure there is a logic that makes sure that handle is uniuqe.
+- Allow users to modify/edit their handle.
+
 ### Courses & Folders OG Images
 - Don't show the info: Last update on the og images made the Arabic labels (المادة ، السنة ، الترم) be RTL, it's that update where they stopped showing.
 
@@ -21,13 +31,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
-### export-to-quiz.js
-- Improve dark mode and light mode to be true dark and true light by removing all purple from the styles, the header at the top, the header of the side-menu, question borders, active states on question navigation items, scrollbars should match the theme.
-- When moving between questions on pagination mode, the page scrolls up and down in an annoying way.
-
 ### Sign in title on Google Sign in.
-- When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something.
-- Signing in doesn't work on localhost for somereason.
+- When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something. ![screenshot](image-5.png)
+- Signing in doesn't work on localhost for somereason. ![alt text](image-6.png)
 
 
 ### AI Agnet Error 

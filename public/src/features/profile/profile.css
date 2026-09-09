@@ -321,6 +321,103 @@ body.sidebar-expanded {
   display: inline-flex;
 }
 
+.profile-bio-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 520px;
+}
+
+.profile-bio-display {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+
+.profile-bio-display.profile-bio-empty {
+  font-style: italic;
+  color: var(--color-text-tertiary);
+}
+
+.profile-bio-edit-btn {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.profile-bio-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 520px;
+}
+
+.profile-bio-textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-background-secondary);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  padding: 10px 12px;
+}
+
+.profile-bio-textarea:focus {
+  outline: none;
+  border-color: var(--color-primary, #6366f1);
+}
+
+.profile-bio-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-bio-counter {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+}
+
+.profile-bio-form-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-bio-cancel-btn,
+.profile-bio-save-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.profile-bio-cancel-btn {
+  background: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+}
+
+.profile-bio-save-btn {
+  background: var(--color-primary, #6366f1);
+  color: #fff;
+}
+
+.profile-bio-cancel-btn:hover,
+.profile-bio-save-btn:hover {
+  opacity: 0.85;
+}
+
 .role-badge {
   display: inline-flex;
   align-items: center;

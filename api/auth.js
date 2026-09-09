@@ -15,12 +15,20 @@
 import jwt from "jsonwebtoken";
 import { applyCors } from "./_middleware.js";
 import { createClient } from "@supabase/supabase-js";
+import { slugifyHandle, claimHandle } from "./_handle.js";
 
 /**
  * Generates a URL-safe default handle from an admin's email local-part
  * (e.g. "belalamrofficial@gmail.com" -> "belalamrofficial"), resolves any
- * collision by appending a numeric suffix, persists it on the admin_users
- * row, and returns the handle that ended up stored.
+ * collision by appending a numeric suffix (via claimHandle, shared with
+ * api/admin.js's own handle-editing path — see api/_handle.js), persists
+ * it on the admin_users row, and returns the handle that ended up stored.
+ *
+ * Two different accounts whose email local-part happens to match (e.g.
+ * "belalamrofficial@gmail.com" and "belalamrofficial@proton.me") are the
+ * exact case this exists to handle: both derive the same baseSlug, so the
+ * second one to sign in gets "belalamrofficial2" instead of silently
+ * failing the unique constraint or (worse) never getting a handle at all.
  *
  * Best-effort: if anything here fails (race with another request, unique
  * constraint still conflicting, etc.) we log and return null rather than
@@ -34,44 +42,14 @@ import { createClient } from "@supabase/supabase-js";
  */
 async function ensureHandle(supabase, adminId, email) {
   const localPart = email.split("@")[0] || "admin";
-  const baseSlug =
-    localPart
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/g, "")
-      .slice(0, 30) || "admin";
+  const baseSlug = slugifyHandle(localPart) || "admin";
 
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = attempt === 0 ? baseSlug : `${baseSlug}${attempt + 1}`;
-
-    // Only claim the handle if it's still actually free — avoids clobbering
-    // a handle someone else grabbed between our check and this write.
-    const { data: existing } = await supabase
-      .from("admin_users")
-      .select("id")
-      .ilike("handle", candidate)
-      .maybeSingle();
-
-    if (existing && existing.id !== adminId) continue; // taken by someone else, try next suffix
-
-    const { data: updated, error: updateErr } = await supabase
-      .from("admin_users")
-      .update({ handle: candidate })
-      .eq("id", adminId)
-      .select("handle")
-      .maybeSingle();
-
-    if (!updateErr && updated) return updated.handle;
-
-    // 23505 = unique_violation: someone else won the race for this exact
-    // candidate between our check and our write. Try the next suffix.
-    if (updateErr && updateErr.code !== "23505") {
-      console.error("[auth] Failed to persist default handle:", updateErr);
-      return null;
-    }
+  const { handle, error } = await claimHandle(supabase, adminId, baseSlug);
+  if (error) {
+    console.error("[auth] Could not find a free default handle for", email, error);
+    return null;
   }
-
-  console.error("[auth] Could not find a free default handle for", email);
-  return null;
+  return handle;
 }
 
 export default async function handler(req, res) {

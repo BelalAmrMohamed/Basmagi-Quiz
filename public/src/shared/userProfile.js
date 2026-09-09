@@ -5,6 +5,7 @@
  * User Profile Structure:
  * {
  *   username: string,
+ *   bio: string,
  *   faculty: string,
  *   year: string,
  *   term: string,
@@ -15,6 +16,7 @@
 const STORAGE_KEY = "quiz_user_profile";
 const DEFAULT_PROFILE = {
   username: "User",
+  bio: "",
   faculty: "All",
   year: "All",
   term: "All",
@@ -23,6 +25,9 @@ const DEFAULT_PROFILE = {
   quizStyle: "pagination", // "pagination" | "vertical"
   defaultQuizMode: "practice", // "practice" | "timed" | "exam" | "timed_exam"
 };
+
+const MAX_BIO_LENGTH = 280;
+export { MAX_BIO_LENGTH };
 
 export class UserProfileManager {
   constructor() {
@@ -94,6 +99,31 @@ export class UserProfileManager {
   setUsername(username) {
     if (!username || !username.trim()) return false;
     this.profile.username = username.trim();
+    this.saveProfile();
+    return true;
+  }
+
+  /**
+   * Get the user's profile description/bio. Regular users have no
+   * server-side account (see api/user-profile.js — device_id only tracks
+   * quiz progress, not identity fields), so this lives purely in
+   * localStorage, same as username/faculty/etc. above.
+   */
+  getBio() {
+    return this.profile.bio || "";
+  }
+
+  /**
+   * Update the user's bio. Passing an empty/whitespace-only string clears
+   * it (stored as "" so getBio() always returns a string, never
+   * undefined). Silently truncates to MAX_BIO_LENGTH rather than
+   * rejecting — callers doing live character-count UI should already stop
+   * the user well before this point, so truncation here is just a safety
+   * net, not the primary validation path.
+   */
+  setBio(bio) {
+    const trimmed = (bio || "").trim().slice(0, MAX_BIO_LENGTH);
+    this.profile.bio = trimmed;
     this.saveProfile();
     return true;
   }
