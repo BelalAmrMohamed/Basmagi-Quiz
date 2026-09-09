@@ -31,8 +31,6 @@ Confirmed via Supabase's own docs/issue tracker: Google's OAuth consent screen a
 
 Google OAuth consent screen verification (free) — in Google Cloud Console → OAuth consent screen, set your app name/logo and go through Google's verification process. Once verified, Google shows your app name ("منصة امتحانات بصمجي") instead of the raw domain, even while the domain stays *.supabase.co underneath. Several teams in the Supabase community got this working for free this way.
 
-### But a transition on the `.sidebar-brand-link` when opening/closing side-menu on desktops.
-
 
 ### AI Agnet Error 
 - ![screenshot 1](image-1.png)
@@ -63,6 +61,12 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 #### Creating Quizzes
 - The AI Agent doesn't have the ability to set the place where the quiz gets put, it always get put inside `/#my-quizzes` directly. It should be able to set it's initial place (e.g., `/#my-quizzes/math/` or `/#my-quizzes/math/algebra/`).
 
+### `.exam-more-btn`
+Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
+- Second press should close.
+
+### But a transition on the `.sidebar-brand-link` when opening/closing side-menu on desktops.
+
 ## New Features
 
 ### Search and navigation refinements (Home Page)
@@ -83,6 +87,11 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 - So new trash can for main quizzes (shared), and new trash can for users “امتحاناتك” section.
 - Admins should be able to Edit quizzes public quizzes, these needs a new button on quizzes, and create-quiz page update.
 - Admins should be able to move folders and quizzes (similar to the امتحاناتك section)
+- So, in the `.exam-more-btn` for quizzes, folders, and courses, a dropdown that will contain all admin actions will be added, it will include: 
+  - The delete button (for sending quizzes, folders, or courses to the trash can, or some recovery workflow)
+  - The move button (for moving quizzes or folders inside the course they are in). Uses similar Move-To Dialog Guide like that in the امتحاناتك section.
+  - The edit button (for editing 'quizzes' in the create-quiz page).
+  - The dropdown should be visible to admins only.
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.

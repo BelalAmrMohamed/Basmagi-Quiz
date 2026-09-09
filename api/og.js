@@ -845,6 +845,31 @@ function formatQuestionTypes(qt) {
   return String(qt) || null;
 }
 
+/**
+ * Slug/URL-path counterpart to renderBidiText(). A slugified Arabic segment
+ * (e.g. "إمتحانات-سابقة-لنفس-الدكتور") is hyphen-joined, not space-joined —
+ * renderBidiText()'s word split on " " is a no-op on a string like this, so
+ * without this helper the segment reaches Satori completely untouched and
+ * comes out in raw storage order (first word painted rightmost-of-nowhere
+ * instead of rightmost-visually — the same class of bug renderBidiText
+ * fixes for sentences, just with "-" as the token separator instead of " ").
+ *
+ * Only reorders a segment that is itself Arabic (detectArabic on the whole
+ * segment) — Latin segments (e.g. a course slug like
+ * "Data-Structures-and-Algorithms") must never be touched, since flipping a
+ * segment's own word order would break EN slugs.
+ *
+ * Only the ORDER of hyphen-separated tokens is reversed — never the
+ * characters within a token — matching renderBidiText's word vs.
+ * glyph distinction. A leading/trailing empty token (from slugify()'s own
+ * "-" -> "--" doubling, or an edge hyphen) is preserved in place rather
+ * than moved, so doubled hyphens don't collapse or migrate.
+ */
+function renderBidiSlugSegment(segment) {
+  if (!segment || !detectArabic(segment)) return segment;
+  return segment.split("-").reverse().join("-");
+}
+
 // =============================================================================
 // Course / folder OG image (used by /api/og?course=<id>[&folder=...]) — see
 // handler() dispatch above. Deliberately mirrors the quiz thumbnail's own
@@ -939,28 +964,47 @@ async function renderCourseImage(courseId, folderPath) {
   // clickable. Rendered at the bottom of the card (see layout below), not
   // immediately under the info rows, so it always reads as a footer.
   const slugify = (s) => (s || "").trim().replace(/-/g, "--").replace(/\s+/g, "-");
-  const courseSlug = meta ? slugify(meta.courseName || meta.name) : "";
+  // Each slug segment is bidi-fixed independently via renderBidiSlugSegment
+  // (see its doc comment) — the course slug can itself be Arabic (an
+  // Arabic-named course with no folder path), and each folder-path segment
+  // is checked/fixed on its own rather than after joining, so a mixed
+  // Arabic/Latin path (e.g. an English course containing an Arabic folder)
+  // only reorders the segment(s) that actually need it.
+  const courseSlug = meta
+    ? renderBidiSlugSegment(slugify(meta.courseName || meta.name))
+    : "";
   const linkPath =
     folderPath && folderPath.length > 0
-      ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath.map(slugify).join("/")}`
+      ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath
+        .map((seg) => renderBidiSlugSegment(slugify(seg)))
+        .join("/")}`
       : `basmagi-quiz.vercel.app/course/${courseSlug}`;
 
   const contentWidth = COURSE_CONTENT.right - COURSE_CONTENT.left;
 
   /**
    * Builds one course-info row as TWO separate flex children (label,
-   * value) instead of one pre-joined "label: value" string run through
-   * renderBidiText(). renderBidiText() mirrors word order by splitting on
-   * spaces — fine for a sentence, but "نوع التعليم: جامعي" has its OWN
-   * internal word order (نوع التعليم is a two-word label) that must stay
-   * intact; running it through the same word-reversal that page-level
-   * sentences use tears the label apart and misplaces the colon (see bug
-   * report — rows rendered as "جامعي التعليم: نوع"). A label/value pair is
-   * structurally a two-item list, not a sentence, so it's mirrored the
-   * same safe way flexbox row-order is mirrored elsewhere in this file
-   * (e.g. the old stats row): as two sibling elements under
-   * `flexDirection: row-reverse` for Arabic, each showing its own text
-   * verbatim with no word-order manipulation at all.
+   * value), mirrored via `flexDirection: row-reverse` for Arabic rather
+   * than pre-joining "label: value" into one string — a label/value pair
+   * is structurally a two-item list, not a sentence, so its two sides are
+   * positioned via flex order exactly like other label+content rows in
+   * this file (e.g. the parent-course line), each side showing its own
+   * text with no cross-side word manipulation.
+   *
+   * IMPORTANT: this does NOT mean the label's own text is safe to render
+   * untouched. Satori does not run the Unicode Bidi Algorithm (see
+   * renderBidiText's doc comment) — it paints a text node's
+   * space-separated words in raw storage order regardless of `direction`.
+   * A one-word label like "الكلية" only has one token, so storage order
+   * and visual order are trivially the same and it happened to render
+   * fine. A two-plus-word label like "نوع التعليم" does NOT get this
+   * lucky: without reordering, it paints as "التعليم نوع" with the
+   * trailing ":" fused onto the wrong word (this shipped as a real bug —
+   * screenshots showed rows like "التعليم:نوع جامعي"). So the label goes
+   * through renderBidiText() same as any other multi-word Arabic string;
+   * the value does not, since values are frequently Latin (e.g. "Computer
+   * Science") or a single Arabic word, and reversing a Latin value's word
+   * order would itself be a bug.
    */
   function buildInfoRowChildren(row) {
     return {
@@ -978,7 +1022,7 @@ async function renderCourseImage(courseId, folderPath) {
             type: "div",
             props: {
               style: { display: "flex", color: "#6b7280", fontWeight: "400" },
-              children: `${row.label}:`,
+              children: `${renderBidiText(row.label, isArabic)}:`,
             },
           },
           {
@@ -1116,7 +1160,7 @@ async function renderCourseImage(courseId, folderPath) {
                         },
                         children: isFolder
                           ? isArabic ? "مجلد" : "FOLDER"
-                          : isArabic ? "مقرر دراسي" : "COURSE",
+                          : isArabic ? renderBidiText("مقرر دراسي", true) : "COURSE",
                       },
                     },
 
