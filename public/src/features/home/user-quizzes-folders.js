@@ -984,7 +984,7 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReaso
   const item = document.createElement("div");
   const disabled = !!disabledReason;
   item.style.cssText = `
-    padding: 9px 14px; cursor: ${disabled ? "not-allowed" : "pointer"};
+    padding: 5px 14px; cursor: ${disabled ? "not-allowed" : "pointer"};
     color: ${disabled ? "var(--color-text-tertiary, var(--color-text-secondary))" : (isDanger ? "var(--color-danger, #dc2626)" : "var(--color-text-primary)")};
     opacity: ${disabled ? "0.55" : "1"};
     font-size: 0.88rem; transition: background 0.15s; display: flex; align-items: center; gap: 10px;

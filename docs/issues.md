@@ -129,6 +129,4 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 - List all unlisted pages (document pages, and reports page)
 
 ### Create Quiz Page
-- `ctrl + z` doesn't work after using the top bar
-- `.gmd-group-latex` Elements in the top bar for LaTeX math are too much, and at the same time not all are there, so make a dropdown to hold most, while keeping the main LaTeX ones in the topbar directly. If, in the dropdown, the LaTeX
-- `.gmd-group-md` don't have everything, it's missing the header dropdown for all 6 levels of headers, and add any other missing elements.
+Fix header bars on phones.
