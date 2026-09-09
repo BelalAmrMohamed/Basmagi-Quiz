@@ -55,7 +55,14 @@ const TEMPLATE_PATH = path.join(process.cwd(), "public", "index.html");
 // "across 0 folders" wording was fixed below — both need every platform
 // (Facebook/LinkedIn/X, and any CDN edge) to refetch rather than serve a
 // year-old cached image/description under the same URL.
-const OG_IMAGE_VERSION = 2;
+// Bumped to 3: fixed the course-info table's key/value alignment and the
+// Arabic title's reversed/spaced-out rendering on folder images (see
+// buildInfoTable + the title block in api/og.js renderCourseImage) — old
+// folder images were rendered under buggy code and are cached for a full
+// year (immutable, max-age=31536000) under the v=2 URL, so this bump is
+// required for every folder image already shared anywhere to actually
+// refresh instead of continuing to serve the broken layout forever.
+const OG_IMAGE_VERSION = 3;
 
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
