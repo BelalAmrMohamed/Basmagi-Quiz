@@ -186,48 +186,14 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
     </div>`;
 }
 
-/** Switch a field between its Write and Preview tabs */
-window.switchMdTab = function (id, target) {
-  const source = document.getElementById(id);
-  const previewPane = document.getElementById(`preview-${id}`);
-  const tabWrite = document.getElementById(`tab-write-${id}`);
-  const tabPreview = document.getElementById(`tab-preview-${id}`);
-  const toolbar = document.getElementById(`toolbar-${id}`);
-  if (!source || !previewPane || !tabWrite || !tabPreview) return;
-
-  if (target === "preview") {
-    const val = source.value;
-    if (val.trim()) {
-      previewPane.innerHTML = renderMarkdown(val);
-      renderMathIn(previewPane);
-    } else {
-      previewPane.innerHTML = `<span class="md-placeholder">لا يوجد شيء للمعاينة</span>`;
-    }
-    source.style.display = "none";
-    previewPane.style.display = "block";
-    if (toolbar) toolbar.style.display = "none";
-    tabWrite.classList.remove("active");
-    tabWrite.setAttribute("aria-selected", "false");
-    tabPreview.classList.add("active");
-    tabPreview.setAttribute("aria-selected", "true");
-  } else {
-    source.style.display = "block";
-    previewPane.style.display = "none";
-    if (toolbar) toolbar.style.display = "flex";
-    tabPreview.classList.remove("active");
-    tabPreview.setAttribute("aria-selected", "false");
-    tabWrite.classList.add("active");
-    tabWrite.setAttribute("aria-selected", "true");
-    source.focus();
-  }
-};
-
-/** Backward-compatible helper: some call sites just want to focus the field */
+/** Focus a .md-source field and place the cursor at the end of its text.
+ * Formerly also switched a per-card Write/Preview tab (switchMdTab); that
+ * markup was removed along with the per-card .wp-bar in favor of the global
+ * #globalMdBar toolbar, so this now only handles focusing the field. */
 window.activateMdEditor = function (e, id) {
   if (typeof e === "string" && !id) {
     id = e;
   }
-  switchMdTab(id, "write");
   const source = document.getElementById(id);
   if (source) {
     source.focus();

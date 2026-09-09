@@ -1013,9 +1013,11 @@
              Mirrors Google Docs' start screen: a "start new" tile followed by
              a flat, sorted grid of recent items (draft + saved quizzes). -->
         <div class="entry-screen" id="entryScreen" style="display: none;">
-            <h2 class="entry-screen-heading">أنشئ امتحانًا جديدًا</h2>
-            <div class="entry-items-grid" id="entryItemsGrid">
-                <!-- Populated by renderEntryItemsGrid() in create-quiz.js -->
+            <div class="entry-sections" id="entryItemsGrid">
+                <!-- Populated by renderEntryItemsGrid() in create-quiz.js:
+                     one .entry-section per group (new / drafts / saved),
+                     each with its own heading and its own .entry-items-grid,
+                     stacked top-to-bottom like Google Docs' start screen. -->
             </div>
         </div>
 

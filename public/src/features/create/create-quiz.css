@@ -208,13 +208,17 @@ body.sidebar-expanded .app-title-bar {
   outline: none;
 }
 
-/* The embedded menu nav inside the unified bar — fills remaining space */
+/* The embedded menu nav inside the unified bar — fills remaining space.
+   min-width: 0 is what actually stops this flex item from forcing the bar
+   wider than its slot; it must NOT have overflow: hidden, since that would
+   clip every position:absolute dropdown inside it (the top-level menu
+   dropdowns and the nested templates submenu) the moment they extend past
+   this element's own box — which is exactly what dropdowns do. */
 .app-bar-menu {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  overflow: hidden;
 }
 
 /* Legacy: .menu-bar is now a <nav> inside .app-title-bar
@@ -285,29 +289,53 @@ body.quiz-form-active .container {
 /* ── Submenu (nested dropdown inside a .menu-dropdown) ───────────────────── */
 
 /* The submenu trigger row: position:relative so child dropdown positions relative to it.
-   CRITICAL FIX: The hover is on the entire .menu-item-submenu row, including the
-   .menu-submenu-dropdown child — so moving the mouse directly into the submenu
-   keeps the parent .menu-item open (because the submenu is a descendant that inherits
-   the hover). We do NOT attach a mouseleave close-listener to .menu-dropdown itself;
+   We do NOT attach a mouseleave close-listener to .menu-dropdown itself;
    only the outer click listener and Escape key close menus. */
 .menu-item-submenu {
   position: relative;
 }
 
-/* Show the submenu on HOVER of the parent row (CSS-only, no JS required).
-   The submenu child is positioned next to its trigger; because it remains
-   inside the hovered subtree, moving into it preserves the :hover chain. */
+/* Show the submenu on HOVER of the parent row (CSS-only, no JS required). */
 .menu-item-submenu:hover > .menu-submenu-dropdown,
 .menu-item-submenu.menu-item-open > .menu-submenu-dropdown {
   display: block;
 }
 
-/* Submenu pops out to the LEFT in RTL layout (away from the sidebar). */
+/* Submenu pops out to the LEFT in RTL layout (away from the sidebar).
+   NOTE: the submenu is position:absolute, so it does NOT extend
+   .menu-item-submenu's own hoverable box — :hover only holds while the
+   pointer is over the trigger row or the submenu itself. The 2px gap below
+   (`right: calc(100% + 2px)`) is bare page with nothing hoverable under it,
+   which used to drop :hover — and close the submenu — the instant the
+   pointer crossed it. The ::after bridge just below fills that gap so the
+   hoverable area is continuous from trigger to submenu. */
 .menu-submenu-dropdown {
   top: -6px !important;
   right: calc(100% + 2px) !important;
   left: auto !important;
   min-width: 200px;
+}
+
+/* Invisible hover bridge: fills the 2px gap (plus a comfortable margin)
+   between the trigger row and the submenu with an unstyled, transparent
+   strip. It's a descendant of .menu-item-submenu, so the pointer stays
+   "inside" the hovered subtree while crossing the gap — no dead zone,
+   no visible change to the submenu's own box. */
+.menu-item-submenu::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 100%;
+  width: 14px;
+  z-index: 59;
+  /* Only needs to exist while the submenu could be open. */
+  display: none;
+}
+
+.menu-item-submenu:hover::after,
+.menu-item-submenu.menu-item-open::after {
+  display: block;
 }
 
 .menu-submenu-caret {
@@ -539,8 +567,19 @@ body.sidebar-expanded .global-md-bar {
   padding: 8px 0 0 0;
 }
 
+/* Plain stacking container for the entry screen's sections (new / drafts /
+   saved). Deliberately NOT a grid — each .entry-section stacks top-to-bottom;
+   the grid layout only applies inside each section's own .entry-items-grid. */
+.entry-sections {
+  display: block;
+}
+
 .entry-section {
   margin-bottom: 32px;
+}
+
+.entry-section:last-child {
+  margin-bottom: 0;
 }
 
 .entry-screen-heading {
