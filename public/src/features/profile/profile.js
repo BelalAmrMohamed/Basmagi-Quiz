@@ -508,8 +508,19 @@ function setupBioEditor(isAdmin) {
   const counterEl = document.getElementById("profileBioCounter");
   if (!wrapEl || !editBtn || !formEl || !textareaEl) return;
 
-  const currentBio = isAdmin ? window.fetchedAdminBio || "" : userProfile.getBio();
-  renderBioDisplay(currentBio);
+  // Read fresh at call time rather than captured once in a closure —
+  // setupBioEditor() runs synchronously in refreshUI(), before the async
+  // admin-stats fetch resolves, so a captured `const currentBio` here
+  // would freeze at "" for admins and never reflect a bio saved on a
+  // previous load. window.fetchedAdminBio is updated in place as soon as
+  // that fetch resolves (see fetchAndRenderAdminStats), so calling this
+  // again later — e.g. when the edit button is actually clicked — always
+  // returns the latest known value.
+  function getCurrentBio() {
+    return isAdmin ? window.fetchedAdminBio || "" : userProfile.getBio();
+  }
+
+  renderBioDisplay(getCurrentBio());
   // Own dashboard (admin or regular user) always shows the bio row, with
   // its empty-state prompt when unset — unlike visitor view (admin/dev
   // only; regular users have no shareable profile URL), which only
@@ -518,7 +529,7 @@ function setupBioEditor(isAdmin) {
   wrapEl.style.display = "flex";
 
   editBtn.onclick = () => {
-    textareaEl.value = currentBio;
+    textareaEl.value = getCurrentBio();
     updateCounter();
     wrapEl.style.display = "none";
     formEl.style.display = "flex";
