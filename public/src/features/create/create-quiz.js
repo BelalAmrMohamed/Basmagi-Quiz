@@ -348,19 +348,163 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get("edit");
   if (editId) {
+    // Deep-linked edit (?edit=<id>) always bypasses the entry screen and
+    // opens straight into the form, same as before this feature existed.
     editingQuizId = editId;
+    showQuizForm();
     loadQuizFromLocalStorage(editId);
   } else {
-    loadDraftFromLocalStorage();
+    showEntryScreen();
   }
 
-  updateEmptyState();
   setupEventListeners();
   setupKeyboardShortcuts();
-  updateProgress();
-  updateStatistics();
   mountAIHelper();
 });
+
+// ============================================================================
+// ENTRY SCREEN
+// ============================================================================
+
+/** Show the entry screen (new / resume draft / edit a saved quiz), hiding the form. */
+function showEntryScreen() {
+  const entryScreen = document.getElementById("entryScreen");
+  const form = document.getElementById("quizCreatorForm");
+  if (!entryScreen || !form) {
+    // Defensive fallback: if the entry screen markup is missing for any
+    // reason, don't strand the user on a blank page — go straight in.
+    loadDraftFromLocalStorage();
+    finishFormInit();
+    return;
+  }
+
+  form.style.display = "none";
+  entryScreen.style.display = "block";
+  document.getElementById("entryQuizPicker").style.display = "none";
+  document
+    .querySelector(".entry-screen-inner")
+    .style.removeProperty("display");
+
+  // "Resume draft" card — only offered if a draft actually exists.
+  let draft = null;
+  try {
+    draft = JSON.parse(localStorage.getItem("quiz_draft") || "null");
+  } catch (e) {
+    draft = null;
+  }
+  const draftTitle = draft?.meta?.title || draft?.title;
+  const draftCard = document.getElementById("entryCardDraft");
+  if (draftCard) {
+    draftCard.style.display = draftTitle || draft?.questions?.length ? "flex" : "none";
+    const descEl = document.getElementById("entryCardDraftDesc");
+    if (descEl && draftTitle) descEl.textContent = `"${draftTitle}"`;
+  }
+
+  // "Edit a saved quiz" card — only offered if user_quizzes has entries.
+  let userQuizzes = [];
+  try {
+    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+  } catch (e) {
+    userQuizzes = [];
+  }
+  const mineCard = document.getElementById("entryCardMine");
+  if (mineCard) {
+    mineCard.style.display = userQuizzes.length ? "flex" : "none";
+    const descEl = document.getElementById("entryCardMineDesc");
+    if (descEl) {
+      descEl.textContent =
+        userQuizzes.length === 1
+          ? "لديك امتحان واحد محفوظ"
+          : `لديك ${userQuizzes.length} امتحانات محفوظة`;
+    }
+  }
+}
+
+/** Hide the entry screen and reveal the quiz-creator form underneath. */
+function showQuizForm() {
+  const entryScreen = document.getElementById("entryScreen");
+  const form = document.getElementById("quizCreatorForm");
+  if (entryScreen) entryScreen.style.display = "none";
+  if (form) form.style.display = "block";
+}
+
+/** Run the same init steps the form previously did unconditionally on load. */
+function finishFormInit() {
+  showQuizForm();
+  updateEmptyState();
+  updateProgress();
+  updateStatistics();
+}
+
+/** Handles taps on the three entry cards ("new" | "draft" | "mine"). */
+window.chooseEntryAction = function (action) {
+  if (action === "new") {
+    resetPageData();
+    finishFormInit();
+    return;
+  }
+
+  if (action === "draft") {
+    finishFormInit();
+    loadDraftFromLocalStorage();
+    return;
+  }
+
+  if (action === "mine") {
+    renderEntryQuizPicker();
+  }
+};
+
+/** Show the flat list of the user's saved quizzes in place of the entry cards. */
+function renderEntryQuizPicker() {
+  let userQuizzes = [];
+  try {
+    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+  } catch (e) {
+    userQuizzes = [];
+  }
+
+  document.querySelector(".entry-screen-inner").style.display = "none";
+  const picker = document.getElementById("entryQuizPicker");
+  const list = document.getElementById("entryPickerList");
+  picker.style.display = "flex";
+
+  if (userQuizzes.length === 0) {
+    list.innerHTML = `<p class="entry-picker-empty">لا توجد امتحانات محفوظة بعد.</p>`;
+    return;
+  }
+
+  list.innerHTML = userQuizzes
+    .slice()
+    .reverse()
+    .map((quiz) => {
+      const title = escapeHtml(quiz.meta?.title || quiz.title || "بدون عنوان");
+      const count =
+        quiz.stats?.questionCount ?? quiz.questions?.length ?? 0;
+      const countLabel = `${count} ${count === 1 ? "سؤال" : "أسئلة"}`;
+      return `
+        <button type="button" class="entry-picker-item" onclick="chooseUserQuizToEdit('${quiz.id}')">
+          <span class="entry-picker-item-title">${title}</span>
+          <span class="entry-picker-item-meta">${countLabel}</span>
+        </button>`;
+    })
+    .join("");
+}
+
+/** Back arrow inside the "edit a saved quiz" picker — returns to the card grid. */
+window.closeEntryQuizPicker = function () {
+  document.getElementById("entryQuizPicker").style.display = "none";
+  document
+    .querySelector(".entry-screen-inner")
+    .style.removeProperty("display");
+};
+
+/** User picked a specific quiz from the "edit a saved quiz" list. */
+window.chooseUserQuizToEdit = function (quizId) {
+  editingQuizId = quizId;
+  finishFormInit();
+  loadQuizFromLocalStorage(quizId);
+};
 
 function setupEventListeners() {
   // Close modals on background click
@@ -431,23 +575,8 @@ function setupEventListeners() {
     });
   }
 
-  // Scroll detection for FAB
-  let lastScrollTop = 0;
-  window.addEventListener("scroll", () => {
-    const fabContainer = document.getElementById("fabContainer");
-    if (!fabContainer || quizData.questions.length < 3) return;
-
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-    // Show/hide based on scroll position
-    if (scrollTop > 300) {
-      fabContainer.style.display = "block";
-    } else {
-      fabContainer.style.display = "none";
-    }
-
-    lastScrollTop = scrollTop;
-  });
+  // Note: the FAB and its scroll-driven show/hide were removed when the
+  // "add question" action moved into the persistent top action bar.
 }
 
 // ============================================================================
@@ -889,6 +1018,63 @@ const MEDIA_EXT_MAP = {
   "video/ogg": "ogv",
 };
 
+/**
+ * Compress an image File in-browser using <canvas> before upload.
+ * Downscales to a max dimension and re-encodes as JPEG at a given quality.
+ * Returns the smaller of {compressed, original} — never makes things worse.
+ * Skips SVG (vector) and GIF (animation would be flattened to one frame).
+ */
+async function compressImageFile(
+  file,
+  { maxDim = 1600, quality = 0.82, qualityFloor = 0.6 } = {},
+) {
+  if (!file || !file.type) return file;
+  if (file.type === "image/svg+xml" || file.type === "image/gif") {
+    return file;
+  }
+
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch (err) {
+    console.warn("[compressImageFile] decode failed, using original", err);
+    return file;
+  }
+
+  try {
+    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(bitmap, 0, 0, w, h);
+
+    const blob = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b), "image/jpeg", Math.max(quality, qualityFloor));
+    });
+
+    if (!blob) return file;
+
+    // Only use the compressed version if it's actually smaller.
+    if (blob.size >= file.size) return file;
+
+    const ext = "jpg";
+    const baseName = file.name ? file.name.replace(/\.[^.]+$/, "") : "image";
+    return new File([blob], `${baseName}.${ext}`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch (err) {
+    console.warn("[compressImageFile] compression failed, using original", err);
+    return file;
+  } finally {
+    bitmap.close?.();
+  }
+}
+
 /** Detect media type ("image"|"audio"|"video"|null) from a File's MIME type. */
 function detectMediaTypeFromFile(file) {
   if (!file || !file.type) return null;
@@ -1081,7 +1267,8 @@ window.handleCombinedMediaDrop = function (e, questionId) {
  * type (image/audio/video) from its MIME type, then route it into the
  * matching question field. No Vercel serverless function needed.
  */
-async function uploadCombinedMediaFile(questionId, file) {
+async function uploadCombinedMediaFile(questionId, inputFile) {
+  let file = inputFile;
   const mediaType = detectMediaTypeFromFile(file);
   if (!mediaType) {
     showNotification(
@@ -1102,6 +1289,14 @@ async function uploadCombinedMediaFile(questionId, file) {
     `media-upload-progress-text-${questionId}`,
   );
   const zone = document.getElementById(`media-dropzone-${questionId}`);
+
+  if (mediaType === "image") {
+    if (progressEl) progressEl.style.display = "flex";
+    if (progressBar) progressBar.style.width = "10%";
+    if (progressTxt) progressTxt.textContent = "جاري ضغط الصورة...";
+    if (zone) zone.style.opacity = "0.5";
+    file = await compressImageFile(file);
+  }
 
   if (file.size > MEDIA_MAX_SIZE[mediaType]) {
     const maxMb = MEDIA_MAX_SIZE[mediaType] / (1024 * 1024);
@@ -1872,21 +2067,16 @@ function updateEmptyState() {
   const emptyState = document.getElementById("emptyState");
   const questionControls = document.getElementById("questionControls");
   const addQuestionBottom = document.getElementById("addQuestionBottom");
-  const fabContainer = document.getElementById("fabContainer");
   const questionBadge = document.getElementById("questionBadge");
 
   if (quizData.questions.length === 0) {
     emptyState.classList.remove("hidden");
     if (questionControls) questionControls.style.display = "none";
     if (addQuestionBottom) addQuestionBottom.style.display = "none";
-    if (fabContainer) fabContainer.style.display = "none";
   } else {
     emptyState.classList.add("hidden");
     if (questionControls) questionControls.style.display = "block";
     if (addQuestionBottom) addQuestionBottom.style.display = "flex";
-    if (fabContainer && quizData.questions.length >= 3) {
-      fabContainer.style.display = "block";
-    }
   }
 
   if (questionBadge) {

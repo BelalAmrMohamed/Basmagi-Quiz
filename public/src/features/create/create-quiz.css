@@ -178,6 +178,163 @@ body.sidebar-expanded {
          QUIZ CREATOR SECTIONS
          ============================================================================ */
 
+/* ============================================================================
+   ENTRY SCREEN
+   ============================================================================ */
+
+.entry-screen {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+  margin-bottom: 24px;
+}
+
+.entry-screen-inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.entry-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: right;
+  font-family: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.entry-card:hover,
+.entry-card:focus-visible {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.entry-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.entry-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.entry-card-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.entry-card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.entry-card-desc {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+/* "Edit a saved quiz" picker replaces the card grid in place */
+.entry-quiz-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.entry-picker-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.entry-picker-back:hover {
+  color: var(--color-primary);
+}
+
+.entry-picker-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.entry-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.entry-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--color-background);
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: right;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s ease;
+}
+
+.entry-picker-item:hover,
+.entry-picker-item:focus-visible {
+  border-color: var(--color-primary);
+}
+
+.entry-picker-item-title {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.entry-picker-item-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.entry-picker-empty {
+  color: var(--color-text-tertiary);
+  text-align: center;
+  padding: 24px 0;
+}
+
+@media (max-width: 480px) {
+  .entry-screen {
+    padding: 18px;
+  }
+
+  .entry-screen-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
 .quiz-creator {
   display: flex;
   flex-direction: column;
@@ -858,7 +1015,9 @@ body.sidebar-expanded {
   box-shadow: var(--shadow-xl);
 }
 
-/* Floating Action Button (FAB) */
+/* Floating Action Button (FAB) — markup removed; "add question" now lives in
+   .top-action-bar. Rules kept (unreferenced) rather than pruned, since other
+   selectors in this file are known to overlap by type/class. */
 .fab-container {
   position: fixed;
   bottom: 30px;
@@ -1601,6 +1760,99 @@ body.sidebar-expanded {
   background: var(--color-border);
   margin: 20px 0;
   border-radius: 2px;
+}
+
+/* ============================================================================
+   TOP ACTION BAR (consolidated, icon-only)
+   Replaces the old .action-bar card + the add-question-bottom's own toolbar
+   role; add-question-bottom itself (the inline prompt at the end of the
+   question list) stays, since it answers a different moment than this bar.
+   ============================================================================ */
+
+.top-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 20px 0;
+}
+
+.top-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.top-action-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--color-border);
+  flex-shrink: 0;
+}
+
+.top-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.top-action-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.top-action-btn:hover,
+.top-action-btn:focus-visible {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.top-action-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+.top-action-btn:active {
+  transform: scale(0.95);
+}
+
+.top-action-btn-primary {
+  color: var(--color-primary);
+}
+
+.top-action-btn-primary:hover,
+.top-action-btn-primary:focus-visible {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.top-action-btn-danger:hover,
+.top-action-btn-danger:focus-visible {
+  background: var(--color-error-light);
+  color: var(--color-error);
+}
+
+/* Native title="" attribute already provides a tooltip; this just makes the
+   bar comfortable to scan on narrow screens instead of wrapping labels. */
+@media (max-width: 480px) {
+  .top-action-bar {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 /* ============================================================================

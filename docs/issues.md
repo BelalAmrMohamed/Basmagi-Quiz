@@ -71,8 +71,9 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 - The search icon disappears when I enter a course that only has subfolders in its first level, this issue is probably due to the folders & courses not being actual objects in the DB, we may choose to solve this issue after we migrate the whole platform to be DB quizzes only, and give up on relative-path quizzes uploaded with the code.
 
 ### Admin actions and deletion flow (New Features)
-- Admins should be able to delete folders and courses from the main quizzes area.
-- Deletion should not be immediate; a trash or recovery workflow is needed.
+- Admins should be able to delete folders and courses from the main quizzes area. Admin can currently delete quizzes.
+- Deletion should not be immediate; a trash can or recovery workflow is needed for courses, folders and quizzes.
+- Trash can or recovery workflow for the user-quizzes section `/@my-quizzes` first.
 - The trash can should support recovery, configurable retention time, emptying, and permanent deletion.
 - Deleting a quiz must remove all associated media files as well.
 - Similar consideration should be given to the “امتحاناتك” section.
@@ -87,15 +88,6 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
   - ميمز تشجيع سلبية
   - ميمز تشجيع إيجابية
 
-### Quiz creation page optimization
-- Compress images client-side before uploading to the Supabase free tier.
-- Convert images to highly compressed JPEG files without significant quality loss where possible.
-- Compress audio files when practical.
-- Google Docs like initial page with the options to 
-  - Start creating a new quiz
-  - edit last draft
-  - edit a quiz from userquizzes
-
 ### Markdown engine enhancement
 - Update the markdown engine to behave more like GitHub markdown rendering, with embeded media like vidoes, audio, and images.
 - It should be implemented after implementing media inside the quiz body in the `quiz.html` page.
@@ -103,6 +95,7 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
   - The `export-to-quiz.js` feature renders media inside the question body, and doesn't rerender the question after each interaction, so you can learn from it.
 - After implementing this feature, migrate all quizzes to embed the media in the question body itself, and delete all legacy code related to the object media rendering, because now media will be in the question body itself.
 - This will allow quiz creators to add multiple pieces of media to each question.
+- Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos. 
 
 ### User upload flow
 - Allow normal users to upload quizzes as a new feature.

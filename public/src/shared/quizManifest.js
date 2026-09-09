@@ -153,18 +153,26 @@ export async function getManifest() {
   try {
     const { quizzes, courses, folders } = await fetchDbManifest(liveTimeout);
     saveManifestCache({ quizzes, courses, folders });
-    subjects = await buildSubjects(quizzes, courses, folders);
+    // buildSubjects() returns { subjects: [...] } (see its docstring/return
+    // statement below) — unwrap here so `subjects` is the plain array
+    // buildCompatStructures() expects (@param {Subject[]} subjects).
+    // Passing the wrapper object through unwrapped previously caused
+    // "TypeError: subjects is not iterable" — but only once a live/snapshot
+    // fetch actually succeeded and reached buildCompatStructures(), so it
+    // never surfaced during the Supabase outage itself (the throw/timeout
+    // path was hit first every time).
+    ({ subjects } = await buildSubjects(quizzes, courses, folders));
   } catch (err) {
     if (!snapshot) throw err;
     console.warn(
       "[quizManifest] Live manifest failed — serving last-good snapshot:",
       err,
     );
-    subjects = await buildSubjects(
+    ({ subjects } = await buildSubjects(
       snapshot.quizzes,
       snapshot.courses,
       snapshot.folders,
-    );
+    ));
     fromCache = true;
   }
 
