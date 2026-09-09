@@ -359,6 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupEventListeners();
   setupKeyboardShortcuts();
+  setupMenuBarListeners();
   mountAIHelper();
 });
 
@@ -366,10 +367,16 @@ document.addEventListener("DOMContentLoaded", () => {
 // ENTRY SCREEN
 // ============================================================================
 
-/** Show the entry screen (new / resume draft / edit a saved quiz), hiding the form. */
+/**
+ * Build the Google-Docs-style "recent items" grid: a "Blank quiz" tile plus
+ * one tile per saved item (the current draft, if any, and every quiz in
+ * user_quizzes), newest first. Replaces the old three-fixed-cards layout.
+ */
 function showEntryScreen() {
   const entryScreen = document.getElementById("entryScreen");
   const form = document.getElementById("quizCreatorForm");
+  const appTitleBar = document.getElementById("appTitleBar");
+  const menuBar = document.getElementById("menuBar");
   if (!entryScreen || !form) {
     // Defensive fallback: if the entry screen markup is missing for any
     // reason, don't strand the user on a blank page — go straight in.
@@ -379,53 +386,151 @@ function showEntryScreen() {
   }
 
   form.style.display = "none";
+  if (appTitleBar) appTitleBar.style.display = "none";
+  if (menuBar) menuBar.style.display = "none";
   entryScreen.style.display = "block";
-  document.getElementById("entryQuizPicker").style.display = "none";
-  document
-    .querySelector(".entry-screen-inner")
-    .style.removeProperty("display");
 
-  // "Resume draft" card — only offered if a draft actually exists.
+  renderEntryItemsGrid();
+}
+
+/** Read the draft + saved quizzes and render them as one recent-items grid. */
+function renderEntryItemsGrid() {
+  const grid = document.getElementById("entryItemsGrid");
+  if (!grid) return;
+
   let draft = null;
   try {
     draft = JSON.parse(localStorage.getItem("quiz_draft") || "null");
   } catch (e) {
     draft = null;
   }
-  const draftTitle = draft?.meta?.title || draft?.title;
-  const draftCard = document.getElementById("entryCardDraft");
-  if (draftCard) {
-    draftCard.style.display = draftTitle || draft?.questions?.length ? "flex" : "none";
-    const descEl = document.getElementById("entryCardDraftDesc");
-    if (descEl && draftTitle) descEl.textContent = `"${draftTitle}"`;
-  }
 
-  // "Edit a saved quiz" card — only offered if user_quizzes has entries.
   let userQuizzes = [];
   try {
     userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
   } catch (e) {
     userQuizzes = [];
   }
-  const mineCard = document.getElementById("entryCardMine");
-  if (mineCard) {
-    mineCard.style.display = userQuizzes.length ? "flex" : "none";
-    const descEl = document.getElementById("entryCardMineDesc");
-    if (descEl) {
-      descEl.textContent =
-        userQuizzes.length === 1
-          ? "لديك امتحان واحد محفوظ"
-          : `لديك ${userQuizzes.length} امتحانات محفوظة`;
-    }
+
+  const items = [];
+
+  const draftHasContent =
+    draft && (draft.meta?.title || draft.title || draft.questions?.length);
+  if (draftHasContent) {
+    items.push({
+      kind: "draft",
+      id: null,
+      title: draft.meta?.title || draft.title || "بدون عنوان",
+      count: draft.questions?.length || 0,
+      updatedAt: draft.lastModified || null,
+    });
   }
+
+  userQuizzes.forEach((quiz) => {
+    items.push({
+      kind: "mine",
+      id: quiz.id,
+      title: quiz.meta?.title || quiz.title || "بدون عنوان",
+      count: quiz.stats?.questionCount ?? quiz.questions?.length ?? 0,
+      // Only the new ISO meta.updatedAt is safe to parse as a Date — the
+      // legacy meta.createdAt is a locale display string (see
+      // quiz-info-html.js's formatDateForInfo), not reliably parseable, so
+      // older quizzes without updatedAt simply show no date, not a wrong one.
+      updatedAt: quiz.meta?.updatedAt || null,
+    });
+  });
+
+  // Newest first, unknown dates last.
+  items.sort((a, b) => {
+    if (!a.updatedAt && !b.updatedAt) return 0;
+    if (!a.updatedAt) return 1;
+    if (!b.updatedAt) return -1;
+    return new Date(b.updatedAt) - new Date(a.updatedAt);
+  });
+
+  const newTile = `
+    <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
+      <span class="entry-item-thumb entry-item-thumb-new">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </svg>
+      </span>
+      <span class="entry-item-title">امتحان فارغ</span>
+    </button>`;
+
+  const itemTiles = items
+    .map((item) => {
+      const title = escapeHtml(item.title);
+      const countLabel = `${item.count} ${item.count === 1 ? "سؤال" : "أسئلة"}`;
+      const dateLabel = formatEntryItemDate(item.updatedAt);
+      const meta = [countLabel, dateLabel].filter(Boolean).join(" · ");
+      const clickHandler =
+        item.kind === "draft"
+          ? "chooseEntryAction('draft')"
+          : `chooseUserQuizToEdit('${item.id}')`;
+      const badge =
+        item.kind === "draft"
+          ? '<span class="entry-item-badge">مسودة</span>'
+          : "";
+      return `
+        <button type="button" class="entry-item" onclick="${clickHandler}">
+          <span class="entry-item-thumb">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <path d="M12 11h4" />
+              <path d="M12 16h4" />
+              <path d="M8 11h.01" />
+              <path d="M8 16h.01" />
+            </svg>
+            ${badge}
+          </span>
+          <span class="entry-item-title">${title}</span>
+          <span class="entry-item-meta">${meta}</span>
+        </button>`;
+    })
+    .join("");
+
+  grid.innerHTML = newTile + itemTiles;
 }
 
-/** Hide the entry screen and reveal the quiz-creator form underneath. */
+/** "منذ ٣ أيام"-style relative label, falling back to a short date. */
+function formatEntryItemDate(isoString) {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return "";
+
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "الآن";
+  if (diffMin < 60) return `منذ ${diffMin} دقيقة`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `منذ ${diffHr} ساعة`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 30) return `منذ ${diffDay} يوم`;
+  return date.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" });
+}
+
+/** Hide the entry screen and reveal the quiz-creator form + app bar underneath. */
 function showQuizForm() {
   const entryScreen = document.getElementById("entryScreen");
   const form = document.getElementById("quizCreatorForm");
+  const appTitleBar = document.getElementById("appTitleBar");
+  const menuBar = document.getElementById("menuBar");
   if (entryScreen) entryScreen.style.display = "none";
   if (form) form.style.display = "block";
+  if (appTitleBar) appTitleBar.style.display = "flex";
+  if (menuBar) menuBar.style.display = "flex";
+  updateAppTitleBar();
+}
+
+/** Keep the compact app-bar title in sync with the quiz's own title field. */
+function updateAppTitleBar() {
+  const titleEl = document.getElementById("appTitleText");
+  if (titleEl) titleEl.textContent = quizData.title?.trim() || "امتحان بدون عنوان";
 }
 
 /** Run the same init steps the form previously did unconditionally on load. */
@@ -436,7 +541,7 @@ function finishFormInit() {
   updateStatistics();
 }
 
-/** Handles taps on the three entry cards ("new" | "draft" | "mine"). */
+/** Handles taps on entry-screen tiles ("new" | "draft" | "exit"). */
 window.chooseEntryAction = function (action) {
   if (action === "new") {
     resetPageData();
@@ -450,61 +555,72 @@ window.chooseEntryAction = function (action) {
     return;
   }
 
-  if (action === "mine") {
-    renderEntryQuizPicker();
+  if (action === "exit") {
+    // The app-bar "home" button: go back to the entry screen without
+    // discarding anything — autosave already keeps quiz_draft current.
+    showEntryScreen();
   }
 };
 
-/** Show the flat list of the user's saved quizzes in place of the entry cards. */
-function renderEntryQuizPicker() {
-  let userQuizzes = [];
-  try {
-    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
-  } catch (e) {
-    userQuizzes = [];
-  }
-
-  document.querySelector(".entry-screen-inner").style.display = "none";
-  const picker = document.getElementById("entryQuizPicker");
-  const list = document.getElementById("entryPickerList");
-  picker.style.display = "flex";
-
-  if (userQuizzes.length === 0) {
-    list.innerHTML = `<p class="entry-picker-empty">لا توجد امتحانات محفوظة بعد.</p>`;
-    return;
-  }
-
-  list.innerHTML = userQuizzes
-    .slice()
-    .reverse()
-    .map((quiz) => {
-      const title = escapeHtml(quiz.meta?.title || quiz.title || "بدون عنوان");
-      const count =
-        quiz.stats?.questionCount ?? quiz.questions?.length ?? 0;
-      const countLabel = `${count} ${count === 1 ? "سؤال" : "أسئلة"}`;
-      return `
-        <button type="button" class="entry-picker-item" onclick="chooseUserQuizToEdit('${quiz.id}')">
-          <span class="entry-picker-item-title">${title}</span>
-          <span class="entry-picker-item-meta">${countLabel}</span>
-        </button>`;
-    })
-    .join("");
-}
-
-/** Back arrow inside the "edit a saved quiz" picker — returns to the card grid. */
-window.closeEntryQuizPicker = function () {
-  document.getElementById("entryQuizPicker").style.display = "none";
-  document
-    .querySelector(".entry-screen-inner")
-    .style.removeProperty("display");
-};
-
-/** User picked a specific quiz from the "edit a saved quiz" list. */
+/** User picked a specific saved quiz tile from the entry screen. */
 window.chooseUserQuizToEdit = function (quizId) {
   editingQuizId = quizId;
   finishFormInit();
   loadQuizFromLocalStorage(quizId);
 };
+
+// ============================================================================
+// MENU BAR (Docs-style dropdowns)
+// ============================================================================
+
+/** Open the named dropdown, closing any other open one first. */
+window.toggleMenu = function (name) {
+  const dropdown = document.getElementById(`menu-${name}`);
+  const item = dropdown?.closest(".menu-item");
+  if (!dropdown || !item) return;
+
+  const isOpen = item.classList.contains("menu-item-open");
+  closeAllMenus();
+  if (!isOpen) {
+    item.classList.add("menu-item-open");
+  }
+};
+
+/** Close every open menu dropdown. Safe to call even if none are open. */
+window.closeAllMenus = function () {
+  document
+    .querySelectorAll(".menu-item.menu-item-open")
+    .forEach((item) => item.classList.remove("menu-item-open"));
+};
+
+/** Click-outside and Escape-to-close wiring for the menu bar, plus
+ * hover-to-switch between menus once one is already open (matches the
+ * feel of Docs' own menu bar: click opens, then hovering a sibling
+ * menu switches without a second click). */
+function setupMenuBarListeners() {
+  const menuBar = document.getElementById("menuBar");
+  if (!menuBar) return;
+
+  document.addEventListener("click", (e) => {
+    if (!menuBar.contains(e.target)) {
+      closeAllMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllMenus();
+  });
+
+  menuBar.querySelectorAll(".menu-item").forEach((item) => {
+    item.addEventListener("mouseenter", () => {
+      const anyOpen = menuBar.querySelector(".menu-item-open");
+      if (anyOpen && anyOpen !== item) {
+        anyOpen.classList.remove("menu-item-open");
+        item.classList.add("menu-item-open");
+      }
+    });
+  });
+}
 
 function setupEventListeners() {
   // Close modals on background click
@@ -529,10 +645,12 @@ function setupEventListeners() {
     // Shortcuts Panel
     const shortcutsPanel = document.getElementById("shortcutsPanel");
     if (shortcutsPanel && shortcutsPanel.style.display === "block") {
-      // Allow clicking the toggle button without immediately closing it
+      // Allow clicking either toggle button (help-panel close btn, or the
+      // "مساعدة" menu item) without immediately re-closing what it just opened.
       if (
         !shortcutsPanel.contains(e.target) &&
-        !e.target.closest('button[onclick="toggleShortcuts()"]')
+        !e.target.closest('button[onclick^="toggleShortcuts()"]') &&
+        !e.target.closest('button[onclick^="toggleShortcuts();"]')
       ) {
         toggleShortcuts();
       }
@@ -547,6 +665,7 @@ function setupEventListeners() {
   titleInput.addEventListener("input", (e) => {
     quizData.title = e.target.value;
     updateCharCount("titleCharCount", e.target.value.length, 100);
+    updateAppTitleBar();
     autosave();
   });
 
@@ -2537,6 +2656,10 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   const meta = {
     title: quizToSave.title?.trim() || "Untitled",
     createdAt: existingCreatedAt || new Date().toLocaleString("en-US"),
+    // ISO timestamp, distinct from the legacy locale-string createdAt above
+    // (which other pages parse/display and I don't want to risk changing).
+    // Used only by the entry screen's "recent items" sort/relative-date label.
+    updatedAt: new Date().toISOString(),
   };
   if (quizToSave.description?.trim())
     meta.description = quizToSave.description.trim();

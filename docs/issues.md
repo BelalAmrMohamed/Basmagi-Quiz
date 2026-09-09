@@ -77,7 +77,9 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 - The trash can should support recovery, configurable retention time, emptying, and permanent deletion.
 - Deleting a quiz must remove all associated media files as well.
 - Similar consideration should be given to the “امتحاناتك” section.
-- So new trash can for main quizzes (shared), and new trash can for users “امتحاناتك” section
+- So new trash can for main quizzes (shared), and new trash can for users “امتحاناتك” section.
+- Admins should be able to Edit quizzes public quizzes, these needs a new button on quizzes, and create-quiz page update.
+- Admins should be able to move folders and quizzes (similar to the امتحاناتك section)
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.
