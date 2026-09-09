@@ -25,6 +25,14 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something. ![screenshot](image-5.png)
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png)
 
+1. "Continue to esdfdzhtavraczrhxnmp.supabase.co" — this can't be fixed in code
+
+Confirmed via Supabase's own docs/issue tracker: Google's OAuth consent screen always shows the domain of the OAuth callback URL, and with Supabase Auth that's always https://<project-ref>.supabase.co — there is no application-side setting that changes it. There are exactly two real fixes, both outside this codebase:
+
+Google OAuth consent screen verification (free) — in Google Cloud Console → OAuth consent screen, set your app name/logo and go through Google's verification process. Once verified, Google shows your app name ("منصة امتحانات بصمجي") instead of the raw domain, even while the domain stays *.supabase.co underneath. Several teams in the Supabase community got this working for free this way.
+
+### But a transition on the `.sidebar-brand-link` when opening/closing side-menu on desktops.
+
 
 ### AI Agnet Error 
 - ![screenshot 1](image-1.png)

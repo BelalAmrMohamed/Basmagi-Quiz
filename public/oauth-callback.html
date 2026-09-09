@@ -65,9 +65,55 @@
     <script type="module">
         import { SUPABASE_URL, SUPABASE_ANON_KEY } from './src/shared/public-config.js';
 
+        // ── localhost-only opener fallback ──────────────────────────────────
+        // WHY THIS EXISTS: window.opener is reliably present in production
+        // (Vercel/HTTPS), but under `vercel dev` on http://localhost this
+        // popup can come back from Google's cross-origin accounts.google.com
+        // hop with window.opener already severed by the browser's
+        // Cross-Origin-Opener-Policy isolation — a known Chromium behavior
+        // for popup-based OAuth (see COOP docs: a cross-origin document
+        // opened in a new browsing context group loses window.opener).
+        // Without this, the old code below (`if (!window.opener) location =
+        // '/'`) treated a severed-but-real opener exactly like a
+        // direct-navigation case and self-navigated THIS popup to the
+        // homepage — producing a second, already-signed-in tab instead of
+        // reporting back to the original one.
+        //
+        // Fix: this popup and its opener are same-origin (both
+        // localhost:8080), so they already share localStorage — the
+        // Supabase SDK just wrote the real session there via
+        // persistSession:true below. We piggyback a small explicit
+        // "handoff" key on top of that same channel: write the result here,
+        // and sign-in.js listens for the resulting `storage` event as a
+        // fallback alongside its normal postMessage listener. This never
+        // fires in production (postMessage always wins there since
+        // window.opener stays intact), so production behavior — and the
+        // popup UX for real users — is completely unchanged.
+        const OAUTH_HANDOFF_KEY = 'bq_oauth_handoff';
+        const isLocalhost =
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1';
+
+        function writeLocalHandoff(payload) {
+            if (!isLocalhost) return;
+            try {
+                localStorage.setItem(
+                    OAUTH_HANDOFF_KEY,
+                    JSON.stringify({ ...payload, ts: Date.now() }),
+                );
+            } catch (_) { }
+        }
+
         (async function handleOAuthCallback() {
-            // If opened without an opener (direct navigation), send user to the main page
-            if (!window.opener || window.opener.closed) {
+            const hasOpener = !!(window.opener && !window.opener.closed);
+
+            // Only treat this as "opened without an opener at all" (direct
+            // navigation, e.g. someone bookmarked this URL) when we're NOT
+            // on localhost — there, a missing opener might just be COOP
+            // severing a real one, which the handoff-key path above/below
+            // still lets us recover from instead of assuming there's no
+            // waiting sign-in dialog to report back to.
+            if (!hasOpener && !isLocalhost) {
                 window.location.href = '/';
                 return;
             }
@@ -119,21 +165,31 @@
                     throw new Error('تعذّر الحصول على جلسة بعد تسجيل الدخول');
                 }
 
-                // Notify the opener and close this popup
-                window.opener.postMessage(
-                    { type: 'BQ_OAUTH_SUCCESS', session },
-                    targetOrigin
-                );
+                // Notify the opener via postMessage when we have a live
+                // reference to it (production path, unchanged). Always also
+                // write the localhost-only handoff key — harmless/no-op in
+                // production (isLocalhost is false there), and the fallback
+                // sign-in.js needs on localhost when hasOpener is false.
+                if (hasOpener) {
+                    window.opener.postMessage(
+                        { type: 'BQ_OAUTH_SUCCESS', session },
+                        targetOrigin
+                    );
+                }
+                writeLocalHandoff({ type: 'BQ_OAUTH_SUCCESS', session });
                 window.close();
             } catch (err) {
                 console.error('[oauth-callback] Error:', err);
                 // Notify opener of failure so it can reset button state
-                try {
-                    window.opener.postMessage(
-                        { type: 'BQ_OAUTH_ERROR', error: err.message },
-                        targetOrigin
-                    );
-                } catch (_) { }
+                if (hasOpener) {
+                    try {
+                        window.opener.postMessage(
+                            { type: 'BQ_OAUTH_ERROR', error: err.message },
+                            targetOrigin
+                        );
+                    } catch (_) { }
+                }
+                writeLocalHandoff({ type: 'BQ_OAUTH_ERROR', error: err.message });
 
                 const errEl = document.getElementById('errorMsg');
                 errEl.textContent = 'حدث خطأ: ' + (err.message || 'غير معروف');

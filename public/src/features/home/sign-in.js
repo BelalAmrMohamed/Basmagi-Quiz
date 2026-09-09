@@ -32,6 +32,7 @@ let _ssoPopup = null;
 let _ssoPopupPollInterval = null;
 let _ssoMessageHandler = null;
 let _ssoTimeoutId = null; // Bug 2 fix: hard timeout tracker
+let _ssoStorageHandler = null; // localhost-only fallback — see _handleSSO()
 
 // Resend OTP cooldown tracking (Bug 3 fix)
 let _resendOtpTimeoutId = null;
@@ -187,7 +188,7 @@ async function _handleNonAdminRejection(errorMsg) {
   if (_supabaseClient) {
     try {
       await _supabaseClient.auth.signOut();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Belt-and-suspenders: clear all Supabase auth keys from localStorage
@@ -196,7 +197,7 @@ async function _handleNonAdminRejection(errorMsg) {
       (k) => k.startsWith("sb-") && k.endsWith("-auth-token")
     );
     keysToRemove.forEach((k) => localStorage.removeItem(k));
-  } catch (_) {}
+  } catch (_) { }
 
   // 3. Show the error in the dialog — do NOT reload (no loop trigger)
   _showError(errorMsg || "هذا الحساب ليس لديه صلاحيات المشرف.");
@@ -383,6 +384,10 @@ function _cleanupSSOState() {
     window.removeEventListener("message", _ssoMessageHandler);
     _ssoMessageHandler = null;
   }
+  if (_ssoStorageHandler) {
+    window.removeEventListener("storage", _ssoStorageHandler);
+    _ssoStorageHandler = null;
+  }
   // Bug 2 fix: clear hard timeout so it doesn't fire after normal completion
   if (_ssoTimeoutId) {
     clearTimeout(_ssoTimeoutId);
@@ -422,8 +427,57 @@ function _fallbackFullPageRedirect(provider) {
   })();
 }
 
+// Tracks whether the current SSO attempt has already been resolved, so
+// that if both the postMessage listener and the localhost `storage`
+// fallback ever fire for the same result (e.g. a browser that keeps
+// window.opener AND still emits the storage event), the second arrival is
+// a harmless no-op instead of double-running signInWithSupabase() /
+// _onSignedIn(). Reset at the start of every _handleSSO() attempt.
+let _ssoResultHandled = false;
+
+// Shared handler for a completed OAuth attempt, regardless of which
+// channel it arrived on (window postMessage from oauth-callback.html, or
+// the localhost-only localStorage handoff — see _handleSSO() below for
+// why both exist). `data` is the same shape either way:
+// { type: 'BQ_OAUTH_SUCCESS', session } or { type: 'BQ_OAUTH_ERROR', error }.
+async function _handleOAuthResult(data, provider) {
+  if (_ssoResultHandled) return;
+
+  if (data?.type === "BQ_OAUTH_SUCCESS") {
+    _ssoResultHandled = true;
+    _cleanupSSOState();
+    // Bug 1 fix: do NOT call _setSSOLoading(false) here — wait for the
+    // async signInWithSupabase call to finish first (see below).
+
+    const session = data.session;
+    if (session?.access_token) {
+      const ok = await signInWithSupabase(session.access_token);
+      // Bug 1 fix: buttons re-enabled only NOW, after the check resolves
+      _setSSOLoading(false, provider);
+      if (!ok) {
+        await _handleNonAdminRejection("هذا الحساب ليس لديه صلاحيات المشرف.");
+        return;
+      }
+      _onSignedIn();
+    } else {
+      // No access_token in the message — re-enable buttons defensively
+      _setSSOLoading(false, provider);
+      _showError("لم يتم استلام بيانات الجلسة. حاول مرة أخرى.");
+    }
+  } else if (data?.type === "BQ_OAUTH_ERROR") {
+    _ssoResultHandled = true;
+    _cleanupSSOState();
+    _setSSOLoading(false, provider);
+    _showError("فشل تسجيل الدخول: " + (data.error || "خطأ غير معروف"));
+  }
+}
+
 function _handleSSO(provider) {
   if (!_supabaseClient) return;
+
+  // Fresh attempt — clear any stale "already handled" flag from a
+  // previous SSO attempt in this dialog session.
+  _ssoResultHandled = false;
 
   // 1. Open blank popup SYNCHRONOUSLY to beat popup blocker
   // Bug 4 fix: removed `noreferrer` — it's browser-inconsistent and breaks
@@ -476,7 +530,7 @@ function _handleSSO(provider) {
       } catch (navErr) {
         // Zombie window cleanup: close the stuck blank popup
         console.warn("[sign-in-dialog] Popup navigation blocked:", navErr.message);
-        try { _ssoPopup.close(); } catch (_) {}
+        try { _ssoPopup.close(); } catch (_) { }
         _cleanupSSOState();
         _setSSOLoading(false, provider);
         // Fall back to full-page redirect
@@ -484,44 +538,52 @@ function _handleSSO(provider) {
         return;
       }
 
-      // 4. Listen for postMessage from oauth-callback.html
+      // 4. Listen for postMessage from oauth-callback.html (production +
+      //    everywhere window.opener survives the round trip intact).
       // Bug 1 fix: _setSSOLoading(false) is moved to AFTER signInWithSupabase
       // resolves so the SSO buttons stay disabled during the async admin check,
       // preventing a second click from starting a concurrent sign-in attempt.
-      _ssoMessageHandler = async (event) => {
+      //
+      // _handleOAuthResult (below) is shared with the localhost-only
+      // `storage` fallback so both paths funnel through identical
+      // success/error handling — only how the result arrives differs.
+      _ssoMessageHandler = (event) => {
         // Only trust messages from our own origin
         if (event.origin !== window.location.origin) return;
-
-        if (event.data?.type === "BQ_OAUTH_SUCCESS") {
-          _cleanupSSOState();
-          // Bug 1 fix: do NOT call _setSSOLoading(false) here — wait for the
-          // async signInWithSupabase call to finish first (see below).
-
-          const session = event.data.session;
-          if (session?.access_token) {
-            const ok = await signInWithSupabase(session.access_token);
-            // Bug 1 fix: buttons re-enabled only NOW, after the check resolves
-            _setSSOLoading(false, provider);
-            if (!ok) {
-              await _handleNonAdminRejection(
-                "هذا الحساب ليس لديه صلاحيات المشرف."
-              );
-              return;
-            }
-            _onSignedIn();
-          } else {
-            // No access_token in the message — re-enable buttons defensively
-            _setSSOLoading(false, provider);
-            _showError("لم يتم استلام بيانات الجلسة. حاول مرة أخرى.");
-          }
-        } else if (event.data?.type === "BQ_OAUTH_ERROR") {
-          _cleanupSSOState();
-          _setSSOLoading(false, provider);
-          _showError("فشل تسجيل الدخول: " + (event.data.error || "خطأ غير معروف"));
-        }
+        _handleOAuthResult(event.data, provider);
       };
-
       window.addEventListener("message", _ssoMessageHandler);
+
+      // 4b. localhost-only fallback: oauth-callback.html writes the same
+      // result to localStorage (see its OAUTH_HANDOFF_KEY) right alongside
+      // postMessage. On production this listener simply never fires first
+      // — postMessage always wins there since window.opener stays intact
+      // — so this is purely additive and changes nothing for real users.
+      // It only matters under `vercel dev` on http://localhost, where a
+      // cross-origin round trip through Google's accounts.google.com can
+      // come back with window.opener severed (Cross-Origin-Opener-Policy
+      // isolation), which previously left oauth-callback.html unable to
+      // reach this tab at all and made it self-navigate to "/" instead —
+      // the "second signed-in window" this fixes.
+      const OAUTH_HANDOFF_KEY = "bq_oauth_handoff";
+      _ssoStorageHandler = (event) => {
+        if (event.key !== OAUTH_HANDOFF_KEY || !event.newValue) return;
+        let payload;
+        try {
+          payload = JSON.parse(event.newValue);
+        } catch (_) {
+          return;
+        }
+        // Consume immediately — a stray leftover value should never be
+        // replayed into a later, unrelated sign-in attempt (storage events
+        // only fire on change, but a page freshly loaded after the popup
+        // already wrote it wouldn't see a "change" at all otherwise).
+        try {
+          localStorage.removeItem(OAUTH_HANDOFF_KEY);
+        } catch (_) { }
+        _handleOAuthResult(payload, provider);
+      };
+      window.addEventListener("storage", _ssoStorageHandler);
 
       // 5. Poll for popup being closed manually
       _ssoPopupPollInterval = setInterval(() => {
@@ -535,7 +597,7 @@ function _handleSSO(provider) {
       //    closed manually within 2 minutes, give up and show an error.
       _ssoTimeoutId = setTimeout(() => {
         if (_ssoPopup) {
-          try { _ssoPopup.close(); } catch (_) {}
+          try { _ssoPopup.close(); } catch (_) { }
         }
         _cleanupSSOState();
         _setSSOLoading(false, provider);
@@ -545,7 +607,7 @@ function _handleSSO(provider) {
     } catch (err) {
       // Close any open popup and clean up
       if (_ssoPopup && !_ssoPopup.closed) {
-        try { _ssoPopup.close(); } catch (_) {}
+        try { _ssoPopup.close(); } catch (_) { }
       }
       _cleanupSSOState();
       _setSSOLoading(false, provider);
