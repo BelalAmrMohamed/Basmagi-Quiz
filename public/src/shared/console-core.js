@@ -166,7 +166,7 @@
   }
 
   // This should dynamically pull the version from the service-worker, or from the package.json if possible.
-  const BUILD_TAG = "core@8.2.7";
+  const BUILD_TAG = "core@8.2.8";
 
   function printHelp() {
     log.rule("═", 64);

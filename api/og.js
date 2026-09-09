@@ -1138,24 +1138,33 @@ async function renderCourseImage(courseId, folderPath) {
                     display: "flex",
                     order: 2,
                     flex: "0 0 46%",
+                    flexDirection: "row-reverse",
                     justifyContent: "flex-end",
                     alignItems: "center",
+                    gap: "8px",
                     padding: "14px 22px",
                     color: "#6b7280",
                     fontWeight: "400",
                     fontSize: "24px",
-                    direction: "ltr", // container stays ltr — text is untouched (see below)
+                    direction: "ltr",
                   },
-                  // Multi-word Arabic labels ARE reversed by renderBidiText
-                  // only for containers whose flex order is itself
-                  // mirrored (row-reverse) — see that helper's own doc
-                  // comment. This column is a plain LTR "row" (not
-                  // reversed), so the label text must be passed through
-                  // UNTOUCHED: Satori paints word-tokens in storage order
-                  // regardless of `direction`, and "نوع التعليم" is
-                  // already stored in correct reading order — reversing it
-                  // here is what produced the flipped "التعليم نوع" bug.
-                  children: row.label,
+                  // A multi-word Arabic label (e.g. "نوع التعليم") passed
+                  // to Satori as ONE raw text-node string gets Satori's
+                  // own internal Arabic-run spacing heuristics applied to
+                  // it regardless of the container's `direction` — this is
+                  // the oversized word-gap bug, confirmed by this exact
+                  // screenshot. There is no single-text-node fix (this is
+                  // the same class of bug documented on renderBidiText's
+                  // own KNOWN LIMITATION note). Fix: render each word as
+                  // its own sibling `div` (renderBidiChildren) with a flex
+                  // `gap` supplying the spacing instead of a Satori text
+                  // run — same sibling-elements-plus-gap pattern already
+                  // used for the counts pill and parent-course line below.
+                  // flexDirection: row-reverse here mirrors the *visual*
+                  // word order for Arabic (rightmost word first in flex
+                  // order); for a single-word or Latin label this is a
+                  // no-op since renderBidiChildren keeps non-Arabic order.
+                  children: renderBidiChildren(row.label, detectArabic(row.label)),
                 },
               },
               // Value column — always the LEFT side, always LTR-aligned,
@@ -1362,27 +1371,30 @@ async function renderCourseImage(courseId, folderPath) {
                           fontWeight: "700",
                           color: "#111827",
                           lineHeight: "1.2",
-                          // Untouched, non-reversed Arabic text needs
-                          // `direction: rtl` on its own text container so
-                          // Satori paints its word order correctly (this
-                          // is the "sibling elements doing their own
-                          // mirroring" case being the exception — see
-                          // renderBidiText's doc comment — but a single
-                          // leaf with genuinely RTL content is the OTHER
-                          // legitimate case: `ltr` here was what produced
-                          // the reversed-with-huge-gaps rendering, since
-                          // Satori's shaper needs to know this run is RTL
-                          // to lay out and join the glyphs correctly).
-                          direction: isArabic ? "rtl" : "ltr",
+                          // Satori does not run the Unicode Bidi Algorithm
+                          // (see renderBidiText's doc comment) — it always
+                          // paints a text node's words in raw storage
+                          // order, and `direction: "rtl"` on that node
+                          // does NOT reorder words for it; it only adds
+                          // extra inter-word spacing to an Arabic run.
+                          // That combination — untouched word order +
+                          // `direction: rtl` — is exactly what produced
+                          // this element's own bug (multi-word titles
+                          // like "الذكاء الإصطناعي" painting reversed
+                          // AND with oversized gaps). The fix is the same
+                          // one used elsewhere in this file for a single
+                          // leaf holding Arabic prose (e.g. the courseName
+                          // line): pre-reverse word order with
+                          // renderBidiText(), then paint as a plain LTR
+                          // string so Satori doesn't re-space it.
+                          direction: "ltr",
                           width: "100%",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           justifyContent: "flex-end",
                           textAlign: "right",
                         },
-                        // Single text node, not word-reversed — see the
-                        // direction comment just above.
-                        children: title,
+                        children: renderBidiText(title, isArabic),
                       },
                     },
 
