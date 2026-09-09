@@ -1129,8 +1129,28 @@ async function renderCourseImage(courseId, folderPath) {
               background: i % 2 === 1 ? "rgba(15,23,42,0.02)" : "transparent",
             },
             children: [
-              // Key column — always the RIGHT side, always RTL-aligned
-              // text, regardless of the value's script.
+              // Key column — always the RIGHT side, always RTL-reading
+              // text, regardless of the value's script. Rendered as a
+              // single pre-mirrored string in a plain LTR div — the SAME
+              // pattern already confirmed working elsewhere in this file
+              // for a leaf holding Arabic prose (the quiz-thumbnail
+              // course pill: `children: renderBidiText(courseName, ...)`
+              // inside a plain `direction: ltr` div). Two earlier
+              // attempts both failed against real screenshots: (1) the
+              // raw untouched string with `direction: rtl` on the
+              // container — Satori doesn't run the bidi algorithm, so
+              // this never reorders words, it only adds inter-word
+              // spacing; (2) sibling divs with `flexDirection:
+              // row-reverse` — that flips the WRONG thing (row-reverse
+              // mirrors which array item paints rightmost, but the
+              // tokens were still in original storage order, so it just
+              // moved the ordering problem instead of fixing it).
+              // Pre-reversing the token order with renderBidiText() and
+              // then painting the joined result as one plain-LTR string
+              // sidesteps both failure modes: by the time Satori sees
+              // it, the text is already in final left-to-right paint
+              // order, so there's no per-run RTL spacing applied and no
+              // word order left to get backwards.
               {
                 type: "div",
                 props: {
@@ -1138,33 +1158,15 @@ async function renderCourseImage(courseId, folderPath) {
                     display: "flex",
                     order: 2,
                     flex: "0 0 46%",
-                    flexDirection: "row-reverse",
                     justifyContent: "flex-end",
                     alignItems: "center",
-                    gap: "8px",
                     padding: "14px 22px",
                     color: "#6b7280",
                     fontWeight: "400",
                     fontSize: "24px",
                     direction: "ltr",
                   },
-                  // A multi-word Arabic label (e.g. "نوع التعليم") passed
-                  // to Satori as ONE raw text-node string gets Satori's
-                  // own internal Arabic-run spacing heuristics applied to
-                  // it regardless of the container's `direction` — this is
-                  // the oversized word-gap bug, confirmed by this exact
-                  // screenshot. There is no single-text-node fix (this is
-                  // the same class of bug documented on renderBidiText's
-                  // own KNOWN LIMITATION note). Fix: render each word as
-                  // its own sibling `div` (renderBidiChildren) with a flex
-                  // `gap` supplying the spacing instead of a Satori text
-                  // run — same sibling-elements-plus-gap pattern already
-                  // used for the counts pill and parent-course line below.
-                  // flexDirection: row-reverse here mirrors the *visual*
-                  // word order for Arabic (rightmost word first in flex
-                  // order); for a single-word or Latin label this is a
-                  // no-op since renderBidiChildren keeps non-Arabic order.
-                  children: renderBidiChildren(row.label, detectArabic(row.label)),
+                  children: renderBidiText(row.label, detectArabic(row.label)),
                 },
               },
               // Value column — always the LEFT side, always LTR-aligned,
