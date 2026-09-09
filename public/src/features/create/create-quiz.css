@@ -60,20 +60,21 @@ body.sidebar-expanded {
   padding-right: calc(var(--sidebar-expanded-width) + 16px);
 }
 
+/* body.quiz-form-active is toggled by showQuizForm()/showEntryScreen() —
+   only present while the fixed app-title-bar + menu-bar are actually
+   visible (the entry screen hides both and doesn't need this). It zeroes
+   out body's normal top padding so the bars have a true, unpadded run from
+   the very top of the viewport; .container gets an explicit margin-top
+   instead, further down, to give the rest of the page's content the same
+   clearance body's padding used to provide. */
+body.quiz-form-active {
+  padding-top: 0;
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-/* Top Bar with Autosave */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  gap: 20px;
-  flex-wrap: wrap;
 }
 
 /* Autosave Indicator */
@@ -112,29 +113,36 @@ body.sidebar-expanded {
 
 /* ============================================================================
    APP TITLE BAR + MENU BAR (Google-Docs-style)
-   Both are full-bleed: negative margins cancel body's own padding so they
-   span from the true left edge to the sidebar's edge, and both stay pinned
-   via position: sticky. They reference the same --sidebar-*-width variables
-   body uses, so they track the sidebar's expand/collapse transition for free.
+   True position: fixed to the viewport (not sticky inside body) — this is
+   what actually guarantees "starts at the very top" and "full width"
+   regardless of body's own padding, which a sticky element inside a padded
+   body cannot do (sticky only kicks in once scrolled past its normal flow
+   position, so on initial load it still sits below body's padding-top).
+   Fixed positioning also lets these bars ignore body's padding-left
+   entirely: left/right here are literal viewport edges, with the sidebar
+   gap applied on the right only, tracking the same --sidebar-*-width
+   variables body itself uses so it stays in sync with the sidebar's
+   expand/collapse transition.
+   Each bar is a compact single row — 44px tall — not a "hero" bar.
    ============================================================================ */
 
 .app-title-bar,
 .menu-bar {
-  margin-left: -24px;
-  margin-right: calc(-1 * (var(--sidebar-collapsed-width) + 16px));
+  position: fixed;
+  left: 0;
+  right: var(--sidebar-collapsed-width);
   padding-left: 24px;
-  padding-right: calc(var(--sidebar-collapsed-width) + 16px);
-  transition: margin-right 250ms cubic-bezier(0.4, 0, 0.2, 1),
-    padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  padding-right: 16px;
+  transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   background: var(--color-surface);
-  position: sticky;
   z-index: 50;
+  height: 44px;
+  box-sizing: border-box;
 }
 
 body.sidebar-expanded .app-title-bar,
 body.sidebar-expanded .menu-bar {
-  margin-right: calc(-1 * (var(--sidebar-expanded-width) + 16px));
-  padding-right: calc(var(--sidebar-expanded-width) + 16px);
+  right: var(--sidebar-expanded-width);
 }
 
 .app-title-bar {
@@ -142,8 +150,6 @@ body.sidebar-expanded .menu-bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-top: 10px;
-  padding-bottom: 10px;
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -180,19 +186,46 @@ body.sidebar-expanded .menu-bar {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 320px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.app-title-text:hover {
+  border-color: var(--color-border);
+  background: var(--color-background);
+}
+
+.app-title-text.editing {
+  cursor: text;
+  overflow: visible;
+  white-space: nowrap;
+  border-color: var(--color-primary);
+  background: var(--color-surface);
+  outline: none;
 }
 
 .menu-bar {
-  top: 53px;
-  /* sits directly under the 53px-tall app-title-bar */
+  top: 44px;
+  /* sits directly under the 44px-tall app-title-bar */
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 4px;
-  padding-bottom: 4px;
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: 24px;
+}
+
+/* Content spacer: since both bars are position: fixed (removed from normal
+   flow), .container needs an explicit top margin equal to their combined
+   real height (44px + 44px) plus a little breathing room, or the form's
+   content would render underneath them. Scoped to body.quiz-form-active
+   (see above) so the entry screen — shown while the bars are hidden —
+   isn't pushed down by a gap it doesn't need. */
+body.quiz-form-active .container {
+  margin-top: 104px;
 }
 
 .menu-bar-inner {
@@ -206,7 +239,7 @@ body.sidebar-expanded .menu-bar {
 }
 
 .menu-trigger {
-  padding: 8px 14px;
+  padding: 6px 14px;
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -241,8 +274,44 @@ body.sidebar-expanded .menu-bar {
   z-index: 60;
 }
 
-.menu-item-open .menu-dropdown {
+.menu-item-open > .menu-dropdown {
   display: block;
+}
+
+/* ── Submenu (nested dropdown inside a .menu-dropdown) ───────────────────── */
+
+/* The submenu trigger row occupies its own .menu-item inside the parent
+   dropdown — it needs position:relative so the child .menu-dropdown can
+   absolutely position itself relative to it. */
+.menu-item-submenu {
+  position: relative;
+}
+
+/* The inner .menu-submenu-dropdown pops out to the LEFT in RTL layout
+   (i.e., towards the content, away from the sidebar). `right: 100%` puts
+   its right edge flush with the parent item's left edge. */
+.menu-submenu-dropdown {
+  top: -6px !important;   /* align with the first option row */
+  right: calc(100% + 2px) !important;
+  left: auto !important;
+  min-width: 200px;
+}
+
+/* Caret chevron on the submenu trigger — rotates 90° when open */
+.menu-submenu-caret {
+  width: 14px !important;
+  height: 14px !important;
+  margin-right: auto;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.menu-item-submenu.menu-item-open .menu-submenu-caret {
+  transform: rotate(-90deg);
+}
+
+.menu-item-submenu.menu-item-open > .menu-option {
+  background: var(--color-background);
 }
 
 .menu-option {
@@ -394,11 +463,20 @@ body.sidebar-expanded .menu-bar {
   gap: 20px;
 }
 
+/* Grid cell wrapper — holds the clickable tile plus the sibling "more" (⋮)
+   button. .entry-item is itself a <button>, so the ⋮ trigger can't nest
+   inside it (buttons can't nest); it lives here instead, positioned over
+   the tile's corner. */
+.entry-item-wrap {
+  position: relative;
+}
+
 .entry-item,
 .entry-item-new {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  width: 100%;
   gap: 8px;
   padding: 0;
   background: none;
@@ -457,6 +535,101 @@ body.sidebar-expanded .menu-bar {
   color: var(--color-warning);
   font-size: 0.7rem;
   font-weight: 600;
+}
+
+/* "More" (⋮) trigger — always visible in the tile's top-right corner (RTL:
+   the far side from the draft badge, which sits top-left), per design
+   decision to keep it discoverable rather than hover-only. */
+.entry-item-more-wrap {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.entry-item-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.entry-item-more-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.entry-item-more-btn:hover,
+.entry-item-more-btn:focus-visible {
+  background: var(--color-background);
+  color: var(--color-primary);
+}
+
+.entry-item-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 160px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 40;
+}
+
+.entry-item-menu.open {
+  display: block;
+}
+
+.entry-item-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.entry-item-menu-option svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.entry-item-menu-option:hover,
+.entry-item-menu-option:focus-visible {
+  background: var(--color-background);
+}
+
+.entry-item-menu-option-danger {
+  color: var(--color-error);
+}
+
+.entry-item-menu-option-danger svg {
+  color: var(--color-error);
+}
+
+.entry-item-menu-option-danger:hover,
+.entry-item-menu-option-danger:focus-visible {
+  background: var(--color-error-light);
 }
 
 .entry-item-title {
@@ -1165,8 +1338,8 @@ body.sidebar-expanded .menu-bar {
 }
 
 /* Floating Action Button (FAB) — markup removed; "add question" now lives in
-   .top-action-bar. Rules kept (unreferenced) rather than pruned, since other
-   selectors in this file are known to overlap by type/class. */
+   the menu bar's إدراج menu. Rules kept (unreferenced) rather than pruned,
+   since other selectors in this file are known to overlap by type/class. */
 .fab-container {
   position: fixed;
   bottom: 30px;
@@ -2026,6 +2199,9 @@ body.sidebar-expanded .menu-bar {
 }
 
 .modal-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 85vh;
   padding: 32px;
   border-radius: 20px;
   max-width: 500px;
@@ -2034,6 +2210,7 @@ body.sidebar-expanded .menu-bar {
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
   background: var(--color-surface);
+  overflow: hidden;
 }
 
 .modal-card p {
@@ -2042,6 +2219,12 @@ body.sidebar-expanded .menu-bar {
 
 .preview-modal {
   max-width: 900px;
+  /* This card uses .modal-header + #previewContent (a .preview-content,
+     not .modal-body) instead of the plain padding/text-align .modal-card
+     ships with by default — reset those so the header/scrollable-body
+     layout below isn't fighting the base rule's own padding and centering. */
+  padding: 0;
+  text-align: initial;
 }
 
 .modal-header {
@@ -2624,13 +2807,21 @@ body.sidebar-expanded .menu-bar {
     padding: 20px 16px;
   }
 
-  .container {
-    padding: 0px;
+  /* Mobile uses a bottom nav, not a side rail, so the app bars don't need to
+     reserve any sidebar gap here — full width edge to edge. */
+  body.quiz-form-active {
+    padding-top: 0;
   }
 
-  .top-bar {
-    flex-direction: column;
-    align-items: flex-start;
+  .app-title-bar,
+  .menu-bar {
+    right: 0;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .container {
+    padding: 0px;
   }
 
   .card {

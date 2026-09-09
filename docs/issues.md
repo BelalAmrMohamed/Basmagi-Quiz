@@ -8,12 +8,12 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Broken Elements
 
 ### Courses & Folders OG Images
-- Don't show the info: Last update on the og images made the Arabic labels (المادة ، السنة ، الترم) be RTL, it's that update where they stopped showing.
+- Don't show the info correctly: 
+  - ![Course with Arabic info not formatted well](image-7.png)
+  - ![Folder with messed up Arabic](image-8.png)
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
-- What I expected? Something similar to how YouTube structures its comment section nowadays (great, functional, expected, and elegant) ![screenshot](image.png).
-  - Vertical lines & Horizontal lines that are **Connected together** to visualize the folder structure of the course or folder. 
 - Expected Design:
   - A dialog guide that visualize the structure similar to a context map of a project: ![./map/context-map.md](image-4.png)
 

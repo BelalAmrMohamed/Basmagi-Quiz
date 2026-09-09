@@ -360,6 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   setupKeyboardShortcuts();
   setupMenuBarListeners();
+  setupEntryItemMenuListeners();
   mountAIHelper();
 });
 
@@ -389,6 +390,7 @@ function showEntryScreen() {
   if (appTitleBar) appTitleBar.style.display = "none";
   if (menuBar) menuBar.style.display = "none";
   entryScreen.style.display = "block";
+  document.body.classList.remove("quiz-form-active");
 
   renderEntryItemsGrid();
 }
@@ -427,6 +429,14 @@ function renderEntryItemsGrid() {
   }
 
   userQuizzes.forEach((quiz) => {
+    // Skip folders/courses — user_quizzes holds those alongside real quizzes
+    // (same pattern used across the app, e.g. navigation.js/
+    // user-quizzes-folders.js: a plain quiz row carries no meta.type at
+    // all). This is an "edit a quiz" screen, not a file browser, so only
+    // real quizzes belong in the grid.
+    const itemType = quiz.meta?.type;
+    if (itemType === "folder" || itemType === "course") return;
+
     items.push({
       kind: "mine",
       id: quiz.id,
@@ -449,16 +459,18 @@ function renderEntryItemsGrid() {
   });
 
   const newTile = `
-    <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
-      <span class="entry-item-thumb entry-item-thumb-new">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14" />
-          <path d="M12 5v14" />
-        </svg>
-      </span>
-      <span class="entry-item-title">امتحان فارغ</span>
-    </button>`;
+    <div class="entry-item-wrap">
+      <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
+        <span class="entry-item-thumb entry-item-thumb-new">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14" />
+            <path d="M12 5v14" />
+          </svg>
+        </span>
+        <span class="entry-item-title">امتحان فارغ</span>
+      </button>
+    </div>`;
 
   const itemTiles = items
     .map((item) => {
@@ -474,23 +486,64 @@ function renderEntryItemsGrid() {
         item.kind === "draft"
           ? '<span class="entry-item-badge">مسودة</span>'
           : "";
+      // The "more" menu only applies to real saved quizzes (kind === "mine")
+      // — a local draft has no id in user_quizzes to rename/delete against,
+      // and renaming/deleting "the draft" isn't a request that maps onto
+      // this storage shape the same way.
+      const moreMenu =
+        item.kind === "mine"
+          ? `
+          <div class="entry-item-more-wrap">
+            <button type="button" class="entry-item-more-btn" onclick="toggleEntryItemMenu(event, '${item.id}')"
+              aria-label="خيارات إضافية" title="خيارات إضافية">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="19" cy="12" r="1" />
+                <circle cx="5" cy="12" r="1" />
+              </svg>
+            </button>
+            <div class="entry-item-menu" id="entryItemMenu-${item.id}">
+              <button type="button" class="entry-item-menu-option" onclick="renameEntryItem(event, '${item.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                </svg>
+                <span>إعادة تسمية</span>
+              </button>
+              <button type="button" class="entry-item-menu-option entry-item-menu-option-danger"
+                onclick="deleteEntryItem(event, '${item.id}')">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+                <span>حذف</span>
+              </button>
+            </div>
+          </div>`
+          : "";
       return `
-        <button type="button" class="entry-item" onclick="${clickHandler}">
-          <span class="entry-item-thumb">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-              <path d="M12 11h4" />
-              <path d="M12 16h4" />
-              <path d="M8 11h.01" />
-              <path d="M8 16h.01" />
-            </svg>
-            ${badge}
-          </span>
-          <span class="entry-item-title">${title}</span>
-          <span class="entry-item-meta">${meta}</span>
-        </button>`;
+        <div class="entry-item-wrap">
+          <button type="button" class="entry-item" onclick="${clickHandler}">
+            <span class="entry-item-thumb">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <path d="M12 11h4" />
+                <path d="M12 16h4" />
+                <path d="M8 11h.01" />
+                <path d="M8 16h.01" />
+              </svg>
+              ${badge}
+            </span>
+            <span class="entry-item-title">${title}</span>
+            <span class="entry-item-meta">${meta}</span>
+          </button>
+          ${moreMenu}
+        </div>`;
     })
     .join("");
 
@@ -521,17 +574,84 @@ function showQuizForm() {
   const appTitleBar = document.getElementById("appTitleBar");
   const menuBar = document.getElementById("menuBar");
   if (entryScreen) entryScreen.style.display = "none";
-  if (form) form.style.display = "block";
+  if (form) form.style.display = "flex";
   if (appTitleBar) appTitleBar.style.display = "flex";
   if (menuBar) menuBar.style.display = "flex";
+  document.body.classList.add("quiz-form-active");
   updateAppTitleBar();
 }
 
 /** Keep the compact app-bar title in sync with the quiz's own title field. */
 function updateAppTitleBar() {
   const titleEl = document.getElementById("appTitleText");
-  if (titleEl) titleEl.textContent = quizData.title?.trim() || "امتحان بدون عنوان";
+  if (titleEl && titleEl.getAttribute("contenteditable") !== "true") {
+    titleEl.textContent = quizData.title?.trim() || "امتحان بدون عنوان";
+  }
 }
+
+// ============================================================================
+// APP-BAR TITLE — click-to-rename (Docs-style)
+// The app-bar title is a *display mirror* of the real #quizTitle input in
+// the metadata card, not a second source of truth — editing it here writes
+// straight into #quizTitle and fires the same "input" event that field
+// already listens for, so quizData.title, the char counter, and autosave
+// all stay driven by the one existing code path.
+// ============================================================================
+
+/** Turn the app-bar title into an editable field, focused with all text selected. */
+window.startTitleEdit = function () {
+  const titleEl = document.getElementById("appTitleText");
+  if (!titleEl) return;
+
+  titleEl.setAttribute("contenteditable", "true");
+  titleEl.textContent = quizData.title || "";
+  titleEl.classList.add("editing");
+  titleEl.focus();
+
+  const range = document.createRange();
+  range.selectNodeContents(titleEl);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+/** Commit the edited app-bar title back into #quizTitle (the real field). */
+window.commitTitleEdit = function () {
+  const titleEl = document.getElementById("appTitleText");
+  if (!titleEl || titleEl.getAttribute("contenteditable") !== "true") return;
+
+  titleEl.setAttribute("contenteditable", "false");
+  titleEl.classList.remove("editing");
+
+  const newTitle = titleEl.textContent.trim();
+  const titleInput = document.getElementById("quizTitle");
+  if (titleInput && titleInput.value !== newTitle) {
+    titleInput.value = newTitle;
+    // Reuse the exact same path typing in the metadata field already
+    // takes: updates quizData.title, the char counter, the app-bar text,
+    // and triggers autosave — no duplicated logic here.
+    titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+  } else {
+    updateAppTitleBar();
+  }
+};
+
+/** Enter commits, Escape cancels without saving. */
+window.handleTitleEditKeydown = function (event) {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    document.getElementById("appTitleText")?.blur();
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    const titleEl = document.getElementById("appTitleText");
+    if (titleEl) {
+      titleEl.setAttribute("contenteditable", "false");
+      titleEl.classList.remove("editing");
+      updateAppTitleBar();
+      titleEl.blur();
+    }
+  }
+};
 
 /** Run the same init steps the form previously did unconditionally on load. */
 function finishFormInit() {
@@ -570,6 +690,79 @@ window.chooseUserQuizToEdit = function (quizId) {
 };
 
 // ============================================================================
+// ENTRY SCREEN — per-tile "more" (⋮) menu: rename / delete
+// A lightweight, purpose-built implementation rather than reusing
+// user-quizzes-folders.js's renameItem()/deleteFolder() — those re-render
+// the home page's own views (renderRootCategories/renderUserQuizzesView),
+// which don't exist on this page. This follows the same storage contract
+// (user_quizzes in localStorage, item.meta.title) but re-renders the entry
+// grid instead.
+// ============================================================================
+
+/** Open/close the ⋮ dropdown for one tile, closing any other open one first. */
+window.toggleEntryItemMenu = function (event, quizId) {
+  event.stopPropagation();
+  const menu = document.getElementById(`entryItemMenu-${quizId}`);
+  if (!menu) return;
+  const isOpen = menu.classList.contains("open");
+  closeAllEntryItemMenus();
+  if (!isOpen) menu.classList.add("open");
+};
+
+function closeAllEntryItemMenus() {
+  document
+    .querySelectorAll(".entry-item-menu.open")
+    .forEach((menu) => menu.classList.remove("open"));
+}
+
+/** Rename a saved quiz directly in user_quizzes, then refresh the grid. */
+window.renameEntryItem = async function (event, quizId) {
+  event.stopPropagation();
+  closeAllEntryItemMenus();
+
+  let userQuizzes = [];
+  try {
+    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+  } catch (e) {
+    userQuizzes = [];
+  }
+
+  const quiz = userQuizzes.find((q) => q.id === quizId);
+  if (!quiz) return;
+
+  const currentTitle = quiz.meta?.title || quiz.title || "";
+  const newTitle = await _prompt("أدخل الاسم الجديد:", currentTitle);
+  if (!newTitle || !newTitle.trim()) return;
+
+  if (quiz.meta) {
+    quiz.meta.title = newTitle.trim();
+  } else {
+    quiz.title = newTitle.trim();
+  }
+  localStorage.setItem("user_quizzes", JSON.stringify(userQuizzes));
+  renderEntryItemsGrid();
+};
+
+/** Delete a saved quiz directly from user_quizzes, then refresh the grid. */
+window.deleteEntryItem = async function (event, quizId) {
+  event.stopPropagation();
+  closeAllEntryItemMenus();
+
+  if (!(await _confirm("هل أنت متأكد من حذف هذا الامتحان؟"))) return;
+
+  let userQuizzes = [];
+  try {
+    userQuizzes = JSON.parse(localStorage.getItem("user_quizzes") || "[]");
+  } catch (e) {
+    userQuizzes = [];
+  }
+
+  const newQuizzes = userQuizzes.filter((q) => q.id !== quizId);
+  localStorage.setItem("user_quizzes", JSON.stringify(newQuizzes));
+  renderEntryItemsGrid();
+};
+
+// ============================================================================
 // MENU BAR (Docs-style dropdowns)
 // ============================================================================
 
@@ -591,6 +784,59 @@ window.closeAllMenus = function () {
   document
     .querySelectorAll(".menu-item.menu-item-open")
     .forEach((item) => item.classList.remove("menu-item-open"));
+  // Also collapse any open submenus
+  document
+    .querySelectorAll(".menu-item-submenu.menu-item-open")
+    .forEach((item) => item.classList.remove("menu-item-open"));
+};
+
+/**
+ * Toggle a nested submenu inside an already-open parent dropdown.
+ * Stops event propagation so the parent dropdown doesn't close.
+ */
+window.toggleSubmenu = function (event, submenuId) {
+  event.stopPropagation();
+  const submenuItem = event.currentTarget.closest("[data-menu='" + submenuId + "']");
+  if (!submenuItem) return;
+  const isOpen = submenuItem.classList.contains("menu-item-open");
+  // Close any other open submenus at this level first
+  submenuItem
+    .closest(".menu-dropdown")
+    ?.querySelectorAll(".menu-item-submenu.menu-item-open")
+    .forEach((s) => s.classList.remove("menu-item-open"));
+  if (!isOpen) submenuItem.classList.add("menu-item-open");
+};
+
+/**
+ * Open the Insert (إدراج) menu and pre-expand the templates submenu,
+ * so the empty-state "استخدام قالب" button takes users straight there.
+ */
+window.openTemplatesMenu = function () {
+  // Open the Insert top-level menu
+  const insertItem = document.querySelector(".menu-item[data-menu='insert']");
+  if (!insertItem) return;
+  closeAllMenus();
+  insertItem.classList.add("menu-item-open");
+  // Pre-expand the templates submenu inside it
+  const templatesItem = insertItem.querySelector(".menu-item-submenu[data-menu='insert-templates']");
+  if (templatesItem) templatesItem.classList.add("menu-item-open");
+};
+
+// ============================================================================
+// STATISTICS MODAL
+// ============================================================================
+
+/** Open the stats modal (updating numbers first so they're always fresh). */
+window.openStatsModal = function () {
+  updateStatistics();
+  const modal = document.getElementById("statsModal");
+  if (modal) modal.style.display = "flex";
+};
+
+/** Close the stats modal. */
+window.closeStatsModal = function () {
+  const modal = document.getElementById("statsModal");
+  if (modal) modal.style.display = "none";
 };
 
 /** Click-outside and Escape-to-close wiring for the menu bar, plus
@@ -622,6 +868,22 @@ function setupMenuBarListeners() {
   });
 }
 
+/** Outside-click/Escape closing for entry-item "more" (⋮) dropdowns.
+ * Delegated to document once at init — safe across renderEntryItemsGrid()
+ * re-renders since it doesn't hold references to the (re-created) menu
+ * elements themselves. */
+function setupEntryItemMenuListeners() {
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".entry-item-more-wrap")) {
+      closeAllEntryItemMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllEntryItemMenus();
+  });
+}
+
 function setupEventListeners() {
   // Close modals on background click
   document.addEventListener("click", (e) => {
@@ -637,6 +899,8 @@ function setupEventListeners() {
         typeof window.closeImportModal === "function"
       ) {
         window.closeImportModal();
+      } else if (e.target.id === "statsModal") {
+        window.closeStatsModal();
       } else {
         e.target.style.display = "none";
       }
@@ -746,6 +1010,14 @@ function setupKeyboardShortcuts() {
       exportQuiz();
     }
 
+    // Escape: close any open modal
+    if (e.key === "Escape") {
+      const statsModal = document.getElementById("statsModal");
+      if (statsModal && statsModal.style.display !== "none") {
+        window.closeStatsModal();
+      }
+    }
+
     // ?: Show shortcuts
     if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
       const target = e.target;
@@ -790,17 +1062,9 @@ function updateProgress() {
 // ============================================================================
 
 function updateStatistics() {
-  const statsCard = document.getElementById("statsCard");
-  if (!statsCard) return;
-
+  // Stats now live inside #statsModal rather than an inline card — just
+  // keep the numbers up-to-date; the modal itself is shown on demand.
   const totalQuestions = quizData.questions.length;
-
-  if (totalQuestions === 0) {
-    statsCard.style.display = "none";
-    return;
-  }
-
-  statsCard.style.display = "block";
 
   const questionsWithImages = quizData.questions.filter(
     (q) => q.image && q.image.trim(),
@@ -812,13 +1076,17 @@ function updateStatistics() {
     (sum, q) => sum + (Array.isArray(q.options) ? q.options.length : 1),
     0,
   );
-  const avgOptions = (totalOptions / totalQuestions).toFixed(1);
+  const avgOptions =
+    totalQuestions > 0 ? (totalOptions / totalQuestions).toFixed(1) : "0";
 
-  document.getElementById("statQuestions").textContent = totalQuestions;
-  document.getElementById("statImages").textContent = questionsWithImages;
-  document.getElementById("statExplanations").textContent =
-    questionsWithExplanations;
-  document.getElementById("statAvgOptions").textContent = avgOptions;
+  const statQ = document.getElementById("statQuestions");
+  const statI = document.getElementById("statImages");
+  const statE = document.getElementById("statExplanations");
+  const statA = document.getElementById("statAvgOptions");
+  if (statQ) statQ.textContent = totalQuestions;
+  if (statI) statI.textContent = questionsWithImages;
+  if (statE) statE.textContent = questionsWithExplanations;
+  if (statA) statA.textContent = avgOptions;
 }
 
 // ============================================================================
