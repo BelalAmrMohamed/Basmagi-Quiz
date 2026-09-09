@@ -2111,14 +2111,16 @@ function renderOptions(question) {
     const optId = `option-text-${question.id}-0`;
     return `
       <div class="essay-answer-container" id="option-${question.id}-0">
-        <div class="essay-badge">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
-          سؤال مقالي
-        </div>
-        <div class="essay-answer-label">نموذج الإجابة ${question.options?.[0]?.trim()
+        <div class="essay-answer-label">
+          <span class="essay-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>
+            سؤال مقالي
+          </span>
+          نموذج الإجابة ${question.options?.[0]?.trim()
         ? `<span class="essay-answer-note">(يُستخدم لتصحيح إجابات الطلاب تلقائيًا وتقييمها من 5)</span>`
         : `<span class="essay-answer-missing">(مطلوب — بدونه لن يمكن تصحيح إجابات الطلاب تلقائيًا)</span>`
-      }</div>
+      }
+        </div>
         <div class="essay-answer-editor">
           ${mdEditorHtml(optId, question.options[0], "اكتب نموذج إجابة هنا...", 5)}
         </div>
