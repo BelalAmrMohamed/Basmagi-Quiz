@@ -986,6 +986,17 @@
          Buttons apply formatting to the last focused .md-source textarea. -->
     <div class="global-md-bar" id="globalMdBar" style="display: none;" aria-label="شريط تنسيق النص">
         <div class="gmd-group gmd-group-md">
+            <div class="gmd-dropdown">
+                <button type="button" class="gmd-btn gmd-dropdown-toggle" id="gmdHeadingToggle" title="عنوان" aria-haspopup="true"><strong>ع</strong><svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                <div class="gmd-dropdown-menu gmd-dropdown-menu--headings" role="menu" aria-label="مستوى العنوان">
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="1">عنوان 1</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="2">عنوان 2</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="3">عنوان 3</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="4">عنوان 4</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="5">عنوان 5</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="6">عنوان 6</button>
+                </div>
+            </div>
             <button type="button" class="gmd-btn" id="gmdBold" title="غامق (Bold)" data-gmd-cmd="bold"><strong>B</strong></button>
             <button type="button" class="gmd-btn" id="gmdItalic" title="مائل (Italic)" data-gmd-cmd="italic"><em>I</em></button>
             <button type="button" class="gmd-btn" id="gmdStrike" title="مشطوب" data-gmd-cmd="strike"><s>S</s></button>
@@ -995,6 +1006,9 @@
             <button type="button" class="gmd-btn" id="gmdHr" title="فاصل أفقي" data-gmd-cmd="hr">—</button>
             <button type="button" class="gmd-btn" id="gmdUl" title="قائمة نقطية" data-gmd-cmd="ul">• قائمة</button>
             <button type="button" class="gmd-btn" id="gmdOl" title="قائمة مرقمة" data-gmd-cmd="ol">١. قائمة</button>
+            <button type="button" class="gmd-btn" id="gmdLink" title="رابط" data-gmd-cmd="link">🔗</button>
+            <button type="button" class="gmd-btn" id="gmdImage" title="صورة" data-gmd-cmd="image">🖼</button>
+            <button type="button" class="gmd-btn" id="gmdTable" title="جدول" data-gmd-cmd="table">▦</button>
         </div>
         <div class="gmd-separator" aria-hidden="true"></div>
         <div class="gmd-group gmd-group-latex">
@@ -1002,18 +1016,23 @@
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSub" title="منخفض (subscript)" data-gmd-latex="_{}">xₙ</button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdFrac" title="كسر" data-gmd-latex="\frac{}{}">a/b</button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSqrt" title="جذر تربيعي" data-gmd-latex="\sqrt{}">√</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع" data-gmd-latex="\sum_{}^{}">Σ</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInt" title="تكامل" data-gmd-latex="\int_{}^{}">∫</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInfty" title="لا نهاية" data-gmd-latex="\infty">∞</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPi" title="باي" data-gmd-latex="\pi">π</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPm" title="زائد أو ناقص" data-gmd-latex="\pm">±</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdLeq" title="أصغر من أو يساوي" data-gmd-latex="\leq">≤</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdGeq" title="أكبر من أو يساوي" data-gmd-latex="\geq">≥</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdNeq" title="لا يساوي" data-gmd-latex="\neq">≠</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdArrow" title="سهم" data-gmd-latex="\rightarrow">→</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdMatrix" title="مصفوفة" data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}">matrix</button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInlineMath" title="رياضيات مضمّنة $…$" data-gmd-cmd="inlinemath">$…$</button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdBlockMath" title="رياضيات منفصلة $$…$$" data-gmd-cmd="blockmath">$$…$$</button>
+            <div class="gmd-dropdown">
+                <button type="button" class="gmd-btn gmd-btn-latex gmd-dropdown-toggle" id="gmdLatexMoreToggle" title="رموز رياضية إضافية" aria-haspopup="true">المزيد<svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+                <div class="gmd-dropdown-menu gmd-dropdown-menu--latex" role="menu" aria-label="رموز رياضية إضافية">
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع" data-gmd-latex="\sum_{}^{}">Σ</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInt" title="تكامل" data-gmd-latex="\int_{}^{}">∫</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInfty" title="لا نهاية" data-gmd-latex="\infty">∞</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPi" title="باي" data-gmd-latex="\pi">π</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPm" title="زائد أو ناقص" data-gmd-latex="\pm">±</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdLeq" title="أصغر من أو يساوي" data-gmd-latex="\leq">≤</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdGeq" title="أكبر من أو يساوي" data-gmd-latex="\geq">≥</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdNeq" title="لا يساوي" data-gmd-latex="\neq">≠</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdArrow" title="سهم" data-gmd-latex="\rightarrow">→</button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdMatrix" title="مصفوفة" data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}">matrix</button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -206,6 +206,35 @@ function autoResizeMdSource(ta) {
   ta.style.height = Math.max(ta.scrollHeight, 60) + "px";
 }
 
+/**
+ * Replace the range [start, end) of a textarea's value with `text`, without
+ * breaking the browser's native undo/redo (Ctrl+Z) history.
+ *
+ * Setting `ta.value` directly wipes the textarea's undo stack in every
+ * browser — that's why Ctrl+Z used to stop working the moment any toolbar
+ * button was used. `document.execCommand('insertText', ...)` goes through
+ * the same input pipeline a real keystroke would, so it's recorded as a
+ * normal undoable edit. execCommand is deprecated for rich-text editing in
+ * general, but for plain <textarea>/<input> "insertText" it is still
+ * implemented and recommended by all major browsers specifically because
+ * there is no replacement API yet for preserving undo history this way.
+ * Falls back to a direct value swap (old behavior) only if execCommand is
+ * unavailable, so nothing breaks in that rare case.
+ */
+function replaceTextareaRange(ta, start, end, text) {
+  ta.focus();
+  ta.setSelectionRange(start, end);
+  const ok =
+    typeof document.execCommand === "function" &&
+    document.execCommand("insertText", false, text);
+  if (!ok) {
+    // Fallback: no native undo support, but the edit still applies.
+    const value = ta.value;
+    ta.value = value.slice(0, start) + text + value.slice(end);
+    ta.setSelectionRange(start + text.length, start + text.length);
+  }
+}
+
 /** Wire up a Write/Preview field: auto-resize + onChange. Preview renders on-demand (tab switch). */
 function setupMdEditor(id, onChange) {
   const source = document.getElementById(id);
@@ -237,9 +266,7 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
 
   const wrap = (prefix, suffix = prefix, placeholder = "") => {
     const text = selected || placeholder;
-    const newValue =
-      value.slice(0, start) + prefix + text + suffix + value.slice(end);
-    ta.value = newValue;
+    replaceTextareaRange(ta, start, end, prefix + text + suffix);
     const cursorStart = start + prefix.length;
     const cursorEnd = cursorStart + text.length;
     ta.setSelectionRange(cursorStart, cursorEnd);
@@ -248,14 +275,13 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
   const linePrefix = (prefix) => {
     // Apply prefix to the start of the current line (or each selected line)
     const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-    const affected = value.slice(lineStart, end || lineStart);
+    const lineEnd = end || lineStart;
+    const affected = value.slice(lineStart, lineEnd);
     const lines = (affected || "").split("\n");
     const newLines = lines
       .map((line) => (line.startsWith(prefix) ? line : prefix + line))
       .join("\n");
-    const newValue =
-      value.slice(0, lineStart) + newLines + value.slice(end || lineStart);
-    ta.value = newValue;
+    replaceTextareaRange(ta, lineStart, lineEnd, newLines);
     ta.setSelectionRange(lineStart, lineStart + newLines.length);
   };
 
@@ -271,15 +297,13 @@ window.applyMdToolbarAction = function (e, id, cmd, headingLevel) {
       break;
     case "codeblock": {
       const text = selected || "كود";
-      const newValue =
-        value.slice(0, start) + "```\n" + text + "\n```" + value.slice(end);
-      ta.value = newValue;
+      replaceTextareaRange(ta, start, end, "```\n" + text + "\n```");
       const codeStart = start + 4;
       ta.setSelectionRange(codeStart, codeStart + text.length);
       break;
     }
     case "heading": {
-      const level = Math.min(Math.max(headingLevel || 3, 1), 5);
+      const level = Math.min(Math.max(headingLevel || 3, 1), 6);
       linePrefix("#".repeat(level) + " ");
       break;
     }
@@ -336,7 +360,7 @@ function _showNoFieldTip() {
  * @param {string} cmd - Named markdown command or null for raw LaTeX insert
  * @param {string|null} latex - Raw LaTeX string to insert at cursor (when cmd is null)
  */
-function applyGlobalMdAction(cmd, latex = null) {
+function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
   const ta = _activeMdSource;
   if (!ta) {
     _showNoFieldTip();
@@ -351,7 +375,7 @@ function applyGlobalMdAction(cmd, latex = null) {
   // Helper: wrap selection (or placeholder) with prefix/suffix
   const wrap = (prefix, suffix = prefix, placeholder = "") => {
     const text = selected || placeholder;
-    ta.value = value.slice(0, start) + prefix + text + suffix + value.slice(end);
+    replaceTextareaRange(ta, start, end, prefix + text + suffix);
     const cs = start + prefix.length;
     ta.setSelectionRange(cs, cs + text.length);
   };
@@ -359,26 +383,32 @@ function applyGlobalMdAction(cmd, latex = null) {
   // Helper: prepend prefix to the current line (or each selected line)
   const linePrefix = (prefix) => {
     const lineStart = value.lastIndexOf("\n", start - 1) + 1;
-    const affected = value.slice(lineStart, end || lineStart);
+    const lineEnd = end || lineStart;
+    const affected = value.slice(lineStart, lineEnd);
     const lines = (affected || "").split("\n");
     const newLines = lines
       .map((line) => (line.startsWith(prefix) ? line : prefix + line))
       .join("\n");
-    ta.value = value.slice(0, lineStart) + newLines + value.slice(end || lineStart);
+    replaceTextareaRange(ta, lineStart, lineEnd, newLines);
     ta.setSelectionRange(lineStart, lineStart + newLines.length);
   };
 
   if (latex !== null) {
-    // Raw LaTeX: insert at cursor, place cursor inside the first {}
-    const inserted = selected ? selected + latex : latex;
-    ta.value = value.slice(0, start) + inserted + value.slice(end);
-    // Try to place cursor inside the first {}
+    // Raw LaTeX snippets (superscript, fraction, matrix, etc.) must be
+    // wrapped in $...$ inline-math delimiters, or renderMathIn()'s KaTeX
+    // auto-render extension has no delimiter to detect and leaves the raw
+    // LaTeX source showing as plain text. Insert at cursor, place cursor
+    // inside the first {} placeholder.
+    const snippet = selected ? selected + latex : latex;
+    const inserted = `$${snippet}$`;
+    replaceTextareaRange(ta, start, end, inserted);
+    // Try to place cursor inside the first {} (offset by 1 for the leading $)
     const braceIdx = inserted.indexOf("{}");
     if (braceIdx !== -1) {
       const pos = start + braceIdx + 1;
       ta.setSelectionRange(pos, pos);
     } else {
-      const pos = start + inserted.length;
+      const pos = start + inserted.length - 1; // before the closing $
       ta.setSelectionRange(pos, pos);
     }
   } else {
@@ -389,21 +419,50 @@ function applyGlobalMdAction(cmd, latex = null) {
       case "code":        wrap("`",  "`",  "كود"); break;
       case "codeblock": {
         const text = selected || "كود";
-        ta.value = value.slice(0, start) + "```\n" + text + "\n```" + value.slice(end);
+        replaceTextareaRange(ta, start, end, "```\n" + text + "\n```");
         const cs = start + 4;
         ta.setSelectionRange(cs, cs + text.length);
+        break;
+      }
+      case "heading": {
+        const level = Math.min(Math.max(Number(headingLevel) || 3, 1), 6);
+        linePrefix("#".repeat(level) + " ");
         break;
       }
       case "blockquote":  linePrefix("> "); break;
       case "hr": {
         const ins = "\n---\n";
-        ta.value = value.slice(0, start) + ins + value.slice(end);
+        replaceTextareaRange(ta, start, end, ins);
         const pos = start + ins.length;
         ta.setSelectionRange(pos, pos);
         break;
       }
       case "ul":          linePrefix("- "); break;
       case "ol":          linePrefix("1. "); break;
+      case "link": {
+        const text = selected || "نص الرابط";
+        replaceTextareaRange(ta, start, end, `[${text}](https://)`);
+        const urlStart = start + text.length + 3; // after "[text]("
+        ta.setSelectionRange(urlStart, urlStart + "https://".length);
+        break;
+      }
+      case "image": {
+        const alt = selected || "وصف الصورة";
+        replaceTextareaRange(ta, start, end, `![${alt}](https://)`);
+        const urlStart = start + alt.length + 4; // after "![alt]("
+        ta.setSelectionRange(urlStart, urlStart + "https://".length);
+        break;
+      }
+      case "table": {
+        const rows =
+          "| العمود 1 | العمود 2 |\n| --- | --- |\n| قيمة | قيمة |";
+        const needsLeadingNewline = start > 0 && value[start - 1] !== "\n";
+        const ins = (needsLeadingNewline ? "\n" : "") + rows;
+        replaceTextareaRange(ta, start, end, ins);
+        const pos = start + ins.length;
+        ta.setSelectionRange(pos, pos);
+        break;
+      }
       case "inlinemath":  wrap("$", "$", "math"); break;
       case "blockmath":   wrap("$$", "$$", "math"); break;
     }
@@ -415,8 +474,9 @@ function applyGlobalMdAction(cmd, latex = null) {
 }
 
 /**
- * Wire up the global #globalMdBar: attach click handlers to every .gmd-btn
- * and start tracking .md-source focus.
+ * Wire up the global #globalMdBar: attach click handlers to every .gmd-btn,
+ * wire up the LaTeX "more" and heading dropdowns, and start tracking
+ * .md-source focus.
  */
 function setupGlobalMdBar() {
   _trackMdSourceFocus();
@@ -424,14 +484,77 @@ function setupGlobalMdBar() {
   const bar = document.getElementById("globalMdBar");
   if (!bar) return;
 
-  bar.querySelectorAll(".gmd-btn").forEach((btn) => {
+  bar.querySelectorAll(".gmd-btn:not(.gmd-dropdown-toggle)").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
-      const cmd   = btn.dataset.gmdCmd   || null;
-      const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
-      applyGlobalMdAction(cmd, latex);
+      const cmd     = btn.dataset.gmdCmd     || null;
+      const latex   = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
+      const heading = btn.dataset.gmdHeading || null;
+      applyGlobalMdAction(cmd, latex, heading);
+      // Using a dropdown item closes the dropdown it came from.
+      closeAllGmdDropdowns();
     });
   });
+
+  // Dropdown toggles (LaTeX "more" menu, heading levels menu)
+  bar.querySelectorAll(".gmd-dropdown-toggle").forEach((toggle) => {
+    toggle.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const menu = toggle.nextElementSibling;
+      if (!menu) return;
+      const isOpen = menu.classList.contains("open");
+      closeAllGmdDropdowns();
+      if (!isOpen) {
+        positionGmdDropdown(toggle, menu);
+        menu.classList.add("open");
+      }
+    });
+  });
+
+  // Re-close (rather than leave stranded mid-air) if the bar scrolls or the
+  // window resizes while a dropdown is open — its fixed position was
+  // computed for the toggle's rect at open-time only.
+  bar.addEventListener("scroll", closeAllGmdDropdowns);
+  window.addEventListener("resize", closeAllGmdDropdowns);
+
+  // Close any open gmd dropdown when clicking elsewhere
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".gmd-dropdown")) closeAllGmdDropdowns();
+  });
+}
+
+/**
+ * Position a .gmd-dropdown-menu (position: fixed) directly beneath its
+ * toggle button, using the toggle's live bounding rect. Needed because the
+ * menu can no longer be positioned with `position: absolute` relative to
+ * .global-md-bar — that bar clips vertical overflow (see CSS comment on
+ * .gmd-dropdown-menu), so an absolutely-positioned child never became
+ * visible there. Aligns to the toggle's right edge (this UI is RTL) and
+ * clamps to the viewport so it can't run off the left edge on narrow bars.
+ */
+function positionGmdDropdown(toggle, menu) {
+  const rect = toggle.getBoundingClientRect();
+  // Measure first with visibility hidden so scrollWidth/Height are correct
+  // before we do the final visible placement.
+  menu.style.visibility = "hidden";
+  menu.style.display = "flex";
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.left = "0px";
+
+  const menuWidth = menu.offsetWidth;
+  let left = rect.right - menuWidth; // align menu's right edge to toggle's right edge (RTL)
+  left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+
+  menu.style.left = `${left}px`;
+  menu.style.display = "";
+  menu.style.visibility = "";
+}
+
+function closeAllGmdDropdowns() {
+  document
+    .querySelectorAll("#globalMdBar .gmd-dropdown-menu.open")
+    .forEach((m) => m.classList.remove("open"));
 }
 
 // ============================================================================

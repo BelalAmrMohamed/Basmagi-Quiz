@@ -533,6 +533,66 @@ body.sidebar-expanded .global-md-bar {
   opacity: 1;
 }
 
+/* ── Dropdown toggles (heading levels, "more" LaTeX symbols) ────────────── */
+/* .gmd-dropdown-menu uses position:fixed (set via inline top/left in JS,
+   anchored to its toggle button) rather than position:absolute. The
+   toolbar itself scrolls horizontally (overflow-x: auto) and clips
+   vertical overflow (overflow-y: hidden) so its buttons don't visually
+   spill past the fixed bar's height — an absolutely-positioned dropdown
+   anchored inside it would be clipped by that same overflow:hidden and
+   never actually appear. Fixed positioning escapes the clipping ancestor
+   entirely. */
+.gmd-dropdown {
+  position: relative;
+}
+
+.gmd-dropdown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.gmd-dropdown-toggle .gmd-caret {
+  width: 9px;
+  height: 9px;
+  opacity: 0.7;
+}
+
+.gmd-dropdown-menu {
+  position: fixed;
+  z-index: 200;
+  display: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+}
+
+.gmd-dropdown-menu.open {
+  display: flex;
+}
+
+/* Heading menu: single column list, one level per row */
+.gmd-dropdown-menu--headings {
+  flex-direction: column;
+  min-width: 130px;
+}
+
+.gmd-dropdown-menu--headings .gmd-btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 6px 10px;
+  height: auto;
+}
+
+/* LaTeX "more" menu: wraps symbol buttons in a small grid */
+.gmd-dropdown-menu--latex {
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 220px;
+}
+
 @media (max-width: 640px) {
   .app-title-bar {
     padding-left: 8px;
