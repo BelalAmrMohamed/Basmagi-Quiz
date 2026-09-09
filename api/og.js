@@ -1144,7 +1144,7 @@ async function renderCourseImage(courseId, folderPath) {
                     color: "#6b7280",
                     fontWeight: "400",
                     fontSize: "24px",
-                    direction: "ltr", // text itself is pre-reordered below
+                    direction: "ltr", // container stays ltr — text is untouched (see below)
                   },
                   // Multi-word Arabic labels ARE reversed by renderBidiText
                   // only for containers whose flex order is itself
@@ -1362,19 +1362,26 @@ async function renderCourseImage(courseId, folderPath) {
                           fontWeight: "700",
                           color: "#111827",
                           lineHeight: "1.2",
-                          direction: "ltr",
+                          // Untouched, non-reversed Arabic text needs
+                          // `direction: rtl` on its own text container so
+                          // Satori paints its word order correctly (this
+                          // is the "sibling elements doing their own
+                          // mirroring" case being the exception — see
+                          // renderBidiText's doc comment — but a single
+                          // leaf with genuinely RTL content is the OTHER
+                          // legitimate case: `ltr` here was what produced
+                          // the reversed-with-huge-gaps rendering, since
+                          // Satori's shaper needs to know this run is RTL
+                          // to lay out and join the glyphs correctly).
+                          direction: isArabic ? "rtl" : "ltr",
                           width: "100%",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           justifyContent: "flex-end",
                           textAlign: "right",
                         },
-                        // Single text node, not mirrored — see the
-                        // course-info-table label comment above for why
-                        // renderBidiText's word-reversal must NOT be
-                        // applied to a plain (non row-reverse) container.
-                        // The title string is already in correct reading
-                        // order; only right-alignment is needed.
+                        // Single text node, not word-reversed — see the
+                        // direction comment just above.
                         children: title,
                       },
                     },

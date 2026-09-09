@@ -1,6 +1,6 @@
 {
   "name": "basamgi-quiz",
-  "version": "8.2.5",
+  "version": "8.2.6",
   "description": "Vanilla JS examination platform with quiz creation and export features",
   "type": "module",
   "scripts": {

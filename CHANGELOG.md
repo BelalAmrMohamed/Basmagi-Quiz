@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [8.2.5] - 2026-9-9
+## [8.2.6] - 2026-9-9
 
 ### Updated og.js
 
