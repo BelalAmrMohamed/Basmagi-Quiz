@@ -997,6 +997,15 @@ async function renderCourseImage(courseId, folderPath) {
   // as its own labeled line in the info block below, per spec: folder
   // name + parent COURSE's info, not a smashed-together path string.
   const rawTitle = meta ? meta.name : "منصة امتحانات بصمجي";
+  // NOTE: `isArabic` here is used ONLY to decide word-order reversal for a
+  // given text run (per renderBidiText's own doc comment) and text-length
+  // budgets/font sizing — it must NEVER be used to pick which side of the
+  // canvas things are laid out on, or the layout would move around
+  // depending on whatever the current title happens to be (this is
+  // exactly the bug that shipped previously — course-info sometimes on
+  // the left, sometimes the right). This page's overall reading direction
+  // is fixed to RTL — see the static layout below — independent of title
+  // language.
   const isArabic = detectArabic(rawTitle);
   const title = truncateTitle(
     rawTitle,
@@ -1060,66 +1069,115 @@ async function renderCourseImage(courseId, folderPath) {
   const courseSlug = meta
     ? renderBidiSlugSegment(slugify(meta.courseName || meta.name))
     : "";
-  const linkPath =
+  const fullLinkPath =
     folderPath && folderPath.length > 0
       ? `basmagi-quiz.vercel.app/course/${courseSlug}/${folderPath
         .map((seg) => renderBidiSlugSegment(slugify(seg)))
         .join("/")}`
       : `basmagi-quiz.vercel.app/course/${courseSlug}`;
 
+  // Footer link — MUST stay on one line. Long paths used to wrap onto a
+  // second line (ugly, and left a lot of the row's own left-hand space
+  // unused since the text was right/left-anchored instead of filling the
+  // row). Fix: hard single-line + truncate from the FRONT ("…" + tail)
+  // once it's too long to fit, so the most identifying part — the actual
+  // course/folder slug at the end of the path — stays visible instead of
+  // the always-identical "basmagi-quiz.vercel.app/course/" prefix. This
+  // is a plain character-count clamp (no font-metrics call needed here,
+  // unlike the title): the footer uses a small monospace-ish sans size
+  // and a generous character budget is enough to guarantee it never
+  // overflows the fixed-width footer row.
+  const LINK_MAX_CHARS = 64;
+  const linkPath =
+    fullLinkPath.length > LINK_MAX_CHARS
+      ? "…" + fullLinkPath.slice(fullLinkPath.length - (LINK_MAX_CHARS - 1))
+      : fullLinkPath;
+
   const contentWidth = COURSE_CONTENT.right - COURSE_CONTENT.left;
 
-  /**
-   * Builds one course-info row as TWO separate flex children (label,
-   * value), mirrored via `flexDirection: row-reverse` for Arabic rather
-   * than pre-joining "label: value" into one string — a label/value pair
-   * is structurally a two-item list, not a sentence, so its two sides are
-   * positioned via flex order exactly like other label+content rows in
-   * this file (e.g. the parent-course line), each side showing its own
-   * text with no cross-side word manipulation.
-   *
-   * IMPORTANT: this does NOT mean the label's own text is safe to render
-   * untouched. Satori does not run the Unicode Bidi Algorithm (see
-   * renderBidiText's doc comment) — it paints a text node's
-   * space-separated words in raw storage order regardless of `direction`.
-   * A one-word label like "الكلية" only has one token, so storage order
-   * and visual order are trivially the same and it happened to render
-   * fine. A two-plus-word label like "نوع التعليم" does NOT get this
-   * lucky: without reordering, it paints as "التعليم نوع" with the
-   * trailing ":" fused onto the wrong word (this shipped as a real bug —
-   * screenshots showed rows like "التعليم:نوع جامعي"). So the label goes
-   * through renderBidiText() same as any other multi-word Arabic string;
-   * the value does not, since values are frequently Latin (e.g. "Computer
-   * Science") or a single Arabic word, and reversing a Latin value's word
-   * order would itself be a bug.
-   */
-  function buildInfoRowChildren(row) {
+  // ── Course-info TABLE ────────────────────────────────────────────────
+  // Per spec: this is a table, not a pair of independently-mirrorable
+  // flex rows. Keys always sit on the right and read RTL; values always
+  // sit on the left and read LTR — even when the value itself is Arabic
+  // text (e.g. "Computer Science" vs. "نظم معلومات") — because a
+  // consistent two-column grid reads better than a layout that
+  // reorders itself per-row based on each value's own script. The whole
+  // table is a fixed-position, fixed-width block (see COURSE_INFO_TABLE
+  // geometry below) so its position on the canvas never moves, no matter
+  // what the title or values are — this directly fixes the "info block
+  // moves left/right depending on the quiz title" bug.
+  function buildInfoTable(rows) {
     return {
       type: "div",
       props: {
         style: {
           display: "flex",
-          flexDirection: isArabic ? "row-reverse" : "row",
-          alignItems: "baseline",
-          gap: "8px",
+          flexDirection: "column",
+          width: "100%",
+          border: "1px solid rgba(15,23,42,0.10)",
+          borderRadius: "16px",
+          overflow: "hidden",
           direction: "ltr",
         },
-        children: [
-          {
-            type: "div",
-            props: {
-              style: { display: "flex", color: "#6b7280", fontWeight: "400" },
-              children: `${renderBidiText(row.label, isArabic)}:`,
+        children: rows.map((row, i) => ({
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
+              borderTop: i === 0 ? "none" : "1px solid rgba(15,23,42,0.08)",
+              background: i % 2 === 1 ? "rgba(15,23,42,0.02)" : "transparent",
             },
+            children: [
+              // Key column — always the RIGHT side, always RTL-aligned
+              // text, regardless of the value's script.
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    order: 2,
+                    flex: "0 0 46%",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    padding: "14px 22px",
+                    color: "#6b7280",
+                    fontWeight: "400",
+                    fontSize: "24px",
+                    direction: "ltr", // text itself is pre-reordered below
+                  },
+                  // Multi-word Arabic labels need word-order reversal
+                  // (see renderBidiText's doc comment) — single-word or
+                  // Latin labels pass through unchanged.
+                  children: renderBidiText(row.label, detectArabic(row.label)),
+                },
+              },
+              // Value column — always the LEFT side, always LTR-aligned,
+              // even for an Arabic value — this is the "even if they are
+              // Arabic, tables look better this way" rule from the brief.
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    order: 1,
+                    flex: "1 1 54%",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    padding: "14px 22px",
+                    color: "#111827",
+                    fontWeight: "700",
+                    fontSize: "24px",
+                    borderRight: "1px solid rgba(15,23,42,0.08)",
+                    direction: "ltr",
+                  },
+                  children: String(row.val),
+                },
+              },
+            ],
           },
-          {
-            type: "div",
-            props: {
-              style: { display: "flex", color: "#111827", fontWeight: "700" },
-              children: String(row.val),
-            },
-          },
-        ],
+        })),
       },
     };
   }
@@ -1215,8 +1273,13 @@ async function renderCourseImage(courseId, folderPath) {
               bottom: `${630 - COURSE_CONTENT.bottom}px`,
               width: `${contentWidth}px`,
               direction: "ltr",
-              alignItems: isArabic ? "flex-end" : "flex-start",
-              textAlign: isArabic ? "right" : "left",
+              // FIXED regardless of title/value language — this column's
+              // side never moves based on what text happens to be in it
+              // (see the isArabic doc comment above renderCourseImage's
+              // title logic for why). The product itself is Arabic-first,
+              // so the column is always right-aligned/RTL-reading.
+              alignItems: "flex-end",
+              textAlign: "right",
             },
             children: [
               // ── Header block (kind label, parent line, title, info
@@ -1229,7 +1292,7 @@ async function renderCourseImage(courseId, folderPath) {
                   style: {
                     display: "flex",
                     flexDirection: "column",
-                    alignItems: isArabic ? "flex-end" : "flex-start",
+                    alignItems: "flex-end",
                     width: "100%",
                   },
                   children: [
@@ -1258,7 +1321,7 @@ async function renderCourseImage(courseId, folderPath) {
                         props: {
                           style: {
                             display: "flex",
-                            flexDirection: isArabic ? "row-reverse" : "row",
+                            flexDirection: "row-reverse",
                             marginTop: "12px",
                             fontSize: "26px",
                             color: "#6b7280",
@@ -1269,7 +1332,7 @@ async function renderCourseImage(courseId, folderPath) {
                           children: [
                             {
                               type: "div",
-                              props: { style: { display: "flex" }, children: isArabic ? "في" : "in" },
+                              props: { style: { display: "flex" }, children: "في" },
                             },
                             {
                               type: "div",
@@ -1317,12 +1380,10 @@ async function renderCourseImage(courseId, folderPath) {
                           style: {
                             display: "flex",
                             flexDirection: "column",
-                            alignItems: isArabic ? "flex-end" : "flex-start",
+                            width: "100%",
                             marginTop: "28px",
-                            gap: "12px",
-                            fontSize: "26px",
                           },
-                          children: infoRows.map(buildInfoRowChildren),
+                          children: [buildInfoTable(infoRows)],
                         },
                       }
                       : null,
@@ -1344,7 +1405,7 @@ async function renderCourseImage(courseId, folderPath) {
                         props: {
                           style: {
                             display: "flex",
-                            flexDirection: isArabic ? "row-reverse" : "row",
+                            flexDirection: "row-reverse",
                             marginTop: "32px",
                             alignItems: "center",
                             gap: "8px",
@@ -1369,17 +1430,26 @@ async function renderCourseImage(courseId, folderPath) {
               },
 
               // ── Link footer — pinned to the bottom of the card by the
-              // space-between on the parent column, per request (was
-              // previously right under the info rows, floating in the
-              // middle of a lot of empty space below it). ────────────────
+              // space-between on the parent column. MUST render as a
+              // single line: `whiteSpace: nowrap` + `overflow: hidden`
+              // stop the wasteful/ugly two-line wrap the old version hit
+              // on long paths, and `width: 100%` + `justifyContent:
+              // flex-end` push the (now front-truncated, see linkPath's
+              // own comment) text flush to the right edge of the content
+              // column so it uses the same static right edge as every
+              // other row instead of drifting based on text length. ─────
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
+                    width: "100%",
+                    justifyContent: "flex-end",
                     fontSize: "20px",
                     color: "#9ca3af",
                     fontWeight: "400",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
                     direction: "ltr",
                   },
                   children: linkPath,

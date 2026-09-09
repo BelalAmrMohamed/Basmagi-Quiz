@@ -9,14 +9,15 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Courses & Folders OG Images
 - Don't show the info correctly: 
-  - ![Course with Arabic info not formatted well](image-7.png)
-  - ![Folder with messed up Arabic](image-8.png)
-  
-#### After the last update
+  - ![Course with Arabic info not formatted well](image.png)
+  - ![Folder with messed up Arabic](image-7.png)
+
+#### Suggestions
 - Similar issues remain. Here are suggestions:
   - For long URLs (that get displayed at the bottom): Make sure they aren't being displayed on 2 lines because that looks ugly, specially when there are so much space on the left of the link that is not being used, so make sure that space is being used, push it to the left when it gets long, you can use other strateiges too.
   - For the course / folder info:
     - They sometimes get displayed on the left, other times on the right, based on the title of the quiz. They should always be displayed in a static place that doesn't move, and they should be displayed as a table, where the keys are on the right and RTL, and the values are on the left and LTR (even if they are Arabic, tables look better this way.)
+  - Direction of elements / labels shouldn't change based on the Title of the quiz because that seems to mess up alot of stuff
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
