@@ -25,6 +25,31 @@ import { ensureSharedSupabaseClient } from "./supabaseClientRegistry.js";
 
 let cached = null;
 
+// Upper bound for how long the home page will wait for Supabase before giving
+// up and showing the retry/error state. Supabase outages in front of
+// CloudFlare can manifest as requests that simply HANG (never resolve, never
+// reject) — without this bound the skeleton loader would spin forever.
+const MANIFEST_FETCH_TIMEOUT_MS = 15000;
+
+// Races a promise against a hard deadline so a hung network request (e.g.
+// Cloudflare 522 / connection timeout against Supabase) can never wedge the
+// home page on the skeleton indefinitely.
+function withTimeout(promise, ms, label) {
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `[${label || "request"}] Timed out after ${ms}ms`,
+          ),
+        ),
+      ms,
+    );
+  });
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -62,20 +87,24 @@ async function fetchDbManifest() {
   const supabase = await ensureSharedSupabaseClient();
   if (!supabase) throw new Error("Supabase client unavailable");
 
-  const [{ data: quizzes, error: quizzesError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await Promise.all([
-    supabase
-      .from("quizzes")
-      .select("id, course_id, folder_id, title, data, password")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("courses")
-      .select("id, name, education_type, college, year, term")
-      .order("name", { ascending: true }),
-    supabase
-      .from("folders")
-      .select("id, course_id, name, parent_folder_id")
-      .order("name", { ascending: true }),
-  ]);
+  const [{ data: quizzes, error: quizzesError }, { data: courses, error: coursesError }, { data: folders, error: foldersError }] = await withTimeout(
+    Promise.all([
+      supabase
+        .from("quizzes")
+        .select("id, course_id, folder_id, title, data, password")
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("courses")
+        .select("id, name, education_type, college, year, term")
+        .order("name", { ascending: true }),
+      supabase
+        .from("folders")
+        .select("id, course_id, name, parent_folder_id")
+        .order("name", { ascending: true }),
+    ]),
+    MANIFEST_FETCH_TIMEOUT_MS,
+    "quiz manifest",
+  );
 
   if (quizzesError) throw quizzesError;
   if (coursesError) throw coursesError;

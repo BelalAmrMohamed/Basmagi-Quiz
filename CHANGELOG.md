@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [] - 2026-9-8
 
+### Fixed Production Home-Page Freeze (Endless Skeleton)
+- **Root cause**: the Supabase project API was unreachable (Cloudflare `522: Connection timed out`; Supabase status reported "Partially Degraded Service"). The home page fired its manifest queries with no timeout, so when Supabase hung instead of erroring, `getManifest()` never settled and the skeleton spinner spun forever.
+- `quizManifest.js`: wrapped the three Supabase manifest queries (`quizzes`/`courses`/`folders`) in a 15-second timeout — a hung request now fails fast instead of wedging the page.
+- `navigation.js`: a manifest load failure now sets the category tree to `null` (reserved `{}` for a genuinely empty catalog) and adds `retryLoadManifest()` so the page can retry without a full reload.
+- `root-view.js`: `renderRootCategories()` detects the `null` tree and shows a clear "تعذّر تحميل المحتوى" error state with **إعادة المحاولة** + **تحديث الصفحة** buttons instead of the misleading "لا توجد مواد متاحة حالياً" empty state or the perpetual skeleton.
+
 ## [8.2.1] - 2026-9-7
 
 ### Updated OG Images

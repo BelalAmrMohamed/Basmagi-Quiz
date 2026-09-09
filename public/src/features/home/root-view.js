@@ -154,6 +154,39 @@ function attachCourseActionsMenu(card, course, categoryTree) {
   card.appendChild(moreBtn);
 }
 
+// Renders the "manifest failed to load" error state (replaces the skeleton /
+// content) with an in-app retry button. Shown from renderRootCategories() when
+// the quiz manifest never loaded — Supabase outage, request timeout, or any
+// network blip. Without this, a hung Supabase request would leave the skeleton
+// spinning forever, and a fast rejection would mislead users into thinking the
+// catalog is legitimately empty.
+function renderManifestLoadError() {
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="error-state" role="alert">
+      <p>تعذّر تحميل المحتوى. الخادم لا يستجيب حالياً — حاول مرة أخرى بعد قليل.</p>
+      <button type="button" id="retryManifestBtn">إعادة المحاولة</button>
+      <button type="button" onclick="location.reload()">تحديث الصفحة</button>
+    </div>
+  `;
+  container.setAttribute("aria-busy", "false");
+
+  const retryBtn = container.querySelector("#retryManifestBtn");
+  if (retryBtn) {
+    retryBtn.addEventListener("click", () => {
+      // Dynamic import avoids the navigation.js <-> root-view.js circular
+      // import (navigation.js imports renderRootCategories from this module).
+      import("./navigation.js")
+        .then((m) => m.retryLoadManifest())
+        .catch((err) => {
+          console.error("Failed to retry manifest load:", err);
+          location.reload(); // last-resort fallback
+        });
+    });
+  }
+}
+
 export async function renderRootCategories() {
   try {
     const navigationStack = getNavigationStack();
@@ -193,6 +226,17 @@ export async function renderRootCategories() {
 
     const subscribedIds = userProfile.getSubscribedCourseIds();
     const categoryTree = getCategoryTree();
+
+    // ── Manifest-load failure guard ────────────────────────────────────────
+    // categoryTree is null (not {}) when the manifest failed to load (see
+    // initApp/retryLoadManifest in navigation.js). Show the retry error state
+    // instead of falling through to the misleading "لا توجد مواد متاحة"
+    // empty state or throwing inside getSubscribedCourses().
+    if (!categoryTree) {
+      renderManifestLoadError();
+      return;
+    }
+
     const subscribedCourses = getSubscribedCourses(categoryTree, subscribedIds);
     const profile = userProfile.getProfile();
 

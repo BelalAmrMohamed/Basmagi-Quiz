@@ -373,7 +373,10 @@ export async function initApp() {
     initializeSearchManager();
   } catch (err) {
     console.error("Failed to load quiz manifest:", err);
-    setCategoryTree({});
+    // null (NOT {}) signals "load failed" so renderRootCategories() shows a
+    // retry error state instead of a misleading "توجد مواد غير متاحة" empty
+    // state — {} remains reserved for a genuinely empty catalog.
+    setCategoryTree(null);
   }
 
   // ── If first-time visitor, show landing layout instead of default content
@@ -382,5 +385,26 @@ export async function initApp() {
     return; // Wait for user decision (skip/onboard button)
   }
 
+  finalizeAppRender();
+}
+
+/**
+ * Re-attempts the quiz-manifest load from the retry/error state without a
+ * full page reload. Used by the manifest-failure error state rendered from
+ * renderRootCategories() (see root-view.js); a dynamic import from that
+ * module avoids the navigation.js <-> root-view.js circular import.
+ *
+ * The manifest is only cached on success, so a retry after a timeout/failure
+ * genuinely re-fetches from Supabase.
+ */
+export async function retryLoadManifest() {
+  try {
+    const manifest = await getManifest();
+    setCategoryTree(manifest.categoryTree);
+    initializeSearchManager();
+  } catch (err) {
+    console.error("Retry failed to load quiz manifest:", err);
+    setCategoryTree(null);
+  }
   finalizeAppRender();
 }
