@@ -670,6 +670,11 @@ function renderEntryItemsGrid() {
   }
 
   grid.innerHTML = html;
+
+  // First real render: swap the static skeleton out for the actual grid.
+  const skeleton = document.getElementById("entrySkeleton");
+  if (skeleton) skeleton.style.display = "none";
+  grid.style.display = "";
 }
 
 
@@ -3069,6 +3074,13 @@ function loadQuizFromLocalStorage(quizId) {
       showNotification("أهلاً بك", "تم تحميل الامتحان للتعديل", "success");
       // Sync the app-bar title now that quizData.title is populated
       updateAppTitleBar();
+      // Questions were just rendered above — refresh the empty-state
+      // visibility (it's shown by default / left over from an earlier,
+      // still-empty call to finishFormInit()) along with progress/stats,
+      // which also depend on quizData.questions now being populated.
+      updateEmptyState();
+      updateProgress();
+      updateStatistics();
     } else {
       showNotification("خطأ", "لم يتم العثور على الامتحان", "error");
       setTimeout(() => (window.location.href = "/"), 1500);

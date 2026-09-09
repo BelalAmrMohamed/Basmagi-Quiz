@@ -951,6 +951,16 @@
                             <span>اختصارات لوحة المفاتيح</span>
                             <span class="menu-option-shortcut">؟</span>
                         </button>
+                        <a href="/how-to-create-a-quiz.html" target="_blank" rel="noopener noreferrer"
+                            class="menu-option" onclick="closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 17h.01" />
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                                <circle cx="12" cy="12" r="10" />
+                            </svg>
+                            <span>كيفية إنشاء امتحان</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1013,7 +1023,22 @@
              Mirrors Google Docs' start screen: a "start new" tile followed by
              a flat, sorted grid of recent items (draft + saved quizzes). -->
         <div class="entry-screen" id="entryScreen" style="display: none;">
-            <div class="entry-sections" id="entryItemsGrid">
+            <!-- Skeleton: visible by default so the page has real
+                 content-shaped structure from first paint, before
+                 create-quiz.js has run. renderEntryItemsGrid() hides
+                 this and fills #entryItemsGrid with the real tiles. -->
+            <div class="entry-sections entry-skeleton" id="entrySkeleton" aria-hidden="true">
+                <div class="entry-section">
+                    <div class="entry-skeleton-heading"></div>
+                    <div class="entry-items-grid">
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="entry-sections" id="entryItemsGrid" style="display: none;">
                 <!-- Populated by renderEntryItemsGrid() in create-quiz.js:
                      one .entry-section per group (new / drafts / saved),
                      each with its own heading and its own .entry-items-grid,
@@ -1289,7 +1314,10 @@
                     <!-- Questions will be dynamically added here -->
                 </div>
 
-                <!-- Enhanced Empty State -->
+                <!-- Enhanced Empty State — informational only, no action
+                     buttons. "إضافة سؤال جديد" and "سؤال من القوالب" both
+                     live in the top menu bar's إدراج menu (Alt+N shortcut
+                     for the former), so this doesn't duplicate them. -->
                 <div class="empty-state" id="emptyState">
                     <div class="empty-illustration">
                         <div class="empty-icon"><svg xmlns="http://www.w3.org/2000/svg" class="empty-icon-svg"
@@ -1305,29 +1333,10 @@
                         <div class="empty-glow"></div>
                     </div>
                     <h3>ابدأ بإنشاء أول سؤال</h3>
-                    <p>اختر من القوالب السريعة أو أنشئ سؤالاً مخصصاً</p>
-                    <div class="empty-actions">
-                        <button class="btn btn-primary btn-large" onclick="addQuestion()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus">
-                                <path d="M5 12h14" />
-                                <path d="M12 5v14" />
-                            </svg> إضافة سؤال
-                        </button>
-                        <button class="btn btn-secondary btn-large" onclick="openTemplatesMenu()">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round"
-                                class="lucide lucide-layout-template-icon lucide-layout-template">
-                                <rect width="18" height="7" x="3" y="3" rx="1" />
-                                <rect width="9" height="7" x="3" y="14" rx="1" />
-                                <rect width="5" height="7" x="16" y="14" rx="1" />
-                            </svg> استخدام قالب
-                        </button>
-                    </div>
+                    <p>استخدم قائمة "إدراج" في الأعلى لإضافة سؤال جديد أو الاختيار من القوالب</p>
                     <p class="empty-hint">اختصار سريع: اضغط <kbd>Alt+N</kbd></p>
                 </div>
+
 
                 <!-- Question Templates Panel — removed; templates are now a
                      submenu under the Insert (إدراج) menu in the top bar. -->

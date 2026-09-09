@@ -75,6 +75,13 @@ body.quiz-form-active {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  /* Push the footer to the bottom of the viewport regardless of how much
+     content the active screen (#entryScreen or #quizCreatorForm) has —
+     including the brief moment before entry-screen tiles have rendered. */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+  /* 80px = body's 40px top + 40px bottom padding */
 }
 
 /* Autosave Indicator */
@@ -560,10 +567,6 @@ body.sidebar-expanded .global-md-bar {
    ============================================================================ */
 
 .entry-screen {
-  /* Flex column so that if a footer exists, it's pushed to the bottom */
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 80px);
   padding: 8px 0 0 0;
 }
 
@@ -610,11 +613,6 @@ body.sidebar-expanded .global-md-bar {
   border-color: var(--color-warning);
 }
 
-/* Push footer to bottom of entry screen */
-.entry-screen-footer {
-  margin-top: auto;
-  padding-top: 24px;
-}
 /* Grid cell wrapper — holds the clickable tile plus the sibling "more" (⋮)
    button. .entry-item is itself a <button>, so the ⋮ trigger can't nest
    inside it (buttons can't nest); it lives here instead, positioned over
@@ -2626,7 +2624,11 @@ body.sidebar-expanded .global-md-bar {
 
 .watermark {
   text-align: center;
-  margin-top: 80px;
+  /* auto pushes this to the bottom of .container's flex column (see
+     .container), instead of a fixed 80px gap that let the footer sit right
+     under short content — including the empty instant before entry-screen
+     tiles render, when it used to land at the literal top of the page. */
+  margin-top: auto;
   padding-top: 40px;
   border-top: 1px solid var(--color-border-light);
   font-size: 0.8rem;
