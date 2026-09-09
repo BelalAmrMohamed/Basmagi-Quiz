@@ -1077,17 +1077,16 @@ async function renderCourseImage(courseId, folderPath) {
       : `basmagi-quiz.vercel.app/course/${courseSlug}`;
 
   // Footer link — MUST stay on one line. Long paths used to wrap onto a
-  // second line (ugly, and left a lot of the row's own left-hand space
-  // unused since the text was right/left-anchored instead of filling the
-  // row). Fix: hard single-line + truncate from the FRONT ("…" + tail)
-  // once it's too long to fit, so the most identifying part — the actual
-  // course/folder slug at the end of the path — stays visible instead of
-  // the always-identical "basmagi-quiz.vercel.app/course/" prefix. This
-  // is a plain character-count clamp (no font-metrics call needed here,
-  // unlike the title): the footer uses a small monospace-ish sans size
-  // and a generous character budget is enough to guarantee it never
-  // overflows the fixed-width footer row.
-  const LINK_MAX_CHARS = 64;
+  // second line (ugly). Fix: hard single-line + truncate from the FRONT
+  // ("…" + tail) once it's too long to fit, so the most identifying part
+  // — the actual course/folder slug at the end of the path — stays
+  // visible instead of the always-identical "basmagi-quiz.vercel.app/
+  // course/" prefix. Budget is generous (the footer now spans the full
+  // centered canvas width, ~1120px, not just the narrow right-hand
+  // content column) — this is a plain character-count clamp, not a
+  // font-metrics measurement, so it errs conservative rather than risking
+  // overflow past the canvas edges.
+  const LINK_MAX_CHARS = 100;
   const linkPath =
     fullLinkPath.length > LINK_MAX_CHARS
       ? "…" + fullLinkPath.slice(fullLinkPath.length - (LINK_MAX_CHARS - 1))
@@ -1147,10 +1146,16 @@ async function renderCourseImage(courseId, folderPath) {
                     fontSize: "24px",
                     direction: "ltr", // text itself is pre-reordered below
                   },
-                  // Multi-word Arabic labels need word-order reversal
-                  // (see renderBidiText's doc comment) — single-word or
-                  // Latin labels pass through unchanged.
-                  children: renderBidiText(row.label, detectArabic(row.label)),
+                  // Multi-word Arabic labels ARE reversed by renderBidiText
+                  // only for containers whose flex order is itself
+                  // mirrored (row-reverse) — see that helper's own doc
+                  // comment. This column is a plain LTR "row" (not
+                  // reversed), so the label text must be passed through
+                  // UNTOUCHED: Satori paints word-tokens in storage order
+                  // regardless of `direction`, and "نوع التعليم" is
+                  // already stored in correct reading order — reversing it
+                  // here is what produced the flipped "التعليم نوع" bug.
+                  children: row.label,
                 },
               },
               // Value column — always the LEFT side, always LTR-aligned,
@@ -1309,8 +1314,8 @@ async function renderCourseImage(courseId, folderPath) {
                           direction: "ltr",
                         },
                         children: isFolder
-                          ? isArabic ? "مجلد" : "FOLDER"
-                          : isArabic ? renderBidiText("مقرر دراسي", true) : "COURSE",
+                          ? "مجلد"
+                          : isArabic ? "مقرر دراسي" : "COURSE",
                       },
                     },
 
@@ -1361,8 +1366,16 @@ async function renderCourseImage(courseId, folderPath) {
                           width: "100%",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
+                          justifyContent: "flex-end",
+                          textAlign: "right",
                         },
-                        children: renderBidiText(title, isArabic),
+                        // Single text node, not mirrored — see the
+                        // course-info-table label comment above for why
+                        // renderBidiText's word-reversal must NOT be
+                        // applied to a plain (non row-reverse) container.
+                        // The title string is already in correct reading
+                        // order; only right-alignment is needed.
+                        children: title,
                       },
                     },
 
@@ -1428,34 +1441,38 @@ async function renderCourseImage(courseId, folderPath) {
                   ].filter(Boolean),
                 },
               },
-
-              // ── Link footer — pinned to the bottom of the card by the
-              // space-between on the parent column. MUST render as a
-              // single line: `whiteSpace: nowrap` + `overflow: hidden`
-              // stop the wasteful/ugly two-line wrap the old version hit
-              // on long paths, and `width: 100%` + `justifyContent:
-              // flex-end` push the (now front-truncated, see linkPath's
-              // own comment) text flush to the right edge of the content
-              // column so it uses the same static right edge as every
-              // other row instead of drifting based on text length. ─────
-              {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    width: "100%",
-                    justifyContent: "flex-end",
-                    fontSize: "20px",
-                    color: "#9ca3af",
-                    fontWeight: "400",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    direction: "ltr",
-                  },
-                  children: linkPath,
-                },
-              },
             ],
+          },
+        },
+
+        // ── Link footer — full canvas width, horizontally centered
+        // (per request: previously confined to the narrow right-hand
+        // content column, which both clipped long paths and left all the
+        // space under the icon card on the left unused). Absolutely
+        // positioned independently of the content column so centering is
+        // against the whole 1200px canvas, not just its own column. Still
+        // single-line (`whiteSpace: nowrap` + `overflow: hidden`) — but
+        // the char budget above is generous enough, and centered text
+        // rarely needs the aggressive front-truncation a right-anchored
+        // line does, so nothing meaningful gets clipped in practice. ─────
+        {
+          type: "div",
+          props: {
+            style: {
+              display: "flex",
+              position: "absolute",
+              left: "40px",
+              right: "40px",
+              bottom: "40px",
+              justifyContent: "center",
+              fontSize: "20px",
+              color: "#9ca3af",
+              fontWeight: "400",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              direction: "ltr",
+            },
+            children: linkPath,
           },
         },
       ],
