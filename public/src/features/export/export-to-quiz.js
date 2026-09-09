@@ -3551,16 +3551,17 @@ ${quizInfoModalHtml}
       this.applyPagerVisibility();
       const card = document.getElementById(\`q\${qIndex}\`);
       if (card) {
-        // In pagination mode, applyPagerVisibility() already swaps which
-        // single card is shown — there's nothing stacked to scroll to, so
-        // centering it here only produced an unwanted scroll jump each
-        // time the page changed. Just reset the scroll position to the
-        // top of the (single) visible card instead. Vertical mode still
-        // has every card stacked in the DOM at once, so scrolling the
-        // target card into view there is still correct and kept as-is.
-        if (EXPORT_LAYOUT === "pagination") {
-          window.scrollTo(0, 0);
-        } else {
+        // Pagination mode swaps which single card is visible in place —
+        // the page's scroll position doesn't need to move at all, since
+        // the new card renders at the same spot the old one occupied.
+        // Both scrollIntoView(...) and an explicit scrollTo(0, 0) here
+        // previously animated the page (html has scroll-behavior:
+        // smooth globally), which read as an unwanted scroll trip on
+        // every arrow-key/next-button press even though nothing above
+        // the card had actually changed. Vertical mode still has every
+        // card stacked in the DOM at once, so scrolling the target card
+        // into view there is still correct and kept as-is.
+        if (EXPORT_LAYOUT !== "pagination") {
           card.scrollIntoView({ behavior: "smooth", block: "center" });
         }
         this.updateAllNavButtons();
@@ -3569,8 +3570,8 @@ ${quizInfoModalHtml}
         setTimeout(() => {
           const firstBtn = card.querySelector('.option-btn, .essay-input, .flag-btn');
           // preventScroll avoids the browser's default "scroll focused
-          // element into view" behavior re-introducing a jump right after
-          // we've just positioned the page for pagination mode above.
+          // element into view" behavior introducing a scroll jump of its
+          // own when focus moves to the new card.
           if (firstBtn) firstBtn.focus({ preventScroll: true });
         }, 500);
       }
