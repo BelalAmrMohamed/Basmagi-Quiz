@@ -7,16 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Broken Elements
 
-### Profile Description
-- Allow users to write a description/bio in their profile.html.
-- Admins description stored in the DB (you can write a migration and I'll run it).
-- People can edit their description at any time.
-
-### Profile Handles
-- The current logic for setting user handle isn't reliable.
-- It sets the handle based on the first part of the user email (belalamrofficial@gmail.com -> `@belalamrofficial`), but that logic has an issue, there might be 2 emails that share the first part (like `belalamrofficial@gmail` and `belalamrofficial@proton`). So make sure there is a logic that makes sure that handle is uniuqe.
-- Allow users to modify/edit their handle.
-
 ### Courses & Folders OG Images
 - Don't show the info: Last update on the og images made the Arabic labels (المادة ، السنة ، الترم) be RTL, it's that update where they stopped showing.
 
