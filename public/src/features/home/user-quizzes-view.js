@@ -102,7 +102,20 @@ function handleCreateQuizToolCall(toolCall) {
     meta: { title, description: input.description || "" },
   };
 
-  saveNewUserQuiz(parsed, title);
+  // BUG FIX: saveNewUserQuiz can now reject a same-level duplicate name
+  // (see its doc comment in quiz-schema.js) — surface that back to the chat
+  // as a thrown error (same pattern as the "no questions" case above) so
+  // the AI Helper sees the failure and can tell the user / retry with a
+  // different title, rather than silently doing nothing while the tool
+  // call reports success.
+  const result = saveNewUserQuiz(parsed, title);
+  if (result.ok === false) {
+    showNotification("الاسم مستخدم", result.reason, "warning", 10);
+    const err = new Error("create_quiz tool call hit a same-level name clash");
+    err.userMessage = result.reason;
+    throw err;
+  }
+
   showNotification(
     "تم الإنشاء",
     'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',

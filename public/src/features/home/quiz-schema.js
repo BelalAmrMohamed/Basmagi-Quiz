@@ -5,6 +5,7 @@
 // ============================================================================
 
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
+import { hasSameLevelCollision } from "./user-quizzes-folders.js";
 
 /** Read a field from either old or new schema */
 export function qz(quiz, field) {
@@ -119,12 +120,31 @@ export function formatQuestionTypesForDownload(questionTypes) {
  * the manual paste-JSON modal (create-quiz-modal.js) and the AI Helper's
  * create_quiz tool call (user-quizzes-view.js). Callers are responsible for
  * validating `parsed.questions` is non-empty before calling this.
+ *
+ * BUG FIX: this never checked for a same-name/same-level clash at all — the
+ * "no two same-type/same-name items at one level" rule (hasSameLevelCollision,
+ * see its doc comment in user-quizzes-folders.js) is enforced for
+ * create-folder/course, rename, copy, and move, but a brand new QUIZ could
+ * always be created even when a quiz with the exact same title already
+ * existed in the same folder, silently producing the same-level duplicate
+ * the rule exists to prevent. Routed through the same shared predicate
+ * every other creation path uses, so it applies universally here too.
  * @param {{questions: Array, meta?: object, stats?: object}} parsed
  * @param {string} titleFallback
- * @returns {{id: string, meta: object, stats: object, questions: Array}} the saved entry
+ * @param {string|null} [parentId]
+ * @returns {{id: string, meta: object, stats: object, questions: Array}|{ok: false, reason: string}}
+ *   the saved entry, or a rejection object (checked via `!result.ok` since a
+ *   successfully-saved entry has no `ok` field at all) when a same-level
+ *   duplicate blocks the save.
  */
 export function saveNewUserQuiz(parsed, titleFallback, parentId = null) {
   const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const title = (parsed.meta?.title || titleFallback || "Untitled").trim();
+
+  if (hasSameLevelCollision(quizzes, { type: "quiz", title, parentId: parentId || null })) {
+    return { ok: false, reason: "يوجد امتحان بنفس الاسم في هذا المستوى بالفعل. اختر اسماً مختلفاً." };
+  }
+
   const quizId = crypto.randomUUID();
   const entry = buildUserQuizEntry(quizId, parsed, titleFallback, parentId);
   quizzes.push(entry);

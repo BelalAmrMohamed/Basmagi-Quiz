@@ -11,18 +11,15 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
 
-### User experience improvements in quiz creation
-- The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
-  - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
+### امتحاناتك Rules
+Check the rules for creating امتحانات and copying them and moving them.
+**No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 
-### `.exam-more-btn`
-Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
-- Fix: Second press should close it.
+### Dropdowns
+- Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
+- Right cliking a quiz shows the right click menu, then pressing the more button, opens it on top of the right-click menu (Incorrect): Only one menu should be open.
 
 ### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
-
-### Home Page Footer
-The `.watermark` element on the home page climbs up very high when there is not enough content being displayed. The footer should stay at the bottom, it shouldn't move up when there is no content.
 
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
@@ -69,6 +66,15 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - The AI Agent Chat should use icons instead of emojis for pinned items.
 - Remove the `لغة ردود المساعد` option from the settings, leave the choice of language to the AI, or the user can tell it in the prompt itself, remove that setting totally.
 - Improve the UI/UX of the `.ai-agent-settings-actions` in the settings panel under the `مفتاح API الخاص بك (اختياري)`, so that both buttons are invisible when there is nothing saved (since there would be nothing to save or delete, the 2 buttons are useless), when the user is typing and nothing is saved, the save button only appears, when the value is saved the delete button only appears.
+
+### Create Quiz Page
+- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
+- ALT + N shortcut is broken. And both `#gmdSub` aren't visible.
+- Reorder mode Shouldn't change the collapsed state of questions. Just like the select mode, it shouldn't touch the collapse satete of questions, it currently expands all of them.
+- Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
+- Accessibility:
+  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
+  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..
 
 ## New Features
 
@@ -139,12 +145,3 @@ Labels aren't connected to their inputs "No label associated with a form field"
 
 ### App SEO and GEO 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
-
-### Create Quiz Page
-- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
-- ALT + N shortcut is broken. And both `#gmdSub` aren't visible.
-- Reorder mode Shouldn't change the collapsed state of questions. Just like the select mode, it shouldn't touch the collapse satete of questions, it currently expands all of them.
-- Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
-- Accessibility:
-  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
-  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..

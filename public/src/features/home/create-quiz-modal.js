@@ -408,7 +408,14 @@ function openInlineCreateQuizModal() {
     // navigates), not always at the "امتحاناتك" root — previously this
     // modal never passed a destination at all, so every quiz landed at
     // root regardless of where the "إنشاء اختبار" button was opened from.
-    saveNewUserQuiz(parsed, title || "Untitled Quiz", currentFolderId);
+    const result = saveNewUserQuiz(parsed, title || "Untitled Quiz", currentFolderId);
+    if (result.ok === false) {
+      // Same-level name clash (see saveNewUserQuiz's doc comment) — leave
+      // the modal open with the user's input intact so they can just edit
+      // the title and retry, instead of losing their pasted content.
+      showNotification("الاسم مستخدم", result.reason, "warning", 10);
+      return;
+    }
     close();
     showNotification(
       "تم الإنشاء",

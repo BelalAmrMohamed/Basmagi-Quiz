@@ -31,12 +31,13 @@ import {
   renderUserQuizzesView,
   updateBulkActionBar,
 } from "./user-quizzes-view.js";
-import { openMoveToDialog } from "./user-quizzes-folders.js";
+import { openMoveToDialog, renameItem } from "./user-quizzes-folders.js";
 import { userProfile } from "../../shared/userProfile.js";
 import {
   LOCK_ICON_SVG,
   DOWNLOAD_ICON_SVG,
   EDIT_ICON_SVG,
+  RENAME_ICON_SVG,
   TRASH_ICON_SVG,
   MORE_DOTS_ICON_SVG,
   MOVE_TO_ICON_SVG,
@@ -330,6 +331,23 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
       window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
     };
     menu.appendChild(editOpt);
+
+    // ── Rename — BUG FIX: this ⋮ dropdown had no way to rename a quiz at
+    // all; the right-click context menu already had it (renameItem, see
+    // showContextMenu in user-quizzes-folders.js) but this menu was simply
+    // missing the same entry point. Reuses that exact function so both
+    // menus share one implementation (and one same-level-name-collision
+    // guard — see renameItem's own doc comment).
+    const renameOpt = document.createElement("button");
+    renameOpt.type = "button";
+    renameOpt.className = "exam-action-btn";
+    renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+    renameOpt.onclick = async (e) => {
+      e.stopPropagation();
+      closeMenu();
+      await renameItem(quiz.id || quiz.meta?.id, qz(quiz, "title"));
+    };
+    menu.appendChild(renameOpt);
 
     // ── "معلومات الامتحان" submenu — user quizzes carry everything already
     // in localStorage (quiz.meta/quiz.stats), so the preview builds

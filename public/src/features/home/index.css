@@ -905,6 +905,13 @@ body.sidebar-expanded {
   text-decoration: underline;
 }
 
+@media (max-width: 768px) {
+  .exam-dropdown-menu .exam-action-btn {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+  }
+}
+
 @media (min-width: 641px) {
   .mobile-only {
     display: none !important;

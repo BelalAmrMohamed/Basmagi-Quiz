@@ -460,12 +460,37 @@ export function handleDrop(e, targetFolderId) {
   }
 
   const itemIndex = userQuizzes.findIndex((q) => q.id === itemId || q.meta?.id === itemId);
-  if (itemIndex !== -1) {
-    if (!userQuizzes[itemIndex].meta) userQuizzes[itemIndex].meta = {};
-    userQuizzes[itemIndex].meta.parentId = targetFolderId;
-    setInStorage("user_quizzes", JSON.stringify(userQuizzes));
-    renderUserQuizzesView();
+  if (itemIndex === -1) return;
+  if (!userQuizzes[itemIndex].meta) userQuizzes[itemIndex].meta = {};
+  if ((userQuizzes[itemIndex].meta.parentId || null) === (targetFolderId || null)) return; // already there
+
+  // BUG FIX: this drag-and-drop path is a separate implementation from
+  // moveItemsToFolder() below (used by the "نقل إلى" dialog/bulk-move bar)
+  // and had never been routed through the shared hasSameLevelCollision()
+  // guard — so dragging a quiz/folder onto a target that already had a
+  // same-named same-type child silently succeeded and created a same-level
+  // duplicate, even though the non-drag move path already blocked exactly
+  // this. Both paths now share the same rule.
+  const item = userQuizzes[itemIndex];
+  if (
+    hasSameLevelCollision(userQuizzes, {
+      type: item.meta?.type || "quiz",
+      title: item.meta?.title || "",
+      parentId: targetFolderId || null,
+      excludeId: itemId,
+    })
+  ) {
+    showNotification(
+      "تعذر النقل",
+      "يوجد عنصر بنفس الاسم والنوع في هذا المستوى بالفعل.",
+      "warning",
+    );
+    return;
   }
+
+  item.meta.parentId = targetFolderId;
+  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  renderUserQuizzesView();
 }
 
 function isDescendant(quizzes, parentId, checkId) {
@@ -694,9 +719,15 @@ export async function openMoveToDialog(itemIds) {
           );
         }
         if (blocked > 0) {
+          // BUG FIX: this always blamed "folder into itself/course into
+          // folder" even when the real reason moveItemsToFolder() rejected
+          // the move was a same-level name collision (now also disabled
+          // up-front above, but a multi-select could still mix valid and
+          // colliding targets across different items) — worded generically
+          // enough to cover either cause instead of misattributing it.
           showNotification(
             "تعذر نقل بعض العناصر",
-            "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية، ولا يمكن نقل مادة إلى داخل مجلد آخر.",
+            "لا يمكن نقل بعض العناصر إلى هذه الوجهة (تعارض في الاسم، أو قيود على نقل المجلدات/المواد).",
             "warning",
           );
         }
@@ -743,6 +774,26 @@ export async function openMoveToDialog(itemIds) {
         disabledReason = "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.";
       } else if (movingCourseIds.length) {
         disabledReason = "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
+      } else if (
+        // BUG FIX: this dialog never flagged a destination that already has
+        // a same-name/same-type child as invalid — the row looked like any
+        // other valid target, the click appeared to succeed (moveItemsToFolder
+        // silently counted it as `blocked` with only a generic message), and
+        // the user saw what looked like a duplicate getting created. Checked
+        // against EVERY item being moved (not just the first) so a bulk move
+        // is flagged if it would collide for any one of them.
+        itemIds.some((id) => {
+          const movingItem = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
+          if (!movingItem) return false;
+          return hasSameLevelCollision(userQuizzes, {
+            type: movingItem.meta?.type || "quiz",
+            title: movingItem.meta?.title || "",
+            parentId: fid,
+            excludeId: id,
+          });
+        })
+      ) {
+        disabledReason = "يوجد عنصر بنفس الاسم والنوع في هذا المجلد بالفعل.";
       }
 
       // This row's own level continues (stays `true`) for every sibling
@@ -800,6 +851,11 @@ const CREATE_COURSE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" he
 const UPLOAD_FOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`;
 const SELECT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`;
 const RENAME_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+// Matches the ⋮ dropdown's own "تعديل الامتحان" icon (EDIT_ICON_SVG in
+// icons.js), redrawn at this menu's 15x15 size instead of importing the
+// 18x18 version, so every icon in this context menu shares one consistent
+// scale.
+const EDIT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
 const MOVE_TO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5c0-1.1.9-2 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/></svg>`;
 const ASK_AI_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="m19 16 .7 2.3L22 19l-2.3.7z"/></svg>`;
@@ -841,6 +897,22 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
     contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
     contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
+    // BUG FIX: this right-click menu had no way to edit a quiz at all — the
+    // ⋮ dropdown menu (showUserQuizActionsOverlay in user-quiz-card.js)
+    // already has a "تعديل الامتحان" option that opens create-quiz.html in
+    // edit mode; this menu was simply missing the same entry point.
+    // Folders/courses have no "edit" concept of their own (there's nothing
+    // to edit — see canPlaceItem's doc comment for why courses/folders are
+    // structural, not content), so this is quiz-only ("item" is only ever
+    // passed for plain quizzes — see the two showContextMenu call sites in
+    // user-quizzes-view.js).
+    if (targetType === "item") {
+      contextMenuEl.appendChild(
+        createMenuItem(EDIT_SVG, "تعديل الامتحان", () => {
+          window.location.href = `create-quiz.html?edit=${encodeURIComponent(targetId)}`;
+        }),
+      );
+    }
     // Non-drag fallback for moving items — essential on touch devices,
     // which have no usable drag gesture for this grid, and a faster path
     // than drag-and-drop even on desktop for deeply nested moves.

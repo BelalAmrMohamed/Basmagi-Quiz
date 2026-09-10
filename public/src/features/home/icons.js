@@ -17,6 +17,14 @@ export const TRASH_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18
 // (shown on all screen sizes; no standalone card icon exists for edit anymore).
 export const EDIT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/></svg>`;
 
+// Pen-with-corner-fold glyph — used by "إعادة تسمية" (rename) rows. Same
+// path data as the right-click context menu's own local RENAME_SVG in
+// user-quizzes-folders.js, exported here at this file's 18x18 icon scale
+// so the ⋮ dropdown overlay (showUserQuizActionsOverlay) can share one
+// rename entry point's icon with every other "flow" icon it imports from
+// here instead of hand-declaring a duplicate SVG string.
+export const RENAME_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+
 export const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
 
 // Small icon pair for copyable submenu rows (e.g. المصدر) — a copy glyph by
