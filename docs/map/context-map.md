@@ -8,7 +8,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ## Map of Project Structure
 
 ```text
-منصة إمتحانات بصمجي/
+project-منصة إمتحانات بصمجي/
 ├── _config.yml
 ├── CHANGELOG.md
 ├── LICENSE
@@ -16,7 +16,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── package.json
 ├── README.md
 ├── vercel.json
-├── api/ [256.09 KB, 6317 LOC]
+├── api/ [287.51 KB, 6914 LOC]
 │   ├── ai-agent/ [47.99 KB, 1042 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
@@ -27,6 +27,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── _levelMath.js
 │   │
 │   ├── _courseFolders.js
+│   ├── _handle.js
 │   ├── _middleware.js
 │   ├── _rateLimit.js
 │   ├── _validateQuiz.js
@@ -42,8 +43,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [1.72 MB, 875 LOC]
-│   ├── map/ [21.29 KB, 516 LOC]
+├── docs/ [1.33 MB, 1885 LOC]
+│   ├── map/ [21.92 KB, 520 LOC]
 │   │   └── context-map.md
 │   │
 │   ├── plans/ [4.95 KB, 48 LOC]
@@ -53,11 +54,12 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── image-1.png
 │   ├── image-2.png
 │   ├── image-3.png
-│   ├── image-4.png
-│   ├── image.png
-│   └── issues.md
+│   ├── image-5.png
+│   ├── image-6.png
+│   ├── issues.md
+│   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
 │
-├── public/ [199.53 MB, 93751 LOC]
+├── public/ [199.72 MB, 98119 LOC]
 │   ├── assets/ [196.07 MB, 0 LOC]
 │   │   ├── images/ [3.84 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -228,9 +230,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [2.87 MB, 84157 LOC]
-│   │   ├── components/ [623.84 KB, 16482 LOC]
-│   │   │   ├── ai-agent/ [374.31 KB, 8802 LOC]
+│   ├── src/ [3.03 MB, 88057 LOC]
+│   │   ├── components/ [624 KB, 16483 LOC]
+│   │   │   ├── ai-agent/ [374.27 KB, 8803 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
 │   │   │   │   ├── ai-agent-chat.js
 │   │   │   │   ├── ai-agent-default-prompts.js
@@ -265,7 +267,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── quiz-info-modal-css.js
 │   │   │   │   └── quiz-info-modal.css
 │   │   │   │
-│   │   │   ├── report-question/ [12.59 KB, 415 LOC]
+│   │   │   ├── report-question/ [12.79 KB, 415 LOC]
 │   │   │   │   ├── report-question.css
 │   │   │   │   └── report-question.js
 │   │   │   │
@@ -273,18 +275,18 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [1.92 MB, 58097 LOC]
-│   │   │   ├── control/ [41.98 KB, 1583 LOC]
+│   │   ├── features/ [2.07 MB, 61744 LOC]
+│   │   │   ├── control/ [42.19 KB, 1583 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
 │   │   │   │   └── reports-view.js
 │   │   │   │
-│   │   │   ├── create/ [198.79 KB, 6795 LOC]
+│   │   │   ├── create/ [295.6 KB, 9428 LOC]
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
 │   │   │   │
-│   │   │   ├── export/ [313.65 KB, 8519 LOC]
+│   │   │   ├── export/ [336.49 KB, 8871 LOC]
 │   │   │   │   ├── export-to-html.js
 │   │   │   │   ├── export-to-markdown.js
 │   │   │   │   ├── export-to-pdf.js
@@ -292,7 +294,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [745.35 KB, 19871 LOC]
+│   │   │   ├── home/ [762.1 KB, 20201 LOC]
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
 │   │   │   │   ├── app-state.js
@@ -348,13 +350,13 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── onboarding.css
 │   │   │   │   └── onboarding.js
 │   │   │   │
-│   │   │   ├── privacy-and-terms/ [75.4 KB, 1850 LOC]
+│   │   │   ├── privacy-and-terms/ [75.62 KB, 1850 LOC]
 │   │   │   │   ├── about.css
 │   │   │   │   ├── doc-toc.js
 │   │   │   │   ├── documentation-shell.js
 │   │   │   │   └── privacy-and-terms.css
 │   │   │   │
-│   │   │   ├── profile/ [151.62 KB, 4785 LOC]
+│   │   │   ├── profile/ [163.12 KB, 5117 LOC]
 │   │   │   │   ├── heatmapOverflow.js
 │   │   │   │   ├── infiniteScroll.js
 │   │   │   │   ├── leaderboardIdentity.js
@@ -368,7 +370,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── quiz.css
 │   │   │   │   └── quiz.js
 │   │   │   │
-│   │   │   ├── reports/ [38.01 KB, 1315 LOC]
+│   │   │   ├── reports/ [39.29 KB, 1315 LOC]
 │   │   │   │   ├── reports.css
 │   │   │   │   └── reports.js
 │   │   │   │
@@ -376,11 +378,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── result.css
 │   │   │   │   └── result.js
 │   │   │   │
-│   │   │   └── settings/ [38.77 KB, 1632 LOC]
+│   │   │   └── settings/ [38.75 KB, 1632 LOC]
 │   │   │       ├── settings.css
 │   │   │       └── settings.js
 │   │   │
-│   │   ├── shared/ [295.39 KB, 7982 LOC]
+│   │   ├── shared/ [305.88 KB, 8234 LOC]
 │   │   │   ├── adminAuth.js
 │   │   │   ├── adminBadgeSync.js
 │   │   │   ├── avatarEngine.js
@@ -440,19 +442,20 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── sitemap.xml
 │   └── terms-of-service.html
 │
-├── scripts/ [19.26 KB, 566 LOC]
+├── scripts/ [19.59 KB, 566 LOC]
 │   ├── lib/ [7.45 KB, 227 LOC]
 │   │   ├── quizId.js
 │   │   └── quizPath.js
 │   │
 │   └── map.js
 │
-└── supabase/ [33.16 KB, 790 LOC]
-    ├── migrations/ [17.55 KB, 375 LOC]
+└── supabase/ [34.42 KB, 810 LOC]
+    ├── migrations/ [18.8 KB, 395 LOC]
     │   ├── 20260828051811_user_profiles_server_side_identity.sql
     │   ├── 20260901195646_courses_and_folders.sql
     │   ├── 20260904000000_colleges.sql
-    │   └── 20260904010000_public_relational_reads.sql
+    │   ├── 20260904010000_public_relational_reads.sql
+    │   └── 20260909120000_admin_users_bio.sql
     │
     └── config.toml
 ```
@@ -463,57 +466,57 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 93751 |
-| `api` | 6317 |
-| `docs` | 875 |
-| `supabase` | 790 |
-| `(root)` | 625 |
+| `public` | 98119 |
+| `api` | 6914 |
+| `docs` | 1885 |
+| `supabase` | 810 |
+| `(root)` | 661 |
 | `scripts` | 566 |
 
 ### Top 10 Largest Code Files
 
 | File | Lines of Code |
 |------|---------------|
-| `public/src/features/home/index.css` | 4993 |
-| `public/src/features/export/export-to-quiz.js` | 3909 |
-| `public/src/features/create/create-quiz.css` | 3610 |
+| `public/src/features/home/index.css` | 4989 |
+| `public/src/features/create/create-quiz.js` | 4841 |
+| `public/src/features/create/create-quiz.css` | 4587 |
+| `public/src/features/export/export-to-quiz.js` | 4261 |
 | `public/src/features/quiz/quiz.js` | 3374 |
 | `public/src/features/quiz/quiz.css` | 3198 |
-| `public/src/features/create/create-quiz.js` | 3185 |
 | `public/src/components/ai-agent/ai-agent-chat.js` | 2797 |
-| `public/src/components/ai-agent/ai-agent.css` | 2737 |
-| `public/src/features/profile/profile.css` | 2501 |
+| `public/src/components/ai-agent/ai-agent.css` | 2738 |
+| `public/src/features/profile/profile.css` | 2598 |
 | `public/src/components/side-menu/side-menu.css` | 2149 |
 
 ### Code Files
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 140 | 61064 | 2.4 MB |
-| .css | 24 | 30138 | 759.94 KB |
-| .html | 19 | 9257 | 552.14 KB |
-| .md | 6 | 1349 | 56.43 KB |
+| .js | 141 | 64485 | 2.56 MB |
+| .css | 24 | 31214 | 791.47 KB |
+| .html | 19 | 9725 | 583.7 KB |
+| .md | 7 | 2395 | 115.29 KB |
+| .sql | 5 | 395 | 18.8 KB |
 | .json | 4 | 214 | 76.13 KB |
-| .sql | 4 | 375 | 17.55 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
 | .txt | 1 | 4 | 79 B |
 | .xml | 1 | 45 | 1.36 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **202** | **102924** | **3.85 MB** |
+| **Total** | **205** | **108955** | **4.12 MB** |
 
 ### Binary / Media Files (Physical Size)
 
 | Extension | Files | Size |
 |-----------|-------|------------|
 | .jpg | 62 | 8.11 MB |
-| .png | 47 | 5.79 MB |
+| .png | 47 | 5.34 MB |
 | .mp3 | 17 | 103.72 MB |
 | .mp4 | 17 | 73.24 MB |
 | .pdf | 7 | 6.92 MB |
 | .ico | 1 | 4.19 KB |
 | .svg | 1 | 19.48 KB |
-| **Total** | **152** | **197.8 MB** |
+| **Total** | **152** | **197.35 MB** |
 
-**Grand Total Files:** 354  
-**Total Repository Size:** 201.65 MB
+**Grand Total Files:** 357  
+**Total Repository Size:** 201.48 MB

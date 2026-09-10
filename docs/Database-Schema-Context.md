@@ -62,6 +62,7 @@ This file is for context only. It's copied from supabase directly after running 
 | `activity_heatmap` | `jsonb` |  Nullable |
 | `thumbnail_url` | `text` |  Nullable |
 | `allowed_scopes` | `_text` |  Nullable |
+| `bio` | `text` |  Nullable |
 
 ## Table `reports`
 
