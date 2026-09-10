@@ -69,6 +69,3 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - #10/#11: side-menu mobile slide direction + width
 - #12: model-select caret padding
 - Clean up dead language-setting code
-- Copy all final files to outputs and present them
-
-I ran out of tool calls for this turn — I'll continue with the remaining items (save/delete button UX, side-menu mobile fixes, caret padding, dead-code cleanup) and then deliver all changed files in the next message. Let me know if you'd like me to proceed.
