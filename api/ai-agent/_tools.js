@@ -12,12 +12,14 @@ export const CREATE_QUIZ_TOOL = {
   name: "create_quiz",
   description:
     "Create a new quiz and save it for the user. Only call this when the user has explicitly confirmed they want the quiz created (e.g. after you've shown them a preview and they said yes/أنشئ/تمام). " +
-    "For MCQ/True-False questions, `correct` MUST always be an array of 0-based option indices — use a single-element array like [2] for one correct answer, or multiple indices like [0, 2] if more than one option is correct. Omit `correct` (and `options`) entirely for essay/free-text questions and use `answer` instead.",
+    "For MCQ/True-False questions, `correct` MUST always be an array of 0-based option indices — use a single-element array like [2] for one correct answer, or multiple indices like [0, 2] if more than one option is correct. Omit `correct` (and `options`) entirely for essay/free-text questions and use `answer` instead. " +
+    "`folder` is the exact title of an existing folder or course (from the folder tree listing already given to you) to place the new quiz directly inside, e.g. so the user can ask for it under \"math/algebra\" instead of always landing at the top level — omit it (or pass null) to save at the top level, alongside courses.",
   input_schema: {
     type: "object",
     properties: {
       title: { type: "string" },
       description: { type: "string" },
+      folder: { type: "string" },
       questions: {
         type: "array",
         items: {

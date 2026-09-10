@@ -205,6 +205,24 @@ function transientMessageFor(status) {
     : "خوادم مزوّد الذكاء الاصطناعي مشغولة حاليًا (overloaded). حاول مرة أخرى خلال لحظات.";
 }
 
+// A bare "fetch failed" (no err.upstreamStatus at all) means the runtime's
+// fetch() never got an HTTP response to inspect in the first place — DNS
+// resolution failed, the connection was refused, or there's no outbound
+// network path to the provider host at all (common on a dev machine behind
+// a restrictive proxy/firewall, or with no internet access). This is
+// distinct from every case above, where the provider *did* respond and we
+// have a real status code — so give it its own message instead of the
+// same generic "فشل الاتصال" a reader can't act on, and log the specific
+// cause code (ENOTFOUND/ECONNREFUSED/etc, available on err.cause on
+// undici's fetch) to make this diagnosable from server logs alone.
+function isNetworkLevelFailure(err) {
+  return !err?.upstreamStatus && (err?.cause?.code || /fetch failed/i.test(err?.message || ""));
+}
+
+function networkFailureMessage() {
+  return "تعذّر الوصول إلى خادم مزوّد الذكاء الاصطناعي عبر الشبكة. تحقق من اتصال الخادم بالإنترنت (DNS/جدار الحماية) وحاول مرة أخرى.";
+}
+
 import { isRateLimited } from "../_rateLimit.js";
 
 // Very small in-memory per-IP limiter for the own-key proxy path, to keep
@@ -335,12 +353,23 @@ export default async function handler(req, res) {
       const result = await callProvider(provider, ownKey, messages, systemPrompt, tools, model);
       return res.status(200).json(result);
     } catch (err) {
-      console.error("[ai-agent/chat] own-key provider error:", err);
+      console.error(
+        "[ai-agent/chat] own-key provider error:",
+        err,
+        err?.cause ? `(cause: ${err.cause.code || err.cause})` : "",
+      );
       if (isTransientUpstreamStatus(err.upstreamStatus)) {
         return res.status(err.upstreamStatus).json({
           error: transientMessageFor(err.upstreamStatus),
           detail: process.env.NODE_ENV === "production" ? undefined : String(err.message || err),
           transient: true,
+        });
+      }
+      if (isNetworkLevelFailure(err)) {
+        return res.status(502).json({
+          error: networkFailureMessage(),
+          detail: process.env.NODE_ENV === "production" ? undefined : String(err.cause?.code || err.message || err),
+          networkLevel: true,
         });
       }
       return res.status(502).json({
@@ -390,12 +419,19 @@ export default async function handler(req, res) {
     const result = await callProvider(provider, picked.key, messages, systemPrompt, tools, undefined);
     return res.status(200).json(result);
   } catch (err) {
-    console.error("[ai-agent/chat] platform-key provider error:", err);
+    console.error(
+      "[ai-agent/chat] platform-key provider error:",
+      err,
+      err?.cause ? `(cause: ${err.cause.code || err.cause})` : "",
+    );
     if (isTransientUpstreamStatus(err.upstreamStatus)) {
       return res.status(err.upstreamStatus).json({
         error: transientMessageFor(err.upstreamStatus),
         transient: true,
       });
+    }
+    if (isNetworkLevelFailure(err)) {
+      return res.status(502).json({ error: networkFailureMessage(), networkLevel: true });
     }
     return res.status(502).json({ error: "فشل الاتصال بمزوّد الذكاء الاصطناعي" });
   }

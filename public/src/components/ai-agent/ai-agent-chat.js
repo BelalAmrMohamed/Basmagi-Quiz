@@ -6,7 +6,7 @@
 // "امتحاناتك" view or result.html with different contextual system prompts.
 // =============================================================================
 
-import { renderMarkdown, _processByLine } from "../../shared/markdown.js";
+import { renderMarkdown } from "../../shared/markdown.js";
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 import { getSelectedProvider, getSelectedModel, getModelsForProvider, setSelectedModel, getOwnKey, getSystemPrompt, applyResponseLanguage, isAiHelperAvailable } from "./ai-agent-settings.js";
 import { getUserToken } from "../../shared/userLevel.js";
@@ -1755,22 +1755,15 @@ export function createChatPanel(options = {}) {
       });
     }
 
-    if (role === "assistant") {
+    if (content) {
+      // Both roles render through the same markdown pipeline now — a user
+      // prompt containing e.g. a fenced code block, a list, or **bold**
+      // should render just like an assistant reply does, not show up as
+      // raw markdown syntax. renderMarkdown() already handles per-line
+      // RTL/LTR direction internally (via scanDirections/_processElement),
+      // so this also keeps the "mixed Arabic/English line" behavior that
+      // _processByLine used to provide directly.
       el.insertAdjacentHTML("beforeend", renderMarkdown(content));
-    } else if (content) {
-      // Per-line direction, not one direction for the whole bubble — a
-      // message can mix an Arabic line and an English line (e.g. someone
-      // pasting a question stem with an English fill-in-the-blank), and
-      // each line should align independently rather than the first
-      // detected direction dragging the rest of the bubble along with it.
-      // _processByLine (markdown.js) already implements exactly this:
-      // split on newlines, wrap each in a direction-classed <span
-      // class="text-line">, and set the container's own class from the
-      // first line so bubble alignment/padding still has a sane base.
-      const textEl = document.createElement("div");
-      textEl.textContent = content;
-      _processByLine(textEl);
-      el.appendChild(textEl);
     }
 
     wrap.appendChild(el);

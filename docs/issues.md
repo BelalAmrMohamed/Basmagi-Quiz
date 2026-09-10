@@ -25,54 +25,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
 
-### AI Agnet Issues
-
-### Issue with a specific conversation I took with it
-- ![screenshot 1](image-1.png)
-- ![screenshot 2](image-2.png)
-
-
-Tested on localhost:
-```
-hook.js:1  POST http://localhost:8080/api/ai-agent/chat 502 (Bad Gateway)
-apply @ hook.js:1
-resendLastUserTurn @ ai-agent-chat.js:2231
-resendLastUserTurn @ ai-agent-chat.js:2395
-await in resendLastUserTurn
-sendMessage @ ai-agent-chat.js:2455
-(anonymous) @ ai-agent-chat.js:2472
-ai-agent-chat.js:2257 [ai-agent-chat] /api/ai-agent/chat responded 502: {error: 'فشل الاتصال بمزوّد الذكاء الاصطناعي', detail: 'fetch failed'}detail: "fetch failed"error: "فشل الاتصال بمزوّد الذكاء الاصطناعي"[[Prototype]]: Object
-resendLastUserTurn @ ai-agent-chat.js:2257
-await in resendLastUserTurn
-resendLastUserTurn @ ai-agent-chat.js:2395
-await in resendLastUserTurn
-sendMessage @ ai-agent-chat.js:2455
-(anonymous) @ ai-agent-chat.js:2472
-```
-
-#### User Prompt
-Makrdown rendering gets applied on the AI Agent Answer but not the user prompt. 
-
-#### Creating Quizzes
-- The AI Agent doesn't have the ability to set the place where the quiz gets put, it always get put inside `/#my-quizzes` directly. It should be able to set it's initial place (e.g., `/#my-quizzes/math/` or `/#my-quizzes/math/algebra/`).
-
-#### Create-Quiz Page
-Some of the elements of the AI Agent are broken on the create-quiz.html page, like the `.ai-agent-more-btn` and the `.ai-agent-history-item-more`
-
-#### Result Page
-The `.ai-agent-history-item-more` doesn't work on the result.html page.
-
-#### Settings
-Labels aren't connected to their inputs "No label associated with a form field"
-
-#### Improvements
-- The AI Agent Chat should use icons instead of emojis for pinned items. So when an item is pinned, the `.ai-agent-history-item-more` icon displays a pinned icon, instead of a more icon, to indicate that this item is pinned in a premium way.
-- Remove the `لغة ردود المساعد` option from the settings, leave the choice of language to the AI, or the user can tell it in the prompt itself, remove that setting totally.
-- Improve the UI/UX of the `.ai-agent-settings-actions` in the settings panel under the `مفتاح API الخاص بك (اختياري)`, so that both buttons are invisible when there is nothing saved (since there would be nothing to save or delete, the 2 buttons are useless), when the user is typing and nothing is saved, the save button only appears, when the value is saved the delete button only appears.
-- The AI Agent has the side-menu on the left on desktops, but it pops from the right on phones, phones should have it pop from the left just like desktops.
-- The side-menu on phones is too wide, it takes most of the AI Agent window.
-- The Carrot in the `.ai-agent-chat-model-select` is too close to the left border, fix the padding or the margin or whatever is broken.
-
 ### Create Quiz Page
 - Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
 - ALT + N shortcut is broken. And both `#gmdSub` aren't visible.
@@ -108,7 +60,7 @@ Labels aren't connected to their inputs "No label associated with a form field"
   - The move button (for moving quizzes or folders inside the course they are in). Uses similar Move-To Dialog Guide like that in the امتحاناتك section.
   - The edit button (for editing 'quizzes' in the create-quiz page).
   - The rename button (for quizzes, folders, or courses)
-  - The dropdown should be visible to admins only.
+  - The dropdown should be visible to admins / Owners only.
 
 ### Search and navigation refinements (Home Page)
 - The footer may sit too high and does not always remain pinned to the bottom of the page when the content area is short.
