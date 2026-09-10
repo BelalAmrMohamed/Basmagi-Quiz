@@ -126,7 +126,7 @@ body.quiz-form-active {
 
 /* ============================================================================
    UNIFIED TOP BAR (merged app-title-bar + menu-bar)
-   Single 48px fixed bar spanning full width (left:0 → right:sidebar-width).
+   Single 44px fixed bar spanning full width (left:0 → right:sidebar-width).
    Contains: home button + title (RTL start) | embedded menu nav (center) |
    autosave indicator (far left).
    ============================================================================ */
@@ -247,53 +247,91 @@ body.sidebar-expanded .app-title-bar {
   display: contents;
 }
 
-/* Content spacer: unified bar is 48px + global md bar is 40px = 88px total
-   plus 10px breathing room = 98px. Scoped to body.quiz-form-active. */
+/* Content spacer: unified bar is 44px + global md bar is 40px = 84px total
+   plus 10px breathing room = 94px. Scoped to body.quiz-form-active. */
 body.quiz-form-active .container {
-  margin-top: 98px;
+  margin-top: 94px;
 }
 
 .menu-bar-inner {
   display: flex;
   align-items: center;
-  gap: 0;
+  /* File should read as the left-most item in the bar. The markup stays in
+     its natural (File, Insert, View, Help) DOM/reading order — only the
+     visual placement is mirrored, via row-reverse, so screen readers and
+     keyboard tab order still follow the logical File→Help sequence. */
+  flex-direction: row-reverse;
+  gap: 2px;
 }
 
-.menu-item {
+/* Own class (.menu-bar-item, not .menu-item) so this can never collide
+   with the sidebar nav, which reuses the .menu-item class name for its own
+   completely different links/buttons (see side-menu markup) — that name
+   clash, not anything about #menuBar's own rules, was the real source of
+   the "two buttons stacked inside each other" look, since the sidebar's
+   external stylesheet could paint its own chrome onto this element too.
+   Now: a plain positioning wrapper around one .menu-trigger button, with
+   no visible box of its own — the trigger is the only interactive box,
+   Google-Docs style. */
+.menu-bar-item {
   position: relative;
 }
 
 /* Google-Docs-style top menu trigger: small, tight padding, no visible
-   chrome until hovered/open. */
-.menu-trigger {
-  padding: 4px 8px;
+   chrome until hovered/open — and the *only* element in this cluster that
+   ever shows a background, so there's exactly one hoverable box per item. */
+#menuBar .menu-trigger {
+  display: block;
+  padding: 6px 10px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   color: var(--color-text-primary);
   font-family: inherit;
   font-size: 0.8125rem;
-  font-weight: 400;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
   line-height: 1.4;
 }
 
-.menu-trigger:hover {
+#menuBar .menu-trigger:hover {
   background: var(--color-background);
 }
 
-.menu-item-open .menu-trigger {
+/* Browser default focus ring (thick blue halo in Chrome) was stacking on
+   top of the .menu-item-open highlight below, making the open trigger look
+   like it had two different hover states and a much bigger hit box than
+   its siblings. Keep a visible ring for keyboard users, but only via
+   :focus-visible, and keep it tight to the button's own box. */
+#menuBar .menu-trigger:focus {
+  outline: none;
+}
+
+#menuBar .menu-trigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.menu-bar-item.menu-item-open .menu-trigger {
   background: var(--color-primary-light);
   color: var(--color-primary);
 }
 
+/* .menu-dropdown uses position:fixed (set via inline top/left in JS, see
+   positionMenuDropdown in create-quiz.js) instead of position:absolute.
+   The old absolute positioning was relative to .menu-item, which lives
+   inside .app-title-bar — a horizontally-scrolling container on phones.
+   An absolutely-positioned dropdown that overflows a scrolling ancestor's
+   box gets clipped/carried by that scroll instead of escaping it, which is
+   why dropdowns used to render off-screen once the bar was scrolled.
+   position:fixed + JS placement (same technique #globalMdBar already uses)
+   anchors the dropdown to the viewport instead, so it's always fully
+   visible regardless of the bar's scroll position. */
 .menu-dropdown {
   display: none;
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
   min-width: 240px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -309,9 +347,8 @@ body.quiz-form-active .container {
 
 /* ── Submenu (nested dropdown inside a .menu-dropdown) ───────────────────── */
 
-/* The submenu trigger row: position:relative so child dropdown positions relative to it.
-   We do NOT attach a mouseleave close-listener to .menu-dropdown itself;
-   only the outer click listener and Escape key close menus. */
+/* The submenu trigger row: kept position:relative (harmless now that the
+   dropdown itself is fixed) so any non-JS fallback still has a frame. */
 .menu-item-submenu {
   position: relative;
 }
@@ -328,47 +365,17 @@ body.quiz-form-active .container {
   box-sizing: border-box;
 }
 
-/* Show the submenu on HOVER of the parent row (CSS-only, no JS required). */
-.menu-item-submenu:hover>.menu-submenu-dropdown,
-.watermark.menu-item-open>.menu-submenu-dropdown {
+/* Submenu open state is now driven by JS (toggleSubmenu), matching the
+   top-level menu's click-driven .menu-item-open pattern — hover-only
+   toggling doesn't work once the submenu is position:fixed and placed by
+   JS on open, since there's no continuous CSS box connecting trigger and
+   submenu to hover across. */
+.menu-item-submenu.menu-item-open>.menu-submenu-dropdown {
   display: block;
 }
 
-/* Submenu pops out to the LEFT in RTL layout (away from the sidebar).
-   NOTE: the submenu is position:absolute, so it does NOT extend
-   .menu-item-submenu's own hoverable box — :hover only holds while the
-   pointer is over the trigger row or the submenu itself. The 2px gap below
-   (`right: calc(100% + 2px)`) is bare page with nothing hoverable under it,
-   which used to drop :hover — and close the submenu — the instant the
-   pointer crossed it. The ::after bridge just below fills that gap so the
-   hoverable area is continuous from trigger to submenu. */
 .menu-submenu-dropdown {
-  top: -6px !important;
-  right: calc(100% + 2px) !important;
-  left: auto !important;
   min-width: 200px;
-}
-
-/* Invisible hover bridge: fills the 2px gap (plus a comfortable margin)
-   between the trigger row and the submenu with an unstyled, transparent
-   strip. It's a descendant of .menu-item-submenu, so the pointer stays
-   "inside" the hovered subtree while crossing the gap — no dead zone,
-   no visible change to the submenu's own box. */
-.menu-item-submenu::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  right: 100%;
-  width: 14px;
-  z-index: 59;
-  /* Only needs to exist while the submenu could be open. */
-  display: none;
-}
-
-.menu-item-submenu:hover::after,
-.menu-item-submenu.menu-item-open::after {
-  display: block;
 }
 
 .menu-submenu-caret {
@@ -379,12 +386,10 @@ body.quiz-form-active .container {
   transition: transform 0.15s ease;
 }
 
-.menu-item-submenu:hover .menu-submenu-caret,
 .menu-item-submenu.menu-item-open .menu-submenu-caret {
   transform: rotate(-90deg);
 }
 
-.menu-item-submenu:hover>.menu-option,
 .menu-item-submenu.menu-item-open>.menu-option {
   background: var(--color-background);
 }
@@ -447,13 +452,15 @@ body.quiz-form-active .container {
 
 /* ============================================================================
    GLOBAL MARKDOWN + LATEX TOOLBAR (#globalMdBar)
-   Fixed below the unified top bar (top: 48px). Visible only while
-   body.quiz-form-active. Applies formatting to the last focused .md-source.
+   Fixed below the unified top bar (top: 44px, matching .app-title-bar's
+   actual height — was hardcoded to a stale 48px, leaving a 4px gap between
+   the two bars). Visible only while body.quiz-form-active. Applies
+   formatting to the last focused .md-source.
    ============================================================================ */
 
 .global-md-bar {
   position: fixed;
-  top: 48px;
+  top: 44px;
   left: 0;
   right: var(--sidebar-collapsed-width);
   height: 40px;
@@ -541,7 +548,7 @@ body.sidebar-expanded .global-md-bar {
 /* Tooltip for "no field focused" state — shown via JS as a brief flash */
 .gmd-no-field-tip {
   position: fixed;
-  top: calc(48px + 40px + 6px);
+  top: calc(44px + 40px + 6px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-text-primary);
@@ -679,11 +686,6 @@ body.sidebar-expanded .global-md-bar {
   .menu-bar-inner {
     /* No longer scrolls internally — the parent .app-title-bar scrolls. */
     overflow: visible;
-  }
-
-  .menu-dropdown {
-    right: auto;
-    left: 0;
   }
 }
 
@@ -971,6 +973,20 @@ body.sidebar-expanded .global-md-bar {
   direction: rtl
 }
 
+/* AI-chat-style growing textarea (see autoResizeMdSource in create-quiz.js):
+   starts at one line, grows with content up to a max height, then scrolls.
+   Manual resize is disabled since the height is already handled
+   automatically — a drag handle would just fight the JS-driven height.
+   Selector is `.form-group textarea.autosize-textarea` (not just
+   `.autosize-textarea`) so it wins over the later, equally-specific
+   `.form-group textarea { resize: vertical }` rule in the cascade. */
+.form-group textarea.autosize-textarea,
+.autosize-textarea {
+  resize: none;
+  overflow-y: hidden;
+  transition: height 0.08s ease-out;
+}
+
 .section-subhint {
   font-size: 0.85rem;
   font-weight: 400;
@@ -1019,6 +1035,7 @@ body.sidebar-expanded .global-md-bar {
 .form-group input[type="text"],
 .form-group input[type="url"],
 .form-group input[type="search"],
+.form-group input[type="password"],
 .form-group textarea {
   width: 100%;
   padding: 9px 14px;
@@ -1032,6 +1049,52 @@ body.sidebar-expanded .global-md-bar {
     border-color 0.2s,
     box-shadow 0.2s,
     transform 0.2s;
+}
+
+/* Password field: input + show/hide toggle button, stacked in a positioning
+   wrapper so the button can sit inside the input's own box instead of next
+   to it. dir="auto" on the input can render the value LTR or RTL depending
+   on content, so the toggle is placed with `inset-inline-end` (not `left`/
+   `right`) to always land on the field's trailing edge regardless of text
+   direction — which in this RTL page's own reading order is the left. */
+.password-field {
+  position: relative;
+}
+
+.password-field input[type="password"],
+.password-field input[type="text"] {
+  padding-inline-end: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  inset-inline-end: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  background: var(--color-background);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 .form-group input:focus,
@@ -1413,100 +1476,105 @@ body.sidebar-expanded .global-md-bar {
   accent-color: var(--color-primary);
 }
 
-.move-handle {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 1px;
-  user-select: none;
-}
-
-.move-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 14px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  border-radius: 3px;
-  transition:
-    color 0.15s,
-    background 0.15s;
-}
-
-.move-btn:hover {
-  color: var(--color-primary);
-  background: var(--color-primary-light);
-}
-
-.move-btn:active {
-  transform: scale(0.9);
-}
-
-.move-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-  background: transparent;
-}
-
 .question-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.btn-icon {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition:
-    transform 0.2s,
-    background-color 0.2s;
-  background: var(--color-background);
+/* ── Question card "more" (⋮) menu — replaces the old row of separate
+   move/duplicate/delete/collapse icon buttons with a single dropdown.
+   Visually modeled on .entry-item-menu (the same pattern used for the
+   home-screen quiz tiles), so the two "more" menus in the app feel
+   consistent. ── */
+.question-more-wrap {
+  position: relative;
 }
 
-.btn-icon:hover {
-  transform: scale(1.1);
-}
-
-.btn-icon:active {
-  transform: scale(0.95);
-}
-
-.btn-collapse {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+.question-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
   border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.btn-collapse:hover {
+.question-more-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.question-more-btn:hover,
+.question-more-btn:focus-visible {
   background: var(--color-background);
+  color: var(--color-primary);
   border-color: var(--color-primary);
 }
 
-.btn-duplicate {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+.question-more-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 190px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 40;
 }
 
-.btn-duplicate:hover {
-  background: var(--color-primary);
-  color: white;
+.question-more-menu.open {
+  display: block;
 }
 
-.btn-delete {
-  background: var(--color-error-light);
+.question-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  text-align: right;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.question-menu-option svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.question-menu-option:hover,
+.question-menu-option:focus-visible {
+  background: var(--color-background);
+}
+
+.question-menu-option-danger {
   color: var(--color-error);
 }
 
-.btn-delete:hover {
-  background: var(--color-error);
-  color: white;
+.question-menu-option-danger svg {
+  color: var(--color-error);
+}
+
+.question-menu-option-danger:hover,
+.question-menu-option-danger:focus-visible {
+  background: var(--color-error-light);
 }
 
 /* Enhanced Empty State */
@@ -1870,13 +1938,8 @@ body.sidebar-expanded .global-md-bar {
 
   .question-actions {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
   }
-}
-
-.btn-delete:hover {
-  background: var(--color-error);
-  color: white;
 }
 
 /* Image Preview */
@@ -2906,7 +2969,9 @@ body.sidebar-expanded .global-md-bar {
 
 .essay-answer-editor .md-source {
   min-height: 100px;
-  resize: vertical;
+  /* No manual resize: this field auto-grows via autoResizeMdSource() like
+     every other .wp-textarea, so a drag handle would only fight the JS. */
+  resize: none;
 }
 
 /* Convert button */
@@ -3118,8 +3183,16 @@ body.sidebar-expanded .global-md-bar {
     padding: 8px;
   }
 
+  /* Was `padding: 0px`, stripping ALL breathing room from the card at this
+     breakpoint — including above .question-header, which made .q-label
+     sit flush against the card's top border. That blanket reset was meant
+     for the *collapsed* state only (where .question-card.collapsed
+     .question-header supplies its own 14px/20px padding instead) but was
+     applying to every card, collapsed or not. Give expanded cards modest
+     padding instead; collapsed cards still get flush edges via the
+     .collapsed-specific rule, which is more specific and wins for them. */
   .question-card {
-    padding: 0px;
+    padding: 12px;
   }
 
   .option-input {
@@ -3129,8 +3202,7 @@ body.sidebar-expanded .global-md-bar {
 
   .option-item {
     flex-wrap: wrap;
-    padding-left: 5px;
-    padding-right: 0px;
+    padding: 8px;
   }
 
   .action-buttons {
@@ -3200,7 +3272,7 @@ body.sidebar-expanded .global-md-bar {
   .app-title-bar,
   .menu-bar,
   .action-bar,
-  .btn-icon,
+  .question-actions,
   .shortcuts-panel {
     display: none !important;
   }
@@ -3357,9 +3429,20 @@ body.sidebar-expanded .global-md-bar {
   position: relative;
 }
 
+/* Selectors are doubled up (`.form-group textarea.wp-textarea` as well as
+   plain `.wp-textarea`) so this wins in the cascade over the generic
+   `.form-group textarea` / `.form-group textarea:focus` rules above.
+   Question-text and explanation fields render `.wp-textarea` *inside* a
+   `.form-group` (see renderQuestion()), so without this the more-specific
+   `.form-group textarea` rule was winning instead — giving the field its
+   own 2px border, its own `resize: vertical`, and on focus its own
+   border-color + box-shadow ring stacked directly on top of .wp-field's
+   ring below. That combination was both the visible "double border" and
+   the manual resize handle the field wasn't supposed to have. */
+.form-group textarea.wp-textarea,
 .wp-textarea {
   width: 100%;
-  min-height: 60px;
+  /* min-height: 60px; */
   padding: 10px 14px;
   border: none;
   background: var(--color-background);
@@ -3367,6 +3450,8 @@ body.sidebar-expanded .global-md-bar {
   font-family: "Fira Code", "Courier New", monospace;
   font-size: 0.9rem;
   line-height: 1.6;
+  /* No manual resize: these fields auto-grow via autoResizeMdSource(), so a
+     drag handle would only fight the JS-driven height. */
   resize: none;
   box-sizing: border-box;
   display: block;
@@ -3374,8 +3459,19 @@ body.sidebar-expanded .global-md-bar {
   direction: rtl;
 }
 
-.wp-textarea:focus {
+/* The focus ring lives on the outer .wp-field wrapper (border-color +
+   box-shadow above). Without this, the textarea's own default browser
+   focus outline — and, inside a .form-group, the generic
+   `.form-group textarea:focus` border/box-shadow — drew on top of that
+   ring at the same time, making an active field look like it had two
+   borders stacked on each other. */
+.form-group textarea.wp-textarea:focus,
+.wp-textarea:focus,
+.wp-textarea:focus-visible {
   outline: none;
+  border: none;
+  box-shadow: none;
+  transform: none;
 }
 
 .wp-preview-pane {
@@ -3695,24 +3791,11 @@ body.sidebar-expanded .global-md-bar {
   border-color: var(--color-border);
 }
 
-[data-theme="dark"] .btn-collapse,
-[data-theme="dark-slate"] .btn-collapse {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  border-color: var(--color-border);
-}
-
 [data-theme="dark"] .btn-action,
 [data-theme="dark-slate"] .btn-action {
   background: var(--color-surface);
   color: var(--color-text-primary);
   border-color: var(--color-border);
-}
-
-[data-theme="dark"] .btn-icon,
-[data-theme="dark-slate"] .btn-icon {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
 }
 
 [data-theme="dark"] .btn-bulk,

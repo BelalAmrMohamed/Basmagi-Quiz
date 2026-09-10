@@ -201,7 +201,7 @@ export function createSettingsPanel(options = {}) {
   const note = document.createElement("div");
   note.className = "ai-agent-settings-note";
   note.textContent =
-    "لن يتم تخزين مفتاحك على خوادمنا — يُحفظ فقط على جهازك ويُستخدم مباشرة عند إرسال رسائلك.";
+    "لن يتم تخزين مفتاحك على خوادمنا — يُحفظ فقط على متصفحك.";
   panel.appendChild(note);
 
   // ── Provider select ──

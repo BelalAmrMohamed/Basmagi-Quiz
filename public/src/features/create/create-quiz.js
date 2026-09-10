@@ -596,6 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupKeyboardShortcuts();
   setupMenuBarListeners();
   setupEntryItemMenuListeners();
+  setupQuestionMenuListeners();
   setupGlobalMdBar();
   mountAIHelper();
 });
@@ -1015,6 +1016,23 @@ function closeAllEntryItemMenus() {
     .forEach((menu) => menu.classList.remove("open"));
 }
 
+/** Open/close the ⋮ "more" dropdown for one question card, closing any
+ * other open one first. Same pattern as toggleEntryItemMenu. */
+window.toggleQuestionMenu = function (event, questionId) {
+  event.stopPropagation();
+  const menu = document.getElementById(`questionMenu-${questionId}`);
+  if (!menu) return;
+  const isOpen = menu.classList.contains("open");
+  closeAllQuestionMenus();
+  if (!isOpen) menu.classList.add("open");
+};
+
+window.closeAllQuestionMenus = function () {
+  document
+    .querySelectorAll(".question-more-menu.open")
+    .forEach((menu) => menu.classList.remove("open"));
+};
+
 /** Rename a saved quiz directly in user_quizzes, then refresh the grid. */
 window.renameEntryItem = async function (event, quizId) {
   event.stopPropagation();
@@ -1066,23 +1084,87 @@ window.deleteEntryItem = async function (event, quizId) {
 // MENU BAR (Docs-style dropdowns)
 // ============================================================================
 
+/**
+ * Position a .menu-dropdown (position: fixed) directly beneath its trigger,
+ * using the trigger's live bounding rect, then clamp to the viewport.
+ * Mirrors positionGmdDropdown() above — needed because .app-title-bar
+ * scrolls horizontally on phones, so a plain position:absolute dropdown
+ * could render partly or fully off-screen depending on scroll position.
+ */
+function positionMenuDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  // Measure first with visibility hidden so offsetWidth/Height are correct
+  // before the final visible placement.
+  dropdown.style.visibility = "hidden";
+  dropdown.style.display = "block";
+  dropdown.style.top = `${rect.bottom + 4}px`;
+  dropdown.style.left = "0px";
+
+  const menuWidth = dropdown.offsetWidth;
+  let left = rect.right - menuWidth; // align dropdown's right edge to trigger's right edge (RTL)
+  left = Math.max(8, Math.min(left, window.innerWidth - menuWidth - 8));
+
+  let top = rect.bottom + 4;
+  const menuHeight = dropdown.offsetHeight;
+  if (top + menuHeight > window.innerHeight - 8) {
+    // Not enough room below — flip to open above the trigger instead.
+    top = Math.max(8, rect.top - menuHeight - 4);
+  }
+
+  dropdown.style.left = `${left}px`;
+  dropdown.style.top = `${top}px`;
+  dropdown.style.display = "";
+  dropdown.style.visibility = "";
+}
+
+/**
+ * Position a .menu-submenu-dropdown beside its trigger row (to the left in
+ * this RTL layout), clamped to the viewport the same way as top-level menus.
+ */
+function positionSubmenuDropdown(trigger, dropdown) {
+  const rect = trigger.getBoundingClientRect();
+  dropdown.style.visibility = "hidden";
+  dropdown.style.display = "block";
+  dropdown.style.top = "0px";
+  dropdown.style.left = "0px";
+
+  const menuWidth = dropdown.offsetWidth;
+  const menuHeight = dropdown.offsetHeight;
+
+  // Prefer popping out to the left of the trigger row (RTL: away from the
+  // sidebar). If there isn't room on the left, fall back to the right.
+  let left = rect.left - menuWidth - 2;
+  if (left < 8) left = Math.min(rect.right + 2, window.innerWidth - menuWidth - 8);
+  left = Math.max(8, left);
+
+  let top = rect.top - 6;
+  top = Math.max(8, Math.min(top, window.innerHeight - menuHeight - 8));
+
+  dropdown.style.left = `${left}px`;
+  dropdown.style.top = `${top}px`;
+  dropdown.style.display = "";
+  dropdown.style.visibility = "";
+}
+
 /** Open the named dropdown, closing any other open one first. */
 window.toggleMenu = function (name) {
   const dropdown = document.getElementById(`menu-${name}`);
-  const item = dropdown?.closest(".menu-item");
-  if (!dropdown || !item) return;
+  const item = dropdown?.closest(".menu-bar-item");
+  const trigger = item?.querySelector(":scope > .menu-trigger");
+  if (!dropdown || !item || !trigger) return;
 
   const isOpen = item.classList.contains("menu-item-open");
   closeAllMenus();
   if (!isOpen) {
     item.classList.add("menu-item-open");
+    positionMenuDropdown(trigger, dropdown);
   }
 };
 
 /** Close every open menu dropdown. Safe to call even if none are open. */
 window.closeAllMenus = function () {
   document
-    .querySelectorAll(".menu-item.menu-item-open")
+    .querySelectorAll(".menu-bar-item.menu-item-open")
     .forEach((item) => item.classList.remove("menu-item-open"));
   // Also collapse any open submenus
   document
@@ -1093,18 +1175,26 @@ window.closeAllMenus = function () {
 /**
  * Toggle a nested submenu inside an already-open parent dropdown.
  * Stops event propagation so the parent dropdown doesn't close.
+ * Now click-driven (not hover) since the submenu is position:fixed and
+ * placed by JS on open — there's no continuous CSS box to hover across
+ * once the dropdown can float anywhere in the viewport.
  */
 window.toggleSubmenu = function (event, submenuId) {
   event.stopPropagation();
   const submenuItem = event.currentTarget.closest("[data-menu='" + submenuId + "']");
-  if (!submenuItem) return;
+  const trigger = event.currentTarget;
+  const dropdown = submenuItem?.querySelector(":scope > .menu-submenu-dropdown");
+  if (!submenuItem || !dropdown) return;
   const isOpen = submenuItem.classList.contains("menu-item-open");
   // Close any other open submenus at this level first
   submenuItem
     .closest(".menu-dropdown")
     ?.querySelectorAll(".menu-item-submenu.menu-item-open")
     .forEach((s) => s.classList.remove("menu-item-open"));
-  if (!isOpen) submenuItem.classList.add("menu-item-open");
+  if (!isOpen) {
+    submenuItem.classList.add("menu-item-open");
+    positionSubmenuDropdown(trigger, dropdown);
+  }
 };
 
 /**
@@ -1113,13 +1203,21 @@ window.toggleSubmenu = function (event, submenuId) {
  */
 window.openTemplatesMenu = function () {
   // Open the Insert top-level menu
-  const insertItem = document.querySelector(".menu-item[data-menu='insert']");
+  const insertItem = document.querySelector(".menu-bar-item[data-menu='insert']");
   if (!insertItem) return;
   closeAllMenus();
+  const insertTrigger = insertItem.querySelector(":scope > .menu-trigger");
+  const insertDropdown = insertItem.querySelector(":scope > .menu-dropdown");
   insertItem.classList.add("menu-item-open");
+  if (insertTrigger && insertDropdown) positionMenuDropdown(insertTrigger, insertDropdown);
   // Pre-expand the templates submenu inside it
   const templatesItem = insertItem.querySelector(".menu-item-submenu[data-menu='insert-templates']");
-  if (templatesItem) templatesItem.classList.add("menu-item-open");
+  const templatesTrigger = templatesItem?.querySelector(":scope > .menu-option");
+  const templatesDropdown = templatesItem?.querySelector(":scope > .menu-submenu-dropdown");
+  if (templatesItem) {
+    templatesItem.classList.add("menu-item-open");
+    if (templatesTrigger && templatesDropdown) positionSubmenuDropdown(templatesTrigger, templatesDropdown);
+  }
 };
 
 // ============================================================================
@@ -1144,15 +1242,19 @@ window.closeStatsModal = function () {
  * NOTE: The menu bar is now embedded as .app-bar-menu inside #appTitleBar.
  * We attach the close listener to #appTitleBar so that clicks anywhere
  * INSIDE it (including submenu items) do NOT close the dropdown prematurely.
- * The submenu UX is handled entirely by CSS :hover — no JS mouseleave needed. */
+ * Submenus are now click-driven (see toggleSubmenu) since dropdowns are
+ * position:fixed and placed by JS rather than pure CSS :hover. */
 function setupMenuBarListeners() {
   // Reference the unified top bar (which contains the embedded menu nav)
   const appTitleBar = document.getElementById("appTitleBar");
   if (!appTitleBar) return;
 
-  // Click outside the entire top bar → close all menus
+  // Click outside the entire top bar AND outside any open dropdown → close.
+  // Dropdowns are position:fixed now, so they're no longer DOM-nested
+  // inside appTitleBar's visible box in a way .contains() would still
+  // reliably reflect for outside-click purposes — check both.
   document.addEventListener("click", (e) => {
-    if (!appTitleBar.contains(e.target)) {
+    if (!appTitleBar.contains(e.target) && !e.target.closest(".menu-dropdown")) {
       closeAllMenus();
     }
   });
@@ -1161,17 +1263,26 @@ function setupMenuBarListeners() {
     if (e.key === "Escape") closeAllMenus();
   });
 
+  // Re-close (rather than leave a dropdown stranded mid-air) if the bar
+  // scrolls or the window resizes — its fixed position was computed for
+  // the trigger's rect at open-time only.
+  appTitleBar.addEventListener("scroll", closeAllMenus);
+  window.addEventListener("resize", closeAllMenus);
+
   // Hover-to-switch: once any top-level menu is open, hovering another
-  // .menu-item (that has its own data-menu trigger) switches to it.
+  // .menu-bar-item (that has its own data-menu trigger) switches to it.
   // We scope to .menu-bar-inner to avoid triggering on submenu rows.
   const menuBarInner = appTitleBar.querySelector(".menu-bar-inner");
   if (!menuBarInner) return;
-  menuBarInner.querySelectorAll(":scope > .menu-item").forEach((item) => {
+  menuBarInner.querySelectorAll(":scope > .menu-bar-item").forEach((item) => {
     item.addEventListener("mouseenter", () => {
       const anyOpen = menuBarInner.querySelector(".menu-item-open");
       if (anyOpen && anyOpen !== item) {
         anyOpen.classList.remove("menu-item-open");
         item.classList.add("menu-item-open");
+        const trigger = item.querySelector(":scope > .menu-trigger");
+        const dropdown = item.querySelector(":scope > .menu-dropdown");
+        if (trigger && dropdown) positionMenuDropdown(trigger, dropdown);
       }
     });
   });
@@ -1190,6 +1301,22 @@ function setupEntryItemMenuListeners() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeAllEntryItemMenus();
+  });
+}
+
+/** Outside-click/Escape closing for question-card "more" (⋮) dropdowns.
+ * Same delegated pattern as setupEntryItemMenuListeners — question cards
+ * are re-rendered/reordered often (add/move/duplicate/remove), so this is
+ * attached once at init rather than per-card. */
+function setupQuestionMenuListeners() {
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".question-more-wrap")) {
+      closeAllQuestionMenus();
+    }
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeAllQuestionMenus();
   });
 }
 
@@ -1242,9 +1369,11 @@ function setupEventListeners() {
     autosave();
   });
 
+  autoResizeMdSource(descInput);
   descInput.addEventListener("input", (e) => {
     quizData.description = e.target.value;
     updateCharCount("descCharCount", e.target.value.length, 500);
+    autoResizeMdSource(e.target);
     autosave();
   });
 
@@ -1337,6 +1466,30 @@ function setupKeyboardShortcuts() {
     }
   });
 }
+
+/**
+ * Show/hide the quiz password's plaintext, like a normal password field's
+ * reveal button — toggles the input's type between "password" and "text"
+ * and swaps the eye / eye-off icon + label to match the resulting state.
+ */
+window.toggleQuizPasswordVisibility = function () {
+  const input = document.getElementById("quizPassword");
+  const btn = document.getElementById("quizPasswordToggle");
+  if (!input || !btn) return;
+
+  const revealing = input.type === "password";
+  input.type = revealing ? "text" : "password";
+
+  const eyeIcon = btn.querySelector(".icon-eye");
+  const eyeOffIcon = btn.querySelector(".icon-eye-off");
+  if (eyeIcon) eyeIcon.style.display = revealing ? "none" : "";
+  if (eyeOffIcon) eyeOffIcon.style.display = revealing ? "" : "none";
+
+  const label = revealing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور";
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
+  btn.setAttribute("aria-pressed", String(revealing));
+};
 
 window.toggleShortcuts = function () {
   const panel = document.getElementById("shortcutsPanel");
@@ -1518,32 +1671,61 @@ function renderQuestion(question, insertAtIndex = null) {
   }
 
   questionCard.innerHTML = `
-        <div class="question-header" onclick="handleHeaderClick(event, ${question.id})">
+        <div class="question-header">
             <span class="question-number" id="qnum-${question.id}">
                 ${bulkModeActive ? `<input type="checkbox" class="question-select-checkbox" onchange="handleQuestionSelect(event, ${question.id})" onclick="event.stopPropagation()">` : ""}
-                <span class="move-handle" onclick="event.stopPropagation()">
-                  <button type="button" class="move-btn move-btn--up" title="نقل للأعلى" aria-label="نقل السؤال للأعلى" onclick="moveQuestion(${question.id}, 'up')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg></button>
-                  <button type="button" class="move-btn move-btn--down" title="نقل للأسفل" aria-label="نقل السؤال للأسفل" onclick="moveQuestion(${question.id}, 'down')"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
-                </span>
                 <span class="q-label">سؤال ${questionNumber}</span>
                 <span class="q-preview ltr" id="qpreview-${question.id}"></span>
             </span>
             <div class="question-actions" onclick="event.stopPropagation()">
-                <button class="btn-icon btn-collapse" onclick="toggleQuestionCollapse(${question.id})" title="طي/توسيع السؤال">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
-                      fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="lucide lucide-chevrons-down-up-icon lucide-chevrons-down-up">
-                      <path d="m7 20 5-5 5 5" />
-                      <path d="m7 4 5 5 5-5" />
-                     </svg>
-                </button>
-                <button class="btn-icon btn-duplicate" onclick="duplicateQuestion(${question.id})" title="مضاعفة السؤال">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                </button>
-                <button class="btn-icon btn-delete" onclick="removeQuestion(${question.id})" title="حذف السؤال">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
+                <div class="question-more-wrap">
+                    <button type="button" class="question-more-btn" onclick="toggleQuestionMenu(event, ${question.id})"
+                        aria-label="خيارات إضافية" title="خيارات إضافية">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="19" cy="12" r="1" />
+                            <circle cx="5" cy="12" r="1" />
+                        </svg>
+                    </button>
+                    <div class="question-more-menu" id="questionMenu-${question.id}">
+                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'top'); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11l-5-5-5 5"/><path d="M17 18l-5-5-5 5"/></svg>
+                            <span>نقل لأعلى السؤال</span>
+                        </button>
+                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'up'); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+                            <span>نقل للأعلى</span>
+                        </button>
+                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'down'); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            <span>نقل للأسفل</span>
+                        </button>
+                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'bottom'); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13l-5 5-5-5"/><path d="M17 6l-5 5-5-5"/></svg>
+                            <span>نقل لأسفل السؤال</span>
+                        </button>
+                        <div class="menu-separator"></div>
+                        <button type="button" class="question-menu-option" onclick="toggleQuestionCollapse(${question.id}); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
+                              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                              stroke-linejoin="round">
+                              <path d="m7 20 5-5 5 5" />
+                              <path d="m7 4 5 5 5-5" />
+                             </svg>
+                            <span>طي/توسيع السؤال</span>
+                        </button>
+                        <button type="button" class="question-menu-option" onclick="duplicateQuestion(${question.id}); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                            <span>مضاعفة السؤال</span>
+                        </button>
+                        <div class="menu-separator"></div>
+                        <button type="button" class="question-menu-option question-menu-option-danger" onclick="closeAllQuestionMenus(); removeQuestion(${question.id});">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            <span>حذف السؤال</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -1554,7 +1736,7 @@ function renderQuestion(question, insertAtIndex = null) {
             </div>
             
             <div class="form-group">
-                <label class="options-label">${isEssay ? "الإجابة المرجعية" : "الإختيارات (اختر إجابة واحدة أو أكثر كصحيحة)"}</label>
+                <label class="options-label">${isEssay ? "الإجابة المرجعية" : "الإختيارات"}</label>
                 <div id="options-container-${question.id}" class="options-list">
                     ${renderOptions(question)}
                 </div>
@@ -1607,7 +1789,7 @@ window.handleHeaderClick = function (e, questionId) {
   // Only collapse if clicking directly on header/label, not child interactive elements
   if (
     e.target.closest(".question-actions") ||
-    e.target.closest(".move-handle") ||
+    e.target.closest(".question-more-wrap") ||
     e.target.closest(".question-select-checkbox") ||
     e.target.tagName === "BUTTON" ||
     e.target.tagName === "INPUT"
@@ -2193,22 +2375,33 @@ window.moveQuestion = function (questionId, direction) {
   const index = quizData.questions.findIndex((q) => q.id === questionId);
   if (index === -1) return;
 
-  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  let targetIndex;
+  if (direction === "up") targetIndex = index - 1;
+  else if (direction === "down") targetIndex = index + 1;
+  else if (direction === "top") targetIndex = 0;
+  else if (direction === "bottom") targetIndex = quizData.questions.length - 1;
+  else return;
+
   if (targetIndex < 0 || targetIndex >= quizData.questions.length) return;
+  if (targetIndex === index) return;
 
   const [moved] = quizData.questions.splice(index, 1);
   quizData.questions.splice(targetIndex, 0, moved);
 
   const container = document.getElementById("questionsContainer");
   const card = document.getElementById(`question-${questionId}`);
-  const siblingCard =
-    direction === "up" ? card.previousElementSibling : card.nextElementSibling;
 
-  if (card && siblingCard) {
+  if (card) {
     if (direction === "up") {
-      container.insertBefore(card, siblingCard);
-    } else {
-      container.insertBefore(siblingCard, card);
+      const sibling = card.previousElementSibling;
+      if (sibling) container.insertBefore(card, sibling);
+    } else if (direction === "down") {
+      const sibling = card.nextElementSibling;
+      if (sibling) container.insertBefore(sibling, card);
+    } else if (direction === "top") {
+      container.insertBefore(card, container.firstElementChild);
+    } else if (direction === "bottom") {
+      container.appendChild(card);
     }
   }
 
@@ -2286,7 +2479,7 @@ function renderOptions(question) {
             <div class="option-md-wrap">
                 ${mdEditorHtml(optId, option, `إختيار ${index + 1}`, 1)}
             </div>
-            ${question.options.length >= 2
+            ${question.options.length > 2
           ? `<button class="option-delete" onclick="removeOption(${question.id}, ${index})" title="حذف الخيار" aria-label="حذف الخيار ${index + 1}"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>`
           : ""
         }
@@ -2370,7 +2563,7 @@ function rerenderOptions(questionId) {
   if (label) {
     label.textContent = isEssay
       ? "الإجابة المرجعية"
-      : "الإختيارات (اختر إجابة واحدة أو أكثر كصحيحة)";
+      : "الإختيارات";
   }
 
   const btnDiv = document.getElementById(`option-btn-${questionId}`);
@@ -2402,7 +2595,9 @@ window.addOption = function (questionId) {
 
 window.removeOption = function (questionId, optionIndex) {
   const question = quizData.questions.find((q) => q.id === questionId);
-  if (question && question.options.length >= 2) {
+  // MCQs must keep at least 2 options — only remove when there are more
+  // than 2 to begin with, so the last removal always leaves exactly 2.
+  if (question && question.options.length > 2) {
     normalizeCorrectField(question);
     question.options.splice(optionIndex, 1);
     // Drop the removed index from `correct` and shift indices above it down.
@@ -3066,8 +3261,10 @@ function loadDraftFromLocalStorage() {
 
       if (description) {
         quizData.description = description;
-        document.getElementById("quizDescription").value = description;
+        const descEl = document.getElementById("quizDescription");
+        descEl.value = description;
         updateCharCount("descCharCount", description.length, 500);
+        autoResizeMdSource(descEl);
       }
 
       if (source) {
@@ -3156,8 +3353,10 @@ function loadQuizFromLocalStorage(quizId) {
       }
 
       quizData.description = quiz.meta?.description || quiz.description || "";
-      document.getElementById("quizDescription").value = quizData.description;
+      const quizDescEl = document.getElementById("quizDescription");
+      quizDescEl.value = quizData.description;
       updateCharCount("descCharCount", quizData.description.length, 500);
+      autoResizeMdSource(quizDescEl);
 
       quizData.source = quiz.meta?.source || quiz.source || "";
       document.getElementById("quizSource").value = quizData.source;
@@ -3745,6 +3944,7 @@ window.processImport = async function () {
           if (descEl) {
             descEl.value = quizData.description;
             updateCharCount("descCharCount", quizData.description.length, 500);
+            autoResizeMdSource(descEl);
           }
           if (sourceInput) {
             sourceInput.value = quizData.source;
@@ -3782,6 +3982,7 @@ window.processImport = async function () {
         if (descEl) {
           descEl.value = quizData.description;
           updateCharCount("descCharCount", quizData.description.length, 500);
+          autoResizeMdSource(descEl);
         }
         if (sourceInput) {
           sourceInput.value = quizData.source;
@@ -3883,7 +4084,10 @@ function resetPageData() {
   const qSrcEl = document.getElementById("quizSource");
   if (qSrcEl) qSrcEl.value = "";
   const qDescEl = document.getElementById("quizDescription");
-  if (qDescEl) qDescEl.value = "";
+  if (qDescEl) {
+    qDescEl.value = "";
+    autoResizeMdSource(qDescEl);
+  }
   document.getElementById("questionsContainer").innerHTML = "";
 
   updateCharCount("titleCharCount", 0, 100);
@@ -3995,6 +4199,7 @@ function handleAiEditQuizToolCall(toolCall) {
     if (descEl) {
       descEl.value = quizData.description;
       updateCharCount("descCharCount", quizData.description.length, 500);
+      autoResizeMdSource(descEl);
     }
   }
 

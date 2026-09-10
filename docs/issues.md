@@ -68,6 +68,20 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 #### Creating Quizzes
 - The AI Agent doesn't have the ability to set the place where the quiz gets put, it always get put inside `/#my-quizzes` directly. It should be able to set it's initial place (e.g., `/#my-quizzes/math/` or `/#my-quizzes/math/algebra/`).
 
+#### Create-Quiz Page
+Some of the elements of the AI Agent are broken on the create-quiz.html page, like the `.ai-agent-more-btn` and the `.ai-agent-history-item-more`
+
+#### Result Page
+The `.ai-agent-history-item-more` doesn't work on the result.html page.
+
+#### Settings
+Labels aren't connected to their inputs "No label associated with a form field"
+
+#### Improvements
+- The AI Agent Chat should use icons instead of emojis for pinned items.
+- Remove the `لغة ردود المساعد` option from the settings, leave the choice of language to the AI, or the user can tell it in the prompt itself, remove that setting totally.
+- Improve the UI/UX of the `.ai-agent-settings-actions` in the settings panel under the `مفتاح API الخاص بك (اختياري)`, so that both buttons are invisible when there is nothing saved (since there would be nothing to save or delete, the 2 buttons are useless), when the user is typing and nothing is saved, the save button only appears, when the value is saved the delete button only appears.
+
 ### `.exam-more-btn`
 Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
 - Second press should close.
@@ -148,13 +162,9 @@ The `.watermark` element on the home page climbs up very high when there is not 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
 
 ### Create Quiz Page
-- Fix the `#menuBar` dropdowns, the `#globalMdBar` work on phones, but not `#menuBar`, they open within the menu itself, meaning on phones after clicking a dropdown, I have to scroll `#menuBar` vertically, it's so messed up.
-- The submenu buttons withing `#menuBar` (e.g., `class="menu-item menu-item-submenu"` buttons) are too big for some reason, they are exceptionally bigger than the other buttons, fix them.
-- The items in the `#menuBar` (e,g., `class="menu-item"`) are too big, they need to get smaller, and be designed more like the top menu at Google Docs.
-- Make the actions (e.g., `#menuBar`) start from the right of the `.app-title-bar` instead of from the left after the quiz title. And bring the `.autosave-indicator` next to the quiz title.
-- On phones, the `.app-title-bar` is static can't be moved, but the `#menuBar` within it can be horizontally scrolled. Remove that, the whole `.app-title-bar` should be scrollable on phones, just like the `#globalMdBar` can.
-- The items in `class="gmd-dropdown-menu gmd-dropdown-menu--latex open"` should be listed under each other with labels next to them.
-- The questions input, questions options inputs are too big, they should behave like an input in an AI chat, starts small (one line), then gets bigger as the user adds more lines.
-
-- Implement a search feature to search the quiz.
+- The items in the `#menuBar` (e,g., `class="menu-item"`) are too big, they need to get smaller, and be designed more like the top menu at Google Docs. They currently feel like they are 2 buttons inside each other. Because the buttons are designed stupidly where it's actually 2 elements inside each other (`.menu-trigger` inside `.menu-item`), and it looks like each has a hover state. Just totally redesign the item. 
+- The minimum number of options on MCQs should be 2, not 1 as it currently is.
+- `#quizPassword` doesn't behave like an actual password input, it should behave like one, with a button on it to show the password or to hide it.
+- Items inside `#menuBar` should be displayed from the left to the right (so "الملف" should be the first elemenet from the left, not the last) 
+- Items in the `.global-md-bar` aren't clear, they are small, and sometimes look bad, redesign them, and use actual icons, not text.
 
