@@ -15,7 +15,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 
-### Dropdowns
+### Dropdowns in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
 - Right cliking a quiz shows the right click menu, then pressing the more button, opens it on top of the right-click menu (Incorrect): Only one menu should be open.
 
@@ -78,14 +78,6 @@ Labels aren't connected to their inputs "No label associated with a form field"
 
 ## New Features
 
-### Search and navigation refinements (Home Page)
-- The footer may sit too high and does not always remain pinned to the bottom of the page when the content area is short.
-- The home page search icon and input placement need refinement.
-- The search button should be aligned at the lower-right rather than upper-right.
-- The search bar should appear within the header itself.
-- When the search bar is visible, the header search button should be hidden to avoid duplication. And try to align the search input's search icon in place of the header search button.
-- The search icon disappears when I enter a course that only has subfolders in its first level, this issue is probably due to the folders & courses not being actual objects in the DB, we may choose to solve this issue after we migrate the whole platform to be DB quizzes only, and give up on relative-path quizzes uploaded with the code.
-
 ### Admin actions and deletion flow (New Features)
 - Admins should be able to delete folders and courses from the main quizzes area. Admin can currently delete quizzes.
 - Deletion should not be immediate; a trash can or recovery workflow is needed for courses, folders and quizzes.
@@ -100,16 +92,16 @@ Labels aren't connected to their inputs "No label associated with a form field"
   - The delete button (for sending quizzes, folders, or courses to the trash can, or some recovery workflow)
   - The move button (for moving quizzes or folders inside the course they are in). Uses similar Move-To Dialog Guide like that in the امتحاناتك section.
   - The edit button (for editing 'quizzes' in the create-quiz page).
+  - The rename button (for quizzes, folders, or courses)
   - The dropdown should be visible to admins only.
 
-### Meme videos on result pages (Easy to make, but very important)
-- Add a result-page feature that displays themed meme videos based on the user’s degree or score.
-- Suggested themes include:
-  - دعوية
-  - إسلامية
-  - قرآن
-  - ميمز تشجيع سلبية
-  - ميمز تشجيع إيجابية
+### Search and navigation refinements (Home Page)
+- The footer may sit too high and does not always remain pinned to the bottom of the page when the content area is short.
+- The home page search icon and input placement need refinement.
+- The search button should be aligned at the lower-right rather than upper-right.
+- The search bar should appear within the header itself.
+- When the search bar is visible, the header search button should be hidden to avoid duplication. And try to align the search input's search icon in place of the header search button.
+- The search icon disappears when I enter a course that only has subfolders in its first level, this issue is probably due to the folders & courses not being actual objects in the DB, we may choose to solve this issue after we migrate the whole platform to be DB quizzes only, and give up on relative-path quizzes uploaded with the code.
 
 ### Markdown engine enhancement
 - Update the markdown engine to behave more like GitHub markdown rendering, with embeded media like vidoes, audio, and images.
@@ -120,20 +112,29 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - This will allow quiz creators to add multiple pieces of media to each question.
 - Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos. 
 
-### User upload flow
-- Allow normal users to upload quizzes as a new feature.
-
-### Translation and content expansion (Suggestion)
-- Add English translation support.
-
-### Home Page Improvements
-- The side menu admin badge and favicon size should be improved visually.
-
 ### Quizzes Improvement (Suggestions)
 - Number of Views or people who solved a quiz on each quiz.
 - Detailed info: Instead of listing the questions types and question number (["Essay", "MCQ", "True/False"] [30]) we should count the number of each individual type, so we now the number of essays, the number of MCQs, and the number of True/False.
 - Connect Password typing memory on the main page to the quiz page, so if the user had to type the password on the main page to download it, they don't have to type it again for the same quiz on the quiz.html page on the same visit.
 - Allow users to switch view on the home page, when there is not a compulsory view.
+
+### Meme videos on result pages (Easy to make, but very important)
+- Add a result-page feature that displays themed meme videos based on the user’s degree or score.
+- Suggested themes include:
+  - دعوية
+  - إسلامية
+  - قرآن
+  - ميمز تشجيع سلبية
+  - ميمز تشجيع إيجابية
+
+### App SEO and GEO 
+- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
+
+### Home Page Improvements
+- The side menu admin badge and favicon size should be improved visually.
+
+### Translation and content expansion (Suggestion)
+- Add English translation support.
 
 ### Home Page Loading
 *Important Note: This update comes after converting the platform to have DB quizzes only. Before that, it depended on relative-path quizzes updated with the code, and a relative path manifest with logic to merge them with quizzes coming from the DB. Now the Platform depends on the DB only, with all legacy code deleted*
@@ -142,6 +143,3 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - Don't load the whole DB for the manifest, just the courses, then when the initial view loads (which is top view, which is courses only), start loading their subfolder in the background.
 - When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
-
-### App SEO and GEO 
-- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
