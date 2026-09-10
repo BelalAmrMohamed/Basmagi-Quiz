@@ -8,7 +8,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ## Map of Project Structure
 
 ```text
-project-منصة إمتحانات بصمجي/
+منصة إمتحانات بصمجي/
 ├── _config.yml
 ├── CHANGELOG.md
 ├── LICENSE
@@ -16,8 +16,8 @@ project-منصة إمتحانات بصمجي/
 ├── package.json
 ├── README.md
 ├── vercel.json
-├── api/ [287.51 KB, 6914 LOC]
-│   ├── ai-agent/ [47.99 KB, 1042 LOC]
+├── api/ [330.67 KB, 7893 LOC]
+│   ├── ai-agent/ [50.09 KB, 1080 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
 │   │   ├── _tools.js
@@ -28,8 +28,10 @@ project-منصة إمتحانات بصمجي/
 │   │
 │   ├── _courseFolders.js
 │   ├── _handle.js
+│   ├── _itemActions.js
 │   ├── _middleware.js
 │   ├── _rateLimit.js
+│   ├── _trash.js
 │   ├── _validateQuiz.js
 │   ├── admin.js
 │   ├── auth.js
@@ -43,12 +45,15 @@ project-منصة إمتحانات بصمجي/
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [1.33 MB, 1885 LOC]
-│   ├── map/ [21.92 KB, 520 LOC]
+├── docs/ [1.35 MB, 2057 LOC]
+│   ├── map/ [21.6 KB, 523 LOC]
 │   │   └── context-map.md
 │   │
-│   ├── plans/ [4.95 KB, 48 LOC]
-│   │   └── ai-agent-on-quiz-page-prompt.md
+│   ├── plans/ [78.91 KB, 1231 LOC]
+│   │   ├── Admin actions and deletion flow for quizzes.md
+│   │   ├── ai-agent-continue.md
+│   │   ├── ai-agent-on-quiz-page-prompt.md
+│   │   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
 │   │
 │   ├── Database-Schema-Context.md
 │   ├── image-1.png
@@ -56,10 +61,9 @@ project-منصة إمتحانات بصمجي/
 │   ├── image-3.png
 │   ├── image-5.png
 │   ├── image-6.png
-│   ├── issues.md
-│   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
+│   └── issues.md
 │
-├── public/ [199.72 MB, 98119 LOC]
+├── public/ [199.72 MB, 98179 LOC]
 │   ├── assets/ [196.07 MB, 0 LOC]
 │   │   ├── images/ [3.84 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -230,9 +234,9 @@ project-منصة إمتحانات بصمجي/
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.03 MB, 88057 LOC]
-│   │   ├── components/ [624 KB, 16483 LOC]
-│   │   │   ├── ai-agent/ [374.27 KB, 8803 LOC]
+│   ├── src/ [3.03 MB, 88114 LOC]
+│   │   ├── components/ [623.8 KB, 16472 LOC]
+│   │   │   ├── ai-agent/ [374.07 KB, 8792 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
 │   │   │   │   ├── ai-agent-chat.js
 │   │   │   │   ├── ai-agent-default-prompts.js
@@ -275,14 +279,14 @@ project-منصة إمتحانات بصمجي/
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.07 MB, 61744 LOC]
+│   │   ├── features/ [2.07 MB, 61812 LOC]
 │   │   │   ├── control/ [42.19 KB, 1583 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
 │   │   │   │   └── reports-view.js
 │   │   │   │
-│   │   │   ├── create/ [295.6 KB, 9428 LOC]
+│   │   │   ├── create/ [295.58 KB, 9428 LOC]
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
 │   │   │   │
@@ -294,7 +298,7 @@ project-منصة إمتحانات بصمجي/
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [762.1 KB, 20201 LOC]
+│   │   │   ├── home/ [764.2 KB, 20269 LOC]
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
 │   │   │   │   ├── app-state.js
@@ -314,6 +318,7 @@ project-منصة إمتحانات بصمجي/
 │   │   │   │   ├── download-password.js
 │   │   │   │   ├── escape-html.js
 │   │   │   │   ├── exam-card.js
+│   │   │   │   ├── exam-dropdown-menu.css
 │   │   │   │   ├── exam-dropdown-menu.js
 │   │   │   │   ├── floating-position.js
 │   │   │   │   ├── icons.js
@@ -449,13 +454,14 @@ project-منصة إمتحانات بصمجي/
 │   │
 │   └── map.js
 │
-└── supabase/ [34.42 KB, 810 LOC]
-    ├── migrations/ [18.8 KB, 395 LOC]
+└── supabase/ [42.89 KB, 969 LOC]
+    ├── migrations/ [27.28 KB, 554 LOC]
     │   ├── 20260828051811_user_profiles_server_side_identity.sql
     │   ├── 20260901195646_courses_and_folders.sql
     │   ├── 20260904000000_colleges.sql
     │   ├── 20260904010000_public_relational_reads.sql
-    │   └── 20260909120000_admin_users_bio.sql
+    │   ├── 20260909120000_admin_users_bio.sql
+    │   └── 20260910120000_trash_items.sql
     │
     └── config.toml
 ```
@@ -466,10 +472,10 @@ project-منصة إمتحانات بصمجي/
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 98119 |
-| `api` | 6914 |
-| `docs` | 1885 |
-| `supabase` | 810 |
+| `public` | 98179 |
+| `api` | 7893 |
+| `docs` | 2057 |
+| `supabase` | 969 |
 | `(root)` | 661 |
 | `scripts` | 566 |
 
@@ -477,13 +483,13 @@ project-منصة إمتحانات بصمجي/
 
 | File | Lines of Code |
 |------|---------------|
-| `public/src/features/home/index.css` | 4989 |
+| `public/src/features/home/index.css` | 4909 |
 | `public/src/features/create/create-quiz.js` | 4841 |
 | `public/src/features/create/create-quiz.css` | 4587 |
 | `public/src/features/export/export-to-quiz.js` | 4261 |
 | `public/src/features/quiz/quiz.js` | 3374 |
 | `public/src/features/quiz/quiz.css` | 3198 |
-| `public/src/components/ai-agent/ai-agent-chat.js` | 2797 |
+| `public/src/components/ai-agent/ai-agent-chat.js` | 2790 |
 | `public/src/components/ai-agent/ai-agent.css` | 2738 |
 | `public/src/features/profile/profile.css` | 2598 |
 | `public/src/components/side-menu/side-menu.css` | 2149 |
@@ -492,18 +498,18 @@ project-منصة إمتحانات بصمجي/
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 141 | 64485 | 2.56 MB |
-| .css | 24 | 31214 | 791.47 KB |
-| .html | 19 | 9725 | 583.7 KB |
-| .md | 7 | 2395 | 115.29 KB |
-| .sql | 5 | 395 | 18.8 KB |
-| .json | 4 | 214 | 76.13 KB |
+| .js | 143 | 65466 | 2.6 MB |
+| .css | 25 | 31269 | 792.8 KB |
+| .html | 19 | 9728 | 583.93 KB |
+| .md | 9 | 2567 | 135.66 KB |
+| .sql | 6 | 554 | 27.28 KB |
+| .json | 4 | 214 | 76.09 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
 | .txt | 1 | 4 | 79 B |
 | .xml | 1 | 45 | 1.36 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **205** | **108955** | **4.12 MB** |
+| **Total** | **211** | **110325** | **4.2 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -518,5 +524,5 @@ project-منصة إمتحانات بصمجي/
 | .svg | 1 | 19.48 KB |
 | **Total** | **152** | **197.35 MB** |
 
-**Grand Total Files:** 357  
-**Total Repository Size:** 201.48 MB
+**Grand Total Files:** 363  
+**Total Repository Size:** 201.55 MB
