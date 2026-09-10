@@ -45,25 +45,22 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [1.35 MB, 2091 LOC]
-│   ├── map/ [21.87 KB, 529 LOC]
+├── docs/ [860.41 KB, 2018 LOC]
+│   ├── map/ [21.98 KB, 531 LOC]
 │   │   └── context-map.md
 │   │
-│   ├── plans/ [83.23 KB, 1272 LOC]
+│   ├── plans/ [75.94 KB, 1190 LOC]
 │   │   ├── Admin actions and deletion flow for quizzes.md
-│   │   ├── ai-agent-continue.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
 │   │   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
 │   │
 │   ├── Database-Schema-Context.md
-│   ├── image-1.png
-│   ├── image-2.png
 │   ├── image-3.png
 │   ├── image-5.png
 │   ├── image-6.png
 │   └── issues.md
 │
-├── public/ [199.76 MB, 99007 LOC]
+├── public/ [199.78 MB, 99636 LOC]
 │   ├── assets/ [196.07 MB, 0 LOC]
 │   │   ├── images/ [3.84 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -234,7 +231,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.06 MB, 88942 LOC]
+│   ├── src/ [3.08 MB, 89523 LOC]
 │   │   ├── components/ [625.45 KB, 16490 LOC]
 │   │   │   ├── ai-agent/ [375.72 KB, 8810 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
@@ -279,8 +276,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.1 MB, 62539 LOC]
-│   │   │   ├── control/ [42.19 KB, 1583 LOC]
+│   │   ├── features/ [2.12 MB, 63120 LOC]
+│   │   │   ├── control/ [56.77 KB, 2060 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
@@ -298,7 +295,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [792.32 KB, 20997 LOC]
+│   │   │   ├── home/ [795.78 KB, 21101 LOC]
 │   │   │   │   ├── admin-item-actions.js
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
@@ -474,9 +471,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 99007 |
+| `public` | 99636 |
 | `api` | 7937 |
-| `docs` | 2091 |
+| `docs` | 2018 |
 | `supabase` | 969 |
 | `(root)` | 661 |
 | `scripts` | 566 |
@@ -485,7 +482,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | File | Lines of Code |
 |------|---------------|
-| `public/src/features/home/index.css` | 4909 |
+| `public/src/features/home/index.css` | 4931 |
 | `public/src/features/create/create-quiz.js` | 4841 |
 | `public/src/features/create/create-quiz.css` | 4586 |
 | `public/src/features/export/export-to-quiz.js` | 4261 |
@@ -500,10 +497,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 145 | 66293 | 2.63 MB |
-| .css | 25 | 31314 | 795.13 KB |
-| .html | 19 | 9728 | 583.93 KB |
-| .md | 9 | 2601 | 138.88 KB |
+| .js | 145 | 66629 | 2.65 MB |
+| .css | 25 | 31559 | 800.38 KB |
+| .html | 19 | 9776 | 586.93 KB |
+| .md | 8 | 2528 | 132.4 KB |
 | .sql | 6 | 554 | 27.28 KB |
 | .json | 4 | 214 | 76.09 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
@@ -511,20 +508,20 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .xml | 1 | 45 | 1.36 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **213** | **111231** | **4.24 MB** |
+| **Total** | **212** | **111787** | **4.25 MB** |
 
 ### Binary / Media Files (Physical Size)
 
 | Extension | Files | Size |
 |-----------|-------|------------|
 | .jpg | 62 | 8.11 MB |
-| .png | 47 | 5.34 MB |
+| .png | 45 | 4.84 MB |
 | .mp3 | 17 | 103.72 MB |
 | .mp4 | 17 | 73.24 MB |
 | .pdf | 7 | 6.92 MB |
 | .ico | 1 | 4.19 KB |
 | .svg | 1 | 19.48 KB |
-| **Total** | **152** | **197.35 MB** |
+| **Total** | **150** | **196.85 MB** |
 
-**Grand Total Files:** 365  
-**Total Repository Size:** 201.59 MB
+**Grand Total Files:** 362  
+**Total Repository Size:** 201.1 MB
