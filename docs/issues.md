@@ -14,6 +14,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### امتحاناتك Rules
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
+- The `نسخ لامتحاناتي` button sometimes doesn't show the animations (on bigger courses, more than 40 quizzes), clicking it quits the menu immedietly, then after a while (takes longer than usual), the big course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
 
 ### Dropdowns in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
@@ -24,7 +25,9 @@ Check the rules for creating امتحانات and copying them and moving them.
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
 
-### AI Agnet Error 
+### AI Agnet Issues
+
+### Issue with a specific conversation I took with it
 - ![screenshot 1](image-1.png)
 - ![screenshot 2](image-2.png)
 
@@ -63,9 +66,12 @@ The `.ai-agent-history-item-more` doesn't work on the result.html page.
 Labels aren't connected to their inputs "No label associated with a form field"
 
 #### Improvements
-- The AI Agent Chat should use icons instead of emojis for pinned items.
+- The AI Agent Chat should use icons instead of emojis for pinned items. So when an item is pinned, the `.ai-agent-history-item-more` icon displays a pinned icon, instead of a more icon, to indicate that this item is pinned in a premium way.
 - Remove the `لغة ردود المساعد` option from the settings, leave the choice of language to the AI, or the user can tell it in the prompt itself, remove that setting totally.
 - Improve the UI/UX of the `.ai-agent-settings-actions` in the settings panel under the `مفتاح API الخاص بك (اختياري)`, so that both buttons are invisible when there is nothing saved (since there would be nothing to save or delete, the 2 buttons are useless), when the user is typing and nothing is saved, the save button only appears, when the value is saved the delete button only appears.
+- The AI Agent has the side-menu on the left on desktops, but it pops from the right on phones, phones should have it pop from the left just like desktops.
+- The side-menu on phones is too wide, it takes most of the AI Agent window.
+- The Carrot in the `.ai-agent-chat-model-select` is too close to the left border, fix the padding or the margin or whatever is broken.
 
 ### Create Quiz Page
 - Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
@@ -75,6 +81,15 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - Accessibility:
   - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
   - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..
+- Skeleton Loader for start page.
+- `.question-more-btn` moves its location based the screen size. That shouldn't happen. It should always be on the top left of the question card
+- There should be versions of the `.section-actions` buttons in the `.app-title-bar`, so users can do these actions without having to scroll all the way up to find them.
+- There are 2 `x` button on the `#questionSearch`, keep the `#clearSearch` and remove the other.
+- Default/Initial size of the ` الشرح (اختياري)` input should be small (one line), because it's currently too big initially. Same for the `نصّ السؤال *`, it should also be small initially (one line).
+- The `.entry-item-thumb-new` should show immedietly on page load, since it'a a static element, doesn't need to load anything from the DB or localStorage. It should be in the HTML directly.
+- On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown.
+- تم التجربة على الموبايل: لما بدوس مرة على حاجة من القائمة العلوية بتفتح من أول مرة ، لكن لو فيه حاجة مفتوحة ، وادوس على زرار تاني مش بتفتح إلا لما ادوس مرتين. صفحة إنشاء إمتحانات.
+
 
 ## New Features
 
@@ -130,16 +145,23 @@ Labels aren't connected to their inputs "No label associated with a form field"
 ### App SEO and GEO 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
 
-### Home Page Improvements
-- The side menu admin badge and favicon size should be improved visually.
+### Settings Page
+- The page shows false/placeholder values at start, which confuses some users. Implement a loading skeleton/state before displaying any info.
+- The carrot on the dropdowns is too close to the left border, fix the padding/margin or whatever is wrong.
 
 ### Translation and content expansion (Suggestion)
 - Add English translation support.
 
-### Home Page Loading
+### Home Page
+
+#### Loading
 *Important Note: This update comes after converting the platform to have DB quizzes only. Before that, it depended on relative-path quizzes updated with the code, and a relative path manifest with logic to merge them with quizzes coming from the DB. Now the Platform depends on the DB only, with all legacy code deleted*
 
 - امتحاناتك section should load independantly.
 - Don't load the whole DB for the manifest, just the courses, then when the initial view loads (which is top view, which is courses only), start loading their subfolder in the background.
 - When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
+
+#### Improvements
+- The side menu admin badge and favicon size should be improved visually.
+- Fix the `.copyAiPromptBtn` with its arrow, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.

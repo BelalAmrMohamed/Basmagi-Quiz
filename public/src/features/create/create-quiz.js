@@ -908,7 +908,7 @@ function renderEntryItemsGrid() {
             <path d="M12 5v14" />
           </svg>
         </span>
-        <span class="entry-item-title">امتحان فارغ</span>
+        <span class="entry-item-title">امتحان جديد</span>
       </button>
     </div>`;
 
@@ -3586,7 +3586,7 @@ function updateAutosaveIndicator(status) {
 
   if (status === "saving") {
     indicator.classList.add("saving");
-    indicator.querySelector(".save-text").textContent = "يُحفظ";
+    indicator.querySelector(".save-text").textContent = "يُحفظ..";
   } else if (status === "saved") {
     indicator.querySelector(".save-text").textContent = "محفوظ";
   } else if (status === "error") {
@@ -4104,7 +4104,7 @@ window.saveLocally = function () {
     return;
   }
 
-  showLoading("يُحفظ");
+  showLoading("يُحفظ..");
 
   setTimeout(() => {
     let quizId;

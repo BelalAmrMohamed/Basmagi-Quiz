@@ -89,6 +89,7 @@ body.quiz-form-active {
   display: flex;
   align-items: center;
   gap: 5px;
+  width: 75px;
   padding: 3px 10px;
   border-radius: 20px;
   background: var(--color-success-light);
@@ -755,6 +756,7 @@ body.sidebar-expanded .global-md-bar {
    the grid layout only applies inside each section's own .entry-items-grid. */
 .entry-sections {
   display: block;
+  margin-bottom: 20px;
 }
 
 .entry-section {
@@ -992,6 +994,7 @@ body.sidebar-expanded .global-md-bar {
   flex-direction: column;
   gap: 18px;
   background-color: var(--quiz-creator-bg);
+  margin-bottom: 30px;
 }
 
 .card {
@@ -2054,6 +2057,10 @@ body.reorder-mode-active .question-card {
 }
 
 @media (max-width: 480px) {
+  body {
+    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+
   .templates-grid {
     grid-template-columns: 1fr;
   }
@@ -2945,7 +2952,7 @@ body.reorder-mode-active .question-card {
 .watermark {
   text-align: center;
   margin-top: auto;
-  padding-top: 40px;
+  padding-top: 20px;
   border-top: 1px solid var(--color-border-light);
   font-size: 0.8rem;
   font-weight: 500;
@@ -3277,10 +3284,6 @@ body.reorder-mode-active .question-card {
   /* ============================================================================
          RESPONSIVE DESIGN
          ============================================================================ */
-  body {
-    padding: 20px 16px;
-  }
-
   /* Mobile uses a bottom nav, not a side rail, so the app bars don't need to
      reserve any sidebar gap here — full width edge to edge. */
   body.quiz-form-active {
@@ -3581,7 +3584,6 @@ body.reorder-mode-active .question-card {
 .form-group textarea.wp-textarea,
 .wp-textarea {
   width: 100%;
-  /* min-height: 60px; */
   padding: 10px 14px;
   border: none;
   background: var(--color-background);
@@ -3589,8 +3591,6 @@ body.reorder-mode-active .question-card {
   font-family: "Fira Code", "Courier New", monospace;
   font-size: 0.9rem;
   line-height: 1.6;
-  /* No manual resize: these fields auto-grow via autoResizeMdSource(), so a
-     drag handle would only fight the JS-driven height. */
   resize: none;
   box-sizing: border-box;
   display: block;
