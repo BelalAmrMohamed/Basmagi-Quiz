@@ -759,25 +759,45 @@
     </script>
 
     <!-- Unified top bar: fixed at viewport top. Contains (RTL order):
-         right = home button + quiz title (click-to-rename);
-         center = Docs-style menu bar (إدراج / ملف / عرض / مساعدة);
-         left = autosave indicator.
+         right = home button + quiz title (click-to-rename) + autosave indicator;
+         then = Docs-style menu bar (إدراج / ملف / عرض / مساعدة), flowing
+         immediately after the title cluster instead of being centered.
          Shown only while the editor is active (hidden on the entry screen). -->
     <div class="app-title-bar" id="appTitleBar" style="display: none;">
-        <!-- RTL start: home button + title -->
-        <button type="button" class="app-title-home" onclick="chooseEntryAction('exit')" title="العودة للشاشة الرئيسية"
-            aria-label="العودة للشاشة الرئيسية">
-            <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
-                fill="var(--color-text-primary)">
-                <path
-                    d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200-200 200Z" />
-            </svg>
-        </button>
-        <span class="app-title-text" id="appTitleText" contenteditable="false" spellcheck="false"
-            title="اضغط لإعادة تسمية الامتحان" onclick="startTitleEdit()" onblur="commitTitleEdit()"
-            onkeydown="handleTitleEditKeydown(event)">امتحان بدون عنوان</span>
+        <!-- RTL start: home button + title + autosave, grouped together -->
+        <div class="app-title-start">
+            <button type="button" class="app-title-home" onclick="chooseEntryAction('exit')"
+                title="العودة للشاشة الرئيسية" aria-label="العودة للشاشة الرئيسية">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+                    fill="var(--color-text-primary)">
+                    <path
+                        d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200-200 200Z" />
+                </svg>
+            </button>
+            <span class="app-title-text" id="appTitleText" contenteditable="false" spellcheck="false"
+                title="اضغط لإعادة تسمية الامتحان" onclick="startTitleEdit()" onblur="commitTitleEdit()"
+                onkeydown="handleTitleEditKeydown(event)">امتحان بدون عنوان</span>
 
-        <!-- Center: Docs-style menu bar (embedded directly into the unified bar) -->
+            <!-- Autosave indicator: now next to the title instead of pinned
+                 to the far left edge of the bar. -->
+            <div class="autosave-indicator" id="autosaveIndicator">
+                <span class="save-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        class="lucide lucide-save-icon lucide-save">
+                        <path
+                            d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                        <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+                        <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+                    </svg>
+                </span>
+                <span class="save-text">محفوظ</span>
+            </div>
+        </div>
+
+        <!-- Actions: Docs-style menu bar, now starting from the right of the
+             title cluster (via justify-content: flex-end on .app-bar-menu)
+             instead of being centered/left-anchored. -->
         <nav class="app-bar-menu" id="menuBar" aria-label="القائمة الرئيسية">
             <div class="menu-bar-inner">
                 <div class="menu-item" data-menu="file">
@@ -969,21 +989,6 @@
                 </div>
             </div>
         </nav>
-
-        <!-- Far left: autosave indicator only -->
-        <div class="autosave-indicator" id="autosaveIndicator">
-            <span class="save-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-save-icon lucide-save">
-                    <path
-                        d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
-                    <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
-                    <path d="M7 3v4a1 1 0 0 0 1 1h7" />
-                </svg>
-            </span>
-            <span class="save-text">محفوظ</span>
-        </div>
     </div>
     <!-- Global Markdown + LaTeX toolbar — fixed bar at top: 48px (just below
          the merged app/menu bar). Only visible when body.quiz-form-active.
@@ -1044,25 +1049,36 @@
                     </svg></button>
                 <div class="gmd-dropdown-menu gmd-dropdown-menu--latex" role="menu" aria-label="رموز رياضية إضافية">
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع"
-                        data-gmd-latex="\sum_{}^{}">Σ</button>
+                        data-gmd-latex="\sum_{}^{}"><span class="gmd-btn-latex-symbol">Σ</span><span
+                            class="gmd-btn-latex-label">مجموع</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInt" title="تكامل"
-                        data-gmd-latex="\int_{}^{}">∫</button>
+                        data-gmd-latex="\int_{}^{}"><span class="gmd-btn-latex-symbol">∫</span><span
+                            class="gmd-btn-latex-label">تكامل</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInfty" title="لا نهاية"
-                        data-gmd-latex="\infty">∞</button>
+                        data-gmd-latex="\infty"><span class="gmd-btn-latex-symbol">∞</span><span
+                            class="gmd-btn-latex-label">لا نهاية</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPi" title="باي"
-                        data-gmd-latex="\pi">π</button>
+                        data-gmd-latex="\pi"><span class="gmd-btn-latex-symbol">π</span><span
+                            class="gmd-btn-latex-label">باي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPm" title="زائد أو ناقص"
-                        data-gmd-latex="\pm">±</button>
+                        data-gmd-latex="\pm"><span class="gmd-btn-latex-symbol">±</span><span
+                            class="gmd-btn-latex-label">زائد أو ناقص</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdLeq" title="أصغر من أو يساوي"
-                        data-gmd-latex="\leq">≤</button>
+                        data-gmd-latex="\leq"><span class="gmd-btn-latex-symbol">≤</span><span
+                            class="gmd-btn-latex-label">أصغر من أو يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdGeq" title="أكبر من أو يساوي"
-                        data-gmd-latex="\geq">≥</button>
+                        data-gmd-latex="\geq"><span class="gmd-btn-latex-symbol">≥</span><span
+                            class="gmd-btn-latex-label">أكبر من أو يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdNeq" title="لا يساوي"
-                        data-gmd-latex="\neq">≠</button>
+                        data-gmd-latex="\neq"><span class="gmd-btn-latex-symbol">≠</span><span
+                            class="gmd-btn-latex-label">لا يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdArrow" title="سهم"
-                        data-gmd-latex="\rightarrow">→</button>
+                        data-gmd-latex="\rightarrow"><span class="gmd-btn-latex-symbol">→</span><span
+                            class="gmd-btn-latex-label">سهم</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdMatrix" title="مصفوفة"
-                        data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}">matrix</button>
+                        data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}"><span
+                            class="gmd-btn-latex-symbol">▦</span><span
+                            class="gmd-btn-latex-label">مصفوفة</span></button>
                 </div>
             </div>
         </div>
@@ -1122,7 +1138,7 @@
                         وصف الامتحان (اختياري)
                         <span class="char-count" id="descCharCount">0/500</span>
                     </label>
-                    <textarea id="quizDescription" rows="3" maxlength="500" dir="auto"
+                    <textarea id="quizDescription" class="autosize-textarea" rows="1" maxlength="500" dir="auto"
                         placeholder="امتحان نحو للصف الثالث االثانوي"></textarea>
                 </div>
                 <div class="form-group">

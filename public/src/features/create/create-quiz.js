@@ -201,9 +201,17 @@ window.activateMdEditor = function (e, id) {
   }
 };
 
-function autoResizeMdSource(ta) {
+/**
+ * AI-chat-style growing textarea: starts small enough for one line, grows
+ * with content up to a max height, then stops growing and scrolls instead.
+ * `minPx` lets compact fields (like option inputs) start smaller than the
+ * default single question-text line.
+ */
+function autoResizeMdSource(ta, minPx = 40, maxPx = 240) {
   ta.style.height = "auto";
-  ta.style.height = Math.max(ta.scrollHeight, 60) + "px";
+  const next = Math.min(Math.max(ta.scrollHeight, minPx), maxPx);
+  ta.style.height = next + "px";
+  ta.style.overflowY = ta.scrollHeight > maxPx ? "auto" : "hidden";
 }
 
 /**
@@ -235,15 +243,22 @@ function replaceTextareaRange(ta, start, end, text) {
   }
 }
 
-/** Wire up a Write/Preview field: auto-resize + onChange. Preview renders on-demand (tab switch). */
+/** Wire up a Write/Preview field: auto-resize + onChange. Preview renders on-demand (tab switch).
+ * Option fields (id starts with "option-text-") are compact, like a chat
+ * reply box; everything else (question text, explanation, description)
+ * gets the taller prompt-box sizing. */
 function setupMdEditor(id, onChange) {
   const source = document.getElementById(id);
   if (!source) return;
 
-  autoResizeMdSource(source);
+  const isOption = id.startsWith("option-text-");
+  const minPx = isOption ? 36 : 40;
+  const maxPx = isOption ? 140 : 240;
+
+  autoResizeMdSource(source, minPx, maxPx);
 
   source.addEventListener("input", () => {
-    autoResizeMdSource(source);
+    autoResizeMdSource(source, minPx, maxPx);
     if (onChange) onChange(source.value);
   });
 }

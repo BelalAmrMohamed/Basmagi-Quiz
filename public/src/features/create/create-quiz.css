@@ -96,7 +96,6 @@ body.quiz-form-active {
   font-size: 0.75rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  margin-right: 4px;
   flex-shrink: 0;
 }
 
@@ -137,7 +136,7 @@ body.quiz-form-active {
   top: 0;
   left: 0;
   right: var(--sidebar-collapsed-width);
-  height: 48px;
+  height: 44px;
   padding-left: 12px;
   padding-right: 12px;
   transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -152,6 +151,17 @@ body.quiz-form-active {
 
 body.sidebar-expanded .app-title-bar {
   right: var(--sidebar-expanded-width);
+}
+
+/* Far side (RTL start): home + title + autosave indicator, grouped so the
+   autosave indicator sits right next to the title as its own cluster,
+   separate from the menu bar which lives in the remaining flex space. */
+.app-title-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .app-title-home {
@@ -226,6 +236,7 @@ body.sidebar-expanded .app-title-bar {
   min-width: 0;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 /* Legacy: .menu-bar is now a <nav> inside .app-title-bar
@@ -245,25 +256,28 @@ body.quiz-form-active .container {
 .menu-bar-inner {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 0;
 }
 
 .menu-item {
   position: relative;
 }
 
+/* Google-Docs-style top menu trigger: small, tight padding, no visible
+   chrome until hovered/open. */
 .menu-trigger {
-  padding: 5px 12px;
+  padding: 4px 8px;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   color: var(--color-text-primary);
   font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  font-weight: 400;
   cursor: pointer;
   transition: background-color 0.15s ease;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .menu-trigger:hover {
@@ -300,6 +314,18 @@ body.quiz-form-active .container {
    only the outer click listener and Escape key close menus. */
 .menu-item-submenu {
   position: relative;
+}
+
+/* The submenu trigger is a .menu-option like any other row — force it back
+   to the same box as its siblings. It previously rendered oversized because
+   it's the only .menu-option with three children (icon + label + caret),
+   which stretched it to align-items: stretch's cross-size by default; fix
+   the row height/padding explicitly so it matches every other option. */
+.menu-item-submenu>.menu-option {
+  min-height: 0;
+  height: auto;
+  padding: 5px 10px;
+  box-sizing: border-box;
 }
 
 /* Show the submenu on HOVER of the parent row (CSS-only, no JS required). */
@@ -368,16 +394,17 @@ body.quiz-form-active .container {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 5px 10px;
+  padding: 6px 10px;
   background: transparent;
   border: none;
   border-radius: 6px;
   color: var(--color-text-primary);
   font-family: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   text-align: right;
   cursor: pointer;
   transition: background-color 0.15s ease;
+  line-height: 1.4;
 }
 
 .menu-option svg {
@@ -586,30 +613,72 @@ body.sidebar-expanded .global-md-bar {
   height: auto;
 }
 
-/* LaTeX "more" menu: wraps symbol buttons in a small grid */
+/* LaTeX "more" menu: one symbol per row, label next to it, so each command
+   is identifiable without hovering for the tooltip. */
 .gmd-dropdown-menu--latex {
-  flex-wrap: wrap;
-  gap: 2px;
-  max-width: 220px;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 190px;
+  max-width: 240px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 10px;
+  height: auto;
+  padding: 7px 10px;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  flex-shrink: 0;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex-label {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
   .app-title-bar {
     padding-left: 8px;
     padding-right: 8px;
+    /* The whole bar scrolls horizontally on phones — same behavior as
+       #globalMdBar — instead of trapping the menu inside its own
+       vertically-scrolled dropdown. */
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .app-title-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-title-start {
+    flex-shrink: 0;
   }
 
   .app-title-text {
     max-width: 120px;
   }
 
-  .menu-bar-inner {
-    overflow-x: auto;
-    scrollbar-width: none;
+  .app-bar-menu {
+    flex: 0 0 auto;
   }
 
-  .menu-bar-inner::-webkit-scrollbar {
-    display: none;
+  .menu-bar-inner {
+    /* No longer scrolls internally — the parent .app-title-bar scrolls. */
+    overflow: visible;
   }
 
   .menu-dropdown {
@@ -1908,7 +1977,7 @@ body.sidebar-expanded .global-md-bar {
 
 .option-delete {
   flex-shrink: 0;
-  padding: 6px 10px;
+  /* padding: 6px 5px; */
   background: transparent;
   border: none;
   color: var(--color-error);

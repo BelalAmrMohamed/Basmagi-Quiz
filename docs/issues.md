@@ -72,7 +72,10 @@ Makrdown rendering gets applied on the AI Agent Answer but not the user prompt.
 Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
 - Second press should close.
 
-### But a transition on the `.sidebar-brand-link` when opening/closing side-menu on desktops.
+### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
+
+### Home Page Footer
+The `.watermark` element on the home page climbs up very high when there is not enough content being displayed. The footer should stay at the bottom, it shouldn't move up when there is no content.
 
 ## New Features
 
@@ -142,12 +145,16 @@ Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
 
 ### App SEO and GEO 
-- List all unlisted pages (document pages, and reports page)
+- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
 
 ### Create Quiz Page
-- Fix top bars on phones:
-  - The `#globalMdBar` doesn't fill the width of the screen, there is emtpy space on the right. Actually, there is a weird behavior for both top bars (`#appTitleBar` and `#globalMdBar`), both of them have empty space (probably margin)
-  - 
-- Make the actions start from the right of the top bar instead of from the left after the quiz title. So bring the .
-- Implement a search feature to search the quiz.
+- Fix the `#menuBar` dropdowns, the `#globalMdBar` work on phones, but not `#menuBar`, they open within the menu itself, meaning on phones after clicking a dropdown, I have to scroll `#menuBar` vertically, it's so messed up.
+- The submenu buttons withing `#menuBar` (e.g., `class="menu-item menu-item-submenu"` buttons) are too big for some reason, they are exceptionally bigger than the other buttons, fix them.
+- The items in the `#menuBar` (e,g., `class="menu-item"`) are too big, they need to get smaller, and be designed more like the top menu at Google Docs.
+- Make the actions (e.g., `#menuBar`) start from the right of the `.app-title-bar` instead of from the left after the quiz title. And bring the `.autosave-indicator` next to the quiz title.
+- On phones, the `.app-title-bar` is static can't be moved, but the `#menuBar` within it can be horizontally scrolled. Remove that, the whole `.app-title-bar` should be scrollable on phones, just like the `#globalMdBar` can.
+- The items in `class="gmd-dropdown-menu gmd-dropdown-menu--latex open"` should be listed under each other with labels next to them.
 - The questions input, questions options inputs are too big, they should behave like an input in an AI chat, starts small (one line), then gets bigger as the user adds more lines.
+
+- Implement a search feature to search the quiz.
+
