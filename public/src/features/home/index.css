@@ -395,61 +395,6 @@ body.sidebar-expanded {
   }
 }
 
-/* ============================================================================
-   exam-dropdown-menu — non-blocking dropdown for the ⋮ "more actions"
-   button (replaces the old full-screen .exam-actions-sheet bottom sheet).
-   Appended to <body> and positioned in JS via getBoundingClientRect()
-   (see openExamDropdownMenu/positionExamDropdownMenu in index.js), so these
-   rules only cover appearance/sizing — never margin/max-width centering or
-   bottom-alignment, since placement is fully dynamic.
-   ============================================================================ */
-.exam-dropdown-menu {
-  position: fixed;
-  /* BUG FIX: was var(--z-header) (~1000), but .bottom-nav uses
-     calc(var(--z-overlay) + 1) (~4001) — on phones that let the bottom nav
-     paint over the lower rows of this dropdown (including the "حذف
-     الامتحان" delete action), making them invisible and untappable.
-     var(--z-tooltip) (6000) clears the bottom nav with the same margin the
-     course-info-tooltip already uses. positionExamDropdownMenu() in
-     floating-position.js also now reserves the bottom-nav's height so the
-     menu never gets placed underneath it in the first place — this z-index
-     bump is the backstop for cases the reserved space alone doesn't cover
-     (e.g. a very tall menu after the "معلومات الامتحان" submenu expands). */
-  z-index: var(--z-tooltip);
-  width: 240px;
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
-  /* overflow-y: auto; */
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 8px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  direction: rtl;
-  animation: examDropdownIn 0.15s ease;
-}
-
-@keyframes examDropdownIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.exam-dropdown-menu .exam-action-btn {
-  padding: 10px 12px;
-  border-radius: 10px;
-  font-size: 0.9rem;
-}
-
 .course-info-modal-card {
   padding: 28px;
   text-align: right;
@@ -867,24 +812,6 @@ body.sidebar-expanded {
   box-shadow: var(--shadow-lg);
 }
 
-/*
- * Danger variant — used by the user-quiz Action Overlay's delete option.
- * Same shape/layout as a regular .exam-action-btn, just colored to signal
- * a destructive action (mirrors the error tokens used elsewhere, e.g. the
- * old standalone .user-quiz-delete-btn icon this option replaced).
- */
-.exam-action-btn--danger {
-  background: var(--color-error-light);
-  border-color: transparent;
-  color: var(--color-error);
-}
-
-.exam-action-btn--danger:hover {
-  background: var(--color-error);
-  border-color: var(--color-error);
-  color: white;
-}
-
 .exam-action-btn--cancel {
   justify-content: center;
   width: auto;
@@ -903,13 +830,6 @@ body.sidebar-expanded {
   border: none;
   color: var(--color-text-primary);
   text-decoration: underline;
-}
-
-@media (max-width: 768px) {
-  .exam-dropdown-menu .exam-action-btn {
-    padding: 6px 10px;
-    font-size: 0.9rem;
-  }
 }
 
 @media (min-width: 641px) {

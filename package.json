@@ -9,7 +9,7 @@
     "dev:static": "npx http-server public -p 8080 -o -c-1",
     "vercel": "vercel dev",
     "map": "node scripts/map.js",
-    "commit": "git add -A && git commit -a",
+    "commit": "git add -A && git commit -am",
     "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD"
   },
   "keywords": [

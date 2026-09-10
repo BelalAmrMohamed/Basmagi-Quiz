@@ -193,8 +193,15 @@ export function isAiHelperAvailable() {
  *   shown when no override has been saved.
  * @returns {HTMLElement} the settings panel root element
  */
+// Suffixed onto every field id this function generates below, so two
+// panel instances on the same page (unlikely today — see call site — but
+// cheap to guard against) never collide on duplicate ids/label `for`
+// targets.
+let settingsPanelInstanceCounter = 0;
+
 export function createSettingsPanel(options = {}) {
   const { pageKey = "default", defaultSystemPrompt = "", onKeyChanged = null } = options;
+  const instanceId = `ai-agent-settings-${settingsPanelInstanceCounter++}`;
   const panel = document.createElement("div");
   panel.className = "ai-agent-panel ai-agent-settings-panel";
 
@@ -208,9 +215,11 @@ export function createSettingsPanel(options = {}) {
   const providerLabel = document.createElement("label");
   providerLabel.className = "ai-agent-field-label";
   providerLabel.textContent = "مزوّد الذكاء الاصطناعي";
+  providerLabel.htmlFor = `${instanceId}-provider`;
   panel.appendChild(providerLabel);
 
   const providerSelect = document.createElement("select");
+  providerSelect.id = `${instanceId}-provider`;
   providerSelect.className = "ai-agent-provider-select";
   PROVIDERS.forEach(({ value, label }) => {
     const opt = document.createElement("option");
@@ -228,9 +237,11 @@ export function createSettingsPanel(options = {}) {
   const modelLabel = document.createElement("label");
   modelLabel.className = "ai-agent-field-label";
   modelLabel.textContent = "النموذج (Model)";
+  modelLabel.htmlFor = `${instanceId}-model`;
   panel.appendChild(modelLabel);
 
   const modelSelect = document.createElement("select");
+  modelSelect.id = `${instanceId}-model`;
   modelSelect.className = "ai-agent-provider-select";
   panel.appendChild(modelSelect);
 
@@ -273,37 +284,22 @@ export function createSettingsPanel(options = {}) {
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
-  // ── Response language select ──
-  // Scoped per-page (like the system prompt) since the quizzes on "home"
-  // and the result being analyzed on "result" can each be in either
-  // language independent of the other page.
-  const languageLabel = document.createElement("label");
-  languageLabel.className = "ai-agent-field-label";
-  languageLabel.textContent = "لغة ردود المساعد";
-  panel.appendChild(languageLabel);
-
-  const languageSelect = document.createElement("select");
-  languageSelect.className = "ai-agent-provider-select";
-  LANGUAGES.forEach(({ value, label }) => {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    languageSelect.appendChild(opt);
-  });
-  languageSelect.value = getResponseLanguage(pageKey);
-  panel.appendChild(languageSelect);
-
-  languageSelect.addEventListener("change", () => {
-    setResponseLanguage(pageKey, languageSelect.value);
-  });
-
   // ── Own key input ──
+  // NOTE: the response-language select that used to live here was removed
+  // per product decision — response language is now left entirely to the
+  // model to infer (from the conversation itself, or an explicit ask in
+  // the user's own prompt) rather than a separate setting. See
+  // getResponseLanguage/setResponseLanguage in ai-agent-storage.js, which
+  // are now unused and can be removed in a follow-up cleanup along with
+  // the LANGUAGES constant, once nothing else references them.
   const keyLabel = document.createElement("label");
   keyLabel.className = "ai-agent-field-label";
   keyLabel.textContent = "مفتاح API الخاص بك (اختياري)";
+  keyLabel.htmlFor = `${instanceId}-key`;
   panel.appendChild(keyLabel);
 
   const keyInput = document.createElement("input");
+  keyInput.id = `${instanceId}-key`;
   keyInput.type = "password";
   keyInput.className = "ai-agent-key-input";
   keyInput.placeholder = "sk-...";

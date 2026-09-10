@@ -102,13 +102,26 @@ function handleCreateQuizToolCall(toolCall) {
     meta: { title, description: input.description || "" },
   };
 
+  // `folder`, like create_folder's `parentFolder` / move_item's
+  // `destinationFolder`, is an exact title matched against the folder-tree
+  // listing already in the model's context — resolve it to an id with the
+  // same shared helper those tools use, so "امتحاناتك الرئيسية"/omitted
+  // both mean top-level consistently across every placement-aware tool.
+  const folderResolution = resolveFolderTitleToId(input.folder);
+  if (!folderResolution.ok) {
+    showNotification("لم يتم العثور على المجلد", folderResolution.reason, "warning", 10);
+    const err = new Error("create_quiz tool call had an unresolvable folder");
+    err.userMessage = folderResolution.reason;
+    throw err;
+  }
+
   // BUG FIX: saveNewUserQuiz can now reject a same-level duplicate name
   // (see its doc comment in quiz-schema.js) — surface that back to the chat
   // as a thrown error (same pattern as the "no questions" case above) so
   // the AI Helper sees the failure and can tell the user / retry with a
   // different title, rather than silently doing nothing while the tool
   // call reports success.
-  const result = saveNewUserQuiz(parsed, title);
+  const result = saveNewUserQuiz(parsed, title, folderResolution.id);
   if (result.ok === false) {
     showNotification("الاسم مستخدم", result.reason, "warning", 10);
     const err = new Error("create_quiz tool call hit a same-level name clash");
