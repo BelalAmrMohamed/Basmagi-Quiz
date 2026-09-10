@@ -41,8 +41,12 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - Default/Initial size of the ` الشرح (اختياري)` input should be small (one line), because it's currently too big initially. Same for the `نصّ السؤال *`, it should also be small initially (one line).
 - The `.entry-item-thumb-new` should show immedietly on page load, since it'a a static element, doesn't need to load anything from the DB or localStorage. It should be in the HTML directly.
 - On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown.
-- تم التجربة على الموبايل: لما بدوس مرة على حاجة من القائمة العلوية بتفتح من أول مرة ، لكن لو فيه حاجة مفتوحة ، وادوس على زرار تاني مش بتفتح إلا لما ادوس مرتين. صفحة إنشاء إمتحانات.
+- The `.entry-item-thumb-new` button should appear as soon as the page loads, it shouldn't load with other content that is being pulled from localstorage, it should load immedietly, put it in the HTML itself if it's not already in it.
+- The `#appTitleText` doesn't get updated when the AI Agent creates/edits a quiz, the whole page gets updated, except for the title. Fix it.
 
+### AI Agent On Phones.
+- The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
+- The `.ai-agent-sidebar-header` should have the close button on the right, too.  
 
 ## New Features
 
@@ -104,3 +108,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
 - Fix the `.copyAiPromptBtn` with its arrow, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
+
+#### Password
+When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
