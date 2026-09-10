@@ -4167,7 +4167,7 @@ function renderQuestionPreviewHtml(q, index) {
 
   return `
       <div class="preview-question">
-        <h4>السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
+        <h4 class="text-rtl">السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
         ${q.image ? `<img src="${escapeHtml(q.image)}" class="preview-image" alt="صورة السؤال" onerror="this.style.display='none'">` : ""}
         ${optionsHtml}
         ${q.explanation ? `<div class="preview-explanation"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em;margin-left:4px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> ${renderMarkdown(q.explanation)}</div>` : ""}

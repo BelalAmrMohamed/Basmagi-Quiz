@@ -1320,11 +1320,13 @@ export default async function handler(req, res) {
     return handleControl(req, res);
   }
 
-  // POST: route by body.action — control uses a fixed action set,
+  // POST: route by body.action — control uses a fixed action set, item
+  // actions (trash/move/rename/folder-course delete) use their own set,
   // everything else (progress/avatar/profile sync) goes to stats.
   if (req.method === "POST") {
     const action = req.body && req.body.action;
     if (CONTROL_ACTIONS.has(action)) return handleControl(req, res);
+    if (ITEM_ACTIONS.has(action)) return handleItemActions(req, res);
     return handleStats(req, res);
   }
 

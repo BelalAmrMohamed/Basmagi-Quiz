@@ -111,11 +111,11 @@ All three surfaces that already render an `.exam-more-btn` dropdown — `exam-ca
 
 ### 8. Build/verification order (suggested sequence)
 
-1. Migration: `trash_items` table + RLS + `admin_settings.trash_retention_days`. (Done `supabase\migrations\20260910120000_trash_items.sql`, but douple check the .sql file for verification)
-2. Server: soft-delete for quizzes (adapt existing `handleDeleteQuiz`) → verify restore/purge round-trip via a scratch script before touching UI. (Partially Done)
-3. Server: folder/course soft-delete + cascade batching. (Partially Done)
-4. Server: move-item, rename-item, update-quiz (edit) actions. (Partially Done)
-5. Shared **Move-To dialog** extraction/generalization (blocks steps 6–7).
+1. Migration: `trash_items` table + RLS + `admin_settings.trash_retention_days`. (Done ✅)
+2. Server: soft-delete for quizzes (adapt existing `handleDeleteQuiz`) → verify restore/purge round-trip via a scratch script before touching UI. (Done ✅)
+3. Server: folder/course soft-delete + cascade batching. (Done ✅)
+4. Server: move-item, rename-item, update-quiz (edit) actions. (Done ✅)
+5. Shared **Move-To dialog** extraction/generalization (blocks steps 6–7). (Next Step)
 6. Client: dropdown additions (edit/move/rename/delete) across `exam-card.js`, `category-view.js`, `root-view.js`, gated by `canManageItem`.
 7. Client: admin trash-management UI (list/restore/purge/settings) in `control.html`.
 8. Client: `/#my-quizzes` local trash (storage key, sweep, restore, its own trash UI panel) — independent of steps 2–7, can be built in parallel.

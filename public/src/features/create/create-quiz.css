@@ -3588,7 +3588,6 @@ body.reorder-mode-active .question-card {
   border: none;
   background: var(--color-background);
   color: var(--color-text-primary);
-  font-family: "Fira Code", "Courier New", monospace;
   font-size: 0.9rem;
   line-height: 1.6;
   resize: none;
