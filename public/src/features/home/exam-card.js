@@ -40,6 +40,7 @@ import {
   TRASH_ICON_SVG,
   RENAME_ICON_SVG,
   MOVE_TO_ICON_SVG,
+  EDIT_ICON_SVG
 } from "./icons.js";
 import {
   showNotification,

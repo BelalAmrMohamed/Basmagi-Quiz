@@ -149,3 +149,5 @@ The cascade update needs care: Postgres triggers fire per-row mid-statement, so 
 
 Now the edit button navigates to create-quiz with `?id=<dbId>&mode=edit`. Let me look at how `create-quiz.js` loads a quiz into the editor so I can wire a DB-backed edit mode properly.
 ```
+
+Note: The implementatoin so far made the Admin Actions embeded in the menu directly, it was supposed to be a dropdown (e.g., `.submenu-trigger` not a normal button), this way the menu doesn't get extremely big. So the `تعديل`, `نقل`, `إعادة تسمية`, `حذف المادة` (or `حذف الامتحان` or `حذف المجلد`) should be in a submenu-trigger.
