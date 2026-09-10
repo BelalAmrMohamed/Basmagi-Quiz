@@ -4,8 +4,6 @@
   "description": "Vanilla JS examination platform with quiz creation and export features",
   "type": "module",
   "scripts": {
-    "migrate:quizzes:dry-run": "node scripts/migrate-local-quizzes-to-db.js --dry-run",
-    "migrate:quizzes": "node scripts/migrate-local-quizzes-to-db.js",
     "dev": "npm run dev:vercel",
     "dev:vercel": "npx vercel dev --local --listen 8080",
     "dev:static": "npx http-server public -p 8080 -o -c-1",

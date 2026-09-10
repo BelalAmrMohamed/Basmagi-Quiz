@@ -23,6 +23,16 @@
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { createClient } from "@supabase/supabase-js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
+import {
+  resolveAdminId,
+  isAuthorizedForItem,
+  getTrashRetentionDays,
+  computeExpiresAt,
+  sweepExpiredTrash,
+  purgeQuizMedia,
+  collectCascadeItems,
+} from "./_trash.js";
+import { canPlaceItemServer, validateItemName } from "./_itemActions.js";
 
 const MAX_BIO_LENGTH = 280;
 
@@ -236,6 +246,622 @@ async function handleControl(req, res) {
   if (req.method === "POST") return handleControlPost(req, res, payload, supabase);
 
   return res.status(405).json({ error: "Method not allowed" });
+}
+
+// =============================================================================
+// Item-management actions (trash list/restore/empty/settings, folder/course
+// soft-delete, move-item, rename-item) — see docs/plans/Admin actions and
+// deletion flow for quizzes.md §2.
+//
+// Unlike handleControl (owner-only), these reuse the exact 3-tier
+// authorization already proven out in college-quiz.js's handleDeleteQuiz
+// (owner -> creator/uploader -> scope match), generalized to
+// folders/courses via isAuthorizedForItem() in api/_trash.js. Only
+// trash-settings (retention days) stays owner-only, since it's a
+// platform-wide knob, not a per-item action.
+// =============================================================================
+
+const ITEM_ACTIONS = new Set([
+  "trash-list",
+  "trash-restore",
+  "trash-empty",
+  "trash-settings",
+  "delete-folder",
+  "delete-course",
+  "move-item",
+  "rename-item",
+]);
+
+async function fetchItemForAuth(supabase, itemType, itemId) {
+  if (itemType === "quiz") {
+    const { data } = await supabase
+      .from("quizzes")
+      .select("*")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data ? { row: data, creatorId: data.uploaded_by, educationType: data.education_type } : null;
+  }
+  if (itemType === "folder") {
+    const { data } = await supabase
+      .from("folders")
+      .select("*, courses:course_id(education_type)")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data
+      ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
+      : null;
+  }
+  if (itemType === "course") {
+    const { data } = await supabase
+      .from("courses")
+      .select("*")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data ? { row: data, creatorId: data.created_by, educationType: data.education_type } : null;
+  }
+  return null;
+}
+
+// ── action=trash-list ────────────────────────────────────────────────────────
+// Lists trash_items, scoped by the caller's allowed_scopes unless they're an
+// owner (same scoping semantics as the rest of item-management). Opportunis-
+// tically sweeps expired rows first (see sweepExpiredTrash's doc comment for
+// why this is a lazy vacuum-on-access rather than a scheduled job).
+async function handleTrashList(req, res, adminPayload, adminId, supabase) {
+  await sweepExpiredTrash(supabase);
+
+  let query = supabase
+    .from("trash_items")
+    .select("id, item_type, original_id, snapshot, parent_folder_id, course_id, education_type, batch_id, deleted_by, deleted_at, expires_at")
+    .order("deleted_at", { ascending: false });
+
+  if (!adminPayload.isOwner && adminPayload.allowed_scopes?.length) {
+    query = query.in("education_type", adminPayload.allowed_scopes);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[admin:trash-list] failed:", error.message);
+    return res.status(500).json({ error: "فشل تحميل سلة المهملات." });
+  }
+
+  // Non-owner, non-scoped admins (only the "is uploader" tier) only ever see
+  // their own trashed items rather than nothing at all — filtered in-memory
+  // since "deleted_by = me OR education_type in scopes" isn't a single
+  // .in()/.eq() query, and the row count here is bounded/small.
+  let visible = data || [];
+  if (!adminPayload.isOwner) {
+    const hasScopeMatch = (row) =>
+      adminPayload.allowed_scopes?.includes(row.education_type);
+    visible = visible.filter((row) => row.deleted_by === adminId || hasScopeMatch(row));
+  }
+
+  return res.status(200).json({
+    items: visible.map((row) => ({
+      id: row.id,
+      itemType: row.item_type,
+      originalId: row.original_id,
+      name: row.snapshot?.title || row.snapshot?.name || row.snapshot?.data?.meta?.title || "بدون اسم",
+      batchId: row.batch_id,
+      deletedBy: row.deleted_by,
+      deletedAt: row.deleted_at,
+      expiresAt: row.expires_at,
+      educationType: row.education_type,
+    })),
+  });
+}
+
+// ── action=trash-restore ─────────────────────────────────────────────────────
+// Body: { trashItemId } — restores that item AND every other row sharing its
+// batch_id (a cascade-trashed folder/course brings its whole subtree back
+// together). Falls back to "restore to root/course-level" when the original
+// parent_folder_id/course_id no longer exists (it may itself have been
+// purged since).
+async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
+  const { trashItemId } = req.body || {};
+  if (!trashItemId) return res.status(400).json({ error: "معرف العنصر المطلوب استعادته مفقود." });
+
+  const { data: anchor, error: anchorErr } = await supabase
+    .from("trash_items")
+    .select("*")
+    .eq("id", trashItemId)
+    .maybeSingle();
+
+  if (anchorErr || !anchor) return res.status(404).json({ error: "العنصر غير موجود في سلة المهملات." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: anchor.deleted_by, educationType: anchor.education_type })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لاستعادة هذا العنصر." });
+  }
+
+  const { data: batchRows, error: batchErr } = await supabase
+    .from("trash_items")
+    .select("*")
+    .eq("batch_id", anchor.batch_id)
+    .order("deleted_at", { ascending: true });
+
+  if (batchErr || !batchRows?.length) return res.status(404).json({ error: "تعذر تحميل عناصر الدفعة." });
+
+  // Restore parent-first: courses, then folders (already ordered by
+  // deleted_at, which was itself written parent-before-children by the
+  // cascade-delete handlers below), then quizzes.
+  const order = { course: 0, folder: 1, quiz: 2 };
+  const sorted = [...batchRows].sort((a, b) => order[a.item_type] - order[b.item_type]);
+
+  // Tracks which original ids were actually restored in this pass, so a
+  // child whose parent is *also* in this batch can point at it even if the
+  // parent's original UUID happens to collide with something else meanwhile
+  // (practically never, but keeps the fallback logic simple/explicit).
+  const restoredIds = new Set();
+  const restoredNames = [];
+  const failures = [];
+
+  for (const row of sorted) {
+    try {
+      if (row.item_type === "course") {
+        const snap = { ...row.snapshot };
+        const { error } = await supabase.from("courses").insert(snap);
+        if (error) throw new Error(error.message);
+        restoredIds.add(row.original_id);
+        restoredNames.push(snap.name);
+      } else if (row.item_type === "folder") {
+        const snap = { ...row.snapshot };
+        // Fall back to root-of-course if the parent folder no longer exists
+        // (purged separately, or genuinely never part of this batch).
+        if (snap.parent_folder_id) {
+          const parentStillGone = !restoredIds.has(snap.parent_folder_id);
+          if (parentStillGone) {
+            const { data: parentExists } = await supabase
+              .from("folders")
+              .select("id")
+              .eq("id", snap.parent_folder_id)
+              .maybeSingle();
+            if (!parentExists) snap.parent_folder_id = null;
+          }
+        }
+        // Fall back to "no course" is not valid (folders require course_id)
+        // — if the course itself was purged, skip restoring this folder;
+        // its quizzes will fall back the same way below.
+        const { data: courseExists } = await supabase
+          .from("courses")
+          .select("id")
+          .eq("id", snap.course_id)
+          .maybeSingle();
+        if (!courseExists && !restoredIds.has(snap.course_id)) {
+          failures.push({ name: snap.name, reason: "المادة الأصلية لم تعد موجودة." });
+          continue;
+        }
+        const { error } = await supabase.from("folders").insert(snap);
+        if (error) throw new Error(error.message);
+        restoredIds.add(row.original_id);
+        restoredNames.push(snap.name);
+      } else if (row.item_type === "quiz") {
+        const snap = { ...row.snapshot };
+        if (snap.folder_id) {
+          const parentStillGone = !restoredIds.has(snap.folder_id);
+          if (parentStillGone) {
+            const { data: folderExists } = await supabase
+              .from("folders")
+              .select("id")
+              .eq("id", snap.folder_id)
+              .maybeSingle();
+            if (!folderExists) snap.folder_id = null;
+          }
+        }
+        if (snap.course_id) {
+          const courseGone = !restoredIds.has(snap.course_id);
+          if (courseGone) {
+            const { data: courseExists } = await supabase
+              .from("courses")
+              .select("id")
+              .eq("id", snap.course_id)
+              .maybeSingle();
+            if (!courseExists) {
+              failures.push({ name: snap.title, reason: "المادة الأصلية لم تعد موجودة." });
+              continue;
+            }
+          }
+        }
+        const { error } = await supabase.from("quizzes").insert(snap);
+        if (error) throw new Error(error.message);
+        restoredIds.add(row.original_id);
+        restoredNames.push(snap.title);
+        if (snap.uploaded_by) {
+          try {
+            await supabase.rpc("increment_uploaded_quizzes", { p_admin_id: snap.uploaded_by });
+          } catch (rpcErr) {
+            console.error("[admin:trash-restore] increment_uploaded_quizzes failed:", rpcErr.message || rpcErr);
+          }
+        }
+      }
+    } catch (e) {
+      failures.push({ name: row.snapshot?.name || row.snapshot?.title || "?", reason: e.message });
+    }
+  }
+
+  // Only remove trash_items rows that were actually restored — a failure
+  // (e.g. parent course purged) leaves that row in trash so nothing is
+  // silently lost.
+  const restoredTrashRowIds = sorted
+    .filter((row) => restoredIds.has(row.original_id))
+    .map((row) => row.id);
+  if (restoredTrashRowIds.length) {
+    await supabase.from("trash_items").delete().in("id", restoredTrashRowIds);
+  }
+
+  return res.status(failures.length && !restoredNames.length ? 500 : 200).json({
+    success: restoredNames.length > 0,
+    restored: restoredNames.length,
+    failed: failures,
+  });
+}
+
+// ── action=trash-empty ───────────────────────────────────────────────────────
+// Body: { trashItemId } (purge one item + its batch) OR { all: true } (purge
+// everything in the caller's scope). Permanently deletes trash_items rows
+// AND cleans up any associated quiz media.
+async function handleTrashEmpty(req, res, adminPayload, adminId, supabase) {
+  const { trashItemId, all } = req.body || {};
+
+  if (!trashItemId && !all) {
+    return res.status(400).json({ error: "حدد عنصراً للحذف النهائي أو استخدم all لإفراغ السلة." });
+  }
+
+  let rowsToPurge = [];
+
+  if (trashItemId) {
+    const { data: anchor } = await supabase.from("trash_items").select("*").eq("id", trashItemId).maybeSingle();
+    if (!anchor) return res.status(404).json({ error: "العنصر غير موجود في سلة المهملات." });
+    if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: anchor.deleted_by, educationType: anchor.education_type })) {
+      return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر نهائياً." });
+    }
+    const { data: batchRows } = await supabase.from("trash_items").select("*").eq("batch_id", anchor.batch_id);
+    rowsToPurge = batchRows || [anchor];
+  } else {
+    let query = supabase.from("trash_items").select("*");
+    if (!adminPayload.isOwner) {
+      if (!adminPayload.allowed_scopes?.length) {
+        // A non-owner admin with no scopes and no owned items has nothing
+        // they're authorized to bulk-empty — require at least one of those
+        // rather than silently purging nothing (which would look like a
+        // no-op bug) or everything (a privilege escalation).
+        const { data: ownRows } = await supabase.from("trash_items").select("*").eq("deleted_by", adminId);
+        rowsToPurge = ownRows || [];
+      } else {
+        const { data } = await query.in("education_type", adminPayload.allowed_scopes);
+        rowsToPurge = data || [];
+      }
+    } else {
+      const { data } = await query;
+      rowsToPurge = data || [];
+    }
+  }
+
+  if (rowsToPurge.length === 0) {
+    return res.status(200).json({ success: true, purged: 0 });
+  }
+
+  const quizSnapshots = rowsToPurge
+    .filter((row) => row.item_type === "quiz")
+    .map((row) => row.snapshot?.data)
+    .filter(Boolean);
+  await purgeQuizMedia(supabase, quizSnapshots);
+
+  const ids = rowsToPurge.map((row) => row.id);
+  const { error: deleteErr } = await supabase.from("trash_items").delete().in("id", ids);
+  if (deleteErr) {
+    console.error("[admin:trash-empty] failed:", deleteErr.message);
+    return res.status(500).json({ error: "فشل الحذف النهائي. حاول مجددًا." });
+  }
+
+  return res.status(200).json({ success: true, purged: ids.length });
+}
+
+// ── action=trash-settings ────────────────────────────────────────────────────
+// GET-like (no body beyond action) returns the current retention window;
+// providing { retentionDays } updates it. Owner-only — a platform-wide knob,
+// not a per-item action.
+async function handleTrashSettings(req, res, adminPayload, adminId, supabase) {
+  const { retentionDays } = req.body || {};
+
+  if (retentionDays === undefined) {
+    const days = await getTrashRetentionDays(supabase);
+    return res.status(200).json({ retentionDays: days });
+  }
+
+  if (!adminPayload.isOwner) {
+    return res.status(403).json({ error: "فقط المالك يمكنه تعديل مدة الاحتفاظ." });
+  }
+
+  const days = Number(retentionDays);
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    return res.status(400).json({ error: "مدة الاحتفاظ يجب أن تكون بين 1 و 365 يوماً." });
+  }
+
+  const { error } = await supabase
+    .from("admin_settings")
+    .update({ trash_retention_days: days, updated_by: adminId, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) {
+    console.error("[admin:trash-settings] failed:", error.message);
+    return res.status(500).json({ error: "فشل تحديث الإعداد." });
+  }
+
+  return res.status(200).json({ success: true, retentionDays: days });
+}
+
+// ── action=delete-folder / delete-course ─────────────────────────────────────
+// Soft-deletes the folder/course itself AND cascades to every quiz/subfolder
+// nested under it (to any depth), all sharing one batch_id so the whole tree
+// restores or purges together (see api/_trash.js#collectCascadeItems and the
+// migration's batch_id comment).
+async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemType) {
+  const { id } = req.body || {};
+  if (!id) return res.status(400).json({ error: "معرف العنصر مطلوب." });
+
+  const fetched = await fetchItemForAuth(supabase, itemType, id);
+  if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر." });
+  }
+
+  const { folders, quizzes } =
+    itemType === "course"
+      ? await collectCascadeItems(supabase, { courseId: id })
+      : await collectCascadeItems(supabase, { folderId: id });
+
+  const retentionDays = await getTrashRetentionDays(supabase);
+  const expiresAt = computeExpiresAt(retentionDays);
+  // One shared batch_id groups the root item + every cascaded descendant so
+  // they can be restored (or purged) together as a unit.
+  const batchId = crypto.randomUUID();
+
+  const trashRows = [];
+
+  if (itemType === "course") {
+    trashRows.push({
+      item_type: "course",
+      original_id: fetched.row.id,
+      snapshot: fetched.row,
+      parent_folder_id: null,
+      course_id: null,
+      education_type: fetched.row.education_type,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  } else {
+    trashRows.push({
+      item_type: "folder",
+      original_id: fetched.row.id,
+      snapshot: {
+        id: fetched.row.id,
+        course_id: fetched.row.course_id,
+        parent_folder_id: fetched.row.parent_folder_id,
+        name: fetched.row.name,
+        icon: fetched.row.icon,
+        created_by: fetched.row.created_by,
+        created_at: fetched.row.created_at,
+        updated_at: fetched.row.updated_at,
+      },
+      parent_folder_id: fetched.row.parent_folder_id,
+      course_id: fetched.row.course_id,
+      education_type: fetched.educationType,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  }
+
+  for (const folder of folders) {
+    trashRows.push({
+      item_type: "folder",
+      original_id: folder.id,
+      snapshot: folder,
+      parent_folder_id: folder.parent_folder_id,
+      course_id: folder.course_id,
+      education_type: fetched.educationType,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  }
+
+  for (const quiz of quizzes) {
+    trashRows.push({
+      item_type: "quiz",
+      original_id: quiz.id,
+      snapshot: quiz,
+      parent_folder_id: quiz.folder_id || null,
+      course_id: quiz.course_id || null,
+      education_type: quiz.education_type || fetched.educationType,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  }
+
+  const { error: insertErr } = await supabase.from("trash_items").insert(trashRows);
+  if (insertErr) {
+    console.error(`[admin:delete-${itemType}] trash insert failed:`, insertErr.message);
+    return res.status(500).json({ error: "فشل نقل العنصر إلى سلة المهملات." });
+  }
+
+  // Delete children first (FKs point up: quizzes/folders reference the
+  // course/parent folder), then the root item itself.
+  const quizIds = quizzes.map((q) => q.id);
+  const folderIds = folders.map((f) => f.id);
+
+  if (quizIds.length) {
+    const { error } = await supabase.from("quizzes").delete().in("id", quizIds);
+    if (error) console.error(`[admin:delete-${itemType}] quiz cascade delete failed:`, error.message);
+  }
+  if (folderIds.length) {
+    // Delete deepest folders first so parent_folder_id FKs never point at an
+    // already-deleted row mid-batch — folders were collected breadth-first
+    // (parent before child), so deleting in reverse order is child-before-parent.
+    const { error } = await supabase.from("folders").delete().in("id", [...folderIds].reverse());
+    if (error) console.error(`[admin:delete-${itemType}] folder cascade delete failed:`, error.message);
+  }
+
+  const { error: rootDeleteErr } = await supabase.from(itemType === "course" ? "courses" : "folders").delete().eq("id", id);
+  if (rootDeleteErr) {
+    console.error(`[admin:delete-${itemType}] root delete failed:`, rootDeleteErr.message);
+    return res.status(500).json({ error: "فشل حذف العنصر الأساسي بعد نقل محتوياته لسلة المهملات." });
+  }
+
+  return res.status(200).json({
+    success: true,
+    trashed: true,
+    cascaded: { folders: folders.length, quizzes: quizzes.length },
+  });
+}
+
+// ── action=move-item ──────────────────────────────────────────────────────────
+// Body: { itemType: 'quiz'|'folder', itemId, targetFolderId, targetCourseId }
+// targetFolderId null = move directly under targetCourseId (root of that
+// course). Courses themselves are never move-item targets (see
+// canPlaceItemServer) — they're always top-level.
+async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
+  const { itemType, itemId, targetFolderId = null, targetCourseId } = req.body || {};
+
+  if (!itemType || !itemId || !targetCourseId) {
+    return res.status(400).json({ error: "بيانات النقل غير مكتملة." });
+  }
+  if (itemType !== "quiz" && itemType !== "folder") {
+    return res.status(400).json({ error: "لا يمكن نقل هذا النوع من العناصر." });
+  }
+
+  const placement = canPlaceItemServer(itemType, targetFolderId);
+  if (!placement.ok) return res.status(400).json({ error: placement.error });
+
+  const fetched = await fetchItemForAuth(supabase, itemType, itemId);
+  if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لنقل هذا العنصر." });
+  }
+
+  // Confirm the destination actually exists and belongs to the target course
+  // (prevents moving a quiz "into" a folder that lives in a different course
+  // than targetCourseId claims, which would corrupt the tree).
+  const { data: targetCourse } = await supabase.from("courses").select("id").eq("id", targetCourseId).maybeSingle();
+  if (!targetCourse) return res.status(404).json({ error: "المادة الوجهة غير موجودة." });
+
+  if (targetFolderId) {
+    const { data: targetFolder } = await supabase
+      .from("folders")
+      .select("id, course_id")
+      .eq("id", targetFolderId)
+      .maybeSingle();
+    if (!targetFolder) return res.status(404).json({ error: "المجلد الوجهة غير موجود." });
+    if (targetFolder.course_id !== targetCourseId) {
+      return res.status(400).json({ error: "المجلد الوجهة لا ينتمي إلى المادة المحددة." });
+    }
+  }
+
+  // Prevent moving a folder into its own descendant (would create a cycle).
+  if (itemType === "folder" && targetFolderId) {
+    let cursor = targetFolderId;
+    const seen = new Set();
+    while (cursor) {
+      if (cursor === itemId) {
+        return res.status(400).json({ error: "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية." });
+      }
+      if (seen.has(cursor)) break;
+      seen.add(cursor);
+      const { data: parent } = await supabase.from("folders").select("parent_folder_id").eq("id", cursor).maybeSingle();
+      cursor = parent?.parent_folder_id || null;
+    }
+  }
+
+  const table = itemType === "quiz" ? "quizzes" : "folders";
+  const updates =
+    itemType === "quiz"
+      ? { course_id: targetCourseId, folder_id: targetFolderId }
+      : { course_id: targetCourseId, parent_folder_id: targetFolderId };
+
+  const { error } = await supabase.from(table).update(updates).eq("id", itemId);
+  if (error) {
+    console.error("[admin:move-item] failed:", error.message);
+    return res.status(500).json({ error: "فشل نقل العنصر." });
+  }
+
+  return res.status(200).json({ success: true });
+}
+
+// ── action=rename-item ────────────────────────────────────────────────────────
+// Body: { itemType: 'quiz'|'folder'|'course', itemId, newName }
+// Quizzes are renamed via their `title` column (meta.title inside `data` is
+// left as-is — the manifest/render paths read the column, not the JSONB
+// field, for title; see quizManifest.js). Folders/courses use `name`.
+async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
+  const { itemType, itemId, newName } = req.body || {};
+  if (!itemType || !itemId) return res.status(400).json({ error: "بيانات إعادة التسمية غير مكتملة." });
+
+  const nameCheck = validateItemName(newName);
+  if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
+
+  const fetched = await fetchItemForAuth(supabase, itemType, itemId);
+  if (!fetched) return res.status(404).json({ error: "العنصر غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لإعادة تسمية هذا العنصر." });
+  }
+
+  if (itemType === "quiz") {
+    const updatedData = { ...fetched.row.data, meta: { ...fetched.row.data?.meta, title: nameCheck.clean } };
+    const { error } = await supabase
+      .from("quizzes")
+      .update({ title: nameCheck.clean, data: updatedData })
+      .eq("id", itemId);
+    if (error) {
+      console.error("[admin:rename-item] quiz rename failed:", error.message);
+      return res.status(500).json({ error: "فشل إعادة تسمية الامتحان." });
+    }
+  } else {
+    const table = itemType === "folder" ? "folders" : "courses";
+    const { error } = await supabase
+      .from(table)
+      .update({ name: nameCheck.clean, updated_at: new Date().toISOString() })
+      .eq("id", itemId);
+    if (error) {
+      console.error("[admin:rename-item] failed:", error.message);
+      return res.status(500).json({ error: "فشل إعادة التسمية." });
+    }
+  }
+
+  return res.status(200).json({ success: true, name: nameCheck.clean });
+}
+
+async function handleItemActions(req, res) {
+  applyCors(req, res);
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  let payload;
+  try {
+    payload = requireAdmin(req);
+  } catch (err) {
+    if (handleAuthError(err, res)) return;
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+  const adminId = await resolveAdminId(supabase, payload);
+  const { action } = req.body || {};
+
+  if (action === "trash-list") return handleTrashList(req, res, payload, adminId, supabase);
+  if (action === "trash-restore") return handleTrashRestore(req, res, payload, adminId, supabase);
+  if (action === "trash-empty") return handleTrashEmpty(req, res, payload, adminId, supabase);
+  if (action === "trash-settings") return handleTrashSettings(req, res, payload, adminId, supabase);
+  if (action === "delete-folder") return handleDeleteTree(req, res, payload, adminId, supabase, "folder");
+  if (action === "delete-course") return handleDeleteTree(req, res, payload, adminId, supabase, "course");
+  if (action === "move-item") return handleMoveItem(req, res, payload, adminId, supabase);
+  if (action === "rename-item") return handleRenameItem(req, res, payload, adminId, supabase);
+
+  return res.status(400).json({ error: "Invalid action" });
 }
 
 // =============================================================================
