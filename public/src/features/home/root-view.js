@@ -42,6 +42,11 @@ import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import {
+  canManageItem,
+  renameSharedItem,
+  deleteSharedItem,
+} from "./admin-item-actions.js";
+import {
   MORE_DOTS_ICON_SVG,
   SPARKLE_ICON_SVG,
   COPY_ICON_SVG,
@@ -49,6 +54,7 @@ import {
   SHARE_ICON_SVG,
   DOWNLOAD_ICON_SVG,
   TRASH_ICON_SVG,
+  RENAME_ICON_SVG,
 } from "./icons.js";
 import {
   openAIAgentWithAttachment,
@@ -135,6 +141,40 @@ function attachCourseActionsMenu(card, course, categoryTree) {
         reposition,
         "معلومات المادة",
       ));
+
+      // ── Admin manage group — إعادة تسمية / حذف (→ trash) ─────────────────
+      // Courses only: rename + soft-delete (move is intentionally absent —
+      // courses are top-level by construction; edit is quizzes-only). Gated
+      // on the canManageItem() 3-tier check (owner → creator match → scope
+      // match); `course` is the category-tree course node that
+      // quizManifest.js threads with the DB course id / created_by / etc.
+      if (canManageItem(course)) {
+        const divider = document.createElement("div");
+        divider.className = "exam-action-divider";
+        menu.appendChild(divider);
+
+        const renameOpt = document.createElement("button");
+        renameOpt.type = "button";
+        renameOpt.className = "exam-action-btn";
+        renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+        renameOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          renameSharedItem(course);
+        };
+        menu.appendChild(renameOpt);
+
+        const deleteOpt = document.createElement("button");
+        deleteOpt.type = "button";
+        deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+        deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المادة</span>`;
+        deleteOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          deleteSharedItem(course);
+        };
+        menu.appendChild(deleteOpt);
+      }
 
       const unsubscribe = document.createElement("button");
       unsubscribe.type = "button";

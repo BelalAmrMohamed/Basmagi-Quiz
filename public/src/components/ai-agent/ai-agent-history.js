@@ -30,6 +30,7 @@ const RENAME_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" heig
 // reads as "طي/تثبيت" correctly regardless of current state, same idea as
 // TOOL_DISPLAY_NAMES-style small lookups elsewhere in this component set.
 const PIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>`;
+const PINNED_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>`;
 const UNPIN_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20"/><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h6"/><path d="M15 9.34V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H9.5"/></svg>`;
 
 function formatRelativeTime(timestamp) {
@@ -246,8 +247,11 @@ export function createHistoryPanel(options = {}) {
       const moreBtn = document.createElement("button");
       moreBtn.type = "button";
       moreBtn.className = "ai-agent-history-item-more";
-      moreBtn.setAttribute("aria-label", "خيارات المحادثة");
-      moreBtn.innerHTML = MORE_ICON_SVG;
+      moreBtn.setAttribute("aria-label", conv.pinned ? "خيارات المحادثة (مثبتة)" : "خيارات المحادثة");
+      if (conv.pinned) {
+        moreBtn.classList.add("ai-agent-history-item-more--pinned");
+      }
+      moreBtn.innerHTML = conv.pinned ? PINNED_ICON_SVG : MORE_ICON_SVG;
       moreBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         openItemMenu(moreBtn, conv, titleEl);

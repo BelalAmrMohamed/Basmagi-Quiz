@@ -788,6 +788,48 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     return res.status(500).json({ error: "فشل نقل العنصر." });
   }
 
+  // Moving a folder into a DIFFERENT course must cascade the new course_id
+  // to every descendant folder and quiz. The DB consistency triggers
+  // (folders_enforce_course_consistency / quizzes_enforce_course_consistency
+  // in 20260901195646_courses_and_folders.sql) only fire on the row being
+  // written — they would NOT rewrite the moved folder's children, leaving
+  // them with a stale course_id (which both breaks "everything in this
+  // course" queries and would fail on any later write to those children).
+  //
+  // collectCascadeItems returns folders breadth-first (parent before child),
+  // so each descendant is updated only after its own parent already has the
+  // new course_id — updating them one-by-one in that order (rather than a
+  // single .in() batch) keeps folders_enforce_course_consistency happy: it
+  // re-reads the parent's course_id from the live table on every row write,
+  // so a batch with unspecified row order could intermittently trip it.
+  if (itemType === "folder") {
+    const { folders: childFolders, quizzes: childQuizzes } =
+      await collectCascadeItems(supabase, { folderId: itemId });
+
+    for (const childFolder of childFolders) {
+      const { error: folderCascadeErr } = await supabase
+        .from("folders")
+        .update({ course_id: targetCourseId, updated_at: new Date().toISOString() })
+        .eq("id", childFolder.id);
+      if (folderCascadeErr) {
+        console.error("[admin:move-item] folder course cascade failed:", folderCascadeErr.message);
+        return res.status(500).json({ error: "فشل نقل المجلدات الفرعية التابعة. حاول مجددًا." });
+      }
+    }
+
+    const childQuizIds = childQuizzes.map((q) => q.id);
+    if (childQuizIds.length) {
+      const { error: quizCascadeErr } = await supabase
+        .from("quizzes")
+        .update({ course_id: targetCourseId })
+        .in("id", childQuizIds);
+      if (quizCascadeErr) {
+        console.error("[admin:move-item] quiz course cascade failed:", quizCascadeErr.message);
+        return res.status(500).json({ error: "فشل نقل الامتحانات التابعة. حاول مجددًا." });
+      }
+    }
+  }
+
   return res.status(200).json({ success: true });
 }
 

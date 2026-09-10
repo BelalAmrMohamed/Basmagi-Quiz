@@ -121,3 +121,31 @@ All three surfaces that already render an `.exam-more-btn` dropdown — `exam-ca
 8. Client: `/#my-quizzes` local trash (storage key, sweep, restore, its own trash UI panel) — independent of steps 2–7, can be built in parallel.
 9. `create-quiz.js` edit-mode wiring.
 10. Manual QA pass: delete→restore→verify media intact; delete→purge→verify media gone; move quiz across courses; rename collision handling; non-owner/scope-restricted admin boundary checks.
+
+
+This is the last partial implementation with AI (End of the chat):
+```txt
+Now let me update `exam-card.js`. First check its current imports and `_confirm` usage:
+
+Now replace the delete block in exam-card.js with the admin manage group:
+
+Now let me update `category-view.js` for folders. Let me read the folder dropdown section precisely.
+
+Now let me update `category-view.js` — add imports and the admin group to
+
+Now add the admin manage group to the folder dropdown in category-view.js:
+
+Now let me read the full `attachCourseActionsMenu` in root-view.js.
+
+Now let me update `root-view.js`:
+
+Now add the admin group to the course dropdown, before the unsubscribe button:
+
+Now let me add the `.exam-action-divider` CSS to the shared dropdown stylesheet:
+
+Now let me fix the server-side `handleMoveItem` gap: moving a folder across courses must cascade the new `course_id` to its descendants (folders + quizzes), or the DB consistency trigger/read path would leave stale course_ids. Let me read the exact section:
+
+The cascade update needs care: Postgres triggers fire per-row mid-statement, so updating all descendant folders in one `.in()` could race the self-referencing consistency trigger. Since `collectCascadeItems` returns folders breadth-first (parents before children), I'll update them one-by-one in that guaranteed order:
+
+Now the edit button navigates to create-quiz with `?id=<dbId>&mode=edit`. Let me look at how `create-quiz.js` loads a quiz into the editor so I can wire a DB-backed edit mode properly.
+```

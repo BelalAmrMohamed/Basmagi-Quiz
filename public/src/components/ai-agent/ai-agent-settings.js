@@ -13,7 +13,6 @@ import { getCachedLevel } from "../../shared/userLevel.js";
 const PROVIDER_STORAGE_KEY = "ai_agent_provider";
 const KEY_STORAGE_PREFIX = "ai_agent_key__"; // + provider
 const SYSTEM_PROMPT_STORAGE_PREFIX = "ai_agent_system_prompt__"; // + pageKey
-const LANGUAGE_STORAGE_PREFIX = "ai_agent_language__"; // + pageKey
 const MODEL_STORAGE_PREFIX = "ai_agent_model__"; // + provider
 
 // Per-provider model catalog. The FIRST entry in each list is always the
@@ -46,22 +45,6 @@ const MODELS_BY_PROVIDER = {
     { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
     { value: "claude-opus-4-6", label: "Claude Opus 4.6" },
   ],
-};
-
-const LANGUAGES = [
-  { value: "auto", label: "تلقائي" },
-  { value: "ar", label: "العربية" },
-  { value: "en", label: "English" },
-];
-
-// Appended to the system prompt sent to the model — kept short and in
-// both languages so it reads correctly regardless of which the model
-// currently favors. "auto" adds nothing: the page's own default system
-// prompt already tells the model which language to default to, and lets
-// it otherwise mirror whatever language the user writes in.
-const LANGUAGE_DIRECTIVES = {
-  ar: "\n\nمهم: أجب دائمًا باللغة العربية فقط، بغض النظر عن لغة سؤال المستخدم.",
-  en: "\n\nImportant: Always respond in English only, regardless of the language the user writes in.",
 };
 
 const PROVIDERS = [
@@ -136,33 +119,6 @@ export function setSystemPrompt(pageKey, value) {
 
 export function resetSystemPrompt(pageKey) {
   setInStorage(`${SYSTEM_PROMPT_STORAGE_PREFIX}${pageKey}`, "");
-}
-
-/**
- * @param {string} pageKey - "home" | "result"
- * @returns {"auto"|"ar"|"en"}
- */
-export function getResponseLanguage(pageKey) {
-  return getFromStorage(`${LANGUAGE_STORAGE_PREFIX}${pageKey}`, "auto");
-}
-
-export function setResponseLanguage(pageKey, value) {
-  setInStorage(`${LANGUAGE_STORAGE_PREFIX}${pageKey}`, value);
-}
-
-/**
- * Appends the language directive (if any) for the currently-selected
- * response language to a system prompt. Called from ai-agent-chat.js right
- * before sending, so every request (including tool-enabled ones) respects
- * the user's choice without each page needing to wire this up itself.
- * @param {string} pageKey
- * @param {string} systemPrompt
- * @returns {string}
- */
-export function applyResponseLanguage(pageKey, systemPrompt) {
-  const lang = getResponseLanguage(pageKey);
-  const directive = LANGUAGE_DIRECTIVES[lang];
-  return directive ? `${systemPrompt || ""}${directive}` : systemPrompt || "";
 }
 
 /**
@@ -288,10 +244,7 @@ export function createSettingsPanel(options = {}) {
   // NOTE: the response-language select that used to live here was removed
   // per product decision — response language is now left entirely to the
   // model to infer (from the conversation itself, or an explicit ask in
-  // the user's own prompt) rather than a separate setting. See
-  // getResponseLanguage/setResponseLanguage in ai-agent-storage.js, which
-  // are now unused and can be removed in a follow-up cleanup along with
-  // the LANGUAGES constant, once nothing else references them.
+  // the user's own prompt) rather than a separate setting.
   const keyLabel = document.createElement("label");
   keyLabel.className = "ai-agent-field-label";
   keyLabel.textContent = "مفتاح API الخاص بك (اختياري)";
@@ -318,6 +271,7 @@ export function createSettingsPanel(options = {}) {
     loadModelsForCurrentProvider();
     status.textContent = "";
     refreshKeySourceIndicator();
+    updateKeyActionsVisibility();
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
@@ -344,6 +298,31 @@ export function createSettingsPanel(options = {}) {
   const status = document.createElement("div");
   status.className = "ai-agent-settings-status";
   panel.appendChild(status);
+
+  // Save / Clear are only surfaced when they're actually actionable:
+  //   - nothing saved and nothing typed → both hidden (nothing to do)
+  //   - nothing saved but the user is typing → Save appears alone
+  //   - a saved value sits in the field untouched → Clear appears alone
+  //   - an existing saved value was edited → both appear (Save persists
+  //     the new value, Clear drops the stored one)
+  function updateKeyActionsVisibility() {
+    const { key: savedKey, hasKey: hasSavedKey } = getOwnKey();
+    const typed = keyInput.value.trim();
+    if (!hasSavedKey && typed === "") {
+      saveBtn.hidden = true;
+      clearBtn.hidden = true;
+      return;
+    }
+    saveBtn.hidden = !(typed !== "" && (typed !== savedKey || !hasSavedKey));
+    clearBtn.hidden = !hasSavedKey;
+  }
+  updateKeyActionsVisibility();
+
+  keyInput.addEventListener("input", () => {
+    updateKeyActionsVisibility();
+    // Any keystroke invalidates whichever status message is showing.
+    status.textContent = "";
+  });
 
   // ── Key-source indicator ──
   // Mirrors the exact precedence ai-agent-chat.js::sendMessage uses (own
@@ -393,6 +372,7 @@ export function createSettingsPanel(options = {}) {
     status.textContent = "تم الحفظ ✓";
     refreshKeySourceIndicator();
     refreshModelSelectAvailability();
+    updateKeyActionsVisibility();
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
@@ -404,6 +384,7 @@ export function createSettingsPanel(options = {}) {
     status.textContent = "تم المسح";
     refreshKeySourceIndicator();
     refreshModelSelectAvailability();
+    updateKeyActionsVisibility();
     if (typeof onKeyChanged === "function") onKeyChanged();
   });
 
@@ -411,9 +392,11 @@ export function createSettingsPanel(options = {}) {
   const promptLabel = document.createElement("label");
   promptLabel.className = "ai-agent-field-label";
   promptLabel.textContent = "تعليمات النظام (System Prompt)";
+  promptLabel.htmlFor = `${instanceId}-system-prompt`;
   panel.appendChild(promptLabel);
 
   const promptTextarea = document.createElement("textarea");
+  promptTextarea.id = `${instanceId}-system-prompt`;
   promptTextarea.className = "ai-agent-system-prompt-input";
   promptTextarea.rows = 6;
   promptTextarea.value = getSystemPrompt(pageKey, defaultSystemPrompt);

@@ -59,13 +59,24 @@ Labels aren't connected to their inputs "No label associated with a form field"
 
 **4/5. Broken `.ai-agent-more-btn` / `.ai-agent-history-item-more` on create-quiz.html and result.html** — Root cause found: these buttons open a `.exam-dropdown-menu` popover, but its CSS (`.exam-dropdown-menu`, `.exam-action-btn`) only lived in `home/index.css`, which create-quiz.html and result.html never load. The JS worked fine — the menu was just unstyled/invisible. Extracted the shared rules into a new `exam-dropdown-menu.css` and linked it on both pages.
 
-**6. Settings labels not associated with inputs** — Confirmed in `ai-agent-settings.js`: every `<label>` was created without `for`. Added unique per-instance `id`/`for` pairs for the provider select, model select, and API key input (in progress — still need the system prompt label/textarea).
+**6. Settings labels not associated with inputs** — Confirmed in `ai-agent-settings.js`: every `<label>` was created without `for`. Added unique per-instance `id`/`for` pairs for the provider select, model select, API key input, and system-prompt label/textarea (`${instanceId}-provider`, `-model`, `-key`, `-system-prompt`, suffixed by `settingsPanelInstanceCounter` so multiple panel instances never collide).
 
-**9 (partially, discovered while fixing #6). Language setting removal** — Removed the "لغة ردود المساعد" label/select block entirely from the settings panel per the request. Still need to clean up the now-dead `LANGUAGES` constant and `getResponseLanguage`/`setResponseLanguage` functions/exports in the same file (confirmed nothing outside this file imports them, so they're safe to delete).
+**9 (language setting removal).** Removed the "لغة ردود المساعد" label/select block entirely from the settings panel, and cleaned up all the now-dead machinery: `LANGUAGE_STORAGE_PREFIX`, `LANGUAGES`, `LANGUAGE_DIRECTIVES`, and `getResponseLanguage`/`setResponseLanguage`/`applyResponseLanguage` are all deleted from `ai-agent-settings.js` (confirmed nothing outside this file referenced them), and the `applyResponseLanguage` import + call in `ai-agent-chat.js` were replaced with a direct `getSystemPrompt(...)`. Response language is now fully left to the model (inferable from the conversation or an explicit ask in the prompt).
+
+**API key save/delete button visibility (auto).** `.ai-agent-settings-actions` under "مفتاح API الخاص بك (اختياري)" is now state-driven via `updateKeyActionsVisibility()` in `ai-agent-settings.js`:
+  - Nothing saved + nothing typed → both buttons hidden (nothing to save or delete).
+  - Nothing saved + user typing → Save appears alone.
+  - Saved value in the field untouched → Clear appears alone.
+  - Saved value edited → both appear (Save persists the change, Clear deletes the stored key).
+  Added `.ai-agent-btn[hidden] { display: none }` so the `[hidden]` attribute takes effect against the buttons' `display: inline-flex` (same fix `.ai-agent-send-btn[hidden]` already uses).
 
 ## Not yet done
-- Finish #6 (system prompt label/textarea `for`/`id`)
-- #9: API key save/delete button visibility logic
-- #10/#11: side-menu mobile slide direction + width
-- #12: model-select caret padding
-- Clean up dead language-setting code
+- None — all identified items are fixed; see "Done in this continuation" below.
+
+## Done in this continuation
+- Finish #6 (system-prompt label `for` / textarea `id`)
+- #9 API key save/delete button visibility logic (see above)
+- Clean up all dead language-setting code (see above)
+- #10/#11: mobile side-menu now slides from the LEFT (matching desktop) and is narrower — `min(76vw, 300px)` instead of `min(86vw, 320px)`, anchored `left: 0` with `transform: translateX(-100%)`
+- #12: `.ai-agent-chat-model-select` caret no longer hugs the left border — padding is now `6px 10px 6px 30px` (the field is `direction: rtl`, so the caret side is the left)
+- Pinned history items: the `.ai-agent-history-item-more` button now shows a filled-pin SVG icon (tinted `--color-primary`, via new `PINNED_ICON_SVG` + `.ai-agent-history-item-more--pinned`) instead of the ⋮ icon, and the old 📌 emoji badge was removed (pinned titles get a primary-color tint; pinned aria-label says "خيارات المحادثة (مثبتة)")

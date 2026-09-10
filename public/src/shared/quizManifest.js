@@ -150,6 +150,11 @@ export async function getManifest() {
 
   let fromCache = false;
   let subjects;
+  // Raw folder rows threaded through to buildCompatStructures() so the
+  // category-tree folder nodes can carry their DB id/creator metadata (see
+  // buildFolderInfoByPath's doc comment). Kept outside the try so both the
+  // live and the snapshot fallback paths can feed it.
+  let foldersRaw;
   try {
     const { quizzes, courses, folders } = await fetchDbManifest(liveTimeout);
     saveManifestCache({ quizzes, courses, folders });
@@ -161,6 +166,7 @@ export async function getManifest() {
     // fetch actually succeeded and reached buildCompatStructures(), so it
     // never surfaced during the Supabase outage itself (the throw/timeout
     // path was hit first every time).
+    foldersRaw = folders;
     ({ subjects } = await buildSubjects(quizzes, courses, folders));
   } catch (err) {
     if (!snapshot) throw err;
@@ -168,6 +174,7 @@ export async function getManifest() {
       "[quizManifest] Live manifest failed — serving last-good snapshot:",
       err,
     );
+    foldersRaw = snapshot.folders;
     ({ subjects } = await buildSubjects(
       snapshot.quizzes,
       snapshot.courses,
@@ -176,7 +183,7 @@ export async function getManifest() {
     fromCache = true;
   }
 
-  const { categoryTree, examList } = buildCompatStructures(subjects);
+  const { categoryTree, examList } = buildCompatStructures(subjects, foldersRaw);
   cached = { subjects, categoryTree, examList, fromCache };
   return cached;
 }
@@ -214,11 +221,11 @@ async function fetchDbManifest(timeoutMs = MANIFEST_FETCH_TIMEOUT_MS) {
         .order("created_at", { ascending: true }),
       supabase
         .from("courses")
-        .select("id, name, education_type, college, year, term")
+        .select("id, name, education_type, college, year, term, created_by, created_at, icon")
         .order("name", { ascending: true }),
       supabase
         .from("folders")
-        .select("id, course_id, name, parent_folder_id")
+        .select("id, course_id, name, parent_folder_id, created_by, created_at, icon")
         .order("name", { ascending: true }),
     ]),
     timeoutMs,
@@ -286,6 +293,13 @@ async function buildSubjects(quizzes, courses, folders) {
         id: course.id,
         name: course.name,
         education_type: course.education_type,
+        // Admin-management metadata (see admin-item-actions.js's canManageItem):
+        // threaded through so the shared-area ⋮ dropdowns can authorize
+        // move/rename/delete against the creator/scope tiers without an extra
+        // per-item fetch. Public RLS already exposes these columns; this is
+        // just carrying them into the category-tree nodes.
+        created_by: course.created_by || null,
+        created_at: course.created_at || null,
         quizzes: [],
       };
       if (course.education_type === "University" && course.college) {
@@ -293,6 +307,7 @@ async function buildSubjects(quizzes, courses, folders) {
       }
       if (course.year != null) subject.year = course.year;
       if (course.term != null) subject.term = course.term;
+      if (course.icon) subject.icon = course.icon;
       subjectsMap.set(course.id, subject);
     }
 
@@ -310,10 +325,17 @@ async function buildSubjects(quizzes, courses, folders) {
       questionCount: quizStats.questionCount ?? 0,
       questionTypes: quizStats.questionTypes ?? [],
       education_type: course.education_type,
+      courseId: row.course_id || null,
+      folderId: row.folder_id || null,
     };
 
     if (quizMeta.description) quizEntry.description = quizMeta.description;
     if (quizMeta.author_id) quizEntry.author_id = quizMeta.author_id;
+    if (quizMeta.author) quizEntry.author = quizMeta.author;
+    // Used by the admin "creator/uploader match" tier of canManageItem()
+    // (see delete-quiz.js / admin-item-actions.js) — lets the quiz's own
+    // author see manage actions even when the platform owner is elsewhere.
+    if (quizMeta.author_email) quizEntry.author_email = quizMeta.author_email;
     if (row.password) quizEntry.password = row.password;
     if (quizMeta.source) quizEntry.source = quizMeta.source;
     if (quizMeta.createdAt) quizEntry.createdAt = quizMeta.createdAt;
@@ -325,6 +347,44 @@ async function buildSubjects(quizzes, courses, folders) {
 }
 
 /**
+ * Builds a path → folder-row map for the folders that actually appear in the
+ * tree. Keys match the categoryTree subcategory keys exactly (course path
+ * first, then each folder's ancestor chain, joined with "/"), so
+ * buildCompatStructures can attach a folder's DB id/created_by/icon to the
+ * subcategory node it created from the quiz-driven folderSegments walk.
+ *
+ * Only folders belonging to a course that is present in the manifest get an
+ * entry — folders under a course with zero quizzes never appear in the tree,
+ * so there is no node to attach them to.
+ * @param {object[]|undefined} folders
+ * @param {Map<string, { name: string }>} courseNameById
+ * @returns {Map<string, object>} path key → folder row
+ */
+function buildFolderInfoByPath(folders, courseNameById) {
+  const infoByPath = new Map();
+  if (!Array.isArray(folders) || folders.length === 0) return infoByPath;
+
+  const folderById = new Map(folders.map((f) => [f.id, f]));
+  for (const folder of folders) {
+    const segments = [];
+    let cur = folder;
+    const visited = new Set();
+    while (cur && !visited.has(cur.id)) {
+      visited.add(cur.id);
+      segments.unshift(cur.name);
+      if (!cur.parent_folder_id) {
+        const courseName = courseNameById.get(cur.course_id);
+        if (courseName) segments.unshift(courseName);
+        break;
+      }
+      cur = folderById.get(cur.parent_folder_id) || null;
+    }
+    if (segments.length) infoByPath.set(segments.join("/"), folder);
+  }
+  return infoByPath;
+}
+
+/**
  * Builds backward-compatible `categoryTree` and `examList` from subjects.
  *
  * categoryTree shape expected by index.js:
@@ -333,12 +393,22 @@ async function buildSubjects(quizzes, courses, folders) {
  * Each quiz's `folderSegments` (walked from folder_id's parent chain in
  * buildSubjects()) is used to reconstruct nested subfolder nodes.
  *
+ * `folders` (raw folder rows) is passed so subcategory nodes can carry their
+ * live DB id + creator metadata — required by the admin move/rename/delete
+ * dropdown actions (see admin-item-actions.js).
+ *
  * @param {Subject[]} subjects
+ * @param {object[]|undefined} [folders]
  * @returns {{ categoryTree: object, examList: object[] }}
  */
-function buildCompatStructures(subjects) {
+function buildCompatStructures(subjects, folders) {
   const categoryTree = {};
   const examList = [];
+
+  const courseNameById = new Map(
+    subjects.map((s) => [s.id, { name: s.name }]),
+  );
+  const folderInfoByPath = buildFolderInfoByPath(folders, courseNameById);
 
   for (const subject of subjects) {
     const key = subject.name;
@@ -357,6 +427,9 @@ function buildCompatStructures(subjects) {
         subcategories: [],
         exams: [],
         source: subject.source,
+        ...(subject.created_by && { created_by: subject.created_by }),
+        ...(subject.created_at && { created_at: subject.created_at }),
+        ...(subject.icon && { icon: subject.icon }),
       };
     }
 
@@ -375,6 +448,7 @@ function buildCompatStructures(subjects) {
           currentPathArr.push(segment);
 
           if (!categoryTree[subKey]) {
+            const folderInfo = folderInfoByPath.get(subKey);
             categoryTree[subKey] = {
               key: subKey,
               name: segment,
@@ -383,6 +457,12 @@ function buildCompatStructures(subjects) {
               subcategories: [],
               exams: [],
               education_type: subject.education_type,
+              ...(folderInfo && { id: folderInfo.id }),
+              ...(folderInfo?.course_id && { course_id: folderInfo.course_id }),
+              ...(folderInfo?.parent_folder_id && { parent_folder_id: folderInfo.parent_folder_id }),
+              ...(folderInfo?.created_by && { created_by: folderInfo.created_by }),
+              ...(folderInfo?.created_at && { created_at: folderInfo.created_at }),
+              ...(folderInfo?.icon && { icon: folderInfo.icon }),
             };
             if (!categoryTree[currentParentKey].subcategories.includes(subKey)) {
               categoryTree[currentParentKey].subcategories.push(subKey);
@@ -402,9 +482,12 @@ function buildCompatStructures(subjects) {
         category: examCategoryKey,
         questionCount: quiz.questionCount,
         questionTypes: quiz.questionTypes,
+        courseId: quiz.courseId || null,
+        folderId: quiz.folderId || null,
         ...(quiz.description && { description: quiz.description }),
         ...(quiz.author && { author: quiz.author }),
         ...(quiz.author_email && { author_email: quiz.author_email }),
+        ...(quiz.author_id && { author_id: quiz.author_id }),
         ...(quiz.source && { source: quiz.source }),
         ...(quiz.password && { password: quiz.password }),
       };

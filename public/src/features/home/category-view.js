@@ -26,10 +26,19 @@ import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
 import {
+  canManageItem,
+  openSharedMoveToDialog,
+  renameSharedItem,
+  deleteSharedItem,
+} from "./admin-item-actions.js";
+import {
   COPY_ICON_SVG,
   DUPLICATE_ICON_SVG,
   SHARE_ICON_SVG,
   SPARKLE_ICON_SVG,
+  RENAME_ICON_SVG,
+  MOVE_TO_ICON_SVG,
+  TRASH_ICON_SVG,
 } from "./icons.js";
 import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
 import { showNotification } from "../../components/notifications/notifications.js";
@@ -348,6 +357,55 @@ export function createCategoryCard(
         counts.disabled = true;
         counts.textContent = `${itemCount} امتحان · ${(courseData.subcategories || []).length} مجلد فرعي`;
         menu.appendChild(counts);
+
+        // ── Admin manage group — نقل / إعادة تسمية / حذف (→ trash) ──────
+        // Folders only: gated on the same canManageItem() 3-tier check as
+        // quizzes (owner → creator match → scope match), grouped below the
+        // public actions with a divider. `courseData` here is the category-
+        // tree folder node, which quizManifest.js now threads with the DB
+        // folder id / course_id / parent_folder_id / created_by it needs.
+        if (canManageItem(courseData)) {
+          const divider = document.createElement("div");
+          divider.className = "exam-action-divider";
+          menu.appendChild(divider);
+
+          // نقل — shared Move-Source dialog over the DB courses+folders tree.
+          const moveOpt = document.createElement("button");
+          moveOpt.type = "button";
+          moveOpt.className = "exam-action-btn";
+          moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل</span>`;
+          moveOpt.onclick = (e) => {
+            e.stopPropagation();
+            closeMenu();
+            openSharedMoveToDialog(courseData);
+          };
+          menu.appendChild(moveOpt);
+
+          // إعادة تسمية.
+          const renameOpt = document.createElement("button");
+          renameOpt.type = "button";
+          renameOpt.className = "exam-action-btn";
+          renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+          renameOpt.onclick = (e) => {
+            e.stopPropagation();
+            closeMenu();
+            renameSharedItem(courseData);
+          };
+          menu.appendChild(renameOpt);
+
+          // حذف — soft-deletes the folder + its whole subtree to the shared
+          // trash (one batch, fully restorable until purged).
+          const deleteOpt = document.createElement("button");
+          deleteOpt.type = "button";
+          deleteOpt.className = "exam-action-btn exam-action-btn--danger";
+          deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المجلد</span>`;
+          deleteOpt.onclick = (e) => {
+            e.stopPropagation();
+            closeMenu();
+            deleteSharedItem(courseData);
+          };
+          menu.appendChild(deleteOpt);
+        }
       });
     };
     card.appendChild(moreBtn);

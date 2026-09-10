@@ -133,3 +133,15 @@
     border-color: var(--color-error);
     color: white;
 }
+
+/* Divider that groups the admin manage actions (تعديل / نقل / إعادة تسمية /
+   حذف) below the public ones inside the ⋮ dropdown — see
+   docs/plans/Admin actions and deletion flow for quizzes.md §5. A thin,
+   full-width hairline with hairline margins on both sides. */
+.exam-dropdown-menu .exam-action-divider {
+    height: 1px;
+    margin: 4px -4px;
+    background: var(--color-border);
+    opacity: 0.7;
+    flex-shrink: 0;
+}

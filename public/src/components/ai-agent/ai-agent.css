@@ -139,7 +139,11 @@
   width: 100%;
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
-  padding: 6px 10px;
+  /* BUG FIX (plan #12): the field is `direction: rtl`, so the browser
+     draws the dropdown caret on the LEFT edge — with the old symmetric
+     10px padding the caret sat almost flush against the left border.
+     Give the caret side extra breathing room. */
+  padding: 6px 10px 6px 30px;
   font-family: inherit;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1253,14 +1257,15 @@
 }
 
 /* PHASE 5: pinned conversations sort first (see listConversations in
-   ai-agent-history-idb.js) — a small filled-pin badge ahead of the title
-   is the visual cue for that ordering, distinct from the --active
+   ai-agent-history-idb.js). The filled-pin icon the more-button shows
+   while pinned (see PINNED_ICON_SVG in ai-agent-history.js) is the visual
+   cue for that ordering — the old 📌 emoji badge is gone per the plan's
+   "icons, not emojis" request. A primary-color title tint keeps a pinned
+   item readable at a glance, and stays clearly distinct from the --active
    highlight (a pinned item and the currently-open item are independent
    states and can coexist). */
-.ai-agent-history-item--pinned .ai-agent-history-item-title::before {
-  content: "📌";
-  margin-inline-end: 4px;
-  font-size: 0.78rem;
+.ai-agent-history-item--pinned .ai-agent-history-item-title {
+  color: var(--color-primary);
 }
 
 /* PHASE 5: inline rename — replaces .ai-agent-history-item-title in place
@@ -1305,6 +1310,14 @@
 
 .ai-agent-history-item-more:hover {
   background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+/* While the conversation is pinned, the ⋮ button itself becomes the
+   filled-pin icon (see PINNED_ICON_SVG in ai-agent-history.js) tinted
+   primary — a premium cue that this thread is pinned, per the plan's
+   "icons instead of emojis" request. */
+.ai-agent-history-item-more--pinned {
   color: var(--color-primary);
 }
 
@@ -1397,6 +1410,16 @@
 
 .ai-agent-btn:active {
   transform: translateY(0);
+}
+
+/* The save/clear key buttons are hidden via the `hidden` attribute (see
+   updateKeyActionsVisibility() in ai-agent-settings.js) — without this,
+   the panel's own `display: inline-flex` rule above would override the
+   browser's default `[hidden] { display: none }` UA rule (same
+   specificity problem `.ai-agent-send-btn[hidden]` solves elsewhere in
+   this file). */
+.ai-agent-btn[hidden] {
+  display: none;
 }
 
 .ai-agent-btn--primary {
@@ -1669,16 +1692,27 @@ body.sidebar-expanded .ai-agent-fab {
   .ai-agent-sidebar {
     position: absolute;
     inset-block: 0;
-    right: 0;
-    left: auto;
+    /* BUG FIX (plan #10): the sheet used to anchor to the RIGHT edge of
+       the card (`right: 0`) and slide in from the right, while the
+       desktop sidebar sits on the LEFT — inconsistent. Anchor it to the
+       left edge and slide in from the left to match desktops. */
+    left: 0;
+    right: auto;
     z-index: 5;
-    width: min(86vw, 320px) !important;
+    /* BUG FIX (plan #11): it was min(86vw, 320px) — on a typical
+       ~380px phone that's over 86% of the modal's 90vw (~342px), i.e.
+       the entire chat surface. Shrink it so the chat stays usable with
+       the drawer open. */
+    width: min(76vw, 300px) !important;
     height: 100%;
     border-inline-start: none;
     border-inline-start: 1px solid var(--color-border);
     border-radius: 0;
+    /* The left-anchored sheet's RIGHT edge faces the chat — a shadow
+       cast to the +x direction (positive offset = to the right, i.e.
+       onto the chat) is what reads correctly for a left-side sheet. */
     box-shadow: var(--shadow-xl, 8px 0 24px rgba(0, 0, 0, 0.18));
-    transform: translateX(100%);
+    transform: translateX(-100%);
     transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -1691,7 +1725,7 @@ body.sidebar-expanded .ai-agent-fab {
      applySidebarCollapsedState doc comment) — force the sheet fully
      expanded on mobile regardless of the persisted collapsed state. */
   .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed {
-    width: min(86vw, 320px) !important;
+    width: min(76vw, 300px) !important;
     height: 100%;
     padding: 14px 10px;
     align-items: stretch;

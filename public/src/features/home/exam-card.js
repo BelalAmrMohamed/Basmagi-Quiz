@@ -18,7 +18,12 @@ import {
 import { formatQuestionTypesForDownload } from "./quiz-schema.js";
 import { loadFullQuizData } from "./quiz-data-loader.js";
 import { copyQuizToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
-import { canDeleteQuiz, deleteQuizFromDatabase } from "./delete-quiz.js";
+import {
+  canManageItem,
+  openSharedMoveToDialog,
+  renameSharedItem,
+  deleteSharedItem,
+} from "./admin-item-actions.js";
 import { showQuizInfoModal } from "./quiz-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
@@ -33,10 +38,11 @@ import {
   SHARE_ICON_SVG,
   MORE_DOTS_ICON_SVG,
   TRASH_ICON_SVG,
+  RENAME_ICON_SVG,
+  MOVE_TO_ICON_SVG,
 } from "./icons.js";
 import {
   showNotification,
-  _confirm,
 } from "../../components/notifications/notifications.js";
 import {
   openAIAgentWithAttachment,
@@ -383,31 +389,66 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     };
     menu.appendChild(askAiOpt);
 
-    // ── "حذف" — database quizzes only, and only for the quiz's own
-    // creator or a platform owner. canDeleteQuiz() covers both the
-    // exam.dbId presence check and the creator/owner check, so this stays
-    // hidden for quizzes with no DB row and for anyone else's DB quizzes.
-    if (canDeleteQuiz(exam)) {
+    // ── Admin manage group — تعديل / نقل / إعادة تسمية / حذف (→ trash) ────
+    // Visible for database quizzes whose admin passes the generalized 3-tier
+    // canManageItem() gate (owner → creator match → scope match). Grouped
+    // below the public actions with a divider so the admin surface reads as
+    // its own block, sitting above the danger-zone delete (see
+    // docs/plans/Admin actions and deletion flow for quizzes.md §5).
+    if (canManageItem(exam)) {
+      const divider = document.createElement("div");
+      divider.className = "exam-action-divider";
+      menu.appendChild(divider);
+
+      // تعديل — quizzes only: deep-link into create-quiz edit mode (the
+      // create-quiz page pre-fills from ?id=<dbId>&mode=edit, step 9).
+      const editOpt = document.createElement("button");
+      editOpt.type = "button";
+      editOpt.className = "exam-action-btn";
+      editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل</span>`;
+      editOpt.onclick = (e) => {
+        e.stopPropagation();
+        closeMenu();
+        if (!exam.dbId) return;
+        window.location.href = `/create-quiz?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
+      };
+      menu.appendChild(editOpt);
+
+      // نقل — shared Move-Source dialog over the DB courses+folders tree.
+      const moveOpt = document.createElement("button");
+      moveOpt.type = "button";
+      moveOpt.className = "exam-action-btn";
+      moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل</span>`;
+      moveOpt.onclick = (e) => {
+        e.stopPropagation();
+        closeMenu();
+        openSharedMoveToDialog(exam);
+      };
+      menu.appendChild(moveOpt);
+
+      // إعادة تسمية — quizzes/folders/courses.
+      const renameOpt = document.createElement("button");
+      renameOpt.type = "button";
+      renameOpt.className = "exam-action-btn";
+      renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
+      renameOpt.onclick = (e) => {
+        e.stopPropagation();
+        closeMenu();
+        renameSharedItem(exam);
+      };
+      menu.appendChild(renameOpt);
+
+      // حذف — soft delete (to the shared trash, fully restorable until
+      // purged). deleteSharedItem() owns the confirmation phrasing
+      // ("سيُنقل … إلى سلة المهملات") and the view refresh.
       const deleteOpt = document.createElement("button");
       deleteOpt.type = "button";
       deleteOpt.className = "exam-action-btn exam-action-btn--danger";
       deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الامتحان</span>`;
-      deleteOpt.onclick = async (e) => {
+      deleteOpt.onclick = (e) => {
         e.stopPropagation();
         closeMenu();
-        const creatorLabel = exam.author || exam.author_email || "غير معروف";
-        const confirmed = await _confirm(
-          `هل أنت متأكد من حذف "${exam.title || exam.id}"؟ \nصاحب الامتحان: (${creatorLabel}). لا يمكن التراجع عن هذا الإجراء.`,
-        );
-        if (!confirmed) return;
-        const ok = await deleteQuizFromDatabase(exam);
-        // deleteQuizFromDatabase() already invalidated the manifest cache
-        // and shown a notification; removing the card here is a same-view
-        // optimistic update so the deleted quiz doesn't linger until the
-        // next full re-render. showExamActionsOverlay() is a standalone
-        // function (not a closure inside createExamCard), so the card
-        // isn't directly in scope — reach it from triggerBtn instead.
-        if (ok) triggerBtn.closest(".exam-card")?.remove();
+        deleteSharedItem(exam);
       };
       menu.appendChild(deleteOpt);
     }
