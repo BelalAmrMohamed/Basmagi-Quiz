@@ -84,7 +84,7 @@ Labels aren't connected to their inputs "No label associated with a form field"
 
 ### `.exam-more-btn`
 Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
-- Second press should close.
+- Fix: Second press should close it.
 
 ### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
 
@@ -162,9 +162,6 @@ The `.watermark` element on the home page climbs up very high when there is not 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
 
 ### Create Quiz Page
-- The items in the `#menuBar` (e,g., `class="menu-item"`) are too big, they need to get smaller, and be designed more like the top menu at Google Docs. They currently feel like they are 2 buttons inside each other. Because the buttons are designed stupidly where it's actually 2 elements inside each other (`.menu-trigger` inside `.menu-item`), and it looks like each has a hover state. Just totally redesign the item. 
 - The minimum number of options on MCQs should be 2, not 1 as it currently is.
 - `#quizPassword` doesn't behave like an actual password input, it should behave like one, with a button on it to show the password or to hide it.
-- Items inside `#menuBar` should be displayed from the left to the right (so "الملف" should be the first elemenet from the left, not the last) 
 - Items in the `.global-md-bar` aren't clear, they are small, and sometimes look bad, redesign them, and use actual icons, not text.
-

@@ -1142,11 +1142,18 @@
                 data-gmd-cmd="blockmath">$$…$$</button>
             <div class="gmd-dropdown">
                 <button type="button" class="gmd-btn gmd-btn-latex gmd-dropdown-toggle" id="gmdLatexMoreToggle"
-                    title="رموز رياضية إضافية" aria-haspopup="true">المزيد<svg class="gmd-caret" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                        stroke-linejoin="round">
+                    title="رموز رياضية إضافية" aria-label="رموز رياضية إضافية" aria-haspopup="true">
+                    <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="19" cy="12" r="1" />
+                        <circle cx="5" cy="12" r="1" />
+                    </svg>
+                    <svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <path d="m6 9 6 6 6-6" />
-                    </svg></button>
+                    </svg>
+                </button>
                 <div class="gmd-dropdown-menu gmd-dropdown-menu--latex" role="menu" aria-label="رموز رياضية إضافية">
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع"
                         data-gmd-latex="\sum_{}^{}"><span class="gmd-btn-latex-symbol">Σ</span><span
@@ -1251,27 +1258,43 @@
                     <div class="password-field">
                         <input type="password" id="quizPassword" dir="auto" placeholder="أدخل كلمة المرور..."
                             autocomplete="new-password">
-                        <button type="button" class="password-toggle" id="quizPasswordToggle"
-                            onclick="toggleQuizPasswordVisibility()" title="إظهار كلمة المرور"
-                            aria-label="إظهار كلمة المرور" aria-pressed="false" aria-controls="quizPassword">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-eye"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <path
-                                    d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                                <circle cx="12" cy="12" r="3" />
-                            </svg>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-eye-off"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-                                <path
-                                    d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
-                                <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
-                                <path
-                                    d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
-                                <path d="m2 2 20 20" />
-                            </svg>
-                        </button>
+                        <div class="password-field-actions">
+                            <button type="button" class="password-action-btn" id="quizPasswordCopy"
+                                onclick="copyQuizPassword()" title="نسخ كلمة المرور" aria-label="نسخ كلمة المرور">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-copy"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-check"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                    <path d="M20 6 9 17l-5-5" />
+                                </svg>
+                            </button>
+                            <button type="button" class="password-action-btn" id="quizPasswordToggle"
+                                onclick="toggleQuizPasswordVisibility()" title="إظهار كلمة المرور"
+                                aria-label="إظهار كلمة المرور" aria-pressed="false" aria-controls="quizPassword">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-eye"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                                    <circle cx="12" cy="12" r="3" />
+                                </svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide icon-eye-off"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                                    <path
+                                        d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" />
+                                    <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" />
+                                    <path
+                                        d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" />
+                                    <path d="m2 2 20 20" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

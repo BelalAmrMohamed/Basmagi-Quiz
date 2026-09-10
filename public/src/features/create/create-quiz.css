@@ -592,6 +592,14 @@ body.sidebar-expanded .global-md-bar {
   opacity: 0.7;
 }
 
+/* Icon glyphs inside .gmd-btn (bold/italic/heading/etc.) — sized to sit
+   comfortably inside the 26px-tall button without the button growing. */
+.gmd-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .gmd-dropdown-menu {
   position: fixed;
   z-index: 200;
@@ -1051,26 +1059,34 @@ body.sidebar-expanded .global-md-bar {
     transform 0.2s;
 }
 
-/* Password field: input + show/hide toggle button, stacked in a positioning
-   wrapper so the button can sit inside the input's own box instead of next
-   to it. dir="auto" on the input can render the value LTR or RTL depending
-   on content, so the toggle is placed with `inset-inline-end` (not `left`/
-   `right`) to always land on the field's trailing edge regardless of text
-   direction — which in this RTL page's own reading order is the left. */
+/* Password field: input + a cluster of two action buttons (copy, show/hide)
+   sitting inside the input's own box instead of next to it. dir="auto" on
+   the input can render the value LTR or RTL depending on content, so the
+   button cluster is placed with `inset-inline-end` (not `left`/`right`) to
+   always land on the field's trailing edge regardless of text direction —
+   which in this RTL page's own reading order is the left. */
 .password-field {
   position: relative;
 }
 
 .password-field input[type="password"],
 .password-field input[type="text"] {
-  padding-inline-end: 40px;
+  /* Room for two 30px buttons + gap + a little breathing space. */
+  padding-inline-end: 72px;
 }
 
-.password-toggle {
+.password-field-actions {
   position: absolute;
   inset-inline-end: 4px;
   top: 50%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.password-action-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1085,16 +1101,23 @@ body.sidebar-expanded .global-md-bar {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.password-toggle:hover,
-.password-toggle:focus-visible {
+.password-action-btn:hover,
+.password-action-btn:focus-visible {
   background: var(--color-background);
   color: var(--color-primary);
   outline: none;
 }
 
-.password-toggle svg {
+.password-action-btn svg {
   width: 18px;
   height: 18px;
+}
+
+/* Copy confirmation: swap to a green check briefly (JS toggles display on
+   the two svg children) — colored via a class on the button itself so it
+   doesn't depend on hover/focus state. */
+.password-action-btn.copied {
+  color: var(--color-success);
 }
 
 .form-group input:focus,

@@ -1491,6 +1491,74 @@ window.toggleQuizPasswordVisibility = function () {
   btn.setAttribute("aria-pressed", String(revealing));
 };
 
+/**
+ * Copy the quiz password to the clipboard, independent of whether it's
+ * currently masked or revealed (reads input.value directly either way).
+ * Swaps the button's copy icon for a checkmark briefly as confirmation,
+ * matching the pattern already used for the copy-question action, and
+ * falls back to a hidden-textarea + execCommand copy for browsers/contexts
+ * where navigator.clipboard is unavailable (e.g. non-HTTPS/local dev).
+ */
+window.copyQuizPassword = async function () {
+  const input = document.getElementById("quizPassword");
+  const btn = document.getElementById("quizPasswordCopy");
+  if (!input || !btn) return;
+
+  const value = input.value;
+  if (!value) {
+    showNotification("لا توجد كلمة مرور", "أدخل كلمة مرور أولاً لنسخها", "error");
+    return;
+  }
+
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      copied = true;
+    }
+  } catch (err) {
+    // Fall through to the execCommand fallback below.
+  }
+
+  if (!copied) {
+    try {
+      const temp = document.createElement("textarea");
+      temp.value = value;
+      temp.style.position = "fixed";
+      temp.style.opacity = "0";
+      document.body.appendChild(temp);
+      temp.focus();
+      temp.select();
+      copied = document.execCommand("copy");
+      document.body.removeChild(temp);
+    } catch (err) {
+      copied = false;
+    }
+  }
+
+  if (!copied) {
+    showNotification("تعذر النسخ", "لم يتمكن المتصفح من نسخ كلمة المرور", "error");
+    return;
+  }
+
+  const copyIcon = btn.querySelector(".icon-copy");
+  const checkIcon = btn.querySelector(".icon-check");
+  if (copyIcon) copyIcon.style.display = "none";
+  if (checkIcon) checkIcon.style.display = "";
+  btn.classList.add("copied");
+  btn.title = "تم النسخ";
+  btn.setAttribute("aria-label", "تم نسخ كلمة المرور");
+
+  clearTimeout(btn._copyResetTimer);
+  btn._copyResetTimer = setTimeout(() => {
+    if (copyIcon) copyIcon.style.display = "";
+    if (checkIcon) checkIcon.style.display = "none";
+    btn.classList.remove("copied");
+    btn.title = "نسخ كلمة المرور";
+    btn.setAttribute("aria-label", "نسخ كلمة المرور");
+  }, 1500);
+};
+
 window.toggleShortcuts = function () {
   const panel = document.getElementById("shortcutsPanel");
   if (panel.style.display === "none") {
