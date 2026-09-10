@@ -10,7 +10,8 @@
     "dev:vercel": "npx vercel dev --local --listen 8080",
     "dev:static": "npx http-server public -p 8080 -o -c-1",
     "vercel": "vercel dev",
-    "map": "node scripts/map.js"
+    "map": "node scripts/map.js",
+    "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD"
   },
   "keywords": [
     "examination",
