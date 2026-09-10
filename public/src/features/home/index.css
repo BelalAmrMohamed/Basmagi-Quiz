@@ -691,6 +691,28 @@ body.sidebar-expanded {
   margin-top: 4px;
 }
 
+/* Admin action-group submenu (تعديل / نقل / إعادة تسمية / حذف…) — same
+   popover shell as the info submenu above, but its content is a stack of
+   full .exam-action-btn rows instead of read-only tooltip rows, so it needs
+   its own padding/width/gap rather than the tighter tooltip-row spacing. */
+.submenu-content--actions {
+  width: 200px;
+  padding: 8px;
+  gap: 6px;
+}
+
+.submenu-content--actions .exam-action-btn {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .submenu-content--actions {
+    padding: 8px 0 0;
+  }
+}
+
 /* "امتحاناتك" root card dropdown — contents breakdown block (quizzes /
    courses / folders). Same tooltip-row layout as the course/folder info
    submenus, but rendered as a plain non-interactive block (no hover state,

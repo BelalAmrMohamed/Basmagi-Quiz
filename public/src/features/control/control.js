@@ -7,6 +7,7 @@
 import {
   getToken,
   isAdminAuthenticated,
+  getAdminRoleInfo,
   fullSignOut,
 } from "../../shared/adminAuth.js";
 import { syncAdminSession } from "../../shared/adminBadgeSync.js";
@@ -14,6 +15,10 @@ import { syncAdminSession } from "../../shared/adminBadgeSync.js";
 import { _alert } from "../../components/notifications/notifications.js";
 
 const API_URL = "/api/admin-control";
+// Trash actions (list/restore/empty/settings) live on the general admin
+// items surface (/api/admin?action=...) rather than /api/admin-control —
+// see docs/plans/Admin actions and deletion flow for quizzes.md §2.
+const ADMIN_ACTIONS_URL = "/api/admin";
 
 // Module-scoped Supabase client — set once in init() via the shared
 // registry (see supabaseClientRegistry.js), used in logout().
@@ -56,6 +61,23 @@ function getHeaders() {
     "Content-Type": "application/json",
     Authorization: `Bearer ${_token}`,
   };
+}
+
+/**
+ * POSTs an `action=` request to /api/admin (the trash/move/rename/delete
+ * surface — see admin-item-actions.js on the home page side, which this
+ * mirrors for the control-page trash panel). Throws on failure so callers
+ * can share one try/catch + showMessage() flow with the rest of this file.
+ */
+async function postAdminItemAction(action, body = {}) {
+  const res = await fetch(ADMIN_ACTIONS_URL, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ action, ...body }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "فشل تنفيذ العملية.");
+  return data;
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────────
@@ -371,6 +393,238 @@ document.getElementById("confirmModal").addEventListener("click", function (e) {
 });
 document.getElementById("scopeModal").addEventListener("click", function (e) {
   if (e.target === this) closeScopeModal();
+});
+
+// ── Trash view (shared/admin quizzes+folders+courses soft-delete area) ──────
+// See docs/plans/Admin actions and deletion flow for quizzes.md §6. Backed
+// entirely by /api/admin's trash-list / trash-restore / trash-empty /
+// trash-settings actions (already implemented server-side).
+
+let trashItemsCache = [];
+let trashFilter = "all";
+
+function showTrashView() {
+  document.getElementById("overviewView").hidden = true;
+  document.getElementById("trashSection").hidden = false;
+  document.getElementById("trashNavBtn").hidden = true;
+  document.getElementById("overviewNavBtn").hidden = false;
+  loadTrash();
+}
+window.showTrashView = showTrashView;
+
+function showOverviewView() {
+  document.getElementById("trashSection").hidden = true;
+  document.getElementById("overviewView").hidden = false;
+  document.getElementById("overviewNavBtn").hidden = true;
+  document.getElementById("trashNavBtn").hidden = false;
+}
+window.showOverviewView = showOverviewView;
+
+const TRASH_TYPE_LABELS = { quiz: "امتحان", folder: "مجلد", course: "مادة" };
+
+function formatTrashDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("ar-EG", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch (_) {
+    return "—";
+  }
+}
+
+/** Days remaining until `expiresAt` (can be negative if already past —
+ * sweepExpiredTrash on the server will clean those up on next access). */
+function daysUntil(expiresAtIso) {
+  if (!expiresAtIso) return null;
+  const diffMs = new Date(expiresAtIso).getTime() - Date.now();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function renderTrashList() {
+  const list = document.getElementById("trashList");
+  const filtered =
+    trashFilter === "all"
+      ? trashItemsCache
+      : trashItemsCache.filter((item) => item.itemType === trashFilter);
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="admin-empty">سلة المهملات فارغة</div>';
+    return;
+  }
+
+  list.replaceChildren();
+  filtered.forEach((item) => {
+    const daysLeft = daysUntil(item.expiresAt);
+    const urgent = daysLeft !== null && daysLeft <= 3;
+
+    const card = document.createElement("div");
+    card.className = "trash-card";
+    card.innerHTML = `
+      <div class="trash-card-info">
+        <div class="trash-card-name">
+          <span class="trash-type-badge">${TRASH_TYPE_LABELS[item.itemType] || item.itemType}</span>
+          <span></span>
+        </div>
+        <div class="trash-card-meta">
+          <span class="admin-meta-item">حُذف في: ${formatTrashDate(item.deletedAt)}</span>
+          <span class="meta-dot"></span>
+          <span class="admin-meta-item trash-expiry${urgent ? " trash-expiry--urgent" : ""}">
+            ${daysLeft === null ? "—" : daysLeft > 0 ? `يُحذف نهائياً خلال ${daysLeft} يوم` : "سيُحذف نهائياً قريباً"}
+          </span>
+        </div>
+      </div>
+      <div class="trash-card-actions">
+        <button class="btn-restore" data-action="restore">↺ استعادة</button>
+        <button class="btn-remove" data-action="purge">&#10005; حذف نهائي</button>
+      </div>
+    `;
+    card.querySelector(".trash-card-name span:last-child").textContent = item.name;
+
+    card.querySelector('[data-action="restore"]').onclick = () => restoreTrashItem(item);
+    card.querySelector('[data-action="purge"]').onclick = () => purgeTrashItem(item);
+
+    list.appendChild(card);
+  });
+}
+
+async function loadTrash() {
+  const list = document.getElementById("trashList");
+  list.innerHTML = '<div class="admin-empty">جاري التحميل...</div>';
+  try {
+    const data = await postAdminItemAction("trash-list");
+    trashItemsCache = data.items || [];
+    renderTrashList();
+  } catch (err) {
+    list.innerHTML = `<div class="admin-empty">${err.message}</div>`;
+  }
+
+  // Retention setting box — owner-only (server also enforces this on write;
+  // this just avoids showing a control that would 403 for anyone else).
+  const roleInfo = getAdminRoleInfo();
+  const retentionBox = document.getElementById("trashRetentionBox");
+  if (roleInfo?.isOwner) {
+    try {
+      const settings = await postAdminItemAction("trash-settings");
+      document.getElementById("trashRetentionInput").value = settings.retentionDays ?? 30;
+      retentionBox.hidden = false;
+    } catch (_) {
+      retentionBox.hidden = true;
+    }
+  } else {
+    retentionBox.hidden = true;
+  }
+}
+
+async function restoreTrashItem(item) {
+  try {
+    const data = await postAdminItemAction("trash-restore", { trashItemId: item.id });
+    if (data.failed?.length) {
+      showMessage(
+        `تمت استعادة ${data.restored} عنصر، وتعذّرت استعادة ${data.failed.length}.`,
+        data.restored === 0,
+      );
+    } else {
+      showMessage(`تمت استعادة "${item.name}" بنجاح.`);
+    }
+    loadTrash();
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+function purgeTrashItem(item) {
+  openConfirmModal({
+    icon: "&#128465;",
+    title: "حذف نهائي",
+    bodyHtml: `سيتم حذف "${item.name}" نهائياً${item.itemType !== "quiz" ? " وكل ما تحتويه" : ""}، بما في ذلك ملفات الوسائط المرتبطة به. لا يمكن التراجع عن هذا الإجراء.`,
+    confirmLabel: "حذف نهائياً",
+    onConfirm: async () => {
+      try {
+        await postAdminItemAction("trash-empty", { trashItemId: item.id });
+        showMessage(`تم حذف "${item.name}" نهائياً.`);
+        loadTrash();
+      } catch (err) {
+        showMessage(err.message, true);
+      }
+    },
+  });
+}
+
+// ── "إفراغ السلة" — double-confirm (button confirm + typed phrase), same
+// pattern as deleteAllUserQuizzes() on the home page for "حذف الكل". Uses
+// control.html's own typed-confirm modal (rather than the shared
+// notifications.js _confirmTyped(), which depends on theme CSS variables
+// that this standalone dark-gold page doesn't define).
+const EMPTY_TRASH_PHRASE = "افراغ السلة";
+
+function closeTypedConfirmModal() {
+  document.getElementById("typedConfirmModal").classList.remove("show");
+  document.getElementById("typedConfirmInput").value = "";
+  document.getElementById("typedConfirmBtn").disabled = true;
+}
+window.closeTypedConfirmModal = closeTypedConfirmModal;
+
+function openEmptyTrashConfirm() {
+  openConfirmModal({
+    icon: "&#9888;",
+    title: "إفراغ سلة المهملات",
+    bodyHtml: "سيتم حذف كل العناصر المرئية لك في سلة المهملات نهائياً، بما في ذلك ملفات الوسائط المرتبطة بها. لا يمكن التراجع عن هذا الإجراء.",
+    confirmLabel: "متابعة",
+    onConfirm: () => {
+      document.getElementById("typedConfirmBody").textContent =
+        `اكتب العبارة التالية بالضبط لتأكيد إفراغ السلة نهائياً:`;
+      document.getElementById("typedConfirmPhrase").textContent = EMPTY_TRASH_PHRASE;
+      document.getElementById("typedConfirmModal").classList.add("show");
+
+      const input = document.getElementById("typedConfirmInput");
+      const confirmBtn = document.getElementById("typedConfirmBtn");
+      input.oninput = () => {
+        confirmBtn.disabled = input.value.trim() !== EMPTY_TRASH_PHRASE;
+      };
+      confirmBtn.onclick = async () => {
+        closeTypedConfirmModal();
+        try {
+          const data = await postAdminItemAction("trash-empty", { all: true });
+          showMessage(`تم حذف ${data.purged} عنصر نهائياً.`);
+          loadTrash();
+        } catch (err) {
+          showMessage(err.message, true);
+        }
+      };
+    },
+  });
+}
+
+async function saveTrashRetention() {
+  const days = Number(document.getElementById("trashRetentionInput").value);
+  if (!Number.isInteger(days) || days < 1 || days > 365) {
+    showMessage("مدة الاحتفاظ يجب أن تكون بين 1 و 365 يوماً.", true);
+    return;
+  }
+  try {
+    await postAdminItemAction("trash-settings", { retentionDays: days });
+    showMessage("تم تحديث مدة الاحتفاظ بنجاح.");
+  } catch (err) {
+    showMessage(err.message, true);
+  }
+}
+
+document.getElementById("refreshTrashBtn").addEventListener("click", loadTrash);
+document.getElementById("emptyTrashBtn").addEventListener("click", openEmptyTrashConfirm);
+document.getElementById("saveRetentionBtn").addEventListener("click", saveTrashRetention);
+document.getElementById("typedConfirmModal").addEventListener("click", function (e) {
+  if (e.target === this) closeTypedConfirmModal();
+});
+document.querySelectorAll(".trash-filter-tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".trash-filter-tab").forEach((t) => t.classList.remove("active"));
+    tab.classList.add("active");
+    trashFilter = tab.dataset.filter;
+    renderTrashList();
+  });
 });
 
 // ── Logout ─────────────────────────────────────────────────────────────────────

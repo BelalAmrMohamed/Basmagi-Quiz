@@ -24,7 +24,7 @@ import { getCourseItemCount, refreshUserQuizzesCard } from "./course-count.js";
 import { isRecentlyAdded } from "./date-utils.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { createExamCard } from "./exam-card.js";
-import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
+import { openExamDropdownMenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import {
   canManageItem,
   openSharedMoveToDialog,
@@ -288,7 +288,7 @@ export function createCategoryCard(
     moreBtn.setAttribute("aria-label", `خيارات ${name}`);
     moreBtn.onclick = (event) => {
       event.stopPropagation();
-      openExamDropdownMenu(moreBtn, (menu, closeMenu) => {
+      openExamDropdownMenu(moreBtn, (menu, closeMenu, reposition) => {
         // Build a shareable URL matching the real-path scheme used by
         // renderCategory(): /course/{courseSlug}/{subSlug}/{subSlug2}/...
         // (all real path segments now, not a #hash — see renderCategory()'s
@@ -361,50 +361,43 @@ export function createCategoryCard(
         // ── Admin manage group — نقل / إعادة تسمية / حذف (→ trash) ──────
         // Folders only: gated on the same canManageItem() 3-tier check as
         // quizzes (owner → creator match → scope match), grouped below the
-        // public actions with a divider. `courseData` here is the category-
-        // tree folder node, which quizManifest.js now threads with the DB
+        // public actions with a divider, collapsed into a single "إدارة"
+        // submenu-trigger row. `courseData` here is the category-tree
+        // folder node, which quizManifest.js now threads with the DB
         // folder id / course_id / parent_folder_id / created_by it needs.
         if (canManageItem(courseData)) {
           const divider = document.createElement("div");
           divider.className = "exam-action-divider";
           menu.appendChild(divider);
 
-          // نقل — shared Move-Source dialog over the DB courses+folders tree.
-          const moveOpt = document.createElement("button");
-          moveOpt.type = "button";
-          moveOpt.className = "exam-action-btn";
-          moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل</span>`;
-          moveOpt.onclick = (e) => {
-            e.stopPropagation();
-            closeMenu();
-            openSharedMoveToDialog(courseData);
-          };
-          menu.appendChild(moveOpt);
-
-          // إعادة تسمية.
-          const renameOpt = document.createElement("button");
-          renameOpt.type = "button";
-          renameOpt.className = "exam-action-btn";
-          renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
-          renameOpt.onclick = (e) => {
-            e.stopPropagation();
-            closeMenu();
-            renameSharedItem(courseData);
-          };
-          menu.appendChild(renameOpt);
-
-          // حذف — soft-deletes the folder + its whole subtree to the shared
-          // trash (one batch, fully restorable until purged).
-          const deleteOpt = document.createElement("button");
-          deleteOpt.type = "button";
-          deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-          deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المجلد</span>`;
-          deleteOpt.onclick = (e) => {
-            e.stopPropagation();
-            closeMenu();
-            deleteSharedItem(courseData);
-          };
-          menu.appendChild(deleteOpt);
+          const adminSubmenu = createActionGroupSubmenu(
+            [
+              {
+                // نقل — shared Move-Source dialog over the DB
+                // courses+folders tree.
+                label: "نقل",
+                icon: MOVE_TO_ICON_SVG,
+                onClick: () => openSharedMoveToDialog(courseData),
+              },
+              {
+                // إعادة تسمية.
+                label: "إعادة تسمية",
+                icon: RENAME_ICON_SVG,
+                onClick: () => renameSharedItem(courseData),
+              },
+              {
+                // حذف — soft-deletes the folder + its whole subtree to the
+                // shared trash (one batch, fully restorable until purged).
+                label: "حذف المجلد",
+                icon: TRASH_ICON_SVG,
+                danger: true,
+                onClick: () => deleteSharedItem(courseData),
+              },
+            ],
+            closeMenu,
+            reposition,
+          );
+          menu.appendChild(adminSubmenu);
         }
       });
     };

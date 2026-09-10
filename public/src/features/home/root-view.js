@@ -37,7 +37,7 @@ import {
 
 import { createCategoryCard, renderCategory, getCategoriesLazy } from "./category-view.js";
 import { openExamDropdownMenu } from "./exam-dropdown-menu.js";
-import { createExamInfoSubmenu } from "./exam-dropdown-menu.js";
+import { createExamInfoSubmenu, createActionGroupSubmenu } from "./exam-dropdown-menu.js";
 import { showCourseInfoModal } from "./course-actions.js";
 import { buildCourseInfoRows } from "./course-info-fields.js";
 import { copyCategoryTreeToUserQuizzes, withCopyButtonLoadingState } from "./copy-to-my-quizzes.js";
@@ -148,32 +148,31 @@ function attachCourseActionsMenu(card, course, categoryTree) {
       // on the canManageItem() 3-tier check (owner → creator match → scope
       // match); `course` is the category-tree course node that
       // quizManifest.js threads with the DB course id / created_by / etc.
+      // Collapsed into a single "إدارة" submenu-trigger row, same as the
+      // quiz/folder dropdowns.
       if (canManageItem(course)) {
         const divider = document.createElement("div");
         divider.className = "exam-action-divider";
         menu.appendChild(divider);
 
-        const renameOpt = document.createElement("button");
-        renameOpt.type = "button";
-        renameOpt.className = "exam-action-btn";
-        renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
-        renameOpt.onclick = (e) => {
-          e.stopPropagation();
-          closeMenu();
-          renameSharedItem(course);
-        };
-        menu.appendChild(renameOpt);
-
-        const deleteOpt = document.createElement("button");
-        deleteOpt.type = "button";
-        deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-        deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف المادة</span>`;
-        deleteOpt.onclick = (e) => {
-          e.stopPropagation();
-          closeMenu();
-          deleteSharedItem(course);
-        };
-        menu.appendChild(deleteOpt);
+        const adminSubmenu = createActionGroupSubmenu(
+          [
+            {
+              label: "إعادة تسمية",
+              icon: RENAME_ICON_SVG,
+              onClick: () => renameSharedItem(course),
+            },
+            {
+              label: "حذف المادة",
+              icon: TRASH_ICON_SVG,
+              danger: true,
+              onClick: () => deleteSharedItem(course),
+            },
+          ],
+          closeMenu,
+          reposition,
+        );
+        menu.appendChild(adminSubmenu);
       }
 
       const unsubscribe = document.createElement("button");

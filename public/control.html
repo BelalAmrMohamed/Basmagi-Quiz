@@ -70,6 +70,8 @@
             منصة امتحانات بصمجي
         </div>
         <div class="topnav-actions">
+            <button class="btn-nav" id="trashNavBtn" onclick="showTrashView()">سلة المهملات</button>
+            <button class="btn-nav" id="overviewNavBtn" onclick="showOverviewView()" hidden>الرئيسية</button>
             <button class="btn-nav" onclick="window.location.href='/reports.html'">البلاغات</button>
             <button class="btn-nav" onclick="window.location.href='/'">عودة للرئيسية</button>
             <button class="btn-nav danger" onclick="logout()">تسجيل الخروج</button>
@@ -188,6 +190,36 @@
         </div>
     </div>
 
+    <!-- TRASH VIEW (shared/admin quizzes/folders/courses soft-delete area) -->
+    <div class="main-grid" id="trashSection" hidden>
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="panel-header trash-panel-header">
+                <div class="panel-title">سلة المهملات</div>
+                <div class="trash-header-actions">
+                    <div class="trash-retention-box" id="trashRetentionBox" hidden>
+                        <label for="trashRetentionInput">مدة الاحتفاظ (أيام):</label>
+                        <input type="number" id="trashRetentionInput" min="1" max="365" step="1">
+                        <button class="btn-primary" id="saveRetentionBtn"
+                            style="padding:6px 14px;font-size:0.82rem;">حفظ</button>
+                    </div>
+                    <button class="btn-nav danger" id="emptyTrashBtn">إفراغ السلة</button>
+                    <button class="btn-nav" id="refreshTrashBtn">تحديث</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="trash-filter-tabs" id="trashFilterTabs">
+                    <button type="button" class="trash-filter-tab active" data-filter="all">الكل</button>
+                    <button type="button" class="trash-filter-tab" data-filter="quiz">امتحانات</button>
+                    <button type="button" class="trash-filter-tab" data-filter="folder">مجلدات</button>
+                    <button type="button" class="trash-filter-tab" data-filter="course">مواد</button>
+                </div>
+                <div class="trash-list" id="trashList">
+                    <div class="admin-empty">جاري التحميل...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- CONFIRM MODAL (generic — reused for admin removal) -->
     <div class="modal-overlay" id="confirmModal">
@@ -201,6 +233,22 @@
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeModal()">إلغاء</button>
                 <button class="btn-confirm-del" id="modalConfirmBtn">إزالة</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TYPED-CONFIRM MODAL (double-confirmation for "إفراغ السلة") -->
+    <div class="modal-overlay" id="typedConfirmModal">
+        <div class="modal">
+            <div class="modal-icon" id="typedConfirmIcon">&#9888;</div>
+            <div class="modal-title" id="typedConfirmTitle">تأكيد الحذف النهائي</div>
+            <div class="modal-body" id="typedConfirmBody"></div>
+            <p class="typed-confirm-phrase" id="typedConfirmPhrase"></p>
+            <input type="text" class="typed-confirm-input" id="typedConfirmInput" dir="auto" autocomplete="off"
+                autocorrect="off" autocapitalize="off" spellcheck="false">
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeTypedConfirmModal()">إلغاء</button>
+                <button class="btn-confirm-del" id="typedConfirmBtn" disabled>حذف نهائياً</button>
             </div>
         </div>
     </div>

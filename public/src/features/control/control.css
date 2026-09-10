@@ -873,3 +873,226 @@ input::placeholder {
     color: var(--text-muted);
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* ── TRASH VIEW ─────────────────────────────────────────────────────────── */
+.trash-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.trash-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.trash-retention-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.trash-retention-box input[type="number"] {
+    width: 64px;
+    padding: 6px 8px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.trash-filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.trash-filter-tab {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: var(--bg-card2);
+    color: var(--text-muted);
+}
+
+.trash-filter-tab:hover {
+    color: var(--text);
+    border-color: var(--gold);
+}
+
+.trash-filter-tab.active {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+    color: var(--gold-light);
+}
+
+.trash-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 560px;
+    overflow-y: auto;
+    padding-right: 2px;
+}
+
+.trash-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.trash-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.trash-list::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 4px;
+}
+
+.trash-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+
+.trash-card:hover {
+    border-color: var(--border-strong);
+}
+
+.trash-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.trash-card-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.trash-type-badge {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--gold-dim);
+    color: var(--gold-light);
+    border: 1px solid var(--border-strong);
+}
+
+.trash-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.trash-expiry {
+    color: #E8A33D;
+}
+
+.trash-expiry.trash-expiry--urgent {
+    color: #E74C3C;
+    font-weight: 700;
+}
+
+.trash-card-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+}
+
+.btn-restore {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: rgba(39, 174, 96, 0.12);
+    border: 1px solid rgba(39, 174, 96, 0.35);
+    border-radius: 6px;
+    color: #58D68D;
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-restore:hover {
+    background: rgba(39, 174, 96, 0.24);
+    border-color: #58D68D;
+}
+
+.btn-restore:disabled,
+.btn-remove:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Typed-confirm modal ("إفراغ السلة") — same shell as .modal, plus the
+   phrase display + text input for the second confirmation step. */
+.typed-confirm-phrase {
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    color: var(--gold-light);
+    background: var(--bg-card2);
+    border: 1px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 12px;
+    word-break: break-all;
+}
+
+.typed-confirm-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+
+.typed-confirm-input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+@media (max-width: 780px) {
+    .trash-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .trash-card-actions {
+        justify-content: flex-end;
+    }
+}

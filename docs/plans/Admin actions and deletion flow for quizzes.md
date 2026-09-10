@@ -124,30 +124,30 @@ All three surfaces that already render an `.exam-more-btn` dropdown — `exam-ca
 
 
 This is the last partial implementation with AI (End of the chat):
-```txt
-Now let me update `exam-card.js`. First check its current imports and `_confirm` usage:
+```md
+These are the 8 files touched today — same relative paths in your repo:
 
-Now replace the delete block in exam-card.js with the admin manage group:
+- `public/src/features/home/exam-dropdown-menu.js` — new `createActionGroupSubmenu()`
+- `public/src/features/home/exam-card.js` — quiz admin group collapsed into submenu
+- `public/src/features/home/category-view.js` — folder admin group collapsed into submenu
+- `public/src/features/home/root-view.js` — course admin group collapsed into submenu
+- `public/src/features/home/index.css` — `.submenu-content--actions` styling
+- `public/control.html` — new trash panel markup, nav toggle, typed-confirm modal
+- `public/src/features/control/control.js` — trash list/restore/purge/settings logic
+- `public/src/features/control/control.css` — trash panel + typed-confirm styling
 
-Now let me update `category-view.js` for folders. Let me read the folder dropdown section precisely.
+## What's left
 
-Now let me update `category-view.js` — add imports and the admin group to
+**Step 8 — `/#my-quizzes` local trash (not started).** Three delete paths still hard-delete instead of soft-deleting into a new `user_quizzes_trash` localStorage bucket:
+- `deleteFolder()` in `user-quizzes-folders.js`
+- `deleteAllUserQuizzes()` in `user-quizzes-folders.js`
+- `deleteUserQuiz()` in `user-quiz-card.js`
 
-Now add the admin manage group to the folder dropdown in category-view.js:
+Needs: a storage helper module (move-to-trash + stamp `expiresAt`, lazy sweep-on-load, restore-with-collision-suffix), and a small trash UI panel reachable from the "امتحاناتك" card dropdown, per the plan's §4.
 
-Now let me read the full `attachCourseActionsMenu` in root-view.js.
+**Step 9 — `create-quiz.js` edit-mode wiring.** Not yet verified this session. Need to confirm `?id=<dbId>&mode=edit` actually pre-fills the form from a fetched quiz and posts to an update path, per §7.
 
-Now let me update `root-view.js`:
+**Step 10 — Manual QA pass.** Delete→restore→media-intact, delete→purge→media-gone, cross-course move, rename collisions, non-owner scope boundaries. This one's on you/a real environment to run — I won't render or execute anything.
 
-Now add the admin group to the course dropdown, before the unsubscribe button:
-
-Now let me add the `.exam-action-divider` CSS to the shared dropdown stylesheet:
-
-Now let me fix the server-side `handleMoveItem` gap: moving a folder across courses must cascade the new `course_id` to its descendants (folders + quizzes), or the DB consistency trigger/read path would leave stale course_ids. Let me read the exact section:
-
-The cascade update needs care: Postgres triggers fire per-row mid-statement, so updating all descendant folders in one `.in()` could race the self-referencing consistency trigger. Since `collectCascadeItems` returns folders breadth-first (parents before children), I'll update them one-by-one in that guaranteed order:
-
-Now the edit button navigates to create-quiz with `?id=<dbId>&mode=edit`. Let me look at how `create-quiz.js` loads a quiz into the editor so I can wire a DB-backed edit mode properly.
+Good stopping point — the shared/admin side (server + dropdown UI + trash panel) is now fully wired end-to-end; what remains is the local-storage trash mirror and the edit-mode form.
 ```
-
-Note: The implementatoin so far made the Admin Actions embeded in the menu directly, it was supposed to be a dropdown (e.g., `.submenu-trigger` not a normal button), this way the menu doesn't get extremely big. So the `تعديل`, `نقل`, `إعادة تسمية`, `حذف المادة` (or `حذف الامتحان` or `حذف المجلد`) should be in a submenu-trigger.

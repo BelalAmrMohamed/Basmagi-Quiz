@@ -28,6 +28,7 @@ import { showQuizInfoModal } from "./quiz-info-modal.js";
 import { formatDateForInfo } from "../../components/quiz-info-modal/quiz-info-html.js";
 import {
   createExamInfoSubmenu,
+  createActionGroupSubmenu,
   openExamDropdownMenu,
 } from "./exam-dropdown-menu.js";
 import {
@@ -393,65 +394,56 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     // ── Admin manage group — تعديل / نقل / إعادة تسمية / حذف (→ trash) ────
     // Visible for database quizzes whose admin passes the generalized 3-tier
     // canManageItem() gate (owner → creator match → scope match). Grouped
-    // below the public actions with a divider so the admin surface reads as
-    // its own block, sitting above the danger-zone delete (see
-    // docs/plans/Admin actions and deletion flow for quizzes.md §5).
+    // below the public actions with a divider, collapsed into a single
+    // "إدارة" submenu-trigger row (rather than 4 separate top-level rows)
+    // so the outer ⋮ menu doesn't grow tall — see
+    // docs/plans/Admin actions and deletion flow for quizzes.md §5.
     if (canManageItem(exam)) {
       const divider = document.createElement("div");
       divider.className = "exam-action-divider";
       menu.appendChild(divider);
 
-      // تعديل — quizzes only: deep-link into create-quiz edit mode (the
-      // create-quiz page pre-fills from ?id=<dbId>&mode=edit, step 9).
-      const editOpt = document.createElement("button");
-      editOpt.type = "button";
-      editOpt.className = "exam-action-btn";
-      editOpt.innerHTML = `${EDIT_ICON_SVG}<span>تعديل</span>`;
-      editOpt.onclick = (e) => {
-        e.stopPropagation();
-        closeMenu();
-        if (!exam.dbId) return;
-        window.location.href = `/create-quiz?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
-      };
-      menu.appendChild(editOpt);
-
-      // نقل — shared Move-Source dialog over the DB courses+folders tree.
-      const moveOpt = document.createElement("button");
-      moveOpt.type = "button";
-      moveOpt.className = "exam-action-btn";
-      moveOpt.innerHTML = `${MOVE_TO_ICON_SVG}<span>نقل</span>`;
-      moveOpt.onclick = (e) => {
-        e.stopPropagation();
-        closeMenu();
-        openSharedMoveToDialog(exam);
-      };
-      menu.appendChild(moveOpt);
-
-      // إعادة تسمية — quizzes/folders/courses.
-      const renameOpt = document.createElement("button");
-      renameOpt.type = "button";
-      renameOpt.className = "exam-action-btn";
-      renameOpt.innerHTML = `${RENAME_ICON_SVG}<span>إعادة تسمية</span>`;
-      renameOpt.onclick = (e) => {
-        e.stopPropagation();
-        closeMenu();
-        renameSharedItem(exam);
-      };
-      menu.appendChild(renameOpt);
-
-      // حذف — soft delete (to the shared trash, fully restorable until
-      // purged). deleteSharedItem() owns the confirmation phrasing
-      // ("سيُنقل … إلى سلة المهملات") and the view refresh.
-      const deleteOpt = document.createElement("button");
-      deleteOpt.type = "button";
-      deleteOpt.className = "exam-action-btn exam-action-btn--danger";
-      deleteOpt.innerHTML = `${TRASH_ICON_SVG}<span>حذف الامتحان</span>`;
-      deleteOpt.onclick = (e) => {
-        e.stopPropagation();
-        closeMenu();
-        deleteSharedItem(exam);
-      };
-      menu.appendChild(deleteOpt);
+      const adminSubmenu = createActionGroupSubmenu(
+        [
+          {
+            // تعديل — quizzes only: deep-link into create-quiz edit mode
+            // (the create-quiz page pre-fills from ?id=<dbId>&mode=edit,
+            // step 9).
+            label: "تعديل",
+            icon: EDIT_ICON_SVG,
+            onClick: () => {
+              if (!exam.dbId) return;
+              window.location.href = `/create-quiz?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
+            },
+          },
+          {
+            // نقل — shared Move-Source dialog over the DB courses+folders
+            // tree.
+            label: "نقل",
+            icon: MOVE_TO_ICON_SVG,
+            onClick: () => openSharedMoveToDialog(exam),
+          },
+          {
+            // إعادة تسمية — quizzes/folders/courses.
+            label: "إعادة تسمية",
+            icon: RENAME_ICON_SVG,
+            onClick: () => renameSharedItem(exam),
+          },
+          {
+            // حذف — soft delete (to the shared trash, fully restorable
+            // until purged). deleteSharedItem() owns the confirmation
+            // phrasing ("سيُنقل … إلى سلة المهملات") and the view
+            // refresh.
+            label: "حذف الامتحان",
+            icon: TRASH_ICON_SVG,
+            danger: true,
+            onClick: () => deleteSharedItem(exam),
+          },
+        ],
+        closeMenu,
+        reposition,
+      );
+      menu.appendChild(adminSubmenu);
     }
 
     // ── "معلومات الامتحان" submenu ───────────────────────────────────────

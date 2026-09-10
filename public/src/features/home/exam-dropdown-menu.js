@@ -254,3 +254,101 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
 
   return container;
 }
+
+/**
+ * Builds a grouped row of admin actions (تعديل / نقل / إعادة تسمية / حذف…)
+ * as a single submenu-trigger row, rather than appending each action as its
+ * own top-level row in the dropdown. Keeps the outer ⋮ menu from growing
+ * tall on items with many admin actions, and reads as one cohesive "إدارة"
+ * block instead of four separate buttons interspersed with the public
+ * actions above.
+ *
+ * `actions` is an array of `{ label, icon, danger, onClick }`. `onClick`
+ * receives no arguments — callers should close over whatever item/menu
+ * state they need (matching how the direct .exam-action-btn onclick
+ * handlers used to be wired before this refactor). This function itself
+ * calls `closeDropdown()` for the caller after `onClick` runs, so
+ * individual action handlers don't each need to do it — mirrors
+ * createExamInfoSubmenu's "كل المعلومات" button, which does the same.
+ *
+ * Reuses the exact same .submenu-container/.submenu-trigger/.submenu-content
+ * CSS and hover/tap-toggle behavior as createExamInfoSubmenu above (same
+ * clamping-on-open logic too), so it looks and behaves identically — the
+ * only difference is the content is a stack of .exam-action-btn rows
+ * instead of read-only tooltip rows plus a single "more" button.
+ */
+export function createActionGroupSubmenu(actions, closeDropdown, reposition, triggerLabel = "إدارة") {
+  const container = document.createElement("div");
+  container.className = "submenu-container";
+
+  const trigger = document.createElement("button");
+  trigger.type = "button";
+  trigger.className = "exam-action-btn submenu-trigger";
+  trigger.innerHTML = `<span class="submenu-trigger-label">${escapeHtml(triggerLabel)}</span><svg class="submenu-caret" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>`;
+
+  const content = document.createElement("div");
+  content.className = "submenu-content submenu-content--actions";
+
+  actions.forEach(({ label, icon, danger, onClick }) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = danger
+      ? "exam-action-btn exam-action-btn--danger"
+      : "exam-action-btn";
+    btn.innerHTML = `${icon || ""}<span>${escapeHtml(label)}</span>`;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      closeDropdown();
+      onClick();
+    };
+    content.appendChild(btn);
+  });
+
+  container.appendChild(trigger);
+  container.appendChild(content);
+
+  function setOpen(open) {
+    content.classList.toggle("show", open);
+    container.classList.toggle("submenu-open", open);
+
+    if (open) {
+      content.style.left = "";
+      content.style.right = "";
+      content.style.top = "";
+
+      const isStacked =
+        window.matchMedia && window.matchMedia("(max-width: 480px)").matches;
+
+      if (!isStacked) {
+        const rect = content.getBoundingClientRect();
+        const gap = 6;
+        if (rect.left < gap) {
+          const shift = gap - rect.left;
+          content.style.right = `calc(100% + 8px - ${shift}px)`;
+        }
+        if (rect.bottom > window.innerHeight - gap) {
+          const overflow = rect.bottom - (window.innerHeight - gap);
+          content.style.top = `${-overflow}px`;
+        }
+      }
+    }
+
+    if (typeof reposition === "function") reposition();
+  }
+
+  if (
+    window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches
+  ) {
+    container.addEventListener("mouseenter", () => setOpen(true));
+    container.addEventListener("mouseleave", () => setOpen(false));
+  }
+
+  trigger.onclick = (e) => {
+    e.stopPropagation();
+    setOpen(!content.classList.contains("show"));
+  };
+  content.onclick = (e) => e.stopPropagation();
+
+  return container;
+}
