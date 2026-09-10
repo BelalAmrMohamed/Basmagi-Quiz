@@ -145,4 +145,9 @@ Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it
 - List all unlisted pages (document pages, and reports page)
 
 ### Create Quiz Page
-Fix header bars on phones.
+- Fix top bars on phones:
+  - The `#globalMdBar` doesn't fill the width of the screen, there is emtpy space on the right. Actually, there is a weird behavior for both top bars (`#appTitleBar` and `#globalMdBar`), both of them have empty space (probably margin)
+  - 
+- Make the actions start from the right of the top bar instead of from the left after the quiz title. So bring the .
+- Implement a search feature to search the quiz.
+- The questions input, questions options inputs are too big, they should behave like an input in an AI chat, starts small (one line), then gets bigger as the user adds more lines.

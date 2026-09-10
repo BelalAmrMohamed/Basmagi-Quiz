@@ -118,8 +118,8 @@ const EDU_TYPE_AR = {
 /**
  * Builds course-info rows from the raw Supabase course fields, matching
  * buildCourseInfoRows()'s label set/ordering/omission rules, EXCEPT: for
- * "Featured" (مادة مميزة) courses, the نوع التعليم row is omitted entirely
- * rather than shown as "نوع التعليم: مادة مميزة" — "Featured" isn't a real
+ * "Featured" (مادة مميزة) courses, the التعليم row is omitted entirely
+ * rather than shown as "التعليم: مادة مميزة" — "Featured" isn't a real
  * education-level distinction, so labeling it as one on a shareable image
  * reads as a mistake rather than useful info. (The in-app modal still
  * shows it, highlighted, since it's operating in a denser table context —
@@ -133,7 +133,7 @@ function buildCourseInfoRowsFromRow(course) {
   const rows = [];
   if (course.educationType !== "Featured") {
     rows.push({
-      label: "نوع التعليم",
+      label: "التعليم",
       val: EDU_TYPE_AR[course.educationType] || course.educationType || "-",
     });
   }
@@ -173,6 +173,21 @@ function translateQuestionTypes(questionTypesStr, isArabic) {
 
 // ── Font cache (survives across warm invocations) ────────────────────────────
 let _fontDataPromise = null;
+
+// ── Background image cache (survives across warm invocations) ───────────────
+// Same rationale as _fontDataPromise above: BACKGROUND_IMAGE_URL is a
+// single static asset (see the header comment — "static template PNG") that
+// never varies per-request, yet the fetch + base64-encode of it was
+// previously repeated on every single invocation of both renderers (quiz
+// AND course/folder), warm or cold. A 1200×630 RGBA PNG easily runs several
+// hundred KB, so that repeated fetch/encode/Satori-reparse was plausibly
+// the largest single contributor to the >1s response times — far more than
+// PNG vs JPEG output encoding would ever cost for an image this size (and
+// @vercel/og's ImageResponse has no format option to control that anyway;
+// see loadBackgroundImage()'s own doc comment). Caching this the same way
+// the font is already cached should meaningfully cut warm-invocation
+// latency at near-zero risk, since the asset is static by definition.
+let _bgImagePromise = null;
 
 // Family names used on the `fontFamily` CSS property throughout the layout.
 // Satori resolves same-named font entries by "first one wins" for every
@@ -268,6 +283,52 @@ function loadFont() {
   return _fontDataPromise;
 }
 
+/**
+ * Fetches the static quiz-thumbnail background PNG and returns its already
+ * base64-encoded `url(data:image/png;base64,...)` CSS string, ready to drop
+ * straight into a `backgroundImage` style.
+ *
+ * Result is cached at module level (see _bgImagePromise above) so warm Edge
+ * invocations skip both the network fetch AND the base64 encode — the same
+ * caching this file already applies to the font, applied here for the same
+ * reason: this is one unchanging static asset (BACKGROUND_IMAGE_URL never
+ * varies per-request), so re-fetching and re-encoding it on every single
+ * invocation was pure waste and a likely major contributor to slow
+ * response times.
+ *
+ * NOTE on image format: @vercel/og's ImageResponse constructor has no
+ * `format`/`quality` option — it only ever outputs PNG, regardless of what
+ * format the *input* background asset is in (confirmed against Vercel's own
+ * docs; there's an open, unresolved upstream GitHub discussion requesting
+ * exactly this feature). So switching this background source to .jpg would
+ * change what @vercel/og has to decode going IN, but would NOT change the
+ * PNG format of the image this function ultimately returns to the client —
+ * it cannot, since that step isn't configurable from here. This caching fix
+ * targets the actual repeated-fetch/re-encode cost instead, which is a real,
+ * controllable source of the slowness.
+ *
+ * @returns {Promise<string|null>} the CSS `url(data:...)` string, or null if
+ *   the fetch failed (caller falls back to a solid background color).
+ */
+function loadBackgroundImage() {
+  if (_bgImagePromise) return _bgImagePromise;
+  _bgImagePromise = fetch(BACKGROUND_IMAGE_URL)
+    .then((res) => {
+      if (!res.ok) throw new Error(`Failed to load background image: ${res.status}`);
+      return res.arrayBuffer();
+    })
+    .then((buf) => `url(data:image/png;base64,${Buffer.from(buf).toString("base64")})`)
+    .catch((err) => {
+      console.error("[og] bg image fetch error:", err);
+      // Don't cache a failure — let the next invocation retry, same as a
+      // transient font-fetch hiccup would (see loadFont()'s own null-return
+      // fallback for the parallel case).
+      _bgImagePromise = null;
+      return null;
+    });
+  return _bgImagePromise;
+}
+
 // =============================================================================
 // Handler
 // =============================================================================
@@ -295,7 +356,7 @@ export default async function handler(req) {
   const quizId = searchParams.get("quizId");
 
   // ── 1. Fetch external assets in parallel ─────────────────────────────────
-  const [fontData, quizData, bgImageArrayBuffer] = await Promise.all([
+  const [fontData, quizData, bgImageBase64] = await Promise.all([
     // If the font fetch/parse ever fails again (network hiccup, Google
     // Fonts markup change, etc.), fall back to null rather than letting
     // the whole handler throw — ImageResponse still renders fine without
@@ -305,13 +366,9 @@ export default async function handler(req) {
       return null;
     }),
     quizId ? fetchQuizMeta(quizId) : null,
-    fetch(BACKGROUND_IMAGE_URL).then((res) => {
-      if (!res.ok) throw new Error(`Failed to load background image: ${res.status}`);
-      return res.arrayBuffer();
-    }).catch(err => {
-      console.error("[og] bg image fetch error:", err);
-      return null;
-    }),
+    // Cached at module level via loadBackgroundImage() — see its own doc
+    // comment for why (this is a static asset, never varies per-request).
+    loadBackgroundImage(),
   ]);
 
   const meta = quizData;
@@ -357,10 +414,10 @@ export default async function handler(req) {
           ? "46px"
           : "54px";
 
-  // Build Base64 background image
-  const bgImageBase64 = bgImageArrayBuffer
-    ? `url(data:image/png;base64,${Buffer.from(bgImageArrayBuffer).toString("base64")})`
-    : `none`;
+  // Background image CSS string — already fully built (fetched, encoded,
+  // and cached) by loadBackgroundImage() above; falls back to "none" (solid
+  // fallback color below) if that fetch failed.
+  const bgImageCss = bgImageBase64 || "none";
 
   // ── 3. Build image element (plain objects — no JSX) ───────────────────────
   const element = {
@@ -372,7 +429,7 @@ export default async function handler(req) {
         height: "100%",
         position: "relative",
         fontFamily: FONT_FAMILY_STACK,
-        backgroundImage: bgImageBase64,
+        backgroundImage: bgImageCss,
         backgroundSize: "1200px 630px",
         backgroundRepeat: "no-repeat",
         backgroundColor: "#0f172a", // Fallback color
@@ -647,7 +704,7 @@ export default async function handler(req) {
   // the immutable cache below, silently breaking that quiz's thumbnail until
   // OG_IMAGE_VERSION is bumped project-wide.
   const renderIsComplete =
-    bgImageArrayBuffer !== null && fontData !== null && (!quizId || meta !== null);
+    bgImageBase64 !== null && fontData !== null && (!quizId || meta !== null);
 
   return new ImageResponse(element, {
     width: 1200,
@@ -991,6 +1048,13 @@ async function renderCourseImage(courseId, folderPath) {
 
   const isFolder = !!(meta && meta.isFolder);
 
+  // Whether the (course-level) educationType is "Featured" — drives the
+  // "مادة مميزة" badge next to the kind label below. Always the COURSE's
+  // own field (see fetchCourseMeta's comment: a folder has no
+  // education_type of its own), same source buildCourseInfoRowsFromRow()
+  // already reads to decide whether to omit the التعليم row.
+  const isFeatured = !!(meta && meta.educationType === "Featured");
+
   // Title is the item's OWN name — the folder's own name for a folder
   // image, or the course's own name for a course image — never the full
   // concatenated breadcrumb. The parent course (for a folder) is shown
@@ -1035,7 +1099,7 @@ async function renderCourseImage(courseId, folderPath) {
   const infoRows = meta ? buildCourseInfoRowsFromRow(meta) : [];
 
   // For a folder image, the course name gets its own small line above the
-  // info rows so it's unambiguous which course "نوع التعليم"/"الكلية"/etc.
+  // info rows so it's unambiguous which course "التعليم"/"الكلية"/etc.
   // belong to (they're the course's, not the folder's).
   const parentCourseLine =
     isFolder && meta && meta.courseName ? meta.courseName : null;
@@ -1129,6 +1193,42 @@ async function renderCourseImage(courseId, folderPath) {
               background: i % 2 === 1 ? "rgba(15,23,42,0.02)" : "transparent",
             },
             children: [
+              // Value column — always the LEFT side, always LTR-aligned,
+              // even for an Arabic value — this is the "even if they are
+              // Arabic, tables look better this way" rule from the brief.
+              //
+              // NOTE: Satori lays out flex children strictly by their
+              // ARRAY order — it does NOT honor the CSS `order` property
+              // for positioning (confirmed by direct rendering: a `div`
+              // listed first in `children` always paints leftmost in an
+              // LTR row, regardless of its own `order` value). The
+              // previous version of this table relied on `order: 1` /
+              // `order: 2` to place the value on the left and the key on
+              // the right while still listing the key div FIRST in the
+              // array — since Satori ignores `order`, that always painted
+              // the key on the left and the value on the right, exactly
+              // backwards from spec. The fix is to put the columns in
+              // the array in their actual final left-to-right paint
+              // order — value first (left), key second (right) — with no
+              // `order` property at all.
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    flex: "1 1 54%",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    padding: "14px 22px",
+                    color: "#111827",
+                    fontWeight: "700",
+                    fontSize: "24px",
+                    borderRight: "1px solid rgba(15,23,42,0.08)",
+                    direction: "ltr",
+                  },
+                  children: String(row.val),
+                },
+              },
               // Key column — always the RIGHT side, always RTL-reading
               // text, regardless of the value's script. Rendered as a
               // single pre-mirrored string in a plain LTR div — the SAME
@@ -1156,7 +1256,6 @@ async function renderCourseImage(courseId, folderPath) {
                 props: {
                   style: {
                     display: "flex",
-                    order: 2,
                     flex: "0 0 46%",
                     justifyContent: "flex-end",
                     alignItems: "center",
@@ -1167,28 +1266,6 @@ async function renderCourseImage(courseId, folderPath) {
                     direction: "ltr",
                   },
                   children: renderBidiText(row.label, detectArabic(row.label)),
-                },
-              },
-              // Value column — always the LEFT side, always LTR-aligned,
-              // even for an Arabic value — this is the "even if they are
-              // Arabic, tables look better this way" rule from the brief.
-              {
-                type: "div",
-                props: {
-                  style: {
-                    display: "flex",
-                    order: 1,
-                    flex: "1 1 54%",
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    padding: "14px 22px",
-                    color: "#111827",
-                    fontWeight: "700",
-                    fontSize: "24px",
-                    borderRight: "1px solid rgba(15,23,42,0.08)",
-                    direction: "ltr",
-                  },
-                  children: String(row.val),
                 },
               },
             ],
@@ -1312,21 +1389,84 @@ async function renderCourseImage(courseId, folderPath) {
                     width: "100%",
                   },
                   children: [
-                    // Kind label — COURSE / FOLDER
+                    // Kind label row — COURSE / FOLDER, plus the
+                    // "مادة مميزة" (Featured) badge when applicable.
+                    // Rendered as a row (not a single text node) so the
+                    // badge can sit beside the label without going
+                    // through renderBidiText/renderBidiChildren — flex
+                    // row-reverse handles the RTL ordering here since
+                    // these are two independent sibling elements, not
+                    // tokens of one string.
                     {
                       type: "div",
                       props: {
                         style: {
                           display: "flex",
-                          fontSize: "24px",
-                          color: BRAND_BLUE,
-                          fontWeight: "700",
-                          letterSpacing: "1px",
+                          flexDirection: isArabic ? "row-reverse" : "row",
+                          alignItems: "center",
+                          gap: "10px",
                           direction: "ltr",
                         },
-                        children: isFolder
-                          ? "مجلد"
-                          : isArabic ? "مقرر دراسي" : "COURSE",
+                        children: [
+                          // Kind label — COURSE / FOLDER
+                          //
+                          // letterSpacing is intentionally omitted for
+                          // the Arabic labels ("مجلد" / "مقرر دراسي") —
+                          // Satori applies letter-spacing between EVERY
+                          // glyph, including within a single Arabic
+                          // word, which reads as words/letters being
+                          // oddly far apart (confirmed by direct
+                          // rendering). It's kept only for the English
+                          // "COURSE" label, where 1px tracking on Latin
+                          // caps is an intentional, legible style choice.
+                          {
+                            type: "div",
+                            props: {
+                              style: {
+                                display: "flex",
+                                fontSize: "24px",
+                                color: BRAND_BLUE,
+                                fontWeight: "700",
+                                ...(isFolder || isArabic ? {} : { letterSpacing: "1px" }),
+                                direction: "ltr",
+                              },
+                              children: isFolder
+                                ? "مجلد"
+                                : isArabic ? "مقرر دراسي" : "COURSE",
+                            },
+                          },
+                          // "مادة مميزة" badge — Featured courses only.
+                          // Previously this file omitted the التعليم row
+                          // for Featured courses (see
+                          // buildCourseInfoRowsFromRow) but never
+                          // actually surfaced the "featured" status
+                          // anywhere else on the image, so it silently
+                          // disappeared instead of being shown as a
+                          // badge. Folder images never show this — a
+                          // folder isn't itself Featured, only its
+                          // parent course can be, and the course-level
+                          // badge would be ambiguous attached to a
+                          // folder's own name.
+                          !isFolder && isFeatured
+                            ? {
+                              type: "div",
+                              props: {
+                                style: {
+                                  display: "flex",
+                                  fontSize: "16px",
+                                  fontWeight: "700",
+                                  color: "#b45309",
+                                  background: "rgba(245,158,11,0.14)",
+                                  border: "1px solid rgba(245,158,11,0.4)",
+                                  borderRadius: "8px",
+                                  padding: "4px 12px",
+                                  direction: "ltr",
+                                },
+                                children: EDU_TYPE_AR.Featured,
+                              },
+                            }
+                            : null,
+                        ],
                       },
                     },
 
@@ -1400,9 +1540,9 @@ async function renderCourseImage(courseId, folderPath) {
                       },
                     },
 
-                    // Course-info rows — نوع التعليم / الكلية / العام /
+                    // Course-info rows — التعليم / الكلية / العام /
                     // الترم, same label set + ordering as the in-app
-                    // "معلومات المادة" modal (minus نوع التعليم for
+                    // "معلومات المادة" modal (minus التعليم for
                     // Featured courses — see buildCourseInfoRowsFromRow).
                     // Each row is two separate flex children, not a
                     // word-reversed joined string — see
@@ -1615,47 +1755,61 @@ async function fetchCourseMeta(courseId, folderPath) {
     // parent_folder_id/folder_id when a folder resolved, otherwise scoped
     // to the whole course via course_id — matching render-course.js's
     // same course-vs-folder count distinction.
-    const [folderCount, quizCount] = targetFolderId
-      ? await Promise.all([
+    //
+    // Run alongside the extra-stats fetch below (Promise.all), not before
+    // it — the extra-stats query only depends on targetFolderId/courseId
+    // (already resolved above), not on these counts, so there was no real
+    // reason for it to wait on this step finishing first. That was an
+    // unforced sequential round-trip; folding it into the same parallel
+    // batch removes one full network hop from every course/folder request.
+    const countsPromise = targetFolderId
+      ? Promise.all([
         countFor("folders", "parent_folder_id"),
         countFor("quizzes", "folder_id"),
       ])
-      : await Promise.all([
+      : Promise.all([
         countFor("folders", "course_id"),
         countFor("quizzes", "course_id"),
       ]);
 
     // Best-effort extra stats (question count total, last-updated date) —
-    // not fatal if this sub-fetch fails.
-    let questionCount = null;
-    let lastUpdated = null;
-    try {
-      const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
-      quizzesUrl.searchParams.set("select", "data,created_at");
-      // Scoped to the resolved folder's direct quizzes when a folder path
-      // resolved, otherwise the whole course — same distinction as the
-      // folderCount/quizCount queries above.
-      quizzesUrl.searchParams.set(
-        targetFolderId ? "folder_id" : "course_id",
-        `eq.${targetFolderId || courseId}`,
-      );
-      quizzesUrl.searchParams.set("order", "created_at.desc");
-      quizzesUrl.searchParams.set("limit", "500");
-      const quizzesRes = await fetch(quizzesUrl.toString(), { headers });
-      if (quizzesRes.ok) {
-        const rows = await quizzesRes.json();
-        if (Array.isArray(rows) && rows.length > 0) {
-          questionCount = rows.reduce((sum, row) => {
-            const qc = row?.data?.stats?.questionCount;
-            return sum + (typeof qc === "number" ? qc : 0);
-          }, 0);
-          const newest = rows[0]?.created_at;
-          if (newest) lastUpdated = new Date(newest).toLocaleDateString("en-CA");
+    // not fatal if this sub-fetch fails. Kicked off in parallel with the
+    // counts above (see countsPromise's comment) rather than awaited after.
+    const extraStatsPromise = (async () => {
+      let questionCount = null;
+      let lastUpdated = null;
+      try {
+        const quizzesUrl = new URL(`${SUPABASE_URL}/rest/v1/quizzes`);
+        quizzesUrl.searchParams.set("select", "data,created_at");
+        // Scoped to the resolved folder's direct quizzes when a folder path
+        // resolved, otherwise the whole course — same distinction as the
+        // folderCount/quizCount queries above.
+        quizzesUrl.searchParams.set(
+          targetFolderId ? "folder_id" : "course_id",
+          `eq.${targetFolderId || courseId}`,
+        );
+        quizzesUrl.searchParams.set("order", "created_at.desc");
+        quizzesUrl.searchParams.set("limit", "500");
+        const quizzesRes = await fetch(quizzesUrl.toString(), { headers });
+        if (quizzesRes.ok) {
+          const rows = await quizzesRes.json();
+          if (Array.isArray(rows) && rows.length > 0) {
+            questionCount = rows.reduce((sum, row) => {
+              const qc = row?.data?.stats?.questionCount;
+              return sum + (typeof qc === "number" ? qc : 0);
+            }, 0);
+            const newest = rows[0]?.created_at;
+            if (newest) lastUpdated = new Date(newest).toLocaleDateString("en-CA");
+          }
         }
+      } catch (err) {
+        console.error("[og] course extra stats fetch error:", err);
       }
-    } catch (err) {
-      console.error("[og] course extra stats fetch error:", err);
-    }
+      return { questionCount, lastUpdated };
+    })();
+
+    const [[folderCount, quizCount], { questionCount, lastUpdated }] =
+      await Promise.all([countsPromise, extraStatsPromise]);
 
     return {
       // The item this image is actually about — the deepest resolved
@@ -1672,7 +1826,7 @@ async function fetchCourseMeta(courseId, folderPath) {
       // still shows which course it belongs to.
       courseName: course.name,
       // Course-info fields — mirrors buildCourseInfoRows() in
-      // course-info-fields.js exactly (نوع التعليم/الكلية/العام/الترم),
+      // course-info-fields.js exactly (التعليم/الكلية/العام/الترم),
       // but read from the raw Supabase row shape (education_type/college/
       // year/term) rather than the client's tree-shaped course object
       // (which calls the same field `faculty`, not `college`). These are

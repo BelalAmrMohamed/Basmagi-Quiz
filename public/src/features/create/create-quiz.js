@@ -176,7 +176,7 @@ function mdEditorHtml(id, value, placeholder, rows = 2) {
     <div class="wp-field" id="wrap-${id}">
       <div class="wp-pane-wrap">
         <textarea
-          class="md-source wp-textarea ltr"
+          class="md-source wp-textarea" dir="auto"
           id="${id}"
           rows="${rows}"
           placeholder="${placeholder}"
@@ -413,10 +413,10 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
     }
   } else {
     switch (cmd) {
-      case "bold":        wrap("**", "**", "نص غامق"); break;
-      case "italic":      wrap("*",  "*",  "نص مائل"); break;
-      case "strike":      wrap("~~", "~~", "نص مشطوب"); break;
-      case "code":        wrap("`",  "`",  "كود"); break;
+      case "bold": wrap("**", "**", "نص غامق"); break;
+      case "italic": wrap("*", "*", "نص مائل"); break;
+      case "strike": wrap("~~", "~~", "نص مشطوب"); break;
+      case "code": wrap("`", "`", "كود"); break;
       case "codeblock": {
         const text = selected || "كود";
         replaceTextareaRange(ta, start, end, "```\n" + text + "\n```");
@@ -429,7 +429,7 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
         linePrefix("#".repeat(level) + " ");
         break;
       }
-      case "blockquote":  linePrefix("> "); break;
+      case "blockquote": linePrefix("> "); break;
       case "hr": {
         const ins = "\n---\n";
         replaceTextareaRange(ta, start, end, ins);
@@ -437,8 +437,8 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
         ta.setSelectionRange(pos, pos);
         break;
       }
-      case "ul":          linePrefix("- "); break;
-      case "ol":          linePrefix("1. "); break;
+      case "ul": linePrefix("- "); break;
+      case "ol": linePrefix("1. "); break;
       case "link": {
         const text = selected || "نص الرابط";
         replaceTextareaRange(ta, start, end, `[${text}](https://)`);
@@ -463,8 +463,8 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
         ta.setSelectionRange(pos, pos);
         break;
       }
-      case "inlinemath":  wrap("$", "$", "math"); break;
-      case "blockmath":   wrap("$$", "$$", "math"); break;
+      case "inlinemath": wrap("$", "$", "math"); break;
+      case "blockmath": wrap("$$", "$$", "math"); break;
     }
   }
 
@@ -487,8 +487,8 @@ function setupGlobalMdBar() {
   bar.querySelectorAll(".gmd-btn:not(.gmd-dropdown-toggle)").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
-      const cmd     = btn.dataset.gmdCmd     || null;
-      const latex   = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
+      const cmd = btn.dataset.gmdCmd || null;
+      const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
       const heading = btn.dataset.gmdHeading || null;
       applyGlobalMdAction(cmd, latex, heading);
       // Using a dropdown item closes the dropdown it came from.

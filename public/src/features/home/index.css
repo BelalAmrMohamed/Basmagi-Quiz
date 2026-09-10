@@ -445,6 +445,10 @@ body.sidebar-expanded {
   line-height: 1.3;
 }
 
+.course-info-modal-card .quiz-info-table td {
+  text-align: left;
+}
+
 .course-info-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2969,13 +2973,6 @@ html[dir="ltr"] .move-to-dialog-elbow {
    ============================================================================ */
 .watermark {
   text-align: center;
-  /*
-   * auto (not a fixed length) so it consumes any leftover space in the
-   * flex-column .container, pinning the footer to the bottom on short
-   * pages instead of leaving it stranded mid-screen. On pages with enough
-   * content to fill the viewport, this collapses to 0 and behaves exactly
-   * like the old fixed 40px margin did.
-   */
   margin-top: auto;
   padding-top: 40px;
   border-top: 1px solid var(--color-border-light);

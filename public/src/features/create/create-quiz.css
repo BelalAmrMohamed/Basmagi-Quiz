@@ -289,7 +289,7 @@ body.quiz-form-active .container {
   z-index: 60;
 }
 
-.menu-item-open > .menu-dropdown {
+.menu-item-open>.menu-dropdown {
   display: block;
 }
 
@@ -303,8 +303,8 @@ body.quiz-form-active .container {
 }
 
 /* Show the submenu on HOVER of the parent row (CSS-only, no JS required). */
-.menu-item-submenu:hover > .menu-submenu-dropdown,
-.menu-item-submenu.menu-item-open > .menu-submenu-dropdown {
+.menu-item-submenu:hover>.menu-submenu-dropdown,
+.watermark.menu-item-open>.menu-submenu-dropdown {
   display: block;
 }
 
@@ -358,8 +358,8 @@ body.quiz-form-active .container {
   transform: rotate(-90deg);
 }
 
-.menu-item-submenu:hover > .menu-option,
-.menu-item-submenu.menu-item-open > .menu-option {
+.menu-item-submenu:hover>.menu-option,
+.menu-item-submenu.menu-item-open>.menu-option {
   background: var(--color-background);
 }
 
@@ -368,7 +368,7 @@ body.quiz-form-active .container {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 10px;
+  padding: 5px 10px;
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -415,7 +415,7 @@ body.quiz-form-active .container {
 .menu-separator {
   height: 1px;
   background: var(--color-border);
-  margin: 6px 4px;
+  margin: 4px 4px;
 }
 
 /* ============================================================================
@@ -887,15 +887,19 @@ body.sidebar-expanded .global-md-bar {
   box-shadow: var(--shadow-lg);
 }
 
-/* Quiz Metadata */
-.quiz-metadata {
-  direction: rtl;
-}
-
 .quiz-metadata h2,
 .section-header h2 {
   margin: 0 0 12px 0;
   font-size: 1.5rem;
+}
+
+#quizSource {
+  direction: ltr
+}
+
+#quizDescription,
+#quizPassword {
+  direction: rtl
 }
 
 .section-subhint {
@@ -1176,11 +1180,6 @@ body.sidebar-expanded .global-md-bar {
   background: var(--color-error);
   color: white;
   transform: translateY(-50%) scale(1.1);
-}
-
-.sort-controls {
-  display: flex;
-  gap: 8px;
 }
 
 .btn-action {
@@ -1738,13 +1737,8 @@ body.sidebar-expanded .global-md-bar {
     flex-direction: column;
   }
 
-  .search-box,
-  .sort-controls {
+  .search-box {
     width: 100%;
-  }
-
-  .sort-controls {
-    justify-content: space-between;
   }
 
   .bulk-actions-bar {
@@ -1784,6 +1778,14 @@ body.sidebar-expanded .global-md-bar {
 
   .add-question-bottom .btn {
     width: 100%;
+  }
+
+  .app-title-bar,
+  .global-md-bar,
+  .menu-bar {
+    right: 0;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 }
 
@@ -2671,10 +2673,6 @@ body.sidebar-expanded .global-md-bar {
 
 .watermark {
   text-align: center;
-  /* auto pushes this to the bottom of .container's flex column (see
-     .container), instead of a fixed 80px gap that let the footer sit right
-     under short content — including the empty instant before entry-screen
-     tiles render, when it used to land at the literal top of the page. */
   margin-top: auto;
   padding-top: 40px;
   border-top: 1px solid var(--color-border-light);
@@ -3016,13 +3014,6 @@ body.sidebar-expanded .global-md-bar {
     padding-top: 0;
   }
 
-  .app-title-bar,
-  .menu-bar {
-    right: 0;
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
   .container {
     padding: 0px;
   }
@@ -3311,6 +3302,7 @@ body.sidebar-expanded .global-md-bar {
   box-sizing: border-box;
   display: block;
   overflow: hidden;
+  direction: rtl;
 }
 
 .wp-textarea:focus {
@@ -4181,10 +4173,6 @@ body.sidebar-expanded .global-md-bar {
   font-size: 0.8rem;
   color: var(--color-text-tertiary);
   line-height: 1.4;
-}
-
-.option-card-desc::before {
-  content: "— ";
 }
 
 /* ============================================================================
