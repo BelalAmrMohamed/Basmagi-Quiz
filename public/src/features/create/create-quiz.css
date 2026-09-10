@@ -192,6 +192,19 @@ body.sidebar-expanded .app-title-bar {
   color: var(--color-primary);
 }
 
+.app-title-home:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+.undo-redo-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .app-title-text {
   font-size: 0.9rem;
   font-weight: 600;

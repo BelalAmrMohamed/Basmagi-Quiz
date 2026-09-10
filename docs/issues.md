@@ -8,16 +8,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Broken Elements
 
 ### Courses & Folders OG Images
-- Don't show the info correctly: 
-  - ![Course with Arabic info not formatted well](image.png)
-  - ![Folder with messed up Arabic](image-7.png)
-
-#### Suggestions
-- Similar issues remain. Here are suggestions:
-  - For long URLs (that get displayed at the bottom): Make sure they aren't being displayed on 2 lines because that looks ugly, specially when there are so much space on the left of the link that is not being used, so make sure that space is being used, push it to the left when it gets long, you can use other strateiges too.
-  - For the course / folder info:
-    - They sometimes get displayed on the left, other times on the right, based on the title of the quiz. They should always be displayed in a static place that doesn't move, and they should be displayed as a table, where the keys are on the right and RTL, and the values are on the left and LTR (even if they are Arabic, tables look better this way.)
-  - Direction of elements / labels shouldn't change based on the Title of the quiz because that seems to mess up alot of stuff
+- Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
+- (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
 
 ### Move-To Dialog Guide Overhaul
 - The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
@@ -28,16 +20,17 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
   - So if I'm standing in `/#my-quizzes/math/algebra` and I create a quiz through that modal, it gets created inside of `/#my-quizzes` directly, not in `/#my-quizzes/math/algebra` as intended.
 
-### Sign in title on Google Sign in.
-- When user sign in using Google, they don't see the name or the logo of the platform, they see a sequence of charachters that seem to be related to the Supabase DB something. ![screenshot](image-5.png)
+### `.exam-more-btn`
+Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
+- Fix: Second press should close it.
+
+### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
+
+### Home Page Footer
+The `.watermark` element on the home page climbs up very high when there is not enough content being displayed. The footer should stay at the bottom, it shouldn't move up when there is no content.
+
+### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
-
-1. "Continue to esdfdzhtavraczrhxnmp.supabase.co" — this can't be fixed in code
-
-Confirmed via Supabase's own docs/issue tracker: Google's OAuth consent screen always shows the domain of the OAuth callback URL, and with Supabase Auth that's always https://<project-ref>.supabase.co — there is no application-side setting that changes it. There are exactly two real fixes, both outside this codebase:
-
-Google OAuth consent screen verification (free) — in Google Cloud Console → OAuth consent screen, set your app name/logo and go through Google's verification process. Once verified, Google shows your app name ("منصة امتحانات بصمجي") instead of the raw domain, even while the domain stays *.supabase.co underneath. Several teams in the Supabase community got this working for free this way.
-
 
 ### AI Agnet Error 
 - ![screenshot 1](image-1.png)
@@ -81,15 +74,6 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - The AI Agent Chat should use icons instead of emojis for pinned items.
 - Remove the `لغة ردود المساعد` option from the settings, leave the choice of language to the AI, or the user can tell it in the prompt itself, remove that setting totally.
 - Improve the UI/UX of the `.ai-agent-settings-actions` in the settings panel under the `مفتاح API الخاص بك (اختياري)`, so that both buttons are invisible when there is nothing saved (since there would be nothing to save or delete, the 2 buttons are useless), when the user is typing and nothing is saved, the save button only appears, when the value is saved the delete button only appears.
-
-### `.exam-more-btn`
-Clicking on the `.exam-more-btn` once opens it, clicking on it again, reopens it (closes then opens quickly). 
-- Fix: Second press should close it.
-
-### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
-
-### Home Page Footer
-The `.watermark` element on the home page climbs up very high when there is not enough content being displayed. The footer should stay at the bottom, it shouldn't move up when there is no content.
 
 ## New Features
 
@@ -162,6 +146,12 @@ The `.watermark` element on the home page climbs up very high when there is not 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
 
 ### Create Quiz Page
-- The minimum number of options on MCQs should be 2, not 1 as it currently is.
-- `#quizPassword` doesn't behave like an actual password input, it should behave like one, with a button on it to show the password or to hide it.
-- Items in the `.global-md-bar` aren't clear, they are small, and sometimes look bad, redesign them, and use actual icons, not text.
+- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, they are small, and sometimes look bad, redesign them, and use actual icons, not text.
+- Add a "معاينة" button to the question's dropdown, to view that specific question rendered.
+- Undo/redo feature for editing questions: Fix it, doesn't work on delete/duplicate/reorder.
+- Reorder mode with a drag handle (there was a previous native-HTML5-DnD implementation and it was deliberately ripped out because it broke on touch), so this must be a (mode), not an always-on drag handle.
+- Select Mode: For questions, to select multiple questions, delete/duplicate/reorder.
+- Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
+- Accessibility:
+  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
+  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background.. 

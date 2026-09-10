@@ -262,6 +262,14 @@
                     <span>تصدير الامتحان</span>
                 </div>
                 <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+                    <span>تراجع</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>Y</kbd>
+                    <span>إعادة</span>
+                </div>
+                <div class="shortcut-item">
                     <kbd>?</kbd>
                     <span>عرض الاختصارات</span>
                 </div>
@@ -792,6 +800,28 @@
                     </svg>
                 </span>
                 <span class="save-text">محفوظ</span>
+            </div>
+
+            <!-- Undo/Redo: whole-quiz-snapshot history (see UNDO / REDO block
+                 in create-quiz.js). Disabled state is toggled by JS
+                 (updateUndoRedoButtons) whenever the stacks change. -->
+            <div class="undo-redo-group">
+                <button type="button" class="app-title-home" id="undoBtn" onclick="performUndo()" title="تراجع (Ctrl+Z)"
+                    aria-label="تراجع" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 14 4 9l5-5" />
+                        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                    </svg>
+                </button>
+                <button type="button" class="app-title-home" id="redoBtn" onclick="performRedo()" title="إعادة (Ctrl+Y)"
+                    aria-label="إعادة" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 14 5-5-5-5" />
+                        <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />
+                    </svg>
+                </button>
             </div>
         </div>
 
