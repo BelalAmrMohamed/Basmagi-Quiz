@@ -66,7 +66,7 @@ export function normalizeQuestions(questions) {
 }
 
 /** Build a new-schema quiz entry for localStorage */
-export function buildUserQuizEntry(id, parsed, titleFallback) {
+export function buildUserQuizEntry(id, parsed, titleFallback, parentId = null) {
   const questions = normalizeQuestions(parsed.questions || []);
   const types = new Set();
   questions.forEach((q) => {
@@ -76,10 +76,14 @@ export function buildUserQuizEntry(id, parsed, titleFallback) {
   });
 
   // Preserve ALL original meta fields (including id, createdAt, source, etc.)
-  // Only fill in fields that are genuinely missing.
+  // Only fill in fields that are genuinely missing. parentId isn't spread
+  // from parsed.meta on purpose: callers pass it explicitly (defaulting to
+  // root) so a quiz always lands exactly where its creator intended rather
+  // than silently inheriting a stray parentId already present on `parsed`.
   const meta = {
     ...(parsed.meta || {}),
     title: parsed.meta?.title || titleFallback || "Untitled",
+    parentId: parentId || null,
   };
   if (!meta.createdAt) {
     meta.createdAt = new Date().toLocaleString("en-US");
@@ -119,10 +123,10 @@ export function formatQuestionTypesForDownload(questionTypes) {
  * @param {string} titleFallback
  * @returns {{id: string, meta: object, stats: object, questions: Array}} the saved entry
  */
-export function saveNewUserQuiz(parsed, titleFallback) {
+export function saveNewUserQuiz(parsed, titleFallback, parentId = null) {
   const quizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const quizId = crypto.randomUUID();
-  const entry = buildUserQuizEntry(quizId, parsed, titleFallback);
+  const entry = buildUserQuizEntry(quizId, parsed, titleFallback, parentId);
   quizzes.push(entry);
   setInStorage("user_quizzes", JSON.stringify(quizzes));
   return entry;

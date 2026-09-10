@@ -22,17 +22,45 @@ import { escapeHtml } from "./escape-html.js";
 import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
 
 /** Removes any currently-open dropdown menu(s). Defensive — normally only
- * one can be open at a time since opening a new one closes the last. */
+ * one can be open at a time since opening a new one closes the last. Also
+ * used directly by callers outside this module (e.g. the AI agent chat) to
+ * force-close any open menu, so it clears openTriggerBtn itself rather than
+ * relying on each menu's own closeMenu() to have run. */
 export function closeAllExamDropdownMenus() {
   document.querySelectorAll(".exam-dropdown-menu").forEach((el) => el.remove());
+  openTriggerBtn = null;
 }
+
+/** Tracks the trigger button whose menu is currently open (if any), so a
+ * second click on that SAME trigger can close it instead of reopening a
+ * fresh copy — see the early-return in openExamDropdownMenu below. Reset
+ * to null on every close path since closeMenu() is this module's single
+ * exit point (see file header). */
+let openTriggerBtn = null;
 
 /** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
  * right-edge aligned (this is an RTL UI), clamped so it never runs off
- * either side of the viewport. */
-
+ * either side of the viewport.
+ *
+ * BUG FIX: every "⋮" trigger's onclick unconditionally calls this to open
+ * its menu, with no way to tell "the menu that's currently open IS this
+ * button's own menu, so this click means close, not reopen." Since this
+ * function always started by closeAllExamDropdownMenus()-ing whatever was
+ * open and then immediately building a brand new menu, clicking an
+ * already-open trigger a second time closed the old menu and instantly
+ * opened a new one in the same spot — reads as "closes then reopens
+ * quickly" instead of just closing. Tracking which trigger currently owns
+ * the open menu (openTriggerBtn) lets a second click on that same trigger
+ * short-circuit into a close instead. */
 export function openExamDropdownMenu(triggerBtn, buildContent) {
+  // Captured BEFORE closeAllExamDropdownMenus() below, which itself resets
+  // openTriggerBtn to null — checking after would always see null and this
+  // toggle-close would never trigger.
+  const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
   closeAllExamDropdownMenus();
+  if (wasOpenForThisTrigger) {
+    return null;
+  }
 
   const menu = document.createElement("div");
   menu.className = "exam-dropdown-menu";
@@ -45,6 +73,7 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
     document.removeEventListener("keydown", onKeydown);
     window.removeEventListener("resize", closeMenu);
     window.removeEventListener("scroll", onScroll, true);
+    if (openTriggerBtn === triggerBtn) openTriggerBtn = null;
   }
 
   // Global click listener — closes the dropdown when the user clicks
@@ -77,6 +106,7 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
   document.body.appendChild(menu);
   positionExamDropdownMenu(menu, triggerBtn);
   menu.style.visibility = "visible";
+  openTriggerBtn = triggerBtn;
 
   // The click that opened this menu already had its propagation stopped by
   // the trigger button's own onclick handler, so it's safe to attach this
@@ -111,21 +141,21 @@ export function createExamInfoSubmenu(basicRows, onShowFull, closeDropdown, repo
   content.className = "submenu-content";
   content.innerHTML = basicRows.length
     ? basicRows
-        .map(({ label, val, multiline, copyable, ltr, highlight }) => {
-          const valClasses = [
-            multiline ? "multiline-val" : "",
-            ltr ? "ltr-val" : "",
-            highlight ? "featured-value" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          const valAttrs = valClasses ? ` class="${valClasses}"` : "";
-          const labelHtml = copyable
-            ? `<span class="copyable-label">${escapeHtml(label)}:${COPY_CHECK_ICON_SVG}</span>`
-            : `<span>${escapeHtml(label)}:</span>`;
-          return `<div class="tooltip-row">${labelHtml}<span${valAttrs}>${escapeHtml(String(val))}</span></div>`;
-        })
-        .join("")
+      .map(({ label, val, multiline, copyable, ltr, highlight }) => {
+        const valClasses = [
+          multiline ? "multiline-val" : "",
+          ltr ? "ltr-val" : "",
+          highlight ? "featured-value" : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const valAttrs = valClasses ? ` class="${valClasses}"` : "";
+        const labelHtml = copyable
+          ? `<span class="copyable-label">${escapeHtml(label)}:${COPY_CHECK_ICON_SVG}</span>`
+          : `<span>${escapeHtml(label)}:</span>`;
+        return `<div class="tooltip-row">${labelHtml}<span${valAttrs}>${escapeHtml(String(val))}</span></div>`;
+      })
+      .join("")
     : `<p class="quiz-info-empty">لا توجد معلومات إضافية</p>`;
 
   // Wire up copy-to-clipboard for any copyable rows (e.g. المصدر/source).

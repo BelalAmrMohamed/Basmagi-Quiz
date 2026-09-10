@@ -266,7 +266,7 @@ function scheduleAutoSave() {
 function showSavingIndicator() {
   const feedback = document.getElementById("saveFeedback");
   if (feedback) {
-    feedback.textContent = "💾 جاري الحفظ...";
+    feedback.textContent = "💾 يُحفظ";
     feedback.style.color = "var(--color-primary, #6366f1)";
     feedback.classList.add("saving");
   }

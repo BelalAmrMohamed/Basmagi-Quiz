@@ -27,6 +27,17 @@ body {
   transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow-x: hidden;
+  /* BUG FIX (".watermark climbs up very high when there is not enough
+     content"): .container below relies on `flex: 1` + `margin-top: auto`
+     on .watermark to stick the footer to the bottom of the viewport. Both
+     of those only do anything once .container's own PARENT is a flex
+     container — `flex: 1` has nothing to grow inside of otherwise, so on a
+     short page (little content in #contentArea) .container just shrank to
+     fit its content's natural height, and the footer sat directly under
+     that short content instead of at the bottom of the screen. body itself
+     needs to actually be the flex column .container flexes inside of. */
+  display: flex;
+  flex-direction: column;
 }
 
 body.sidebar-expanded {
@@ -41,6 +52,11 @@ body.sidebar-expanded {
   z-index: var(--z-base);
   display: flex;
   flex-direction: column;
+  /* Now meaningful: body is the flex parent (see above), so this actually
+     stretches .container to fill the remaining viewport height whenever
+     the page's real content is shorter than the screen — which is what
+     lets .watermark's own `margin-top: auto` push it all the way down to
+     the bottom of the viewport instead of just under a short #contentArea. */
   flex: 1;
   width: 100%;
 }
@@ -2520,13 +2536,22 @@ Container
  * and card ⋮ overlay). Renders an actual indented tree (see
  * user-quizzes-folders.js's addNode/appendChildren): a header with title +
  * subtitle + close button, then one .move-to-dialog-node button per
- * folder/course, each sibling group wrapped in a .move-to-dialog-branch
- * container whose own border-right draws that group's ONE continuous
- * ancestor rail (nested branches simply nest further borders inside it),
- * plus a per-row .move-to-dialog-elbow stub connecting each row to its
- * own branch's rail, a "current location" badge, and a disabled state
- * (with a title= tooltip explaining why) for invalid destinations instead
- * of hiding them outright.
+ * folder/course, a "current location" badge, and a disabled state (with a
+ * title= tooltip explaining why) for invalid destinations instead of
+ * hiding them outright.
+ *
+ * Guide lines (the vertical/elbow strokes showing the tree's shape,
+ * modeled on a real file-tree explorer / this project's own context-map
+ * doc) are drawn per ROW, not per sibling-group wrapper. Each row carries
+ * one .move-to-dialog-guide span per ancestor level, absolutely positioned
+ * at that level's own indent via the `--level` custom property the JS
+ * sets inline. Because every row independently draws its own full guide
+ * set from its own top to its own bottom, a level's line is pixel-
+ * continuous from the row after a fork to the row before the next one
+ * regardless of how many children any single ancestor happens to have —
+ * unlike an earlier version that shared one border-right per sibling-group
+ * wrapper, which produced visibly disconnected segments the moment any
+ * ancestor folder had only one child (an extremely common shape).
  * ============================================================================ */
 .move-to-dialog-card {
   padding: 0;
@@ -2681,114 +2706,81 @@ Container
   opacity: 0.7;
 }
 
-/* Ancestry rail connectors — REDESIGNED (see appendChildren in
-   user-quizzes-folders.js): previously each row independently redrew a
-   `.move-to-dialog-rail` span per ancestor depth level via `position:
-   absolute; top:0; bottom:0` scoped to that row's own height. Because
-   each row recomputed and repainted the "same" line separately, any
-   difference in row height (wrapped labels, disabled-state padding,
-   sub-pixel rounding) could leave a visible seam between one row's
-   segment and the next — the "rails aren't connected together" bug.
-   Now each sibling group is wrapped in one .move-to-dialog-branch
-   container (see index.css usage from that file), and the shared
-   ancestor line is a single `border-right` on that ONE wrapper — a
-   single continuous stroke spanning every row and every nested branch
-   inside it, structurally incapable of developing a seam between rows.
-   Only the short horizontal stub connecting a row to its branch's rail
-   remains per-row (.move-to-dialog-elbow), since that part IS
-   legitimately specific to each row's own position. */
-.move-to-dialog-branch {
-  display: flex;
-  flex-direction: column;
-  /* Indent + the shared vertical rail for every row (and any further
-     nested .move-to-dialog-branch) inside this sibling group. Matches
-     the previous rail's tone/weight: --color-border alone reads as too
-     faint/decorative at 1px to register as "structure" rather than
-     noise. */
-  padding-right: 18px;
-  border-right: 1.5px solid var(--color-text-tertiary, var(--color-border));
-  opacity: 1;
+/* Rows need extra right padding per ancestor level so the label doesn't
+   sit under the deepest guide line; `--depth` is set inline by the JS. */
+.move-to-dialog-node {
+  padding-right: calc(10px + var(--depth, 0) * 18px);
 }
 
-/* The branch's own border draws at full opacity by default (browsers
-   don't apply `opacity` to just the border), so the softer 0.55 the old
-   rail used is reproduced via border-color's alpha instead of the
-   element's own opacity, which would also fade the rows nested inside
-   it. color-mix degrades gracefully; browsers without it simply keep
-   the border at full tone, which still reads fine. */
-@supports (border-color: color-mix(in srgb, red, transparent)) {
-  .move-to-dialog-branch {
-    border-right-color: color-mix(in srgb,
-        var(--color-text-tertiary, var(--color-border)) 55%,
-        transparent);
-  }
+html[dir="ltr"] .move-to-dialog-node {
+  padding-right: 10px;
+  padding-left: calc(10px + var(--depth, 0) * 18px);
 }
 
-html[dir="ltr"] .move-to-dialog-branch {
-  padding-right: 0;
-  padding-left: 18px;
-  border-right: none;
-  border-left: 1.5px solid var(--color-text-tertiary, var(--color-border));
-}
-
-@supports (border-color: color-mix(in srgb, red, transparent)) {
-  html[dir="ltr"] .move-to-dialog-branch {
-    border-left-color: color-mix(in srgb, var(--color-text-tertiary, var(--color-border)) 55%, transparent);
-  }
-}
-
-/* Single-child branch: no rail. A branch's border-right is only readable
-   as "structure" when it's tracing an actual fork back to a sibling
-   further down — with exactly one child, there's nothing to connect
-   this level's line to at the level below (that nested branch, if any,
-   draws its own separate rail at its own indent), so a chain of single-
-   child folders produced a cascade of short, disconnected-looking
-   parallel strokes — one per level, each shorter than the last — instead
-   of one clean line. Dropping the rail (indent via padding-right is
-   kept, so depth is still visually clear from the label's own position)
-   fixes that; branches with 2+ siblings are unaffected and keep the
-   rail exactly as before. */
-.move-to-dialog-branch--single {
-  border-right: none;
-}
-
-html[dir="ltr"] .move-to-dialog-branch--single {
-  border-left: none;
-}
-
-/* Per-row elbow: a short horizontal stub joining this row to its
-   branch's own vertical rail (drawn by the .move-to-dialog-branch
-   wrapper above, not by this element). `--continues` rows sit in the
-   middle of their sibling list, so the branch's own border keeps
-   running past them uninterrupted — the stub is purely decorative
-   there. The LAST row in a branch still visually terminates its own
-   branch's rail with a matching short curve so the line doesn't just
-   trail off past the final child; since CSS can't "shorten" a sibling
-   border from a child, this is approximated by nudging the branch's
-   own bottom edge to end flush with the last row's own vertical
-   midpoint via that row having no `--continues` modifier — the visual
-   difference between an ongoing vs. terminal rail is intentionally
-   subtle (a design choice already present before this rewrite) rather
-   than a literal elbow curve. */
-/* Absolutely positioned against the row itself (not squeezed into flex
-   flow via a negative margin, which broke as soon as row content wrapped
-   or padding differed) — anchored to the branch's own border, which sits
-   exactly `padding-right` (18px) from the row's right edge. */
-.move-to-dialog-elbow {
+/* One guide per ancestor level, positioned by that level's own `--level`
+   (0 = the level right under root). Each level's horizontal slot is 18px
+   wide, mirroring the old branch indent, right-aligned in RTL (flipped to
+   left-aligned in LTR) so nested levels stack inward toward the label. */
+.move-to-dialog-guide {
   position: absolute;
-  top: 50%;
-  right: -18px;
-  width: 16px;
-  height: 1.5px;
+  right: calc(18px * var(--level) + 8px);
   background: var(--color-text-tertiary, var(--color-border));
-  opacity: 0.55;
-  border-radius: 1px;
   pointer-events: none;
 }
 
-html[dir="ltr"] .move-to-dialog-elbow {
+@supports (background: color-mix(in srgb, red, transparent)) {
+  .move-to-dialog-guide {
+    background: color-mix(in srgb, var(--color-text-tertiary, var(--color-border)) 55%, transparent);
+  }
+}
+
+html[dir="ltr"] .move-to-dialog-guide {
   right: auto;
-  left: -18px;
+  left: calc(18px * var(--level) + 8px);
+}
+
+/* Ancestor pass-through: a straight vertical line running this row's full
+   height, since an ancestor level either keeps going past this row
+   entirely (more of that ancestor's own siblings still to come further
+   down) or isn't drawn at all for this row (see addNode — omitted rather
+   than styled-away, so there's never a stray zero-height fragment). */
+.move-to-dialog-guide--pass {
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+}
+
+/* This row's OWN level: an elbow — vertical line down to this row's
+   mid-height, then a short horizontal stub into the icon/label. */
+.move-to-dialog-guide--elbow {
+  top: 0;
+  height: 50%;
+  width: 1.5px;
+}
+
+.move-to-dialog-guide--elbow::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 10px;
+  height: 1.5px;
+  background: currentColor;
+  color: inherit;
+}
+
+html[dir="ltr"] .move-to-dialog-guide--elbow::after {
+  right: auto;
+  left: 0;
+}
+
+/* When a later sibling still follows this row at its own level, extend
+   the vertical line past this row's mid-height down to its full height so
+   the next sibling's own pass-through/elbow guide has a continuous line
+   to join — this is what keeps consecutive siblings' guides from ever
+   visibly breaking between rows. */
+.move-to-dialog-guide--elbow.move-to-dialog-guide--continues {
+  height: 100%;
 }
 
 /* ============================================================================

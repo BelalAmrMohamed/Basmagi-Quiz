@@ -24,6 +24,7 @@ import {
 import { saveNewUserQuiz } from "./quiz-schema.js";
 import { renderRootCategories } from "./root-view.js";
 import { renderUserQuizzesView } from "./user-quizzes-view.js";
+import { currentFolderId } from "./user-quizzes-folders.js";
 import {
   importJsonQuizFiles,
   wireJsonFileDropZone,
@@ -402,11 +403,18 @@ function openInlineCreateQuizModal() {
       return;
     }
 
-    saveNewUserQuiz(parsed, title || "Untitled Quiz");
+    // Create inside whatever folder/course the user is currently browsing
+    // (currentFolderId, kept live by user-quizzes-folders.js as the user
+    // navigates), not always at the "امتحاناتك" root — previously this
+    // modal never passed a destination at all, so every quiz landed at
+    // root regardless of where the "إنشاء اختبار" button was opened from.
+    saveNewUserQuiz(parsed, title || "Untitled Quiz", currentFolderId);
     close();
     showNotification(
       "تم الإنشاء",
-      'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
+      currentFolderId
+        ? "تم إنشاء الامتحان وإضافته إلى هذا المجلد"
+        : 'تم إنشاء الامتحان وإضافته إلى "امتحاناتك"',
       "success",
     );
     renderRootCategories();

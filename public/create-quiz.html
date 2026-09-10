@@ -832,7 +832,7 @@
             <div class="menu-bar-inner">
                 <div class="menu-bar-item" data-menu="file">
                     <button type="button" class="menu-trigger" onclick="toggleMenu('file')">ملف</button>
-                    <div class="menu-dropdown" id="menu-file">
+                    <div class="menu-dropdown" id="menu-file" role="menu" aria-label="ملف">
                         <button type="button" class="menu-option" onclick="importQuestions(); closeAllMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -890,7 +890,7 @@
 
                 <div class="menu-bar-item" data-menu="insert">
                     <button type="button" class="menu-trigger" onclick="toggleMenu('insert')">إدراج</button>
-                    <div class="menu-dropdown" id="menu-insert">
+                    <div class="menu-dropdown" id="menu-insert" role="menu" aria-label="إدراج">
                         <button type="button" class="menu-option" onclick="addQuestion(); closeAllMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -917,7 +917,8 @@
                                     <path d="m15 18-6-6 6-6" />
                                 </svg>
                             </button>
-                            <div class="menu-dropdown menu-submenu-dropdown" id="menu-insert-templates">
+                            <div class="menu-dropdown menu-submenu-dropdown" id="menu-insert-templates" role="menu"
+                                aria-label="سؤال من القوالب">
                                 <button type="button" class="menu-option"
                                     onclick="addQuestionFromTemplate('mcq'); closeAllMenus();">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -963,7 +964,7 @@
 
                 <div class="menu-bar-item" data-menu="view">
                     <button type="button" class="menu-trigger" onclick="toggleMenu('view')">عرض</button>
-                    <div class="menu-dropdown" id="menu-view">
+                    <div class="menu-dropdown" id="menu-view" role="menu" aria-label="عرض">
                         <button type="button" class="menu-option" onclick="previewQuiz(); closeAllMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1159,17 +1160,53 @@
         <div class="gmd-separator" aria-hidden="true"></div>
         <div class="gmd-group gmd-group-latex">
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSup" title="أس (superscript)"
-                data-gmd-latex="^{}">x²</button>
+                data-gmd-latex="^{}" aria-label="أس (superscript)">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="2" y="17" font-size="13" font-weight="700" font-family="inherit">x</text>
+                    <text x="13" y="9" font-size="9" font-weight="700" font-family="inherit">2</text>
+                </svg>
+            </button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSub" title="منخفض (subscript)"
-                data-gmd-latex="_{}">xₙ</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdFrac" title="كسر"
-                data-gmd-latex="\frac{}{}">a/b</button>
-            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSqrt" title="جذر تربيعي"
-                data-gmd-latex="\sqrt{}">√</button>
+                data-gmd-latex="_{}" aria-label="منخفض (subscript)">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="2" y="15" font-size="13" font-weight="700" font-family="inherit">x</text>
+                    <text x="13" y="21" font-size="9" font-weight="700" font-family="inherit">n</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdFrac" title="كسر" data-gmd-latex="\frac{}{}"
+                aria-label="كسر">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="7" y="10" font-size="10" font-weight="700" font-family="inherit"
+                        text-anchor="middle">a</text>
+                    <line x1="3" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                    <text x="7" y="22" font-size="10" font-weight="700" font-family="inherit"
+                        text-anchor="middle">b</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSqrt" title="جذر تربيعي" data-gmd-latex="\sqrt{}"
+                aria-label="جذر تربيعي">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12h3l3 8 4-16h8" />
+                </svg>
+            </button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInlineMath" title="رياضيات مضمّنة $…$"
-                data-gmd-cmd="inlinemath">$…$</button>
+                data-gmd-cmd="inlinemath" aria-label="رياضيات مضمّنة">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="12" y="17" font-size="14" font-weight="700" font-family="inherit"
+                        text-anchor="middle">$x$</text>
+                </svg>
+            </button>
             <button type="button" class="gmd-btn gmd-btn-latex" id="gmdBlockMath" title="رياضيات منفصلة $$…$$"
-                data-gmd-cmd="blockmath">$$…$$</button>
+                data-gmd-cmd="blockmath" aria-label="رياضيات منفصلة (سطر مستقل)">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="6" width="18" height="12" rx="2" />
+                    <path d="M8 10v4" />
+                    <path d="M16 10v4" />
+                </svg>
+            </button>
             <div class="gmd-dropdown">
                 <button type="button" class="gmd-btn gmd-btn-latex gmd-dropdown-toggle" id="gmdLatexMoreToggle"
                     title="رموز رياضية إضافية" aria-label="رموز رياضية إضافية" aria-haspopup="true">
@@ -1445,16 +1482,6 @@
                                 <circle cx="11" cy="11" r="8" />
                             </svg>
                         </button>
-                        <button class="btn btn-secondary btn-icon-text" onclick="importQuestions()"
-                            title="استيراد أسئلة">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload">
-                                <path d="M12 3v12" />
-                                <path d="m17 8-5-5-5 5" />
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            </svg> استيراد
-                        </button>
                         <button class="btn btn-secondary btn-icon-text" onclick="toggleBulkMode()" id="bulkModeBtn"
                             title="الوضع الجماعي">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
@@ -1464,6 +1491,19 @@
                                 <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" />
                                 <path d="m9 11 3 3L22 4" />
                             </svg> تحديد أسئلة
+                        </button>
+                        <button class="btn btn-secondary btn-icon-text" onclick="toggleReorderMode()"
+                            id="reorderModeBtn" title="وضع إعادة الترتيب" aria-pressed="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <circle cx="9" cy="6" r="1.2" />
+                                <circle cx="15" cy="6" r="1.2" />
+                                <circle cx="9" cy="12" r="1.2" />
+                                <circle cx="15" cy="12" r="1.2" />
+                                <circle cx="9" cy="18" r="1.2" />
+                                <circle cx="15" cy="18" r="1.2" />
+                            </svg> ترتيب الأسئلة
                         </button>
                     </div>
                 </div>
@@ -1517,6 +1557,14 @@
                                     stroke-linejoin="round" class="lucide lucide-circle-icon lucide-circle">
                                     <circle cx="12" cy="12" r="10" />
                                 </svg> إلغاء التحديد
+                            </button>
+                            <button class="btn-bulk" onclick="duplicateSelectedQuestions()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg> مضاعفة المحدد
                             </button>
                             <button class="btn-bulk btn-bulk-danger" onclick="deleteSelectedQuestions()">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"

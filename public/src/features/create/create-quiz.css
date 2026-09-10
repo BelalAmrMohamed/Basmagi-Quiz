@@ -491,6 +491,20 @@ body.quiz-form-active .container {
   box-sizing: border-box;
 }
 
+/* When background animations are enabled, --color-surface becomes
+   semi-transparent (see themes.css) so the animated shader shows through
+   panels/cards — appropriate for large surfaces, but this toolbar's text
+   (.gmd-btn-latex in particular) was contrast-checked against an OPAQUE
+   surface color; layering it over a moving, unpredictable background
+   could silently drop it below AA depending on what's rendered behind it
+   at any given moment. backdrop-filter's blur keeps the same "shows
+   through" feel without ever letting the raw background color show
+   through at full strength under the text itself. */
+html[data-animations="enabled"] .global-md-bar {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
 .global-md-bar::-webkit-scrollbar {
   display: none;
 }
@@ -519,8 +533,8 @@ body.sidebar-expanded .global-md-bar {
   align-items: center;
   justify-content: center;
   padding: 3px 8px;
-  min-width: 28px;
-  height: 26px;
+  min-width: 30px;
+  height: 28px;
   border: none;
   border-radius: 5px;
   background: transparent;
@@ -545,17 +559,29 @@ body.sidebar-expanded .global-md-bar {
   transform: scale(0.93);
 }
 
-/* LaTeX buttons — slightly different accent so they're distinguishable */
+/* LaTeX buttons — real icons (see .gmd-icon-math below for the
+   superscript/subscript/fraction/inline-math glyphs, which render their
+   mathematical notation as SVG <text> rather than plain button text: this
+   keeps their exact visual shape — "x" raised/lowered relative to a small
+   exponent, a fraction bar between two glyphs — independent of the
+   surrounding page's font/line-height, which plain text content inside a
+   26px button could not guarantee). Slightly different accent color than
+   the plain-markdown .gmd-btn group so the two toolbar sections stay
+   visually distinguishable at a glance. */
 .gmd-btn-latex {
-  color: var(--color-text-tertiary);
-  font-family: "Fira Code", "Courier New", monospace;
-  font-size: 0.78rem;
+  color: var(--color-text-secondary);
 }
 
 .gmd-btn-latex:hover,
 .gmd-btn-latex:focus-visible {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
   color: var(--color-primary);
+}
+
+/* The four math buttons whose icon is built from SVG <text> (sup/sub/frac/
+   inline-math) rather than <path> strokes — text needs fill, not stroke. */
+.gmd-icon-math text {
+  fill: currentColor;
 }
 
 /* Tooltip for "no field focused" state — shown via JS as a brief flash */
@@ -645,9 +671,9 @@ body.sidebar-expanded .global-md-bar {
    is identifiable without hovering for the tooltip. */
 .gmd-dropdown-menu--latex {
   flex-direction: column;
-  gap: 1px;
-  min-width: 190px;
-  max-width: 240px;
+  gap: 2px;
+  min-width: 210px;
+  max-width: 260px;
   max-height: 60vh;
   overflow-y: auto;
 }
@@ -655,22 +681,24 @@ body.sidebar-expanded .global-md-bar {
 .gmd-dropdown-menu--latex .gmd-btn-latex {
   width: 100%;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 12px;
   height: auto;
-  padding: 7px 10px;
+  padding: 4px 12px;
+  border-radius: 6px;
 }
 
 .gmd-dropdown-menu--latex .gmd-btn-latex-symbol {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
+  min-width: 24px;
+  font-size: 1.05rem;
   flex-shrink: 0;
 }
 
 .gmd-dropdown-menu--latex .gmd-btn-latex-label {
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 400;
   color: var(--color-text-primary);
   white-space: nowrap;
@@ -1516,6 +1544,69 @@ body.sidebar-expanded .global-md-bar {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* ── Reorder mode: drag handle + dragging/placeholder states ─────────────
+   Only exists in the DOM while body.reorder-mode-active (see
+   renderQuestion's reorderModeActive ternary) — a dedicated toggleable
+   mode rather than an always-visible handle, since native HTML5 DnD was
+   deliberately removed for breaking on touch (see the comment above
+   moveQuestion). Dragging itself is Pointer-Events-based (setupReorderHandles),
+   which fires consistently across mouse/touch/pen. ── */
+.question-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-background);
+  color: var(--color-text-tertiary);
+  cursor: grab;
+  flex-shrink: 0;
+  touch-action: none;
+  padding: 0;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.question-drag-handle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.question-drag-handle:hover,
+.question-drag-handle:focus-visible {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  outline: none;
+}
+
+.question-drag-handle:active {
+  cursor: grabbing;
+}
+
+.question-card.dragging {
+  box-shadow: var(--shadow-lg);
+  opacity: 0.95;
+  cursor: grabbing;
+}
+
+.question-drag-placeholder {
+  border: 2px dashed var(--color-primary);
+  border-radius: 12px;
+  background: var(--color-primary-light);
+  box-sizing: border-box;
+}
+
+body.reorder-mode-active .question-card {
+  scroll-margin-top: 90px;
+}
+
+#reorderModeBtn.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
 }
 
 /* ── Question card "more" (⋮) menu — replaces the old row of separate
@@ -2715,6 +2806,18 @@ body.sidebar-expanded .global-md-bar {
   background: var(--color-success-light);
   border-color: var(--color-success);
   font-weight: 600;
+}
+
+/* Essay questions in the preview modal show the model answer as a plain
+ * card rather than an option list — there's nothing to mark "correct"
+ * among a single free-text answer, so this deliberately doesn't reuse
+ * .preview-options/.correct styling. */
+.preview-essay-answer {
+  margin: 10px 0;
+  padding: 10px 14px;
+  background: var(--color-success-light);
+  border: 2px solid var(--color-success);
+  border-radius: 6px;
 }
 
 .preview-explanation {

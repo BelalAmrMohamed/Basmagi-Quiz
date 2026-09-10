@@ -44,6 +44,7 @@ let bulkModeActive = false;
 let selectedQuestions = new Set();
 let isTemplatesPanelOpen = false;
 let editingQuizId = null;
+let reorderModeActive = false;
 // ID of the current draft entry in user_quizzes (meta.type = "draft").
 // null when editing an already-published quiz via ?edit=<id>.
 let currentDraftId = null;
@@ -573,6 +574,129 @@ function closeAllGmdDropdowns() {
 }
 
 // ============================================================================
+// UNDO / REDO
+// ============================================================================
+//
+// Whole-quiz-snapshot history. #undoBtn/#redoBtn in create-quiz.html already
+// call performUndo()/performRedo() and expect updateUndoRedoButtons() to
+// toggle their disabled state — this block is what actually backs them.
+//
+// Deliberately scoped to STRUCTURAL edits only (add/remove/duplicate/move/
+// reorder/convert/bulk-delete/import/template-insert/AI edits) — i.e. every
+// call site that already calls autosave() from outside a per-keystroke
+// input handler. Per-keystroke text edits (question/option/title/description
+// text) are intentionally excluded and continue to rely on the textarea's
+// own native undo (see the "why not just set ta.value" comment above
+// replaceTextareaRange) — pushing a snapshot on every keystroke would both
+// explode the stack and fight the native undo the user already expects
+// inside a text field.
+//
+// Snapshots are plain deep clones of `quizData` (JSON-safe: title,
+// description, source, questions — no DOM/live references), so restoring
+// one is just `quizData = clone; rerenderAllQuestions(); ...`.
+
+const UNDO_STACK_LIMIT = 50;
+let undoStack = [];
+let redoStack = [];
+// Set while performUndo/performRedo is actively restoring a snapshot, so
+// pushHistorySnapshot() calls triggered by that restore's own re-render
+// (e.g. autosave() inside rerenderAllQuestions callbacks) don't re-enter
+// the stack and corrupt it.
+let isRestoringHistory = false;
+
+function cloneQuizData() {
+  return JSON.parse(JSON.stringify(quizData));
+}
+
+/**
+ * Record the CURRENT quizData as an undo point, then clear the redo stack
+ * (a fresh structural edit invalidates whatever was ahead). Call this
+ * BEFORE mutating quizData for a structural operation — that way the
+ * snapshot captures the pre-edit state to return to.
+ */
+function pushHistorySnapshot() {
+  if (isRestoringHistory) return;
+  undoStack.push(cloneQuizData());
+  if (undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById("undoBtn");
+  const redoBtn = document.getElementById("redoBtn");
+  if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+  if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+}
+
+/** Fully re-render the editor from the current quizData after a snapshot
+ * restore — mirrors what every structural mutator already does after
+ * changing quizData, so undo/redo looks identical to a normal edit. */
+function refreshEditorAfterHistoryChange() {
+  rerenderAllQuestions();
+  updateEmptyState();
+  updateProgress();
+  updateStatistics();
+  updateAppTitleBar();
+
+  const titleInput = document.getElementById("quizTitle");
+  const descInput = document.getElementById("quizDescription");
+  const sourceInput = document.getElementById("quizSource");
+  if (titleInput) titleInput.value = quizData.title || "";
+  if (descInput) {
+    descInput.value = quizData.description || "";
+    autoResizeMdSource(descInput);
+  }
+  if (sourceInput) sourceInput.value = quizData.source || "";
+
+  // Bulk/reorder mode reference DOM nodes (checkboxes, drag handles) that
+  // no longer exist after the container was rebuilt — leaving the mode
+  // "on" would show a stale toolbar over cards with no handles/checkboxes.
+  if (bulkModeActive) window.toggleBulkMode();
+  if (reorderModeActive) window.toggleReorderMode();
+}
+
+window.performUndo = function () {
+  if (undoStack.length === 0) return;
+  const previous = undoStack.pop();
+  redoStack.push(cloneQuizData());
+  if (redoStack.length > UNDO_STACK_LIMIT) redoStack.shift();
+
+  isRestoringHistory = true;
+  quizData = previous;
+  refreshEditorAfterHistoryChange();
+  isRestoringHistory = false;
+
+  updateUndoRedoButtons();
+  autosave();
+};
+
+window.performRedo = function () {
+  if (redoStack.length === 0) return;
+  const next = redoStack.pop();
+  undoStack.push(cloneQuizData());
+  if (undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+
+  isRestoringHistory = true;
+  quizData = next;
+  refreshEditorAfterHistoryChange();
+  isRestoringHistory = false;
+
+  updateUndoRedoButtons();
+  autosave();
+};
+
+/** Reset the history stacks — call whenever quizData is replaced wholesale
+ * from outside the undo system itself (loading a draft, importing a quiz,
+ * resetting the page), since old snapshots would otherwise point back to
+ * a completely unrelated quiz. */
+function resetHistory() {
+  undoStack = [];
+  redoStack = [];
+  updateUndoRedoButtons();
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -599,6 +723,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupQuestionMenuListeners();
   setupGlobalMdBar();
   mountAIHelper();
+  updateUndoRedoButtons();
+  setupReorderHandles();
 });
 
 // ============================================================================
@@ -1436,6 +1562,22 @@ function setupKeyboardShortcuts() {
       saveLocally();
     }
 
+    // Ctrl+Z: Undo. Ctrl+Y or Ctrl+Shift+Z: Redo (both are common
+    // conventions — Ctrl+Y matches the shortcut already printed on
+    // #redoBtn's title attribute in create-quiz.html).
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      performUndo();
+    }
+    if (
+      (e.ctrlKey || e.metaKey) &&
+      (e.key.toLowerCase() === "y" ||
+        (e.shiftKey && e.key.toLowerCase() === "z"))
+    ) {
+      e.preventDefault();
+      performRedo();
+    }
+
     // Ctrl+P: Preview quiz
     if ((e.ctrlKey || e.metaKey) && e.key === "p") {
       e.preventDefault();
@@ -1624,6 +1766,7 @@ function updateStatistics() {
 // ============================================================================
 
 window.addQuestion = function () {
+  pushHistorySnapshot();
   const questionId = ++questionIdCounter;
 
   const question = {
@@ -1662,6 +1805,7 @@ window.removeQuestion = async function (questionId) {
 
   const index = quizData.questions.findIndex((q) => q.id === questionId);
   if (index !== -1) {
+    pushHistorySnapshot();
     quizData.questions.splice(index, 1);
 
     const questionCard = document.getElementById(`question-${questionId}`);
@@ -1685,6 +1829,7 @@ window.duplicateQuestion = function (questionId) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (!question) return;
 
+  pushHistorySnapshot();
   const newId = ++questionIdCounter;
   const duplicatedQuestion = {
     ...question,
@@ -1740,6 +1885,16 @@ function renderQuestion(question, insertAtIndex = null) {
 
   questionCard.innerHTML = `
         <div class="question-header">
+            ${reorderModeActive
+      ? `<button type="button" class="question-drag-handle" aria-label="اسحب لإعادة ترتيب السؤال ${questionNumber}" title="اسحب لإعادة الترتيب">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="9" cy="6" r="1.2" /><circle cx="15" cy="6" r="1.2" />
+                        <circle cx="9" cy="12" r="1.2" /><circle cx="15" cy="12" r="1.2" />
+                        <circle cx="9" cy="18" r="1.2" /><circle cx="15" cy="18" r="1.2" />
+                    </svg>
+                </button>`
+      : ""
+    }
             <span class="question-number" id="qnum-${question.id}">
                 ${bulkModeActive ? `<input type="checkbox" class="question-select-checkbox" onchange="handleQuestionSelect(event, ${question.id})" onclick="event.stopPropagation()">` : ""}
                 <span class="q-label">سؤال ${questionNumber}</span>
@@ -1756,25 +1911,30 @@ function renderQuestion(question, insertAtIndex = null) {
                             <circle cx="5" cy="12" r="1" />
                         </svg>
                     </button>
-                    <div class="question-more-menu" id="questionMenu-${question.id}">
-                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'top'); closeAllQuestionMenus();">
+                    <div class="question-more-menu" id="questionMenu-${question.id}" role="menu" aria-label="خيارات السؤال">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="previewSingleQuestion(${question.id}); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span>معاينة</span>
+                        </button>
+                        <div class="menu-separator"></div>
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="moveQuestion(${question.id}, 'top'); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 11l-5-5-5 5"/><path d="M17 18l-5-5-5 5"/></svg>
                             <span>نقل لأعلى السؤال</span>
                         </button>
-                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'up'); closeAllQuestionMenus();">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="moveQuestion(${question.id}, 'up'); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
                             <span>نقل للأعلى</span>
                         </button>
-                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'down'); closeAllQuestionMenus();">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="moveQuestion(${question.id}, 'down'); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                             <span>نقل للأسفل</span>
                         </button>
-                        <button type="button" class="question-menu-option" onclick="moveQuestion(${question.id}, 'bottom'); closeAllQuestionMenus();">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="moveQuestion(${question.id}, 'bottom'); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13l-5 5-5-5"/><path d="M17 6l-5 5-5-5"/></svg>
                             <span>نقل لأسفل السؤال</span>
                         </button>
                         <div class="menu-separator"></div>
-                        <button type="button" class="question-menu-option" onclick="toggleQuestionCollapse(${question.id}); closeAllQuestionMenus();">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="toggleQuestionCollapse(${question.id}); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24"
                               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                               stroke-linejoin="round">
@@ -1783,12 +1943,12 @@ function renderQuestion(question, insertAtIndex = null) {
                              </svg>
                             <span>طي/توسيع السؤال</span>
                         </button>
-                        <button type="button" class="question-menu-option" onclick="duplicateQuestion(${question.id}); closeAllQuestionMenus();">
+                        <button type="button" class="question-menu-option" role="menuitem" onclick="duplicateQuestion(${question.id}); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                             <span>مضاعفة السؤال</span>
                         </button>
                         <div class="menu-separator"></div>
-                        <button type="button" class="question-menu-option question-menu-option-danger" onclick="closeAllQuestionMenus(); removeQuestion(${question.id});">
+                        <button type="button" class="question-menu-option question-menu-option-danger" role="menuitem" onclick="closeAllQuestionMenus(); removeQuestion(${question.id});">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             <span>حذف السؤال</span>
                         </button>
@@ -2453,6 +2613,7 @@ window.moveQuestion = function (questionId, direction) {
   if (targetIndex < 0 || targetIndex >= quizData.questions.length) return;
   if (targetIndex === index) return;
 
+  pushHistorySnapshot();
   const [moved] = quizData.questions.splice(index, 1);
   quizData.questions.splice(targetIndex, 0, moved);
 
@@ -2484,6 +2645,154 @@ function rerenderAllQuestions() {
     renderQuestion(question);
   });
   updateQuestionNumbers();
+}
+
+// ============================================================================
+// REORDER MODE (drag handle, Pointer Events)
+// ============================================================================
+//
+// A dedicated toggleable mode rather than an always-on handle, per the same
+// touch-safety lesson as the old HTML5 DnD removal above: this uses Pointer
+// Events (pointerdown/pointermove/pointerup), which — unlike HTML5
+// draggable/dragstart — fire consistently for mouse, touch, and pen alike,
+// so there's no touch-only failure mode to repeat here. The handle only
+// exists in the DOM while reorderModeActive (see renderQuestion), so it
+// can't be grabbed by accident during normal editing.
+
+let reorderDrag = null; // { card, placeholder, pointerId, startY, offsetY }
+
+window.toggleReorderMode = function () {
+  reorderModeActive = !reorderModeActive;
+  const btn = document.getElementById("reorderModeBtn");
+
+  // Reorder and bulk-select are mutually exclusive — both repurpose the
+  // question header (drag handle vs. checkbox) and both reorder/renumber
+  // the list, so having both active at once would be visually cluttered
+  // and semantically confusing (what does "select" mean while dragging?).
+  if (reorderModeActive && bulkModeActive) {
+    window.toggleBulkMode();
+  }
+
+  if (btn) {
+    btn.classList.toggle("active", reorderModeActive);
+    btn.setAttribute("aria-pressed", String(reorderModeActive));
+  }
+  document.body.classList.toggle("reorder-mode-active", reorderModeActive);
+
+  // Re-render so every card picks up (or drops) its drag handle — simplest
+  // way to keep this in sync with bulkModeActive's own checkbox toggling.
+  rerenderAllQuestions();
+};
+
+function setupReorderHandles() {
+  const container = document.getElementById("questionsContainer");
+  if (!container || container.dataset.reorderReady) return;
+  container.dataset.reorderReady = "1";
+
+  container.addEventListener("pointerdown", (e) => {
+    if (!reorderModeActive) return;
+    const handle = e.target.closest(".question-drag-handle");
+    if (!handle) return;
+    const card = handle.closest(".question-card");
+    if (!card) return;
+
+    e.preventDefault();
+
+    const rect = card.getBoundingClientRect();
+    const placeholder = document.createElement("div");
+    placeholder.className = "question-drag-placeholder";
+    placeholder.style.height = `${rect.height}px`;
+    card.after(placeholder);
+
+    card.classList.add("dragging");
+    card.style.width = `${rect.width}px`;
+    card.style.position = "fixed";
+    card.style.top = `${rect.top}px`;
+    card.style.left = `${rect.left}px`;
+    card.style.zIndex = "500";
+    card.style.pointerEvents = "none";
+
+    reorderDrag = {
+      card,
+      placeholder,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      cardTop: rect.top,
+    };
+
+    handle.setPointerCapture(e.pointerId);
+  });
+
+  container.addEventListener("pointermove", (e) => {
+    if (!reorderDrag || e.pointerId !== reorderDrag.pointerId) return;
+    e.preventDefault();
+
+    const dy = e.clientY - reorderDrag.startY;
+    reorderDrag.card.style.top = `${reorderDrag.cardTop + dy}px`;
+
+    // Find which sibling the pointer is currently over and move the
+    // placeholder there — the dragged card itself stays position:fixed
+    // and is ignored by elementsFromPoint via pointer-events:none.
+    const target = document
+      .elementsFromPoint(e.clientX, e.clientY)
+      .find((el) => el.classList?.contains("question-card") && el !== reorderDrag.card);
+    if (!target) return;
+
+    const targetRect = target.getBoundingClientRect();
+    const isAfter = e.clientY > targetRect.top + targetRect.height / 2;
+    if (isAfter) {
+      target.after(reorderDrag.placeholder);
+    } else {
+      target.before(reorderDrag.placeholder);
+    }
+  });
+
+  const endDrag = (e) => {
+    if (!reorderDrag || e.pointerId !== reorderDrag.pointerId) return;
+    const { card, placeholder } = reorderDrag;
+
+    // Commit: move the card to the placeholder's position, then discard
+    // the placeholder and reset the card's temporary drag styles.
+    placeholder.replaceWith(card);
+    card.classList.remove("dragging");
+    card.style.position = "";
+    card.style.top = "";
+    card.style.left = "";
+    card.style.width = "";
+    card.style.zIndex = "";
+    card.style.pointerEvents = "";
+
+    reorderDrag = null;
+    commitReorderFromDom();
+  };
+
+  container.addEventListener("pointerup", endDrag);
+  container.addEventListener("pointercancel", endDrag);
+}
+
+/** After a drag settles, read the new DOM order back into quizData.questions
+ * (single source of truth), snapshot for undo, renumber, and autosave —
+ * mirrors what moveQuestion() does for the button-based reorder path. */
+function commitReorderFromDom() {
+  const container = document.getElementById("questionsContainer");
+  if (!container) return;
+
+  const domIds = Array.from(container.querySelectorAll(".question-card")).map(
+    (card) => Number(card.dataset.questionId),
+  );
+
+  const currentIds = quizData.questions.map((q) => q.id);
+  const unchanged =
+    domIds.length === currentIds.length &&
+    domIds.every((id, i) => id === currentIds[i]);
+  if (unchanged) return;
+
+  pushHistorySnapshot();
+  const byId = new Map(quizData.questions.map((q) => [q.id, q]));
+  quizData.questions = domIds.map((id) => byId.get(id)).filter(Boolean);
+
+  updateQuestionNumbers();
+  autosave();
 }
 
 // ============================================================================
@@ -2584,6 +2893,7 @@ window.updateOption = function (questionId, optionIndex, value) {
 window.toggleCorrectAnswer = function (questionId, optionIndex) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (question) {
+    pushHistorySnapshot();
     normalizeCorrectField(question);
     const pos = question.correct.indexOf(optionIndex);
     if (pos === -1) {
@@ -2654,6 +2964,7 @@ function rerenderOptions(questionId) {
 window.addOption = function (questionId) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (question) {
+    pushHistorySnapshot();
     question.options.push("");
     rerenderOptions(questionId);
     updateStatistics();
@@ -2666,6 +2977,7 @@ window.removeOption = function (questionId, optionIndex) {
   // MCQs must keep at least 2 options — only remove when there are more
   // than 2 to begin with, so the last removal always leaves exactly 2.
   if (question && question.options.length > 2) {
+    pushHistorySnapshot();
     normalizeCorrectField(question);
     question.options.splice(optionIndex, 1);
     // Drop the removed index from `correct` and shift indices above it down.
@@ -2683,6 +2995,7 @@ window.removeOption = function (questionId, optionIndex) {
 window.convertEssayToMcq = function (questionId) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (!question) return;
+  pushHistorySnapshot();
   // Keep the model-answer text as the first option
   while (question.options.length < 4) question.options.push("");
   question.correct = [0];
@@ -2722,6 +3035,7 @@ window.convertMcqToEssay = async function (questionId) {
     return;
   }
 
+  pushHistorySnapshot();
   // Keep the first option's text as a starting draft for the model answer
   // rather than discarding it outright — the user may already have typed
   // the correct answer's wording into option 1.
@@ -2850,6 +3164,12 @@ window.toggleBulkMode = function () {
   const bulkActionsBar = document.getElementById("bulkActionsBar");
   const bulkBtn = document.getElementById("bulkModeBtn");
 
+  // Mutually exclusive with reorder mode — see the matching check in
+  // toggleReorderMode() for why (both repurpose the question header).
+  if (bulkModeActive && reorderModeActive) {
+    window.toggleReorderMode();
+  }
+
   if (bulkModeActive) {
     bulkActionsBar.style.display = "flex";
     bulkBtn.style.background = "var(--color-primary)";
@@ -2948,6 +3268,7 @@ window.deleteSelectedQuestions = async function () {
     return;
   }
 
+  pushHistorySnapshot();
   const idsToDelete = Array.from(selectedQuestions);
 
   idsToDelete.forEach((id) => {
@@ -2971,6 +3292,49 @@ window.deleteSelectedQuestions = async function () {
   autosave();
 
   showNotification("تم الحذف", `تم حذف ${idsToDelete.length} سؤال`, "success");
+};
+
+/** Duplicate every currently-selected question, inserting each copy
+ * directly after its original — same per-question behavior as
+ * duplicateQuestion(), just applied to the whole selection at once. */
+window.duplicateSelectedQuestions = function () {
+  if (selectedQuestions.size === 0) {
+    showNotification("تنبيه", "لم يتم تحديد أي أسئلة", "error");
+    return;
+  }
+
+  pushHistorySnapshot();
+
+  // Snapshot the ids in on-page order (not Set insertion order) so
+  // duplicates land in a predictable top-to-bottom sequence even if the
+  // user selected questions out of order.
+  const idsToDuplicate = quizData.questions
+    .map((q) => q.id)
+    .filter((id) => selectedQuestions.has(id));
+
+  let duplicatedCount = 0;
+  idsToDuplicate.forEach((id) => {
+    const index = quizData.questions.findIndex((q) => q.id === id);
+    if (index === -1) return;
+    const original = quizData.questions[index];
+    const newId = ++questionIdCounter;
+    const copy = { ...original, id: newId };
+    quizData.questions.splice(index + 1, 0, copy);
+    renderQuestion(copy, index + 1);
+    duplicatedCount++;
+  });
+
+  updateQuestionNumbers();
+  updateEmptyState();
+  updateProgress();
+  updateStatistics();
+  autosave();
+
+  showNotification(
+    "تم النسخ",
+    `تم نسخ ${duplicatedCount} سؤال`,
+    "success",
+  );
 };
 
 // ============================================================================
@@ -3105,6 +3469,7 @@ window.addQuestionFromTemplate = function (templateType) {
   const template = templates[templateType];
   if (!template) return;
 
+  pushHistorySnapshot();
   const questionId = ++questionIdCounter;
   const question = {
     id: questionId,
@@ -3221,7 +3586,7 @@ function updateAutosaveIndicator(status) {
 
   if (status === "saving") {
     indicator.classList.add("saving");
-    indicator.querySelector(".save-text").textContent = "جاري الحفظ...";
+    indicator.querySelector(".save-text").textContent = "يُحفظ";
   } else if (status === "saved") {
     indicator.querySelector(".save-text").textContent = "محفوظ";
   } else if (status === "error") {
@@ -3395,6 +3760,10 @@ function loadDraftFromLocalStorage() {
       // Sync the app-bar title now that quizData.title is populated
       updateAppTitleBar();
     }
+    // Loading a draft replaces quizData wholesale — old undo/redo snapshots
+    // (if any existed at this point) would no longer point back to anything
+    // related to what's now on screen.
+    resetHistory();
   } catch (error) {
     console.error("Error loading from localStorage:", error);
   }
@@ -3488,6 +3857,8 @@ function loadQuizFromLocalStorage(quizId) {
       updateEmptyState();
       updateProgress();
       updateStatistics();
+      // Freshly loaded quiz — nothing to undo back into yet.
+      resetHistory();
     } else {
       showNotification("خطأ", "لم يتم العثور على الامتحان", "error");
       setTimeout(() => (window.location.href = "/"), 1500);
@@ -3733,7 +4104,7 @@ window.saveLocally = function () {
     return;
   }
 
-  showLoading("جاري الحفظ...");
+  showLoading("يُحفظ");
 
   setTimeout(() => {
     let quizId;
@@ -3771,6 +4142,56 @@ window.saveLocally = function () {
 // PREVIEW
 // ============================================================================
 
+/** Render one question's preview markup (question text, image, options with
+ * the correct answer(s) marked, explanation). Shared by previewQuiz() (whole
+ * quiz) and previewSingleQuestion() (one question from its ⋮ menu) so the
+ * two stay visually identical. */
+function renderQuestionPreviewHtml(q, index) {
+  const isEssay = Boolean(q.answer);
+  const correctSet = Array.isArray(q.correct)
+    ? q.correct
+    : typeof q.correct === "number"
+      ? [q.correct]
+      : [];
+
+  const optionsHtml = isEssay
+    ? `<div class="preview-essay-answer">${renderMarkdown(q.options?.[0] || "")}</div>`
+    : `<ul class="preview-options">
+          ${q.options
+      .map(
+        (opt, i) =>
+          `<li class="${correctSet.includes(i) ? "correct" : ""}">${renderMarkdown(opt)}${correctSet.includes(i) ? " ✓" : ""}</li>`,
+      )
+      .join("")}
+        </ul>`;
+
+  return `
+      <div class="preview-question">
+        <h4>السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
+        ${q.image ? `<img src="${escapeHtml(q.image)}" class="preview-image" alt="صورة السؤال" onerror="this.style.display='none'">` : ""}
+        ${optionsHtml}
+        ${q.explanation ? `<div class="preview-explanation"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em;margin-left:4px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> ${renderMarkdown(q.explanation)}</div>` : ""}
+      </div>
+    `;
+}
+
+/** Reset #previewTitle back to its default "معاينة الامتحان" wording/icon —
+ * previewSingleQuestion() temporarily overrides it, so previewQuiz() (the
+ * whole-quiz preview) needs to restore it on its own open, not just rely on
+ * closePreview() to do it (the modal can be reopened without an intervening
+ * close if the user re-triggers it from elsewhere). */
+function resetPreviewModalTitle() {
+  const titleEl = document.getElementById("previewTitle");
+  if (!titleEl) return;
+  titleEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye">
+                        <path
+                            d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg> معاينة الامتحان`;
+}
+
 window.previewQuiz = function () {
   const errors = validateQuiz();
 
@@ -3785,6 +4206,7 @@ window.previewQuiz = function () {
 
   const modal = document.getElementById("previewModal");
   const content = document.getElementById("previewContent");
+  resetPreviewModalTitle();
 
   let html = `
     <div style="text-align: center; margin-bottom: 30px;">
@@ -3794,26 +4216,7 @@ window.previewQuiz = function () {
   `;
 
   quizData.questions.forEach((q, index) => {
-    const correctSet = Array.isArray(q.correct)
-      ? q.correct
-      : typeof q.correct === "number"
-        ? [q.correct]
-        : [];
-    html += `
-      <div class="preview-question">
-        <h4>السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
-        ${q.image ? `<img src="${escapeHtml(q.image)}" class="preview-image" alt="صورة السؤال" onerror="this.style.display='none'">` : ""}
-        <ul class="preview-options">
-          ${q.options
-        .map(
-          (opt, i) =>
-            `<li class="${correctSet.includes(i) ? "correct" : ""}">${renderMarkdown(opt)}${correctSet.includes(i) ? " ✓" : ""}</li>`,
-        )
-        .join("")}
-        </ul>
-        ${q.explanation ? `<div class="preview-explanation"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em;margin-left:4px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> ${renderMarkdown(q.explanation)}</div>` : ""}
-      </div>
-    `;
+    html += renderQuestionPreviewHtml(q, index);
   });
 
   content.innerHTML = html;
@@ -3821,9 +4224,42 @@ window.previewQuiz = function () {
   renderMathIn(content);
 };
 
+/** Preview a single question, opened from its ⋮ dropdown menu. Reuses the
+ * same #previewModal as previewQuiz() (rather than a second modal) so
+ * there's only one preview look-and-feel in the app, with the title
+ * swapped to "معاينة السؤال" for the duration and restored by
+ * closePreview()/the next previewQuiz() call. Skips validateQuiz() — that
+ * check is about the whole quiz being publishable, not about whether this
+ * one question can be rendered, so an unrelated incomplete question
+ * elsewhere in the quiz shouldn't block previewing this one. */
+window.previewSingleQuestion = function (questionId) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+
+  const index = quizData.questions.findIndex((q) => q.id === questionId);
+  const modal = document.getElementById("previewModal");
+  const content = document.getElementById("previewContent");
+  const titleEl = document.getElementById("previewTitle");
+
+  if (titleEl) {
+    titleEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye">
+                        <path
+                            d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg> معاينة السؤال ${index + 1}`;
+  }
+
+  content.innerHTML = renderQuestionPreviewHtml(question, index);
+  modal.style.display = "flex";
+  renderMathIn(content);
+};
+
 window.closePreview = function () {
   const modal = document.getElementById("previewModal");
   modal.style.display = "none";
+  resetPreviewModalTitle();
 };
 
 window.updateShortcutsModal = function (show) {
@@ -4060,6 +4496,7 @@ window.processImport = async function () {
     }
 
     // Add questions to current quiz
+    if (allImportedQuestions.length > 0) pushHistorySnapshot();
     allImportedQuestions.forEach((q) => {
       const questionId = ++questionIdCounter;
       let importedCorrect;
@@ -4142,6 +4579,9 @@ function resetPageData() {
   editingQuizId = null;
   // Every new session gets its own draft ID so old drafts are never overwritten
   currentDraftId = _generateId("draft");
+  // A reset starts a brand-new quiz — old snapshots would undo back into a
+  // quiz that no longer has anything to do with what's on screen.
+  resetHistory();
 
   const headerTitle = document.querySelector(".header h1");
   if (headerTitle) headerTitle.textContent = "إنشاء امتحان جديد";
@@ -4251,6 +4691,8 @@ function handleAiEditQuizToolCall(toolCall) {
     err.userMessage = "تعذر تنفيذ التعديل: لم يتم إرسال أي بيانات صالحة.";
     throw err;
   }
+
+  pushHistorySnapshot();
 
   if (hasTitle) {
     quizData.title = input.title.trim();

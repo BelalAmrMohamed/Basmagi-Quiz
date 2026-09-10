@@ -5,16 +5,11 @@
 
 Issues in here have to be studies and tested well, then turned into a plan, before actually implementing it.
 
-## Broken Elements
+## Patches
 
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
-
-### Move-To Dialog Guide Overhaul
-- The `.move-to-dialog-guide` system to tell the users the folder structure is not perfect, because `.move-to-dialog-rail` aren't connected toghether (they are visually different pieces).
-- Expected Design:
-  - A dialog guide that visualize the structure similar to a context map of a project: ![./map/context-map.md](image-4.png)
 
 ### User experience improvements in quiz creation
 - The “إنشاء اختبار” `create-quiz-inline-modal` flow currently creates quizzes directly under the main “امتحاناتك” section directly instead of the folder or course that I'm currently sitting inside.
@@ -146,12 +141,10 @@ Labels aren't connected to their inputs "No label associated with a form field"
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. 
 
 ### Create Quiz Page
-- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, they are small, and sometimes look bad, redesign them, and use actual icons, not text.
-- Add a "معاينة" button to the question's dropdown, to view that specific question rendered.
-- Undo/redo feature for editing questions: Fix it, doesn't work on delete/duplicate/reorder.
-- Reorder mode with a drag handle (there was a previous native-HTML5-DnD implementation and it was deliberately ripped out because it broke on touch), so this must be a (mode), not an always-on drag handle.
-- Select Mode: For questions, to select multiple questions, delete/duplicate/reorder.
+- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
+- ALT + N shortcut is broken. And both `#gmdSub` aren't visible.
+- Reorder mode Shouldn't change the collapsed state of questions. Just like the select mode, it shouldn't touch the collapse satete of questions, it currently expands all of them.
 - Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
 - Accessibility:
   - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
-  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background.. 
+  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..

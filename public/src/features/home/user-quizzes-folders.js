@@ -605,39 +605,45 @@ export async function openMoveToDialog(itemIds) {
 
   /**
    * One row = one button styled as a real tree node: an icon, a label, and
-   * (for nested rows) a vertical rail + elbow drawn with CSS borders on a
-   * dedicated element per ancestor level — not ASCII box-drawing characters
-   * baked into text content, which don't align pixel-for-pixel with the
-   * row's own height/line-box and read as a decorative afterthought rather
-   * than an actual structural line.
+   * (for nested rows) a set of vertical guide lines + one elbow, drawn as
+   * absolutely-positioned spans anchored to the ROW ITSELF — not to a
+   * wrapper div shared by a sibling group.
    *
-   * `railContinues` is an array with one boolean per ancestor level (length
-   * === depth): railContinues[i] says whether the vertical line at that
-   * level should run the row's full height (there's a later sibling still
-   * to come at that level, so the trunk must keep going down to reach it)
-   * or stop halfway with an elbow (this row is the last child at that
-   * level, so the line has nowhere left to go). Every level except the
-   * last one in the array is always a straight pass-through rail for an
-   * *ancestor* level — only the final entry (this row's own level) is ever
-   * an elbow, and only when this row itself has no more siblings below it.
+   * Earlier versions of this dialog drew the ancestor rail on a per-sibling-
+   * group `.move-to-dialog-branch` wrapper's own `border-right`, spanning
+   * every row in that one wrapper. That reads as one continuous line only
+   * while every ancestor level happens to have 2+ children. The instant any
+   * ancestor is a lone child (an extremely common shape — "folder > folder >
+   * folder" single-item chains), that level's wrapper was deliberately
+   * rendered with NO rail at all (`.move-to-dialog-branch--single`), since a
+   * single-child wrapper has no sibling to fork to. That left the *next*
+   * level's rail (for that lone folder's own children) starting from
+   * nothing — a vertical line + elbows appearing to float below a parent
+   * row it was never visually connected to. That's the exact "rails aren't
+   * connected together, they're visually different pieces" bug.
    *
-   * The pass-through ancestor lines themselves are NOT drawn per-row
-   * anymore (see appendChildren below) — each row here only draws its
-   * OWN level's short elbow stub. A sibling list's shared ancestor rails
-   * are instead a single continuous `border-right` on the `.move-to-
-   * dialog-branch` wrapper that contains that whole sibling list, so the
-   * line is structurally guaranteed to run unbroken from the first row to
-   * the last, immune to any row-to-row seam, height variation, or
-   * rounding that previously made independently-redrawn per-row segments
-   * look disconnected even though the "should this level continue"
-   * logic was already correct.
+   * Fix: draw guides the way a real file-tree explorer does (VS Code's
+   * Explorer, this dialog's own "context map" reference design) — every
+   * row independently draws ONE vertical guide span per ancestor level,
+   * regardless of how many siblings that ancestor level has. `guides` is an
+   * array with one boolean per ancestor level (length === depth): guides[i]
+   * is true when the vertical line at that ancestor level must keep running
+   * past this row's own height (a later sibling still exists at that
+   * level), false when that ancestor's line should have already stopped
+   * before this row (this row's ancestor at that level was the last child,
+   * so nothing below it needs that line anymore). Because every row draws
+   * its own full set of ancestor guides at its own indent, from its own top
+   * to its own bottom, a level's guide is guaranteed pixel-continuous from
+   * the row right after a fork to the row right before the next one —
+   * whether or not any level in between happens to have only one child.
    */
-  function addNode(container, label, id, icon, depth, { isCurrent = false, disabledReason = null, hasMoreSiblings = false, isSingleChild = false } = {}) {
+  function addNode(container, label, id, icon, depth, { isCurrent = false, disabledReason = null, guides = [] } = {}) {
     const row = document.createElement("button");
     row.type = "button";
     row.className = "move-to-dialog-node";
     row.setAttribute("role", "treeitem");
     row.dataset.depth = String(depth);
+    row.style.setProperty("--depth", String(depth));
     if (isCurrent) row.classList.add("move-to-dialog-node--current");
     if (disabledReason) {
       row.classList.add("move-to-dialog-node--disabled");
@@ -645,19 +651,33 @@ export async function openMoveToDialog(itemIds) {
       row.title = disabledReason;
     }
 
-    // Own-level elbow: a short stub connecting this row to the branch's
-    // shared vertical rail (drawn by the parent .move-to-dialog-branch
-    // wrapper, not here). Only rendered for nested rows (depth > 0) —
-    // the root "امتحاناتك" row at depth 0 has no ancestor rail to
-    // connect to at all. Also skipped for a lone child (isSingleChild):
-    // with no rail behind it (see appendChildren), a stub with nothing
-    // to connect to just reads as a stray floating dash.
-    const elbow = depth > 0 && !isSingleChild
-      ? `<span class="move-to-dialog-elbow${hasMoreSiblings ? " move-to-dialog-elbow--continues" : ""}" aria-hidden="true"></span>`
-      : "";
+    // One straight pass-through guide per ANCESTOR level (everything
+    // before this row's own level) — always a full-height vertical line,
+    // since an ancestor's line only ever continues or doesn't; it never
+    // elbows for a row that isn't its own. Then this row's OWN level gets
+    // a short elbow into the label, plus (only when a later sibling still
+    // follows this row at its own level) a continuation of the vertical
+    // line past the elbow so the next sibling's guide has something to
+    // join. Depth 0 (root) has no ancestors and is never itself nested,
+    // so it renders no guides at all.
+    let guidesHtml = "";
+    for (let level = 0; level < depth; level += 1) {
+      const isOwnLevel = level === depth - 1;
+      const continues = guides[level];
+      const classes = ["move-to-dialog-guide"];
+      if (isOwnLevel) {
+        classes.push("move-to-dialog-guide--elbow");
+        if (continues) classes.push("move-to-dialog-guide--continues");
+      } else if (continues) {
+        classes.push("move-to-dialog-guide--pass");
+      } else {
+        continue; // ancestor's line already terminated above this row
+      }
+      guidesHtml += `<span class="${classes.join(" ")}" style="--level:${level}" aria-hidden="true"></span>`;
+    }
 
     row.innerHTML =
-      elbow +
+      guidesHtml +
       `<span class="move-to-dialog-node-icon" aria-hidden="true">${icon}</span>` +
       `<span class="move-to-dialog-node-label">${label}</span>` +
       (isCurrent ? `<span class="move-to-dialog-node-badge">الموقع الحالي</span>` : "");
@@ -688,49 +708,27 @@ export async function openMoveToDialog(itemIds) {
 
   // Root option. Marked "current location" (not disabled — re-confirming
   // "stay at root" is harmless) when the item(s) are already there.
-  // Appended directly into treeEl — it has no ancestor rail of its own,
-  // so it needs no wrapping .move-to-dialog-branch.
+  // Depth 0, so it draws no ancestor guides.
   addNode(treeEl, "امتحاناتك (الرئيسية)", null, "🏠", 0, {
     isCurrent: currentParentId === null,
   });
 
-  // Recursively render the real folder/course tree — actual nesting via
-  // real DOM nesting, not a flat list dressed up to look nested with
-  // per-row rail spans. Each sibling group at a given parent is wrapped
-  // in one .move-to-dialog-branch container; that wrapper's own
-  // `border-right` (see index.css) draws a single continuous line
-  // spanning every row (and nested branch) inside it, so the ancestor
-  // rail can never visually break between rows the way independently
-  // redrawn per-row segments could. Each node is individually
-  // validity-checked against every item being moved:
+  // Recursively render the real folder/course tree — flat DOM (every row
+  // appended straight into treeEl, no per-level wrapper divs), with each
+  // row independently drawing its own full set of ancestor guide lines
+  // (see addNode above). `guides` is this branch's own ancestor chain,
+  // extended by one entry per recursive call; a level's entry is `true`
+  // for every row up to and including the sibling right before the last
+  // one, `false` once that level has no sibling left below it. Each node
+  // is individually validity-checked against every item being moved:
   // - a descendant of any moving item (would create a cycle)
   // - a course itself, when the payload includes a course (nowhere for a
   //   course to go but root — see canPlaceItem)
   // - the item's current parent (a no-op, shown but marked/disabled rather
   //   than hidden, so the tree's shape stays predictable)
-  function appendChildren(container, parentId, depth) {
+  function appendChildren(container, parentId, depth, guides) {
     const siblings = folders.filter((f) => (f.meta?.parentId || null) === parentId);
     if (!siblings.length) return;
-
-    // One wrapper per sibling group. Its border-right is the ancestor
-    // rail every row (and every nested branch) inside it shares — a
-    // single element drawing one line, rather than each row redrawing
-    // its own copy of the same line and risking a seam between them.
-    //
-    // The rail is only meaningful when there's an actual fork to trace —
-    // i.e. more than one sibling at this level. A lone child (the common
-    // "folder > folder > folder" single-item chain) has nothing to
-    // branch from or to, so drawing a rail there just produces a cascade
-    // of short, disconnected-looking parallel strokes (one per ancestor
-    // level, each shorter than the last) instead of reading as one
-    // continuous line. Suppressing the rail — but keeping the same
-    // indent via padding-right — for single-child branches fixes that
-    // without touching the real multi-sibling case, where the rail still
-    // renders exactly as before.
-    const branch = document.createElement("div");
-    branch.className =
-      siblings.length > 1 ? "move-to-dialog-branch" : "move-to-dialog-branch move-to-dialog-branch--single";
-    container.appendChild(branch);
 
     siblings.forEach((f, index) => {
       const fid = f.id || f.meta?.id;
@@ -747,17 +745,15 @@ export async function openMoveToDialog(itemIds) {
         disabledReason = "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
       }
 
-      addNode(branch, f.meta?.title || "", fid, icon, depth, {
+      // This row's own level continues (stays `true`) for every sibling
+      // except the last, matching exactly which rows below it still need
+      // this level's vertical line.
+      const rowGuides = [...guides, !isLastSibling];
+
+      addNode(treeEl, f.meta?.title || "", fid, icon, depth, {
         isCurrent,
         disabledReason,
-        // Whether THIS row's own elbow should read as "continues" (a
-        // straight join, more siblings still coming below) or a
-        // rounded corner (last child in this branch) — purely a
-        // property of this row's own position among its siblings, not
-        // anything inherited from ancestors (those are handled by the
-        // branch wrapper's border, not per-row state).
-        hasMoreSiblings: !isLastSibling,
-        isSingleChild: siblings.length === 1,
+        guides: rowGuides,
       });
 
       // Still descend into disabled branches (a disabled ancestor doesn't
@@ -766,10 +762,10 @@ export async function openMoveToDialog(itemIds) {
       // descendant of every moving item, in which case nothing under it
       // could ever be valid either and descending would just be noise.
       const allBlocked = itemIds.every((id) => isDescendant(userQuizzes, id, fid) || id === fid);
-      if (!allBlocked) appendChildren(branch, fid, depth + 1);
+      if (!allBlocked) appendChildren(container, fid, depth + 1, rowGuides);
     });
   }
-  appendChildren(treeEl, null, 1);
+  appendChildren(treeEl, null, 1, []);
 
   overlay.appendChild(card);
   document.body.appendChild(overlay);
