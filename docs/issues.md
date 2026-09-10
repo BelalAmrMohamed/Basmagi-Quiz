@@ -20,7 +20,8 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
 - Right cliking a quiz shows the right click menu, then pressing the more button, opens it on top of the right-click menu (Incorrect): Only one menu should be open.
 
-### But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
+### `.sidebar-brand-link`
+But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
 
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
@@ -46,21 +47,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 ## New Features
 
 ### Admin actions and deletion flow (New Features)
-- Admins should be able to delete folders and courses from the main quizzes area. Admin can currently delete quizzes.
-- Deletion should not be immediate; a trash can or recovery workflow is needed for courses, folders and quizzes.
-- Trash can or recovery workflow for the user-quizzes section `/@my-quizzes` first.
-- The trash can should support recovery, configurable retention time, emptying, and permanent deletion.
-- Deleting a quiz must remove all associated media files as well.
-- Similar consideration should be given to the “امتحاناتك” section.
-- So new trash can for main quizzes (shared), and new trash can for users “امتحاناتك” section.
-- Admins should be able to Edit quizzes public quizzes, these needs a new button on quizzes, and create-quiz page update.
-- Admins should be able to move folders and quizzes (similar to the امتحاناتك section)
-- So, in the `.exam-more-btn` for quizzes, folders, and courses, a dropdown that will contain all admin actions will be added, it will include: 
-  - The delete button (for sending quizzes, folders, or courses to the trash can, or some recovery workflow)
-  - The move button (for moving quizzes or folders inside the course they are in). Uses similar Move-To Dialog Guide like that in the امتحاناتك section.
-  - The edit button (for editing 'quizzes' in the create-quiz page).
-  - The rename button (for quizzes, folders, or courses)
-  - The dropdown should be visible to admins / Owners only.
+See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
 
 ### Search and navigation refinements (Home Page)
 - The footer may sit too high and does not always remain pinned to the bottom of the page when the content area is short.

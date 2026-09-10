@@ -8,6 +8,7 @@ import { toSlug } from "./slug-utils.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
+import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -558,16 +559,16 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
 }
 
 /**
- * Non-drag fallback for moving an item (used by the right-click context
- * menu and the card ⋮ overlay) — opens a small folder-tree picker modal so
- * touch/mobile users, who have no usable drag gesture, can still move items
- * in and out of folders/courses. `itemIds` supports both the single-item
- * case and the bulk-selection case with one shared implementation.
+ * Builds the MoveSource adapter (see move-to-dialog.js's interface doc)
+ * for the "امتحاناتك" localStorage tree. Kept in this file rather than
+ * move-to-dialog.js since it's the only thing here that actually reads
+ * `user_quizzes` — the dialog itself stays storage-agnostic.
  * @param {string[]} itemIds
+ * @returns {object|null} a MoveSource, or null if the move should be
+ *   refused outright (see the lone-course guard below) before any dialog
+ *   opens at all.
  */
-export async function openMoveToDialog(itemIds) {
-  if (!itemIds || itemIds.length === 0) return;
-
+function createLocalUserQuizzesMoveSource(itemIds) {
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   const folders = userQuizzes.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
@@ -590,21 +591,13 @@ export async function openMoveToDialog(itemIds) {
       "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها.",
       "warning",
     );
-    return;
+    return null;
   }
 
   // Current location of the item(s) being moved, so it can be excluded/
   // marked as "current" rather than offered as a no-op destination.
   const firstItem = userQuizzes.find((q) => (q.id || q.meta?.id) === itemIds[0]);
   const currentParentId = firstItem?.meta?.parentId || null;
-
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay move-to-dialog-overlay";
-
-  const card = document.createElement("div");
-  card.className = "modal-card move-to-dialog-card";
-
-  const closeDialog = () => overlay.remove();
 
   const itemLabel =
     itemIds.length > 1
@@ -613,227 +606,97 @@ export async function openMoveToDialog(itemIds) {
         ? `"${firstItem.meta.title}"`
         : "العنصر";
 
-  card.innerHTML = `
-    <div class="move-to-dialog-header">
-      <div class="move-to-dialog-header-text">
-        <h3 class="move-to-dialog-title">نقل إلى</h3>
-        <p class="move-to-dialog-subtitle">اختر الوجهة لنقل ${itemLabel}</p>
-      </div>
-      <button type="button" class="move-to-dialog-close" aria-label="إغلاق">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-      </button>
-    </div>
-    <div class="move-to-dialog-tree" role="tree" aria-label="اختر وجهة النقل"></div>
-  `;
+  return {
+    itemLabel,
+    rootLabel: "امتحاناتك (الرئيسية)",
+    includeRoot: true,
+    showNotification,
 
-  const treeEl = card.querySelector(".move-to-dialog-tree");
-
-  /**
-   * One row = one button styled as a real tree node: an icon, a label, and
-   * (for nested rows) a set of vertical guide lines + one elbow, drawn as
-   * absolutely-positioned spans anchored to the ROW ITSELF — not to a
-   * wrapper div shared by a sibling group.
-   *
-   * Earlier versions of this dialog drew the ancestor rail on a per-sibling-
-   * group `.move-to-dialog-branch` wrapper's own `border-right`, spanning
-   * every row in that one wrapper. That reads as one continuous line only
-   * while every ancestor level happens to have 2+ children. The instant any
-   * ancestor is a lone child (an extremely common shape — "folder > folder >
-   * folder" single-item chains), that level's wrapper was deliberately
-   * rendered with NO rail at all (`.move-to-dialog-branch--single`), since a
-   * single-child wrapper has no sibling to fork to. That left the *next*
-   * level's rail (for that lone folder's own children) starting from
-   * nothing — a vertical line + elbows appearing to float below a parent
-   * row it was never visually connected to. That's the exact "rails aren't
-   * connected together, they're visually different pieces" bug.
-   *
-   * Fix: draw guides the way a real file-tree explorer does (VS Code's
-   * Explorer, this dialog's own "context map" reference design) — every
-   * row independently draws ONE vertical guide span per ancestor level,
-   * regardless of how many siblings that ancestor level has. `guides` is an
-   * array with one boolean per ancestor level (length === depth): guides[i]
-   * is true when the vertical line at that ancestor level must keep running
-   * past this row's own height (a later sibling still exists at that
-   * level), false when that ancestor's line should have already stopped
-   * before this row (this row's ancestor at that level was the last child,
-   * so nothing below it needs that line anymore). Because every row draws
-   * its own full set of ancestor guides at its own indent, from its own top
-   * to its own bottom, a level's guide is guaranteed pixel-continuous from
-   * the row right after a fork to the row right before the next one —
-   * whether or not any level in between happens to have only one child.
-   */
-  function addNode(container, label, id, icon, depth, { isCurrent = false, disabledReason = null, guides = [] } = {}) {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.className = "move-to-dialog-node";
-    row.setAttribute("role", "treeitem");
-    row.dataset.depth = String(depth);
-    row.style.setProperty("--depth", String(depth));
-    if (isCurrent) row.classList.add("move-to-dialog-node--current");
-    if (disabledReason) {
-      row.classList.add("move-to-dialog-node--disabled");
-      row.disabled = true;
-      row.title = disabledReason;
-    }
-
-    // One straight pass-through guide per ANCESTOR level (everything
-    // before this row's own level) — always a full-height vertical line,
-    // since an ancestor's line only ever continues or doesn't; it never
-    // elbows for a row that isn't its own. Then this row's OWN level gets
-    // a short elbow into the label, plus (only when a later sibling still
-    // follows this row at its own level) a continuation of the vertical
-    // line past the elbow so the next sibling's guide has something to
-    // join. Depth 0 (root) has no ancestors and is never itself nested,
-    // so it renders no guides at all.
-    let guidesHtml = "";
-    for (let level = 0; level < depth; level += 1) {
-      const isOwnLevel = level === depth - 1;
-      const continues = guides[level];
-      const classes = ["move-to-dialog-guide"];
-      if (isOwnLevel) {
-        classes.push("move-to-dialog-guide--elbow");
-        if (continues) classes.push("move-to-dialog-guide--continues");
-      } else if (continues) {
-        classes.push("move-to-dialog-guide--pass");
-      } else {
-        continue; // ancestor's line already terminated above this row
-      }
-      guidesHtml += `<span class="${classes.join(" ")}" style="--level:${level}" aria-hidden="true"></span>`;
-    }
-
-    row.innerHTML =
-      guidesHtml +
-      `<span class="move-to-dialog-node-icon" aria-hidden="true">${icon}</span>` +
-      `<span class="move-to-dialog-node-label">${label}</span>` +
-      (isCurrent ? `<span class="move-to-dialog-node-badge">الموقع الحالي</span>` : "");
-
-    if (!disabledReason) {
-      row.onclick = () => {
-        const { moved, blocked } = moveItemsToFolder(itemIds, id);
-        closeDialog();
-        if (moved > 0) {
-          showNotification(
-            "تم النقل",
-            moved > 1 ? `تم نقل ${moved} عنصر بنجاح.` : "تم نقل العنصر بنجاح.",
-            "success",
-          );
-        }
-        if (blocked > 0) {
-          // BUG FIX: this always blamed "folder into itself/course into
-          // folder" even when the real reason moveItemsToFolder() rejected
-          // the move was a same-level name collision (now also disabled
-          // up-front above, but a multi-select could still mix valid and
-          // colliding targets across different items) — worded generically
-          // enough to cover either cause instead of misattributing it.
-          showNotification(
-            "تعذر نقل بعض العناصر",
-            "لا يمكن نقل بعض العناصر إلى هذه الوجهة (تعارض في الاسم، أو قيود على نقل المجلدات/المواد).",
-            "warning",
-          );
-        }
-        renderUserQuizzesView();
-      };
-    }
-    container.appendChild(row);
-  }
-
-  // Root option. Marked "current location" (not disabled — re-confirming
-  // "stay at root" is harmless) when the item(s) are already there.
-  // Depth 0, so it draws no ancestor guides.
-  addNode(treeEl, "امتحاناتك (الرئيسية)", null, "🏠", 0, {
-    isCurrent: currentParentId === null,
-  });
-
-  // Recursively render the real folder/course tree — flat DOM (every row
-  // appended straight into treeEl, no per-level wrapper divs), with each
-  // row independently drawing its own full set of ancestor guide lines
-  // (see addNode above). `guides` is this branch's own ancestor chain,
-  // extended by one entry per recursive call; a level's entry is `true`
-  // for every row up to and including the sibling right before the last
-  // one, `false` once that level has no sibling left below it. Each node
-  // is individually validity-checked against every item being moved:
-  // - a descendant of any moving item (would create a cycle)
-  // - a course itself, when the payload includes a course (nowhere for a
-  //   course to go but root — see canPlaceItem)
-  // - the item's current parent (a no-op, shown but marked/disabled rather
-  //   than hidden, so the tree's shape stays predictable)
-  function appendChildren(container, parentId, depth, guides) {
-    const siblings = folders.filter((f) => (f.meta?.parentId || null) === parentId);
-    if (!siblings.length) return;
-
-    siblings.forEach((f, index) => {
-      const fid = f.id || f.meta?.id;
-      const icon = f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁");
-      const isCurrent = fid === currentParentId;
-      const isLastSibling = index === siblings.length - 1;
-
-      let disabledReason = null;
-      if (itemIds.includes(fid)) {
-        disabledReason = "لا يمكن نقل عنصر إلى نفسه.";
-      } else if (itemIds.some((id) => isDescendant(userQuizzes, id, fid))) {
-        disabledReason = "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.";
-      } else if (movingCourseIds.length) {
-        disabledReason = "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
-      } else if (
-        // BUG FIX: this dialog never flagged a destination that already has
-        // a same-name/same-type child as invalid — the row looked like any
-        // other valid target, the click appeared to succeed (moveItemsToFolder
-        // silently counted it as `blocked` with only a generic message), and
-        // the user saw what looked like a duplicate getting created. Checked
-        // against EVERY item being moved (not just the first) so a bulk move
-        // is flagged if it would collide for any one of them.
-        itemIds.some((id) => {
-          const movingItem = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
-          if (!movingItem) return false;
-          return hasSameLevelCollision(userQuizzes, {
-            type: movingItem.meta?.type || "quiz",
-            title: movingItem.meta?.title || "",
-            parentId: fid,
-            excludeId: id,
-          });
-        })
-      ) {
-        disabledReason = "يوجد عنصر بنفس الاسم والنوع في هذا المجلد بالفعل.";
-      }
-
-      // This row's own level continues (stays `true`) for every sibling
-      // except the last, matching exactly which rows below it still need
-      // this level's vertical line.
-      const rowGuides = [...guides, !isLastSibling];
-
-      addNode(treeEl, f.meta?.title || "", fid, icon, depth, {
-        isCurrent,
-        disabledReason,
-        guides: rowGuides,
-      });
-
-      // Still descend into disabled branches (a disabled ancestor doesn't
-      // imply its children are also invalid destinations for a *different*
-      // moving item in a multi-select) unless this exact subtree is a
-      // descendant of every moving item, in which case nothing under it
-      // could ever be valid either and descending would just be noise.
-      const allBlocked = itemIds.every((id) => isDescendant(userQuizzes, id, fid) || id === fid);
-      if (!allBlocked) appendChildren(container, fid, depth + 1, rowGuides);
-    });
-  }
-  appendChildren(treeEl, null, 1, []);
-
-  overlay.appendChild(card);
-  document.body.appendChild(overlay);
-
-  card.querySelector(".move-to-dialog-close").onclick = closeDialog;
-  overlay.onclick = (e) => {
-    if (e.target === overlay) closeDialog();
-  };
-  document.addEventListener(
-    "keydown",
-    function onEsc(e) {
-      if (e.key === "Escape") {
-        closeDialog();
-        document.removeEventListener("keydown", onEsc);
-      }
+    isCurrentDestination(nodeId) {
+      return (nodeId || null) === currentParentId;
     },
-  );
+
+    getNodes() {
+      return folders.map((f) => ({
+        id: f.id || f.meta?.id,
+        parentId: f.meta?.parentId || null,
+        title: f.meta?.title || "",
+        icon: f.meta?.icon || (f.meta?.type === "course" ? "📚" : "📁"),
+      }));
+    },
+
+    // Each node is individually validity-checked against every item being
+    // moved:
+    // - a descendant of any moving item (would create a cycle)
+    // - a course itself, when the payload includes a course (nowhere for a
+    //   course to go but root — see canPlaceItem)
+    // - a destination that already has a same-name/same-type child (would
+    //   silently create a same-level duplicate)
+    // - the item's current parent (a no-op, shown but marked/disabled
+    //   rather than hidden, so the tree's shape stays predictable) — this
+    //   one is handled by isCurrentDestination above rendering the badge
+    //   instead, not by disabling the row.
+    getDisabledReason(nodeId) {
+      if (itemIds.includes(nodeId)) {
+        return "لا يمكن نقل عنصر إلى نفسه.";
+      }
+      if (itemIds.some((id) => isDescendant(userQuizzes, id, nodeId))) {
+        return "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية.";
+      }
+      if (movingCourseIds.length) {
+        return "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها إلى داخل مجلد.";
+      }
+      // Checked against EVERY item being moved (not just the first) so a
+      // bulk move is flagged if it would collide for any one of them.
+      const collides = itemIds.some((id) => {
+        const movingItem = userQuizzes.find((q) => (q.id || q.meta?.id) === id);
+        if (!movingItem) return false;
+        return hasSameLevelCollision(userQuizzes, {
+          type: movingItem.meta?.type || "quiz",
+          title: movingItem.meta?.title || "",
+          parentId: nodeId,
+          excludeId: id,
+        });
+      });
+      if (collides) {
+        return "يوجد عنصر بنفس الاسم والنوع في هذا المجلد بالفعل.";
+      }
+      return null;
+    },
+
+    isFullyBlocked(nodeId) {
+      return itemIds.every((id) => isDescendant(userQuizzes, id, nodeId) || id === nodeId);
+    },
+
+    moveTo(nodeId) {
+      return moveItemsToFolder(itemIds, nodeId);
+    },
+
+    onMoved() {
+      renderUserQuizzesView();
+    },
+  };
+}
+
+/**
+ * Non-drag fallback for moving an item (used by the right-click context
+ * menu and the card ⋮ overlay) — opens a small folder-tree picker modal so
+ * touch/mobile users, who have no usable drag gesture, can still move items
+ * in and out of folders/courses. `itemIds` supports both the single-item
+ * case and the bulk-selection case with one shared implementation.
+ *
+ * Thin wrapper: builds the localStorage MoveSource (see
+ * createLocalUserQuizzesMoveSource above) and hands it to the shared,
+ * storage-agnostic dialog renderer in move-to-dialog.js. The exported
+ * signature is unchanged so every existing caller (the context menu, the
+ * card ⋮ overlay, the bulk-selection action bar) needs no changes.
+ * @param {string[]} itemIds
+ */
+export function openMoveToDialog(itemIds) {
+  if (!itemIds || itemIds.length === 0) return;
+  const source = createLocalUserQuizzesMoveSource(itemIds);
+  if (!source) return; // lone-course guard already showed its own notification
+  openMoveToDialogWithSource(source);
 }
 
 // Context Menu Logic
