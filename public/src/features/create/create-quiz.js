@@ -15,7 +15,7 @@ import { showDownloadModal } from "../../components/download-quiz-modal/download
 import { renderMarkdown } from "../../shared/markdown.js";
 import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
-import { loadFullQuizData } from "../home/quiz-data-loader.js";
+import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -58,6 +58,15 @@ let currentDraftId = null;
 // POST /api/admin?action=update-quiz. See saveSharedQuizEdit() below and
 // docs/plans/Admin actions and deletion flow for quizzes.md §7/step 9.
 let sharedEditDbId = null;
+
+// Whether the shared quiz currently being edited (sharedEditDbId) actually
+// has a password set, per checkQuizHasPassword() — loadFullQuizData() never
+// exposes the hash itself (see that function's header comment), so this is
+// populated separately by loadSharedQuizForEdit() and consulted by
+// updateSaveMenuOptionForSharedEdit() before revealing the "remove
+// password" row. Stays false for the local-edit/new-quiz flows, where it's
+// simply unused.
+let sharedEditHasPassword = false;
 
 // ── Admin detection ──────────────────────────────────────────────────────────
 // Set once on DOMContentLoaded; controls whether media-upload tabs are shown.
@@ -724,6 +733,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // from the pre-existing local ?edit=<id> so both keep working
     // unchanged — see sharedEditDbId's declaration above for why.
     sharedEditDbId = sharedId;
+    // Defensive: clear any stray quiz_draft key left over from a previous
+    // *local* published-quiz edit-in-progress in this browser (?edit=<id>
+    // autosaves into this same key — see autosave()'s header comment on its
+    // currentDraftId-less branch). Without this, an old local edit sitting
+    // here from before this shared-edit session could get surfaced on the
+    // entry screen later and look like it belongs to this quiz.
+    try {
+      localStorage.removeItem("quiz_draft");
+    } catch (e) { /* ignore storage errors */ }
     showQuizForm();
     loadSharedQuizForEdit(sharedId);
   } else if (editId) {
@@ -3556,6 +3574,21 @@ function autosave() {
 
   autosaveTimeout = setTimeout(() => {
     try {
+      // Editing a shared/admin quiz (?id=<dbId>&mode=edit) — the server is
+      // the source of truth here (saveLocally() posts straight to
+      // POST /api/admin?action=update-quiz for this mode; see its header
+      // comment), so there's no local draft to keep in sync. Skipping local
+      // persistence entirely also avoids the bug this branch used to cause:
+      // falling through to the quiz_draft key below (the same key the
+      // *local* published-quiz edit path uses) meant every keystroke here
+      // got written under that single shared key, which the entry screen's
+      // legacy-draft migration (renderEntryItemsGrid()) then surfaced as a
+      // bogus recoverable draft for an entirely different, unrelated quiz.
+      if (sharedEditDbId) {
+        updateAutosaveIndicator("saved");
+        return;
+      }
+
       // If we have a currentDraftId, upsert into user_quizzes as a draft entry.
       // If editing a published quiz (?edit=<id>), fall back to the old single-key
       // quiz_draft behaviour so the editor's state is preserved across refreshes.
@@ -3908,6 +3941,18 @@ async function loadSharedQuizForEdit(dbId) {
     const full = await loadFullQuizData({ dbId });
     const meta = full.meta || {};
 
+    // See sharedEditHasPassword's declaration above — fetched alongside the
+    // quiz itself so updateSaveMenuOptionForSharedEdit() (called at the end
+    // of this function) knows whether to reveal the "remove password" row.
+    // Best-effort: if the check itself fails, fall back to not showing the
+    // row rather than blocking the rest of the load over it.
+    try {
+      sharedEditHasPassword = await checkQuizHasPassword(dbId);
+    } catch (pwError) {
+      console.error("Error checking quiz password state:", pwError);
+      sharedEditHasPassword = false;
+    }
+
     const headerTitle = document.querySelector(".header h1");
     if (headerTitle) headerTitle.textContent = "تعديل الامتحان";
     document.title = "تعديل الامتحان - منصة بصمجي";
@@ -4000,9 +4045,20 @@ function updateSaveMenuOptionForSharedEdit() {
 
   // Also reveal the "remove password" checkbox (create-quiz.html) — see
   // saveSharedQuizEdit()'s header comment for why plain-blank isn't enough
-  // to mean "remove it" in this mode.
+  // to mean "remove it" in this mode. Only shown when the loaded quiz
+  // actually has a password set (sharedEditHasPassword, populated by
+  // loadSharedQuizForEdit() via checkQuizHasPassword()) — otherwise there's
+  // nothing to clear and the row was showing unconditionally. Also make
+  // sure it's hidden (and its checkbox unticked) in the no-password case,
+  // in case this ever runs more than once for the same page load.
   const clearRow = document.getElementById("quizPasswordClearRow");
-  if (clearRow) clearRow.style.display = "";
+  if (clearRow) {
+    clearRow.style.display = sharedEditHasPassword ? "" : "none";
+    if (!sharedEditHasPassword) {
+      const clearCheckbox = document.getElementById("quizPasswordClear");
+      if (clearCheckbox) clearCheckbox.checked = false;
+    }
+  }
 }
 
 // ============================================================================
@@ -4308,7 +4364,7 @@ window.saveLocally = function () {
  * always means "leave the current password as-is."
  */
 async function saveSharedQuizEdit() {
-  showLoading("يُحفظ التعديلات..");
+  showLoading("جاري الحفظ...");
 
   try {
     const token = getToken();
@@ -4329,6 +4385,15 @@ async function saveSharedQuizEdit() {
     // or ignored server-side in handleUpdateQuiz regardless (see its
     // header comment in api/admin.js).
     const payload = buildQuizPayload(quizData, sharedEditDbId);
+    // buildQuizPayload() always stamps meta.updatedAt for the local
+    // user_quizzes save path (entry screen's "recent items" sort/relative-
+    // date label reads it — see that function's comment). The server has no
+    // such concept and api/_validateQuiz.js's meta-key whitelist doesn't
+    // include it, so posting it as-is 400s with
+    // INVALID_META_KEY: "updatedAt" is not permitted in meta. Strip it here
+    // rather than adding it to the server's whitelist, since it's genuinely
+    // meaningless server-side (the row already has its own updated_at).
+    delete payload.meta.updatedAt;
     const clearPassword = Boolean(
       document.getElementById("quizPasswordClear")?.checked,
     );

@@ -60,3 +60,30 @@ export async function loadFullQuizData(exam) {
     stats: data.stats || null,
   };
 }
+
+/**
+ * Checks whether a DB-hosted quiz currently has a password set, without
+ * exposing the hash itself. loadFullQuizData()/loadDbQuizData() only ever
+ * select `id, data` — the password hash lives in its own column and is
+ * stripped out of `data` at upload/update time (see api/admin.js's
+ * handleUpdateQuiz header comment) — so callers that need to know *whether*
+ * a password exists (not what it is) need this separate, narrower query
+ * rather than trying to read it off the loaded quiz payload.
+ *
+ * @param {string} dbId
+ * @returns {Promise<boolean>}
+ */
+export async function checkQuizHasPassword(dbId) {
+  if (!dbId) return false;
+  const supabase = await ensureSharedSupabaseClient();
+  if (!supabase) throw new Error("تعذّر الاتصال بقاعدة البيانات");
+
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select("password")
+    .eq("id", dbId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return Boolean(data?.password);
+}

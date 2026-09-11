@@ -130,6 +130,16 @@ export default async function handler(req, res) {
       handle: adminHandle,
       isOwner: ownerEmails.includes(userEmail),
       allowed_scopes: adminData?.allowed_scopes || ["Primary", "Middle", "High", "University", "Featured"],
+      // admin_users.id (uuid) — matches folders.created_by/courses.created_by
+      // (see supabase/migrations/20260901195646_courses_and_folders.sql).
+      // Threaded through so canManageItem() (admin-item-actions.js) can do
+      // a Tier-2 creator-match for folders/courses client-side the same way
+      // it already does for quizzes via handle/email — those tables carry a
+      // DB uuid in created_by that quizzes' author_handle/author_email
+      // fields don't have, so without this the JWT had nothing to compare
+      // it against. null for owner-only admins with no admin_users row
+      // (they already pass via isOwner, Tier 1, so this is unused for them).
+      id: adminData?.id || null,
     },
     process.env.JWT_SECRET,
     { expiresIn: "4h", algorithm: "HS256" }

@@ -195,7 +195,12 @@ async function handleControlPost(req, res, payload, supabase) {
     };
     const query = id
       ? supabase.from("colleges").update(values).eq("id", id)
-      : supabase.from("colleges").insert({ ...values, created_by: payload.sub || null });
+      // payload.sub was never a real JWT claim (see api/auth.js's jwt.sign()
+      // call — no `sub` field is ever set), so this always inserted
+      // created_by: null. payload.id (admin_users.id, added to the JWT
+      // alongside the college-management actions above) is the field that
+      // actually carries this.
+      : supabase.from("colleges").insert({ ...values, created_by: payload.id || null });
     const { data, error } = await query
       .select("id, education_type, name, normalized_name, year_count, terms, is_active")
       .single();
@@ -787,6 +792,16 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
 
   const { error } = await supabase.from(table).update(updates).eq("id", itemId);
   if (error) {
+    // 23505 = unique_violation: folders_unique_name_per_parent (see
+    // supabase/migrations/20260901195646_courses_and_folders.sql) — moving
+    // a folder into a destination that already has a same-named child hits
+    // this the same way a rename can (see handleRenameItem's matching
+    // branch). Quizzes have no equivalent constraint, so this only ever
+    // fires for itemType === "folder", but checking the code rather than
+    // itemType keeps this correct if that ever changes.
+    if (error.code === "23505") {
+      return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
+    }
     console.error("[admin:move-item] failed:", error.message);
     return res.status(500).json({ error: "فشل نقل العنصر." });
   }
@@ -872,6 +887,18 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       .update({ name: nameCheck.clean, updated_at: new Date().toISOString() })
       .eq("id", itemId);
     if (error) {
+      // 23505 = unique_violation: folders_unique_name_per_parent /
+      // courses_unique_slot (see supabase/migrations/
+      // 20260901195646_courses_and_folders.sql) already enforce
+      // same-level name uniqueness at the DB layer — validateItemName()
+      // deliberately doesn't duplicate that check itself (see its header
+      // comment), so this is where the constraint's rejection actually
+      // surfaces. Without this branch it fell through to the generic 500
+      // below, which read as an unexplained failure rather than "name
+      // already taken."
+      if (error.code === "23505") {
+        return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في نفس المكان." });
+      }
       console.error("[admin:rename-item] failed:", error.message);
       return res.status(500).json({ error: "فشل إعادة التسمية." });
     }
@@ -1452,7 +1479,20 @@ async function handleStats(req, res) {
 // Dispatcher
 // =============================================================================
 
-const CONTROL_ACTIONS = new Set(["add_admin", "remove_admin", "update_scopes"]);
+// save_college/delete_college route here too — added to handleControlPost
+// (owner-only college management, alongside admin management) without this
+// set being updated to match, which meant POST /api/admin-control with
+// either action fell through to handleStats/handleStatsSync (the catch-all
+// for anything not in CONTROL_ACTIONS or ITEM_ACTIONS below) and 400'd
+// there instead, since that handler expects an entirely different
+// progress/avatar/profile-sync payload shape.
+const CONTROL_ACTIONS = new Set([
+  "add_admin",
+  "remove_admin",
+  "update_scopes",
+  "save_college",
+  "delete_college",
+]);
 
 function isStatsGet(req) {
   const q = req.query || {};

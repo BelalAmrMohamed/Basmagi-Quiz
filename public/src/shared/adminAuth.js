@@ -53,7 +53,7 @@ export async function signIn(adminId) {
   let body = {};
   try {
     body = await res.json();
-  } catch (_) {}
+  } catch (_) { }
 
   if (!res.ok) {
     throw new Error(body.error || "فشل تسجيل الدخول");
@@ -67,7 +67,7 @@ export async function signIn(adminId) {
   _token = token;
   try {
     sessionStorage.setItem(SESSION_KEY, token);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**
@@ -93,7 +93,7 @@ export async function signInWithSupabase(supabaseToken) {
   let body = {};
   try {
     body = await res.json();
-  } catch (_) {}
+  } catch (_) { }
 
   if (!res.ok) {
     console.warn(body.error || "Failed to authenticate as admin via Supabase");
@@ -108,7 +108,7 @@ export async function signInWithSupabase(supabaseToken) {
   _token = token;
   try {
     sessionStorage.setItem(SESSION_KEY, token);
-  } catch (_) {}
+  } catch (_) { }
   return true;
 }
 
@@ -126,7 +126,7 @@ export function getToken() {
       _token = raw;
       return raw;
     }
-  } catch (_) {}
+  } catch (_) { }
   return null;
 }
 
@@ -141,7 +141,7 @@ export function isAdminAuthenticated() {
 
 /**
  * Decodes the JWT payload to extract role and owner status.
- * @returns {{ role: string, isOwner: boolean } | null}
+ * @returns {{ role: string, isOwner: boolean, id: string|null } | null}
  */
 export function getAdminRoleInfo() {
   const token = getToken();
@@ -154,6 +154,9 @@ export function getAdminRoleInfo() {
       email: payload.email,
       handle: payload.handle,
       allowed_scopes: payload.allowed_scopes || [],
+      // admin_users.id (uuid) — matches folders/courses.created_by. See
+      // api/auth.js's jwt.sign() call for why this was added.
+      id: payload.id || null,
     };
   } catch (err) {
     return null;
@@ -165,7 +168,7 @@ export function signOut() {
   _token = null;
   try {
     sessionStorage.removeItem(SESSION_KEY);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 /**

@@ -7,6 +7,8 @@
 //
 //   - canManageItem() — per-item UX gate (owner → creator match → scope match),
 //     generalized from delete-quiz.js's canDeleteQuiz() to folders/courses.
+//     Creator-match now works for folders/courses too via created_by vs.
+//     the JWT's admin_users.id (see canManageItem()'s header comment).
 //   - renameSharedItem() / deleteSharedItem() — prompt/confirm + the matching
 //     /api/admin?action=... server call.
 //   - openSharedMoveToDialog() — the Supabase-backed MoveSource adapter for
@@ -71,9 +73,9 @@ function resolveItemId(item) {
  * Generalized 3-tier admin gate, parallel to delete-quiz.js's canDeleteQuiz():
  *   1. platform owner
  *   2. the item's own creator/uploader (quizzes match author_handle /
- *      author_email against the JWT — folders/courses carry a DB uuid in
- *      created_by that the client JWT doesn't have, so that tier only applies
- *      client-side for quizzes; the server matches the real uuid for all)
+ *      author_email against the JWT; folders/courses match created_by, a DB
+ *      uuid, against roleInfo.id — the admin's own admin_users.id, carried
+ *      in the JWT since api/auth.js's jwt.sign() call)
  *   3. allowed_scopes includes the item's education_type
  * @param {object} item - manifest quiz entry / category-tree course or folder node
  * @returns {boolean}
@@ -97,6 +99,16 @@ export function canManageItem(item) {
     roleInfo.email &&
     String(item.author_email).toLowerCase() === String(roleInfo.email).toLowerCase()
   ) {
+    return true;
+  }
+  // Tier 2, folders/courses — these carry a DB uuid in created_by instead of
+  // author_handle/author_email (see the type-shape comment above). Matched
+  // against roleInfo.id (admin_users.id, added to the JWT in api/auth.js
+  // specifically so this comparison would have something to check against —
+  // previously the JWT carried no uuid at all, so this tier could never
+  // match for folders/courses and the whole ⋮ dropdown silently failed to
+  // appear unless Tier 1 or Tier 3 already covered the admin).
+  if (item.created_by && roleInfo.id && item.created_by === roleInfo.id) {
     return true;
   }
 
@@ -151,7 +163,7 @@ export async function postAdminAction(action, body = {}) {
   let json = {};
   try {
     json = await res.json();
-  } catch (_) {}
+  } catch (_) { }
 
   if (!res.ok) {
     console.error(`[admin-item-actions] ${action} failed:`, res.status, json);

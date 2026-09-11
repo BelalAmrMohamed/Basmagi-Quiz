@@ -25,6 +25,23 @@ const ADMIN_ACTIONS_URL = "/api/admin";
 let _supabaseClient = null;
 let _token = getToken();
 
+// Resolves once init()'s async session reconciliation (step 2 below) has
+// settled and _token reflects its result. Every action that reads _token
+// (via getHeaders(), below) awaits this first — see its declaration site
+// for why: trashNavBtn's onclick is live in the DOM (and callable) from
+// first paint, well before init() finishes, so without this a click in
+// that window could read this module's _token (captured synchronously at
+// line 26, above) or adminAuth.js's own copy before syncAdminSession() has
+// had a chance to replace a stale/soon-to-be-invalidated token with a
+// fresh one — or, if reconciliation determines the session is dead, before
+// onSignedOut's redirect has fired. Resolves immediately (already-resolved
+// microtask) on any run after the first, so this costs nothing once
+// startup has completed.
+let _resolveInitReady;
+const _initReady = new Promise((resolve) => {
+  _resolveInitReady = resolve;
+});
+
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 async function init() {
   // 1. Redirect immediately if no local admin JWT exists
@@ -52,6 +69,8 @@ async function init() {
     return;
   }
 
+  _resolveInitReady();
+
   // 3. Load admin-control data (admins + platform stats)
   loadData();
 }
@@ -68,8 +87,16 @@ function getHeaders() {
  * surface — see admin-item-actions.js on the home page side, which this
  * mirrors for the control-page trash panel). Throws on failure so callers
  * can share one try/catch + showMessage() flow with the rest of this file.
+ *
+ * Awaits _initReady first — see that declaration's comment. Without this,
+ * an action fired in the window before init() finishes could run with a
+ * token that's about to be replaced or invalidated, producing a spurious
+ * 401 (or, worse, hanging its caller's loading state if the resulting
+ * redirect races with the fetch — see loadTrash()'s stuck-spinner symptom
+ * this was meant to close off).
  */
 async function postAdminItemAction(action, body = {}) {
+  await _initReady;
   const res = await fetch(ADMIN_ACTIONS_URL, {
     method: "POST",
     headers: getHeaders(),
@@ -399,6 +426,20 @@ document.getElementById("scopeModal").addEventListener("click", function (e) {
 // See docs/plans/Admin actions and deletion flow for quizzes.md §6. Backed
 // entirely by /api/admin's trash-list / trash-restore / trash-empty /
 // trash-settings actions (already implemented server-side).
+//
+// Fix-round note (docs/plans/implementation-plan.md item 8): the
+// pre-init()-ready click race on trashNavBtn (see _initReady's comment,
+// above) is fixed — postAdminItemAction() now can't fire with a token
+// that's about to be replaced or invalidated by syncAdminSession(). That
+// was a confirmed real bug, but not confirmed to be *the* cause of the
+// originally-reported "stuck on جاري التحميل... until manual refresh"
+// symptom: loadTrash()'s own error handling (below) already surfaces a
+// thrown error as visible text rather than silently swallowing it, so a
+// genuine stall (as opposed to a visible-but-unwanted error message) would
+// require the request to never settle at all — nothing found by reading
+// through handleTrashList/handleItemActions suggests why that would
+// happen. If this still reproduces after this fix, it needs a live
+// console/network trace to pin down further (per the plan's own note).
 
 let trashItemsCache = [];
 let trashFilter = "all";

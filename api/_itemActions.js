@@ -25,13 +25,18 @@ export function canPlaceItemServer(itemType, targetFolderId) {
 }
 
 /**
- * Basic sanity checks for a new item name (rename/create). Full uniqueness
- * enforcement (same-level collision) is intentionally NOT duplicated here —
- * unlike the localStorage side, the shared/Supabase area has no
- * client-maintained in-memory collision index to reuse, and a DB unique
- * constraint would be the more idiomatic place for that; for now a
- * duplicate name at the same level is allowed (mirrors quizzes today, where
- * duplicate titles are already possible).
+ * Basic sanity checks for a new item name (rename/create). Same-level
+ * collision protection is NOT done here as a pre-check query (that would
+ * race against a concurrent rename/move to the same name) — folders and
+ * courses already have DB-level uniqueness constraints
+ * (folders_unique_name_per_parent, courses_unique_slot /
+ * courses_canonical_unique_slot — see supabase/migrations/
+ * 20260901195646_courses_and_folders.sql and
+ * 20260904000000_colleges.sql), and the callers in api/admin.js
+ * (handleRenameItem, handleMoveItem) catch the resulting 23505
+ * unique_violation and turn it into a friendly error instead of a generic
+ * 500. Quizzes have no such constraint and still allow duplicate titles at
+ * the same level, unchanged from before.
  * @param {unknown} name
  * @returns {{ ok: boolean, error?: string, clean?: string }}
  */
