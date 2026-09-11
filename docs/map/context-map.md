@@ -16,7 +16,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── package.json
 ├── README.md
 ├── vercel.json
-├── api/ [332.99 KB, 7937 LOC]
+├── api/ [338.57 KB, 8046 LOC]
 │   ├── ai-agent/ [50.09 KB, 1080 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
@@ -45,22 +45,25 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [860.41 KB, 2018 LOC]
-│   ├── map/ [21.98 KB, 531 LOC]
+├── docs/ [1.4 MB, 2098 LOC]
+│   ├── map/ [21.89 KB, 528 LOC]
 │   │   └── context-map.md
 │   │
-│   ├── plans/ [75.94 KB, 1190 LOC]
-│   │   ├── Admin actions and deletion flow for quizzes.md
+│   ├── plans/ [331.34 KB, 1266 LOC]
+│   │   ├── admin-actions-update-testing-results.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
+│   │   ├── image.png
+│   │   ├── implementation-plan.md
 │   │   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
 │   │
 │   ├── Database-Schema-Context.md
 │   ├── image-3.png
 │   ├── image-5.png
 │   ├── image-6.png
+│   ├── image.png
 │   └── issues.md
 │
-├── public/ [199.78 MB, 99636 LOC]
+├── public/ [199.82 MB, 100593 LOC]
 │   ├── assets/ [196.07 MB, 0 LOC]
 │   │   ├── images/ [3.84 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -231,7 +234,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.08 MB, 89523 LOC]
+│   ├── src/ [3.12 MB, 90462 LOC]
 │   │   ├── components/ [625.45 KB, 16490 LOC]
 │   │   │   ├── ai-agent/ [375.72 KB, 8810 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
@@ -276,14 +279,14 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.12 MB, 63120 LOC]
+│   │   ├── features/ [2.15 MB, 64059 LOC]
 │   │   │   ├── control/ [56.77 KB, 2060 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
 │   │   │   │   ├── control.js
 │   │   │   │   └── reports-view.js
 │   │   │   │
-│   │   │   ├── create/ [295.54 KB, 9427 LOC]
+│   │   │   ├── create/ [305.41 KB, 9661 LOC]
 │   │   │   │   ├── create-quiz.css
 │   │   │   │   └── create-quiz.js
 │   │   │   │
@@ -295,7 +298,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── export-to-quiz.js
 │   │   │   │   └── export-to-word.js
 │   │   │   │
-│   │   │   ├── home/ [795.78 KB, 21101 LOC]
+│   │   │   ├── home/ [823.99 KB, 21806 LOC]
 │   │   │   │   ├── admin-item-actions.js
 │   │   │   │   ├── adminUpload.js
 │   │   │   │   ├── ai-prompts.js
@@ -347,6 +350,9 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── tooltip-position.js
 │   │   │   │   ├── user-quiz-card.js
 │   │   │   │   ├── user-quizzes-folders.js
+│   │   │   │   ├── user-quizzes-trash-panel.css
+│   │   │   │   ├── user-quizzes-trash-panel.js
+│   │   │   │   ├── user-quizzes-trash.js
 │   │   │   │   ├── user-quizzes-view.js
 │   │   │   │   └── welcome-message.js
 │   │   │   │
@@ -471,19 +477,19 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 99636 |
-| `api` | 7937 |
-| `docs` | 2018 |
+| `public` | 100593 |
+| `api` | 8046 |
+| `docs` | 2098 |
 | `supabase` | 969 |
-| `(root)` | 661 |
+| `(root)` | 662 |
 | `scripts` | 566 |
 
 ### Top 10 Largest Code Files
 
 | File | Lines of Code |
 |------|---------------|
+| `public/src/features/create/create-quiz.js` | 5075 |
 | `public/src/features/home/index.css` | 4931 |
-| `public/src/features/create/create-quiz.js` | 4841 |
 | `public/src/features/create/create-quiz.css` | 4586 |
 | `public/src/features/export/export-to-quiz.js` | 4261 |
 | `public/src/features/quiz/quiz.js` | 3374 |
@@ -497,10 +503,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 145 | 66629 | 2.65 MB |
-| .css | 25 | 31559 | 800.38 KB |
-| .html | 19 | 9776 | 586.93 KB |
-| .md | 8 | 2528 | 132.4 KB |
+| .js | 147 | 67482 | 2.68 MB |
+| .css | 26 | 31754 | 805.13 KB |
+| .html | 19 | 9794 | 588.4 KB |
+| .md | 9 | 2609 | 148.32 KB |
 | .sql | 6 | 554 | 27.28 KB |
 | .json | 4 | 214 | 76.09 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
@@ -508,20 +514,20 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .xml | 1 | 45 | 1.36 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **212** | **111787** | **4.25 MB** |
+| **Total** | **216** | **112934** | **4.31 MB** |
 
 ### Binary / Media Files (Physical Size)
 
 | Extension | Files | Size |
 |-----------|-------|------------|
 | .jpg | 62 | 8.11 MB |
-| .png | 45 | 4.84 MB |
+| .png | 47 | 5.38 MB |
 | .mp3 | 17 | 103.72 MB |
 | .mp4 | 17 | 73.24 MB |
 | .pdf | 7 | 6.92 MB |
 | .ico | 1 | 4.19 KB |
 | .svg | 1 | 19.48 KB |
-| **Total** | **150** | **196.85 MB** |
+| **Total** | **152** | **197.39 MB** |
 
-**Grand Total Files:** 362  
-**Total Repository Size:** 201.1 MB
+**Grand Total Files:** 368  
+**Total Repository Size:** 201.7 MB
