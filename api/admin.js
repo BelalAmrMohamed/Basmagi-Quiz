@@ -33,6 +33,8 @@ import {
   collectCascadeItems,
 } from "./_trash.js";
 import { canPlaceItemServer, validateItemName } from "./_itemActions.js";
+import { validateQuizPayload, computeStats } from "./_validateQuiz.js";
+import crypto from "crypto";
 
 const MAX_BIO_LENGTH = 280;
 
@@ -270,6 +272,7 @@ const ITEM_ACTIONS = new Set([
   "delete-course",
   "move-item",
   "rename-item",
+  "update-quiz",
 ]);
 
 async function fetchItemForAuth(supabase, itemType, itemId) {
@@ -877,6 +880,111 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   return res.status(200).json({ success: true, name: nameCheck.clean });
 }
 
+// ── action=update-quiz ──────────────────────────────────────────────────────
+// Body: { id: <quizzes.id UUID>, quiz: {meta, stats, questions} } — the same
+// {meta, stats, questions} shape validated by _validateQuiz.js on the create
+// path (upload-quiz.js), built client-side by create-quiz.js's
+// buildQuizPayload() for its edit-mode save. `id` is the Supabase row UUID
+// (what ?id=<dbId>&mode=edit carries and what loadFullQuizData/
+// loadDbQuizData already fetch by) — NOT the 8-char data.meta.id used by
+// college-quiz.js's handleDeleteQuiz, which looks the row up a different
+// way (data->meta->>id) since DELETE only ever gets that shorter public ID
+// from the client. Both identify the same row; callers must send the one
+// this action expects.
+//
+// Fields intentionally NOT touched by an edit-mode save:
+//   - path/filename/category/subject/subfolder/college/year/term/course_id/
+//     folder_id — placement is changed only via action=move-item, never as
+//     a side effect of editing content. Re-deriving fullPath/filename here
+//     from a possibly-changed title (the way upload-quiz.js does on create)
+//     would silently relocate the quiz's storage path, which move-item's
+//     own path bookkeeping doesn't expect.
+//   - uploaded_by/author_id — ownership never changes via an edit.
+//   - password — see below.
+//
+// Password semantics: the client never gets to see the existing hash
+// (quiz-data-loader.js's public read selects `id, data` only — password is
+// stored in its own column, hashed, and stripped out of `data` at upload
+// time by upload-quiz.js), so the edit form's password field always starts
+// blank. That makes "blank" ambiguous between "leave the password alone"
+// and "remove the password" — resolved via an explicit clearPassword flag
+// from the client (rather than inferring intent from an empty string) so
+// there's no silent password removal just because the admin didn't retype
+// it. A non-empty meta.password re-hashes and replaces it, same as create.
+async function handleUpdateQuiz(req, res, adminPayload, adminId, supabase) {
+  const { id, quiz, clearPassword } = req.body || {};
+  if (!id || !quiz) {
+    return res.status(400).json({ error: "بيانات التعديل غير مكتملة." });
+  }
+
+  const fetched = await fetchItemForAuth(supabase, "quiz", id);
+  if (!fetched) return res.status(404).json({ error: "الامتحان غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل هذا الامتحان." });
+  }
+
+  // validateQuizPayload requires meta.id to already be the existing
+  // 8-char id (edit never changes it) — the client's buildQuizPayload()
+  // doesn't set meta.id at all (it's a local-quiz helper repurposed here),
+  // so it's threaded in from the existing row rather than trusted from the
+  // request body, exactly like create's placeholder-then-overwrite dance
+  // in upload-quiz.js, except here the real id already exists and must be
+  // preserved unchanged rather than freshly derived from a path.
+  const existingMetaId = fetched.row.data?.meta?.id;
+  if (typeof existingMetaId !== "string") {
+    // Should be unreachable for any row created through the normal upload
+    // path, but fail loudly rather than silently minting a new id that
+    // would desync from the row's own path-derived filename.
+    console.error("[admin:update-quiz] existing row missing data.meta.id:", id);
+    return res.status(500).json({ error: "تعذّر تحديد هوية الامتحان الحالية." });
+  }
+  quiz.meta = { ...(quiz.meta || {}), id: existingMetaId };
+
+  let cleanQuiz;
+  try {
+    cleanQuiz = validateQuizPayload(quiz);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  cleanQuiz.stats = computeStats(cleanQuiz.questions);
+
+  // Preserve path-derived fields from the existing row — see header comment.
+  cleanQuiz.meta.path = fetched.row.data?.meta?.path;
+  cleanQuiz.meta.author_id = fetched.row.data?.meta?.author_id ?? fetched.row.uploaded_by ?? null;
+
+  const updates = {
+    title: cleanQuiz.meta.title,
+    data: cleanQuiz,
+  };
+
+  if (clearPassword) {
+    updates.password = null;
+    delete cleanQuiz.meta.password;
+  } else if (cleanQuiz.meta.password) {
+    updates.password = crypto
+      .createHash("sha256")
+      .update(cleanQuiz.meta.password)
+      .digest("hex");
+    delete cleanQuiz.meta.password;
+  } else {
+    // Neither a new password nor an explicit clear — leave the existing
+    // hash column untouched (omit it from `updates`) and keep whatever
+    // meta.password state the current row already has out of the new
+    // data blob (there never is one — see header comment — but this stays
+    // correct even if that ever changes).
+    delete cleanQuiz.meta.password;
+  }
+
+  const { error } = await supabase.from("quizzes").update(updates).eq("id", id);
+  if (error) {
+    console.error("[admin:update-quiz] failed:", error.message);
+    return res.status(500).json({ error: "فشل حفظ التعديلات." });
+  }
+
+  return res.status(200).json({ success: true, id, quizId: existingMetaId });
+}
+
 async function handleItemActions(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -902,6 +1010,7 @@ async function handleItemActions(req, res) {
   if (action === "delete-course") return handleDeleteTree(req, res, payload, adminId, supabase, "course");
   if (action === "move-item") return handleMoveItem(req, res, payload, adminId, supabase);
   if (action === "rename-item") return handleRenameItem(req, res, payload, adminId, supabase);
+  if (action === "update-quiz") return handleUpdateQuiz(req, res, payload, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
 }

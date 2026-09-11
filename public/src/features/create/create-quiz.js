@@ -13,8 +13,9 @@ import {
 } from "../../shared/quiz-json.js";
 import { showDownloadModal } from "../../components/download-quiz-modal/download-quiz-modal.js";
 import { renderMarkdown } from "../../shared/markdown.js";
-import { isAdminAuthenticated } from "../../shared/adminAuth.js";
+import { isAdminAuthenticated, getToken } from "../../shared/adminAuth.js";
 import { ensureSharedSupabaseClient } from "../../shared/supabaseClientRegistry.js";
+import { loadFullQuizData } from "../home/quiz-data-loader.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -48,6 +49,15 @@ let reorderModeActive = false;
 // ID of the current draft entry in user_quizzes (meta.type = "draft").
 // null when editing an already-published quiz via ?edit=<id>.
 let currentDraftId = null;
+
+// Set when the page was opened via ?id=<dbId>&mode=edit (editing a shared/
+// admin, Supabase-backed quiz) — distinct from editingQuizId, which always
+// means a *local* user_quizzes row (?edit=<id>). The two flows are mutually
+// exclusive: sharedEditDbId being non-null means saveLocally()'s usual
+// local-storage branch is bypassed entirely in favor of posting to
+// POST /api/admin?action=update-quiz. See saveSharedQuizEdit() below and
+// docs/plans/Admin actions and deletion flow for quizzes.md §7/step 9.
+let sharedEditDbId = null;
 
 // ── Admin detection ──────────────────────────────────────────────────────────
 // Set once on DOMContentLoaded; controls whether media-upload tabs are shown.
@@ -706,7 +716,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get("edit");
-  if (editId) {
+  const sharedId = urlParams.get("id");
+  const sharedMode = urlParams.get("mode");
+  if (sharedId && sharedMode === "edit") {
+    // Deep-linked shared-quiz edit (?id=<dbId>&mode=edit), reached from the
+    // admin "تعديل" dropdown action (exam-card.js). Distinct query param
+    // from the pre-existing local ?edit=<id> so both keep working
+    // unchanged — see sharedEditDbId's declaration above for why.
+    sharedEditDbId = sharedId;
+    showQuizForm();
+    loadSharedQuizForEdit(sharedId);
+  } else if (editId) {
     // Deep-linked edit (?edit=<id>) always bypasses the entry screen and
     // opens straight into the form, same as before this feature existed.
     editingQuizId = editId;
@@ -3869,6 +3889,122 @@ function loadQuizFromLocalStorage(quizId) {
   }
 }
 
+/**
+ * Fetch a shared/admin (Supabase-backed) quiz by its DB row id and prefill
+ * the editor form from it — the shared-quiz counterpart to
+ * loadQuizFromLocalStorage() above. Reuses loadFullQuizData() (already
+ * used by the download/copy/AI-attach paths) rather than a new fetch, since
+ * it already returns exactly the {meta, stats, questions} shape this form
+ * needs and public reads on `quizzes` already allow it (no auth token
+ * needed just to populate the form — the real authorization check happens
+ * server-side when the save actually posts to action=update-quiz).
+ *
+ * Note meta.password is never present here (see the header comment on
+ * handleUpdateQuiz in api/admin.js for why) — the password field simply
+ * starts blank, same as it would look to a public visitor.
+ */
+async function loadSharedQuizForEdit(dbId) {
+  try {
+    const full = await loadFullQuizData({ dbId });
+    const meta = full.meta || {};
+
+    const headerTitle = document.querySelector(".header h1");
+    if (headerTitle) headerTitle.textContent = "تعديل الامتحان";
+    document.title = "تعديل الامتحان - منصة بصمجي";
+
+    quizData.title = meta.title || "";
+    const qTitleEl = document.getElementById("quizTitle");
+    if (qTitleEl) {
+      qTitleEl.value = quizData.title;
+      updateCharCount("titleCharCount", quizData.title.length, 100);
+    }
+
+    quizData.description = meta.description || "";
+    const quizDescEl = document.getElementById("quizDescription");
+    if (quizDescEl) {
+      quizDescEl.value = quizData.description;
+      updateCharCount("descCharCount", quizData.description.length, 500);
+      autoResizeMdSource(quizDescEl);
+    }
+
+    quizData.source = meta.source || "";
+    const quizSourceEl = document.getElementById("quizSource");
+    if (quizSourceEl) {
+      quizSourceEl.value = quizData.source;
+      updateCharCount("sourceCharCount", quizData.source.length, 500);
+    }
+
+    // Password intentionally left blank — see function header comment.
+    // The view/mode radios are the only other meta fields the create form
+    // exposes, same as the local-edit path above.
+    const viewValue = meta.view && meta.view !== "empty" ? meta.view : "empty";
+    const viewRadio = document.querySelector(
+      `input[name="quizView"][value="${viewValue}"]`,
+    );
+    if (viewRadio) {
+      viewRadio.checked = true;
+      if (typeof updateOptionCards === "function") updateOptionCards(viewRadio);
+    }
+
+    const modeValue = meta.mode && meta.mode !== "empty" ? meta.mode : "empty";
+    const modeRadio = document.querySelector(
+      `input[name="quizMode"][value="${modeValue}"]`,
+    );
+    if (modeRadio) {
+      modeRadio.checked = true;
+      if (typeof updateOptionCards === "function") updateOptionCards(modeRadio);
+    }
+
+    if (Array.isArray(full.questions) && full.questions.length > 0) {
+      const { questions, maxId } = normalizeQuestionsWithIds(full.questions);
+      quizData.questions = questions;
+      questionIdCounter = maxId;
+    }
+
+    const container = document.getElementById("questionsContainer");
+    if (container) container.innerHTML = "";
+    quizData.questions.forEach((question) => renderQuestion(question));
+
+    showNotification("أهلاً بك", "تم تحميل الامتحان للتعديل", "success");
+    updateAppTitleBar();
+    updateEmptyState();
+    updateProgress();
+    updateStatistics();
+    resetHistory();
+    updateSaveMenuOptionForSharedEdit();
+  } catch (error) {
+    console.error("Error loading shared quiz for edit:", error);
+    showNotification(
+      "خطأ",
+      "تعذّر تحميل الامتحان للتعديل. تأكد أنه ما يزال موجودًا.",
+      "error",
+    );
+    setTimeout(() => (window.location.href = "/"), 1500);
+  }
+}
+
+/**
+ * Swap the "حفظ محليًا" / Ctrl+S menu entry's label to "حفظ التعديلات" while
+ * editing a shared quiz, so its wording doesn't misleadingly claim a
+ * server-backed save is only local. Purely cosmetic — saveLocally() itself
+ * (called by both the click handler and the Ctrl+S shortcut, unchanged)
+ * already branches on sharedEditDbId to actually post to the server; see
+ * its header comment.
+ */
+function updateSaveMenuOptionForSharedEdit() {
+  if (!sharedEditDbId) return;
+  const label = document.querySelector(
+    '.menu-option[onclick*="saveLocally"] span:not(.menu-option-shortcut)',
+  );
+  if (label) label.textContent = "حفظ التعديلات";
+
+  // Also reveal the "remove password" checkbox (create-quiz.html) — see
+  // saveSharedQuizEdit()'s header comment for why plain-blank isn't enough
+  // to mean "remove it" in this mode.
+  const clearRow = document.getElementById("quizPasswordClearRow");
+  if (clearRow) clearRow.style.display = "";
+}
+
 // ============================================================================
 // SAVE TO USER QUIZZES
 // ============================================================================
@@ -4104,6 +4240,18 @@ window.saveLocally = function () {
     return;
   }
 
+  // Editing a shared/admin quiz (?id=<dbId>&mode=edit) — bypass the
+  // user_quizzes localStorage branch entirely and post to the server
+  // instead. Same "ملف > حفظ محليًا" menu item and Ctrl+S shortcut trigger
+  // this (its label is swapped to "حفظ التعديلات" by
+  // updateSaveMenuOptionForSharedEdit() when this mode is active), so
+  // there's still exactly one save entry point rather than two competing
+  // ones.
+  if (sharedEditDbId) {
+    saveSharedQuizEdit();
+    return;
+  }
+
   showLoading("يُحفظ..");
 
   setTimeout(() => {
@@ -4137,6 +4285,92 @@ window.saveLocally = function () {
     }
   }, 500);
 };
+
+/**
+ * Posts the current form state to POST /api/admin?action=update-quiz for a
+ * shared/admin quiz being edited (?id=<dbId>&mode=edit). Mirrors
+ * saveLocally()'s local branch in spirit (same validateQuiz() gate already
+ * run by the caller, same buildQuizPayload() shape, same loading/
+ * notification UX) but posts to the server instead of writing to
+ * localStorage, and requires an admin bearer token the way every other
+ * write in this codebase to a shared/admin-owned row does (adminUpload.js's
+ * authHeaders() pattern, reused here rather than duplicated).
+ *
+ * Password handling: the "كلمة المرور" field always starts blank on a
+ * shared-quiz edit (see loadSharedQuizForEdit's header comment — the
+ * existing hash is never sent to the client), so a blank field here must
+ * NOT be read as "remove the password" the way it is on the local-save
+ * path (buildQuizPayload deletes meta.password when blank, which is fine
+ * for user_quizzes since there's no server-side password concept there).
+ * clearPasswordCheckbox — added next to the password field specifically
+ * for this mode, see create-quiz.html — is how "remove it" gets said
+ * explicitly instead. Leaving the field blank with the checkbox unchecked
+ * always means "leave the current password as-is."
+ */
+async function saveSharedQuizEdit() {
+  showLoading("يُحفظ التعديلات..");
+
+  try {
+    const token = getToken();
+    if (!token) {
+      hideLoading();
+      showNotification(
+        "انتهت الجلسة",
+        "يرجى تسجيل الدخول كمشرف مجددًا قبل الحفظ.",
+        "error",
+      );
+      return;
+    }
+
+    // buildQuizPayload's 2nd arg (quizId) isn't actually read inside the
+    // function — it's only relevant to saveToUserQuizzes' caller, which
+    // spreads it alongside the result. Passed here anyway for readability
+    // at the call site; meta.createdAt/path/author_id all get overwritten
+    // or ignored server-side in handleUpdateQuiz regardless (see its
+    // header comment in api/admin.js).
+    const payload = buildQuizPayload(quizData, sharedEditDbId);
+    const clearPassword = Boolean(
+      document.getElementById("quizPasswordClear")?.checked,
+    );
+    // buildQuizPayload() already drops meta.password when the field is
+    // blank (see its own logic) — that's exactly the "leave unchanged"
+    // case here too, so no extra handling is needed beyond passing the
+    // explicit clearPassword flag alongside it.
+
+    const res = await fetch("/api/admin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "update-quiz",
+        id: sharedEditDbId,
+        quiz: payload,
+        clearPassword,
+      }),
+    });
+
+    let body = {};
+    try {
+      body = await res.json();
+    } catch (_) { }
+
+    hideLoading();
+
+    if (!res.ok) {
+      showNotification("خطأ", body.error || "فشل حفظ التعديلات", "error");
+      return;
+    }
+
+    showNotification("تم الحفظ!", "تم حفظ تعديلات الامتحان بنجاح", "success");
+    setTimeout(() => (window.location.href = "/"), 1000);
+  } catch (err) {
+    hideLoading();
+    console.error("Error saving shared quiz edit:", err);
+    showNotification("خطأ", "تعذّر الاتصال بالخادم. حاول مجددًا.", "error");
+  }
+}
 
 // ============================================================================
 // PREVIEW

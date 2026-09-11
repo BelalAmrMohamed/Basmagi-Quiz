@@ -25,6 +25,7 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
+- See ![screenshot of browser console errors](image.png)
 
 ### Create Quiz Page
 - Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
@@ -47,6 +48,7 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 ### AI Agent On Phones.
 - The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
 - The `.ai-agent-sidebar-header` should have the close button on the right, too, and the logo on the left.  
+- `محادثة جديدة` button should be disabled when it's already a new chat.
 
 ### Document Pages
 Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons

@@ -1364,6 +1364,21 @@
                             </button>
                         </div>
                     </div>
+                    <!-- Shared-quiz edit mode only (?id=<dbId>&mode=edit): the field
+                         above always starts blank on an edit (the existing password
+                         hash is never sent to the client — see
+                         loadSharedQuizForEdit()'s header comment in create-quiz.js),
+                         so a blank field can't by itself mean "remove the password."
+                         This checkbox is the explicit way to say that; hidden
+                         otherwise since it's meaningless for local quizzes. Shown by
+                         create-quiz.js's updateSaveMenuOptionForSharedEdit(). -->
+                    <div class="form-group" id="quizPasswordClearRow" style="display:none;">
+                        <label for="quizPasswordClear"
+                            style="display:flex;align-items:center;gap:8px;font-weight:400;cursor:pointer;">
+                            <input type="checkbox" id="quizPasswordClear" style="width:auto;margin:0;">
+                            <span>إزالة كلمة المرور الحالية (اتركها بدون تحديد إن كنت لا تريد تغييرها)</span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
