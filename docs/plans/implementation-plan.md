@@ -1,3 +1,10 @@
+## Implementation Plan For Patches
+Original Plan [admin-actions-update-testing-results.md](admin-actions-update-testing-results.md)
+
+This implementation plan was made to fix the issues found at the orignal plan and documented at the bottom of it.
+
+---
+
 Let's pin down item 8 precisely. Let me check if `showTrashView` is reachable before `init()` resolves, and trace exactly what a stuck spinner would require.Now I see the actual precise mechanism. Look at `showTrashView()` again:
 
 ```js
@@ -56,7 +63,7 @@ Eleven files were modified across this work (all presented above, unzipped, orig
 
 **Suggested order for the new chat:** finish item 11's CSS + the 5 swap sites, syntax-check `control.html`/`control.js`/`control.css`, then move to item 12 using the same file.
 
-### Testing
+## Testing
 While testing the local trash can, I found that it doesn't close once the confirmation modal pops up, and it has a higher z--index, so the modal appears under it. It should close when the modal pops up.
 
 Since the `إنشاء امتحان جديد` modal now exists in `#userQuizContextMenu` and `.create-folder-btn`, remove it from the `.user-quizzes-container` completely, and remove any styles related to its card there.

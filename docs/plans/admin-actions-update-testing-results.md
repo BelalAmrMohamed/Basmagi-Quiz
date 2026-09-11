@@ -151,16 +151,8 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
 - I can rename, delete, restore, and move quizzes. ✅
 - A course had a quiz named `منصة امتحانات بصمجي (تعديل)`, and another quiz next to it, I renamed the other quiz to the exact name `منصة امتحانات بصمجي (تعديل)`, and it allowed me, so no name collision protection on the front or the DB. ⚠️
 - I wasn't able to delete, rename, or move folders. ⚠️
-- When trying to edit a quiz, I got redirected to `/create-quiz?id=ddcf5f00-79ff-43ac-8e14-9e73f21cccb0&mode=edit`, which didn't do anything, until I figured out that the redirect is missing `.html` after the `create-quiz`, so I typed `/create-quiz.html?id=ddcf5f00-79ff-43ac-8e14-9e73f21cccb0&mode=edit`, and I was redirected to the create-quiz page with the quiz to edit. ⚠️
 - `#quizPasswordClear` appears even when the quiz has no password to be removed (create-quiz.html). ⚠️
-- After trying to edit the quiz, I got this error ![browser console error](image.png).
-- After quitting the create-quiz editing, and going to the create-quiz page's start screen, I found the quiz I was just editing as a draft for some reason.
-- It would be a good feature to have a link to the local trash can inside the `#userQuizContextMenu` and inside the `.create-folder-btn mobile-only-flex`. Tested the trash can, I can delete and restore ✅.
-- While you are moving it, also move the `.user-create-quiz-card` Into the `create-folder-btn mobile-only-flex` menu and into the `#userQuizContextMenu`, too. So the `create-folder-btn mobile-only-flex` menu should now have 4 elements:
-  - Create Quiz
-  - Create Folder
-  - Create Course
-  - Trash Can
+- Trash Can should appear disabled when there is nothing in it, instead of not appearing at all, this would make users comfortable that their quizzes get sent to trash and aren't permenantly deleted.
 - Control Page turned out to have many issues:
   - No loading animations at all on anything on the page, it just says `جاري التحميل...`, remove that and add an advanced skeleton loader.
   - I can't edit colleges (seperate issue, not related, but good to fix). Console Output:
@@ -173,4 +165,4 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
   - The `#trashSection` keeps saying "جاري التحميل...", and never actually loads until I press the `#refreshTrashBtn`
   - Pressing any button has a delay, which is acceptible if there is a loading animation.
 
-See [plan](implementation-plan.md) then implement it.
+See [plan](implementation-plan.md) to implement the patches.
