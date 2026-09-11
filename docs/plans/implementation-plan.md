@@ -63,6 +63,33 @@ Eleven files were modified across this work (all presented above, unzipped, orig
 
 **Suggested order for the new chat:** finish item 11's CSS + the 5 swap sites, syntax-check `control.html`/`control.js`/`control.css`, then move to item 12 using the same file.
 
+---
+
+## Update — Item 11 done
+
+Built `.control-skeleton-block` / `.control-skeleton-row` / `.control-skeleton-line` / `.control-skeleton-stat` in `control.css`, using the page's own palette (`--bg-card2` base, `--gold-dim` sweep) and a page-local `@keyframes control-shimmer`, mirroring `index.css`'s shimmer timing (1.6s ease-in-out infinite, `prefers-reduced-motion` respected) without depending on any of its CSS vars.
+
+Swapped all 5 loading sites:
+- `#adminsTableBody`, `#collegesList`, `#trashList` (static markup in `control.html`) — each now renders 2–3 `.control-skeleton-row` placeholders (a wide block + a narrow block, echoing the real `.admin-card`/`.college-card`/`.trash-card` layout) instead of a bare "جاري التحميل..." string.
+- `#ownerEmailDisplay` — now holds a single inline `.control-skeleton-line` instead of loading text; `renderPlatformStats()` overwrites its `textContent` once data lands, same as before.
+- The 3 `.stat-card`s got a `control-skeleton-stat` class + a stable `id` (`statQuizzesCard`/`statCategoriesCard`/`statAdminsCard`). This variant hides the icon/value/label behind a shimmer overlay via `::after` rather than replacing DOM content, so the em-dash placeholders and emoji icons stay exactly where they were — `renderPlatformStats()` now also removes the class once `stats` arrives, which un-hides the real content. (Without that removal the shimmer would sit on top of the numbers forever — caught this in review before considering it done.)
+- `loadTrash()` in `control.js` — replaced the inline `'<div class="admin-empty">جاري التحميل...</div>'` string with a small `TRASH_SKELETON_HTML` constant (3 rows, same markup as the static placeholder) so a manual refresh/filter click shows the same skeleton as first paint, not a regression to plain text.
+
+All four touched files (`control.html`, `control.css`, `control.js` — `control-stats.css` wasn't touched) pass `node --check` / brace-balance / tag-balance checks.
+
+**Not done as part of this item, left for whoever picks up item 12:** the two open items from the original handoff are still open —
+1. Whether item 12's button-loading feedback should reuse this shimmer language or use a simpler spinner/disabled-state pattern.
+2. Whether `trashNavBtn` needs its own visible disabled/loading state until `_initReady` resolves.
+
+## Item 12 — optimistic/immediate button feedback (not started)
+
+Still needs: audit every action button in `control.js` (save college, delete/deactivate college, add/remove admin, update scopes, trash restore/purge/empty, save retention) for a shared "disable + spinner while in-flight" pattern. Suggested approach for the next session: add one small reusable helper (e.g. `withButtonLoading(button, asyncFn)`) that disables the button, swaps its text/adds a spinner class, and restores it in a `finally` block — then wire each of the action handlers above through it, rather than hand-rolling disabled-state toggling per button.
+
+## Also outstanding (from Testing section above, still unaddressed)
+- Trash-can panel doesn't close when the confirmation modal opens, and sits above the modal's z-index (modal appears underneath it). Needs `trashSection`/`.trash-card` z-index audited against `.modal-overlay`, or the trash panel explicitly hidden/dimmed while a confirm modal is open.
+- The now-redundant "إنشاء امتحان جديد" card still needs removing from `.user-quizzes-container`, along with its dedicated styles, now that the same action lives in `#userQuizContextMenu` and the `.create-folder-btn` menu.
+- Folder delete/move/rename still doesn't work — not yet investigated in this pass.
+
 ## Testing
 While testing the local trash can, I found that it doesn't close once the confirmation modal pops up, and it has a higher z--index, so the modal appears under it. It should close when the modal pops up.
 

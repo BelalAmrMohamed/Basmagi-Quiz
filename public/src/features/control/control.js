@@ -122,6 +122,11 @@ function showMessage(msg, isError = false) {
 }
 
 // ── Platform Stats ─────────────────────────────────────────────────────────────
+// Each stat-card carries a .control-skeleton-stat class (see control.css)
+// that hides its real .stat-icon/.stat-value/.stat-label content behind a
+// shimmer placeholder until data actually arrives. Once we have real values
+// to show, drop the class so the underlying content becomes visible again —
+// otherwise the shimmer would stay glued on top of the numbers forever.
 function renderPlatformStats(stats) {
   if (!stats) return;
   const statQuizzes = document.getElementById("statQuizzes");
@@ -134,6 +139,16 @@ function renderPlatformStats(stats) {
   if (statAdmins) statAdmins.textContent = stats.totalAdmins ?? "—";
   if (ownerEmailDisplay)
     ownerEmailDisplay.textContent = stats.ownerEmail ?? "—";
+
+  document
+    .getElementById("statQuizzesCard")
+    ?.classList.remove("control-skeleton-stat");
+  document
+    .getElementById("statCategoriesCard")
+    ?.classList.remove("control-skeleton-stat");
+  document
+    .getElementById("statAdminsCard")
+    ?.classList.remove("control-skeleton-stat");
 }
 
 let loadedColleges = [];
@@ -531,9 +546,19 @@ function renderTrashList() {
   });
 }
 
+// Same 3-row shimmer markup as the static placeholder in control.html (see
+// .control-skeleton-row/.control-skeleton-block in control.css) — reused
+// here so a manual refresh/filter click shows the same loading state as
+// first paint instead of falling back to plain "جاري التحميل..." text.
+const TRASH_SKELETON_HTML = Array.from(
+  { length: 3 },
+  () =>
+    '<div class="control-skeleton-row"><div class="control-skeleton-block"></div><div class="control-skeleton-block"></div></div>',
+).join("");
+
 async function loadTrash() {
   const list = document.getElementById("trashList");
-  list.innerHTML = '<div class="admin-empty">جاري التحميل...</div>';
+  list.innerHTML = TRASH_SKELETON_HTML;
   try {
     const data = await postAdminItemAction("trash-list");
     trashItemsCache = data.items || [];

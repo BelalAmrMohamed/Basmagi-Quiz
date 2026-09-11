@@ -97,7 +97,18 @@
                         <button class="btn-primary" onclick="submitAddAdmin()">إضافة</button>
                     </div>
                     <div class="admin-list" id="adminsTableBody">
-                        <div class="admin-empty">جاري التحميل...</div>
+                        <div class="control-skeleton-row">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
+                        <div class="control-skeleton-row">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
+                        <div class="control-skeleton-row">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -131,7 +142,14 @@
                         </div>
                     </form>
                     <div id="collegesList" class="college-list">
-                        <div class="admin-empty">جاري التحميل...</div>
+                        <div class="control-skeleton-row">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
+                        <div class="control-skeleton-row">
+                            <div class="control-skeleton-block"></div>
+                            <div class="control-skeleton-block"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -144,17 +162,17 @@
                 <div class="panel-body">
                     <!-- Stats Grid -->
                     <div class="stats-grid" id="statsGrid">
-                        <div class="stat-card">
+                        <div class="stat-card control-skeleton-stat" id="statQuizzesCard">
                             <div class="stat-icon">📋</div>
                             <div class="stat-value" id="statQuizzes">—</div>
                             <div class="stat-label">إجمالي الامتحانات</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card control-skeleton-stat" id="statCategoriesCard">
                             <div class="stat-icon">📚</div>
                             <div class="stat-value" id="statCategories">—</div>
                             <div class="stat-label">المواد والتصنيفات</div>
                         </div>
-                        <div class="stat-card">
+                        <div class="stat-card control-skeleton-stat" id="statAdminsCard">
                             <div class="stat-icon">👥</div>
                             <div class="stat-value" id="statAdmins">—</div>
                             <div class="stat-label">المشرفون النشطون</div>
@@ -173,7 +191,8 @@
                         </div>
                         <div class="owner-info-row">
                             <span class="owner-info-label">الحساب المسجّل:</span>
-                            <span class="owner-info-value" id="ownerEmailDisplay">جاري التحميل...</span>
+                            <span class="owner-info-value" id="ownerEmailDisplay"><span
+                                    class="control-skeleton-block control-skeleton-line"></span></span>
                         </div>
                         <div class="owner-info-row">
                             <span class="owner-info-label">مستوى الصلاحية:</span>
@@ -214,7 +233,18 @@
                     <button type="button" class="trash-filter-tab" data-filter="course">مواد</button>
                 </div>
                 <div class="trash-list" id="trashList">
-                    <div class="admin-empty">جاري التحميل...</div>
+                    <div class="control-skeleton-row">
+                        <div class="control-skeleton-block"></div>
+                        <div class="control-skeleton-block"></div>
+                    </div>
+                    <div class="control-skeleton-row">
+                        <div class="control-skeleton-block"></div>
+                        <div class="control-skeleton-block"></div>
+                    </div>
+                    <div class="control-skeleton-row">
+                        <div class="control-skeleton-block"></div>
+                        <div class="control-skeleton-block"></div>
+                    </div>
                 </div>
             </div>
         </div>
