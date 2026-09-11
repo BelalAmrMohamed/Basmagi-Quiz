@@ -334,16 +334,18 @@ function handleMoveItemToolCall(toolCall) {
     throw err;
   }
 
-  const { moved, blocked } = moveItemsToFolder([itemId], destResolution.id);
+  const { moved, blocked, saveFailed } = moveItemsToFolder([itemId], destResolution.id);
   renderUserQuizzesView();
 
   if (moved > 0) {
     return `✅ تم نقل "${itemName}" إلى ${destinationFolder || "امتحاناتك الرئيسية"}.`;
   }
   const err = new Error(`Move blocked/no-op for ${itemName}`);
-  err.userMessage = blocked > 0
-    ? "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية، ولا يمكن نقل مادة إلى داخل مجلد آخر."
-    : `"${itemName}" موجود بالفعل في هذا الموقع.`;
+  err.userMessage = saveFailed
+    ? "تعذّر حفظ النقل محلياً. قد تكون مساحة التخزين ممتلئة."
+    : blocked > 0
+      ? "لا يمكن نقل مجلد إلى داخل نفسه أو أحد مجلداته الفرعية، ولا يمكن نقل مادة إلى داخل مجلد آخر."
+      : `"${itemName}" موجود بالفعل في هذا الموقع.`;
   throw err;
 }
 

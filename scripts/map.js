@@ -10,7 +10,7 @@ import path from "path";
 import ignore from "ignore";
 
 // ===== Settings =====
-const outputMapPath = "docs/map/context-map.md";
+const outputMapPath = "PROJECT_STRUCTURE.md";
 const IGNORE_EXT = [];
 const EXCEPTION_NAMES = ["README.md", "robots.txt"];
 const IGNORE_HIDDEN_FILES = true;

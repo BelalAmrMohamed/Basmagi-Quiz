@@ -592,7 +592,7 @@ function isDescendant(quizzes, parentId, checkId) {
  * difference between them is how many ids get passed in.
  * @param {string[]} itemIds
  * @param {string|null} targetFolderId
- * @returns {{moved: number, blocked: number}}
+ * @returns {{moved: number, blocked: number, saveFailed?: boolean}}
  */
 export function moveItemsToFolder(itemIds, targetFolderId) {
   const userQuizzes = readUserQuizzes();
@@ -636,9 +636,13 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
   });
 
   if (moved > 0 && !saveUserQuizzes(userQuizzes)) {
-    // Save failed (see saveUserQuizzes) — don't report a successful move
-    // that never actually persisted.
-    return { moved: 0, blocked: blocked + moved };
+    // Save failed (see saveUserQuizzes, which already surfaced its own
+    // notification) — don't report a successful move that never actually
+    // persisted. `saveFailed` lets a caller distinguish this from an
+    // ordinary placement-rule block (see resolveFolderTitleToId's caller in
+    // user-quizzes-view.js, which used to always blame a "already there"
+    // rule violation here regardless of the real cause).
+    return { moved: 0, blocked, saveFailed: true };
   }
   return { moved, blocked };
 }
@@ -1262,6 +1266,15 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
     userQuizzes.push({
       id,
       meta: {
+        // BUG FIX (schema consistency, same class of issue as
+        // createFolderOrCourseNamed's — see its own comment above): this
+        // path built folder rows with a top-level `id` but no matching
+        // `meta.id`, unlike every other folder-creation path in this file.
+        // Every reader falls back with `q.id || q.meta?.id`, so this was
+        // harmless as long as `id` stayed present — but any future code
+        // (or a copy/export round-trip) that only looks at `meta.id` would
+        // silently fail to find folders created via a bulk folder import.
+        id,
         type: isRootLevel ? "course" : "folder",
         title,
         parentId,
@@ -1285,7 +1298,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
     });
   }
 
-  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (!saveUserQuizzes(userQuizzes)) return;
   showNotification(
     "تم الرفع",
     `تم إنشاء ${folderCount} مجلد/مادة ورفع ${quizCount} امتحان بنجاح.`,
@@ -1583,7 +1596,7 @@ export function createFolderOrCourseCard(item) {
   textWrap.appendChild(h);
 
   // Subtext: total number of subfolders and quizzes (recursive)
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const { subfolderCount, quizCount } = getFolderContentsCount(userQuizzes, itemId);
   const subtextStr = formatFolderAndQuizCount(subfolderCount, quizCount);
 
