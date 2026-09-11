@@ -15,6 +15,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 - The `نسخ لامتحاناتي` button sometimes doesn't show the animations (on bigger courses, more than 40 quizzes), clicking it quits the menu immedietly, then after a while (takes longer than usual), the big course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
+- The `.create-quiz-inline-modal` has messed up styles on phones, no top padding
+- Fix the `.copyAiPromptBtn` with its arrow, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
 ### Dropdowns in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
@@ -80,6 +82,7 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - Detailed info: Instead of listing the questions types and question number (["Essay", "MCQ", "True/False"] [30]) we should count the number of each individual type, so we now the number of essays, the number of MCQs, and the number of True/False.
 - Connect Password typing memory on the main page to the quiz page, so if the user had to type the password on the main page to download it, they don't have to type it again for the same quiz on the quiz.html page on the same visit.
 - Allow users to switch view on the home page, when there is not a compulsory view.
+- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on.
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.
@@ -112,7 +115,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
-- Fix the `.copyAiPromptBtn` with its arrow, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
 #### Password
 When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 

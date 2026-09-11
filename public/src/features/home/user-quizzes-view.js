@@ -581,7 +581,7 @@ export function renderUserQuizzesView() {
     // already enforces (see showContextMenu in user-quizzes-folders.js).
     const createFolderBtn = document.createElement("button");
     createFolderBtn.type = "button";
-    createFolderBtn.innerHTML = `<span>مجلد جديد</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+    createFolderBtn.innerHTML = `<span>إنشاء</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
     createFolderBtn.className = "btn create-folder-btn mobile-only-flex";
     createFolderBtn.setAttribute("aria-label", "إنشاء مجلد أو مادة جديدة");
     createFolderBtn.setAttribute("aria-haspopup", "menu");
