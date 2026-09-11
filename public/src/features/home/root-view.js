@@ -55,7 +55,10 @@ import {
   DOWNLOAD_ICON_SVG,
   TRASH_ICON_SVG,
   RENAME_ICON_SVG,
+  TRASH_BIN_ICON_SVG,
 } from "./icons.js";
+import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
+import { getTrashItemCount } from "./user-quizzes-trash.js";
 import {
   openAIAgentWithAttachment,
   buildPlatformCourseAttachment,
@@ -395,6 +398,25 @@ export async function renderRootCategories() {
               exportUserQuizzesAsJson();
             };
             menu.appendChild(exportBtn);
+          }
+
+          // "سلة المهملات" — local trash panel (see user-quizzes-trash.js
+          // and plan §4/§8 Step 8). Shown whenever there's at least one
+          // trashed item, regardless of whether "امتحاناتك" itself
+          // currently has any live content — a fully-emptied collection can
+          // still have recoverable items sitting in the trash.
+          const trashCount = getTrashItemCount();
+          if (trashCount > 0) {
+            const trashBtn = document.createElement("button");
+            trashBtn.type = "button";
+            trashBtn.className = "exam-action-btn";
+            trashBtn.innerHTML = `${TRASH_BIN_ICON_SVG}<span>سلة المهملات (${trashCount})</span>`;
+            trashBtn.onclick = (clickEvent) => {
+              clickEvent.stopPropagation();
+              closeMenu();
+              openLocalTrashPanel();
+            };
+            menu.appendChild(trashBtn);
           }
 
           // "حذف الكل" (Part C, item 1) — a fully destructive, collection-

@@ -46,7 +46,10 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 
 ### AI Agent On Phones.
 - The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
-- The `.ai-agent-sidebar-header` should have the close button on the right, too.  
+- The `.ai-agent-sidebar-header` should have the close button on the right, too, and the logo on the left.  
+
+### Document Pages
+Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons
 
 ## New Features
 
@@ -67,8 +70,8 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
   - Because for some reason, the quiz page rerenders each time the user interacts with the quiz (presses a button), which reloads every videos, images, and audio. that's why media is currently out of the quiz body. We should fix that issue first, before migrating the media to be rendered through the markdown engine.
   - The `export-to-quiz.js` feature renders media inside the question body, and doesn't rerender the question after each interaction, so you can learn from it.
 - After implementing this feature, migrate all quizzes to embed the media in the question body itself, and delete all legacy code related to the object media rendering, because now media will be in the question body itself.
-- This will allow quiz creators to add multiple pieces of media to each question.
-- Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos. 
+- This will allow quiz creators to add multiple pieces of media to each question or add media to options, explanations, and formal answers.
+- Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use YouTube, images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos objects. 
 
 ### Quizzes Improvement (Suggestions)
 - Number of Views or people who solved a quiz on each quiz.

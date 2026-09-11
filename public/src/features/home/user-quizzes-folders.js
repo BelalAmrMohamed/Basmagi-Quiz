@@ -354,14 +354,39 @@ export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
   return idsToDelete;
 }
 
+/**
+ * Soft-deletes an item (quiz/folder/course, called from showContextMenu's
+ * "حذف" for any targetType) into the local trash instead of discarding it —
+ * see user-quizzes-trash.js and plan §4. Cascades to every descendant via
+ * expandSelectionWithDescendants (unchanged from the old hard-delete
+ * behavior) so a folder/course and everything inside it move to the trash
+ * together, as one restorable/purgeable batch.
+ *
+ * BUG FIX (copy): the confirm wording used to say the delete "لا يمكن
+ * التراجع عنه" (irreversible) — no longer true now that this routes through
+ * the trash, so the message reflects that instead.
+ */
 export async function deleteFolder(folderId) {
-  if (!(await _confirm("هل أنت متأكد من الحذف"))) return;
   const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-  const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userQuizzes);
+  const target = userQuizzes.find((q) => (q.id || q.meta?.id) === folderId);
+  if (!target) return;
 
+  if (!(await _confirm("سيُنقل هذا العنصر إلى سلة المهملات. هل تريد المتابعة؟"))) return;
+
+  const idsToDelete = expandSelectionWithDescendants(new Set([folderId]), userQuizzes);
+  const itemsToTrash = userQuizzes.filter(
+    (q) => idsToDelete.has(q.id) || idsToDelete.has(q.meta?.id),
+  );
   const newQuizzes = userQuizzes.filter((q) => !idsToDelete.has(q.id) && !idsToDelete.has(q.meta?.id));
+
+  const { moveToTrash } = await import("./user-quizzes-trash.js");
+  moveToTrash(itemsToTrash, target.meta?.title || "عنصر بلا اسم");
+
   setInStorage("user_quizzes", JSON.stringify(newQuizzes));
   renderUserQuizzesView();
+
+  const { refreshUserQuizzesCard } = await import("./course-count.js");
+  refreshUserQuizzesCard();
 }
 
 /**

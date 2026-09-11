@@ -118,36 +118,9 @@ All three surfaces that already render an `.exam-more-btn` dropdown — `exam-ca
 5. Shared **Move-To dialog** extraction/generalization (blocks steps 6–7). (Done ✅ — new `move-to-dialog.js` exports a storage-agnostic `openMoveToDialogWithSource(source)` that owns all DOM/tree/guide-line rendering behind a documented `MoveSource` adapter interface; `user-quizzes-folders.js`'s `openMoveToDialog()` is now a thin wrapper building a `createLocalUserQuizzesMoveSource()` adapter over `user_quizzes`, with the exact same exported signature/behavior as before — zero changes needed at any of its three call sites. The Supabase-backed admin-side adapter is deferred to step 6, where the dropdown wiring will need a concrete course/folder tree fetch to build it from.)
 6. Client: dropdown additions (edit/move/rename/delete) across `exam-card.js`, `category-view.js`, `root-view.js`, gated by `canManageItem`. (Next Step — includes building the Supabase-backed `MoveSource` adapter for `openMoveToDialogWithSource()`.) (Done ✅)
 7. Client: admin trash-management UI (list/restore/purge/settings) in `control.html`. (Done ✅)
-8. Client: `/#my-quizzes` local trash (storage key, sweep, restore, its own trash UI panel) — independent of steps 2–7, can be built in parallel.
+8. Client: `/#my-quizzes` local trash (storage key, sweep, restore, its own trash UI panel) — independent of steps 2–7, can be built in parallel. (Done ✅ — new `user-quizzes-trash.js` owns the `user_quizzes_trash` storage key, batch-based soft-delete/restore/purge, lazy expiry sweep, and the local retention setting; new `user-quizzes-trash-panel.js` + `user-quizzes-trash-panel.css` render the "سلة المهملات" dialog, reusing the existing `.quiz-info-dialog` shell. `deleteFolder()` (user-quizzes-folders.js), `deleteUserQuiz()` (user-quiz-card.js), and the bulk-delete handler (user-quizzes-view.js) now all route through `moveToTrash()` instead of discarding rows, with confirm copy updated to reflect that the action is reversible. Entry point wired into the "امتحاناتك" card's dropdown in root-view.js, shown whenever the trash is non-empty. `deleteAllUserQuizzes()` ("حذف الكل") is deliberately left as a genuine hard wipe — it's the plan's documented escape hatch, not a per-item delete, and the trash UI's own "إفراغ السلة" already reuses its `_confirmTyped()` pattern.)
 9. `create-quiz.js` edit-mode wiring.
 10. Manual QA pass: delete→restore→verify media intact; delete→purge→verify media gone; move quiz across courses; rename collision handling; non-owner/scope-restricted admin boundary checks.
 
 
-This is the last partial implementation with AI (End of the chat):
-```md
-These are the 8 files touched today — same relative paths in your repo:
-
-- `public/src/features/home/exam-dropdown-menu.js` — new `createActionGroupSubmenu()`
-- `public/src/features/home/exam-card.js` — quiz admin group collapsed into submenu
-- `public/src/features/home/category-view.js` — folder admin group collapsed into submenu
-- `public/src/features/home/root-view.js` — course admin group collapsed into submenu
-- `public/src/features/home/index.css` — `.submenu-content--actions` styling
-- `public/control.html` — new trash panel markup, nav toggle, typed-confirm modal
-- `public/src/features/control/control.js` — trash list/restore/purge/settings logic
-- `public/src/features/control/control.css` — trash panel + typed-confirm styling
-
-## What's left
-
-**Step 8 — `/#my-quizzes` local trash (not started).** Three delete paths still hard-delete instead of soft-deleting into a new `user_quizzes_trash` localStorage bucket:
-- `deleteFolder()` in `user-quizzes-folders.js`
-- `deleteAllUserQuizzes()` in `user-quizzes-folders.js`
-- `deleteUserQuiz()` in `user-quiz-card.js`
-
-Needs: a storage helper module (move-to-trash + stamp `expiresAt`, lazy sweep-on-load, restore-with-collision-suffix), and a small trash UI panel reachable from the "امتحاناتك" card dropdown, per the plan's §4.
-
-**Step 9 — `create-quiz.js` edit-mode wiring.** Not yet verified this session. Need to confirm `?id=<dbId>&mode=edit` actually pre-fills the form from a fetched quiz and posts to an update path, per §7.
-
-**Step 10 — Manual QA pass.** Delete→restore→media-intact, delete→purge→media-gone, cross-course move, rename collisions, non-owner scope boundaries. This one's on you/a real environment to run — I won't render or execute anything.
-
-Good stopping point — the shared/admin side (server + dropdown UI + trash panel) is now fully wired end-to-end; what remains is the local-storage trash mirror and the edit-mode form.
-```
+This is the last partial implementation with AI (End of the chat).

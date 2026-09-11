@@ -12,7 +12,8 @@
 // ============================================================================
 
 import { qz } from "./quiz-schema.js";
-import { formatArabicQuestionCount } from "./course-count.js";
+import { formatArabicQuestionCount, refreshUserQuizzesCard } from "./course-count.js";
+import { moveToTrash } from "./user-quizzes-trash.js";
 import { getSelectedUserQuizzes } from "./app-state.js";
 import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import {
@@ -254,23 +255,33 @@ export function playUserQuiz(quiz) {
 }
 
 /**
- * Delete a user-created quiz
+ * Delete a user-created quiz — soft delete into the local trash (see
+ * user-quizzes-trash.js and plan §4) rather than discarding it outright.
+ *
+ * BUG FIX (copy): the confirm wording used to say "لا يمكن إسترداده" (can't
+ * be recovered) — no longer true now that this routes through the trash, so
+ * the message reflects that instead.
  */
 export async function deleteUserQuiz(quizId) {
   try {
-    if (!(await _confirm("هل أنت متأكد من مسح الامتحان؟ لا يمكن إسترداده"))) {
+    if (!(await _confirm("سيُنقل هذا الامتحان إلى سلة المهملات. هل تريد المتابعة؟"))) {
       return;
     }
 
     const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    const target = userQuizzes.find((q) => q.id === quizId);
+    if (!target) return;
+
     const filteredQuizzes = userQuizzes.filter((q) => q.id !== quizId);
+    moveToTrash([target], qz(target, "title") || target.meta?.title || "امتحان بلا اسم");
     setInStorage("user_quizzes", JSON.stringify(filteredQuizzes));
 
     // Re-render the folder view
     renderRootCategories();
     renderUserQuizzesView();
+    refreshUserQuizzesCard();
 
-    showNotification("تم الحذف", "تم حذف الامتحان بنجاح", "./favicon.png");
+    showNotification("تم النقل إلى السلة", "تم نقل الامتحان إلى سلة المهملات بنجاح", "./favicon.png");
   } catch (error) {
     console.error("Error deleting quiz:", error);
     _alert("Error deleting quiz. Please try again.");

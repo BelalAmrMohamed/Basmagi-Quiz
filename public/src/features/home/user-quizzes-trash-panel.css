@@ -1,0 +1,195 @@
+/* ============================================================================
+   public/src/features/home/user-quizzes-trash-panel.css
+   "سلة المهملات" (local trash) panel for the "امتحاناتك" section.
+   Reuses the shared .quiz-info-dialog shell (quiz-info-modal.css) for the
+   outer frame/header/close-button/animations — only the trash-specific
+   toolbar + row list are styled here.
+   ============================================================================ */
+
+.local-trash-dialog .quiz-info-dialog-body {
+    padding: 16px 20px 20px;
+    gap: 14px;
+}
+
+/* ─── Toolbar: retention setting + "إفراغ السلة" ─── */
+.local-trash-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+}
+
+.local-trash-retention-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+.local-trash-retention-input {
+    width: 60px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border, #ccc);
+    background: var(--color-background, #fff);
+    color: var(--color-text-primary, #111);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+/* ─── Buttons (shared shape for restore / purge / empty-all / save) ─── */
+.local-trash-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
+    background: var(--color-background-secondary, #f3f4f6);
+    color: var(--color-text-primary, #111);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.local-trash-btn svg {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+}
+
+.local-trash-btn:hover {
+    background: var(--color-background, #fff);
+    border-color: var(--color-border-strong, #bbb);
+}
+
+.local-trash-btn--restore {
+    color: #1a9d5c;
+    border-color: rgba(26, 157, 92, 0.35);
+    background: rgba(26, 157, 92, 0.1);
+}
+
+.local-trash-btn--restore:hover {
+    background: rgba(26, 157, 92, 0.2);
+    border-color: #1a9d5c;
+}
+
+.local-trash-btn--purge,
+.local-trash-btn--empty-all {
+    color: var(--color-danger, #dc2626);
+    border-color: rgba(220, 38, 38, 0.3);
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.local-trash-btn--purge:hover,
+.local-trash-btn--empty-all:hover {
+    background: rgba(220, 38, 38, 0.16);
+    border-color: var(--color-danger, #dc2626);
+}
+
+/* ─── Row list ─── */
+.local-trash-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.local-trash-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--color-background, #fff);
+    border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+    border-radius: 10px;
+    transition: border-color 0.15s ease;
+}
+
+.local-trash-row:hover {
+    border-color: var(--color-border-strong, #bbb);
+}
+
+.local-trash-row-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.local-trash-row-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: var(--color-text-primary, #111);
+    overflow-wrap: anywhere;
+}
+
+.local-trash-row-title {
+    overflow-wrap: anywhere;
+}
+
+.local-trash-type-badge {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--color-background-secondary, #f3f4f6);
+    color: var(--color-text-secondary, #6b7280);
+    border: 1px solid var(--color-border, rgba(0, 0, 0, 0.08));
+}
+
+.local-trash-row-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--color-text-secondary, #6b7280);
+}
+
+.local-trash-dot {
+    opacity: 0.6;
+}
+
+.local-trash-expiry {
+    color: #b8860b;
+}
+
+.local-trash-expiry--urgent {
+    color: var(--color-danger, #dc2626);
+    font-weight: 700;
+}
+
+.local-trash-row-actions {
+    flex-shrink: 0;
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 480px) {
+    .local-trash-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .local-trash-row-actions {
+        justify-content: flex-end;
+    }
+
+    .local-trash-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

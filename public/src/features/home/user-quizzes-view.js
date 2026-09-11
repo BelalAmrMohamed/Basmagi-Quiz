@@ -71,6 +71,8 @@ import {
   showNotification,
   _confirm,
 } from "../../components/notifications/notifications.js";
+import { moveToTrash } from "./user-quizzes-trash.js";
+import { refreshUserQuizzesCard } from "./course-count.js";
 
 /**
  * Handles the AI Helper's `create_quiz` tool call: validates the payload,
@@ -1039,9 +1041,14 @@ function renderBulkActionBar() {
       updateBulkActionBar();
     };
 
+    // BUG FIX (reversibility): this used to hard-delete straight out of
+    // user_quizzes. Now routes through moveToTrash() (user-quizzes-trash.js)
+    // — same as the single-item deleteFolder() in user-quizzes-folders.js —
+    // so a bulk delete lands in "سلة المهملات" as one restorable/purgeable
+    // batch instead of being unrecoverable. Confirm copy updated to match.
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
       if (selectedUserQuizzes.size === 0) return;
-      if (await _confirm("هل أنت متأكد من حذف الامتحانات المحددة؟")) {
+      if (await _confirm("سيُنقل العناصر المحددة إلى سلة المهملات. هل تريد المتابعة؟")) {
         let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
         // BUG FIX: expand the checked selection to include descendants of any
         // selected folder/course first — see expandSelectionWithDescendants()
@@ -1052,13 +1059,23 @@ function renderBulkActionBar() {
           selectedUserQuizzes,
           userQuizzes,
         );
+        const itemsToTrash = userQuizzes.filter((q) => {
+          const qId = qz(q, "id") || q.id;
+          return idsToDelete.has(qId);
+        });
         userQuizzes = userQuizzes.filter((q) => {
           const qId = qz(q, "id") || q.id;
           return !idsToDelete.has(qId);
         });
+        const label =
+          itemsToTrash.length > 1
+            ? `${itemsToTrash.length} عناصر محددة`
+            : itemsToTrash[0]?.meta?.title || qz(itemsToTrash[0], "title") || "عنصر بلا اسم";
+        moveToTrash(itemsToTrash, label);
         setInStorage("user_quizzes", JSON.stringify(userQuizzes));
         selectedUserQuizzes.clear();
         renderUserQuizzesView();
+        refreshUserQuizzesCard();
       }
     };
 
