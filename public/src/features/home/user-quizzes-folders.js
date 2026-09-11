@@ -9,6 +9,7 @@ import { buildUserQuizEntry } from "./quiz-schema.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
+import { getTrashItemCount } from "./user-quizzes-trash.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -747,6 +748,13 @@ const EDIT_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"
 const DELETE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
 const MOVE_TO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9V5c0-1.1.9-2 2-2h3.9c.7 0 1.3.3 1.7.9l.8 1.2c.4.6 1 .9 1.7.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-2"/><path d="M2 13h10"/><path d="m9 16 3-3-3-3"/></svg>`;
 const ASK_AI_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="m19 16 .7 2.3L22 19l-2.3.7z"/></svg>`;
+// Matches create-quiz-modal.js's own file-plus modal-header icon, redrawn
+// at this menu's 15x15 scale (same "redraw rather than import a
+// differently-sized version" approach EDIT_SVG above already uses).
+const CREATE_QUIZ_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>`;
+// Matches root-view.js's TRASH_BIN_ICON_SVG (icons.js), redrawn at 15x15 —
+// see docs/plans/implementation-plan.md items 9/10.
+const TRASH_CAN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 
 export function initContextMenu() {
   if (contextMenuEl) return;
@@ -843,6 +851,20 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   }
 
   // Global actions — always visible regardless of what was right-clicked
+  //
+  // "إنشاء امتحان جديد" — opens the same paste-text/import-file modal as
+  // the standalone .user-create-quiz-card (create-quiz-modal.js), which
+  // stays visible unchanged elsewhere in the "امتحاناتك" layout (see
+  // docs/plans/implementation-plan.md item 10 — this menu gets its own
+  // entry point to that same flow, not a replacement for the card).
+  // Dynamically imported to avoid a static circular import: create-quiz-
+  // modal.js already imports currentFolderId from this module.
+  contextMenuEl.appendChild(
+    createMenuItem(CREATE_QUIZ_SVG, "إنشاء امتحان جديد", async () => {
+      const { openInlineCreateQuizModal } = await import("./create-quiz-modal.js");
+      openInlineCreateQuizModal();
+    }),
+  );
   contextMenuEl.appendChild(createMenuItem(CREATE_FOLDER_SVG, "إنشاء مجلد", () => createNewFolderOrCourse("folder")));
   // Courses are top-level only — inside a folder/course this option can't
   // do anything, but it stays visible-but-disabled (not hidden) so the
@@ -868,6 +890,28 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   }
   if (isAdminAuthenticated()) {
     contextMenuEl.appendChild(createMenuItem(UPLOAD_FOLDER_SVG, "استيراد مجلد من جهازك", () => uploadFolderForAdmins()));
+  }
+
+  // "سلة المهملات" — local trash panel entry point (item 9). Mirrors the
+  // exact gating root-view.js's own "امتحاناتك" card ⋮ menu already uses:
+  // shown only once there's at least one trashed item, regardless of
+  // whether "امتحاناتك" itself currently has any live content.
+  // getTrashItemCount() is imported statically above (user-quizzes-trash.js
+  // already statically imports back from this module — hasSameLevelCollision
+  // — so this doesn't introduce a new cycle, just uses the existing one, and
+  // it's only ever called from inside this function body, well after both
+  // modules have finished their own top-level evaluation). openLocalTrashPanel
+  // itself is still dynamically imported (user-quizzes-trash-panel.js pulls
+  // in more of this module's exports transitively) since the click only
+  // happens well after page load, so the extra async hop there is free.
+  const trashCount = getTrashItemCount();
+  if (trashCount > 0) {
+    contextMenuEl.appendChild(
+      createMenuItem(TRASH_CAN_SVG, `سلة المهملات (${trashCount})`, async () => {
+        const { openLocalTrashPanel } = await import("./user-quizzes-trash-panel.js");
+        openLocalTrashPanel();
+      }),
+    );
   }
 
   // Divider + "حذف الكل" below — kept visually and physically separate from

@@ -4364,7 +4364,7 @@ window.saveLocally = function () {
  * always means "leave the current password as-is."
  */
 async function saveSharedQuizEdit() {
-  showLoading("جاري الحفظ...");
+  showLoading("يُحفظ التعديلات..");
 
   try {
     const token = getToken();

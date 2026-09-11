@@ -7,6 +7,11 @@
 //      (see ai-prompts.js) and copy it to clipboard for use with an external AI.
 //   2. createInlineCreateQuizCard()/openInlineCreateQuizModal() — paste text or
 //      import a file, parse it into quiz JSON, and save it to localStorage.
+//      openInlineCreateQuizModal() is exported (not just used internally by
+//      the card above) so the #userQuizContextMenu and create-folder-btn
+//      dropdowns (user-quizzes-folders.js / user-quizzes-view.js) can offer
+//      the same "إنشاء امتحان جديد" action without duplicating this modal —
+//      see docs/plans/implementation-plan.md item 10.
 //
 // Both modals previously leaked a document-level Escape-key listener whenever
 // closed via a button rather than Escape/overlay-click — fixed here using the
@@ -90,7 +95,7 @@ export function createInlineCreateQuizCard() {
   return card;
 }
 
-function openInlineCreateQuizModal() {
+export function openInlineCreateQuizModal() {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.setAttribute("role", "dialog");

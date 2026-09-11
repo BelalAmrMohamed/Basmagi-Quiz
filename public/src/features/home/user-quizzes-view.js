@@ -49,7 +49,7 @@ import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
-import { createInlineCreateQuizCard } from "./create-quiz-modal.js";
+import { createInlineCreateQuizCard, openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -71,7 +71,8 @@ import {
   showNotification,
   _confirm,
 } from "../../components/notifications/notifications.js";
-import { moveToTrash } from "./user-quizzes-trash.js";
+import { moveToTrash, getTrashItemCount } from "./user-quizzes-trash.js";
+import { openLocalTrashPanel } from "./user-quizzes-trash-panel.js";
 import { refreshUserQuizzesCard } from "./course-count.js";
 
 /**
@@ -583,11 +584,33 @@ export function renderUserQuizzesView() {
     createFolderBtn.type = "button";
     createFolderBtn.innerHTML = `<span>إنشاء</span> <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
     createFolderBtn.className = "btn create-folder-btn mobile-only-flex";
-    createFolderBtn.setAttribute("aria-label", "إنشاء مجلد أو مادة جديدة");
+    // Broadened from "مجلد أو مادة جديدة" now that this dropdown also
+    // covers quiz creation and the trash link (see docs/plans/
+    // implementation-plan.md items 9/10) — the button's own visible label
+    // ("إنشاء") already covered this; only the a11y label needed updating.
+    createFolderBtn.setAttribute("aria-label", "إنشاء أو الوصول إلى سلة المهملات");
     createFolderBtn.setAttribute("aria-haspopup", "menu");
     createFolderBtn.onclick = (e) => {
       e.stopPropagation();
       openExamDropdownMenu(createFolderBtn, (menu, closeMenu) => {
+        // "إنشاء امتحان جديد" — same modal as the standalone
+        // .user-create-quiz-card (createInlineCreateQuizCard(), still
+        // rendered unchanged elsewhere in this view below), reused here so
+        // phone users reach it from this dropdown too instead of having to
+        // scroll to the card. Consolidates this menu to the 4 items the
+        // plan calls for: Create Quiz / Create Folder / Create Course /
+        // Trash Can.
+        const quizOpt = document.createElement("button");
+        quizOpt.type = "button";
+        quizOpt.className = "exam-action-btn";
+        quizOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg><span>إنشاء امتحان جديد</span>`;
+        quizOpt.onclick = (e) => {
+          e.stopPropagation();
+          closeMenu();
+          openInlineCreateQuizModal();
+        };
+        menu.appendChild(quizOpt);
+
         const folderOpt = document.createElement("button");
         folderOpt.type = "button";
         folderOpt.className = "exam-action-btn";
@@ -619,6 +642,24 @@ export function renderUserQuizzesView() {
           courseOpt.style.cursor = "not-allowed";
         }
         menu.appendChild(courseOpt);
+
+        // "سلة المهملات" — same gating as root-view.js's "امتحاناتك" card
+        // ⋮ menu and the #userQuizContextMenu global actions (see
+        // user-quizzes-folders.js's showContextMenu): only shown once
+        // there's at least one trashed item.
+        const trashCount = getTrashItemCount();
+        if (trashCount > 0) {
+          const trashOpt = document.createElement("button");
+          trashOpt.type = "button";
+          trashOpt.className = "exam-action-btn";
+          trashOpt.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span>سلة المهملات (${trashCount})</span>`;
+          trashOpt.onclick = (e) => {
+            e.stopPropagation();
+            closeMenu();
+            openLocalTrashPanel();
+          };
+          menu.appendChild(trashOpt);
+        }
       });
     };
     actionsBar.appendChild(createFolderBtn);
