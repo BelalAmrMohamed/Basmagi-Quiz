@@ -413,7 +413,7 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
             icon: EDIT_ICON_SVG,
             onClick: () => {
               if (!exam.dbId) return;
-              window.location.href = `/create-quiz?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
+              window.location.href = `/create-quiz.html?id=${encodeURIComponent(exam.dbId)}&mode=edit`;
             },
           },
           {

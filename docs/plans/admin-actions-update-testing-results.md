@@ -1,4 +1,4 @@
-## Implementation Plan: Admin Deletion/Trash, Move, Edit & Rename
+## Implementation Plan: Admin Deletion/Trash, Move, Edit & Rename (Fully Implemented)
 
 ### 0. Scope clarification & assumptions to confirm first
 
@@ -172,3 +172,5 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
   ```
   - The `#trashSection` keeps saying "جاري التحميل...", and never actually loads until I press the `#refreshTrashBtn`
   - Pressing any button has a delay, which is acceptible if there is a loading animation.
+
+See [plan](implementation-plan.md) then implement it.
