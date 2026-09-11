@@ -116,8 +116,8 @@ All three surfaces that already render an `.exam-more-btn` dropdown — `exam-ca
 3. Server: folder/course soft-delete + cascade batching. (Done ✅)
 4. Server: move-item, rename-item, update-quiz (edit) actions. (Done ✅)
 5. Shared **Move-To dialog** extraction/generalization (blocks steps 6–7). (Done ✅ — new `move-to-dialog.js` exports a storage-agnostic `openMoveToDialogWithSource(source)` that owns all DOM/tree/guide-line rendering behind a documented `MoveSource` adapter interface; `user-quizzes-folders.js`'s `openMoveToDialog()` is now a thin wrapper building a `createLocalUserQuizzesMoveSource()` adapter over `user_quizzes`, with the exact same exported signature/behavior as before — zero changes needed at any of its three call sites. The Supabase-backed admin-side adapter is deferred to step 6, where the dropdown wiring will need a concrete course/folder tree fetch to build it from.)
-6. Client: dropdown additions (edit/move/rename/delete) across `exam-card.js`, `category-view.js`, `root-view.js`, gated by `canManageItem`. (Next Step — includes building the Supabase-backed `MoveSource` adapter for `openMoveToDialogWithSource()`.)
-7. Client: admin trash-management UI (list/restore/purge/settings) in `control.html`.
+6. Client: dropdown additions (edit/move/rename/delete) across `exam-card.js`, `category-view.js`, `root-view.js`, gated by `canManageItem`. (Next Step — includes building the Supabase-backed `MoveSource` adapter for `openMoveToDialogWithSource()`.) (Done ✅)
+7. Client: admin trash-management UI (list/restore/purge/settings) in `control.html`. (Done ✅)
 8. Client: `/#my-quizzes` local trash (storage key, sweep, restore, its own trash UI panel) — independent of steps 2–7, can be built in parallel.
 9. `create-quiz.js` edit-mode wiring.
 10. Manual QA pass: delete→restore→verify media intact; delete→purge→verify media gone; move quiz across courses; rename collision handling; non-owner/scope-restricted admin boundary checks.
