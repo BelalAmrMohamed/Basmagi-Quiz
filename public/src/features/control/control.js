@@ -43,6 +43,12 @@ const _initReady = new Promise((resolve) => {
 });
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
+// trashNavBtn is disabled at parse time (see control.html) since its
+// onclick is live from first paint but _initReady hasn't resolved yet —
+// clicking it before that point used to just silently wait on
+// postAdminItemAction's internal `await _initReady` with no visible
+// feedback, which is itself confusable with the stuck-spinner symptom item
+// 12 is meant to close out. Re-enabled here once _initReady resolves.
 async function init() {
   // 1. Redirect immediately if no local admin JWT exists
   if (!isAdminAuthenticated()) {
@@ -70,6 +76,8 @@ async function init() {
   }
 
   _resolveInitReady();
+  document.getElementById("trashNavBtn").disabled = false;
+  document.getElementById("trashNavBtn").classList.remove("btn-loading");
 
   // 3. Load admin-control data (admins + platform stats)
   loadData();
@@ -119,6 +127,29 @@ function showMessage(msg, isError = false) {
   toastTimer = setTimeout(() => {
     el.classList.remove("show");
   }, 3500);
+}
+
+// ── Button loading feedback (item 12) ──────────────────────────────────────────
+// Shared helper for every in-flight action button (save college, add/remove
+// admin, update scopes, trash restore/purge/empty, save retention): adds a
+// disabled + spinner state (see .btn-loading in control.css) for the
+// duration of `asyncFn`, and always restores the button afterwards via
+// `finally` — including when `asyncFn` throws, so a failed request never
+// leaves a button stuck spinning. Buttons that get re-created/removed from
+// the DOM as part of a re-render (e.g. after loadData()/loadTrash()
+// refresh the list) don't need manual restoration since they're discarded
+// entirely, but `finally` still runs safely against the detached node.
+async function withButtonLoading(button, asyncFn) {
+  if (!button) return asyncFn();
+  if (button.classList.contains("btn-loading")) return; // already in flight
+  button.classList.add("btn-loading");
+  button.disabled = true;
+  try {
+    return await asyncFn();
+  } finally {
+    button.classList.remove("btn-loading");
+    button.disabled = false;
+  }
 }
 
 // ── Platform Stats ─────────────────────────────────────────────────────────────
@@ -185,7 +216,7 @@ function renderColleges(colleges) {
     const remove = document.createElement("button");
     remove.className = "btn-remove";
     remove.textContent = "تعطيل";
-    remove.onclick = () => deactivateCollege(college.id);
+    remove.onclick = () => deactivateCollege(college.id, remove);
     actions.append(edit, remove);
     card.append(info, actions);
     list.appendChild(card);
@@ -209,44 +240,49 @@ async function saveCollege(event) {
   event.preventDefault();
   const terms = [...document.querySelectorAll("#collegeForm .college-terms input:checked")]
     .map((input) => Number(input.value));
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        action: "save_college",
-        id: document.getElementById("collegeId").value || undefined,
-        name: document.getElementById("collegeName").value,
-        education_type: document.getElementById("collegeEducationType").value,
-        year_count: Number(document.getElementById("collegeYearCount").value),
-        terms,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    showMessage("تم حفظ الكلية بنجاح");
-    resetCollegeForm();
-    loadData();
-  } catch (err) {
-    showMessage(err.message, true);
-  }
+  const submitBtn = document.querySelector("#collegeForm button[type='submit']");
+  await withButtonLoading(submitBtn, async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          action: "save_college",
+          id: document.getElementById("collegeId").value || undefined,
+          name: document.getElementById("collegeName").value,
+          education_type: document.getElementById("collegeEducationType").value,
+          year_count: Number(document.getElementById("collegeYearCount").value),
+          terms,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showMessage("تم حفظ الكلية بنجاح");
+      resetCollegeForm();
+      loadData();
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
 }
 
-async function deactivateCollege(id) {
+async function deactivateCollege(id, button) {
   if (!window.confirm("سيتم إخفاء الكلية من خيارات الرفع. هل تريد المتابعة؟")) return;
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ action: "delete_college", id }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    showMessage("تم تعطيل الكلية");
-    loadData();
-  } catch (err) {
-    showMessage(err.message, true);
-  }
+  await withButtonLoading(button, async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ action: "delete_college", id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showMessage("تم تعطيل الكلية");
+      loadData();
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
 }
 
 // ── Data loading ───────────────────────────────────────────────────────────────
@@ -312,24 +348,45 @@ async function submitAddAdmin() {
     showMessage("يرجى إدخال بريد إلكتروني صالح", true);
     return;
   }
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({ action: "add_admin", email }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    showMessage("تم إضافة المشرف بنجاح");
-    document.getElementById("newAdminEmail").value = "";
-    loadData();
-  } catch (err) {
-    showMessage(err.message, true);
+  const addBtn = document.querySelector(".search-row .btn-primary");
+  await withButtonLoading(addBtn, async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ action: "add_admin", email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      showMessage("تم إضافة المشرف بنجاح");
+      document.getElementById("newAdminEmail").value = "";
+      loadData();
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
+}
+
+// Item-12 fix-round note: testing found the trash panel staying visible
+// (and, per the report, painting above) the confirm modal when a
+// restore/purge/remove confirmation opens from within the trash view. The
+// modal's own CSS is a standard fixed-position, z-index:5000 overlay with
+// no competing z-index found anywhere under #trashSection, so rather than
+// rely on a stacking-context diagnosis that couldn't be reproduced by
+// reading the CSS alone, this hides the trash section outright while
+// either confirm modal is open — matching what the report explicitly
+// asked for ("it should close when the modal pops up") and removing any
+// possibility of it visually competing with the modal regardless of cause.
+function hideTrashSectionForModal(hide) {
+  const trashSection = document.getElementById("trashSection");
+  if (trashSection && !trashSection.hidden) {
+    trashSection.classList.toggle("trash-section--dimmed-for-modal", hide);
   }
 }
 
 function closeModal() {
   document.getElementById("confirmModal").classList.remove("show");
+  hideTrashSectionForModal(false);
 }
 window.closeModal = closeModal;
 
@@ -348,10 +405,18 @@ function openConfirmModal({
 
   const modal = document.getElementById("confirmModal");
   modal.classList.add("show");
+  hideTrashSectionForModal(true);
 
   confirmBtn.onclick = async function () {
+    // Async onConfirm handlers (the actual delete/restore/purge network
+    // call) get the button's own loading spinner while the modal stays
+    // open, so the user sees explicit in-flight feedback instead of the
+    // modal just vanishing with nothing happening for a moment. Purely
+    // synchronous onConfirm handlers (e.g. openEmptyTrashConfirm's, which
+    // just swaps in the typed-confirm modal) resolve withButtonLoading
+    // immediately, so this adds no delay for them.
+    await withButtonLoading(confirmBtn, onConfirm);
     closeModal();
-    await onConfirm();
   };
 }
 
@@ -403,31 +468,33 @@ window.openScopeModal = function (email, currentScopes) {
   document.getElementById("scopeModal").classList.add("show");
 };
 
-document.getElementById("saveScopesBtn").addEventListener("click", async () => {
+document.getElementById("saveScopesBtn").addEventListener("click", async (e) => {
   if (!currentScopeEmail) return;
 
   const checkboxes = document.querySelectorAll(".scope-checkbox:checked");
   const selectedScopes = Array.from(checkboxes).map((cb) => cb.value);
 
-  try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: getHeaders(),
-      body: JSON.stringify({
-        action: "update_scopes",
-        email: currentScopeEmail,
-        scopes: selectedScopes,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
+  await withButtonLoading(e.currentTarget, async () => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          action: "update_scopes",
+          email: currentScopeEmail,
+          scopes: selectedScopes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-    showMessage("تم تحديث الصلاحيات بنجاح");
-    closeScopeModal();
-    loadData();
-  } catch (err) {
-    showMessage(err.message, true);
-  }
+      showMessage("تم تحديث الصلاحيات بنجاح");
+      closeScopeModal();
+      loadData();
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
 });
 
 document.getElementById("confirmModal").addEventListener("click", function (e) {
@@ -539,7 +606,8 @@ function renderTrashList() {
     `;
     card.querySelector(".trash-card-name span:last-child").textContent = item.name;
 
-    card.querySelector('[data-action="restore"]').onclick = () => restoreTrashItem(item);
+    card.querySelector('[data-action="restore"]').onclick = (e) =>
+      restoreTrashItem(item, e.currentTarget);
     card.querySelector('[data-action="purge"]').onclick = () => purgeTrashItem(item);
 
     list.appendChild(card);
@@ -584,21 +652,23 @@ async function loadTrash() {
   }
 }
 
-async function restoreTrashItem(item) {
-  try {
-    const data = await postAdminItemAction("trash-restore", { trashItemId: item.id });
-    if (data.failed?.length) {
-      showMessage(
-        `تمت استعادة ${data.restored} عنصر، وتعذّرت استعادة ${data.failed.length}.`,
-        data.restored === 0,
-      );
-    } else {
-      showMessage(`تمت استعادة "${item.name}" بنجاح.`);
+async function restoreTrashItem(item, button) {
+  await withButtonLoading(button, async () => {
+    try {
+      const data = await postAdminItemAction("trash-restore", { trashItemId: item.id });
+      if (data.failed?.length) {
+        showMessage(
+          `تمت استعادة ${data.restored} عنصر، وتعذّرت استعادة ${data.failed.length}.`,
+          data.restored === 0,
+        );
+      } else {
+        showMessage(`تمت استعادة "${item.name}" بنجاح.`);
+      }
+      loadTrash();
+    } catch (err) {
+      showMessage(err.message, true);
     }
-    loadTrash();
-  } catch (err) {
-    showMessage(err.message, true);
-  }
+  });
 }
 
 function purgeTrashItem(item) {
@@ -630,6 +700,7 @@ function closeTypedConfirmModal() {
   document.getElementById("typedConfirmModal").classList.remove("show");
   document.getElementById("typedConfirmInput").value = "";
   document.getElementById("typedConfirmBtn").disabled = true;
+  hideTrashSectionForModal(false);
 }
 window.closeTypedConfirmModal = closeTypedConfirmModal;
 
@@ -640,6 +711,11 @@ function openEmptyTrashConfirm() {
     bodyHtml: "سيتم حذف كل العناصر المرئية لك في سلة المهملات نهائياً، بما في ذلك ملفات الوسائط المرتبطة بها. لا يمكن التراجع عن هذا الإجراء.",
     confirmLabel: "متابعة",
     onConfirm: () => {
+      // Keep the trash section hidden through the handoff to the typed
+      // modal — openConfirmModal's own closeModal() (called right after
+      // this onConfirm resolves) would otherwise un-hide it for the brief
+      // moment before the typed modal takes over.
+      hideTrashSectionForModal(true);
       document.getElementById("typedConfirmBody").textContent =
         `اكتب العبارة التالية بالضبط لتأكيد إفراغ السلة نهائياً:`;
       document.getElementById("typedConfirmPhrase").textContent = EMPTY_TRASH_PHRASE;
@@ -651,14 +727,16 @@ function openEmptyTrashConfirm() {
         confirmBtn.disabled = input.value.trim() !== EMPTY_TRASH_PHRASE;
       };
       confirmBtn.onclick = async () => {
+        await withButtonLoading(confirmBtn, async () => {
+          try {
+            const data = await postAdminItemAction("trash-empty", { all: true });
+            showMessage(`تم حذف ${data.purged} عنصر نهائياً.`);
+            loadTrash();
+          } catch (err) {
+            showMessage(err.message, true);
+          }
+        });
         closeTypedConfirmModal();
-        try {
-          const data = await postAdminItemAction("trash-empty", { all: true });
-          showMessage(`تم حذف ${data.purged} عنصر نهائياً.`);
-          loadTrash();
-        } catch (err) {
-          showMessage(err.message, true);
-        }
       };
     },
   });
@@ -670,12 +748,14 @@ async function saveTrashRetention() {
     showMessage("مدة الاحتفاظ يجب أن تكون بين 1 و 365 يوماً.", true);
     return;
   }
-  try {
-    await postAdminItemAction("trash-settings", { retentionDays: days });
-    showMessage("تم تحديث مدة الاحتفاظ بنجاح.");
-  } catch (err) {
-    showMessage(err.message, true);
-  }
+  await withButtonLoading(document.getElementById("saveRetentionBtn"), async () => {
+    try {
+      await postAdminItemAction("trash-settings", { retentionDays: days });
+      showMessage("تم تحديث مدة الاحتفاظ بنجاح.");
+    } catch (err) {
+      showMessage(err.message, true);
+    }
+  });
 }
 
 document.getElementById("refreshTrashBtn").addEventListener("click", loadTrash);

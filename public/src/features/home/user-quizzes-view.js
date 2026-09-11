@@ -49,7 +49,7 @@ import { renderTitleBreadcrumb } from "./title-breadcrumb.js";
 import { getSubjectIcon } from "./subject-icons.js";
 import { qz, saveNewUserQuiz, buildUserQuizEntry } from "./quiz-schema.js";
 import { createUserQuizCard } from "./user-quiz-card.js";
-import { createInlineCreateQuizCard, openInlineCreateQuizModal } from "./create-quiz-modal.js";
+import { openInlineCreateQuizModal } from "./create-quiz-modal.js";
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { HOME_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { HOME_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
@@ -593,13 +593,11 @@ export function renderUserQuizzesView() {
     createFolderBtn.onclick = (e) => {
       e.stopPropagation();
       openExamDropdownMenu(createFolderBtn, (menu, closeMenu) => {
-        // "إنشاء امتحان جديد" — same modal as the standalone
-        // .user-create-quiz-card (createInlineCreateQuizCard(), still
-        // rendered unchanged elsewhere in this view below), reused here so
-        // phone users reach it from this dropdown too instead of having to
-        // scroll to the card. Consolidates this menu to the 4 items the
-        // plan calls for: Create Quiz / Create Folder / Create Course /
-        // Trash Can.
+        // "إنشاء امتحان جديد" — opens the same modal previously reachable
+        // via the standalone .user-create-quiz-card in the quiz grid
+        // (createInlineCreateQuizCard(), removed per docs/plans/
+        // implementation-plan.md testing notes: it duplicated this menu
+        // entry once item 10 added it here and to #userQuizContextMenu).
         const quizOpt = document.createElement("button");
         quizOpt.type = "button";
         quizOpt.className = "exam-action-btn";
@@ -696,9 +694,6 @@ export function renderUserQuizzesView() {
 
     container.appendChild(actionsBar);
 
-    // Inline create-quiz card (always visible in this view)
-    const inlineCreateCard = createInlineCreateQuizCard();
-
     // Drag-and-drop JSON import on the whole امتحاناتك section
     wireJsonFileDropZone(container, (files) => importJsonQuizFiles(files), {
       isEnabled: () => container.classList.contains("user-quizzes-drop-zone"),
@@ -765,9 +760,12 @@ export function renderUserQuizzesView() {
       });
     }
 
-    // Prepend the create card as the first child in the quizzesContainer
-    // so it flows inline in the same CSS grid on desktop.
-    quizzesContainer.prepend(inlineCreateCard);
+    // Prepend removed (docs/plans/implementation-plan.md testing notes):
+    // the standalone create-quiz card used to be prepended here, but is
+    // now redundant with the "إنشاء امتحان جديد" entry in the
+    // create-folder-btn dropdown above and #userQuizContextMenu — both
+    // call openInlineCreateQuizModal() directly, so no in-grid card is
+    // needed to reach the same modal.
 
     container.appendChild(quizzesContainer);
 

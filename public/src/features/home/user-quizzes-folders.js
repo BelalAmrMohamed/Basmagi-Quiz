@@ -15,6 +15,59 @@ import { getTrashItemCount } from "./user-quizzes-trash.js";
 export let currentFolderId = null;
 let folderPathStack = [];
 
+/**
+ * Safe read of the `user_quizzes` tree. Every caller in this file used to
+ * call `JSON.parse(getFromStorage("user_quizzes", "[]"))` directly and
+ * unguarded — if the stored value was ever malformed (a partially-written
+ * value from an earlier failed save, or external tampering), JSON.parse
+ * throws synchronously and *uncaught*, silently aborting whichever
+ * delete/rename/move function was mid-call with no error shown to the user
+ * and no re-render. That reads exactly like "nothing happens when I click
+ * حذف/إعادة تسمية/نقل إلى" — this is one of two fixes made for that report
+ * (see saveUserQuizzes below for the other). Falls back to an empty tree
+ * and warns via showNotification rather than crashing the calling action.
+ * @returns {Array}
+ */
+function readUserQuizzes() {
+  try {
+    const parsed = JSON.parse(getFromStorage("user_quizzes", "[]"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error("[user-quizzes-folders] Corrupt user_quizzes data:", err);
+    showNotification(
+      "خطأ في البيانات",
+      "تعذّرت قراءة بيانات امتحاناتك المحفوظة محلياً. قد تكون تالفة.",
+      "warning",
+    );
+    return [];
+  }
+}
+
+/**
+ * Safe write of the `user_quizzes` tree, surfacing a failed save instead of
+ * silently discarding it. setInStorage() already returns a boolean and logs
+ * to console on failure, but every caller in this file used to ignore that
+ * return value entirely — a full/blocked localStorage write (quota, private
+ * browsing restrictions, etc.) would leave the in-memory change reflected
+ * in the UI (since callers re-render right after saving) while the
+ * underlying data silently never persisted, then reverted on next load.
+ * Returns the same boolean so a caller that needs to bail out before
+ * re-rendering can (see deleteFolder/renameItem/moveItemsToFolder below).
+ * @param {Array} userQuizzes
+ * @returns {boolean} true if the write succeeded
+ */
+function saveUserQuizzes(userQuizzes) {
+  const ok = setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (!ok) {
+    showNotification(
+      "تعذّر الحفظ",
+      "تعذّر حفظ التغيير محلياً. قد تكون مساحة التخزين ممتلئة.",
+      "warning",
+    );
+  }
+  return ok;
+}
+
 export function getChildren(userQuizzes, parentId) {
   return userQuizzes.filter((q) => (q.meta?.parentId || null) === parentId);
 }
@@ -217,7 +270,7 @@ export function createFolderOrCourseNamed(type, name, parentId) {
     return { ok: false, reason: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن إنشاؤها داخل مجلد." };
   }
 
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
 
   // BUG FIX: this used to compare only parentId + title, never type — a
   // course named "math" would block a folder also named "math" at the same
@@ -250,7 +303,9 @@ export function createFolderOrCourseNamed(type, name, parentId) {
     questions: [],
   };
   userQuizzes.push(newFolder);
-  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (!saveUserQuizzes(userQuizzes)) {
+    return { ok: false, reason: "تعذّر حفظ العنصر الجديد محلياً." };
+  }
   return { ok: true, id: newFolder.id };
 }
 
@@ -269,7 +324,7 @@ export function createFolderOrCourseNamed(type, name, parentId) {
  * @returns {{id: string, type: string}|null}
  */
 export function findFolderByName(title, parentTitle = null) {
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const normalize = (s) => (s || "").trim().toLowerCase();
 
   let parentId = null;
@@ -296,7 +351,7 @@ export async function renameItem(itemId, currentTitle) {
   const newName = await _prompt("أدخل الاسم الجديد:", currentTitle);
   if (!newName || !newName.trim()) return;
 
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const item = userQuizzes.find((q) => q.id === itemId || q.meta?.id === itemId);
   if (!item || !item.meta) return;
 
@@ -314,7 +369,7 @@ export async function renameItem(itemId, currentTitle) {
   }
 
   item.meta.title = trimmedName;
-  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (!saveUserQuizzes(userQuizzes)) return;
   renderUserQuizzesView();
 }
 
@@ -368,7 +423,7 @@ export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
  * the trash, so the message reflects that instead.
  */
 export async function deleteFolder(folderId) {
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const target = userQuizzes.find((q) => (q.id || q.meta?.id) === folderId);
   if (!target) return;
 
@@ -383,7 +438,7 @@ export async function deleteFolder(folderId) {
   const { moveToTrash } = await import("./user-quizzes-trash.js");
   moveToTrash(itemsToTrash, target.meta?.title || "عنصر بلا اسم");
 
-  setInStorage("user_quizzes", JSON.stringify(newQuizzes));
+  if (!saveUserQuizzes(newQuizzes)) return;
   renderUserQuizzesView();
 
   const { refreshUserQuizzesCard } = await import("./course-count.js");
@@ -430,7 +485,7 @@ export async function deleteAllUserQuizzes() {
   });
   if (!confirmed) return;
 
-  setInStorage("user_quizzes", "[]");
+  if (!saveUserQuizzes([])) return;
   // navigateToFolder(null, ...) resets to root AND calls
   // renderUserQuizzesView() itself — no need to call it again here.
   navigateToFolder(null, null);
@@ -473,7 +528,7 @@ export function handleDrop(e, targetFolderId) {
   if (!itemId || itemId === targetFolderId) return;
 
   // Prevent moving a folder into itself or its children
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   if (isDescendant(userQuizzes, itemId, targetFolderId)) {
     showNotification("خطأ", "لا يمكن نقل المجلد إلى داخله.", "./favicon.png");
     return;
@@ -516,7 +571,7 @@ export function handleDrop(e, targetFolderId) {
   }
 
   item.meta.parentId = targetFolderId;
-  setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (!saveUserQuizzes(userQuizzes)) return;
   renderUserQuizzesView();
 }
 
@@ -540,7 +595,7 @@ function isDescendant(quizzes, parentId, checkId) {
  * @returns {{moved: number, blocked: number}}
  */
 export function moveItemsToFolder(itemIds, targetFolderId) {
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   let moved = 0;
   let blocked = 0;
 
@@ -580,7 +635,11 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
     moved++;
   });
 
-  if (moved > 0) setInStorage("user_quizzes", JSON.stringify(userQuizzes));
+  if (moved > 0 && !saveUserQuizzes(userQuizzes)) {
+    // Save failed (see saveUserQuizzes) — don't report a successful move
+    // that never actually persisted.
+    return { moved: 0, blocked: blocked + moved };
+  }
   return { moved, blocked };
 }
 
@@ -595,7 +654,7 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
  *   opens at all.
  */
 function createLocalUserQuizzesMoveSource(itemIds) {
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const folders = userQuizzes.filter(
     (q) => q.meta?.type === "folder" || q.meta?.type === "course",
   );
@@ -852,11 +911,12 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
 
   // Global actions — always visible regardless of what was right-clicked
   //
-  // "إنشاء امتحان جديد" — opens the same paste-text/import-file modal as
-  // the standalone .user-create-quiz-card (create-quiz-modal.js), which
-  // stays visible unchanged elsewhere in the "امتحاناتك" layout (see
-  // docs/plans/implementation-plan.md item 10 — this menu gets its own
-  // entry point to that same flow, not a replacement for the card).
+  // "إنشاء امتحان جديد" — opens the same paste-text/import-file modal
+  // (create-quiz-modal.js). The standalone .user-create-quiz-card that used
+  // to sit in the quiz grid was removed per docs/plans/implementation-
+  // plan.md testing notes (it duplicated this entry once item 10 added it
+  // here and to the create-folder-btn dropdown) — this context-menu item
+  // and that dropdown's are now the only two entry points to this flow.
   // Dynamically imported to avoid a static circular import: create-quiz-
   // modal.js already imports currentFolderId from this module.
   contextMenuEl.appendChild(
@@ -919,7 +979,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   // instead of one folder. Hidden entirely (not just disabled) once
   // "امتحاناتك" is already empty — there's nothing left to wipe, and a
   // visible-but-inert danger button would just be confusing.
-  const userQuizzesForDeleteAll = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzesForDeleteAll = readUserQuizzes();
   if (userQuizzesForDeleteAll.length > 0) {
     const dangerDivider = document.createElement("div");
     dangerDivider.style.cssText = "border-top: 1px solid var(--color-border); margin: 4px 0;";
@@ -1013,7 +1073,7 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReaso
  * @param {string} itemId
  */
 function uploadItemToPlatform(type, itemId) {
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const item = userQuizzes.find((q) => (q.id || q.meta?.id) === itemId);
   if (!item) return;
 
@@ -1168,7 +1228,7 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
   if (!confirmed) return;
 
   // 4. Materialize folder/course records + quiz entries, then write once.
-  const userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
+  const userQuizzes = readUserQuizzes();
   const keyToId = new Map();
 
   // Unlike createNewFolderOrCourse (which rejects a duplicate name outright

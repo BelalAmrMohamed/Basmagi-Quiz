@@ -154,7 +154,6 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
 - `#quizPasswordClear` appears even when the quiz has no password to be removed (create-quiz.html). ⚠️
 - Trash Can should appear disabled when there is nothing in it, instead of not appearing at all, this would make users comfortable that their quizzes get sent to trash and aren't permenantly deleted.
 - Control Page turned out to have many issues:
-  - No loading animations at all on anything on the page, it just says `جاري التحميل...`, remove that and add an advanced skeleton loader.
   - I can't edit colleges (seperate issue, not related, but good to fix). Console Output:
   ```
   control.html:281  GET http://localhost:8080/_vercel/insights/script.js net::ERR_ABORTED 404 (Not Found)
@@ -162,7 +161,6 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
   apply @ hook.js:1
   saveCollege @ control.js:171
   ```
-  - The `#trashSection` keeps saying "جاري التحميل...", and never actually loads until I press the `#refreshTrashBtn`
   - Pressing any button has a delay, which is acceptible if there is a loading animation.
 
 See [plan](implementation-plan.md) to implement the patches.

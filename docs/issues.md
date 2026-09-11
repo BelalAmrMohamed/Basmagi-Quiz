@@ -115,6 +115,10 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
+- Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
+  - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
+  - Extend the info in the course info modal, too.
+  - Make an info modal for Folders.
 
 #### Password
 When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 

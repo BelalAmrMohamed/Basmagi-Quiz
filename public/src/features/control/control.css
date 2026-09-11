@@ -605,6 +605,16 @@ input::placeholder {
     margin-inline-start: auto;
 }
 
+/* Item-12 fix-round: applied while a confirm/typed-confirm modal is open
+   for an action triggered from inside the trash view (restore/purge/empty)
+   — see hideTrashSectionForModal() in control.js. Testing found the trash
+   panel remaining visible (and reported as painting above) the modal in
+   this case; hiding it outright removes any possibility of visual
+   competition with the modal regardless of the underlying cause. */
+.trash-section--dimmed-for-modal {
+    visibility: hidden;
+}
+
 /* CONFIRM MODAL */
 .modal-overlay {
     position: fixed;
@@ -1178,6 +1188,69 @@ input::placeholder {
 .btn-remove:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ============================================================================
+   BUTTON LOADING STATE (item 12 — optimistic/immediate action feedback)
+   ----------------------------------------------------------------------------
+   Applied via JS (see withButtonLoading() in control.js) to any action
+   button while its request is in flight, so latency reads as "working" and
+   not as an unresponsive click. Disables the button, dims it slightly (any
+   button-specific hover/active rules are moot once pointer-events is off),
+   and shows a small inline spinner using the button's own current text
+   color via currentColor, so it fits btn-primary/btn-remove/btn-restore/
+   btn-confirm-del alike without per-button-color overrides.
+   ============================================================================ */
+@keyframes control-btn-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.btn-loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    color: inherit;
+    /* currentColor is transparent on this element (see .btn-loading above),
+       so pin the spinner's visible color explicitly per button family
+       instead — see the color rules below. */
+    animation: control-btn-spin 0.6s linear infinite;
+}
+
+.btn-primary.btn-loading::after {
+    border-color: #1A1000;
+    border-top-color: transparent;
+}
+
+.btn-remove.btn-loading::after,
+.btn-confirm-del.btn-loading::after {
+    border-color: #E74C3C;
+    border-top-color: transparent;
+}
+
+.btn-restore.btn-loading::after {
+    border-color: #58D68D;
+    border-top-color: transparent;
+}
+
+.btn-nav.btn-loading::after {
+    border-color: var(--gold-light);
+    border-top-color: transparent;
 }
 
 /* Typed-confirm modal ("إفراغ السلة") — same shell as .modal, plus the

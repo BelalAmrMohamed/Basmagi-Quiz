@@ -39,60 +39,22 @@ Let me reconsider from scratch, focusing specifically on **first load** as liter
 
 Given the plan explicitly frames this as needing **live console output to pin down exactly**, and given I've now ruled out the two most likely candidates (swallowed error, rendering no-op) through careful code tracing without being able to reproduce it live, the responsible thing is to fix the **one concrete, real bug I did find** — the premature-click token race — since it's a genuine correctness issue in the same code path, and leave a clear diagnostic note for what remains unconfirmed. Let me implement that fix now: gate the trash view (and really, all `control.js` actions) behind `init()`'s readiness, so a click before reconciliation completes can't fire with a token that's about to change.The cleanest fix: track `init()`'s completion as a promise, and have `getHeaders()` (or better, the action functions themselves) await it before reading `_token`. Since `getHeaders()` is synchronous and called from many places, the simplest robust fix is to make `postAdminAction`/`postAdminItemAction` await an `_initReady` promise before building headers, guaranteeing `_token` always reflects the post-reconciliation value once `init()` has run at least once.Now, `showTrashView()` itself calls `loadTrash()` synchronously, which sets the "جاري التحميل..." text immediately, then calls `postAdminItemAction` — now gated. But if a click happens pre-`init()`, `_initReady` won't resolve until `init()` actually completes (or the redirect fires, in which case it never resolves — which is fine, since the page is navigating away). Let's also apply the same `await _initReady` guard to `postAdminAction` (the college/admin-management POST helper) for consistency, since it has the identical gap:These `fetch(API_URL, ...)` calls in `saveCollege`/`deactivateCollege` use `getHeaders()` directly, inline, not through a shared helper. These forms are only reachable after `loadData()` has populated the college list — which itself only runs from inside `init()` after `_token` is finalized — so they're not exposed to the same pre-init race in practice (the form/list wouldn't be populated yet for a user to interact with). The genuinely exposed one was `trashNavBtn`, which is static markup, clickable from paint. That's now fixed. Let's also double-check `loadData()`'s own fetch (used by `init()` itself) and `loadTrash()` doesn't double-await unnecessarily — verify no deadlock (since `init()` itself calls `loadData()` after resolving `_initReady`, and `loadData()` doesn't go through `postAdminItemAction`, so no circular await):Good — `loadData()` uses `fetch` directly, no dependency on `postAdminItemAction`, so no deadlock risk. `_resolveInitReady()` is called before `loadData()` in `init()`, which is correct ordering. Let's syntax-check:Now let's update the plan's root-cause table context by adding a clear code comment at `showTrashView()`/`loadTrash()` noting what was fixed and what remains genuinely unconfirmed, so future debugging (with live console access) has a documented starting point.Item 8 is done — genuine bug fixed, and the unconfirmed part is now honestly documented in-code rather than papered over. That completes Phase 1 and Phase 2 in full. Now let's present the updated files.Now the handoff brief.
 
-## Handoff Brief — Continuing `implementation-plan.md`
+## Fully done and verified (from earlier this turn)
 
-### Status: Phase 1 ✅, Phase 2 ✅, Phase 3: items 9–10 ✅ done, item 11 in progress, item 12 not started
+- **Item 12 (button loading feedback)** and the **trash-panel-vs-modal fix** — both verified clean (`node --check` passing, CSS brace-balanced).
+- **Redundant "إنشاء امتحان جديد" card removed** — fully done and verified: deleted the dead `createInlineCreateQuizCard()` function, its call site, its CSS, and updated stale comments. All touched files pass syntax checks.
 
-Eleven files were modified across this work (all presented above, unzipped, original directory structure preserved). **To apply:** drop these back into the corresponding paths, overwriting the originals. All pass `node --check`.
+## In progress: the folder delete/move/rename bug
 
-### What's done
+I did a full trace of `deleteFolder`, `renameItem`, `moveItemsToFolder`, and `handleDrop` and found every folder-specific code path structurally sound — no folder-specific logic bug. But I found **two real, generic defects** in `user-quizzes-folders.js` that would produce exactly the symptom reported ("nothing happens," no error, no re-render), and would hit folder operations harder than single-quiz ones since folder deletes/moves serialize larger cascaded payloads:
 
-**Phase 1** — password-clear checkbox condition fixed; draft-leak into `quiz_draft` fixed; the `meta.updatedAt` 400 on save fixed.
+1. **`setInStorage()`'s return value was ignored everywhere.** It already detects and logs write failures (e.g. quota exceeded) but every caller in this file discarded the boolean, so a failed save looked identical to a successful one until the next page load reverted it.
+2. **Every `JSON.parse(getFromStorage(...))` call was unguarded.** Malformed stored data throws synchronously and uncaught, silently aborting whichever function was running mid-click with no error shown and no re-render.
 
-**Phase 2** — folder/course admin-actions visibility fixed (JWT now carries `admin_users.id`); rename/move name-collision now returns a friendly error via existing DB unique constraints + `23505` handling; `/api/admin-control` 400 fixed (`save_college`/`delete_college` were missing from the `CONTROL_ACTIONS` dispatch set — real root cause, different from what the plan guessed); trash first-load stall — found and fixed a real pre-init token race in `control.js` via a new `_initReady` gate, though not confirmed to be the exact originally-reported symptom (documented honestly in-code).
+I also found a **third, smaller bug** while fixing this: the bulk folder-import path (`ensureFolderRecord`, used when importing a folder tree from files) creates folder rows with a top-level `id` but never sets the matching `meta.id` — inconsistent with the other two folder-creation paths, which the code's own comments say was already fixed elsewhere. This could make folders created via that import path fail `id`-lookups later.
 
-**Phase 3, items 9+10** — `openInlineCreateQuizModal` exported from `create-quiz-modal.js`; `#userQuizContextMenu` (`user-quizzes-folders.js`) now has "إنشاء امتحان جديد" and a gated "سلة المهملات (N)" entry; the `create-folder-btn` dropdown (`user-quizzes-view.js`) is now the full 4-item menu (Create Quiz / Create Folder / Create Course / Trash Can) the spec called for.
+**What I fixed:** added two shared helpers, `readUserQuizzes()` and `saveUserQuizzes()`, that wrap the unsafe calls with try/catch and surface failures via `showNotification` instead of swallowing them, then routed `renameItem`, `deleteFolder`, `moveItemsToFolder`, `handleDrop`, `createFolderOrCourseNamed`, `deleteAllUserQuizzes`, `findFolderByName`, `createLocalUserQuizzesMoveSource`, and `uploadItemToPlatform` through them.
 
-### What's left
-
-**Item 11 — skeleton loaders for `control.html`** (in progress). Four bare "جاري التحميل..." nodes need replacing: overview stats box, `#ownerEmailDisplay`, colleges list, admins list — plus `control.js`'s `loadTrash()` list-rendering instance. Key constraint found: the codebase's existing shimmer skeleton system (`.skeleton-block` + `.skeleton-grid/card/icon/title/text` in `public/src/features/home/index.css`) **cannot be reused directly** — `control.html` is a standalone page with its own `control.css`/`control-stats.css`, doesn't link `index.css`, and the shimmer primitive depends on CSS vars (`--gradient-loading-skeleton`, `--color-background-secondary`) not defined in `control.css`'s scope (confirmed via grep). `control.css` has its own dark-gold palette instead: `--gold`, `--gold-light`, `--gold-dark`, `--bg`, `--bg-card`, `--bg-card2`, `--border`, `--border-strong`, `--text`, `--text-muted`, `--text-dim`, `--danger`. **Next step:** build a small `.control-skeleton-block` shimmer primitive from this page's own palette (e.g. base color `--bg-card2`, shimmer sweep via `--gold-dim`/`--gold-dim2`, same `@keyframes shimmer` animation as `index.css` for visual consistency), plus row/line-shaped variants sized for a stat box, an inline text span, and list rows. Then swap the 4 HTML nodes in `control.html` and the JS-driven trash-list node in `control.js`.
-
-**Item 12 — optimistic/immediate button feedback** (not started). Audit `control.js`'s action buttons (save college, delete/deactivate college, add/remove admin, update scopes, trash restore/purge/empty, save retention) for a shared "disable + spinner while in-flight" pattern so network latency reads as expected loading. Two things worth checking when picking this up:
-- Whether to visually reuse the item-11 skeleton/shimmer language for consistency, or a simpler spinner/disabled-state pattern (buttons, not content blocks).
-- Whether the `_initReady` gate added for the trash-stall fix needs matching visible feedback (e.g., `trashNavBtn` shown as disabled/loading until `_initReady` resolves) — right now a click before that point just silently waits, which could itself present as the "unexplained delay" item 12 is meant to close out.
-
-**Suggested order for the new chat:** finish item 11's CSS + the 5 swap sites, syntax-check `control.html`/`control.js`/`control.css`, then move to item 12 using the same file.
-
----
-
-## Update — Item 11 done
-
-Built `.control-skeleton-block` / `.control-skeleton-row` / `.control-skeleton-line` / `.control-skeleton-stat` in `control.css`, using the page's own palette (`--bg-card2` base, `--gold-dim` sweep) and a page-local `@keyframes control-shimmer`, mirroring `index.css`'s shimmer timing (1.6s ease-in-out infinite, `prefers-reduced-motion` respected) without depending on any of its CSS vars.
-
-Swapped all 5 loading sites:
-- `#adminsTableBody`, `#collegesList`, `#trashList` (static markup in `control.html`) — each now renders 2–3 `.control-skeleton-row` placeholders (a wide block + a narrow block, echoing the real `.admin-card`/`.college-card`/`.trash-card` layout) instead of a bare "جاري التحميل..." string.
-- `#ownerEmailDisplay` — now holds a single inline `.control-skeleton-line` instead of loading text; `renderPlatformStats()` overwrites its `textContent` once data lands, same as before.
-- The 3 `.stat-card`s got a `control-skeleton-stat` class + a stable `id` (`statQuizzesCard`/`statCategoriesCard`/`statAdminsCard`). This variant hides the icon/value/label behind a shimmer overlay via `::after` rather than replacing DOM content, so the em-dash placeholders and emoji icons stay exactly where they were — `renderPlatformStats()` now also removes the class once `stats` arrives, which un-hides the real content. (Without that removal the shimmer would sit on top of the numbers forever — caught this in review before considering it done.)
-- `loadTrash()` in `control.js` — replaced the inline `'<div class="admin-empty">جاري التحميل...</div>'` string with a small `TRASH_SKELETON_HTML` constant (3 rows, same markup as the static placeholder) so a manual refresh/filter click shows the same skeleton as first paint, not a regression to plain text.
-
-All four touched files (`control.html`, `control.css`, `control.js` — `control-stats.css` wasn't touched) pass `node --check` / brace-balance / tag-balance checks.
-
-**Not done as part of this item, left for whoever picks up item 12:** the two open items from the original handoff are still open —
-1. Whether item 12's button-loading feedback should reuse this shimmer language or use a simpler spinner/disabled-state pattern.
-2. Whether `trashNavBtn` needs its own visible disabled/loading state until `_initReady` resolves.
-
-## Item 12 — optimistic/immediate button feedback (not started)
-
-Still needs: audit every action button in `control.js` (save college, delete/deactivate college, add/remove admin, update scopes, trash restore/purge/empty, save retention) for a shared "disable + spinner while in-flight" pattern. Suggested approach for the next session: add one small reusable helper (e.g. `withButtonLoading(button, asyncFn)`) that disables the button, swaps its text/adds a spinner class, and restores it in a `finally` block — then wire each of the action handlers above through it, rather than hand-rolling disabled-state toggling per button.
-
-## Also outstanding (from Testing section above, still unaddressed)
-- Trash-can panel doesn't close when the confirmation modal opens, and sits above the modal's z-index (modal appears underneath it). Needs `trashSection`/`.trash-card` z-index audited against `.modal-overlay`, or the trash panel explicitly hidden/dimmed while a confirm modal is open.
-- The now-redundant "إنشاء امتحان جديد" card still needs removing from `.user-quizzes-container`, along with its dedicated styles, now that the same action lives in `#userQuizContextMenu` and the `.create-folder-btn` menu.
-- Folder delete/move/rename still doesn't work — not yet investigated in this pass.
-
-## Testing
-While testing the local trash can, I found that it doesn't close once the confirmation modal pops up, and it has a higher z--index, so the modal appears under it. It should close when the modal pops up.
-
-Since the `إنشاء امتحان جديد` modal now exists in `#userQuizContextMenu` and `.create-folder-btn`, remove it from the `.user-quizzes-container` completely, and remove any styles related to its card there.
-
-I'm still unable to delete, move, or rename folders.
+**Not yet done:**
+- I was mid-edit on the bulk-import function (`importFolderTree`) when I hit the limit — I'd just swapped its `readUserQuizzes()` call but still need to (a) fix `ensureFolderRecord` to set `meta.id`, (b) swap its `setInStorage` call to `saveUserQuizzes`, and (c) fix the one remaining unguarded read at line ~1586.
+- Haven't re-run `node --check` or brace-balance checks since these latest edits.

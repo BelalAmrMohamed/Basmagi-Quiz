@@ -1892,8 +1892,7 @@ Container
 
   /* First card: no top border (container border serves as top) */
   .user-quizzes-container>.exam-card:first-child,
-  .user-quizzes-container>.category-card:first-child,
-  .user-quizzes-container>.user-create-quiz-card:first-child {
+  .user-quizzes-container>.category-card:first-child {
     border: none !important;
     border-top: none !important;
   }
@@ -2282,8 +2281,7 @@ Container
   .category-card .icon,
   .phone-only-emoji,
   .user-quiz--phone-only-emoji,
-  .category-icon,
-  .user-create-quiz-card--phone-only-emoji {
+  .category-icon {
     font-size: 1.25rem;
     margin-bottom: 0;
     display: flex;
@@ -2322,16 +2320,6 @@ Container
     margin-bottom: 0;
     line-height: 1.2;
   }
-}
-
-.user-create-quiz-card {
-  border-style: dashed;
-  background: var(--color-surface);
-}
-
-.user-create-quiz-card .icon {
-  font-size: 3rem;
-  margin-bottom: 12px;
 }
 
 /* Premium Button */
@@ -3729,8 +3717,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
    Custom utility classes for responsive visibility & Mobile Layout Fixes
    ============================================================================ */
 .phone-only-emoji,
-.user-quiz--phone-only-emoji,
-.user-create-quiz-card--phone-only-emoji {
+.user-quiz--phone-only-emoji {
   display: none;
 }
 
@@ -3745,8 +3732,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
      shared rule above). `flex` here matches that rule instead of fighting it.  */
   .phone-only-emoji,
   .user-quiz--phone-only-emoji,
-  .category-icon,
-  .user-create-quiz-card--phone-only-emoji {
+  .category-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3967,66 +3953,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   /* Download button: hidden on mobile (same as normal exam cards) */
   .exam-card.user-quiz-card .start-btn.desktop-download-btn {
     display: none !important;
-  }
-
-  /* ── Create-quiz card: compact list-row matching user quiz cards on mobile ── */
-  .user-create-quiz-card {
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 10px !important;
-    padding: 0 10px !important;
-    min-height: 52px !important;
-    height: auto !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-top: 1px solid var(--color-border) !important;
-    border-style: solid !important;
-    text-align: left !important;
-    direction: ltr !important;
-    overflow: hidden !important;
-  }
-
-  /* Hide the big desktop-only centered icon on mobile */
-  .user-create-quiz-card>.icon {
-    display: none !important;
-  }
-
-  /* card-text wrapper: stretchy middle column (same as user-quiz-card) */
-  .user-create-quiz-card .card-text {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    flex: 1 !important;
-    min-width: 0 !important;
-    align-items: flex-start !important;
-  }
-
-  /* Title: compact, single line, truncated — matching user quiz cards */
-  .user-create-quiz-card h3 {
-    font-size: 0.83rem !important;
-    font-weight: 600 !important;
-    margin-bottom: 0 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    text-align: left !important;
-    direction: ltr !important;
-    width: 100% !important;
-  }
-
-  /* Description subtitle: sits in place of .user-quiz-card-meta */
-  .user-create-quiz-card--phone-only-emoji .create-quiz-card-subtitle {
-    font-size: 0.65rem !important;
-    color: var(--color-text-tertiary, #888) !important;
-    margin-bottom: 6px !important;
-    line-height: 1.3 !important;
-    direction: rtl !important;
-    text-align: right;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    width: 100% !important;
   }
 }
 

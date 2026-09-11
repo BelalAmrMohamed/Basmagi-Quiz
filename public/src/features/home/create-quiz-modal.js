@@ -5,13 +5,16 @@
 // Two related flows, both reachable from the "امتحاناتك" (My Quizzes) view:
 //   1. openPromptSelectionModal() — pick one of the three AI prompt presets
 //      (see ai-prompts.js) and copy it to clipboard for use with an external AI.
-//   2. createInlineCreateQuizCard()/openInlineCreateQuizModal() — paste text or
-//      import a file, parse it into quiz JSON, and save it to localStorage.
-//      openInlineCreateQuizModal() is exported (not just used internally by
-//      the card above) so the #userQuizContextMenu and create-folder-btn
-//      dropdowns (user-quizzes-folders.js / user-quizzes-view.js) can offer
-//      the same "إنشاء امتحان جديد" action without duplicating this modal —
-//      see docs/plans/implementation-plan.md item 10.
+//   2. openInlineCreateQuizModal() — paste text or import a file, parse it
+//      into quiz JSON, and save it to localStorage. Exported so the
+//      #userQuizContextMenu and create-folder-btn dropdowns
+//      (user-quizzes-folders.js / user-quizzes-view.js) can offer the same
+//      "إنشاء امتحان جديد" action — see docs/plans/implementation-plan.md
+//      item 10. This used to also be reachable via a standalone
+//      .user-create-quiz-card rendered inline in the quiz grid
+//      (createInlineCreateQuizCard()); that card was removed once item 10
+//      made it fully redundant (per the plan's testing notes) — this
+//      function's caller was updated accordingly in user-quizzes-view.js.
 //
 // Both modals previously leaked a document-level Escape-key listener whenever
 // closed via a button rather than Escape/overlay-click — fixed here using the
@@ -35,65 +38,6 @@ import {
   wireJsonFileDropZone,
 } from "./quiz-file-import.js";
 import { showNotification } from "../../components/notifications/notifications.js";
-
-export function createInlineCreateQuizCard() {
-  const card = document.createElement("div");
-  card.className = "exam-card user-create-quiz-card";
-  card.setAttribute("role", "button");
-  card.setAttribute("tabindex", "0");
-  card.setAttribute("title", "تحويل نص ← امتحان");
-  card.setAttribute("aria-label", "إنشاء امتحان جديد من نص");
-
-  // Desktop-only large centered icon
-  const icon = document.createElement("div");
-  icon.className = "icon";
-  icon.textContent = "➕";
-  icon.setAttribute("aria-hidden", "true");
-
-  // card-text wrapper (display:contents on desktop, flex column on mobile)
-  const textWrap = document.createElement("div");
-  textWrap.className = "card-text";
-
-  const titleEl = document.createElement("h3");
-  titleEl.textContent = "إنشاء امتحان جديد";
-
-  // ── Phone-only leading emoji — sibling of .card-text, not nested inside
-  // h3. BUG FIX: same misalignment as exam-card.js/user-quiz-card.js — an
-  // emoji living inside <h3> is centered by the title text's line-height
-  // instead of the mobile row's own flex alignment, so it sits slightly too
-  // high compared to course/subfolder cards' sibling `.icon` element (see
-  // createCategoryCard in category-view.js). This is intentionally separate
-  // from the desktop-only `.icon` div above (that one is hidden on mobile;
-  // this one is shown only on mobile — same "swap icon by breakpoint"
-  // pattern used elsewhere on this card).
-  const phoneIconEl = document.createElement("span");
-  phoneIconEl.className = "user-create-quiz-card--phone-only-emoji";
-  phoneIconEl.textContent = "➕";
-  phoneIconEl.setAttribute("aria-hidden", "true");
-
-  const desc = document.createElement("p");
-  desc.className = "create-quiz-card-subtitle";
-  desc.textContent =
-    "الصق أسئلة الامتحان كنص وسيتم تحويلها تلقائيًا إلى امتحان.";
-
-  textWrap.appendChild(titleEl);
-  textWrap.appendChild(desc);
-
-  card.appendChild(icon);
-  card.appendChild(phoneIconEl);
-  card.appendChild(textWrap);
-
-  const open = () => openInlineCreateQuizModal();
-  card.onclick = open;
-  card.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      open();
-    }
-  });
-
-  return card;
-}
 
 export function openInlineCreateQuizModal() {
   const overlay = document.createElement("div");
