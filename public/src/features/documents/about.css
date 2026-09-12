@@ -390,17 +390,21 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 /* ── Tech Stack ────────────────────────────────────────────────────────────── */
-.about-page .tech-stack {
+#techStackPills {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.about-page .tech-badge {
+#techStackPills>.tech-badge {
   display: inline-flex;
+  width: auto;
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
   padding: 6px 10px;
@@ -413,7 +417,7 @@ html[data-theme="dark-slate"] .about-page {
   white-space: nowrap;
 }
 
-.about-page .tech-badge svg {
+#techStackPills>.tech-badge svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
