@@ -279,7 +279,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   const sidebarBrand = document.createElement("div");
   sidebarBrand.className = "ai-agent-sidebar-brand";
   sidebarBrand.innerHTML =
-    '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-sidebar-brand-img"><span class="ai-agent-sidebar-brand-name">الباشــمبصمج</span>';
+    '<span class="ai-agent-sidebar-brand-name">الباشــمبصمج</span><img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="" class="ai-agent-sidebar-brand-img">';
 
   // Collapse button: two icon siblings (default "panel-left" / hover
   // "panel-left-open" — same lucide icons and same crossfade mechanism
@@ -293,7 +293,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarCollapseBtn.title = "طي الشريط الجانبي";
   sidebarCollapseBtn.innerHTML = SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG + SIDEBAR_COLLAPSE_HOVER_ICON_SVG;
 
-  sidebarHeader.append(sidebarFaviconBtn, sidebarBrand, sidebarCollapseBtn);
+  sidebarHeader.append(sidebarCollapseBtn, sidebarBrand, sidebarFaviconBtn);
 
   function applySidebarCollapsedState(collapsed) {
     sidebarCollapsed = collapsed;

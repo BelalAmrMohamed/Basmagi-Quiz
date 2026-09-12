@@ -14,13 +14,13 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### امتحاناتك Rules
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
-- The `نسخ لامتحاناتي` button sometimes doesn't show the animations (on bigger courses, more than 40 quizzes), clicking it quits the menu immedietly, then after a while (takes longer than usual), the big course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
-- The `.create-quiz-inline-modal` has messed up styles on phones, no top padding
-- Fix the `.copyAiPromptBtn` with its arrow, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
+- The `نسخ لامتحاناتي` button sometimes doesn't show the animations (on courses and folders), clicking it quits the menu immedietly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
+- The  has messed up styles on phones, no top padding
+- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
-### Dropdowns in امتحاناتك
+### Menus in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
-- Right cliking a quiz shows the right click menu, then pressing the more button, opens it on top of the right-click menu (Incorrect): Only one menu should be open.
+- Right cliking a quiz shows the right-click menu "#userQuizContextMenu", then pressing the more button, opens `.exam-dropdown-menu` on top of the right-click menu (Incorrect Behavior): Only one menu should be open.
 
 ### `.sidebar-brand-link`
 But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
@@ -30,27 +30,18 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - See ![screenshot of browser console errors](image.png)
 
 ### Create Quiz Page
-- Items in the `.gmd-group-latex` and the dropdown of it aren't clear, use actual icons (spacially for `#gmdMatrix`), not text.
-- ALT + N shortcut is broken. And both `#gmdSub` aren't visible.
-- Reorder mode Shouldn't change the collapsed state of questions. Just like the select mode, it shouldn't touch the collapse satete of questions, it currently expands all of them.
 - Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
 - Accessibility:
   - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
   - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..
 - Skeleton Loader for start page.
-- `.question-more-btn` moves its location based the screen size. That shouldn't happen. It should always be on the top left of the question card
 - There should be versions of the `.section-actions` buttons in the `.app-title-bar`, so users can do these actions without having to scroll all the way up to find them.
-- There are 2 `x` button on the `#questionSearch`, keep the `#clearSearch` and remove the other.
-- Default/Initial size of the ` الشرح (اختياري)` input should be small (one line), because it's currently too big initially. Same for the `نصّ السؤال *`, it should also be small initially (one line).
-- The `.entry-item-thumb-new` should show immedietly on page load, since it'a a static element, doesn't need to load anything from the DB or localStorage. It should be in the HTML directly.
 - On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown.
 - The `.entry-item-thumb-new` button should appear as soon as the page loads, it shouldn't load with other content that is being pulled from localstorage, it should load immedietly, put it in the HTML itself if it's not already in it.
 - The `#appTitleText` doesn't get updated when the AI Agent creates/edits a quiz, the whole page gets updated, except for the title. Fix it.
 
 ### AI Agent.
-- On Phones: 
-  - The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
-  - The `.ai-agent-sidebar-header` should have the close button on the right, too, and the logo on the left.  
+- On Phones: `class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle"` exists on the right, even though the menu opens from the left. 
 - `محادثة جديدة` button should be disabled when it's already a new chat.
 - The AI Agent is currently a modal that takes most of the screen. Is making it a screen (e.g., takes full width/heigt) better?
 

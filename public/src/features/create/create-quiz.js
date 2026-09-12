@@ -46,6 +46,16 @@ let selectedQuestions = new Set();
 let isTemplatesPanelOpen = false;
 let editingQuizId = null;
 let reorderModeActive = false;
+// Timestamp of the last programmatic menu/dropdown open (menu bar or the
+// LaTeX/heading gmd toolbar) — used to ignore a scroll event that's a side
+// effect of that same open (e.g. the browser auto-scrolling a trigger into
+// view when it's tapped near the edge of a horizontally-scrolling bar on
+// phones) rather than the user actually scrolling to dismiss the menu. See
+// setupMenuBarListeners / setupGlobalMdBar.
+let _lastMenuOpenAt = 0;
+function _armMenuOpenGuard() {
+  _lastMenuOpenAt = Date.now();
+}
 // ID of the current draft entry in user_quizzes (meta.type = "draft").
 // null when editing an already-published quiz via ?edit=<id>.
 let currentDraftId = null;
@@ -513,6 +523,109 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
  * wire up the LaTeX "more" and heading dropdowns, and start tracking
  * .md-source focus.
  */
+/**
+ * ============================================================================
+ * ROVING TABINDEX + ARROW-KEY NAVIGATION for role="menu" dropdowns
+ * ============================================================================
+ *
+ * Shared by both dropdown families in this file (.menu-dropdown — the Docs-
+ * style File/Insert/View/Help menus and their submenus — and
+ * .gmd-dropdown-menu — the heading-level and "more LaTeX symbols" popups).
+ * Both already carry role="menu" on the container and are built from
+ * <button> items, but had no keyboard model beyond native Tab, which walks
+ * the whole page rather than staying inside the open menu.
+ *
+ * Implements the standard menu pattern: while a menu is open, exactly one
+ * item has tabindex="0" (the "roving" item, initially the first) and every
+ * other item has tabindex="-1", so a single Tab either activates or leaves
+ * the menu instead of stopping at each item. Arrow keys move the roving
+ * index and move focus; Home/End jump to the first/last item; Escape closes
+ * and returns focus to the trigger that opened the menu.
+ */
+
+/** All focusable item buttons directly usable inside an open menu — i.e.
+ * not the trigger buttons of a *closed* nested submenu's own items (those
+ * only become reachable once that submenu is opened), but the submenu's
+ * own trigger row itself counts as an item of its parent menu. */
+function _gmdMenuItems(menuEl) {
+  return Array.from(menuEl.querySelectorAll(':scope > button, :scope > .menu-item-submenu > button'))
+    .filter((el) => el.offsetParent !== null || el.closest('.gmd-dropdown-menu'));
+}
+
+function _initRovingTabindex(menuEl, startIndex = 0) {
+  const items = _gmdMenuItems(menuEl);
+  items.forEach((item, i) => {
+    item.setAttribute('tabindex', i === startIndex ? '0' : '-1');
+  });
+  return items;
+}
+
+function _focusRovingItem(menuEl, items, index) {
+  if (!items.length) return;
+  const clamped = (index + items.length) % items.length;
+  items.forEach((item, i) => item.setAttribute('tabindex', i === clamped ? '0' : '-1'));
+  items[clamped].focus();
+}
+
+/**
+ * Attach arrow-key/Home/End/Escape handling to a menu container. Call once
+ * right after the menu is opened and given focus (or whenever it's opened,
+ * since the item set can change between opens — e.g. re-rendered content).
+ * `onClose` is called on Escape so callers can also restore focus to their
+ * trigger.
+ */
+function setupMenuKeyboardNav(menuEl, onClose) {
+  if (!menuEl || menuEl.dataset.rovingNavReady) return;
+  menuEl.dataset.rovingNavReady = '1';
+
+  menuEl.addEventListener('keydown', (e) => {
+    const items = _gmdMenuItems(menuEl);
+    if (!items.length) return;
+    const currentIndex = items.indexOf(document.activeElement);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        _focusRovingItem(menuEl, items, currentIndex === -1 ? 0 : currentIndex + 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        _focusRovingItem(menuEl, items, currentIndex === -1 ? items.length - 1 : currentIndex - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        _focusRovingItem(menuEl, items, 0);
+        break;
+      case 'End':
+        e.preventDefault();
+        _focusRovingItem(menuEl, items, items.length - 1);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof onClose === 'function') onClose();
+        break;
+      case 'Tab':
+        // Tabbing out of the menu should close it rather than leave it
+        // open with focus elsewhere on the page.
+        if (typeof onClose === 'function') onClose();
+        break;
+    }
+  });
+}
+
+/** Open a menu for keyboard use: set up roving tabindex starting at the
+ * first item and move focus into it. Safe to call every time the menu
+ * opens (idempotent listener attach via setupMenuKeyboardNav). */
+function activateMenuKeyboardNav(menuEl, onClose) {
+  if (!menuEl) return;
+  setupMenuKeyboardNav(menuEl, onClose);
+  const items = _initRovingTabindex(menuEl, 0);
+  // Focus the first item so arrow keys work immediately; a mouse click to
+  // open the menu still lands here, matching native <select>/menu behavior.
+  if (items.length) items[0].focus();
+}
+
 function setupGlobalMdBar() {
   _trackMdSourceFocus();
 
@@ -543,14 +656,29 @@ function setupGlobalMdBar() {
       if (!isOpen) {
         positionGmdDropdown(toggle, menu);
         menu.classList.add("open");
+        activateMenuKeyboardNav(menu, () => {
+          closeAllGmdDropdowns();
+          toggle.focus();
+        });
+        // See _armMenuOpenGuard (menu-bar section below) — same fix for
+        // the same class of bug on this separately-scrolling toolbar.
+        _armMenuOpenGuard();
       }
     });
   });
 
   // Re-close (rather than leave stranded mid-air) if the bar scrolls or the
   // window resizes while a dropdown is open — its fixed position was
-  // computed for the toggle's rect at open-time only.
-  bar.addEventListener("scroll", closeAllGmdDropdowns);
+  // computed for the toggle's rect at open-time only. Skip closes in the
+  // brief window right after this same tap opened a dropdown (see
+  // _armMenuOpenGuard) — a tap near the scroll edge of this
+  // horizontally-scrolling bar can trigger the browser's own
+  // scroll-into-view as a side effect of focusing the toggle, which would
+  // otherwise immediately close the dropdown that same tap just opened.
+  bar.addEventListener("scroll", () => {
+    if (Date.now() - _lastMenuOpenAt < 350) return;
+    closeAllGmdDropdowns();
+  });
   window.addEventListener("resize", closeAllGmdDropdowns);
 
   // Close any open gmd dropdown when clicking elsewhere
@@ -935,27 +1063,10 @@ function renderEntryItemsGrid() {
   const draftTiles = draftItems.map((item) => makeTile(item)).join("");
   const savedTiles = savedItems.map(makeTile).join("");
 
-  // ── New-quiz tile (always shown) ────────────────────────────────────────────
-  const newTile = `
-    <div class="entry-item-wrap">
-      <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
-        <span class="entry-item-thumb entry-item-thumb-new">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14" />
-            <path d="M12 5v14" />
-          </svg>
-        </span>
-        <span class="entry-item-title">امتحان جديد</span>
-      </button>
-    </div>`;
-
-  let html = `
-    <div class="entry-section">
-      <h2 class="entry-screen-heading">أنشئ امتحانًا جديدًا</h2>
-      <div class="entry-items-grid">${newTile}</div>
-    </div>`;
-
+  // The "new quiz" tile lives in static HTML now (see #entryScreen in
+  // create-quiz.html) — it needs nothing from localStorage/DB, so it no
+  // longer needs to be generated here or wait on this render.
+  let html = "";
   if (draftTiles) {
     html += `
     <div class="entry-section">
@@ -1322,8 +1433,23 @@ window.toggleMenu = function (name) {
   if (!isOpen) {
     item.classList.add("menu-item-open");
     positionMenuDropdown(trigger, dropdown);
+    activateMenuKeyboardNav(dropdown, () => {
+      closeAllMenus();
+      trigger.focus();
+    });
+    // See _armMenuOpenGuard below: tapping a trigger near the scroll edge
+    // of the horizontally-scrolling .app-title-bar (phones) can make the
+    // browser auto-scroll the trigger into view as a side effect of the
+    // tap/focus itself. That scroll event was reaching the "scroll closes
+    // menus" listener and immediately closing the menu this same tap just
+    // opened — on a second trigger, the net effect looked like "first tap
+    // closes the previous menu, second tap opens nothing" even though a
+    // menu genuinely did open for a frame. Suppress scroll-triggered
+    // closes for a brief window right after opening.
+    _armMenuOpenGuard();
   }
 };
+
 
 /** Close every open menu dropdown. Safe to call even if none are open. */
 window.closeAllMenus = function () {
@@ -1358,6 +1484,11 @@ window.toggleSubmenu = function (event, submenuId) {
   if (!isOpen) {
     submenuItem.classList.add("menu-item-open");
     positionSubmenuDropdown(trigger, dropdown);
+    activateMenuKeyboardNav(dropdown, () => {
+      submenuItem.classList.remove("menu-item-open");
+      trigger.focus();
+    });
+    _armMenuOpenGuard();
   }
 };
 
@@ -1429,8 +1560,14 @@ function setupMenuBarListeners() {
 
   // Re-close (rather than leave a dropdown stranded mid-air) if the bar
   // scrolls or the window resizes — its fixed position was computed for
-  // the trigger's rect at open-time only.
-  appTitleBar.addEventListener("scroll", closeAllMenus);
+  // the trigger's rect at open-time only. Skip closes that land in the
+  // brief window right after this same tap opened a menu (see
+  // _armMenuOpenGuard) — those are the tap's own focus-scroll side effect,
+  // not the user scrolling to dismiss the menu.
+  appTitleBar.addEventListener("scroll", () => {
+    if (Date.now() - _lastMenuOpenAt < 350) return;
+    closeAllMenus();
+  });
   window.addEventListener("resize", closeAllMenus);
 
   // Hover-to-switch: once any top-level menu is open, hovering another
@@ -1588,8 +1725,14 @@ function updateCharCount(elementId, current, max) {
 
 function setupKeyboardShortcuts() {
   document.addEventListener("keydown", (e) => {
-    // Alt+N: Add new question
-    if (e.altKey && e.key.toLowerCase() === "n") {
+    // Alt+N: Add new question.
+    // Checked via e.code ("KeyN", the physical key) rather than e.key: this
+    // is an Arabic-locale app, and on Arabic keyboard layouts e.key for the
+    // N key reports the Arabic letter printed on that key, not "n" — so
+    // e.key.toLowerCase() === "n" silently never matched for exactly the
+    // users this app is built for. e.code identifies the physical key
+    // regardless of the active layout.
+    if (e.altKey && e.code === "KeyN") {
       e.preventDefault();
       addQuestion();
     }
@@ -1998,7 +2141,7 @@ function renderQuestion(question, insertAtIndex = null) {
         <div class="question-body">
             <div class="form-group">
                 <label>نصّ السؤال *</label>
-                ${mdEditorHtml(`question-text-${question.id}`, question.q, "أدخل سؤالك هنا...", 3)}
+                ${mdEditorHtml(`question-text-${question.id}`, question.q, "أدخل سؤالك هنا...", 1)}
             </div>
             
             <div class="form-group">
@@ -2025,7 +2168,7 @@ function renderQuestion(question, insertAtIndex = null) {
             
             <div class="form-group">
                 <label><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح (اختياري)</label>
-                ${mdEditorHtml(`question-explanation-${question.id}`, question.explanation || "", "قدم تفسيرًا للإجابة الصحيحة", 3)}
+                ${mdEditorHtml(`question-explanation-${question.id}`, question.explanation || "", "قدم تفسيرًا للإجابة الصحيحة", 1)}
             </div>
         </div>
     `;
@@ -2719,7 +2862,37 @@ window.toggleReorderMode = function () {
 
   // Re-render so every card picks up (or drops) its drag handle — simplest
   // way to keep this in sync with bulkModeActive's own checkbox toggling.
+  // Collapse state lives only as a DOM class (see renderQuestion), so a
+  // full rebuild would otherwise silently expand every card, same bug
+  // toggleBulkMode avoids by mutating in place instead of re-rendering.
+  // Capture and restore it around the rebuild here.
+  const collapsedIds = new Set(
+    Array.from(document.querySelectorAll(".question-card.collapsed")).map(
+      (card) => card.dataset.questionId,
+    ),
+  );
   rerenderAllQuestions();
+  collapsedIds.forEach((id) => {
+    const card = document.querySelector(
+      `.question-card[data-question-id="${id}"]`,
+    );
+    if (!card) return;
+    card.classList.add("collapsed");
+    // Also restore the collapsed-state preview snippet (see
+    // toggleQuestionCollapse), which a fresh render leaves empty.
+    const qPreview = document.getElementById(`qpreview-${id}`);
+    const question = quizData.questions.find((q) => String(q.id) === id);
+    if (qPreview && question) {
+      const preview = (question.q || "")
+        .replace(/\n/g, " ")
+        .replace(/```[\s\S]*?```/g, "[كود]")
+        .replace(/`/g, "")
+        .trim();
+      qPreview.textContent = preview
+        ? preview.slice(0, 20) + (preview.length > 20 ? "…" : "")
+        : "";
+    }
+  });
 };
 
 function setupReorderHandles() {
@@ -5000,6 +5173,11 @@ function handleAiEditQuizToolCall(toolCall) {
       titleEl.value = quizData.title;
       updateCharCount("titleCharCount", quizData.title.length, 100);
     }
+    // titleEl.value is a direct JS set, not a real keystroke, so it never
+    // fires "input" — the event #appTitleText's own sync relies on (see
+    // commitTitleEdit). Without this, every other part of the page updates
+    // except the app-bar title. Call the same sync function directly.
+    updateAppTitleBar();
   }
 
   if (hasDescription) {

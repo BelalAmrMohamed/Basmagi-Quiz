@@ -990,7 +990,7 @@
 
                 <div class="menu-bar-item" data-menu="help">
                     <button type="button" class="menu-trigger" onclick="toggleMenu('help')">مساعدة</button>
-                    <div class="menu-dropdown" id="menu-help">
+                    <div class="menu-dropdown" id="menu-help" role="menu" aria-label="مساعدة">
                         <button type="button" class="menu-option" onclick="toggleShortcuts(); closeAllMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1224,36 +1224,50 @@
                 </button>
                 <div class="gmd-dropdown-menu gmd-dropdown-menu--latex" role="menu" aria-label="رموز رياضية إضافية">
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع"
-                        data-gmd-latex="\sum_{}^{}"><span class="gmd-btn-latex-symbol">Σ</span><span
-                            class="gmd-btn-latex-label">مجموع</span></button>
+                        data-gmd-latex="\sum_{}^{}"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">Σ</span><span class="gmd-btn-latex-label">مجموع</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInt" title="تكامل"
-                        data-gmd-latex="\int_{}^{}"><span class="gmd-btn-latex-symbol">∫</span><span
-                            class="gmd-btn-latex-label">تكامل</span></button>
+                        data-gmd-latex="\int_{}^{}"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">∫</span><span class="gmd-btn-latex-label">تكامل</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInfty" title="لا نهاية"
-                        data-gmd-latex="\infty"><span class="gmd-btn-latex-symbol">∞</span><span
-                            class="gmd-btn-latex-label">لا نهاية</span></button>
+                        data-gmd-latex="\infty"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">∞</span><span class="gmd-btn-latex-label">لا نهاية</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPi" title="باي"
-                        data-gmd-latex="\pi"><span class="gmd-btn-latex-symbol">π</span><span
-                            class="gmd-btn-latex-label">باي</span></button>
+                        data-gmd-latex="\pi"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">π</span><span class="gmd-btn-latex-label">باي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPm" title="زائد أو ناقص"
-                        data-gmd-latex="\pm"><span class="gmd-btn-latex-symbol">±</span><span
-                            class="gmd-btn-latex-label">زائد أو ناقص</span></button>
+                        data-gmd-latex="\pm"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">±</span><span class="gmd-btn-latex-label">زائد أو ناقص</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdLeq" title="أصغر من أو يساوي"
-                        data-gmd-latex="\leq"><span class="gmd-btn-latex-symbol">≤</span><span
-                            class="gmd-btn-latex-label">أصغر من أو يساوي</span></button>
+                        data-gmd-latex="\leq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≤</span><span class="gmd-btn-latex-label">أصغر من أو
+                            يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdGeq" title="أكبر من أو يساوي"
-                        data-gmd-latex="\geq"><span class="gmd-btn-latex-symbol">≥</span><span
-                            class="gmd-btn-latex-label">أكبر من أو يساوي</span></button>
+                        data-gmd-latex="\geq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≥</span><span class="gmd-btn-latex-label">أكبر من أو
+                            يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdNeq" title="لا يساوي"
-                        data-gmd-latex="\neq"><span class="gmd-btn-latex-symbol">≠</span><span
-                            class="gmd-btn-latex-label">لا يساوي</span></button>
+                        data-gmd-latex="\neq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≠</span><span class="gmd-btn-latex-label">لا يساوي</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdArrow" title="سهم"
-                        data-gmd-latex="\rightarrow"><span class="gmd-btn-latex-symbol">→</span><span
-                            class="gmd-btn-latex-label">سهم</span></button>
+                        data-gmd-latex="\rightarrow"><span class="gmd-btn-latex-symbol"><svg class="gmd-icon"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 12h14" />
+                                <path d="m13 6 6 6-6 6" />
+                            </svg></span><span class="gmd-btn-latex-label">سهم</span></button>
                     <button type="button" class="gmd-btn gmd-btn-latex" id="gmdMatrix" title="مصفوفة"
                         data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}"><span
-                            class="gmd-btn-latex-symbol">▦</span><span
-                            class="gmd-btn-latex-label">مصفوفة</span></button>
+                            class="gmd-btn-latex-symbol"><svg class="gmd-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path d="M7 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2" />
+                                <path d="M17 3h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2" />
+                                <line x1="9" y1="9" x2="9" y2="9.01" />
+                                <line x1="15" y1="9" x2="15" y2="9.01" />
+                                <line x1="9" y1="15" x2="9" y2="15.01" />
+                                <line x1="15" y1="15" x2="15" y2="15.01" />
+                            </svg></span><span class="gmd-btn-latex-label">مصفوفة</span></button>
                 </div>
             </div>
         </div>
@@ -1265,10 +1279,36 @@
              Mirrors Google Docs' start screen: a "start new" tile followed by
              a flat, sorted grid of recent items (draft + saved quizzes). -->
         <div class="entry-screen" id="entryScreen" style="display: none;">
+            <!-- "New quiz" tile: fully static, needs nothing from
+                 localStorage/DB, so it's real markup here rather than
+                 something renderEntryItemsGrid() has to wait to build —
+                 it's visible on first paint, before create-quiz.js runs. -->
+            <div class="entry-sections">
+                <div class="entry-section">
+                    <h2 class="entry-screen-heading">أنشئ امتحانًا جديدًا</h2>
+                    <div class="entry-items-grid">
+                        <div class="entry-item-wrap">
+                            <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
+                                <span class="entry-item-thumb entry-item-thumb-new">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M5 12h14" />
+                                        <path d="M12 5v14" />
+                                    </svg>
+                                </span>
+                                <span class="entry-item-title">امتحان جديد</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <!-- Skeleton: visible by default so the page has real
                  content-shaped structure from first paint, before
                  create-quiz.js has run. renderEntryItemsGrid() hides
-                 this and fills #entryItemsGrid with the real tiles. -->
+                 this and fills #entryItemsGrid with the real tiles.
+                 Only covers the drafts/saved sections now — the "new
+                 quiz" tile above needs no loading state of its own. -->
             <div class="entry-sections entry-skeleton" id="entrySkeleton" aria-hidden="true">
                 <div class="entry-section">
                     <div class="entry-skeleton-heading"></div>
@@ -1282,9 +1322,11 @@
             </div>
             <div class="entry-sections" id="entryItemsGrid" style="display: none;">
                 <!-- Populated by renderEntryItemsGrid() in create-quiz.js:
-                     one .entry-section per group (new / drafts / saved),
+                     one .entry-section per group (drafts / saved),
                      each with its own heading and its own .entry-items-grid,
-                     stacked top-to-bottom like Google Docs' start screen. -->
+                     stacked top-to-bottom like Google Docs' start screen.
+                     The "new quiz" tile itself lives in the static markup
+                     above, not here. -->
             </div>
         </div>
 
