@@ -71,32 +71,66 @@
 /* ===========================
    SEARCH CONTAINER - Collapsible
    =========================== */
-/* Now positioned inside .header, anchored to the same lower-right corner
-   the trigger button occupies when closed — so opening the bar reads as
-   "the button turned into the input" rather than a new block appearing
-   elsewhere. Sits above the header's own bottom padding (see
-   .header { padding-bottom }). */
+/* Lives inside .header, anchored to the same lower-right corner the trigger
+   button occupies when closed — so opening the bar reads as "the button
+   turned into the input" rather than a new block appearing elsewhere.
+
+   STRUCTURE FIX: .search-container no longer grows upward from a fixed
+   bottom edge. It used to stack .search-bar / .search-filters /
+   .search-results-summary as normal-flow children inside a
+   `position:absolute; bottom:16px` box — so anything that appeared below
+   the bar (the results summary, the filters panel) pushed the whole box
+   taller, which visually shoved the bar itself upward, and a tall panel
+   like .search-filters could grow past the header's own top edge entirely.
+
+   Now: .search-container anchors from the TOP of its reserved slot (a fixed
+   position that never moves regardless of what's inside), .search-bar-row
+   lays the bar + results summary out side-by-side, and .search-filters is
+   pulled OUT of normal flow into its own absolutely-positioned flyout that
+   drops below the row — so nothing after the bar can ever move the bar.
+   Hidden at rest via opacity+visibility (not max-height/overflow:hidden,
+   since this box is now overflow:visible so the filters flyout can extend
+   past its edge) — visibility is delayed on the way out and instant on the
+   way in, so it's untabbable/unclickable while closed but appears instantly
+   when opened. */
 
 .search-container {
   position: absolute;
   left: 24px;
   right: 16px;
-  bottom: 16px;
-  overflow: hidden;
-  max-height: 0;
+  top: calc(100% - 84px);
+  /* mirrors the space padding-bottom reserves on .header */
+  overflow: visible;
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   transition:
-    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease;
+    opacity 0.2s ease,
+    visibility 0s linear 0.2s;
   z-index: 9;
 }
 
 .search-container.is-open {
-  max-height: 600px;
-  /* large enough for filters panel */
   opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 0.2s ease,
+    visibility 0s linear 0s;
   animation: none;
   /* override old fadeInUp */
+}
+
+/* Bar + results summary sit side by side on one row that never changes
+   height regardless of whether filters are open. justify-content:flex-end
+   keeps the bar hugging the right edge when the summary is absent (display:
+   none) — see search-manager.js updateResultsSummary()/clearSearch() for
+   where searchSummary's display is toggled. */
+.search-bar-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 /* ===========================
@@ -116,10 +150,13 @@
   transition:
     border-color 0.25s ease,
     box-shadow 0.25s ease;
+  /* Bar keeps its own comfortable width and hugs the row's right edge
+     (via .search-bar-row's justify-content:flex-end) — it no longer
+     stretches to fill the row now that the results summary is a row
+     sibling rather than a block stacked underneath. */
+  width: 100%;
   max-width: 420px;
-  /* Bar hugs the same right edge the trigger button sits at. */
-  margin-right: 0;
-  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .search-icon {
@@ -272,15 +309,20 @@
 /* ===========================
    SEARCH FILTERS PANEL
    =========================== */
-
 .search-filters {
-  margin-top: 12px;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, 100%);
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
   padding: 16px;
   background: var(--color-surface, #ffffff);
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   animation: slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
 }
 
 @keyframes slideDown {
@@ -437,12 +479,16 @@
 /* ===========================
    SEARCH RESULTS SUMMARY
    =========================== */
+/* Now a sibling of .search-bar inside .search-bar-row (flex row), not a
+   block stacked underneath it — appearing/disappearing no longer changes
+   the bar's position. Takes the remaining row space to the bar's left. */
 
 .search-results-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 12px;
+  flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   background: var(--color-primary-light, #e8f0fe);
   border-radius: 10px;
@@ -535,7 +581,19 @@
   .search-container {
     left: 16px;
     right: 12px;
-    bottom: 12px;
+    top: calc(100% - 64px);
+    /* mirrors .header's mobile padding-bottom (64px) at this breakpoint */
+  }
+
+  /* Below 768px there isn't room for the results summary and the bar on one
+     row — let the row wrap so the summary drops to its own line above the
+     bar, instead of squeezing both into an unreadable width. */
+  .search-bar-row {
+    flex-wrap: wrap;
+  }
+
+  .search-results-summary {
+    flex-basis: 100%;
   }
 
   .search-bar {

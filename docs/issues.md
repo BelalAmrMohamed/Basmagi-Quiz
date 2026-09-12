@@ -7,6 +7,11 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Search Bar in the Home Page
+- `.search-filters` doesn't close when I click out of it.
+- `.search-bar` doesn't appear at the exact same place as `.header-search-btn`
+- In the `.search-bar-row`, the `.search-results-summary` should appear on the left, and the `.search-bar` should be on the right (in place of the `.header-search-btn`)
+
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
@@ -62,6 +67,7 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 ### Quiz Page
 - Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on.
+- Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view.
 
 ### App SEO and GEO 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
@@ -85,7 +91,6 @@ Make it a full screen, instead of a modal. Not a different page, but takes full 
   - Extend the info in the course info modal, too.
   - Make an info modal for Folders.
   - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
-  - Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view.
 
 #### Password
 Connect Password typing memory on the main page to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
@@ -105,3 +110,6 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
+
+### about.html
+`المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom)

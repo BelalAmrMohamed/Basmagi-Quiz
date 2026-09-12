@@ -926,25 +926,27 @@ body.sidebar-expanded {
   border: 1px solid var(--color-border-light);
   text-align: center;
   position: relative;
-  overflow: hidden;
-  /* Subtle noise-like background depth */
+  overflow: visible;
   background: var(--color-surface);
-  /* Extra bottom padding reserves room for the search bar + trigger button,
-     which now live inside the header itself instead of below it. */
   padding-bottom: 84px;
 }
 
-/* The search bar now lives inside .header. While it's expanded, switch
-   overflow to visible so the bar (and its filters panel) aren't clipped by
-   the header's own rounded corners / decorative ::before/::after layers.
-   Only toggled while open — otherwise .header::before/::after would leak
-   outside the header's rounded corners at all times. */
-.header.is-open {
-  overflow: visible;
+/* Clips ::before/::after (below) to the header's exact rounded rect,
+   independently of .header's own overflow — see the comment above. */
+.header-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Two-tone top accent bar: thicker, gradient-glow effect */
-.header::before {
+/* Two-tone top accent bar: thicker, gradient-glow effect.
+   Moved onto .header-clip (not .header) so it stays clipped to the header's
+   rounded corners regardless of whether search is open — see .header-clip
+   above. */
+.header-clip::before {
   content: "";
   position: absolute;
   top: 0;
@@ -955,8 +957,8 @@ body.sidebar-expanded {
   box-shadow: 0 2px 12px rgba(99, 102, 241, 0.35);
 }
 
-/* Subtle radial glow centred behind the title */
-.header::after {
+/* Subtle radial glow centred behind the title. Same reasoning as above. */
+.header-clip::after {
   content: "";
   position: absolute;
   top: -60px;

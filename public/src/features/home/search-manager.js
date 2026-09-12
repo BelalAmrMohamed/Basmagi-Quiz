@@ -93,7 +93,7 @@ export class SearchManager {
       searchInput: document.getElementById("courseSearch"),
       searchClose: document.getElementById("searchClose"), // merged clear+close button
       headerSearchBtn: document.getElementById("headerSearchBtn"), // NEW: header icon trigger
-      headerEl: document.querySelector(".header"), // toggled to overflow:visible while the bar is open
+      headerEl: document.querySelector(".header"), // gets .is-open as a styling hook while the bar is open (overflow itself no longer depends on it — see .header-clip in index.css)
       searchBar: document.querySelector(".search-bar"), // shows a spinner during the debounce window
       contentArea: document.getElementById("contentArea"),
       filterToggle: document.getElementById("filterToggle"),
@@ -813,8 +813,10 @@ export class SearchManager {
    * NEW: Expand the search bar inside the header and focus the input.
    * Hides the header trigger button (its icon visually "becomes" the
    * search bar's own leading icon, which sits at the same corner — see
-   * search.css) and switches .header to overflow:visible so the expanding
-   * bar/filters panel aren't clipped by the header's rounded corners.
+   * search.css). .header itself is unconditionally overflow:visible (see
+   * .header-clip in index.css, which clips only the decorative accent
+   * bar/glow layers instead) — the .is-open class added to it here is just
+   * a styling hook, not what makes the flyout visible.
    */
   openSearchBar() {
     if (!this.container) return;

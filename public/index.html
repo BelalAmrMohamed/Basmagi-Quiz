@@ -833,6 +833,13 @@
         </nav>
 
         <header class="header" role="banner">
+            <!-- Clips the decorative top accent bar + radial glow to the header's
+                 rounded corners at all times — independent of the search bar/
+                 filters/summary below, which now need .header itself to stay
+                 overflow:visible so they can flyout past its edge. See
+                 .header-clip in index.css. -->
+            <div class="header-clip" aria-hidden="true"></div>
+
             <div class="header-content">
                 <!-- Personalised greeting pill (JS sets innerHTML) -->
                 <button class="header-badge" id="user-name" onclick="changeUsername(``)" aria-live="polite"
@@ -856,58 +863,75 @@
 
             <!-- Context-Aware Search System — now lives inside the header itself.
                  Collapsed by default, opened via the header trigger button below.
-                 header.is-open (toggled alongside searchContainer.is-open) switches
-                 the header's overflow from hidden -> visible only while search is
-                 expanded, so the bar isn't clipped by the header's own decorative
-                 ::before/::after layers. -->
+                 .header stays overflow:visible at all times (see .header-clip
+                 above, which clips only the decorative accent bar/glow layers),
+                 so this can flyout past the header's own bottom edge without
+                 being clipped. -->
             <div class="search-container" id="searchContainer" aria-hidden="true">
-                <!-- Compact Search Bar -->
-                <div class="search-bar">
-                    <svg class="search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20"
-                        height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <!-- Debounce-window spinner — shown in place of .search-icon while a
-                         keystroke is queued but not yet searched. See .is-searching in
-                         search.css and handleSearchInput()/performSearch() in
-                         search-manager.js. -->
-                    <span class="search-spinner" aria-hidden="true"></span>
-                    <input type="text" id="courseSearch" placeholder="ابحث عن مادة..." class="search-input" dir="auto"
-                        autocomplete="off" aria-label="البحث عن المواد الامتحانات" />
-                    <!-- Single merged button: clears the text if there's any, otherwise closes the search bar.
-                         Two distinct icons (X vs chevron-down) are swapped via CSS based on .mode-clear so the
-                         two behaviors are visually distinct, not just distinct in aria-label/title. -->
-                    <button class="search-close" id="searchClose" aria-label="إغلاق البحث" title="إغلاق البحث"
-                        type="button">
-                        <svg class="search-close-icon search-close-icon--clear" width="14" height="14"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                            stroke-linecap="round" aria-hidden="true">
-                            <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                        <svg class="search-close-icon search-close-icon--collapse" width="14" height="14"
-                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                            <polyline points="18 15 12 9 6 15"></polyline>
-                        </svg>
-                    </button>
-                    <button class="search-filters-toggle" id="filterToggle" aria-label="فتح الفلاتر"
-                        title="الفلاتر (Ctrl+F)" aria-expanded="false" type="button">
-                        <svg class="filter-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16"
-                            height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                <!-- Bar + results summary share one row so the summary sits BESIDE
+                     the bar, not stacked under it — appearing/disappearing here can
+                     no longer move the bar's position (see .search-bar-row in
+                     search.css). .search-filters is a sibling of this row, not a
+                     child, since it needs to anchor its own flyout position
+                     independently (see below). -->
+                <div class="search-bar-row">
+                    <!-- Search Results Summary -->
+                    <div class="search-results-summary" id="searchSummary" style="display:none;">
+                        <span><span id="resultCount">0</span> نتيجة</span>
+                        <div class="active-filters" id="activeFilterTags"></div>
+                    </div>
+
+                    <!-- Compact Search Bar -->
+                    <div class="search-bar">
+                        <svg class="search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20"
+                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                             stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="4" y1="6" x2="20" y2="6"></line>
-                            <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
-                            <line x1="4" y1="12" x2="20" y2="12"></line>
-                            <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"></circle>
-                            <line x1="4" y1="18" x2="20" y2="18"></line>
-                            <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                    </button>
+                        <!-- Debounce-window spinner — shown in place of .search-icon while a
+                             keystroke is queued but not yet searched. See .is-searching in
+                             search.css and handleSearchInput()/performSearch() in
+                             search-manager.js. -->
+                        <span class="search-spinner" aria-hidden="true"></span>
+                        <input type="text" id="courseSearch" placeholder="ابحث عن مادة..." class="search-input"
+                            dir="auto" autocomplete="off" aria-label="البحث عن المواد الامتحانات" />
+                        <!-- Single merged button: clears the text if there's any, otherwise closes the search bar.
+                             Two distinct icons (X vs chevron-down) are swapped via CSS based on .mode-clear so the
+                             two behaviors are visually distinct, not just distinct in aria-label/title. -->
+                        <button class="search-close" id="searchClose" aria-label="إغلاق البحث" title="إغلاق البحث"
+                            type="button">
+                            <svg class="search-close-icon search-close-icon--clear" width="14" height="14"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round" aria-hidden="true">
+                                <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                            <svg class="search-close-icon search-close-icon--collapse" width="14" height="14"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="18 15 12 9 6 15"></polyline>
+                            </svg>
+                        </button>
+                        <button class="search-filters-toggle" id="filterToggle" aria-label="فتح الفلاتر"
+                            title="الفلاتر (Ctrl+F)" aria-expanded="false" type="button">
+                            <svg class="filter-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16"
+                                height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="4" y1="6" x2="20" y2="6"></line>
+                                <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
+                                <line x1="4" y1="12" x2="20" y2="12"></line>
+                                <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+                                <line x1="4" y1="18" x2="20" y2="18"></line>
+                                <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Search Filters Panel (Collapsible) -->
+                <!-- Search Filters Panel (Collapsible) — a flyout anchored below
+                     .search-bar-row's right edge (== the bar's own corner), not a
+                     block stacked between the bar and the results summary. See
+                     .search-filters in search.css. -->
                 <div class="search-filters" id="searchFilters" style="display:none;">
                     <div class="filter-section">
                         <h4>نطاق البحث</h4>
@@ -990,12 +1014,6 @@
                     <div class="filter-actions">
                         <button class="btn-reset-filters" id="resetFilters" type="button">إعادة تعيين</button>
                     </div>
-                </div>
-
-                <!-- Search Results Summary -->
-                <div class="search-results-summary" id="searchSummary" style="display:none;">
-                    <span><span id="resultCount">0</span> نتيجة</span>
-                    <div class="active-filters" id="activeFilterTags"></div>
                 </div>
             </div>
 
