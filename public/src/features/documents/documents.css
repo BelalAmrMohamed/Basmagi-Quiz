@@ -718,7 +718,7 @@ html[data-motion="reduced"] *::after {
            on-screen as the visible grab handle. calc() (rather than a
            fixed translateX) keeps this correct regardless of how wide the
            panel ends up (e.g. a longer heading than usual). */
-        transform: translateY(-50%) translateX(calc(-1 * (100% - 22px)));
+        transform: translateY(-50%) translateX(calc(-1 * (110%)));
         cursor: pointer;
         /* The panel's normal "spine" accent is on its left edge, which is
            exactly the part that's now off-screen — move it to the right
@@ -733,22 +733,7 @@ html[data-motion="reduced"] *::after {
         /* A small nudge back toward the reading column on hover signals
            "this is interactive" before the user even clicks, same idea as
            a drawer handle that peeks out further when you mouse over it. */
-        transform: translateY(-50%) translateX(calc(-1 * (100% - 40px)));
-    }
-
-    /* The list would otherwise still be reachable (scrolled into view,
-       tab-focusable) while slid mostly off-screen — hide it outright
-       rather than just visually clipping it via overflow, matching how
-       the mobile slide-up panel already treats its own hidden state. */
-    .doc-toc.doc-toc-minimized .doc-toc-list {
-        display: none;
-    }
-
-    /* The heading label would get clipped mid-word by the sliver anyway;
-       hide it and keep only the chevron button visible/clickable within
-       the visible strip. */
-    .doc-toc.doc-toc-minimized .doc-toc-heading-label {
-        display: none;
+        transform: translateY(-50%) translateX(calc(-1 * (105%)));
     }
 
     .doc-toc.doc-toc-minimized .doc-toc-heading {

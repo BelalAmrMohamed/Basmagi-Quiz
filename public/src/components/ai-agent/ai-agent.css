@@ -880,22 +880,34 @@
    .ai-agent-attach-btn (removed). Same footprint/shape as the old attach
    button so the input row's layout doesn't shift, but now opens a small
    anchored menu (see openExamDropdownMenu in ai-agent-chat.js) instead of
-   directly triggering the file picker. */
+   directly triggering the file picker.
+
+   REDESIGN (Gemini-style input): every control used to be its own little
+   bordered/background box sitting NEXT TO the textarea's own separately
+   bordered box — five distinct outlines in a row. Gemini's composer reads
+   as ONE pill (see .ai-agent-chat-input-controls below, which now owns the
+   border/background/radius/focus-ring that used to live on the textarea
+   alone) with plain, borderless icon buttons floating inside it. So each
+   icon button below drops its own border/background and just gets a
+   circular hover/focus tint — the pill itself is the only outline. */
 .ai-agent-more-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary, var(--color-text-primary));
   cursor: pointer;
-  transition: border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.ai-agent-more-btn:hover {
-  border-color: var(--color-primary);
+.ai-agent-more-btn:hover:not(:disabled) {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
 }
 
 .ai-agent-more-btn:disabled {
@@ -917,32 +929,52 @@
    inputRow's own first child) sits above them as its own row. Wrapping
    those direct-line controls in .ai-agent-chat-input-controls keeps
    inputRow itself a simple flex-column of [tiles?, controls] without
-   touching every one of ai-agent-chat.js's individual appendChild calls. */
+   touching every one of ai-agent-chat.js's individual appendChild calls.
+
+   REDESIGN: this wrapper is now the single pill container (Gemini-style)
+   — it owns the border/background/radius/focus-ring that the textarea
+   used to carry on its own. Every child inside (more/textarea/wave/mic/
+   send) is borderless and background-less, so the whole row reads as one
+   continuous rounded field with icon buttons floating inside it rather
+   than several separate boxes side by side. */
 .ai-agent-chat-input-controls {
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px 4px 4px 6px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 26px;
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ai-agent-chat-input-controls:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 .ai-agent-chat-input {
   flex: 1;
   resize: none;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  padding: 9px 12px;
+  border: none;
+  border-radius: 0;
+  padding: 8px 10px;
   font-family: inherit;
   font-size: 0.88rem;
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text-primary);
-  min-height: 40px;
+  min-height: 36px;
   max-height: 120px;
   overflow-y: hidden;
   direction: rtl;
   unicode-bidi: plaintext;
 }
 
+/* The pill wrapper (.ai-agent-chat-input-controls above) owns the focus
+   ring now — the textarea itself stays borderless even when focused, so
+   there's still only ever one outline visible around the whole control. */
 .ai-agent-chat-input:focus {
   outline: none;
-  border-color: var(--color-primary);
 }
 
 .ai-agent-chat-input:disabled {
@@ -954,14 +986,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: 999px;
   background: var(--gradient-accent);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
 }
 
 /* The .ai-agent-send-btn `display: inline-flex` above wins over the
@@ -974,12 +1009,12 @@
 }
 
 .ai-agent-send-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: scale(1.05);
   box-shadow: var(--shadow-md);
 }
 
 .ai-agent-send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
@@ -988,17 +1023,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  border: 1.5px solid var(--color-border);
-  border-radius: 10px;
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-secondary, var(--color-text-primary));
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .ai-agent-mic-btn:hover {
-  border-color: var(--color-primary);
+  background: var(--color-background-secondary);
   color: var(--color-primary);
 }
 
@@ -1048,51 +1085,24 @@
 /* A subtle live-recording cue on the input field itself while dictating,
    distinct from the mic button (which is hidden during dictation — see
    setDictationUiState()) so there's still a visible "you're being heard"
-   signal near the text being filled in live. */
-.ai-agent-chat-input--dictating {
+   signal near the text being filled in live. REDESIGN: the pill wrapper
+   (.ai-agent-chat-input-controls) now owns the focus ring, so this cue
+   is the same treatment applied to the pill itself while dictating,
+   rather than to the (now borderless) textarea. */
+.ai-agent-chat-input-controls:has(.ai-agent-chat-input--dictating) {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
 }
 
-/* Replaces the textarea + attach button in place while dictating (see
-   setDictationUiState / dictationWaveEl in ai-agent-chat.js) — takes
-   over the textarea's flex:1 slot in the row so the layout doesn't
-   jump, and reads as an actively-listening control rather than a
-   passive status label: clicking it cancels dictation, same as the
-   mic/cancel button. */
-.ai-agent-dictation-wave {
-  /* Hidden by default — only shown while actively dictating (see
-     setDictationUiState() in ai-agent-chat.js, which toggles the
-     [hidden] attribute). Without this, the wave button — always present
-     in the DOM as a sibling of the textarea — would render on every
-     page load regardless of dictation state. */
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  flex: 1;
-  min-height: 40px;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 10px;
-  padding: 9px 12px;
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
-  color: var(--color-primary);
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Same [hidden]-override pattern as .ai-agent-send-btn[hidden] above —
-   `display: flex` at equal specificity would otherwise beat the UA
-   `[hidden] { display: none }` rule depending on cascade order. */
-.ai-agent-dictation-wave:not([hidden]) {
-  display: flex;
-}
-
-.ai-agent-dictation-wave:hover {
-  background: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
-}
+/* NOTE: an earlier, lower-specificity .ai-agent-dictation-wave rule set
+   used to live here (bordered pill of its own, ~line 1100 in prior
+   revisions). It was fully superseded by the more specific
+   `.ai-agent-dictation-wave:not([hidden])` rule further down this file
+   (higher specificity always won), so it was dead weight kept only for
+   history — removed as part of the Gemini-style redesign below, which
+   updates that surviving, actually-effective rule instead so the wave
+   sits flush inside the new borderless pill instead of drawing its own
+   nested border/background. */
 
 .ai-agent-dictation-wave-bars {
   display: inline-flex;
@@ -1668,6 +1678,70 @@ body.sidebar-expanded .ai-agent-fab {
   }
 }
 
+/* The settings modal reuses .ai-agent-modal-card as a second class, so it
+   would otherwise also go full-screen under the phone rule further below
+   — that's fine for the base card, but this fixed height is more
+   specific (two classes) and always wins regardless of viewport unless
+   explicitly reset. Settings' content is short, so it keeps its own
+   shorter sheet-style height rather than stretching to fill an entire
+   phone screen the way the full chat experience does. */
+@media (max-width: 640px) {
+  .ai-agent-settings-modal-card {
+    height: min(560px, 80vh);
+    max-height: none;
+    border-radius: 20px;
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Same reasoning as the card override above — restore the normal
+     dimmed/blurred backdrop + centering padding for the settings modal
+     specifically, since it stays a small centered sheet rather than
+     going full-screen like the chat modal. */
+  .ai-agent-settings-modal-overlay {
+    padding-bottom: calc(var(--bottom-nav-height, 64px) + env(safe-area-inset-bottom, 0px));
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+  }
+}
+
+/* ── Full-screen on phones ──
+   On a phone, a centered card with dimmed backdrop margins around it
+   reads as "a popup sitting on top of the app" — for something as
+   central as the AI Agent, that's less screen real estate than the
+   conversation deserves, and the backdrop margins are just dead space
+   framing a shrunk-down chat. Below the same 640px tier the rest of this
+   file already treats as "phone" (see the block directly above), the
+   overlay drops its dimming/blur/padding and the card itself expands to
+   fill the entire viewport edge-to-edge — no radius, no shadow, no
+   border — so it reads as its own full screen rather than a modal.
+   Nothing here changes the >640px (tablet/desktop) experience, which
+   keeps the centered card + backdrop treatment as-is. */
+@media (max-width: 640px) {
+  .ai-agent-modal-overlay {
+    padding-bottom: 0;
+    background: var(--color-surface);
+    backdrop-filter: none;
+  }
+
+  .ai-agent-modal-card {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+
+  .ai-agent-modal-card .modal-header {
+    /* Extra top padding so the header clears a phone's status bar /
+       camera cutout now that the card runs flush to the physical top
+       edge instead of floating with margin around it. */
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+  }
+}
+
 /* ── Desktop sidebar (Task 4) ──
    Built unconditionally in ai-agent.js (not behind a JS viewport check),
    hidden by default here and only shown once .ai-agent-desktop-layout is
@@ -2212,6 +2286,12 @@ body.sidebar-expanded .ai-agent-fab {
   display: none !important;
 }
 
+/* REDESIGN: previously drew its own tinted pill (border-radius/background)
+   nested inside the input row's separately-bordered boxes. Now that
+   .ai-agent-chat-input-controls itself is the single outer pill, this
+   sits flush inside it exactly like the textarea it replaces — no
+   border, no radius, no background — so swapping between "typing" and
+   "dictating" doesn't introduce a second nested pill shape. */
 .ai-agent-dictation-wave:not([hidden]) {
   display: flex;
   align-items: center;
@@ -2219,21 +2299,22 @@ body.sidebar-expanded .ai-agent-fab {
   gap: 10px;
   flex: 1;
   min-width: 0;
-  padding: 0 10px;
+  padding: 8px 10px;
   border: none;
-  border-radius: 10px;
-  background: var(--color-primary-light, rgba(0, 136, 204, 0.08));
+  border-radius: 0;
+  background: transparent;
   color: var(--color-primary);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
   font-family: inherit;
-  transition: background 0.2s ease;
-  min-height: 38px;
+  transition: color 0.2s ease;
+  min-height: 36px;
 }
 
 .ai-agent-dictation-wave:not([hidden]):hover {
-  background: var(--color-primary-light, rgba(0, 136, 204, 0.14));
+  color: var(--color-primary);
+  opacity: 0.85;
 }
 
 /* Wave bars container */

@@ -109,7 +109,21 @@ function buildToc() {
     } catch (_) { }
   }
 
-  minimizeBtn.addEventListener("click", () => {
+  // BUG FIX: minimizeBtn lives inside `heading`, which lives inside `nav`
+  // — so a click on the button bubbles straight into nav's own click
+  // listener below. Without stopping that here, clicking the button while
+  // expanded looked like this: minimizeBtn's handler fires first (target
+  // fires before ancestors in the bubble phase) and adds
+  // .doc-toc-minimized — then the SAME click event keeps bubbling up to
+  // nav's listener, which now sees .doc-toc-minimized already present (it
+  // was just added a moment ago) and immediately calls setMinimized(false)
+  // again, undoing the toggle within the same click. The net effect was a
+  // button that looked completely broken — clicking it never visibly
+  // changed anything. stopPropagation() here means the button fully owns
+  // its own click and nav's "click the minimized pill to re-expand"
+  // listener never sees it at all.
+  minimizeBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     setMinimized(!nav.classList.contains("doc-toc-minimized"));
   });
 

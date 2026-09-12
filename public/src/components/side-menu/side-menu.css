@@ -554,7 +554,14 @@
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text);
+  /* BUG FIX: --color-text is not a defined token anywhere in themes.css
+     (only --color-text-primary/-secondary/-tertiary exist) — a var()
+     reference to an undefined custom property with no fallback makes the
+     whole `color` declaration invalid, so it fell back to inheriting
+     from an ancestor instead of the intended theme-aware text color. That
+     inherited value happened to still be legible for the `<a>` items
+     above this one, which is why only some rows looked affected. */
+  color: var(--color-text-primary);
   text-decoration: none;
   cursor: pointer;
   text-align: right;
@@ -563,6 +570,15 @@
 
 .side-menu-profile-dropdown-item svg {
   flex-shrink: 0;
+  /* BUG FIX: explicit width/height guard — svg's own width/height
+     attributes should already size it, but pairing that with a `color`
+     that resolves correctly (see the invalid --color-text token fixed
+     above) is what actually feeds stroke="currentColor" a real value.
+     Without both fixes together, a button-level icon like تغيير الإسم's
+     could inherit a color from a different ancestor than its sibling
+     <a> items do and end up effectively invisible against the
+     background despite being present in the DOM. */
+  color: inherit;
 }
 
 .side-menu-profile-dropdown-item-avatar {

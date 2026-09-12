@@ -339,7 +339,7 @@ mountSignInDialog();
       applyDesktopState(true);
       try {
         localStorage.setItem(STORAGE_KEY, "true");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -348,7 +348,7 @@ mountSignInDialog();
       applyDesktopState(false);
       try {
         localStorage.setItem(STORAGE_KEY, "false");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -412,7 +412,7 @@ mountSignInDialog();
 
       try {
         dragHandle.setPointerCapture(pointerId);
-      } catch (_) {}
+      } catch (_) { }
 
       window.addEventListener("pointermove", onPointerMove);
       window.addEventListener("pointerup", onPointerUp);
@@ -595,7 +595,7 @@ mountSignInDialog();
     themeControlsPanel.classList.toggle("collapsed", !expanded);
     try {
       localStorage.setItem(THEME_ACCORDION_KEY, String(expanded));
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (themeControlsToggle && themeControlsPanel) {
@@ -624,7 +624,7 @@ mountSignInDialog();
       applyDesktopState(true);
       try {
         localStorage.setItem(STORAGE_KEY, "true");
-      } catch (_) {}
+      } catch (_) { }
     });
   }
 
@@ -682,7 +682,7 @@ function refreshNavBadges() {
   let roleInfo = null;
   try {
     roleInfo = getAdminRoleInfo();
-  } catch (_) {}
+  } catch (_) { }
 
   targets.forEach(({ imgId }) => {
     const img = document.getElementById(imgId);
@@ -728,7 +728,7 @@ export function refreshAdminUI() {
     // recovery mid-session shows up without the user having to close/reopen.
     populateDropdownIfAvailable();
   }
-  
+
   const mobileAdminBtn = document.getElementById("sideMenuMobileAdminSignIn");
   if (mobileAdminBtn) {
     const roleInfo = getAdminRoleInfo();
@@ -740,7 +740,7 @@ export function refreshAdminUI() {
 // populateDropdown() is defined further down (only when the dropdown markup
 // exists on this page). This indirection lets refreshAdminUI() call it
 // safely even though it's declared later in the same DOMContentLoaded scope.
-let populateDropdownIfAvailable = () => {};
+let populateDropdownIfAvailable = () => { };
 
 function initProfileDropdown() {
   const trigger = document.getElementById("sideMenuProfileTrigger");
@@ -1076,7 +1076,7 @@ window.changeUsername = async function (message = "أدخل الإسم الجد�
   }
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+function injectMobileAdminAndReportsMenuItems() {
   const changeUsernameBtn = document.querySelector(".mobile-only-menu-item[onclick*='changeUsername']");
   if (changeUsernameBtn && changeUsernameBtn.parentNode) {
     const mobileAdminBtn = document.createElement("button");
@@ -1135,4 +1135,10 @@ document.addEventListener("DOMContentLoaded", () => {
       label.textContent = roleInfo ? "تسجيل الخروج" : "دخول المشرفين";
     }
   }
-});
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", injectMobileAdminAndReportsMenuItems, { once: true });
+} else {
+  injectMobileAdminAndReportsMenuItems();
+}

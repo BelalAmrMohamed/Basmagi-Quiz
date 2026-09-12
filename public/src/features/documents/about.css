@@ -7,18 +7,6 @@
   --about-sage: #a8c3a0;
   --about-coral: #d8785f;
   --about-line: rgba(23, 34, 29, .16);
-  /* Dedicated pair for the "inverted" highlight card (3rd .principle) —
-     explicitly declared per theme rather than reusing --about-ink/
-     --about-paper for both the page's normal colors AND this card's
-     inverted ones. Those two swap MEANING between light and dark themes
-     (ink=dark-on-light in light mode, but ink=light-on-dark in dark mode),
-     so a rule built from "background: ink, text: paper" quietly stops
-     being an inversion at all in dark themes — the card's background
-     ends up light while its text stays a light color hardcoded for a
-     dark background, i.e. unreadable. Naming these for what they ARE
-     (a dark chip / a light chip) instead of reusing tokens whose meaning
-     depends on the active theme keeps the pairing correct in every theme.
-     Also known as: 3rd-nth principle. */
   --about-highlight-bg: #17221d;
   --about-highlight-ink: #f3f0e8;
   --about-highlight-muted: #c9d4cc;
@@ -390,10 +378,17 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 /* ── Tech Stack ────────────────────────────────────────────────────────────── */
+/* REDESIGN: these pills were sized like standalone buttons (10px/16px
+   padding, .82rem text, 18px icons) for what's really just a small
+   reference list of ~7 badges — on a page already dense with sections,
+   that made the whole row look oversized and heavy relative to
+   everything around it. Trimmed to a genuinely compact "chip" size:
+   smaller padding/gap/font/icon and a tighter border, while keeping
+   enough padding that the pill shape and tap target still read clearly. */
 .about-page .tech-stack {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -402,18 +397,19 @@ html[data-theme="dark-slate"] .about-page {
 .about-page .tech-badge {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 16px;
+  gap: 6px;
+  padding: 6px 12px;
   background: var(--about-card);
   border: 1px solid var(--about-line);
   border-radius: 999px;
-  font-size: .82rem;
+  font-size: .74rem;
+  line-height: 1.3;
   color: var(--about-ink);
 }
 
 .about-page .tech-badge svg {
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
   color: var(--about-coral);
 }

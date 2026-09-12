@@ -42,14 +42,12 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - Redesign the AI Agent's `.ai-agent-chat-input-controls` to be like Gemini. Instead of the current styling. See screenshot.
 
 ### Document Pages
-- `تغيير الإسم` button in the profile dropdown on desktops doesn't have the icon.
 - These 3 button don't appear on phones (side-menu):
   - `تسجيل الدخول` 
   - `البلاغات`
   - `تغيير الإسم`
   - I tried fixing them, but they still don't appear, they appear on the rest of the pages (index.html and the rest).
-- `.doc-toc-minimize-btn` doesn't do anything, it's broken.
-- Redesign the `كيف بُنيت المنصة؟` pills, they are too big.
+- Redesign the `كيف بُنيت المنصة؟` pills, they are too wide.
 
 ## New Features
 
@@ -107,7 +105,7 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
 
 #### Onboarding Pop Up
-Make it a full screen, instead of a modal.
+Make it a full screen, instead of a modal. not a different page, but takes full width/height, no rounded corners.
 
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
