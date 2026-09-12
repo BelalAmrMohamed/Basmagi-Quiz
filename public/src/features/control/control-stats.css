@@ -1,50 +1,7 @@
 /* =============================================================================
-   public/src/features/control/control.css — additional styles for stats panel & owner info
+   public/src/features/control/control-stats.css — additional styles for stats panel & owner info
    Appended to the existing control.css design system.
    ============================================================================= */
-
-/* ── Platform Stats Grid ──────────────────────────────────────────────────── */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.stat-card {
-    background: var(--bg-card2);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 12px;
-    text-align: center;
-    transition: border-color 0.2s, transform 0.2s;
-}
-
-.stat-card:hover {
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
-}
-
-.stat-icon {
-    font-size: 1.5rem;
-    margin-bottom: 8px;
-    line-height: 1;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--gold-light);
-    line-height: 1;
-    margin-bottom: 4px;
-    font-variant-numeric: tabular-nums;
-}
-
-.stat-label {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-    line-height: 1.3;
-}
 
 /* ── Owner Info Box ───────────────────────────────────────────────────────── */
 .owner-info-box {
@@ -103,7 +60,7 @@
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 700;
-    background: linear-gradient(135deg, rgba(212,168,64,0.15), rgba(212,168,64,0.08));
+    background: linear-gradient(135deg, rgba(212, 168, 64, 0.15), rgba(212, 168, 64, 0.08));
     border: 1px solid var(--border-strong);
     color: var(--gold-light);
 }

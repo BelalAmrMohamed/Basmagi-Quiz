@@ -1275,6 +1275,40 @@ async function handleStats(req, res) {
   const handle = req.query.handle;
   const id = req.query.id;
 
+  const isPlatformStats = req.query.platformStats === "true";
+
+  // ── Public platform stats (about.html) ──────────────────────────────────
+  // Same underlying counts as handleControlGet's platformStats, but
+  // computed with the anon client (public/RLS-governed reads only) and
+  // stripped of anything owner-only: no ownerEmail, and "creators" is a
+  // plain count rather than the admin_users management list. This is the
+  // only stats shape meant to be shown to every visitor, not just the
+  // signed-in owner.
+  if (isPlatformStats) {
+    const { count: quizCount } = await supabase
+      .from("quizzes")
+      .select("id", { count: "exact", head: true });
+
+    const { data: catData } = await supabase.from("quizzes").select("category");
+    const uniqueCategories = new Set((catData || []).map((r) => r.category));
+
+    const { count: collegeCount } = await supabase
+      .from("colleges")
+      .select("id", { count: "exact", head: true })
+      .eq("is_active", true);
+
+    const { count: creatorCount } = await supabase
+      .from("admin_users")
+      .select("id", { count: "exact", head: true });
+
+    return res.status(200).json({
+      totalQuizzes: quizCount ?? 0,
+      totalCategories: uniqueCategories.size,
+      totalColleges: collegeCount ?? 0,
+      totalCreators: creatorCount ?? 0,
+    });
+  }
+
   const isLeaderboard = req.query.leaderboard === "true";
 
   if (isLeaderboard) {
@@ -1499,6 +1533,7 @@ function isStatsGet(req) {
   return (
     q.leaderboard === "true" ||
     q.uploads === "true" ||
+    q.platformStats === "true" ||
     typeof q.handle !== "undefined" ||
     typeof q.id !== "undefined"
   );

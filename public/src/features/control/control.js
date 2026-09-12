@@ -152,34 +152,16 @@ async function withButtonLoading(button, asyncFn) {
   }
 }
 
-// ── Platform Stats ─────────────────────────────────────────────────────────────
-// Each stat-card carries a .control-skeleton-stat class (see control.css)
-// that hides its real .stat-icon/.stat-value/.stat-label content behind a
-// shimmer placeholder until data actually arrives. Once we have real values
-// to show, drop the class so the underlying content becomes visible again —
-// otherwise the shimmer would stay glued on top of the numbers forever.
+// ── Owner Info ─────────────────────────────────────────────────────────────────
+// Platform stats (quizzes/categories/admins) used to render here too, but
+// they're now shown publicly on about.html (via GET /api/admin?platformStats=true,
+// which reuses the same underlying counts through the anon client) instead
+// of being locked behind this owner-only page — see about.html/about-stats.js.
 function renderPlatformStats(stats) {
   if (!stats) return;
-  const statQuizzes = document.getElementById("statQuizzes");
-  const statCategories = document.getElementById("statCategories");
-  const statAdmins = document.getElementById("statAdmins");
   const ownerEmailDisplay = document.getElementById("ownerEmailDisplay");
-
-  if (statQuizzes) statQuizzes.textContent = stats.totalQuizzes ?? "—";
-  if (statCategories) statCategories.textContent = stats.totalCategories ?? "—";
-  if (statAdmins) statAdmins.textContent = stats.totalAdmins ?? "—";
   if (ownerEmailDisplay)
     ownerEmailDisplay.textContent = stats.ownerEmail ?? "—";
-
-  document
-    .getElementById("statQuizzesCard")
-    ?.classList.remove("control-skeleton-stat");
-  document
-    .getElementById("statCategoriesCard")
-    ?.classList.remove("control-skeleton-stat");
-  document
-    .getElementById("statAdminsCard")
-    ?.classList.remove("control-skeleton-stat");
 }
 
 let loadedColleges = [];

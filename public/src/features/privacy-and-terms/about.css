@@ -305,6 +305,118 @@ html[data-theme="dark-slate"] .about-page {
   text-align: right;
 }
 
+/* ── Platform Stats ────────────────────────────────────────────────────────── */
+.about-page .platform-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.about-page .platform-stat-card {
+  padding: 24px 18px;
+  background: var(--about-card);
+  border: 1px solid var(--about-line);
+  text-align: center;
+}
+
+.about-page .platform-stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px;
+  color: var(--about-coral);
+}
+
+.about-page .platform-stat-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.about-page .platform-stat-value {
+  display: block;
+  margin-bottom: 6px;
+  font-family: "Noto Naskh Arabic", serif;
+  font-size: 2rem;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--about-ink);
+}
+
+.about-page .platform-stat-label {
+  display: block;
+  color: var(--about-muted);
+  font-size: .82rem;
+}
+
+/* Skeleton state — shown until /api/admin?platformStats=true resolves,
+   mirrors the shimmer pattern used on control.html's own skeletons so a
+   slow/failed fetch doesn't just sit on a bare "—". */
+.about-page .platform-stat-loading .platform-stat-value {
+  position: relative;
+  color: transparent;
+}
+
+.about-page .platform-stat-loading .platform-stat-value::after {
+  content: "";
+  position: absolute;
+  inset: 2px 30%;
+  border-radius: 6px;
+  background-color: var(--about-line);
+  background-image: linear-gradient(90deg,
+      var(--about-line) 0%,
+      var(--about-sage) 50%,
+      var(--about-line) 100%);
+  background-size: 300px 100%;
+  background-repeat: no-repeat;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .about-page .platform-stat-loading .platform-stat-value::after {
+    animation: about-stat-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes about-stat-shimmer {
+  0% {
+    background-position: -300px 0;
+  }
+
+  100% {
+    background-position: 300px 0;
+  }
+}
+
+/* ── Tech Stack ────────────────────────────────────────────────────────────── */
+.about-page .tech-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.about-page .tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 16px;
+  background: var(--about-card);
+  border: 1px solid var(--about-line);
+  border-radius: 999px;
+  font-size: .82rem;
+  color: var(--about-ink);
+}
+
+.about-page .tech-badge svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--about-coral);
+}
+
 .about-page .creator {
   display: grid;
   grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
@@ -318,6 +430,17 @@ html[data-theme="dark-slate"] .about-page {
   background: var(--about-coral);
   color: #fff9ef;
   transform: rotate(-2deg);
+}
+
+.about-page .creator-photo {
+  display: block;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  border: 3px solid #fff9ef;
+  object-fit: cover;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
 }
 
 .about-page .creator-stamp span {
@@ -350,6 +473,9 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 .about-page .creator-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 8px 13px;
   color: var(--about-ink);
   border: 1px solid var(--about-line);
@@ -358,10 +484,241 @@ html[data-theme="dark-slate"] .about-page {
   transition: background-color .15s ease, color .15s ease;
 }
 
+.about-page .creator-links a svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
 .about-page .creator-links a:hover,
 .about-page .creator-links a:focus-visible {
   background: var(--about-ink);
   color: var(--about-paper);
+}
+
+/* ── Featured Links (website preview / platform profile / YouTube) ──────────── */
+.about-page .featured-links {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-areas:
+    "website profile"
+    "website youtube";
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.about-page .featured-link-card {
+  display: flex;
+  color: var(--about-ink);
+  text-decoration: none;
+  background: var(--about-card);
+  border: 1px solid var(--about-line);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color .15s ease, transform .15s ease;
+}
+
+.about-page .featured-link-card:hover,
+.about-page .featured-link-card:focus-visible {
+  border-color: var(--about-coral);
+  transform: translateY(-2px);
+}
+
+/* Website — real link-unfurl style card (thumbnail + domain + title + desc) */
+.about-page .featured-link-website {
+  grid-area: website;
+  flex-direction: column;
+}
+
+.about-page .featured-link-website-thumb {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  background-color: var(--about-highlight-bg);
+  /* Placeholder art until a real screenshot of the portfolio site is
+     available — swap this background-image for one, e.g.
+     url('/assets/images/portfolio-thumbnail.jpg'), and the aspect-ratio
+     box above will hold it exactly like a real OG unfurl. */
+  background-image:
+    linear-gradient(135deg, color-mix(in srgb, var(--about-coral) 22%, transparent), transparent 60%),
+    url('/assets/images/developer.jpg');
+  background-position: center 20%;
+  background-size: cover;
+}
+
+.about-page .featured-link-website-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.about-page .featured-link-website-domain {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--about-muted);
+  font-size: .72rem;
+  direction: ltr;
+  text-align: right;
+}
+
+.about-page .featured-link-website-domain svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.about-page .featured-link-website-title {
+  font-size: .95rem;
+  line-height: 1.4;
+}
+
+.about-page .featured-link-website-desc {
+  color: var(--about-muted);
+  font-size: .8rem;
+  line-height: 1.6;
+}
+
+/* Platform profile — live identity mini-card, populated by about-stats.js
+   from GET /api/admin?handle=belalamrofficial */
+.about-page .featured-link-profile {
+  grid-area: profile;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.about-page .featured-link-profile-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--about-highlight-bg);
+  color: var(--about-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-page .featured-link-profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.about-page .featured-link-profile-avatar-default {
+  width: 22px;
+  height: 22px;
+}
+
+.about-page .featured-link-profile-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about-page .featured-link-profile-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.about-page .featured-link-profile-name {
+  font-size: .88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-page .featured-link-profile-level {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--about-coral);
+  color: #fff9ef;
+  font-size: .66rem;
+  font-weight: 700;
+}
+
+.about-page .featured-link-profile-handle {
+  color: var(--about-muted);
+  font-size: .72rem;
+  direction: ltr;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-page .featured-link-profile-stats {
+  color: var(--about-muted);
+  font-size: .72rem;
+}
+
+.about-page .featured-link-profile-stats:empty {
+  display: none;
+}
+
+/* YouTube — brand-colored card, distinct from the neutral pills/cards */
+.about-page .featured-link-youtube {
+  grid-area: youtube;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ff0000;
+  border-color: #ff0000;
+  color: #fff;
+}
+
+.about-page .featured-link-youtube:hover,
+.about-page .featured-link-youtube:focus-visible {
+  border-color: #fff;
+  background: #e00000;
+}
+
+.about-page .featured-link-youtube-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.about-page .featured-link-youtube-icon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.about-page .featured-link-youtube-body {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.about-page .featured-link-youtube-body strong {
+  font-size: .88rem;
+}
+
+.about-page .featured-link-youtube-body span {
+  font-size: .74rem;
+  opacity: .85;
+}
+
+.about-page .featured-link-youtube-cta {
+  flex-shrink: 0;
+  opacity: .85;
+}
+
+.about-page .featured-link-youtube-cta svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ── Creator Contact Card ─────────────────────────────────────────────────── */
@@ -529,6 +886,18 @@ html[data-theme="dark-slate"] .about-page {
   .about-page .principles,
   .about-page .flow {
     grid-template-columns: 1fr;
+  }
+
+  .about-page .platform-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-page .featured-links {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "website"
+      "profile"
+      "youtube";
   }
 
   .about-page .principle:nth-child(2) {

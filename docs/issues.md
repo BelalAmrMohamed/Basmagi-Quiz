@@ -44,11 +44,16 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 
 ### Document Pages
 - Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons.
-- Add the developer's YouTube Channel Link, and his profile link on the platform (about.html):
-  - https://basmagi-quiz.vercel.app/@belalamrofficial
-  - https://www.youtube.com/@طالب-حاسبات
-  - And use icons next to the links, also use icons for the existing links.
 - Generate suggestions on how to improve that developer section at the bottom of about.html
+- `تغيير الإسم` button in the profile dropdown on desktops doesn't have the icon.
+- These 3 button don't appear on phones (side-menu):
+  - `تسجيل الدخول` 
+  - `البلاغات`
+  - `تغيير الإسم`
+- Make the `.doc-toc` minimizable on desktops, because it can sometimes hide some text under it. It's minimizable on phones.
+- `.featured-link-website-body`, `.featured-link-profile`, and `.featured-link-youtube` should display under the `.creator-stamp`, because the area under it is unused.
+- The `.featured-link-website-body` doesn't fetch the actual website thumbnail, or I can download the thumbnail myself and put it inside `/public/assets/images/`.
+- The `.featured-link-youtube` has the same issue.
 
 ## New Features
 
@@ -72,12 +77,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - This will allow quiz creators to add multiple pieces of media to each question or add media to options, explanations, and formal answers.
 - Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use YouTube, images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos objects. 
 
-### Quizzes Improvement (Suggestions)
-- Number of Views or people who solved a quiz on each quiz.
-- Detailed info: Instead of listing the questions types and question number (["Essay", "MCQ", "True/False"] [30]) we should count the number of each individual type, so we now the number of essays, the number of MCQs, and the number of True/False.
-- Connect Password typing memory on the main page to the quiz page, so if the user had to type the password on the main page to download it, they don't have to type it again for the same quiz on the quiz.html page on the same visit.
-- Allow users to switch view on the home page, when there is not a compulsory view.
-- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on.
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.
@@ -87,6 +86,9 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
   - قرآن
   - ميمز تشجيع سلبية
   - ميمز تشجيع إيجابية
+
+### Quiz Page
+- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on.
 
 ### App SEO and GEO 
 - Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
@@ -117,12 +119,18 @@ Make it a full screen, instead of a modal.
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
   - Make an info modal for Folders.
+  - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
+  - Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view.
 
 #### Password
-When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
+Connect Password typing memory on the main page to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
 
 ### URLs
 - Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
 
 ### Testing Issue
 `npm run dev` doesn't do hot reload.
+
+
+### Control.html
+`#collegeForm` doesn't have a loading skeleton/animation.

@@ -528,58 +528,6 @@ input::placeholder {
     border-radius: 6px;
 }
 
-/* Stat-card skeleton — sized to sit inside .stat-card in place of icon/value/label */
-.control-skeleton-stat .stat-icon,
-.control-skeleton-stat .stat-value,
-.control-skeleton-stat .stat-label {
-    visibility: hidden;
-    position: relative;
-}
-
-.control-skeleton-stat .stat-icon::after,
-.control-skeleton-stat .stat-value::after,
-.control-skeleton-stat .stat-label::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    visibility: visible;
-    border-radius: 8px;
-    background-color: var(--bg-card2);
-    background-image: linear-gradient(90deg,
-            var(--bg-card2) 0%,
-            var(--gold-dim) 50%,
-            var(--bg-card2) 100%);
-    background-size: 600px 100%;
-    background-repeat: no-repeat;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-
-    .control-skeleton-stat .stat-icon::after,
-    .control-skeleton-stat .stat-value::after,
-    .control-skeleton-stat .stat-label::after {
-        animation: control-shimmer 1.6s ease-in-out infinite;
-    }
-}
-
-.control-skeleton-stat .stat-icon::after {
-    margin: 0 auto;
-    width: 28px;
-    height: 1.5rem;
-}
-
-.control-skeleton-stat .stat-value::after {
-    margin: 0 auto 4px;
-    width: 46px;
-    height: 1.2rem;
-}
-
-.control-skeleton-stat .stat-label::after {
-    margin: 0 auto;
-    width: 70%;
-    height: 0.72rem;
-}
-
 /* List-row skeleton — mimics .admin-card / .college-card / .trash-card
    footprint so the layout doesn't jump once real rows replace it. */
 .control-skeleton-row {
