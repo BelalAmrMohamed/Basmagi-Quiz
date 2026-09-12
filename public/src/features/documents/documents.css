@@ -675,8 +675,13 @@ html[data-motion="reduced"] *::after {
 
 .doc-toc-link--active {
     color: var(--bg);
-    background: var(--accent);
+    background: black;
     font-weight: 600;
+}
+
+.doc-toc-link--active:hover {
+    color: var(--bg);
+    background: var(--accent-mid);
 }
 
 .doc-toc-toggle {
