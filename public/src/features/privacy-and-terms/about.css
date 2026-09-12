@@ -496,7 +496,7 @@ html[data-theme="dark-slate"] .about-page {
 
 @media (max-width: 680px) {
   .about-page .page-wrapper {
-    padding: 34px 18px 100px;
+    padding: 34px 0px 100px;
   }
 
   .about-page .docs-switcher {

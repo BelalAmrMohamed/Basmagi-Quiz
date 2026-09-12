@@ -32,13 +32,10 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 ### Create Quiz Page
 - Performance: create-quiz.js is ~4,300 lines in one file — This is a good candidate to split into modules
 - Accessibility:
-  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items — worth adding roving tabindex + arrow key handling since they already have role="menu".
+  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items properly, specially between submenus, and confirmation modals (`_confirm()` and others) — worth adding roving tabindex + arrow key handling since they already have role="menu".
   - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..
-- Skeleton Loader for start page.
-- There should be versions of the `.section-actions` buttons in the `.app-title-bar`, so users can do these actions without having to scroll all the way up to find them.
+- There should be versions of the `.section-actions` buttons in the `.app-title-bar` (Search, Reorder, Select, and collapse). So users can use these actions without having to scroll all the way up.
 - On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown.
-- The `.entry-item-thumb-new` button should appear as soon as the page loads, it shouldn't load with other content that is being pulled from localstorage, it should load immedietly, put it in the HTML itself if it's not already in it.
-- The `#appTitleText` doesn't get updated when the AI Agent creates/edits a quiz, the whole page gets updated, except for the title. Fix it.
 
 ### AI Agent.
 - On Phones: `class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle"` exists on the right, even though the menu opens from the left. 
@@ -47,10 +44,11 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 
 ### Document Pages
 - Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons.
-- Add the developer's YouTube Channel Link, and his profile link on the platform:
+- Add the developer's YouTube Channel Link, and his profile link on the platform (about.html):
   - https://basmagi-quiz.vercel.app/@belalamrofficial
   - https://www.youtube.com/@طالب-حاسبات
   - And use icons next to the links, also use icons for the existing links.
+- Generate suggestions on how to improve that developer section at the bottom of about.html
 
 ## New Features
 
@@ -125,3 +123,6 @@ When there is a quiz with a password, and the user downloads the quiz, he has to
 
 ### URLs
 - Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
+
+### Testing Issue
+`npm run dev` doesn't do hot reload.
