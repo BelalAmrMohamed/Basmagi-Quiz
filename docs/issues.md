@@ -14,8 +14,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### امتحاناتك Rules
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
-- The `نسخ لامتحاناتي` button sometimes doesn't show the animations (on courses and folders), clicking it quits the menu immedietly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
-- The  has messed up styles on phones, no top padding
+- The `نسخ لامتحاناتي` button doesn't show the animations when copying courses and folders, clicking it quits the menu instantly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
 - Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
 ### Menus in امتحاناتك
@@ -38,7 +37,7 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown. I tried fixing this before, but it didn't work.
 
 ### Document Pages
-- Redesign the `كيف بُنيت المنصة؟` pills, they are too wide. `.tech-stack` in `about.css`
+- Redesign the `كيف بُنيت المنصة؟` pills. `.tech-stack` in `about.css`: Too wide, they are all listed under each other, even though they are just pills. They should be smaller in terms of width. Redeisgn the whole section, I tried fixing the issue, but failed, if you can't fix it, delete the whole section, I don't tolerate having something messed up in my website. You seem too stupid to understand that I'm positive your non-working updated are being hosted, I restarted the whole server multiple times and used different browsers to test.
 
 ## New Features
 
