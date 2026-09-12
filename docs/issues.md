@@ -42,11 +42,6 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - Redesign the AI Agent's `.ai-agent-chat-input-controls` to be like Gemini. Instead of the current styling. See screenshot.
 
 ### Document Pages
-- These 3 button don't appear on phones (side-menu):
-  - `تسجيل الدخول` 
-  - `البلاغات`
-  - `تغيير الإسم`
-  - I tried fixing them, but they still don't appear, they appear on the rest of the pages (index.html and the rest).
 - Redesign the `كيف بُنيت المنصة؟` pills, they are too wide.
 
 ## New Features
