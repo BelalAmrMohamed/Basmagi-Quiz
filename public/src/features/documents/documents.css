@@ -1,5 +1,5 @@
 /* =============================================================================
-    public/src/features/privacy-and-terms/privacy-and-terms.css 
+    public/src/features/documents/documents.css 
     Combined styles used by both, `privacy-policy.html` and `terms-of-service.html`
    ============================================================================= */
 
@@ -107,7 +107,7 @@ body.sidebar-expanded .top-bar {
 
 /* The decorative gradient now lives on a fill bar whose width (via
    transform: scaleX) is driven by scroll progress (see
-   documentation-shell.js) instead of the bar itself, so it starts empty at
+   documents-shell.js) instead of the bar itself, so it starts empty at
    the top of a doc and fills in as the reader scrolls through the content,
    reaching full width once they've reached the end. */
 .top-bar-fill {

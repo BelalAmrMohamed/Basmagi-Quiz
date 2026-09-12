@@ -47,8 +47,9 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
   - `تسجيل الدخول` 
   - `البلاغات`
   - `تغيير الإسم`
-  - I tried fixing them, but they still don't appear, they appear on the rest of the pages (index.html and the rest)
+  - I tried fixing them, but they still don't appear, they appear on the rest of the pages (index.html and the rest).
 - `.doc-toc-minimize-btn` doesn't do anything, it's broken.
+- Redesign the `كيف بُنيت المنصة؟` pills, they are too big.
 
 ## New Features
 

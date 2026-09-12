@@ -832,7 +832,7 @@
   flex-shrink: 0;
 }
 
-/* ── Docs ("المستندات") section — added via documentation-shell.js only,
+/* ── Docs ("المستندات") section — added via documents-shell.js only,
    so it only ever renders on the doc pages, never on the main app pages. */
 .docs-menu-heading {
   padding: 4px 12px 6px;
@@ -888,7 +888,7 @@
 }
 
 /* A matched doc-search result carries a snippet of the actual matching
-   text underneath its label (see documentation-shell.js's runSearch) —
+   text underneath its label (see documents-shell.js's runSearch) —
    .menu-item is normally a rigid single-line row (white-space: nowrap,
    align-items: center), which would clip or misalign a second line, so a
    link that currently holds a snippet opts into a two-line layout locally

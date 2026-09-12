@@ -1,4 +1,4 @@
-// public/src/features/privacy-and-terms/about-stats.js
+// public/src/features/documents/about-stats.js
 // Two independent live-loaded pieces for about.html:
 //
 // 1. Platform stats (quizzes/categories/colleges/creators) shown in the

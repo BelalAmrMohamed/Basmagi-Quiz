@@ -1,5 +1,5 @@
 // ============================================================================
-// public/src/features/privacy-and-terms/doc-toc.js
+// public/src/features/documents/doc-toc.js
 // STICKY TABLE OF CONTENTS — reference-style doc pages
 // ============================================================================
 // Auto-generates a sticky in-page ToC from every `.page-wrapper .section
@@ -84,7 +84,7 @@ function buildToc() {
   // "get it out of my way" affordance by sliding the whole panel almost
   // entirely off the left edge of the screen (a thin sliver stays
   // visible/clickable as a handle) rather than shrinking it in place —
-  // see the .doc-toc-minimized rules in privacy-and-terms.css for the
+  // see the .doc-toc-minimized rules in documents.css for the
   // actual slide.
   const MINIMIZED_KEY = "doc_toc_minimized";
   const minimizeBtn = document.createElement("button");

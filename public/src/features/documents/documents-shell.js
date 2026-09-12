@@ -1,4 +1,4 @@
-// public/src/features/privacy-and-terms/documentation-shell.js
+// public/src/features/documents/documents-shell.js
 import "../../shared/flow-field.js";
 
 const sidebarMarkup = `
@@ -86,7 +86,7 @@ if (sidebarNav) {
 }
 
 // ── "المستندات" (Docs) links ────────────────────────────────────────────
-// This shell (documentation-shell.js) is only loaded on the doc pages
+// This shell (documents-shell.js) is only loaded on the doc pages
 // themselves (about/privacy/terms/how-to-*), not the main app pages, so
 // this section only ever renders there — the main app sidebar (rendered by
 // side-menu.js alone, without this shell) is intentionally left untouched.
