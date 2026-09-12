@@ -6,7 +6,7 @@ const sidebarMarkup = `
   <aside class="sidebar" id="sidebar" role="dialog" aria-modal="true" aria-label="القائمة الجانبية" aria-hidden="true" tabindex="-1">
     <div class="sidebar-drag-handle" id="sidebarDragHandle" aria-hidden="true"><span class="sidebar-drag-handle-bar"></span></div>
     <button class="sidebar-favicon" id="sidebarExpandBtn" type="button" title="توسيع القائمة" aria-label="توسيع القائمة" data-tooltip="توسيع القائمة">
-      <img src="./favicon.png" alt="منصة امتحانات بصمجي" width="28" height="28" class="sidebar-favicon-img">
+      <img src="./favicon.png" alt="منصة امتحانات بصمجي" class="sidebar-favicon-img">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-right-open-icon sidebar-expand-icon" aria-hidden="true">
         <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/>
       </svg>
@@ -14,7 +14,7 @@ const sidebarMarkup = `
     <div class="sidebar-header sidebar-expanded-only">
       <a href="/" class="sidebar-brand-link" aria-label="الصفحة الرئيسية">
         <div class="sidebar-logo" title="منصة امتحانات بصمجي">
-          <svg xmlns="http://www.w3.org/2000/svg" width="180" height="40" viewBox="0 0 220 40" style="direction: ltr;"><image x="0" y="0" width="40" height="40" href="./favicon.png" /><text x="50" y="27" font-family="Tajawal, Arial, sans-serif" font-size="17" font-weight="bold" fill="currentColor" text-anchor="start">امتحانات بصمجي</text></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="180" height="40" viewBox="0 0 220 40" style="direction: ltr;"><image x="0" y="0" width="45" height="45" href="./favicon.png" /><text x="50" y="27" font-family="Tajawal, Arial, sans-serif" font-size="17" font-weight="bold" fill="currentColor" text-anchor="start">امتحانات بصمجي</text></svg>
         </div>
       </a>
       <button class="sidebar-collapse-btn" id="sidebarCollapseBtn" type="button" title="طي القائمة" aria-label="طي القائمة" data-tooltip="طي القائمة">
