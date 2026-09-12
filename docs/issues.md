@@ -47,13 +47,19 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - The `.entry-item-thumb-new` button should appear as soon as the page loads, it shouldn't load with other content that is being pulled from localstorage, it should load immedietly, put it in the HTML itself if it's not already in it.
 - The `#appTitleText` doesn't get updated when the AI Agent creates/edits a quiz, the whole page gets updated, except for the title. Fix it.
 
-### AI Agent On Phones.
-- The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
-- The `.ai-agent-sidebar-header` should have the close button on the right, too, and the logo on the left.  
+### AI Agent.
+- On Phones: 
+  - The side-menu has wrong direction on some elements on phones, like the side-menu open button is on the left, even though the menu opens from the right
+  - The `.ai-agent-sidebar-header` should have the close button on the right, too, and the logo on the left.  
 - `محادثة جديدة` button should be disabled when it's already a new chat.
+- The AI Agent is currently a modal that takes most of the screen. Is making it a screen (e.g., takes full width/heigt) better?
 
 ### Document Pages
-Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons
+- Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons.
+- Add the developer's YouTube Channel Link, and his profile link on the platform:
+  - https://basmagi-quiz.vercel.app/@belalamrofficial
+  - https://www.youtube.com/@طالب-حاسبات
+  - And use icons next to the links, also use icons for the existing links.
 
 ## New Features
 
@@ -113,6 +119,9 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
 - On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
 
+#### Onboarding Pop Up
+Make it a full screen, instead of a modal.
+
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
@@ -122,3 +131,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 #### Password
 When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
+
+### URLs
+- Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
