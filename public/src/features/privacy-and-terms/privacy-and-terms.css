@@ -592,11 +592,53 @@ html[data-motion="reduced"] *::after {
 }
 
 .doc-toc-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
     padding: 0 8px 10px;
     color: var(--ink-muted);
     font-size: .68rem;
     font-weight: 600;
     letter-spacing: .08em;
+}
+
+.doc-toc-heading-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Desktop-only minimize toggle — collapses the fixed, vertically-centered
+   panel down to a small pill so it stops sitting on top of the reading
+   column on shorter pages. Hidden on phones, which already collapse the
+   whole ToC behind the floating .doc-toc-toggle button instead. */
+.doc-toc-minimize-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    color: var(--ink-muted);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color .15s ease, color .15s ease, transform .2s ease;
+}
+
+.doc-toc-minimize-btn:hover,
+.doc-toc-minimize-btn:focus-visible {
+    color: var(--accent);
+    background: var(--bg-tint);
+}
+
+/* Chevron points up when expanded (collapses upward on click) and flips to
+   point down once minimized (click would expand it back down). */
+.doc-toc-minimized .doc-toc-minimize-btn {
+    transform: rotate(180deg);
 }
 
 .doc-toc-list {
@@ -651,6 +693,32 @@ html[data-motion="reduced"] *::after {
 }
 
 /* ─────────────────────────────────────────
+    DESKTOP — minimized ToC collapses to a small pill instead of the full
+    panel, so it stops covering reading-column text on shorter pages.
+    Scoped to the desktop breakpoint only; on phones the ToC is already
+    collapsed by default behind .doc-toc-toggle and this class doesn't
+    apply there (see the mobile media query further down, which resets it).
+───────────────────────────────────────── */
+@media (min-width: 769px) {
+    .doc-toc.doc-toc-minimized {
+        width: auto;
+        max-height: none;
+        overflow: visible;
+        padding: 8px 6px;
+        cursor: pointer;
+    }
+
+    .doc-toc.doc-toc-minimized .doc-toc-heading {
+        padding: 0 2px;
+    }
+
+    .doc-toc.doc-toc-minimized .doc-toc-heading-label,
+    .doc-toc.doc-toc-minimized .doc-toc-list {
+        display: none;
+    }
+}
+
+/* ─────────────────────────────────────────
     MOBILE — ToC becomes a floating toggle + slide-up panel
 ───────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -683,5 +751,13 @@ html[data-motion="reduced"] *::after {
 
     .doc-toc-toggle {
         display: inline-flex;
+    }
+
+    /* Mobile already collapses the whole panel behind .doc-toc-toggle —
+       the in-panel minimize control is desktop-only, so hide it here to
+       avoid a second, redundant collapse affordance once the slide-up
+       panel is open. */
+    .doc-toc-minimize-btn {
+        display: none;
     }
 }

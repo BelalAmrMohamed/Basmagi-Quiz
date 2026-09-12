@@ -132,3 +132,7 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.
+
+### About.html
+- Open-source Angle
+- Add a short testimonial or review

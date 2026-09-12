@@ -420,12 +420,17 @@ html[data-theme="dark-slate"] .about-page {
 .about-page .creator {
   display: grid;
   grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
-  gap: 56px;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "stamp copy"
+    "links copy";
+  gap: 24px 56px;
   align-items: start;
   padding-bottom: 30px;
 }
 
 .about-page .creator-stamp {
+  grid-area: stamp;
   padding: 28px;
   background: var(--about-coral);
   color: #fff9ef;
@@ -455,6 +460,10 @@ html[data-theme="dark-slate"] .about-page {
   font-family: "Noto Naskh Arabic", serif;
   font-size: 2.2rem;
   line-height: 1.35;
+}
+
+.about-page .creator-copy {
+  grid-area: copy;
 }
 
 .about-page .creator-copy h2 {
@@ -497,14 +506,15 @@ html[data-theme="dark-slate"] .about-page {
 }
 
 /* ── Featured Links (website preview / platform profile / YouTube) ──────────── */
+/* Sits in the .creator grid's "links" area, directly under .creator-stamp
+   (see .creator's grid-template-areas above) — a single narrow column at
+   this width, so the 2-column website/profile+youtube layout that made
+   sense spanning the old full-width slot would be too cramped here. */
 .about-page .featured-links {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  grid-template-areas:
-    "website profile"
-    "website youtube";
+  grid-area: links;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
 }
 
 .about-page .featured-link-card {
@@ -526,7 +536,6 @@ html[data-theme="dark-slate"] .about-page {
 
 /* Website — real link-unfurl style card (thumbnail + domain + title + desc) */
 .about-page .featured-link-website {
-  grid-area: website;
   flex-direction: column;
 }
 
@@ -536,12 +545,14 @@ html[data-theme="dark-slate"] .about-page {
   aspect-ratio: 1200 / 630;
   background-color: var(--about-highlight-bg);
   /* Placeholder art until a real screenshot of the portfolio site is
-     available — swap this background-image for one, e.g.
-     url('/assets/images/portfolio-thumbnail.jpg'), and the aspect-ratio
-     box above will hold it exactly like a real OG unfurl. */
+     available — drop the file at
+     /public/assets/images/portfolio-thumbnail.jpg and swap the url()
+     below to it; the aspect-ratio box above will hold it exactly like a
+     real OG unfurl. Currently reusing the developer photo as a stand-in
+     so the card isn't just an empty tinted rectangle. */
   background-image:
     linear-gradient(135deg, color-mix(in srgb, var(--about-coral) 22%, transparent), transparent 60%),
-    url('/assets/images/developer.jpg');
+    url('/assets/images/portfolio-thumbnail.jpg');
   background-position: center 20%;
   background-size: cover;
 }
@@ -583,7 +594,6 @@ html[data-theme="dark-slate"] .about-page {
 /* Platform profile — live identity mini-card, populated by about-stats.js
    from GET /api/admin?handle=belalamrofficial */
 .about-page .featured-link-profile {
-  grid-area: profile;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -665,7 +675,6 @@ html[data-theme="dark-slate"] .about-page {
 
 /* YouTube — brand-colored card, distinct from the neutral pills/cards */
 .about-page .featured-link-youtube {
-  grid-area: youtube;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -684,14 +693,31 @@ html[data-theme="dark-slate"] .about-page {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   width: 34px;
   height: 34px;
   flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
 }
 
 .about-page .featured-link-youtube-icon svg {
   width: 30px;
   height: 30px;
+}
+
+/* Real channel thumbnail, when /assets/images/youtube-channel-thumb.jpg
+   exists — see the onerror/onload pair on the <img> in about.html for how
+   this swaps with the plain play-icon badge above. Absolutely positioned
+   over the badge so loading the image doesn't shift layout, and hiding it
+   (on error) cleanly reveals the badge sitting underneath. */
+.about-page .featured-link-youtube-thumb {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .about-page .featured-link-youtube-body {
@@ -877,9 +903,17 @@ html[data-theme="dark-slate"] .about-page {
   }
 
   .about-page .about-section-heading,
-  .about-page .origin-copy,
+  .about-page .origin-copy {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
   .about-page .creator {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "stamp"
+      "links"
+      "copy";
     gap: 20px;
   }
 
@@ -890,14 +924,6 @@ html[data-theme="dark-slate"] .about-page {
 
   .about-page .platform-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .about-page .featured-links {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "website"
-      "profile"
-      "youtube";
   }
 
   .about-page .principle:nth-child(2) {

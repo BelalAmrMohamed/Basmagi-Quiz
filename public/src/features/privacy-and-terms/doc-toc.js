@@ -71,8 +71,60 @@ function buildToc() {
 
   const heading = document.createElement("div");
   heading.className = "doc-toc-heading";
-  heading.textContent = "محتويات الصفحة";
+
+  const headingLabel = document.createElement("span");
+  headingLabel.className = "doc-toc-heading-label";
+  headingLabel.textContent = "محتويات الصفحة";
+  heading.appendChild(headingLabel);
+
+  // Desktop-only minimize control — the panel is `position: fixed` at
+  // vertical-center, so on shorter/narrower content it can sit on top of
+  // paragraph text instead of beside it. Phones already get their own
+  // collapse-to-toggle behavior below; this gives desktop an equivalent
+  // "get it out of my way" affordance without losing the ToC entirely
+  // (collapsing tucks it into a small pill instead of removing it).
+  const MINIMIZED_KEY = "doc_toc_minimized";
+  const minimizeBtn = document.createElement("button");
+  minimizeBtn.type = "button";
+  minimizeBtn.className = "doc-toc-minimize-btn";
+  minimizeBtn.setAttribute("aria-controls", "docTocPanel");
+  minimizeBtn.innerHTML =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>`;
+  heading.appendChild(minimizeBtn);
   nav.appendChild(heading);
+
+  function setMinimized(minimized) {
+    nav.classList.toggle("doc-toc-minimized", minimized);
+    minimizeBtn.setAttribute("aria-expanded", minimized ? "false" : "true");
+    minimizeBtn.setAttribute(
+      "aria-label",
+      minimized ? "إظهار محتويات الصفحة" : "طي محتويات الصفحة",
+    );
+    minimizeBtn.title = minimized ? "إظهار المحتويات" : "طي المحتويات";
+    try {
+      localStorage.setItem(MINIMIZED_KEY, minimized ? "true" : "false");
+    } catch (_) { }
+  }
+
+  minimizeBtn.addEventListener("click", () => {
+    setMinimized(!nav.classList.contains("doc-toc-minimized"));
+  });
+
+  // Clicking anywhere on the minimized pill re-expands it, not just the
+  // small chevron button — the whole thing is a compact affordance at
+  // that point, and hunting for a precise hitbox is unnecessary friction.
+  nav.addEventListener("click", (e) => {
+    if (!nav.classList.contains("doc-toc-minimized")) return;
+    if (e.target.closest("a")) return; // shouldn't exist while minimized, but stay safe
+    setMinimized(false);
+  });
+
+  let startMinimized = false;
+  try {
+    startMinimized = localStorage.getItem(MINIMIZED_KEY) === "true";
+  } catch (_) { }
+  if (startMinimized) setMinimized(true);
+  else minimizeBtn.setAttribute("aria-expanded", "true");
 
   const list = document.createElement("ul");
   list.className = "doc-toc-list";
