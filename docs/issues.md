@@ -10,7 +10,8 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ### Search Bar in the Home Page
 - `.search-filters` doesn't close when I click out of it.
 - `.search-bar` doesn't appear at the exact same place as `.header-search-btn`
-- In the `.search-bar-row`, the `.search-results-summary` should appear on the left, and the `.search-bar` should be on the right (in place of the `.header-search-btn`)
+- In the `.search-bar-row`, the `.search-results-summary` should appear on the left, and the `.search-bar` should be on the right (in place of the `.header-search-btn`).
+- On Phones: `.search-bar-row` appears on top of other elements on the header.
 
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
