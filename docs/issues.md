@@ -43,8 +43,6 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - The AI Agent is currently a modal that takes most of the screen. Is making it a screen (e.g., takes full width/heigt) better?
 
 ### Document Pages
-- Fix the `public\src\features\privacy-and-terms\documentation-shell.js`, because the side-menu on phones in document pages doesn't match the rest of the platform. It doesn't have the sign-in button, reports button, and change username button, instead it has a useless create-quiz.html link button, create-quiz.html is in the bottom nav, remove it from the side-menu on phones and add the other 3 buttons.
-- Generate suggestions on how to improve that developer section at the bottom of about.html
 - `تغيير الإسم` button in the profile dropdown on desktops doesn't have the icon.
 - These 3 button don't appear on phones (side-menu):
   - `تسجيل الدخول` 
