@@ -148,11 +148,21 @@ export function _confirm(message) {
     // 2. Create Modal
     const modal = document.createElement("div");
     modal.className = "confirmation-modal";
+    // role="alertdialog" (rather than plain "dialog") + aria-modal tells
+    // assistive tech both that background content is inert AND that this
+    // is an interruption requiring an immediate yes/no response, matching
+    // how this component is actually used (delete confirmations etc.).
+    // aria-labelledby points at the message paragraph itself so it's
+    // announced as the dialog's accessible name the moment focus enters.
+    modal.setAttribute("role", "alertdialog");
+    modal.setAttribute("aria-modal", "true");
+    const messageId = `confirm-message-${Date.now()}`;
+    modal.setAttribute("aria-labelledby", messageId);
 
     // 3. Content
     modal.innerHTML = `
         <div class="confirmation-content">
-          <p class="confirmation-message">${escapeHtml(message)}</p>
+          <p class="confirmation-message" id="${messageId}">${escapeHtml(message)}</p>
           <div class="confirmation-actions">
             <button class="confirmation-btn confirm">نعم</button>
             <button class="confirmation-btn cancel">لا</button>
@@ -256,11 +266,15 @@ export function _alert(message) {
     // 2. Create Modal
     const modal = document.createElement("div");
     modal.className = "confirmation-modal alert-modal";
+    modal.setAttribute("role", "alertdialog");
+    modal.setAttribute("aria-modal", "true");
+    const messageId = `alert-message-${Date.now()}`;
+    modal.setAttribute("aria-labelledby", messageId);
 
     // 3. Content
     modal.innerHTML = `
         <div class="confirmation-content">
-          <p class="confirmation-message">${escapeHtml(message)}</p>
+          <p class="confirmation-message" id="${messageId}">${escapeHtml(message)}</p>
           <div class="confirmation-actions">
             <button class="confirmation-btn confirm">حسناً</button>
           </div>
@@ -359,12 +373,20 @@ export function _prompt(message, defaultValue = "") {
     // 2. Create Modal
     const modal = document.createElement("div");
     modal.className = "confirmation-modal prompt-modal";
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    const messageId = `prompt-message-${Date.now()}`;
+    modal.setAttribute("aria-labelledby", messageId);
 
     // 3. Content
+    // aria-labelledby on the input (rather than a separate <label>) reuses
+    // the existing message paragraph as the field's accessible name, so a
+    // screen reader announces e.g. "Your name?, edit text" when focus lands
+    // on the input instead of just "edit text".
     modal.innerHTML = `
         <div class="confirmation-content">
-          <p class="confirmation-message">${escapeHtml(message)}</p>
-          <input type="text" class="prompt-input" dir="auto" value="${escapeHtml(defaultValue)}" />
+          <p class="confirmation-message" id="${messageId}">${escapeHtml(message)}</p>
+          <input type="text" class="prompt-input" dir="auto" aria-labelledby="${messageId}" value="${escapeHtml(defaultValue)}" />
           <div class="confirmation-actions">
             <button class="confirmation-btn confirm">نعم</button>
             <button class="confirmation-btn cancel">لا</button>
@@ -536,15 +558,22 @@ function openTypedConfirmationStep({ confirmPhrase, inputLabel, confirmButtonLab
 
     const modal = document.createElement("div");
     modal.className = "confirmation-modal prompt-modal typed-confirmation-modal";
+    modal.setAttribute("role", "alertdialog");
+    modal.setAttribute("aria-modal", "true");
+    const messageId = `typed-confirm-message-${Date.now()}`;
+    const phraseId = `typed-confirm-phrase-${Date.now()}`;
+    modal.setAttribute("aria-labelledby", messageId);
 
     modal.innerHTML = `
         <div class="confirmation-content">
-          <p class="confirmation-message">${escapeHtml(inputLabel)}</p>
-          <p class="typed-confirmation-phrase" dir="auto">${escapeHtml(confirmPhrase)}</p>
+          <p class="confirmation-message" id="${messageId}">${escapeHtml(inputLabel)}</p>
+          <p class="typed-confirmation-phrase" id="${phraseId}" dir="auto">${escapeHtml(confirmPhrase)}</p>
           <input
             type="text"
             class="prompt-input typed-confirmation-input"
             dir="auto"
+            aria-labelledby="${messageId}"
+            aria-describedby="${phraseId}"
             autocomplete="off"
             autocorrect="off"
             autocapitalize="off"

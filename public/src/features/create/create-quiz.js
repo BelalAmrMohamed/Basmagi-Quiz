@@ -644,8 +644,21 @@ function setupGlobalMdBar() {
     });
   });
 
-  // Dropdown toggles (LaTeX "more" menu, heading levels menu)
+  // Dropdown toggles (LaTeX "more" menu, heading levels menu). aria-
+  // haspopup/aria-expanded wired here (rather than hardcoded in the HTML)
+  // since aria-expanded needs to flip on every open/close anyway — one
+  // place to keep both in sync. Individual .gmd-btn rows inside each
+  // role="menu" get role="menuitem" for the same reason as the main menu
+  // bar (see _wireMenuBarAria): without it they're read as generic
+  // clickable content rather than menu choices.
   bar.querySelectorAll(".gmd-dropdown-toggle").forEach((toggle) => {
+    toggle.setAttribute("aria-haspopup", "true");
+    toggle.setAttribute("aria-expanded", "false");
+    const menu = toggle.nextElementSibling;
+    if (menu?.id) toggle.setAttribute("aria-controls", menu.id);
+    menu?.querySelectorAll(".gmd-btn").forEach((btn) => {
+      btn.setAttribute("role", "menuitem");
+    });
     toggle.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -656,6 +669,7 @@ function setupGlobalMdBar() {
       if (!isOpen) {
         positionGmdDropdown(toggle, menu);
         menu.classList.add("open");
+        toggle.setAttribute("aria-expanded", "true");
         activateMenuKeyboardNav(menu, () => {
           closeAllGmdDropdowns();
           toggle.focus();
@@ -717,7 +731,13 @@ function positionGmdDropdown(toggle, menu) {
 function closeAllGmdDropdowns() {
   document
     .querySelectorAll("#globalMdBar .gmd-dropdown-menu.open")
-    .forEach((m) => m.classList.remove("open"));
+    .forEach((m) => {
+      m.classList.remove("open");
+      const toggle = m.previousElementSibling;
+      if (toggle?.classList.contains("gmd-dropdown-toggle")) {
+        toggle.setAttribute("aria-expanded", "false");
+      }
+    });
 }
 
 // ============================================================================
@@ -1421,6 +1441,61 @@ function positionSubmenuDropdown(trigger, dropdown) {
   dropdown.style.visibility = "";
 }
 
+/**
+ * One-time ARIA wiring for the Docs-style menu bar. The dropdowns already
+ * carry role="menu" in the markup, but the pieces that make them a real
+ * menu for assistive tech were missing: triggers need aria-haspopup +
+ * aria-expanded (so a screen reader announces "button, has popup,
+ * collapsed/expanded" instead of a plain button), and every row inside a
+ * role="menu" container needs role="menuitem" or it's read as generic
+ * clickable content rather than a menu choice. Done once here in JS,
+ * rather than hand-adding these attributes to every .menu-option/.menu-
+ * trigger in the HTML, so newly added menu rows automatically pick up the
+ * same wiring without anyone having to remember the attributes by hand.
+ * aria-expanded is kept in sync afterward by _setMenuExpanded() at every
+ * open/close site (toggleMenu, toggleSubmenu, closeAllMenus).
+ */
+function _wireMenuBarAria() {
+  document.querySelectorAll("#menuBar .menu-bar-item").forEach((item) => {
+    const isSubmenuItem = item.classList.contains("menu-item-submenu");
+    const trigger = item.querySelector(
+      isSubmenuItem ? ":scope > .menu-option" : ":scope > .menu-trigger"
+    );
+    const dropdown = item.querySelector(
+      ":scope > .menu-dropdown, :scope > .menu-submenu-dropdown"
+    );
+    if (trigger && dropdown) {
+      trigger.setAttribute("aria-haspopup", "true");
+      trigger.setAttribute("aria-expanded", "false");
+      if (dropdown.id) trigger.setAttribute("aria-controls", dropdown.id);
+    }
+  });
+  document
+    .querySelectorAll("#menuBar .menu-dropdown .menu-option, #menuBar .menu-dropdown .menu-separator")
+    .forEach((el) => {
+      // Separators get role="separator" so they aren't announced as
+      // choices; every real row (including submenu trigger rows, which
+      // are both a menuitem AND a popup trigger — aria-haspopup above
+      // still applies to the same element) gets role="menuitem".
+      el.setAttribute(
+        "role",
+        el.classList.contains("menu-separator") ? "separator" : "menuitem"
+      );
+    });
+}
+
+/** Reflect a menu-bar-item's open/closed state in aria-expanded on its
+ * trigger, so screen readers announce the change (the visual state is
+ * already carried by the menu-item-open class). */
+function _setMenuExpanded(item, expanded) {
+  if (!item) return;
+  const isSubmenuItem = item.classList.contains("menu-item-submenu");
+  const trigger = item.querySelector(
+    isSubmenuItem ? ":scope > .menu-option" : ":scope > .menu-trigger"
+  );
+  trigger?.setAttribute("aria-expanded", expanded ? "true" : "false");
+}
+
 /** Open the named dropdown, closing any other open one first. */
 window.toggleMenu = function (name) {
   const dropdown = document.getElementById(`menu-${name}`);
@@ -1432,6 +1507,7 @@ window.toggleMenu = function (name) {
   closeAllMenus();
   if (!isOpen) {
     item.classList.add("menu-item-open");
+    _setMenuExpanded(item, true);
     positionMenuDropdown(trigger, dropdown);
     activateMenuKeyboardNav(dropdown, () => {
       closeAllMenus();
@@ -1455,11 +1531,17 @@ window.toggleMenu = function (name) {
 window.closeAllMenus = function () {
   document
     .querySelectorAll(".menu-bar-item.menu-item-open")
-    .forEach((item) => item.classList.remove("menu-item-open"));
+    .forEach((item) => {
+      item.classList.remove("menu-item-open");
+      _setMenuExpanded(item, false);
+    });
   // Also collapse any open submenus
   document
     .querySelectorAll(".menu-item-submenu.menu-item-open")
-    .forEach((item) => item.classList.remove("menu-item-open"));
+    .forEach((item) => {
+      item.classList.remove("menu-item-open");
+      _setMenuExpanded(item, false);
+    });
 };
 
 /**
@@ -1480,12 +1562,17 @@ window.toggleSubmenu = function (event, submenuId) {
   submenuItem
     .closest(".menu-dropdown")
     ?.querySelectorAll(".menu-item-submenu.menu-item-open")
-    .forEach((s) => s.classList.remove("menu-item-open"));
+    .forEach((s) => {
+      s.classList.remove("menu-item-open");
+      _setMenuExpanded(s, false);
+    });
   if (!isOpen) {
     submenuItem.classList.add("menu-item-open");
+    _setMenuExpanded(submenuItem, true);
     positionSubmenuDropdown(trigger, dropdown);
     activateMenuKeyboardNav(dropdown, () => {
       submenuItem.classList.remove("menu-item-open");
+      _setMenuExpanded(submenuItem, false);
       trigger.focus();
     });
     _armMenuOpenGuard();
@@ -1504,6 +1591,7 @@ window.openTemplatesMenu = function () {
   const insertTrigger = insertItem.querySelector(":scope > .menu-trigger");
   const insertDropdown = insertItem.querySelector(":scope > .menu-dropdown");
   insertItem.classList.add("menu-item-open");
+  _setMenuExpanded(insertItem, true);
   if (insertTrigger && insertDropdown) positionMenuDropdown(insertTrigger, insertDropdown);
   // Pre-expand the templates submenu inside it
   const templatesItem = insertItem.querySelector(".menu-item-submenu[data-menu='insert-templates']");
@@ -1511,6 +1599,7 @@ window.openTemplatesMenu = function () {
   const templatesDropdown = templatesItem?.querySelector(":scope > .menu-submenu-dropdown");
   if (templatesItem) {
     templatesItem.classList.add("menu-item-open");
+    _setMenuExpanded(templatesItem, true);
     if (templatesTrigger && templatesDropdown) positionSubmenuDropdown(templatesTrigger, templatesDropdown);
   }
 };
@@ -1544,6 +1633,8 @@ function setupMenuBarListeners() {
   const appTitleBar = document.getElementById("appTitleBar");
   if (!appTitleBar) return;
 
+  _wireMenuBarAria();
+
   // Click outside the entire top bar AND outside any open dropdown → close.
   // Dropdowns are position:fixed now, so they're no longer DOM-nested
   // inside appTitleBar's visible box in a way .contains() would still
@@ -1573,8 +1664,26 @@ function setupMenuBarListeners() {
   // Hover-to-switch: once any top-level menu is open, hovering another
   // .menu-bar-item (that has its own data-menu trigger) switches to it.
   // We scope to .menu-bar-inner to avoid triggering on submenu rows.
+  //
+  // Desktop-only (matchMedia gate below): touch browsers — WebKit/iOS in
+  // particular — synthesize a hover/"mouseenter" pass on the FIRST tap of
+  // any element that has a mouseenter/mouseover listener, and only dispatch
+  // the real `click` on a SECOND tap on that same element. With this
+  // listener attached unconditionally, tapping a second .menu-trigger while
+  // another menu was open used to eat that first tap as a hover simulation
+  // (closing nothing, opening nothing) and only actually call
+  // toggleMenu()'s click handler on the tap after — i.e. exactly the
+  // "closes the open menu, then a second tap is needed to open the next
+  // one" bug. Desktop mouse users still get the hover-switch via the
+  // (hover: hover) and (pointer: fine) checks; touch users fall back to
+  // toggleMenu's own click-driven close-then-open, which already switches
+  // menus correctly in a single tap.
   const menuBarInner = appTitleBar.querySelector(".menu-bar-inner");
   if (!menuBarInner) return;
+  const supportsHover =
+    window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (!supportsHover) return;
   menuBarInner.querySelectorAll(":scope > .menu-bar-item").forEach((item) => {
     item.addEventListener("mouseenter", () => {
       const anyOpen = menuBarInner.querySelector(".menu-item-open");
@@ -1689,6 +1798,18 @@ function setupEventListeners() {
   const searchInput = document.getElementById("questionSearch");
   if (searchInput) {
     searchInput.addEventListener("input", debounce(handleSearch, 300));
+    // Escape while the field itself has focus closes the pinned (title-bar
+    // Actions menu) search bar outright, matching the affordance the
+    // fixed-position close button gives — scoped to the input's own
+    // keydown (not a document-level listener) so it doesn't interfere
+    // with every other Escape handler in the app (menus, modals, etc.)
+    // and only fires when the search field is actually what's focused.
+    searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        closeQuestionSearch();
+      }
+    });
     searchInput.addEventListener("input", (e) => {
       const clearBtn = document.getElementById("clearSearch");
       if (clearBtn) {
@@ -2842,9 +2963,28 @@ function rerenderAllQuestions() {
 
 let reorderDrag = null; // { card, placeholder, pointerId, startY, offsetY }
 
+/**
+ * Reflect a toggle-mode's on/off state onto every button instance that
+ * represents it — e.g. both the .section-actions button above the
+ * questions list AND its mirror in the title bar's "إجراءات" (Actions)
+ * menu (see #reorderModeBtn / #actionsMenuReorderBtn and the bulk-mode
+ * equivalents). Previously each toggle* function only ever touched one
+ * hardcoded button id, so a second trigger for the same mode had no way
+ * to show whether that mode was currently on. `ariaAttr` is "aria-pressed"
+ * for the two real toggle buttons or null for the collapse/expand item,
+ * which has no persistent on/off state of its own to reflect.
+ */
+function _syncModeButtons(ids, active, ariaAttr = "aria-pressed") {
+  ids.forEach((id) => {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.classList.toggle("active", active);
+    if (ariaAttr) btn.setAttribute(ariaAttr, String(active));
+  });
+}
+
 window.toggleReorderMode = function () {
   reorderModeActive = !reorderModeActive;
-  const btn = document.getElementById("reorderModeBtn");
 
   // Reorder and bulk-select are mutually exclusive — both repurpose the
   // question header (drag handle vs. checkbox) and both reorder/renumber
@@ -2854,10 +2994,7 @@ window.toggleReorderMode = function () {
     window.toggleBulkMode();
   }
 
-  if (btn) {
-    btn.classList.toggle("active", reorderModeActive);
-    btn.setAttribute("aria-pressed", String(reorderModeActive));
-  }
+  _syncModeButtons(["reorderModeBtn", "actionsMenuReorderBtn"], reorderModeActive);
   document.body.classList.toggle("reorder-mode-active", reorderModeActive);
 
   // Re-render so every card picks up (or drops) its drag handle — simplest
@@ -3373,7 +3510,6 @@ window.collapseAll = function () {
 window.toggleBulkMode = function () {
   bulkModeActive = !bulkModeActive;
   const bulkActionsBar = document.getElementById("bulkActionsBar");
-  const bulkBtn = document.getElementById("bulkModeBtn");
 
   // Mutually exclusive with reorder mode — see the matching check in
   // toggleReorderMode() for why (both repurpose the question header).
@@ -3381,10 +3517,15 @@ window.toggleBulkMode = function () {
     window.toggleReorderMode();
   }
 
+  // Was inline-style toggling (bulkBtn.style.background/color) targeting
+  // only #bulkModeBtn — switched to the same .active class + _syncModeButtons
+  // helper toggleReorderMode uses, so the title bar's Actions-menu mirror
+  // (#actionsMenuSelectBtn) reflects the mode too instead of only the
+  // original section-actions button.
+  _syncModeButtons(["bulkModeBtn", "actionsMenuSelectBtn"], bulkModeActive);
+
   if (bulkModeActive) {
     bulkActionsBar.style.display = "flex";
-    bulkBtn.style.background = "var(--color-primary)";
-    bulkBtn.style.color = "white";
 
     // Add checkboxes to all questions
     document.querySelectorAll(".question-card").forEach((card) => {
@@ -3402,8 +3543,6 @@ window.toggleBulkMode = function () {
     });
   } else {
     bulkActionsBar.style.display = "none";
-    bulkBtn.style.background = "";
-    bulkBtn.style.color = "";
     selectedQuestions.clear();
 
     // Remove checkboxes
@@ -4818,24 +4957,64 @@ function handleDroppedFiles(files) {
 // SEARCH BAR TOGGLE
 // ============================================================================
 
-window.toggleSearchBar = function () {
+/**
+ * Open/close the single #searchBarCollapse search field. Two triggers share
+ * it: the .section-actions search icon (in-flow, scrolls with the page —
+ * fine there since the button that opened it is right above it) and the
+ * title bar's "إجراءات" (Actions) menu item (openQuestionSearch below),
+ * whose whole point is being reachable without scrolling up first — so
+ * *that* trigger pins the same bar to the viewport instead of duplicating
+ * the input and forking its state/filtering logic. `pinned` controls which
+ * of those two layouts is used for this particular open; closing always
+ * clears the pinned state along with everything else.
+ */
+function setSearchBarOpen(open, { pinned = false } = {}) {
   const searchBar = document.getElementById("searchBarCollapse");
-  const toggleBtn = document.getElementById("searchToggleBtn");
   if (!searchBar) return;
-  const isOpen = searchBar.style.display !== "none";
-  searchBar.style.display = isOpen ? "none" : "block";
-  if (toggleBtn) {
-    toggleBtn.setAttribute("aria-expanded", String(!isOpen));
-    toggleBtn.classList.toggle("active", !isOpen);
-  }
-  if (!isOpen) {
-    // focus the input when opening
+  const toggleBtn = document.getElementById("searchToggleBtn");
+  const actionsBtn = document.getElementById("actionsMenuSearchBtn");
+
+  searchBar.style.display = open ? "block" : "none";
+  searchBar.classList.toggle("search-bar-fixed", open && pinned);
+
+  [toggleBtn, actionsBtn].forEach((btn) => {
+    if (!btn) return;
+    btn.setAttribute("aria-expanded", String(open));
+    btn.classList.toggle("active", open);
+  });
+
+  if (open) {
     const input = document.getElementById("questionSearch");
     if (input) setTimeout(() => input.focus(), 50);
   } else {
-    // clear search when closing
     clearSearch();
   }
+}
+
+/** .section-actions search icon — in-flow open/close (existing behavior). */
+window.toggleSearchBar = function () {
+  const searchBar = document.getElementById("searchBarCollapse");
+  if (!searchBar) return;
+  const isOpen = searchBar.style.display !== "none";
+  setSearchBarOpen(!isOpen, { pinned: false });
+};
+
+/**
+ * Title bar Actions-menu search item. Always opens (never toggles closed
+ * from here — the menu closes itself on click, so there's no persistent
+ * button state a second click could "toggle off"; closing this bar is done
+ * via its own close button/Escape once open) in pinned mode, so the field
+ * stays fixed under the title bar no matter how far down the page the user
+ * has scrolled.
+ */
+window.openQuestionSearch = function () {
+  setSearchBarOpen(true, { pinned: true });
+};
+
+/** Closes the search bar outright (used by the pinned bar's own close
+ * button, and by Escape while it's focused/pinned — see setupEventListeners). */
+window.closeQuestionSearch = function () {
+  setSearchBarOpen(false);
 };
 
 window.processImport = async function () {

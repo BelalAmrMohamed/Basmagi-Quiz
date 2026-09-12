@@ -506,6 +506,20 @@ html[data-animations="enabled"] .global-md-bar {
   -webkit-backdrop-filter: blur(16px);
 }
 
+/* Same reasoning as .global-md-bar above, but for the dropdown POPOVERS
+   themselves (.gmd-dropdown-menu, .menu-dropdown incl. its submenu
+   variant) — these render position:fixed, detached from the toolbar/menu
+   bar's own DOM box, so they don't inherit that bar's blur just because
+   the bar has one. Each is its own semi-transparent --color-surface panel
+   in Lightfall mode and needs the same treatment, or .gmd-btn-latex's
+   label (and every .menu-option label) is only contrast-safe against an
+   opaque surface that Lightfall mode never actually gives it. */
+html[data-animations="enabled"] .gmd-dropdown-menu,
+html[data-animations="enabled"] .menu-dropdown {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
 .global-md-bar::-webkit-scrollbar {
   display: none;
 }
@@ -1723,10 +1737,29 @@ body.reorder-mode-active .question-card {
   scroll-margin-top: 90px;
 }
 
-#reorderModeBtn.active {
+#reorderModeBtn.active,
+#bulkModeBtn.active {
   background: var(--color-primary);
   color: #fff;
   border-color: var(--color-primary);
+}
+
+/* Title-bar "إجراءات" (Actions) menu mirrors of the same toggle buttons —
+   .menu-option rows, so "active" needs its own look distinct from the
+   .btn-secondary treatment above (a solid fill would clash with the
+   dropdown's row styling). Highlight like the currently-open submenu row
+   instead, plus a colored icon/label so the state reads at a glance. */
+#actionsMenuSelectBtn.active,
+#actionsMenuReorderBtn.active,
+#actionsMenuSearchBtn.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+#actionsMenuSelectBtn.active svg,
+#actionsMenuReorderBtn.active svg,
+#actionsMenuSearchBtn.active svg {
+  color: var(--color-primary);
 }
 
 /* ── Question card "more" (⋮) menu — replaces the old row of separate
@@ -4259,6 +4292,97 @@ body.reorder-mode-active .question-card {
   background: var(--color-primary-light);
   border-color: var(--color-primary);
   color: var(--color-primary);
+}
+
+/* Pinned mode: applied by JS (see setSearchBarOpen in create-quiz.js) only
+   when the search bar is opened from the title bar's "إجراءات" (Actions)
+   menu, whose whole point is reaching search without first scrolling back
+   up to the questions section header — so this variant pins the bar to
+   the viewport, right below the fixed app-title-bar + global-md-bar stack
+   (44px + 40px, matching the .container top-margin math used elsewhere in
+   this file), instead of flowing inline where it would immediately scroll
+   out of view again. z-index sits below .menu-dropdown (60) so a menu
+   opened while this bar is visible still draws on top of it. */
+.search-bar-fixed {
+  position: fixed;
+  top: 84px;
+  left: 0;
+  right: var(--sidebar-collapsed-width);
+  z-index: 55;
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+body.sidebar-expanded .search-bar-fixed {
+  right: var(--sidebar-expanded-width);
+}
+
+/* Same Lightfall-mode contrast fix as the dropdown popovers above
+   (.gmd-dropdown-menu / .menu-dropdown) — this bar is also a
+   --color-surface panel and renders detached from any other element's
+   own blur once pinned, so it needs its own backdrop-filter here too. */
+html[data-animations="enabled"] .search-bar-fixed {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.search-bar-fixed .search-only-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Hidden by default — .search-bar-fixed-close only ever needs to be
+   visible in pinned mode (see markup comment in create-quiz.html); the
+   in-flow open already has the .section-actions search toggle button
+   right above it to close the bar with. */
+.search-bar-fixed-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.search-bar-fixed-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.search-bar-fixed-close:hover,
+.search-bar-fixed-close:focus-visible {
+  background: var(--color-background);
+  color: var(--color-text-primary);
+}
+
+.search-bar-fixed .search-bar-fixed-close {
+  display: flex;
+}
+
+@media (max-width: 640px) {
+  .search-bar-fixed {
+    top: 84px;
+    right: 0;
+    padding: 8px 12px;
+  }
+
+  body.sidebar-expanded .search-bar-fixed {
+    right: 0;
+  }
 }
 
 /* ============================================================================

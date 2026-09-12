@@ -1019,6 +1019,65 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- "Actions" menu: mirrors the .section-actions buttons above the
+                     questions list (Search / Select / Reorder / Collapse) so they're
+                     reachable from the title bar without scrolling all the way up to
+                     the section header. Each item calls the SAME window.toggle*
+                     functions the section-actions buttons already use — those
+                     functions were updated to sync every button/menu-item instance
+                     that reflects a given mode, so activating a mode from either
+                     place keeps both in sync. The Search item additionally opens the
+                     search bar in its fixed-position mode (see #searchBarCollapse /
+                     openQuestionSearch in create-quiz.js) so the field stays visible
+                     on screen even if the user is scrolled away from the questions
+                     section — the whole reason this menu exists. -->
+                <div class="menu-bar-item" data-menu="actions">
+                    <button type="button" class="menu-trigger" onclick="toggleMenu('actions')">إجراءات</button>
+                    <div class="menu-dropdown" id="menu-actions" role="menu" aria-label="إجراءات">
+                        <button type="button" class="menu-option" id="actionsMenuSearchBtn"
+                            onclick="openQuestionSearch(); closeAllMenus();" aria-expanded="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21 21-4.34-4.34" />
+                                <circle cx="11" cy="11" r="8" />
+                            </svg>
+                            <span>بحث في الأسئلة</span>
+                        </button>
+                        <button type="button" class="menu-option" id="actionsMenuSelectBtn"
+                            onclick="toggleBulkMode(); closeAllMenus();" aria-pressed="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" />
+                                <path d="m9 11 3 3L22 4" />
+                            </svg>
+                            <span>تحديد أسئلة</span>
+                        </button>
+                        <button type="button" class="menu-option" id="actionsMenuReorderBtn"
+                            onclick="toggleReorderMode(); closeAllMenus();" aria-pressed="false">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="9" cy="6" r="1.2" />
+                                <circle cx="15" cy="6" r="1.2" />
+                                <circle cx="9" cy="12" r="1.2" />
+                                <circle cx="15" cy="12" r="1.2" />
+                                <circle cx="9" cy="18" r="1.2" />
+                                <circle cx="15" cy="18" r="1.2" />
+                            </svg>
+                            <span>ترتيب الأسئلة</span>
+                        </button>
+                        <div class="menu-separator"></div>
+                        <button type="button" class="menu-option" id="actionsMenuCollapseBtn"
+                            onclick="toggleExpand(); closeAllMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m7 20 5-5 5 5" />
+                                <path d="m7 4 5 5 5-5" />
+                            </svg>
+                            <span id="actionsMenuCollapseLabel">توسيع أو طي الأسئلة</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </nav>
     </div>
@@ -1592,6 +1651,21 @@
                                         <path d="m6 6 12 12" />
                                     </svg></button>
                             </div>
+                            <!-- Only shown while .search-bar-fixed is applied (pinned mode,
+                                 opened via the title bar's Actions menu) — see CSS. The
+                                 in-flow open (section-actions search icon) already has a
+                                 visible toggle button right above it to close the bar with;
+                                 the pinned bar can be scrolled far away from that button, so
+                                 it needs its own explicit close affordance. -->
+                            <button type="button" class="search-bar-fixed-close" id="closeSearchBar"
+                                onclick="closeQuestionSearch()" aria-label="إغلاق شريط البحث">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M18 6 6 18" />
+                                    <path d="m6 6 12 12" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
 
