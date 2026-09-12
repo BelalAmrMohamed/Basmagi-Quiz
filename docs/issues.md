@@ -29,11 +29,6 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - See ![screenshot of browser console errors](image.png)
 
 ### Create Quiz Page
-- Accessibility:
-  - Dropdown menus (.menu-dropdown, .gmd-dropdown-menu) don't appear to trap focus or support arrow-key navigation between items properly, specially between submenus, and confirmation modals (`_confirm()` and others) — worth adding roving tabindex + arrow key handling since they already have role="menu".
-  - Verify color contrast on .gmd-btn-latex (uses --color-text-tertiary, often a lighter gray) against the toolbar background..
-- There should be versions of the `.section-actions` buttons in a menu in the `.app-title-bar` (Search, Reorder, Select, and collapse). So users can use these actions without having to scroll all the way up. But the search input for the version in the title bar should be fixed position, so it appears on top no matter where the user is currently standing.
-- On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown. I tried fixing this before, but it didn't work.
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
 
 ## New Features
