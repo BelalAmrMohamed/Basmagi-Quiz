@@ -57,7 +57,9 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - This will allow quiz creators to add multiple pieces of media to each question or add media to options, explanations, and formal answers.
 - Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use YouTube, images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos objects. 
 
-### Meme videos on result pages (Easy to make, but very important)
+### Result Pages
+
+#### Videos (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.
 - Suggested themes include:
   - دعوية
@@ -65,9 +67,14 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
   - قرآن
   - ميمز تشجيع سلبية
   - ميمز تشجيع إيجابية
+- Some vidoes will be displayed based on the percentage of the result.
+
+#### Score Guage
+- The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` to the result page.
+
 
 ### Quiz Page
-- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on.
+- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on, instead of .
 - Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view.
 
 ### App SEO and GEO 
