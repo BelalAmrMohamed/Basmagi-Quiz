@@ -162,6 +162,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   function refreshHistoryHighlights() {
     historyPanel.refresh();
     refreshCopyButtonState();
+    refreshNewChatButtonState();
   }
 
   /**
@@ -326,8 +327,10 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarNewChatBtn.className = "ai-agent-sidebar-btn";
   sidebarNewChatBtn.innerHTML = `${NEW_CHAT_ICON_SVG}<span>محادثة جديدة</span>`;
   sidebarNewChatBtn.addEventListener("click", () => {
+    if (sidebarNewChatBtn.disabled) return;
     chatPanelSlot.current.startNewConversation();
     refreshCopyButtonState();
+    refreshNewChatButtonState();
     closeMobileSidebarSheet();
   });
 
@@ -419,6 +422,21 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
     sidebarCopyBtn.classList.toggle("ai-agent-sidebar-btn--disabled", !hasMessages);
   }
   refreshCopyButtonState();
+
+  // Mirrors refreshCopyButtonState just above, but inverted: "محادثة
+  // جديدة" starts a fresh, empty conversation, so it's redundant (and
+  // would just silently no-op) when the active panel is ALREADY a new,
+  // empty chat — i.e. exactly when sidebarCopyBtn is disabled for having
+  // nothing to export. Same hasMessages() signal, same refresh hook.
+  function refreshNewChatButtonState() {
+    const hasMessages =
+      typeof chatPanelSlot.current.hasMessages === "function"
+        ? chatPanelSlot.current.hasMessages()
+        : true;
+    sidebarNewChatBtn.disabled = !hasMessages;
+    sidebarNewChatBtn.classList.toggle("ai-agent-sidebar-btn--disabled", !hasMessages);
+  }
+  refreshNewChatButtonState();
 
   sidebar.appendChild(sidebarNewChatBtn);
   sidebar.appendChild(sidebarCopyBtn);

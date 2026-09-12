@@ -2640,6 +2640,23 @@ body.sidebar-expanded .ai-agent-fab {
 @media (max-width: 900px) {
   .ai-agent-mobile-sidebar-toggle {
     display: flex;
+    /* BUG FIX: the mobile drawer this button opens slides in from the
+       LEFT (see .ai-agent-sidebar's `left: 0` / translateX rules above),
+       but this button is the FIRST child in .modal-header's source order
+       (kept that way so #aiAgentModalTitle's flex:1 stays visually
+       centered between it and .close-btn — see the comment on
+       #aiAgentModalTitle) — in this RTL layout, "first child" renders on
+       the RIGHT, opposite the drawer it triggers. `order` flips only the
+       visual position, leaving source order (and the centering) intact. */
+    order: 3;
+  }
+
+  .ai-agent-modal-card .close-btn {
+    order: 1;
+  }
+
+  .ai-agent-modal-card #aiAgentModalTitle {
+    order: 2;
   }
 }
 

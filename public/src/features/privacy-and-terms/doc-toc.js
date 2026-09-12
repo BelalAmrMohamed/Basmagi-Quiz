@@ -81,15 +81,18 @@ function buildToc() {
   // vertical-center, so on shorter/narrower content it can sit on top of
   // paragraph text instead of beside it. Phones already get their own
   // collapse-to-toggle behavior below; this gives desktop an equivalent
-  // "get it out of my way" affordance without losing the ToC entirely
-  // (collapsing tucks it into a small pill instead of removing it).
+  // "get it out of my way" affordance by sliding the whole panel almost
+  // entirely off the left edge of the screen (a thin sliver stays
+  // visible/clickable as a handle) rather than shrinking it in place —
+  // see the .doc-toc-minimized rules in privacy-and-terms.css for the
+  // actual slide.
   const MINIMIZED_KEY = "doc_toc_minimized";
   const minimizeBtn = document.createElement("button");
   minimizeBtn.type = "button";
   minimizeBtn.className = "doc-toc-minimize-btn";
   minimizeBtn.setAttribute("aria-controls", "docTocPanel");
   minimizeBtn.innerHTML =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>`;
+    `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>`;
   heading.appendChild(minimizeBtn);
   nav.appendChild(heading);
 

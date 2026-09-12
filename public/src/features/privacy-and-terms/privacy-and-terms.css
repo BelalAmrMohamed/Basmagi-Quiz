@@ -609,10 +609,12 @@ html[data-motion="reduced"] *::after {
     white-space: nowrap;
 }
 
-/* Desktop-only minimize toggle — collapses the fixed, vertically-centered
-   panel down to a small pill so it stops sitting on top of the reading
-   column on shorter pages. Hidden on phones, which already collapse the
-   whole ToC behind the floating .doc-toc-toggle button instead. */
+/* Desktop-only minimize toggle — slides the fixed, vertically-centered
+   panel almost entirely off the left edge of the screen so it stops
+   sitting on top of the reading column, while leaving a thin sliver (with
+   the heading row) visible as a handle to pull it back. Hidden on phones,
+   which already collapse the whole ToC behind the floating .doc-toc-toggle
+   button instead. */
 .doc-toc-minimize-btn {
     display: flex;
     align-items: center;
@@ -635,8 +637,12 @@ html[data-motion="reduced"] *::after {
     background: var(--bg-tint);
 }
 
-/* Chevron points up when expanded (collapses upward on click) and flips to
-   point down once minimized (click would expand it back down). */
+/* Chevron points left when expanded (slides left/off-screen on click) and
+   flips to point right once minimized (click would slide it back in). RTL
+   page, but the panel's own slide direction is a fixed screen-edge
+   (left), not a logical/direction-relative one, so the icon and the
+   transform below both use physical left/right rather than
+   start/end. */
 .doc-toc-minimized .doc-toc-minimize-btn {
     transform: rotate(180deg);
 }
@@ -693,28 +699,61 @@ html[data-motion="reduced"] *::after {
 }
 
 /* ─────────────────────────────────────────
-    DESKTOP — minimized ToC collapses to a small pill instead of the full
-    panel, so it stops covering reading-column text on shorter pages.
+    DESKTOP — minimized ToC slides almost fully off the left edge of the
+    screen instead of shrinking in place, so it's unambiguous where it
+    went and how to get it back. A thin strip (matching the panel's own
+    left border-radius) stays visible as a handle; clicking anywhere on
+    that visible strip (see doc-toc.js's click handler) slides it back.
     Scoped to the desktop breakpoint only; on phones the ToC is already
     collapsed by default behind .doc-toc-toggle and this class doesn't
     apply there (see the mobile media query further down, which resets it).
 ───────────────────────────────────────── */
 @media (min-width: 769px) {
+    .doc-toc {
+        transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     .doc-toc.doc-toc-minimized {
-        width: auto;
-        max-height: none;
-        overflow: visible;
-        padding: 8px 6px;
+        /* Shift left by the panel's own width, minus a fixed sliver kept
+           on-screen as the visible grab handle. calc() (rather than a
+           fixed translateX) keeps this correct regardless of how wide the
+           panel ends up (e.g. a longer heading than usual). */
+        transform: translateY(-50%) translateX(calc(-1 * (100% - 22px)));
         cursor: pointer;
+        /* The panel's normal "spine" accent is on its left edge, which is
+           exactly the part that's now off-screen — move it to the right
+           edge instead so the sliver that's actually visible still reads
+           as "part of a panel, click to pull it back" rather than a bare
+           unmarked sliver. */
+        border-left: 1px solid var(--rule-heavy);
+        border-right: 3px solid var(--accent);
+    }
+
+    .doc-toc.doc-toc-minimized:hover {
+        /* A small nudge back toward the reading column on hover signals
+           "this is interactive" before the user even clicks, same idea as
+           a drawer handle that peeks out further when you mouse over it. */
+        transform: translateY(-50%) translateX(calc(-1 * (100% - 40px)));
+    }
+
+    /* The list would otherwise still be reachable (scrolled into view,
+       tab-focusable) while slid mostly off-screen — hide it outright
+       rather than just visually clipping it via overflow, matching how
+       the mobile slide-up panel already treats its own hidden state. */
+    .doc-toc.doc-toc-minimized .doc-toc-list {
+        display: none;
+    }
+
+    /* The heading label would get clipped mid-word by the sliver anyway;
+       hide it and keep only the chevron button visible/clickable within
+       the visible strip. */
+    .doc-toc.doc-toc-minimized .doc-toc-heading-label {
+        display: none;
     }
 
     .doc-toc.doc-toc-minimized .doc-toc-heading {
-        padding: 0 2px;
-    }
-
-    .doc-toc.doc-toc-minimized .doc-toc-heading-label,
-    .doc-toc.doc-toc-minimized .doc-toc-list {
-        display: none;
+        justify-content: flex-end;
+        padding: 0;
     }
 }
 

@@ -706,20 +706,7 @@ html[data-theme="dark-slate"] .about-page {
   height: 30px;
 }
 
-/* Real channel thumbnail, when /assets/images/youtube-channel-thumb.jpg
-   exists — see the onerror/onload pair on the <img> in about.html for how
-   this swaps with the plain play-icon badge above. Absolutely positioned
-   over the badge so loading the image doesn't shift layout, and hiding it
-   (on error) cleanly reveals the badge sitting underneath. */
-.about-page .featured-link-youtube-thumb {
-  display: block;
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
+/* Real channel thumbnail. */
 .about-page .featured-link-youtube-body {
   min-width: 0;
   flex: 1;

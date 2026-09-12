@@ -38,9 +38,8 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - On Phones, when clicking on a `.menu-trigger` in the `.app-title-bar`, its `.menu-dropdown` appears, but when I press on a second `.menu-trigger`, its menu doesn't appear, but the first menu closes. Meaning it takes 2 clicks for the second one, a click to close the first open menu dropdown, a second click to open the second menu dropdown.
 
 ### AI Agent.
-- On Phones: `class="ai-agent-sidebar-collapse-btn ai-agent-mobile-sidebar-toggle"` exists on the right, even though the menu opens from the left. 
-- `محادثة جديدة` button should be disabled when it's already a new chat.
 - The AI Agent is currently a modal that takes most of the screen. Is making it a screen (e.g., takes full width/heigt) better?
+- Redesign the AI Agent's `.ai-agent-chat-input-controls` to be like Gemini. Instead of the current styling. See screenshot.
 
 ### Document Pages
 - `تغيير الإسم` button in the profile dropdown on desktops doesn't have the icon.
@@ -48,10 +47,8 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
   - `تسجيل الدخول` 
   - `البلاغات`
   - `تغيير الإسم`
-- Make the `.doc-toc` minimizable on desktops, because it can sometimes hide some text under it. It's minimizable on phones.
-- `.featured-link-website-body`, `.featured-link-profile`, and `.featured-link-youtube` should display under the `.creator-stamp`, because the area under it is unused.
-- The `.featured-link-website-body` doesn't fetch the actual website thumbnail, or I can download the thumbnail myself and put it inside `/public/assets/images/`.
-- The `.featured-link-youtube` has the same issue.
+  - I tried fixing them, but they still don't appear, they appear on the rest of the pages (index.html and the rest)
+- `.doc-toc-minimize-btn` doesn't do anything, it's broken.
 
 ## New Features
 
