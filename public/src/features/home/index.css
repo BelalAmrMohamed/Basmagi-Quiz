@@ -932,10 +932,6 @@ body.sidebar-expanded {
   transition: padding-bottom 0.2s ease;
 }
 
-/* .header.is-open {
-  padding-bottom: 84px;
-} */
-
 .header-clip {
   position: absolute;
   inset: 0;
@@ -1331,6 +1327,10 @@ ANIMATIONS
   /* Prevent the ::after emoji from pushing the path off-screen */
   gap: 0;
   padding: 7px 16px 7px 12px;
+}
+
+.header.is-open #Subjects-text {
+  visibility: hidden;
 }
 
 /* ============================================================================
@@ -2982,6 +2982,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 .empty-state {
   text-align: center;
   padding: 80px 32px;
+  margin: 0 auto;
 }
 
 .empty-state-icon {
@@ -3094,9 +3095,9 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     border-radius: 18px;
   }
 
-  .header.is-open {
+  /* .header.is-open {
     padding-bottom: 96px;
-  }
+  } */
 
   .header h1 {
     font-size: 1.75rem;

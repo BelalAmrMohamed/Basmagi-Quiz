@@ -8,13 +8,9 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Search Bar in the Home Page
-Look at all the images I provided you with. The whole update to the platform can't be sent to production if the home page search is this messed up.
-
-* On Desktops: The `.search-bar` appears to the left of the `.header`, and slightly raised from the original position of `.header-search-btn` . It only gets to the right when the `.search-results-summary` appears.
-* On Phones: There is far too much unused space under `.search-bar-row` when the `.search-results-summary` isn't even appearing
-* There is so much unused space/padding at the bottom of `.header` When the search is closed, only keep the padding when the search is open.
-
-If you can't solve them, write a prompt for a smarter AI to do it, you seem too stupid.
+- `search-close::after` fix it
+- Fix Fix search input on phones, too much space above it.
+- Modal opens weirdly on phones.
 
 
 All what happened in the last go is that `.header-search-icon` has less space between it and the bottom border of `.header`

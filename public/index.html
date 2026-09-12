@@ -882,17 +882,9 @@
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
-                        <!-- Debounce-window spinner — shown in place of .search-icon while a
-                             keystroke is queued but not yet searched. See .is-searching in
-                             search.css and handleSearchInput()/performSearch() in
-                             search-manager.js. -->
                         <span class="search-spinner" aria-hidden="true"></span>
                         <input type="text" id="courseSearch" dir="auto" class="search-input" dir="auto"
-                            placeholder="ابحث عن مادة ، أو مجلد ، أو امتحان..." autocomplete="off"
-                            aria-label="البحث عن المواد الامتحانات" />
-                        <!-- Single merged button: clears the text if there's any, otherwise closes the search bar.
-                             Two distinct icons (X vs chevron-down) are swapped via CSS based on .mode-clear so the
-                             two behaviors are visually distinct, not just distinct in aria-label/title. -->
+                            placeholder="ابحث عن مادة" autocomplete="off" aria-label="البحث عن المواد والامتحانات" />
                         <button class="search-close" id="searchClose" aria-label="إغلاق البحث" title="إغلاق البحث"
                             type="button">
                             <svg class="search-close-icon search-close-icon--clear" width="14" height="14"

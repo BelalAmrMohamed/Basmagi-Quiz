@@ -121,7 +121,7 @@ export class SearchManager {
       // Course categories view — search for courses
       this.currentContext = "courses";
       if (this.elements.searchInput) {
-        this.elements.searchInput.placeholder = "ابحث عن مادة...";
+        this.elements.searchInput.placeholder = "ابحث عن مادة";
       }
       // Show header trigger button
       if (this.elements.headerSearchBtn) {
@@ -153,7 +153,7 @@ export class SearchManager {
 
         if (hasExams) {
           if (this.elements.searchInput) {
-            this.elements.searchInput.placeholder = "ابحث عن امتحان...";
+            this.elements.searchInput.placeholder = "ابحث عن امتحان";
           }
           if (this.elements.headerSearchBtn) {
             this.elements.headerSearchBtn.style.display = "flex";
