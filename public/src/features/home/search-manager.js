@@ -69,6 +69,7 @@ export class SearchManager {
     this.bindSearchClose(); // NEW — also handles clearing (merged button)
     this.populateFacultyFilter();
     this.bindResetFilters();
+    this.bindOutsideClick(); // NEW — closes the filters panel on an outside click
     this.setupKeyboardShortcuts();
     this.updateContextVisibility();
   }
@@ -902,6 +903,34 @@ export class SearchManager {
 
     this.elements.resetFilters.addEventListener("click", () => {
       this.resetFilters();
+    });
+  }
+
+  /**
+   * NEW: Close the filters panel when the user clicks/taps anywhere outside
+   * of it (and outside the toggle button that opens it). Previously nothing
+   * closed the panel except re-clicking the filter toggle, Apply, or Reset
+   * — so it stayed open over the page indefinitely once opened. Listens on
+   * "pointerdown" (fires before "click", and covers touch + mouse in one
+   * listener) rather than "click", so it also catches a tap that lands on
+   * an element which itself gets removed/hidden before a "click" would
+   * have fired.
+   */
+  bindOutsideClick() {
+    document.addEventListener("pointerdown", (e) => {
+      if (!this.isFiltersPanelOpen) return;
+      if (!this.elements.searchFilters) return;
+
+      const clickedInsidePanel = this.elements.searchFilters.contains(
+        e.target,
+      );
+      const clickedToggle =
+        this.elements.filterToggle &&
+        this.elements.filterToggle.contains(e.target);
+
+      if (!clickedInsidePanel && !clickedToggle) {
+        this.toggleFiltersPanel();
+      }
     });
   }
 

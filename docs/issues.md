@@ -8,11 +8,16 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Search Bar in the Home Page
-- `.search-filters` doesn't close when I click out of it.
-- `.search-bar` doesn't appear at the exact same place as `.header-search-btn`
-- In the `.search-bar-row`, the `.search-results-summary` should appear on the left, and the `.search-bar` should be on the right (in place of the `.header-search-btn`).
-- On Phones: `.search-bar-row` appears on top of other elements on the header.
+Look at all the images I provided you with. The whole update to the platform can't be sent to production if the home page search is this messed up.
 
+* On Desktops: The `.search-bar` appears to the left of the `.header`, and slightly raised from the original position of `.header-search-btn` . It only gets to the right when the `.search-results-summary` appears.
+* On Phones: There is far too much unused space under `.search-bar-row` when the `.search-results-summary` isn't even appearing
+* There is so much unused space/padding at the bottom of `.header` When the search is closed, only keep the padding when the search is open.
+
+If you can't solve them, write a prompt for a smarter AI to do it, you seem too stupid.
+
+
+All what happened in the last go is that `.header-search-icon` has less space between it and the bottom border of `.header`
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
@@ -33,15 +38,6 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
 - See ![screenshot of browser console errors](image.png)
-
-### Create Quiz Page
-- While I was testing, I found these errors in the console:
-```
-create-quiz.html:1947  GET http://localhost:8080/_vercel/insights/script.js net::ERR_ABORTED 404 (Not Found)
-create-quiz.html:1350 Uncaught ReferenceError: chooseEntryAction is not defined
-    at HTMLButtonElement.onclick (create-quiz.html:1350:120)
-onclick @ create-quiz.html:1350
-```
 
 ## New Features
 
@@ -71,7 +67,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 #### Score Guage
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` to the result page.
-
 
 ### Quiz Page
 - Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on, instead of .

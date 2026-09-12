@@ -928,11 +928,14 @@ body.sidebar-expanded {
   position: relative;
   overflow: visible;
   background: var(--color-surface);
-  padding-bottom: 84px;
+  padding-bottom: 16px;
+  transition: padding-bottom 0.2s ease;
 }
 
-/* Clips ::before/::after (below) to the header's exact rounded rect,
-   independently of .header's own overflow — see the comment above. */
+/* .header.is-open {
+  padding-bottom: 84px;
+} */
+
 .header-clip {
   position: absolute;
   inset: 0;
@@ -3083,10 +3086,16 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
   .header {
     padding: 28px 20px;
-    /* Smaller trigger button/bar on mobile (see search.css @media 768px)
-       need less reserved space than the desktop 84px. */
-    padding-bottom: 64px;
+    /* Match desktop's tight default: just enough to clear the button/border
+       while closed (see .header's 16px base padding-bottom in this file's
+       desktop rule) — no extra reservation needed. Only grows while search
+       is open (below). */
+    padding-bottom: 16px;
     border-radius: 18px;
+  }
+
+  .header.is-open {
+    padding-bottom: 96px;
   }
 
   .header h1 {
@@ -3119,6 +3128,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 @media (max-width: 480px) {
   .header {
     padding: 24px 20px;
+    padding-bottom: 16px;
   }
 
   .header h1 {

@@ -1924,6 +1924,44 @@
 
 
 
+    <!-- RACE-CONDITION FIX ("chooseEntryAction is not defined"):
+         create-quiz.js is a `type="module"` script, so it's always deferred
+         until AFTER the HTML above (including the entry screen's "New quiz"
+         tile, visible on first paint) has already parsed and become
+         clickable. A fast click/tap — or a slow network delaying the
+         module fetch — can land before the module has finished evaluating
+         and attached its ~60 window.<handler> functions (chooseEntryAction,
+         startTitleEdit, etc.), throwing "X is not defined".
+
+         Rather than relocate every inline onclick="window.X(...)" handler
+         in create-quiz.html, gate clicks at the document level: capture
+         clicks on any element whose onclick would call one of these
+         handlers, and no-op them (instead of letting the inline handler
+         throw) until create-quiz.js signals it has finished attaching
+         everything by dispatching 'app:ready' (added at the bottom of
+         create-quiz.js, after all window.* assignments). This is a single
+         listener, so it covers every current and future window.* handler,
+         not just chooseEntryAction. -->
+    <script>
+        (function () {
+            var appReady = false;
+            document.addEventListener("app:ready", function () {
+                appReady = true;
+            }, { once: true });
+
+            document.addEventListener("click", function (event) {
+                if (appReady) return;
+                var target = event.target.closest("[onclick]");
+                if (!target) return;
+                // Let clicks through once the app is ready; until then,
+                // swallow them silently rather than surfacing a
+                // "not defined" error to the user.
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }, true);
+        })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/features/create/create-quiz.js"></script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
