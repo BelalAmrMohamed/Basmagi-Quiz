@@ -929,6 +929,18 @@ body.sidebar-expanded {
   overflow: hidden;
   /* Subtle noise-like background depth */
   background: var(--color-surface);
+  /* Extra bottom padding reserves room for the search bar + trigger button,
+     which now live inside the header itself instead of below it. */
+  padding-bottom: 84px;
+}
+
+/* The search bar now lives inside .header. While it's expanded, switch
+   overflow to visible so the bar (and its filters panel) aren't clipped by
+   the header's own rounded corners / decorative ::before/::after layers.
+   Only toggled while open — otherwise .header::before/::after would leak
+   outside the header's rounded corners at all times. */
+.header.is-open {
+  overflow: visible;
 }
 
 /* Two-tone top accent bar: thicker, gradient-glow effect */
@@ -2968,10 +2980,35 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 }
 
 .empty-state-icon {
-  font-size: 5rem;
+  display: flex;
+  justify-content: center;
   margin-bottom: 24px;
-  opacity: 0.3;
-  filter: grayscale(1);
+  opacity: 0.35;
+  color: var(--color-text-secondary);
+}
+
+.empty-state-icon svg {
+  width: 56px;
+  height: 56px;
+}
+
+/* "panel" variant — standalone card (e.g. "no quizzes yet"), not inside a
+   results grid, so it needs its own surface/shadow instead of inheriting
+   the grid's. */
+.empty-state--panel {
+  background: var(--color-surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 60px 20px;
+}
+
+.empty-state--panel h3 {
+  margin-bottom: 10px;
+  color: var(--color-text-primary);
+}
+
+.empty-state--panel p {
+  color: var(--color-text-secondary);
 }
 
 /* ============================================================================
@@ -3044,6 +3081,9 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
   .header {
     padding: 28px 20px;
+    /* Smaller trigger button/bar on mobile (see search.css @media 768px)
+       need less reserved space than the desktop 84px. */
+    padding-bottom: 64px;
     border-radius: 18px;
   }
 

@@ -29,20 +29,18 @@ But a transition on the `.sidebar-brand-link` for opening/closing side-menu on d
 - See ![screenshot of browser console errors](image.png)
 
 ### Create Quiz Page
-- Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
+- While I was testing, I found these errors in the console:
+```
+create-quiz.html:1947  GET http://localhost:8080/_vercel/insights/script.js net::ERR_ABORTED 404 (Not Found)
+create-quiz.html:1350 Uncaught ReferenceError: chooseEntryAction is not defined
+    at HTMLButtonElement.onclick (create-quiz.html:1350:120)
+onclick @ create-quiz.html:1350
+```
 
 ## New Features
 
 ### Admin actions and deletion flow (New Features)
 See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
-
-### Search and navigation refinements (Home Page)
-- The footer may sit too high and does not always remain pinned to the bottom of the page when the content area is short.
-- The home page search icon and input placement need refinement.
-- The search button should be aligned at the lower-right rather than upper-right.
-- The search bar should appear within the header itself.
-- When the search bar is visible, the header search button should be hidden to avoid duplication. And try to align the search input's search icon in place of the header search button.
-- The search icon disappears when I enter a course that only has subfolders in its first level, this issue is probably due to the folders & courses not being actual objects in the DB, we may choose to solve this issue after we migrate the whole platform to be DB quizzes only, and give up on relative-path quizzes uploaded with the code.
 
 ### Markdown engine enhancement
 - Update the markdown engine to behave more like GitHub markdown rendering, with embeded media like vidoes, audio, and images.
@@ -52,7 +50,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - After implementing this feature, migrate all quizzes to embed the media in the question body itself, and delete all legacy code related to the object media rendering, because now media will be in the question body itself.
 - This will allow quiz creators to add multiple pieces of media to each question or add media to options, explanations, and formal answers.
 - Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use YouTube, images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos objects. 
-
 
 ### Meme videos on result pages (Easy to make, but very important)
 - Add a result-page feature that displays themed meme videos based on the user’s degree or score.
@@ -78,16 +75,8 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 ### Home Page
 
-#### Loading
-*Important Note: This update comes after converting the platform to have DB quizzes only. Before that, it depended on relative-path quizzes updated with the code, and a relative path manifest with logic to merge them with quizzes coming from the DB. Now the Platform depends on the DB only, with all legacy code deleted*
-
-- امتحاناتك section should load independantly.
-- Don't load the whole DB for the manifest, just the courses, then when the initial view loads (which is top view, which is courses only), start loading their subfolder in the background.
-- When a course or folder is visited directly (e.g., `http://basmagi-quiz.vercel.app/course/Website-Demo/All-Features`) load only what is enough to show its elements, then when it loads, start loading everything else in the background. This would speed up loading time significantly.
-- On localhost, sometimes the home page (index.html) takes too much time to load, the animation shimmer on the skeleton cards just keeps going, the cards never actually load, and I have to reload the whole page for it to work.
-
-#### Onboarding Pop Up
-Make it a full screen, instead of a modal. not a different page, but takes full width/height, no rounded corners.
+#### Onboarding Pop Up `.landing-card`
+Make it a full screen, instead of a modal. Not a different page, but takes full width/height, no rounded corners.
 
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
@@ -107,10 +96,12 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 ### Testing Issue
 `npm run dev` doesn't do hot reload.
 
-
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.
 
 ### About.html
 - Open-source Angle
 - Add a short testimonial or review
+
+### Create Quiz Page
+- Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules

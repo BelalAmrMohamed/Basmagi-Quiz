@@ -93,6 +93,9 @@ export class SearchManager {
       searchInput: document.getElementById("courseSearch"),
       searchClose: document.getElementById("searchClose"), // merged clear+close button
       headerSearchBtn: document.getElementById("headerSearchBtn"), // NEW: header icon trigger
+      headerEl: document.querySelector(".header"), // toggled to overflow:visible while the bar is open
+      searchBar: document.querySelector(".search-bar"), // shows a spinner during the debounce window
+      contentArea: document.getElementById("contentArea"),
       filterToggle: document.getElementById("filterToggle"),
       searchFilters: document.getElementById("searchFilters"),
       searchSummary: document.getElementById("searchSummary"),
@@ -136,10 +139,14 @@ export class SearchManager {
           this.elements.headerSearchBtn.style.display = "flex";
         }
       } else {
+        // BUG FIX: this used to only check currentCategory.exams/.quizzes at
+        // the CURRENT level, so a course whose first level holds only
+        // subfolders (no direct exams) hid the search button entirely — even
+        // though quizzes existed several levels deeper. collectAllExams()
+        // already recurses through subcategories (see below), so reuse it
+        // here for a check that actually matches what search can find.
         const hasExams =
-          currentCategory &&
-          ((currentCategory.exams && currentCategory.exams.length > 0) ||
-            (currentCategory.quizzes && currentCategory.quizzes.length > 0));
+          currentCategory && this.collectAllExams(currentCategory).length > 0;
 
         this.currentContext = "quizzes";
 
@@ -178,6 +185,16 @@ export class SearchManager {
   /**
    * Reset search state without triggering a render callback.
    * Used internally when context changes.
+   *
+   * PERSISTENCE NOTE (reviewed as part of the search refinements): only
+   * `searchQuery` is cleared here. `scope`, `contentType`, `faculty`, and
+   * `sortBy` deliberately survive a context change within the same session —
+   * they're session-level browsing choices, not saved to localStorage, and
+   * reset to "all"/"relevance" only via the explicit "إعادة تعيين" button
+   * (resetFilters()) or a full page reload. `educationType` is the one
+   * exception: it's treated as a stable personal attribute and persisted to
+   * localStorage (see setEducationTypeSetting()/loadSearchSettings()), so it
+   * survives page reloads too, not just in-session navigation.
    */
   _resetSearchState() {
     this.filters.searchQuery = "";
@@ -219,6 +236,19 @@ export class SearchManager {
     // Clear previous debounce timer
     clearTimeout(this.debounceTimer);
 
+    // Immediate feedback that input is queued but not yet searched — the
+    // 300ms debounce window previously gave no visual signal at all, which
+    // could read as unresponsiveness on slower devices. contentArea's
+    // aria-busy is flipped back to "false" by the renderers in
+    // search-integration.js once results actually render; the search bar's
+    // own spinner is cleared at the start of performSearch() below.
+    if (this.elements.contentArea) {
+      this.elements.contentArea.setAttribute("aria-busy", "true");
+    }
+    if (this.elements.searchBar) {
+      this.elements.searchBar.classList.add("is-searching");
+    }
+
     // Debounce the search
     this.debounceTimer = setTimeout(() => {
       this.filters.searchQuery = query;
@@ -249,6 +279,13 @@ export class SearchManager {
   // ===========================
 
   performSearch() {
+    // The debounce-window spinner (if showing) is done once an actual
+    // search runs — whether triggered by the debounce timer, Enter, a
+    // filter change, or the console's basmagi.search().
+    if (this.elements.searchBar) {
+      this.elements.searchBar.classList.remove("is-searching");
+    }
+
     if (this.currentContext === "courses") {
       this.searchCourses();
     } else if (this.currentContext === "quizzes") {
@@ -773,15 +810,29 @@ export class SearchManager {
   }
 
   /**
-   * NEW: Expand the search bar below the header and focus the input
+   * NEW: Expand the search bar inside the header and focus the input.
+   * Hides the header trigger button (its icon visually "becomes" the
+   * search bar's own leading icon, which sits at the same corner — see
+   * search.css) and switches .header to overflow:visible so the expanding
+   * bar/filters panel aren't clipped by the header's rounded corners.
    */
   openSearchBar() {
     if (!this.container) return;
     this.isBarOpen = true;
     this.container.classList.add("is-open");
     this.container.setAttribute("aria-hidden", "false");
+    if (this.elements.headerEl) {
+      this.elements.headerEl.classList.add("is-open");
+    }
     if (this.elements.headerSearchBtn) {
       this.elements.headerSearchBtn.setAttribute("aria-expanded", "true");
+      // .is-bar-open is a SEPARATE reason for hiding this button from the
+      // inline display:none set in updateContextVisibility() for "no exams
+      // in this context". Using a class here (rather than another inline
+      // style write) means the two hide-reasons can never overwrite one
+      // another — closing the bar only removes this class, it never
+      // touches the inline style, and vice versa.
+      this.elements.headerSearchBtn.classList.add("is-bar-open");
     }
     // Auto-focus the input
     setTimeout(() => {
@@ -799,8 +850,12 @@ export class SearchManager {
     this.isBarOpen = false;
     this.container.classList.remove("is-open");
     this.container.setAttribute("aria-hidden", "true");
+    if (this.elements.headerEl) {
+      this.elements.headerEl.classList.remove("is-open");
+    }
     if (this.elements.headerSearchBtn) {
       this.elements.headerSearchBtn.setAttribute("aria-expanded", "false");
+      this.elements.headerSearchBtn.classList.remove("is-bar-open");
     }
     // Close filters panel too
     if (this.isFiltersPanelOpen) {
@@ -893,6 +948,13 @@ export class SearchManager {
       faculty: "all",
       sortBy: "relevance",
     };
+
+    // FIX: educationType is the one filter persisted to localStorage (see
+    // setEducationTypeSetting()/loadSearchSettings()). Resetting it above in
+    // `this.filters` only cleared the in-memory value — the persisted
+    // setting stayed behind and would silently reappear on the next page
+    // load, contradicting what "إعادة تعيين" (reset) implies it does.
+    this.setEducationTypeSetting("all");
 
     // Reset UI controls
     document.querySelectorAll('input[name="searchScope"]').forEach((radio) => {

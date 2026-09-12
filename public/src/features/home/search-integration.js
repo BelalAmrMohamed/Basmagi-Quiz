@@ -12,6 +12,7 @@
 import { SearchManager } from "./search-manager.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { container, title } from "./dom-refs.js";
+import { createEmptyState } from "./empty-state.js";
 import {
   getCategoryTree,
   getNavigationStack,
@@ -128,21 +129,11 @@ function handleUserQuizSearchResults(results) {
     container.appendChild(actionsBar);
 
     if (!results || results.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.setAttribute("role", "status");
-      emptyState.style.cssText = `
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 60px 20px;
-        background: var(--color-surface);
-        border-radius: 12px;
-        box-shadow: var(--shadow-md);
-        color: var(--color-text-primary);
-      `;
-      emptyState.innerHTML = `
-        <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;" aria-hidden="true">📝</div>
-        <h3 style="margin-bottom: 10px;">لا توجد نتائج بحث</h3>
-      `;
+      const emptyState = createEmptyState({
+        variant: "panel",
+        icon: "search",
+        title: "لا توجد نتائج بحث",
+      });
       container.appendChild(emptyState);
     } else {
       const allUserQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
@@ -175,14 +166,12 @@ function renderCourseSearchResults(courses) {
 
     if (courses.length === 0) {
       // Empty state for no results
-      const emptyState = document.createElement("div");
-      emptyState.className = "empty-state";
-      emptyState.setAttribute("role", "status");
-      emptyState.innerHTML = `
-        <div class="empty-state-icon" aria-hidden="true">🔍</div>
-        <h3>لا توجد نتائج</h3>
-        <p>جرّب البحث بكلمات مختلفة أو تعديل الفلاتر</p>
-      `;
+      const emptyState = createEmptyState({
+        variant: "grid",
+        icon: "search",
+        title: "لا توجد نتائج",
+        subtitle: "جرّب البحث بكلمات مختلفة أو تعديل الفلاتر",
+      });
       container.appendChild(emptyState);
       return;
     }
@@ -268,14 +257,12 @@ function renderQuizSearchResults(exams) {
         currentCategory.subcategories.length === 0)
     ) {
       // Empty state for no results
-      const emptyState = document.createElement("div");
-      emptyState.className = "empty-state";
-      emptyState.setAttribute("role", "status");
-      emptyState.innerHTML = `
-        <div class="empty-state-icon" aria-hidden="true">🔍</div>
-        <h3>لا توجد نتائج</h3>
-        <p>جرّب البحث بكلمات مختلفة</p>
-      `;
+      const emptyState = createEmptyState({
+        variant: "grid",
+        icon: "search",
+        title: "لا توجد نتائج",
+        subtitle: "جرّب البحث بكلمات مختلفة",
+      });
       container.appendChild(emptyState);
       return;
     }
@@ -291,4 +278,3 @@ function renderQuizSearchResults(exams) {
     console.error("Error rendering quiz search results:", error);
   }
 }
-

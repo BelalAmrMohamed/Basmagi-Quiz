@@ -5445,7 +5445,7 @@ function mountAIHelper() {
   if (!container) return;
   container.appendChild(
     createAIAgentFab({
-      placeholder: "اطلب تعديل الامتحان، أو ارفع ملفًا لتحويله لأسئلة...",
+      placeholder: "اسأل الباشــمبصمج",
       pageKey: "create",
       defaultSystemPrompt: CREATE_QUIZ_PAGE_SYSTEM_PROMPT,
       suggestedPrompts: CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS,

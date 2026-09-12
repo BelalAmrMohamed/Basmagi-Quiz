@@ -37,6 +37,7 @@ import {
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
+import { createEmptyState } from "./empty-state.js";
 import {
   getNavigationStack,
   isRestoring,
@@ -725,22 +726,14 @@ export function renderUserQuizzesView() {
     // 3. Quiz cards (or empty state) go into quizzesContainer, not container
     if (currentChildren.length === 0) {
       // Empty state
-      const emptyState = document.createElement("div");
-      emptyState.setAttribute("role", "status");
-      emptyState.style.cssText = `
-        grid-column: 1 / -1;
-        text-align: center;
-        padding: 60px 20px;
-        background: var(--color-surface);
-        border-radius: 12px;
-        box-shadow: var(--shadow-md);
-        color: var(--color-text-primary);
-      `;
-      emptyState.innerHTML = `
-        <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;" aria-hidden="true">📝</div>
-        <h3 style="margin-bottom: 10px;">${currentFolderId ? "هذا المجلد فارغ" : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن"}</h3>
-        <p style="color: var(--color-text-secondary);">انقر على الزر الذي في الأعلى للبدء</p>
-      `;
+      const emptyState = createEmptyState({
+        variant: "panel",
+        icon: "folder",
+        title: currentFolderId
+          ? "هذا المجلد فارغ"
+          : "لم تقم بإنشاء أي امتحانات أو مجلدات حتى الآن",
+        subtitle: "انقر على الزر الذي في الأعلى للبدء",
+      });
       quizzesContainer.appendChild(emptyState);
     } else {
       currentChildren.forEach((item, index) => {

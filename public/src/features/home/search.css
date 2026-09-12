@@ -9,10 +9,11 @@
    =========================== */
 
 .header-search-btn {
+  /* Anchored to the header's lower-right corner (previously top-right). */
   position: absolute;
-  top: 16px;
+  bottom: 16px;
   right: 16px;
-  bottom: auto;
+  top: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,7 +28,8 @@
   transition:
     background 0.2s ease,
     transform 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    opacity 0.15s ease;
   z-index: 10;
 }
 
@@ -47,6 +49,16 @@
   border-color: rgba(255, 255, 255, 0.5);
 }
 
+/* Hidden while the search bar itself is expanded — independent of the
+   "no exams in this context" display:none set by SearchManager, so the two
+   reasons for hiding this button never fight over the same inline style.
+   See openSearchBar()/closeSearchBar() in search-manager.js. */
+.header-search-btn.is-bar-open {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.85);
+}
+
 .header-search-icon {
   width: 18px;
   height: 18px;
@@ -59,23 +71,30 @@
 /* ===========================
    SEARCH CONTAINER - Collapsible
    =========================== */
+/* Now positioned inside .header, anchored to the same lower-right corner
+   the trigger button occupies when closed — so opening the bar reads as
+   "the button turned into the input" rather than a new block appearing
+   elsewhere. Sits above the header's own bottom padding (see
+   .header { padding-bottom }). */
 
 .search-container {
+  position: absolute;
+  left: 24px;
+  right: 16px;
+  bottom: 16px;
   overflow: hidden;
   max-height: 0;
   opacity: 0;
-  margin-bottom: 0;
   transition:
     max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease,
-    margin-bottom 0.3s ease;
+    opacity 0.25s ease;
+  z-index: 9;
 }
 
 .search-container.is-open {
   max-height: 600px;
   /* large enough for filters panel */
   opacity: 1;
-  margin-bottom: 20px;
   animation: none;
   /* override old fadeInUp */
 }
@@ -98,6 +117,9 @@
     border-color 0.25s ease,
     box-shadow 0.25s ease;
   max-width: 420px;
+  /* Bar hugs the same right edge the trigger button sits at. */
+  margin-right: 0;
+  margin-left: auto;
 }
 
 .search-icon {
@@ -105,12 +127,44 @@
   height: 16px;
   opacity: 0.5;
   flex-shrink: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease;
   object-fit: contain;
 }
 
 .search-bar:focus-within .search-icon {
   opacity: 0.85;
+}
+
+/* Debounce-window feedback: while a keystroke is queued but not yet
+   searched (see handleSearchInput() in search-manager.js), fade the static
+   search icon out and a small spinner in, in the same slot — no layout
+   shift, and no new element when idle. Cleared as soon as performSearch()
+   actually runs. */
+.search-bar.is-searching .search-icon {
+  opacity: 0;
+  position: absolute;
+}
+
+.search-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: var(--color-primary, #0088cc);
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.search-bar.is-searching .search-spinner {
+  display: block;
+  animation: search-spinner-spin 0.7s linear infinite;
+}
+
+@keyframes search-spinner-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .search-input {
@@ -182,6 +236,26 @@
 .search-close.mode-clear {
   opacity: 1;
   color: var(--color-primary, #0088cc);
+}
+
+/* Two distinct icons for the merged button's two modes — an X to clear text,
+   a downward chevron to collapse the whole bar — so the difference is
+   visible at a glance, not just carried by aria-label/title text. Toggled by
+   .mode-clear (set in updateCloseButtonMode(), search-manager.js). */
+.search-close-icon {
+  display: none;
+}
+
+.search-close-icon--collapse {
+  display: block;
+}
+
+.search-close.mode-clear .search-close-icon--collapse {
+  display: none;
+}
+
+.search-close.mode-clear .search-close-icon--clear {
+  display: block;
 }
 
 .search-filters-toggle.active {
@@ -448,14 +522,20 @@
   .header-search-btn {
     width: 32px;
     height: 32px;
-    top: 12px;
+    bottom: 12px;
     right: 12px;
-    bottom: auto;
+    top: auto;
   }
 
   .header-search-icon {
     width: 16px;
     height: 16px;
+  }
+
+  .search-container {
+    left: 16px;
+    right: 12px;
+    bottom: 12px;
   }
 
   .search-bar {
@@ -502,8 +582,9 @@
 }
 
 @media (max-width: 480px) {
-  .search-container.is-open {
-    margin-bottom: 16px;
+  .search-container {
+    left: 12px;
+    right: 8px;
   }
 
   .search-bar {
