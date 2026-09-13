@@ -2,7 +2,29 @@
 
 ## STATUS (updated — read this first)
 
-**Section 9's production create-quiz click-freeze bug is now FIXED** — root
+**This pass re-verified every "Done" claim below directly against the
+uploaded working copy** (not re-derived from memory) and found the file-level
+claims for items 1–8 all still hold — `media-resolve.js` exists,
+`mediaBaseUrl` is threaded through `markdown.js`/`quiz.js`/`result.js`/
+`export-to-quiz.js` exactly as described, legacy `renderQuestionMedia`
+families are untouched in all three files, and the Section 9 `app:ready`
+fix is present in `create-quiz.js`. **However, Section 5
+(`create-quiz.js` insert-at-cursor UX) is NOT "not started" as the previous
+Remaining-items list claimed** — the working copy already contains a
+substantial, independently-built insert-at-cursor system
+(`setupMarkdownMediaDropzone`, `handleMarkdownMediaFile`,
+`MEDIA_TAG_BUILDERS`, per-textarea drag/paste wired via `setupMdEditor()`)
+that was evidently added in a separate pass not reflected in this plan's
+"Remaining" list. **This is the same code the "Unrelated regression" note
+under Section 9 already flagged** — it just wasn't connected back to
+Section 5's status here. New Section 10 below documents exactly what's
+there, how it diverges from Section 1's syntax, a second, already-present
+helper (`foldLegacyMediaIntoQuestionBody`) that further complicates the
+picture, and a recommended path to reconcile them. **Treat the old
+"Remaining item 1" as superseded by Section 10** — nothing else in
+Remaining items 2–4 has changed.
+
+**Section 9's production create-quiz click-freeze bug is FIXED** — root
 cause found by cloning the actual GitHub repo (not just this working
 copy/zip): a missing `app:ready` event dispatch left every click on the
 page silently swallowed forever by a click-guard script. See the
@@ -11,22 +33,20 @@ change applied so far: `document.dispatchEvent(new Event("app:ready"))`
 added to the end of `create-quiz.js`'s `DOMContentLoaded` handler.
 **Still needs a real-browser smoke test** before/alongside deploying —
 the event-timing mechanism is verified in isolation (standalone harness),
-not against the real page. A second, separate, NOT-yet-fixed regression
-was also found during this investigation (raw HTML media tags
-`create-quiz.js` still inserts on drag/paste, which `markdown.js` no
-longer renders after the bracket-syntax migration) — see the
-"Unrelated regression" note at the end of Section 9.
+not against the real page.
 
 Implementation resumed and completed Section 8, steps 1–4 in full, including
 substitute (automated, non-browser) verification passes for both step 3's
 syntax check and step 4's export-bundling change — see Done items below.
-Currently paused at the start of step 5 (`create-quiz.js` insert-at-cursor
-UX). **Nothing destructive has happened**: no Supabase writes, no legacy
-code deleted, no UI removed. Everything below is additive — the app should
-work exactly as it did before, with the new capability layered in alongside
-the old. A real-browser regression pass on `quiz.html`/`result.html`/a
-freshly-exported standalone quiz is still recommended before production
-migration (Section 7) — see the caveats noted under Done items 7 and 8.
+**Nothing destructive has happened**: no Supabase writes, no legacy
+code deleted, no UI removed. Everything in items 1–8 is additive — the app
+should work exactly as it did before, with the new capability layered in
+alongside the old. A real-browser regression pass on
+`quiz.html`/`result.html`/a freshly-exported standalone quiz is still
+recommended before production migration (Section 7) — see the caveats
+noted under Done items 7 and 8. Section 10's findings are read-only
+investigation from this pass — no code was changed there yet; see its
+"Recommended resolution" for what to do next.
 
 ### ✅ Done
 
@@ -185,21 +205,31 @@ migration (Section 7) — see the caveats noted under Done items 7 and 8.
 
 ### ⏳ Remaining (in order)
 
-1. **`create-quiz.js` + `create-quiz.html`** — build the insert-at-cursor
-   UX (file drop/paste inserts a markdown media tag into the focused
-   textarea instead of writing to a dedicated `q.image`/`q.audio`/`q.video`
-   field). Not started. Legacy dropzone/chip UI is untouched and still
-   fully functional in the meantime.
+1. ~~**`create-quiz.js` + `create-quiz.html`** — build the insert-at-cursor
+   UX~~ — **superseded, see Section 10.** This was marked "not started" in
+   the previous revision of this plan, which was wrong: an insert-at-cursor
+   system already exists in the working copy, built independently of this
+   plan's Section 1 syntax. It is not simply "done" either — it emits raw
+   HTML tags that the current `markdown.js` doesn't render, and disagrees
+   with a second, correct helper already present in the same file. Section
+   10 has the full picture and the recommended fix. Do not start a fresh
+   insert-at-cursor implementation without reading it — the work is mostly
+   there, just needs reconciling.
 
 2. **`ai-prompts.js`** — update the AI agent's JSON example to embed media
    inline via the new syntax instead of emitting `"audio"`/`"video"` keys.
-   Not started.
+   Not started. Confirmed still not started this pass (grepped
+   `ai-prompts.js` directly — the legacy `"audio"`/`"video"` example keys
+   are still there at their originally-cited line numbers). Recommend
+   doing this only after Section 10's reconciliation lands, so the prompt's
+   guidance matches whatever the editor actually produces.
 
 3. **Supabase backup, migration script, verification, then legacy code
    deletion** (Section 7 of this plan) — **not started, and per the
    original instruction, the backup must be taken and presented before any
    migration write happens.** No Supabase writes of any kind have occurred
-   yet; production data is untouched.
+   yet; production data is untouched. Confirmed this pass: no new Supabase
+   tool calls of any kind were made during this investigation.
 
 4. Final regression pass across the 20 previously-affected production
    quizzes plus a freshly-authored test quiz.
@@ -844,7 +874,7 @@ place because:
   intent of the guard script.
 
 ### Unrelated regression found during this investigation (separate bug,
-not yet fixed — flagging for a future pass)
+now folded into Section 10 below — see there for status)
 
 While tracing the actual GitHub history to find the above bug, found that
 commit `6bdabc40` ("Partial Markdown Engine Enhancements") added a new
@@ -866,10 +896,12 @@ likely render as escaped literal text (or a stripped/broken tag, depending
 on `escHtml`'s exact behavior on it) instead of a working image/audio/
 video embed. This is a separate, real regression from the click-freeze
 bug above, affects the create-quiz editor specifically (not the entry
-screen), and is NOT yet fixed — worth a dedicated follow-up: either
-restore HTML-tag support in `markdown.js` alongside the bracket syntax, or
-change `MEDIA_TAG_BUILDERS` in `create-quiz.js` to emit `![audio](url)`/
-`![video](url)` instead of raw tags, matching the rest of this plan's
-syntax. The second option is more consistent with Section 1 of this plan
-and Section 5's own "insert-at-cursor" design (which was written assuming
-bracket syntax, not raw tags) — recommend that path when this is picked up.
+screen). **Update (this pass): confirmed still live** — `markdown.js` has
+no HTML-tag sanitizer of any kind today (grepped for it directly), and
+`MEDIA_TAG_BUILDERS` in `create-quiz.js` still emits raw `<img>`/`<video>`/
+`<audio>` tags. See Section 10 for what was actually found in `create-quiz.js`
+this pass and the recommended resolution — the situation is more involved
+than "just switch the tag builders," because a second, independent
+migration-safe helper (`foldLegacyMediaIntoQuestionBody`) already emits the
+*correct* bracket syntax elsewhere in the same file, so the two code paths
+now disagree with each other, not just with the plan.

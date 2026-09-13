@@ -120,4 +120,4 @@ Think of a new way to download quizzes, maybe throug canva.
 Think about this suggestion, a new way to download quizzes.
 
 ### Profile Page
-Update the display of the top admins to be similar to YouTube: ![similar](image-1.png)  
+Update the display of the top admins to be similar to YouTube: ![similar](image-1.png)
