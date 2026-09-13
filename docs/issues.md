@@ -9,6 +9,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Search Bar in the Home Page
 ```md
+In `search.css`, `search-manager.js`, and `index.css`
 For the `.search-container`, it now has fucking annoying bottom padding on desktops and phones 
 
 ```css

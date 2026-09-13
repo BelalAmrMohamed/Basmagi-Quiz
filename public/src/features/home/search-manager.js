@@ -207,6 +207,9 @@ export class SearchManager {
     if (this.elements.searchSummary) {
       this.elements.searchSummary.style.display = "none";
     }
+    if (this.elements.headerEl) {
+      this.elements.headerEl.classList.remove("summary-is-open");
+    }
   }
 
   // ===========================
@@ -1081,6 +1084,17 @@ export class SearchManager {
       this.elements.searchSummary.style.display = hasActiveFilters
         ? "flex"
         : "none";
+    }
+    // Reserve extra room in .header only while the summary is actually
+    // showing, and only on phones (see .header.summary-is-open in
+    // index.css) — .search-bar-row wraps the summary onto its own line at
+    // that width, and without this the extra line has nowhere to go but
+    // overlap the header content above it.
+    if (this.elements.headerEl) {
+      this.elements.headerEl.classList.toggle(
+        "summary-is-open",
+        hasActiveFilters,
+      );
     }
 
     // Update active filter tags (only for course search)

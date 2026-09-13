@@ -593,14 +593,9 @@
     bottom: 8px;
   }
 
-  .search-bar-row {
-    align-items: flex-start;
-  }
-
   .search-bar {
     padding: 5px 8px;
     gap: 4px;
-    flex-shrink: 0;
   }
 
   .search-icon {
