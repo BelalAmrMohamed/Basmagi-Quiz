@@ -932,6 +932,12 @@ body.sidebar-expanded {
   transition: padding-bottom 0.2s ease;
 }
 
+/* @media (max-width: 768px) {
+  .header.is-open {
+    padding-bottom: var(--search-reserve-height);
+  }
+} */
+
 .header-clip {
   position: absolute;
   inset: 0;
@@ -941,10 +947,6 @@ body.sidebar-expanded {
   z-index: 0;
 }
 
-/* Two-tone top accent bar: thicker, gradient-glow effect.
-   Moved onto .header-clip (not .header) so it stays clipped to the header's
-   rounded corners regardless of whether search is open — see .header-clip
-   above. */
 .header-clip::before {
   content: "";
   position: absolute;
@@ -2983,6 +2985,9 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   text-align: center;
   padding: 80px 32px;
   margin: 0 auto;
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 480px;
 }
 
 .empty-state-icon {
