@@ -1,0 +1,7 @@
+npm notice run basamgi-quiz@8.3.0 dev:vercel
+npm notice run npx vercel dev --local --listen 8080
+npm notice run basamgi-quiz@8.3.0 npx
+npm notice run vercel dev --local --listen 8080
+Vercel CLI 59.9.1 (Node.js 24.19.0)
+Retrieving project…
+> Ready! Available at http://localhost:8080

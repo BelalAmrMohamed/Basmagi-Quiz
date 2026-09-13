@@ -917,6 +917,7 @@ document.addEventListener("DOMContentLoaded", () => {
   mountAIHelper();
   updateUndoRedoButtons();
   setupReorderHandles();
+  document.dispatchEvent(new Event("app:ready"));
 });
 
 // ============================================================================

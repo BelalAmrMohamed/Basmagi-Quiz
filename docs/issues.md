@@ -26,17 +26,17 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Make the favicon on the right and the text `امتحانات بصمجي` on the left, since this is an RTL Platform.
 - Put a transition on it. Because when opening/closing the side-menu on desktops, it appears instantly while the side-menu on desktops has a transition/animation.
 
-### Google Sign in on localhost.
-- Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
-- See ![screenshot of browser console errors](image.png)
-
-## New Features
-
 ### Admin actions and deletion flow (New Features)
 See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
 
 ### Markdown Engine
 - See [Mrkdown Media Migration Plan](plans/markdown-media-migration-plan.md)
+
+### Google Sign in on localhost.
+- Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
+- See ![screenshot of browser console errors](image.png)
+
+## New Features
 
 ### Result Pages
 
@@ -97,15 +97,13 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 ### About.html
 - Open-source Angle
 - Add a short testimonial or review
+`المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
 
-### about.html
-`المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
-
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
-Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases
+Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
 
 #### Control Page
 Allow the owner to change the level where users can use the (الباشــمبصمج), so if there is not that much usage, I can manually make the required level 1 or 2, and if there is so much usage I can make it 10 or more.
@@ -114,3 +112,12 @@ Allow the owner to change the level where users can use the (الباشــمب�
 I want an Idea to implement usage monitoring so I can monitor the uasge of the API Keys (specially of the free Google API Keys I got from Google AI Studio, they are the only ones that actually exist, and they are 2 free-tier api keys), so monitoring usage is actually important.
 
 I'm thinking of implementing it in about.html how-to-use-ai-agen.html or in another page. I want ideas.
+
+### Connect Canva
+Think of a new way to download quizzes, maybe throug canva.
+
+### Download as Python
+Think about this suggestion, a new way to download quizzes.
+
+### Profile Page
+Update the display of the top admins to be similar to YouTube: ![similar](image-1.png)  

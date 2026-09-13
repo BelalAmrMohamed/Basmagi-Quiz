@@ -2,6 +2,21 @@
 
 ## STATUS (updated — read this first)
 
+**Section 9's production create-quiz click-freeze bug is now FIXED** — root
+cause found by cloning the actual GitHub repo (not just this working
+copy/zip): a missing `app:ready` event dispatch left every click on the
+page silently swallowed forever by a click-guard script. See the
+"Resolution" subsection under Section 9 for full detail. One fix-sized
+change applied so far: `document.dispatchEvent(new Event("app:ready"))`
+added to the end of `create-quiz.js`'s `DOMContentLoaded` handler.
+**Still needs a real-browser smoke test** before/alongside deploying —
+the event-timing mechanism is verified in isolation (standalone harness),
+not against the real page. A second, separate, NOT-yet-fixed regression
+was also found during this investigation (raw HTML media tags
+`create-quiz.js` still inserts on drag/paste, which `markdown.js` no
+longer renders after the bracket-syntax migration) — see the
+"Unrelated regression" note at the end of Section 9.
+
 Implementation resumed and completed Section 8, steps 1–4 in full, including
 substitute (automated, non-browser) verification passes for both step 3's
 syntax check and step 4's export-bundling change — see Done items below.
@@ -653,6 +668,21 @@ After migration, before deleting any legacy code:
 
 ## 9. Follow-up issue (separate from the media migration): Start Screen UI Unresponsive
 
+**STATUS: ROOT CAUSE FOUND AND FIXED.** See "Resolution" at the end of this
+section. Root cause was NOT the modal-overlay/z-index hypothesis below —
+that investigation is kept for reference since it ruled out several real
+candidates, but the actual bug was in a different mechanism entirely: an
+early inline `<script>` in `create-quiz.html` (added in commit
+`0ed1ad57` / message "Updated create-quiz page", well before the
+markdown-migration commits) that swallows every click on any
+`[onclick]` element until `create-quiz.js` dispatches a custom
+`app:ready` event — a dispatch that was never actually added to
+`create-quiz.js`. So every click on the page was captured and silently
+discarded, forever, on every load. Confirmed via `git clone` of
+`https://github.com/BelalAmrMohamed/Basmagi-Quiz` (full history, not
+just this working copy) and a standalone event-timing harness
+reproducing the guard script's exact logic.
+
 **Reported:** `create-quiz.html` start screen — `.entry-item-new`, `.entry-item-draft`,
 `.entry-item`, and `.entry-item-more-wrap` menus are all unresponsive to
 clicks. No console errors on click.
@@ -730,8 +760,116 @@ clicks. No console errors on click.
    unlike `addEventListener`-based wiring), so this is a weaker hypothesis
    than the overlay one.
 
-This section was investigated but not fixed — the environment here has no
-live browser to confirm the hypothesis against actual computed styles/hit-
-testing, and the chat is wrapping up per the user's request. Start with
-step 1 above in a real browser session; it should immediately confirm or
-rule out the leading `.modal-overlay` hypothesis.
+The above (steps 1–3) was the investigation done with only a static code
+snapshot (this working copy/zip) available, before repo access was given.
+It's kept for reference since it's still useful defensive analysis (see
+"Notes" below), but it was superseded once the real repo history was
+accessible — see Resolution.
+
+### Resolution (found via full git history — `git clone` of the actual repo)
+
+**Root cause:** `create-quiz.html` contains an inline `<script>` (added in
+commit `0ed1ad57`, "Updated create-quiz page" — unrelated to and predating
+the markdown-migration work) titled `RACE-CONDITION FIX ("chooseEntryAction
+is not defined")`. It attaches a capture-phase `document` click listener
+that swallows (`stopImmediatePropagation()` + `preventDefault()`) every
+click on any element with an `onclick` attribute, until `create-quiz.js`
+dispatches a custom `app:ready` event signaling all its `window.*` handler
+assignments are attached. The comment even names the intended location:
+"added at the bottom of create-quiz.js, after all window.* assignments."
+
+**The bug:** that dispatch was never actually added to `create-quiz.js`.
+Confirmed by grepping the entire file — `app:ready` appears nowhere in it
+before this fix. So `appReady` never flips to `true`, and **every click on
+every `[onclick]` element on the page is silently discarded, forever, on
+every single page load** — not just entry-item tiles; anything using inline
+`onclick=` (which is most of this file's UI, per the "not just
+chooseEntryAction" line in the guard's own comment). This exactly matches
+the reported symptom: totally unresponsive clicks, zero console errors
+(the guard's `preventDefault`/`stopImmediatePropagation` are by design
+silent — there's nothing to throw).
+
+This also explains why earlier investigation of `.modal-overlay`/z-index
+stacking found nothing conclusive: the click was never reaching any
+element's real handler in the first place, regardless of what was or
+wasn't visually on top of it. `elementFromPoint()` would still have
+returned the correct clicked element (the guard runs on the `document`
+listener, not by hiding/intercepting hit-testing), which would have been
+a fast way to notice "the click event fires, but the button's own
+onclick handler visibly never runs" — pointing straight at a listener
+higher up the chain rather than a stacking/z-index problem.
+
+**Fix applied:** added `document.dispatchEvent(new Event("app:ready"))`
+at the end of `create-quiz.js`'s `DOMContentLoaded` handler, after every
+other init call (`setupEventListeners`, `setupKeyboardShortcuts`,
+`setupMenuBarListeners`, `setupEntryItemMenuListeners`,
+`setupQuestionMenuListeners`, `setupGlobalMdBar`, `mountAIHelper`,
+`updateUndoRedoButtons`, `setupReorderHandles`) — this is the correct
+place because:
+- All `window.<handler>` assignments (`chooseEntryAction`,
+  `toggleEntryItemMenu`, `renameEntryItem`, etc.) are top-level
+  `window.x = function(){}` statements evaluated when the module itself
+  parses, which happens before `DOMContentLoaded` fires at all — so
+  they're guaranteed already attached by the time this handler even
+  starts running, let alone by the time it finishes.
+- Placing it after the other setup calls (rather than at the very top of
+  the handler) also means listeners like `setupEventListeners()`'s
+  modal-outside-click handling are wired before the guard lifts, so
+  nothing can slip through in a half-initialized state.
+
+**Verified:**
+- `node --check` passes on the modified file.
+- Cloned the actual GitHub repo (`git clone
+  https://github.com/BelalAmrMohamed/Basmagi-Quiz`) and confirmed this
+  working copy's `create-quiz.js` is byte-identical (after CRLF
+  normalization) to `main` before the fix, so the diagnosis is against
+  the real, current production code, not a stale snapshot.
+- Built a standalone event-timing harness (`/home/claude/verify/test.mjs`,
+  scratch — not part of the repo) that reproduces the guard script's exact
+  listener logic from `create-quiz.html` verbatim, then simulates both the
+  broken (no dispatch) and fixed (dispatch at end of DOMContentLoaded)
+  behavior. Confirmed: without the dispatch, clicks are swallowed
+  indefinitely (2/2 swallowed, 0/2 allowed in the test); with it, clicks
+  are swallowed only until the dispatch fires, then pass through normally
+  (0/2 swallowed, 2/2 allowed after dispatch) — matching the intended
+  design exactly.
+- **Not yet done** (still needs a real browser, same limitation as
+  before): loading the actual page and clicking an entry-item tile to
+  confirm end-to-end. The harness proves the event-timing mechanism is
+  correct in isolation; it doesn't load the real `create-quiz.html`/
+  `create-quiz.js` together. Recommend a real-browser smoke test of the
+  entry screen (click "New quiz", click an existing draft, open the ⋮
+  menu) before/alongside deploying this fix, though the mechanism itself
+  is now well-understood and the fix directly addresses the documented
+  intent of the guard script.
+
+### Unrelated regression found during this investigation (separate bug,
+not yet fixed — flagging for a future pass)
+
+While tracing the actual GitHub history to find the above bug, found that
+commit `6bdabc40` ("Partial Markdown Engine Enhancements") added a new
+GitHub-style drag-and-drop/paste media uploader to `create-quiz.js`
+(`setupMarkdownMediaDropzone`, `handleMarkdownMediaFile`,
+`MEDIA_TAG_BUILDERS`) that inserts raw `<img>`/`<video>`/`<audio>` HTML
+tags directly into markdown textareas. The very next commit, `0d7dec75`
+(the actual media-migration work this plan documents), **deleted**
+`markdown.js`'s HTML-tag sanitizer (`embedInlineMediaTags`,
+`sanitizeMediaTag`, etc. — the code that used to turn those raw tags into
+real rendered elements) and replaced it with the `![audio](url)`/
+`![video](url)` bracket-syntax system this plan describes, without
+updating `create-quiz.js`'s still-current `MEDIA_TAG_BUILDERS` to match.
+
+**Net effect:** dragging or pasting a file into a question/option/
+explanation/answer field in the create-quiz editor now inserts an HTML tag
+that the current markdown renderer no longer recognizes as media — it will
+likely render as escaped literal text (or a stripped/broken tag, depending
+on `escHtml`'s exact behavior on it) instead of a working image/audio/
+video embed. This is a separate, real regression from the click-freeze
+bug above, affects the create-quiz editor specifically (not the entry
+screen), and is NOT yet fixed — worth a dedicated follow-up: either
+restore HTML-tag support in `markdown.js` alongside the bracket syntax, or
+change `MEDIA_TAG_BUILDERS` in `create-quiz.js` to emit `![audio](url)`/
+`![video](url)` instead of raw tags, matching the rest of this plan's
+syntax. The second option is more consistent with Section 1 of this plan
+and Section 5's own "insert-at-cursor" design (which was written assuming
+bracket syntax, not raw tags) — recommend that path when this is picked up.
