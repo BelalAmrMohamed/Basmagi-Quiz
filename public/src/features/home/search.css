@@ -209,14 +209,19 @@
   outline-offset: 2px;
 }
 
-/* Divider between the close/clear button and the filters toggle. Might need improvement or a different implementation */
-.search-close::after {
-  content: "";
-  position: absolute;
-  left: 39px;
-  width: 1px;
-  height: calc(100% - 14px);
-  background: var(--color-border);
+/* Divider between the close/clear button and the filters toggle.
+   Previously an absolutely-positioned ::after on .search-close with a
+   hardcoded `left: 39px` — since .search-close has no `position`, that
+   offset actually resolved against .search-bar (the nearest positioned
+   ancestor), not the button itself, so the line drifted out of place
+   whenever the bar's padding/gap/icon sizes changed (e.g. the 480px/768px
+   breakpoints in this file). A real border on the adjacent button tracks
+   the layout automatically and needs no magic number. Margin keeps it from
+   touching the icons on either side. */
+.search-filters-toggle {
+  border-inline-start: 1px solid var(--color-border);
+  margin-inline-start: 2px;
+  padding-inline-start: 6px;
 }
 
 .search-close:hover {
@@ -583,10 +588,6 @@
 }
 
 @media (max-width: 480px) {
-  .header.is-open {
-    padding-bottom: 96px;
-  }
-
   .search-container {
     left: 8px;
     right: 8px;
@@ -670,13 +671,11 @@
   }
 
   .header {
-    overflow: hidden;
     max-width: 100%;
   }
 
   .search-container {
     max-width: 100%;
-    overflow-x: hidden;
   }
 }
 

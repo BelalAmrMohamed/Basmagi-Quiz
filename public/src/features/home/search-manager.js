@@ -72,6 +72,7 @@ export class SearchManager {
     this.bindOutsideClick(); // NEW — closes the filters panel on an outside click
     this.setupKeyboardShortcuts();
     this.updateContextVisibility();
+    this.bindHeaderReserveHeight(); // NEW
   }
 
   /**
@@ -808,6 +809,53 @@ export class SearchManager {
         this.closeSearchBar();
       }
     });
+  }
+
+  /**
+   * NEW: Keep --search-reserve-height in sync with the search bar's actual
+   * rendered height, so .header.is-open's padding-bottom (search.css) can
+   * reserve exactly enough room instead of a fixed guess.
+   *
+   * Why this exists: .search-container is `position: absolute`, pinned to
+   * the bottom of .header, so it doesn't push .header's own height the way
+   * normal-flow content would — .header has to be told separately, via
+   * padding-bottom, how much extra room to leave. A single hardcoded value
+   * can't be right for every state: the bar alone is ~36-44px depending on
+   * breakpoint, but once the results summary + active-filter tags appear
+   * and .search-bar-row wraps (see the max-width:768px block in search.css),
+   * the same container can be 3x taller on a narrow phone. A fixed guess
+   * sized for one case is either wasted empty space in the other (the
+   * "too much space above the search bar" symptom) or not enough room.
+   *
+   * A ResizeObserver on .search-bar-row (the only in-flow child of
+   * .search-container — .search-filters is its own absolutely-positioned
+   * flyout and never affects this height) tracks every state change
+   * automatically: opening the bar, the summary/tags appearing or wrapping,
+   * font-size changes at different breakpoints, etc.
+   */
+  bindHeaderReserveHeight() {
+    const row = this.container
+      ? this.container.querySelector(".search-bar-row")
+      : null;
+    if (!row || !this.elements.headerEl) return;
+
+    const apply = () => {
+      const height = row.getBoundingClientRect().height;
+      this.elements.headerEl.style.setProperty(
+        "--search-reserve-height",
+        `${Math.ceil(height)}px`,
+      );
+    };
+
+    apply();
+    if (typeof ResizeObserver !== "undefined") {
+      this._searchRowResizeObserver = new ResizeObserver(apply);
+      this._searchRowResizeObserver.observe(row);
+    } else {
+      // Fallback for environments without ResizeObserver: re-measure on the
+      // events that are actually likely to change this height.
+      window.addEventListener("resize", apply);
+    }
   }
 
   /**

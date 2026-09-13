@@ -27,7 +27,9 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Right cliking a quiz shows the right-click menu "#userQuizContextMenu", then pressing the more button, opens `.exam-dropdown-menu` on top of the right-click menu (Incorrect Behavior): Only one menu should be open.
 
 ### `.sidebar-brand-link`
-But a transition on the `.sidebar-brand-link` for opening/closing side-menu on desktops, because the `.sidebar-brand-link` appears instantly while the side-menu on desktops has a transition.
+- Remove the link from that element and update its name, I don't want it to be a link (on all pages, including `documents-shell.js` and `quiz.html`).
+- Make the favicon on the right and the text `امتحانات بصمجي` on the left, since this is an RTL Platform.
+- Put a transition on it. Because when opening/closing the side-menu on desktops, it appears instantly while the side-menu on desktops has a transition/animation.
 
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
@@ -64,14 +66,18 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 
 ### Quiz Page
 - Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on, instead of .
-- Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view.
+- Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view, while preseving there progress perfectly, and preserving the question index they were on.
 
-### App SEO and GEO 
-- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
+#### Password
+Connect Password typing memory on the main page to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
 
 ### Settings Page
 - The page shows false/placeholder values at start, which confuses some users. Implement a loading skeleton/state before displaying any info.
 - The carrot on the dropdowns is too close to the left border, fix the padding/margin or whatever is wrong.
+- If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
+
+### App SEO and GEO 
+- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
 
 ### Translation and content expansion (Suggestion)
 - Add English translation support.
@@ -79,7 +85,8 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 ### Home Page
 
 #### Onboarding Pop Up `.landing-card`
-Make it a full screen, instead of a modal. Not a different page, but takes full width/height, no rounded corners.
+- Make it a full screen, instead of a modal. Not a different page, but takes full width/height, no rounded corners.
+- Redesign/Overhaul: I want new ideas/features for the landing card.
 
 #### Improvements
 - The side menu admin badge and favicon size should be improved visually.
@@ -88,9 +95,6 @@ Make it a full screen, instead of a modal. Not a different page, but takes full 
   - Extend the info in the course info modal, too.
   - Make an info modal for Folders.
   - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
-
-#### Password
-Connect Password typing memory on the main page to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
 
 ### URLs
 - Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
