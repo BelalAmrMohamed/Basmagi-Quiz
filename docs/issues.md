@@ -8,9 +8,11 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Search Bar in the Home Page
-- `search-close::after` fix it, it's not perfect. Or reimplement it in a different way.
-- Fix search input on phones, too much space above it. ![screenshot on phones](image-1.png). When I open the search, there is too much space above it, which is incorrect. At first I though it was accounting for the `.search-results-summary`, but it shouldn't account for it when it's not open, and even when it is open there is still to much space above them `.search-container`.
-- The `.search-filters` menu opens weirdly on phones. It's not visible, doesn't appear to be an actual menu, the problem is probably that it's opening within the `.search-container` or the `.header` itself, while on desktops it opens correctuly as expected.
+`.search-results-summary` on phones: messed up ![screenshot](image-2.png). It pushes the `.search-bar` up on content, instead of adding extra space to the `.header` for it.
+
+search is 10000000000% and shouldn't be touched in anyway, other AIs that worked on improving the search on phones seem to fuck it on desktops instead. The `.search-results-summary` is broken on phones only
+
+On desktops, the `.empty-state` isn't centered in the `#contentArea`, fix it without touching the `#contentArea` itself, not to mess it up and the other content that appears in it like the other AIs tend to do.
 
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.

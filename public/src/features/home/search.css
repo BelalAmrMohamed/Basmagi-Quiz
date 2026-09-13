@@ -519,7 +519,6 @@
 /* ===========================
    RESPONSIVE DESIGN
    =========================== */
-
 @media (max-width: 768px) {
   .header-search-btn {
     width: 32px;
