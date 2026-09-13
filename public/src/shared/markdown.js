@@ -63,7 +63,10 @@ export function unescapeHtmlEntities(s) {
 // Matches the skeleton markup quiz.js's dedicated-field media renderer uses,
 // so inline media looks and behaves identically (same CSS, same
 // initMediaSkeletons() reveal-on-load / retry-on-error logic in quiz.js).
-const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><div class="skeleton-block skeleton-media"></div><span class="media-skeleton-label">جاري التحميل…</span></div>`;
+// Exported (alongside renderInlineMediaTag) so export-to-quiz.js's
+// .toString()-based static-export bundler can inline both — renderInlineMediaTag
+// references this by bare closure, same situation as _HL_KEYWORDS/ICON_COPY.
+export const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><div class="skeleton-block skeleton-media"></div><span class="media-skeleton-label">جاري التحميل…</span></div>`;
 
 /**
  * Renders one inline media tag: ![audio](url) or ![video](url).
@@ -71,11 +74,14 @@ const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><
  * `.media-container`/skeleton wrapper, same YouTube-iframe branch for
  * video), so media embedded directly in markdown behaves exactly like the
  * legacy dedicated q.image/q.audio/q.video fields did.
+ * Exported so export-to-quiz.js's static-export bundler can import and
+ * .toString()-inline it (applyInline calls it by bare reference, same
+ * .toString()-serialization pattern as escHtml/highlightCode/etc below).
  * @param {"audio"|"video"} kind
  * @param {string} url
  * @param {string|null} mediaBaseUrl
  */
-function renderInlineMediaTag(kind, url, mediaBaseUrl) {
+export function renderInlineMediaTag(kind, url, mediaBaseUrl) {
   const safe = (v) => escHtml(unescapeHtmlEntities(v));
 
   if (kind === "video" && isYouTubeUrl(url)) {
@@ -1225,7 +1231,7 @@ export function _renderMarkdownCore(str, options = {}) {
   str = str.replace(
     /```passage\n?([\s\S]*?)```/gi,
     (_, body) => {
-      const innerHtml = _renderMarkdownCore(body.trim());
+      const innerHtml = _renderMarkdownCore(body.trim(), { mediaBaseUrl });
       return stashPush(`<div class="reading-passage">${innerHtml}</div>`);
     },
   );
@@ -1836,13 +1842,23 @@ export function scanDirections(container = document) {
  * already applied to every block and line.
  * Supports: KaTeX math, GFM tables, fenced code blocks with copy button,
  * reading passages (```passage … ```), headings, blockquotes, nested lists,
- * bold/italic, links, images.
+ * bold/italic, links, images, and inline audio/video media
+ * (`![audio](url)` / `![video](url)`, including YouTube auto-embed).
  *
  * @param {string} str — Raw Markdown input.
+ * @param {{mediaBaseUrl?: string|null}} [options] — Optional render options.
+ *   `mediaBaseUrl` is the directory URL of the current quiz/result page
+ *   (e.g. `new URL("./", window.location.href).href`), used to resolve
+ *   quiz-folder-relative media paths like `./assets/quiz-media/...` found
+ *   in `![audio](...)`/`![video](...)` tags. Callers rendering quiz content
+ *   (quiz.js, result.js, export-to-quiz.js) should pass this; callers
+ *   rendering non-quiz markdown (e.g. static pages) can omit it — relative
+ *   media paths simply won't resolve, matching prior behavior.
  * @returns {string}   — Safe HTML string ready for innerHTML.
  */
-export function renderMarkdown(str) {
+export function renderMarkdown(str, options = {}) {
   if (!str) return "";
+  const { mediaBaseUrl = null } = options;
   try {
     // SAFETY: the engine uses \x00/\x01/\x02/\x03 control-character
     // sentinels internally (stash placeholders for math, code blocks,
@@ -1853,7 +1869,7 @@ export function renderMarkdown(str) {
     // up front; they have no legitimate meaning in Markdown source.
     str = str.replace(/[\x00-\x03]/g, "");
 
-    const html = _renderMarkdownCore(str);
+    const html = _renderMarkdownCore(str, { mediaBaseUrl });
 
     // Apply direction classes to the rendered output.  We parse the HTML
     // string into a detached container, run the engine over it, then

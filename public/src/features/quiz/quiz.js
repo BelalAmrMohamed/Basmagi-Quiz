@@ -452,7 +452,7 @@ const renderReadingPassage = (passage) => {
   // The passage wrapper and per-element direction classes are handled
   // entirely by renderMarkdown (via the ```passage``` fence) and the
   // RTL/LTR engine embedded in it. No wrapper or alignClass needed here.
-  return `<div class="reading-passage" role="region" aria-label="Reading passage">${renderMarkdown(passage)}</div>`;
+  return `<div class="reading-passage" role="region" aria-label="Reading passage">${renderMarkdown(passage, { mediaBaseUrl: quizBaseUrl })}</div>`;
 };
 
 const applyMediaSrc = (media, url) => {
@@ -1736,7 +1736,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
+      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
     } else {
       if (isMultiple) {
         isCorrect =
@@ -1747,7 +1747,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
     }
   }
 
@@ -1785,7 +1785,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
          \`passage\` field. A <div> has no content-model restriction;
          role="heading" aria-level="2" preserves the same heading
          semantics for screen readers that the real <h2> provided. -->
-    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
+    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
   `;
 
   if (isEssay) {
@@ -1804,7 +1804,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
           ? `<div class="formal-answer">            
           <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
           <strong style="text-align: center;">الإجابة النموذجية</strong>
-          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div></div>`
+          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div></div>`
           : ""
         }
         <div class="${feedbackClass}">${feedbackText}</div>
@@ -1836,7 +1836,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       return `
         <div class="${optionClass}" ${isLocked ? "" : `onclick="window.handleSelectForQuestion(${idx}, ${i})"`}>
           <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
-          <span class="option-label">${renderMarkdown(opt)}</span>
+          <span class="option-label">${renderMarkdown(opt, { mediaBaseUrl: quizBaseUrl })}</span>
         </div>`;
     })
     .join("");
@@ -2054,7 +2054,7 @@ function buildQuestionBodyHTML(q, idx) {
       const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
       isCorrect = essayScore >= 3;
       feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`;
+      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
     } else {
       if (Array.isArray(correctIdx)) {
         isCorrect =
@@ -2065,7 +2065,7 @@ function buildQuestionBodyHTML(q, idx) {
         isCorrect = isAnswerCorrect(userSelected, correctIdx);
       }
       feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
     }
   }
 
@@ -2099,7 +2099,7 @@ function buildQuestionBodyHTML(q, idx) {
       ${actionButtons}
     </div>
     ${renderReadingPassage(q.passage)}
-    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q)}</div>
+    <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
   `;
 
   if (isEssay) {
@@ -2133,7 +2133,7 @@ function buildQuestionBodyHTML(q, idx) {
           <div class="formal-answer">
             <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
             <strong style="text-align: center;">الإجابة النموذجية</strong>
-            <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
+            <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>
           </div>
         `
           : ""
@@ -2181,7 +2181,7 @@ function buildQuestionBodyHTML(q, idx) {
               <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""
             } 
                      ${isLocked ? "disabled" : ""} aria-label="Option ${i + 1}">
-              <span class="option-label">${renderMarkdown(opt)}</span>
+              <span class="option-label">${renderMarkdown(opt, { mediaBaseUrl: quizBaseUrl })}</span>
             </div>`;
         })
         .join("")}

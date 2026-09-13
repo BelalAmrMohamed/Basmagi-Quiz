@@ -150,7 +150,7 @@ const renderReadingPassage = (passage) => {
   if (!passage) return "";
   return `
     <div class="reading-passage" role="region" aria-label="Reading passage">
-      ${renderMarkdown(passage)}
+      ${renderMarkdown(passage, { mediaBaseUrl: resultBaseUrl })}
     </div>
   `;
 };
@@ -909,11 +909,11 @@ function renderReview(container, questions, userAnswers) {
               : "essay-score-none";
 
       const userText = userAns
-        ? renderMarkdown(String(userAns))
+        ? renderMarkdown(String(userAns), { mediaBaseUrl: resultBaseUrl })
         : "<em>لم تُجِب</em>";
-      const formalText = renderMarkdown(getEssayAnswer(q));
+      const formalText = renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: resultBaseUrl });
       const explanationText = q.explanation
-        ? renderMarkdown(q.explanation)
+        ? renderMarkdown(q.explanation, { mediaBaseUrl: resultBaseUrl })
         : "";
 
       html += `
@@ -927,7 +927,7 @@ function renderReview(container, questions, userAnswers) {
             </div>
           </div>
           ${renderReadingPassage(q.passage)}
-          <div class="q-text">${renderMarkdown(q.q)}</div>
+          <div class="q-text">${renderMarkdown(q.q, { mediaBaseUrl: resultBaseUrl })}</div>
           ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
@@ -1007,13 +1007,13 @@ function renderReview(container, questions, userAnswers) {
           return `
           <div class="${optionClass}">
             <input type="${inputType}" name="${inputName}" ${isSelected ? "checked" : ""} disabled aria-label="Option ${i + 1}">
-            <span class="option-label">${renderMarkdown(opt)}</span>
+            <span class="option-label">${renderMarkdown(opt, { mediaBaseUrl: resultBaseUrl })}</span>
           </div>`;
         })
         .join("");
 
       const explanationText = q.explanation
-        ? renderMarkdown(q.explanation)
+        ? renderMarkdown(q.explanation, { mediaBaseUrl: resultBaseUrl })
         : "";
 
       html += `
@@ -1026,7 +1026,7 @@ function renderReview(container, questions, userAnswers) {
             </div>
           </div>
           ${renderReadingPassage(q.passage)}
-          <div class="q-text">${renderMarkdown(q.q)}</div>
+          <div class="q-text">${renderMarkdown(q.q, { mediaBaseUrl: resultBaseUrl })}</div>
           ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}

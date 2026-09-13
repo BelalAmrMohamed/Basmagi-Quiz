@@ -2,11 +2,16 @@
 
 ## STATUS (updated — read this first)
 
-Implementation started following the build order in Section 8. Work paused
-partway through Section 8, step 3, due to low credits. **Nothing destructive
-has happened**: no Supabase writes, no legacy code deleted, no UI removed.
-Everything below is additive — the app should work exactly as it did before,
-with the new capability layered in alongside the old.
+Implementation resumed and completed Section 8, steps 1–4 in full, including
+substitute (automated, non-browser) verification passes for both step 3's
+syntax check and step 4's export-bundling change — see Done items below.
+Currently paused at the start of step 5 (`create-quiz.js` insert-at-cursor
+UX). **Nothing destructive has happened**: no Supabase writes, no legacy
+code deleted, no UI removed. Everything below is additive — the app should
+work exactly as it did before, with the new capability layered in alongside
+the old. A real-browser regression pass on `quiz.html`/`result.html`/a
+freshly-exported standalone quiz is still recommended before production
+migration (Section 7) — see the caveats noted under Done items 7 and 8.
 
 ### ✅ Done
 
@@ -59,66 +64,146 @@ with the new capability layered in alongside the old.
      cells, paragraph text lines, headings, blockquotes, list items) to pass
      `{ mediaBaseUrl }` through.
 
+5. **`markdown.js`: `mediaBaseUrl` now threaded all the way to the public
+   entry point.** `renderMarkdown(str, options = {})` accepts and forwards
+   `{ mediaBaseUrl }` to `_renderMarkdownCore`. Also fixed a gap the original
+   plumbing missed: the recursive `_renderMarkdownCore` call inside the
+   ` ```passage ``` ` fence handler wasn't forwarding `mediaBaseUrl`, so an
+   `![audio](...)`/`![video](...)` tag placed inside a passage block would
+   have silently lost quiz-folder-relative URL resolution — fixed alongside
+   this edit. The file's header JSDoc already documented the final
+   `(str, options)` signature correctly, so no change was needed there.
+   Syntax-checked with `node --check` (passes).
+
+6. **`mediaBaseUrl` wired into every real `renderMarkdown(...)` call site**
+   in `quiz.js` and `result.js`.
+   - `quiz.js`: all 10 call sites now pass `{ mediaBaseUrl: quizBaseUrl }` —
+     `renderReadingPassage`, both explanation/feedback branches, `q.q`,
+     `getEssayAnswer(q)`, and each option — across **both** question-render
+     functions in the file (`buildVerticalQuestionBodyHTML` and
+     `buildQuestionBodyHTML`; there are two parallel render paths, not one —
+     worth being explicit here for whoever verifies next).
+   - `result.js`: all 8 call sites now pass `{ mediaBaseUrl: resultBaseUrl }`
+     — `renderReadingPassage`, the essay branch (`userText`, `formalText`,
+     explanation), and the MCQ branch (`q.q`, each option, explanation).
+   - Syntax-checked both files with `node --check` (both pass).
+
+7. **Automated verification of the new syntax's correctness** (substitute
+   for the manual-browser check step 3 called for — no live browser
+   available in this environment). Built a jsdom-based smoke test
+   (`/home/claude/mdtest/test.mjs`, scratch — not part of the repo) that
+   imports the actual `markdown.js`/`media-resolve.js` unmodified and
+   exercises `renderMarkdown()` directly. All 8 checks passed: plain-image
+   regression guard, relative-path audio/video resolution with
+   `mediaBaseUrl`, YouTube auto-embed detection, the "alt text merely
+   *contains* audio/video" false-positive guard, case-insensitive keyword
+   matching, media-inside-a-passage-fence (validates the recursive
+   `_renderMarkdownCore` fix from item 5 above end-to-end), and a
+   no-options-arg call (backward compatibility for any untouched legacy
+   call site).
+
+   **What this does NOT cover** (still needs a real browser pass): the
+   no-reload behavior on answer-select/lock described in Section 1.4 (that's
+   a live-DOM-mutation/timing property, not something a one-shot
+   `renderMarkdown()` string-output check can exercise), visual/CSS
+   rendering, and `initMediaSkeletons()`'s runtime retry behavior when a
+   primary candidate URL 404s. Recommend a real-browser pass on both
+   `quiz.html` and `result.html` before proceeding to production migration
+   (Section 7), even though the syntax itself is now confirmed correct.
+
+8. **`export-to-quiz.js` updated** so exported quizzes also get the new
+   inline media syntax. Investigated how the export bundles `renderMarkdown`
+   (per Remaining item 2's open question): it's an **inline-copy** approach
+   — `_renderMarkdownCore`/`renderMarkdown`/`applyInline`/etc. are
+   `.toString()`-serialized directly into the generated `<script>` block of
+   the downloaded standalone `.html`, not a shared-module reference (the
+   export has no build step and must be a single self-contained file).
+   Since `applyInline` now calls `renderInlineMediaTag`, which in turn
+   calls into `media-resolve.js`, and neither was previously exported or
+   inlined, exported quizzes would have thrown `ReferenceError` on any
+   `![audio]`/`![video]` tag. Fixed:
+   - Exported `renderInlineMediaTag` and `MD_MEDIA_SKELETON_HTML` from
+     `markdown.js` (previously module-private) so they're importable.
+   - Verified no naming collision between `media-resolve.js`'s
+     `resolveMediaUrl(url, baseUrl)` (quiz-folder-relative resolution) and
+     the *already-imported, differently-behaved* `resolveMediaUrl(url)`
+     from `media-url.js` (fixed-platform-origin resolution for legacy
+     `q.video`/`q.audio` fields) — only imported the 5 non-colliding names
+     actually needed (`getMediaUrlCandidates`, `getMediaMimeType`,
+     `isYouTubeUrl`, `getYouTubeVideoId`, `YOUTUBE_RE`), not
+     `resolveMediaUrl` itself, so both modules' same-purpose-different-
+     signature functions coexist safely.
+   - Added the `.toString()` inlining block to `export-to-quiz.js`, in
+     dependency order (`YOUTUBE_RE` → the 4 media-resolve helpers →
+     `MD_MEDIA_SKELETON_HTML` → `renderInlineMediaTag` → `applyInline`).
+     Caught a real bug in the first attempt: unlike every other inlined
+     dependency in that block (plain `function name() {}` declarations,
+     whose `.toString()` is already a self-declaring statement), the 4
+     media-resolve helpers are `const name = (...) => {}` arrow-function
+     exports — their bare `.toString()` is just an unassigned expression,
+     not a declaration. Each had to be wrapped as
+     `` const name = ${fn.toString()}; `` instead.
+   - Verified no scope collision with the export template's own
+     function-local `YOUTUBE_RE` inside `renderQuestionVideo` (that one is
+     `const`-scoped to that single method for the *legacy* dedicated-field
+     renderer the plan says not to touch — confirmed it doesn't shadow or
+     get shadowed by the new module-scope inlined one).
+   - **Verified with a second, targeted harness** (not just
+     inspection): reproduced the exact inlining pattern in a standalone
+     script and executed it with `new Function(...)`, exactly as a
+     browser parsing the downloaded `.html`'s `<script>` tag would (no ES
+     module system, no shared scope with `export-to-quiz.js` itself). All
+     5 checks passed: audio tag renders with correct resolved `src`,
+     video tag renders, YouTube URL auto-embeds, plain image is
+     unaffected, and the "alt text merely contains audio/video" false-positive
+     guard still correctly falls through to `<img>`. This caught that an
+     earlier harness draft's failure was its own setup gap (missing
+     `window.location`), not a defect in the inlined code — confirmed by
+     rerunning with a proper `window.location.origin` stand-in and getting
+     matching output to the `renderMarkdown()`-level test in item 7.
+   - Syntax-checked with `node --check` (passes).
+   - **Not yet done**: actually generating a real exported `.html` file
+     from a live quiz with inline media and opening it in a browser — the
+     harness proves the JS executes correctly standalone, but hasn't
+     confirmed visual/CSS parity or `initMediaSkeletons()` runtime retry
+     behavior inside a real downloaded file. Same caveat as item 7 above.
+
 ### ⏳ Remaining (in order)
 
-1. **`markdown.js`: finish threading `mediaBaseUrl` to the public entry
-   point.** `applyInline` and `_renderMarkdownCore` both accept the option
-   now, but the exported `renderMarkdown(str)` function itself does **not
-   yet** accept or forward `{ mediaBaseUrl }` — it still calls
-   `_renderMarkdownCore(str)` with no options. This is the very next edit
-   needed; until it's done, the new `mediaBaseUrl`-aware plumbing is
-   unreachable from any real caller. Also update the file's header JSDoc
-   comment block (already partially updated) to reflect the final signature.
-   **Run `node --check` on `markdown.js` after this edit** — it has not
-   been syntax-checked since the `applyInline`/`_renderMarkdownCore` edits.
-
-2. **Wire `mediaBaseUrl` into actual `renderMarkdown(...)` call sites** in
-   `quiz.js` (pass `{ mediaBaseUrl: quizBaseUrl }`) and `result.js` (pass
-   `{ mediaBaseUrl: resultBaseUrl }`) — every call site that renders `q.q`,
-   `q.passage`, `q.explanation`/`desc`/`info`, each option, and
-   `getEssayAnswer(q)`/user essay answers. Not yet started.
-
-3. **Manual/functional verification** of the new syntax before touching
-   anything else: hand-edit one non-production test quiz row (or a local
-   fixture) to embed `![audio](...)`/`![video](...)` directly in `q.q`,
-   confirm correct rendering on `quiz.html`, confirm no-reload behavior on
-   answer-select/lock, confirm rendering on `result.html`. Not yet done —
-   important to do before proceeding further, since everything after this
-   builds on the syntax actually working.
-
-4. **`export-to-quiz.js`** — determine how it currently bundles
-   `renderMarkdown` into its static export template (inline copy vs. shared
-   reference) and update accordingly so exported quizzes also get the new
-   syntax. Not started.
-
-5. **`create-quiz.js` + `create-quiz.html`** — build the insert-at-cursor
+1. **`create-quiz.js` + `create-quiz.html`** — build the insert-at-cursor
    UX (file drop/paste inserts a markdown media tag into the focused
    textarea instead of writing to a dedicated `q.image`/`q.audio`/`q.video`
    field). Not started. Legacy dropzone/chip UI is untouched and still
    fully functional in the meantime.
 
-6. **`ai-prompts.js`** — update the AI agent's JSON example to embed media
+2. **`ai-prompts.js`** — update the AI agent's JSON example to embed media
    inline via the new syntax instead of emitting `"audio"`/`"video"` keys.
    Not started.
 
-7. **Supabase backup, migration script, verification, then legacy code
+3. **Supabase backup, migration script, verification, then legacy code
    deletion** (Section 7 of this plan) — **not started, and per the
    original instruction, the backup must be taken and presented before any
    migration write happens.** No Supabase writes of any kind have occurred
    yet; production data is untouched.
 
-8. Final regression pass across the 20 previously-affected production
+4. Final regression pass across the 20 previously-affected production
    quizzes plus a freshly-authored test quiz.
 
 ### Notes for whoever picks this back up
 
-- All four modified files were shared as full-file downloads (not a diff)
-  since this session ended before they could be committed anywhere. Diff
-  them against the original zip to see exact changes if needed.
+- `media-resolve.js`, `markdown.js`, `quiz.js`, `result.js`, and
+  `export-to-quiz.js` have all been modified in place in this working copy
+  (not shared as standalone downloads this round) — diff against the
+  original zip/repo to see exact changes if needed.
 - `quiz.js` and `result.js` still contain their old `renderQuestionMedia`
-  family functions, fully intact — do not delete these until steps 1–3
-  above are verified working, per the plan's original sequencing in
-  Section 8.
+  family functions, fully intact — do not delete these until a real-browser
+  regression pass (see item 7/8's caveats above) confirms the new syntax
+  works end-to-end, per the plan's original sequencing in Section 8.
+- `export-to-quiz.js`'s legacy `renderQuestionImage`/`renderQuestionAudio`/
+  `renderQuestionVideo`/`renderQuestionMedia` methods (the ones baked into
+  the exported quiz's own `quizApp` object, used for the dedicated
+  `q.image`/`q.audio`/`q.video` fields) are likewise untouched and fully
+  intact — same "don't delete until verified" rule applies here.
 - The `export-to-quiz.js`, `create-quiz.js`, and `ai-prompts.js` files in
   the shared zip are **unmodified** — none of that work has started.
 

@@ -12,6 +12,26 @@ import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../../shared/
 // See public/src/shared/media-url.js for the full rationale.
 import { resolveMediaUrl, isLocalPath } from "../../shared/media-url.js";
 
+// Shared media resolution for INLINE markdown media tags (![audio](url)/
+// ![video](url)) — a deliberately separate module/name-space from
+// media-url.js above. media-url.js's resolveMediaUrl(url) resolves a
+// legacy dedicated q.image/q.audio/q.video field against a fixed platform
+// origin for standalone-file portability; media-resolve.js's
+// getMediaUrlCandidates(url, baseUrl)/getMediaMimeType/isYouTubeUrl/
+// getYouTubeVideoId resolve markdown-embedded media against the *quiz's
+// own* base URL (folder co-location) the same way quiz.js/result.js do.
+// No name collisions between the two modules' exports — verified before
+// adding this import. Only imported here so applyInline's dependency
+// renderInlineMediaTag (also imported below) can be .toString()-inlined
+// into the export template with a complete, standalone dependency chain.
+import {
+  getMediaUrlCandidates,
+  getMediaMimeType,
+  isYouTubeUrl,
+  getYouTubeVideoId,
+  YOUTUBE_RE,
+} from "../../shared/media-resolve.js";
+
 import {
   renderMarkdown,
   _renderMarkdownCore,
@@ -38,6 +58,8 @@ import {
   ICON_COPY,
   ICON_CHECK,
   COPY_LABEL,
+  renderInlineMediaTag,
+  MD_MEDIA_SKELETON_HTML,
 } from "../../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
@@ -2511,7 +2533,46 @@ ${quizInfoModalHtml}
   ${highlightCode.toString()}
 
   ${escHtml.toString()}
-  
+
+  // ── Inline markdown media (![audio](url)/![video](url)) dependencies ──
+  // Inlined in dependency order: media-resolve.js's helpers first (YOUTUBE_RE
+  // before isYouTubeUrl/getYouTubeVideoId, which close over it by bare
+  // reference), then MD_MEDIA_SKELETON_HTML (a bare-closure const reference
+  // inside renderInlineMediaTag, same .toString()-can't-carry-it situation
+  // as ICON_COPY/_HL_KEYWORDS elsewhere in this block), then
+  // renderInlineMediaTag itself, since applyInline (inlined next) calls it.
+  // NOTE: YOUTUBE_RE.toString() on a RegExp literal correctly round-trips
+  // through this template-literal interpolation (verified) — this is safe
+  // BECAUSE it's a \${...} interpolation of a runtime string value, unlike
+  // a literal /regex/ written directly in this file's own template-literal
+  // source text (see renderQuestionVideo's own comment on that distinct
+  // gotcha further down in this file).
+  //
+  // NOTE 2: unlike every other .toString()-inlined dependency in this
+  // block (all plain "function name(...) {}" declarations, whose
+  // .toString() is already a complete, self-declaring statement),
+  // getMediaUrlCandidates/getMediaMimeType/isYouTubeUrl/getYouTubeVideoId
+  // in media-resolve.js are declared as "const name = (...) => {...}"
+  // arrow functions. Their .toString() yields only the arrow-function
+  // *expression* ((url) => {...}), with no name and no declaration — a
+  // bare statement of that text is a syntactically-valid-but-useless
+  // no-op expression statement, NOT a declaration, so renderInlineMediaTag
+  // below would find these identifiers undefined at call time. Each one
+  // must be wrapped in its own "const <name> = <arrow-fn-text>;" here.
+  const YOUTUBE_RE = ${YOUTUBE_RE.toString()};
+
+  const getMediaUrlCandidates = ${getMediaUrlCandidates.toString()};
+
+  const getMediaMimeType = ${getMediaMimeType.toString()};
+
+  const isYouTubeUrl = ${isYouTubeUrl.toString()};
+
+  const getYouTubeVideoId = ${getYouTubeVideoId.toString()};
+
+  const MD_MEDIA_SKELETON_HTML = ${JSON.stringify(MD_MEDIA_SKELETON_HTML)};
+
+  ${renderInlineMediaTag.toString()}
+
   ${applyInline.toString()}
   
   ${_renderMarkdownCore.toString()}
