@@ -8,11 +8,18 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Search Bar in the Home Page
-`.search-results-summary` on phones: messed up ![screenshot](image-2.png). It pushes the `.search-bar` up on content, instead of adding extra space to the `.header` for it.
+```md
+For the `.search-container`, it now has fucking annoying bottom padding on desktops and phones 
 
-search is 10000000000% and shouldn't be touched in anyway, other AIs that worked on improving the search on phones seem to fuck it on desktops instead. The `.search-results-summary` is broken on phones only
+```css
+.header.is-open {
+  padding-bottom: var(--search-reserve-height);
+}
+```
+When I remove it: When I use the `.search-results-summary`, it now pushes the search bar above on top of content. 
 
-On desktops, the `.empty-state` isn't centered in the `#contentArea`, fix it without touching the `#contentArea` itself, not to mess it up and the other content that appears in it like the other AIs tend to do.
+I don't want any fucking extra padding on desktops nor on phones, I want that when the search-results-summary appears, it doesn't push the search bar above. Don't add any fucking extra padding, I DON'T WANT EXTRA PADDING, I DON'T WANT EXTRA PADDDDDDDDINGGGGGGGGGGGG. I want
+```
 
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
