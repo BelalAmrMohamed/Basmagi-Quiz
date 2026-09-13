@@ -3757,6 +3757,21 @@ body.reorder-mode-active .question-card {
   transform: none;
 }
 
+/* GitHub-style drag-and-drop media embedding: visual feedback while a file
+   is dragged over a markdown field (question text, options, explanation,
+   essay/formal answer — every .md-source textarea gets this via
+   setupMarkdownMediaDropzone). Mirrors the existing .media-dropzone.drag-active
+   treatment used by the legacy combined-media dropzone, applied to the
+   textarea's wrapper so the whole field visibly lights up as a drop target. */
+.wp-field:has(.md-source--drag-active) {
+  border-color: var(--gradient-start, #6366f1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gradient-start, #6366f1) 25%, transparent);
+}
+
+.md-source--drag-active {
+  background: color-mix(in srgb, var(--gradient-start, #6366f1) 6%, var(--color-background));
+}
+
 .wp-preview-pane {
   min-height: 60px;
   padding: 10px 14px;

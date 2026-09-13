@@ -7,21 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Search Bar in the Home Page
-```md
-In `search.css`, `search-manager.js`, and `index.css`
-For the `.search-container`, it now has fucking annoying bottom padding on desktops and phones 
-
-```css
-.header.is-open {
-  padding-bottom: var(--search-reserve-height);
-}
-```
-When I remove it: When I use the `.search-results-summary`, it now pushes the search bar above on top of content. 
-
-I don't want any fucking extra padding on desktops nor on phones, I want that when the search-results-summary appears, it doesn't push the search bar above. Don't add any fucking extra padding, I DON'T WANT EXTRA PADDING, I DON'T WANT EXTRA PADDDDDDDDINGGGGGGGGGGGG. I want
-```
-
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
@@ -50,14 +35,25 @@ Check the rules for creating امتحانات and copying them and moving them.
 ### Admin actions and deletion flow (New Features)
 See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
 
-### Markdown engine enhancement
-- Update the markdown engine to behave more like GitHub markdown rendering, with embeded media like vidoes, audio, and images.
-- It should be implemented after implementing media inside the quiz body in the `quiz.html` page.
-  - Because for some reason, the quiz page rerenders each time the user interacts with the quiz (presses a button), which reloads every videos, images, and audio. that's why media is currently out of the quiz body. We should fix that issue first, before migrating the media to be rendered through the markdown engine.
-  - The `export-to-quiz.js` feature renders media inside the question body, and doesn't rerender the question after each interaction, so you can learn from it.
-- After implementing this feature, migrate all quizzes to embed the media in the question body itself, and delete all legacy code related to the object media rendering, because now media will be in the question body itself.
-- This will allow quiz creators to add multiple pieces of media to each question or add media to options, explanations, and formal answers.
-- Now all quizzes created from the home page (index.html), create-quiz.html, or through the AI Agent, should use YouTube, images, audio, and vidoes using this way only. Users shouldn't be able to create Legacy YouTube, audio, images, and videos objects. 
+### Pending Continuism
+
+#### Markdown Engine Enhancement (Step 3: Migration & Cleanup)
+
+* Migrate existing quizzes' legacy `q.image`, `q.audio`, and `q.video` object fields into embedded markdown tags.
+* Delete the legacy rendering path, specifically `renderQuestionMedia` and related functions in both `quiz.js` and `export-to-quiz.js`.
+* Remove the old dedicated media dropzone UI in `create-quiz.js`.
+* Update the AI Agent system prompt in `ai-prompts.js` to stop emitting legacy media fields and instead embed media directly using the new Markdown syntax.
+
+---
+
+### 
+
+#### Active Issue: `create-quiz.html` Start Screen UI Unresponsive
+
+* Interactive elements on the start screen are completely unresponsive to clicks.
+* Affected buttons include `.entry-item-new` (start new quiz), `.entry-item-draft` (open draft), and `.entry-item` (choose existing quiz).
+* Menus, including `.entry-item-more-wrap`, fail to open or trigger actions.
+* The browser console logs no errors when these elements are clicked.
 
 ### Result Pages
 
@@ -123,4 +119,15 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
 
 ### about.html
-`المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom)
+`المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
+
+### Dynamic AI Agent Allowance (الباشــمبصمج)
+Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases
+
+#### Control Page
+Allow the owner to change the level where users can use the (الباشــمبصمج), so if there is not that much usage, I can manually make the required level 1 or 2, and if there is so much usage I can make it 10 or more.
+
+#### Monitor Usage
+I want an Idea to implement usage monitoring so I can monitor the uasge of the API Keys (specially of the free Google API Keys I got from Google AI Studio, they are the only ones that actually exist, and they are 2 free-tier api keys), so monitoring usage is actually important.
+
+I'm thinking of implementing it in about.html how-to-use-ai-agen.html or in another page. I want ideas.

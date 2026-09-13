@@ -189,6 +189,31 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   MEDIA EMBEDS (video / audio / YouTube) — GitHub-style inline media
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.md-embed {
+  margin: 8px 0;
+  display: flex;
+  justify-content: center;
+}
+.md-video,
+.md-video-embed {
+  max-width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+.md-video {
+  background: #000;
+}
+.md-audio {
+  max-width: 100%;
+  min-width: 240px;
+  display: block;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
    KATEX / MATH
    ══════════════════════════════════════════════════════════════════════════════ */
 

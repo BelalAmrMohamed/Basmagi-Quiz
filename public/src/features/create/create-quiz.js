@@ -276,7 +276,11 @@ function replaceTextareaRange(ta, start, end, text) {
 /** Wire up a Write/Preview field: auto-resize + onChange. Preview renders on-demand (tab switch).
  * Option fields (id starts with "option-text-") are compact, like a chat
  * reply box; everything else (question text, explanation, description)
- * gets the taller prompt-box sizing. */
+ * gets the taller prompt-box sizing.
+ * Also wires GitHub-style drag-and-drop/paste media embedding (see
+ * setupMarkdownMediaDropzone) — every field that goes through this
+ * function gets it for free: question text, options, explanation, and the
+ * essay/formal-answer editor. */
 function setupMdEditor(id, onChange) {
   const source = document.getElementById(id);
   if (!source) return;
@@ -291,6 +295,8 @@ function setupMdEditor(id, onChange) {
     autoResizeMdSource(source, minPx, maxPx);
     if (onChange) onChange(source.value);
   });
+
+  setupMarkdownMediaDropzone(source, onChange);
 }
 
 /** Insert/wrap markdown syntax at the cursor of a Write/Preview textarea */
@@ -2890,8 +2896,305 @@ function updateQuestionNumbers() {
 }
 
 // ============================================================================
-// QUESTION REORDERING
+// GITHUB-STYLE MEDIA EMBEDDING: drag-and-drop / paste into markdown fields
 // ============================================================================
+//
+// Mirrors GitHub's issue/release editor: dropping or pasting media into any
+// .md-source textarea (question text, options, explanation, essay/formal
+// answer — every field wired through setupMdEditor()) immediately inserts
+// an `![Uploading filename…]()` placeholder at the cursor so the author can
+// keep typing, uploads the file in the background using the exact same
+// Supabase Storage path already used by the legacy image/audio/video
+// dropzone (uploadCombinedMediaFile), then swaps the placeholder text for
+// the final <img>/<video>/<audio> tag once the upload finishes.
+//
+// Pasting a YouTube / image / video / audio URL (instead of a file) inserts
+// the URL as plain text — the shared markdown engine (markdown.js) already
+// auto-embeds bare media URLs on render, so no special tag is needed there.
+
+const MEDIA_TAG_BUILDERS = {
+  image: (url, filename, w, h) =>
+    `<img width="${w}" height="${h}" alt="${escapeHtml(filename)}" src="${escapeHtml(url)}" />`,
+  video: (url, filename, w, h) =>
+    `<video width="${w}" height="${h}" src="${escapeHtml(url)}" controls></video>`,
+  // Per spec: audio can only be resized horizontally — no height attribute.
+  audio: (url, filename, w) =>
+    `<audio width="${w}" src="${escapeHtml(url)}" controls></audio>`,
+};
+
+// Default sizing applied to a freshly-uploaded file, before the creator
+// drags to resize. Images/video get a sensible preview size; audio players
+// have a fixed native height so only width matters.
+const MEDIA_DEFAULT_DIMENSIONS = {
+  image: { width: 480, height: 320 },
+  video: { width: 480, height: 270 },
+  audio: { width: 320 },
+};
+
+/**
+ * Reads the natural width/height of an image or video File by loading it
+ * into a throwaway element, so the inserted tag's dimensions actually match
+ * the file's own aspect ratio (capped to a reasonable default width) rather
+ * than always using a fixed box. Falls back to MEDIA_DEFAULT_DIMENSIONS if
+ * the file can't be probed (e.g. an unsupported codec) or for audio, which
+ * has no visual dimensions to read.
+ */
+function probeMediaDimensions(file, mediaType) {
+  return new Promise((resolve) => {
+    if (mediaType === "audio") {
+      resolve(MEDIA_DEFAULT_DIMENSIONS.audio);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+    const fallback = () => {
+      cleanup();
+      resolve(MEDIA_DEFAULT_DIMENSIONS[mediaType]);
+    };
+    const maxWidth = MEDIA_DEFAULT_DIMENSIONS[mediaType].width;
+
+    if (mediaType === "image") {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / (img.naturalWidth || maxWidth));
+        cleanup();
+        resolve({
+          width: Math.round((img.naturalWidth || maxWidth) * scale),
+          height: Math.round((img.naturalHeight || maxWidth) * scale),
+        });
+      };
+      img.onerror = fallback;
+      img.src = url;
+    } else {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        const scale = Math.min(1, maxWidth / (video.videoWidth || maxWidth));
+        cleanup();
+        resolve({
+          width: Math.round((video.videoWidth || maxWidth) * scale),
+          height: Math.round((video.videoHeight || maxWidth) * scale),
+        });
+      };
+      video.onerror = fallback;
+      video.src = url;
+    }
+  });
+}
+
+/**
+ * Uploads a File to Supabase Storage using the same "quiz-media" bucket,
+ * per-user path convention, and compression step as the legacy combined
+ * media dropzone (uploadCombinedMediaFile), but returns the public URL
+ * instead of writing into a question.image/audio/video field. Throws with
+ * a user-facing Arabic message on any failure — callers should catch and
+ * surface it via showNotification.
+ */
+async function uploadMediaFileForMarkdown(file, mediaType) {
+  let workingFile = file;
+  if (mediaType === "image") {
+    workingFile = await compressImageFile(workingFile);
+  }
+
+  if (workingFile.size > MEDIA_MAX_SIZE[mediaType]) {
+    const maxMb = MEDIA_MAX_SIZE[mediaType] / (1024 * 1024);
+    throw new Error(
+      `الحد الأقصى لـ ${MEDIA_TYPE_LABELS[mediaType]} هو ${maxMb} ميجابايت.`,
+    );
+  }
+  if (workingFile.size === 0) {
+    throw new Error("الملف المحدد فارغ.");
+  }
+
+  const client = await ensureSharedSupabaseClient();
+  if (!client) {
+    throw new Error("تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.");
+  }
+  const { data: sessionData } = await client.auth.getSession();
+  if (!sessionData?.session) {
+    throw new Error("جلسة Supabase منتهية. أعد تسجيل الدخول.");
+  }
+
+  const uid = sessionData.session.user.id;
+  const ext = MEDIA_EXT_MAP[workingFile.type] || "bin";
+  const random = Math.random().toString(36).slice(2, 9);
+  const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
+
+  const { error: uploadError } = await client.storage
+    .from("quiz-media")
+    .upload(storagePath, workingFile, {
+      contentType: workingFile.type,
+      upsert: false,
+    });
+  if (uploadError) throw new Error(uploadError.message);
+
+  const { data: urlData } = client.storage
+    .from("quiz-media")
+    .getPublicUrl(storagePath);
+  if (!urlData?.publicUrl) throw new Error("تم الرفع لكن فشل توليد الرابط.");
+
+  return urlData.publicUrl;
+}
+
+/**
+ * Core GitHub-style upload flow for one File dropped/pasted into a
+ * .md-source textarea:
+ *   1. Insert `![Uploading filename…]()` at the cursor (undo-safe) so the
+ *      author can keep typing immediately.
+ *   2. Upload in the background.
+ *   3. Replace that exact placeholder text with the final media tag,
+ *      wherever it now sits in the textarea (the author may have moved
+ *      the cursor or typed more text around it in the meantime).
+ * Multiple concurrent uploads in the same field are supported since each
+ * one tracks its own unique placeholder string.
+ */
+async function handleMarkdownMediaFile(textarea, file, onChange) {
+  const mediaType = detectMediaTypeFromFile(file);
+  if (!mediaType) {
+    showNotification(
+      "نوع غير مدعوم",
+      `نوع الملف (${file.type || "غير معروف"}) غير مدعوم. الأنواع المدعومة: صور، صوت، فيديو.`,
+      "error",
+    );
+    return;
+  }
+
+  // Unique per-upload placeholder — lets several uploads run at once in the
+  // same field (e.g. two images dropped back-to-back) without colliding.
+  const uploadTag = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const placeholder = `![Uploading ${uploadTag}…]()`;
+
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+  replaceTextareaRange(textarea, start, end, placeholder);
+  autoResizeMdSource(
+    textarea,
+    textarea.id.startsWith("option-text-") ? 36 : 40,
+    textarea.id.startsWith("option-text-") ? 140 : 240,
+  );
+  if (onChange) onChange(textarea.value);
+
+  const replacePlaceholder = (replacementText) => {
+    const idx = textarea.value.indexOf(placeholder);
+    if (idx === -1) {
+      // The placeholder text is gone (author deleted it, or the field was
+      // rebuilt) — nothing sane to patch. The upload still completed
+      // successfully; the author just won't see it auto-inserted.
+      return;
+    }
+    replaceTextareaRange(textarea, idx, idx + placeholder.length, replacementText);
+    autoResizeMdSource(
+      textarea,
+      textarea.id.startsWith("option-text-") ? 36 : 40,
+      textarea.id.startsWith("option-text-") ? 140 : 240,
+    );
+    if (onChange) onChange(textarea.value);
+  };
+
+  try {
+    const [publicUrl, dims] = await Promise.all([
+      uploadMediaFileForMarkdown(file, mediaType),
+      probeMediaDimensions(file, mediaType),
+    ]);
+    const tag = MEDIA_TAG_BUILDERS[mediaType](
+      publicUrl,
+      file.name,
+      dims.width,
+      dims.height,
+    );
+    replacePlaceholder(tag);
+  } catch (err) {
+    console.error("[handleMarkdownMediaFile]", err);
+    replacePlaceholder(""); // remove the placeholder — the upload failed
+    showNotification(
+      "خطأ في الرفع",
+      err.message || "حدث خطأ أثناء رفع الملف.",
+      "error",
+    );
+  }
+}
+
+// Recognises a pasted/dropped bare URL that points at a YouTube video or a
+// direct image/video/audio file — same detection markdown.js itself uses
+// to auto-embed bare URLs, kept in sync here just for the "is this actually
+// media, or just a plain link" decision at paste time.
+function isEmbeddableMediaUrl(url) {
+  return !!detectMediaTypeFromUrl(url) || /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
+}
+
+/**
+ * Wires drag-and-drop and clipboard-paste media handling onto one
+ * .md-source textarea. Called once per field from setupMdEditor(), so
+ * every markdown field in the editor (question text, options, explanation,
+ * essay/formal answer) gets this for free.
+ */
+function setupMarkdownMediaDropzone(textarea, onChange) {
+  let dragDepth = 0;
+
+  textarea.addEventListener("dragenter", (e) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+    dragDepth++;
+    textarea.classList.add("md-source--drag-active");
+  });
+  textarea.addEventListener("dragover", (e) => {
+    if (!e.dataTransfer?.types?.includes("Files")) return;
+    e.preventDefault();
+  });
+  textarea.addEventListener("dragleave", () => {
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) textarea.classList.remove("md-source--drag-active");
+  });
+  textarea.addEventListener("drop", (e) => {
+    const files = e.dataTransfer?.files;
+    if (!files || !files.length) return;
+    e.preventDefault();
+    dragDepth = 0;
+    textarea.classList.remove("md-source--drag-active");
+    Array.from(files).forEach((file) =>
+      handleMarkdownMediaFile(textarea, file, onChange),
+    );
+  });
+
+  textarea.addEventListener("paste", (e) => {
+    // Case 1: an actual image/file sitting on the clipboard (e.g. a
+    // screenshot copied from the OS, or an image copied from a browser).
+    const fileItems = Array.from(e.clipboardData?.items || []).filter(
+      (item) => item.kind === "file",
+    );
+    if (fileItems.length) {
+      e.preventDefault();
+      fileItems.forEach((item) => {
+        const file = item.getAsFile();
+        if (file) handleMarkdownMediaFile(textarea, file, onChange);
+      });
+      return;
+    }
+
+    // Case 2: plain-text paste that happens to BE a media URL (YouTube
+    // link, direct image/video/audio link). Let it insert as plain text —
+    // markdown.js already auto-embeds bare media URLs at render time — but
+    // still route it through the normal undo-safe insertion path rather
+    // than the browser's default paste, for consistency with Case 1.
+    const text = e.clipboardData?.getData("text/plain");
+    if (text && isEmbeddableMediaUrl(text.trim())) {
+      e.preventDefault();
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      replaceTextareaRange(textarea, start, end, text.trim());
+      autoResizeMdSource(
+        textarea,
+        textarea.id.startsWith("option-text-") ? 36 : 40,
+        textarea.id.startsWith("option-text-") ? 140 : 240,
+      );
+      if (onChange) onChange(textarea.value);
+    }
+    // Anything else (plain text, non-media links): fall through to the
+    // browser's default paste behavior.
+  });
+}
+
+
 //
 // Previously implemented with native HTML5 drag-and-drop, armed from a
 // `.drag-handle` mousedown. That approach broke on touch devices: touchstart
