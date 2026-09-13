@@ -564,6 +564,89 @@ After migration, before deleting any legacy code:
 9. Final regression pass across all 20 previously-affected quizzes plus a
    freshly-authored test quiz using only the new UI.
 
-This order keeps the app fully functional at every intermediate step —
-nothing is deleted until its replacement is proven working end-to-end
-against real data.
+---
+
+## 9. Follow-up issue (separate from the media migration): Start Screen UI Unresponsive
+
+**Reported:** `create-quiz.html` start screen — `.entry-item-new`, `.entry-item-draft`,
+`.entry-item`, and `.entry-item-more-wrap` menus are all unresponsive to
+clicks. No console errors on click.
+
+**Investigation done (no code changed — read-only):**
+
+1. Confirmed `.entry-item-new` is static markup with
+   `onclick="chooseEntryAction('new')"`; `.entry-item-draft`/`.entry-item`/
+   `.entry-item-more-wrap` are generated dynamically by
+   `create-quiz.js` (~line 993-1039) with inline `onclick` handlers
+   (`toggleEntryItemMenu`, `renameEntryItem`, `chooseEntryAction`, etc.),
+   all exposed on `window.*`. Since clicking produces **zero console
+   errors** (a call to an undefined `window.*` function from an inline
+   `onclick` would throw a visible `ReferenceError`), the handlers
+   themselves are very likely intact and attached correctly — something is
+   more likely intercepting the click before it reaches the element.
+2. Checked every `position: fixed`/`inset: 0` full-viewport element in
+   `create-quiz.css` and `side-menu.css` for a stacking/pointer-events
+   problem:
+   - `.loading-overlay` (`z-index: 2000`) — starts `display:none` inline in
+     HTML; `showLoading()`/`hideLoading()` calls in `create-quiz.js` are all
+     inside user-triggered save/import flows, not page init, so it shouldn't
+     be stuck open on a fresh load. Not yet ruled out for a *specific*
+     repro path (e.g. if the user previously triggered an import/save that
+     errored between `showLoading()` and its `hideLoading()`).
+   - `.side-menu-backdrop` (`z-index: calc(var(--z-overlay,500) - 1)`) —
+     correctly guarded with `opacity:0; pointer-events:none` by default,
+     only `pointer-events:auto` when `.visible` is added. Low suspicion.
+   - **`.modal-overlay` (`z-index: 5000` — highest z-index found on the
+     page) — this is the leading suspect.** Three instances exist
+     (`#statsModal`, `#previewModal`, `#importModal`), all `display:none`
+     inline in the static HTML, but the CSS rule itself has **no
+     `pointer-events:none` fallback and no `display:none` baked into the
+     class** — visibility is entirely dependent on JS correctly toggling
+     the inline style/class every time. If any code path shows one of these
+     (e.g. `showPreviewModal`/`showStatsModal`/an import-flow error) and
+     then fails to hide it again — most likely because an error was thrown
+     *between* the show call and the matching hide call, or because closing
+     the modal only fades opacity without resetting `display` — the
+     resulting element would sit invisibly (or near-invisibly) on top of
+     the entire page at the highest z-index in the app, silently absorbing
+     every click with no console error, exactly matching the reported
+     symptom.
+   - The screenshot's live DOM snapshot also shows `<aside class="sidebar"
+     ... aria-hidden="false" ...>` where the static HTML source has
+     `aria-hidden="true"` by default — confirming *some* JS toggled sidebar
+     state at runtime in that session, though the sidebar itself is a
+     narrow fixed rail (`z-index:500`, well below the modal's `5000`) and
+     unlikely to be the actual blocker on its own.
+
+**Not yet done (next steps for whoever continues this):**
+
+1. **Reproduce live in a browser** (I do not have one in this environment)
+   and run, from the console: `document.elementFromPoint(x, y)` at the
+   coordinates of one of the unresponsive buttons. Whatever element that
+   returns *is* the thing eating the click — this single check will likely
+   confirm or rule out the `.modal-overlay` hypothesis immediately, far
+   faster than further static reading.
+2. If it confirms a stuck `.modal-overlay`: check `getComputedStyle()` on
+   `#statsModal`/`#previewModal`/`#importModal` for `display`/`opacity`/
+   `visibility`, identify which one is stuck open, then find the
+   show/hide function pair for that specific modal in `create-quiz.js` and
+   look for a code path that shows it without a matching hide — especially
+   any `try`/`catch` around an async import or stats-fetch flow where the
+   `hideLoading()`/close call sits in a `finally` for one modal but not
+   another (worth checking whether all three modals' close paths
+   consistently use `finally` or only some do).
+3. If `elementFromPoint` instead returns the actual clicked entry-item
+   button (ruling out an overlay), the next hypothesis is that
+   `setupEventListeners`/whatever re-renders the entry-item grid after data
+   loads is replacing the DOM nodes (e.g. via `innerHTML =`) *after* initial
+   listener setup in a way that orphans the originally-clicked elements —
+   though inline `onclick=` attributes are normally immune to this specific
+   failure mode (they're re-parsed fresh from the HTML string every time,
+   unlike `addEventListener`-based wiring), so this is a weaker hypothesis
+   than the overlay one.
+
+This section was investigated but not fixed — the environment here has no
+live browser to confirm the hypothesis against actual computed styles/hit-
+testing, and the chat is wrapping up per the user's request. Start with
+step 1 above in a real browser session; it should immediately confirm or
+rule out the leading `.modal-overlay` hypothesis.
