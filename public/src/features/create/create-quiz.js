@@ -917,6 +917,15 @@ document.addEventListener("DOMContentLoaded", () => {
   mountAIHelper();
   updateUndoRedoButtons();
   setupReorderHandles();
+
+  // Signals create-quiz.html's early "RACE-CONDITION FIX" click-guard
+  // (see the inline <script> right before this module's own <script> tag)
+  // that every window.<handler> used by inline onclick="..." attributes
+  // has been attached and all DOMContentLoaded setup above has finished,
+  // so it can stop swallowing clicks. Must fire — the guard was written
+  // expecting this dispatch and has no timeout/fallback, so omitting it
+  // (as this file previously did) left every inline-onclick click on the
+  // page silently swallowed forever, with no console error, on every load.
   document.dispatchEvent(new Event("app:ready"));
 });
 
@@ -2083,9 +2092,6 @@ window.addQuestion = function () {
     q: "",
     options: ["", ""],
     correct: [],
-    image: "",
-    audio: "",
-    video: "",
     explanation: "",
   };
 
@@ -2292,8 +2298,6 @@ function renderQuestion(question, insertAtIndex = null) {
                 </div>
             </div>
             
-            ${renderCombinedMediaSection(question)}
-            
             <div class="form-group">
                 <label><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح (اختياري)</label>
                 ${mdEditorHtml(`question-explanation-${question.id}`, question.explanation || "", "قدم تفسيرًا للإجابة الصحيحة", 1)}
@@ -2314,11 +2318,6 @@ function renderQuestion(question, insertAtIndex = null) {
 
   setupQuestionEventListeners(question.id);
   renderMathIn(questionCard);
-
-  // Load media previews if existing values present
-  if (question.image) updateImagePreview(question.id, question.image);
-  if (question.audio) updateAudioPreview(question.id, question.audio);
-  if (question.video) updateVideoPreview(question.id, question.video);
 }
 
 // Click on header area (but not buttons/drag) collapses the card
@@ -2367,9 +2366,6 @@ function setupQuestionEventListeners(questionId) {
   setupMdEditor(`question-text-${questionId}`, (val) =>
     updateQuestionData(questionId, "q", val),
   );
-
-  // Media section listeners (image, audio, video)
-  setupCombinedMediaListeners(questionId);
 
   // Explanation: inline md editor
   setupMdEditor(`question-explanation-${questionId}`, (val) =>
@@ -2510,369 +2506,9 @@ function detectMediaTypeFromUrl(url) {
   return null;
 }
 
-/** Which media field(s) a question currently has content in. */
-function getActiveMediaFields(question) {
-  return ["image", "audio", "video"].filter(
-    (t) => question[t] && question[t].trim(),
-  );
-}
-
+// Kept: still used by the insert-at-cursor upload path's error/success
+// notifications (uploadMediaFileForMarkdown, handleMarkdownMediaFile).
 const MEDIA_TYPE_LABELS = { image: "صورة", audio: "ملف صوتي", video: "فيديو" };
-const MEDIA_TYPE_ICONS = {
-  image: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`,
-  audio: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>`,
-  video: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`,
-};
-
-/**
- * Build the HTML for one question's combined media dropzone.
- * Shows a chip + preview for each media field that currently has content,
- * plus a single dropzone/link input to add another (or replace one).
- */
-function renderCombinedMediaSection(question) {
-  const qId = question.id;
-  const active = getActiveMediaFields(question);
-
-  const chips = active
-    .map((type) => {
-      const val = escapeHtml(question[type] || "");
-      return `
-        <div class="media-chip" id="media-chip-${type}-${qId}">
-          <div class="media-chip-header">
-            <span class="media-chip-label">${MEDIA_TYPE_ICONS[type]} ${MEDIA_TYPE_LABELS[type]}</span>
-            <button type="button" class="media-chip-remove" title="إزالة" aria-label="إزالة ${MEDIA_TYPE_LABELS[type]}" onclick="removeQuestionMedia(${qId}, '${type}')">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-            </button>
-          </div>
-          <input type="url" class="ltr media-chip-url" id="question-${type}-${qId}" value="${val}" placeholder="https://..." />
-          <div id="${type}-preview-${qId}" class="${type}-preview-container"></div>
-        </div>`;
-    })
-    .join("");
-
-  const dropzone = isAdmin
-    ? `
-      <div class="media-dropzone" id="media-dropzone-${qId}"
-           onclick="document.getElementById('media-upload-input-${qId}').click()"
-           ondragover="event.preventDefault();this.classList.add('drag-active')"
-           ondragleave="this.classList.remove('drag-active')"
-           ondrop="handleCombinedMediaDrop(event, ${qId})">
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <p>اسحب صورة أو صوت أو فيديو هنا<br><span>أو انقر للاختيار — أو الصق رابط YouTube أدناه</span></p>
-        <p class="upload-size-hint">صور حتى 5MB · صوت حتى 10MB · فيديو حتى 50MB (أو رابط YouTube)</p>
-      </div>
-      <input type="file" id="media-upload-input-${qId}" accept="${[...MEDIA_MIME_MAP.image, ...MEDIA_MIME_MAP.audio, ...MEDIA_MIME_MAP.video].join(",")}" style="display:none;" />
-      <div class="upload-progress" id="media-upload-progress-${qId}" style="display:none;">
-        <div class="upload-progress-bar" id="media-upload-progress-bar-${qId}"></div>
-        <span class="upload-progress-text" id="media-upload-progress-text-${qId}">جاري الرفع...</span>
-      </div>`
-    : "";
-
-  return `
-    <div class="form-group media-form-group">
-      <label>وسائط السؤال (اختيارية)</label>
-      ${chips}
-      ${dropzone}
-      <div class="media-link-row">
-        <input type="url" class="ltr" id="media-link-input-${qId}" placeholder="أو الصق رابط صورة / صوت / فيديو / YouTube هنا" />
-        <button type="button" class="btn btn-secondary btn-sm" onclick="addMediaFromLinkInput(${qId})">إضافة</button>
-      </div>
-    </div>`;
-}
-
-/** Wire listeners for one question's combined media dropzone + chip URL inputs + link-add row */
-function setupCombinedMediaListeners(questionId) {
-  // Chip URL inputs (for existing media, editable in place)
-  ["image", "audio", "video"].forEach((type) => {
-    const input = document.getElementById(`question-${type}-${questionId}`);
-    if (!input) return;
-    input.addEventListener(
-      "input",
-      debounce((e) => {
-        updateQuestionData(questionId, type, e.target.value);
-        updateMediaPreview(questionId, type, e.target.value);
-      }, 500),
-    );
-    if (input.value) updateMediaPreview(questionId, type, input.value);
-  });
-
-  // Quick-add link row
-  const linkInput = document.getElementById(`media-link-input-${questionId}`);
-  if (linkInput) {
-    linkInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        addMediaFromLinkInput(questionId);
-      }
-    });
-  }
-
-  if (!isAdmin) return;
-
-  const fileInput = document.getElementById(`media-upload-input-${questionId}`);
-  if (fileInput) {
-    fileInput.addEventListener("change", () => {
-      if (fileInput.files && fileInput.files[0]) {
-        uploadCombinedMediaFile(questionId, fileInput.files[0]);
-      }
-    });
-  }
-}
-
-/** Add media from the free-text link input, auto-detecting its type */
-window.addMediaFromLinkInput = function (questionId) {
-  const linkInput = document.getElementById(`media-link-input-${questionId}`);
-  if (!linkInput) return;
-  const url = linkInput.value.trim();
-  if (!url) return;
-
-  const type = detectMediaTypeFromUrl(url);
-  if (!type) {
-    showNotification(
-      "تعذّر تحديد نوع الرابط",
-      "تأكد أن الرابط ينتهي بامتداد صورة/صوت/فيديو معروف، أو أنه رابط YouTube.",
-      "error",
-    );
-    return;
-  }
-
-  updateQuestionData(questionId, type, url);
-  linkInput.value = "";
-  rerenderCombinedMedia(questionId);
-};
-
-/** Remove one media field from a question and re-render the dropzone section */
-window.removeQuestionMedia = function (questionId, type) {
-  updateQuestionData(questionId, type, "");
-  rerenderCombinedMedia(questionId);
-};
-
-/** Re-render just the media section for a question, in place */
-function rerenderCombinedMedia(questionId) {
-  const question = quizData.questions.find((q) => q.id === questionId);
-  if (!question) return;
-  const card = document.getElementById(`question-${questionId}`);
-  const oldSection = card?.querySelector(".media-form-group");
-  if (!oldSection) return;
-  const wrapper = document.createElement("div");
-  wrapper.innerHTML = renderCombinedMediaSection(question);
-  const newSection = wrapper.firstElementChild;
-  oldSection.replaceWith(newSection);
-  setupCombinedMediaListeners(questionId);
-}
-
-/** Render the preview for a given media field/type */
-function updateMediaPreview(questionId, type, url) {
-  if (type === "image") updateImagePreview(questionId, url);
-  if (type === "audio") updateAudioPreview(questionId, url);
-  if (type === "video") updateVideoPreview(questionId, url);
-}
-
-/** Handle a file dropped on the combined dropzone */
-window.handleCombinedMediaDrop = function (e, questionId) {
-  e.preventDefault();
-  const zone = document.getElementById(`media-dropzone-${questionId}`);
-  if (zone) zone.classList.remove("drag-active");
-  const file = e.dataTransfer?.files?.[0];
-  if (file) uploadCombinedMediaFile(questionId, file);
-};
-
-/**
- * Upload a media file directly to Supabase Storage, auto-detecting its
- * type (image/audio/video) from its MIME type, then route it into the
- * matching question field. No Vercel serverless function needed.
- */
-async function uploadCombinedMediaFile(questionId, inputFile) {
-  let file = inputFile;
-  const mediaType = detectMediaTypeFromFile(file);
-  if (!mediaType) {
-    showNotification(
-      "نوع غير مدعوم",
-      `نوع الملف (${file.type || "غير معروف"}) غير مدعوم. الأنواع المدعومة: صور، صوت، فيديو.`,
-      "error",
-    );
-    return;
-  }
-
-  const progressEl = document.getElementById(
-    `media-upload-progress-${questionId}`,
-  );
-  const progressBar = document.getElementById(
-    `media-upload-progress-bar-${questionId}`,
-  );
-  const progressTxt = document.getElementById(
-    `media-upload-progress-text-${questionId}`,
-  );
-  const zone = document.getElementById(`media-dropzone-${questionId}`);
-
-  if (mediaType === "image") {
-    if (progressEl) progressEl.style.display = "flex";
-    if (progressBar) progressBar.style.width = "10%";
-    if (progressTxt) progressTxt.textContent = "جاري ضغط الصورة...";
-    if (zone) zone.style.opacity = "0.5";
-    file = await compressImageFile(file);
-  }
-
-  if (file.size > MEDIA_MAX_SIZE[mediaType]) {
-    const maxMb = MEDIA_MAX_SIZE[mediaType] / (1024 * 1024);
-    showNotification(
-      "الملف كبير جدًا",
-      `الحد الأقصى لـ ${MEDIA_TYPE_LABELS[mediaType]} هو ${maxMb} ميجابايت.`,
-      "error",
-    );
-    return;
-  }
-  if (file.size === 0) {
-    showNotification("ملف فارغ", "الملف المحدد فارغ.", "error");
-    return;
-  }
-
-  if (progressEl) progressEl.style.display = "flex";
-  if (progressBar) progressBar.style.width = "20%";
-  if (progressTxt) progressTxt.textContent = "جاري الاتصال...";
-  if (zone) zone.style.opacity = "0.5";
-
-  try {
-    const client = await ensureSharedSupabaseClient();
-    if (!client)
-      throw new Error(
-        "تعذّر الاتصال بـ Supabase. حاول تسجيل الخروج والدخول مجدداً.",
-      );
-
-    const { data: sessionData } = await client.auth.getSession();
-    if (!sessionData?.session) {
-      throw new Error("جلسة Supabase منتهية. أعد تسجيل الدخول.");
-    }
-
-    if (progressBar) progressBar.style.width = "40%";
-    if (progressTxt) progressTxt.textContent = "جاري الرفع...";
-
-    const uid = sessionData.session.user.id;
-    const ext = MEDIA_EXT_MAP[file.type] || "bin";
-    const random = Math.random().toString(36).slice(2, 9);
-    const storagePath = `${mediaType}s/${uid}/${Date.now()}-${random}.${ext}`;
-
-    const { error: uploadError } = await client.storage
-      .from("quiz-media")
-      .upload(storagePath, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (uploadError) throw new Error(uploadError.message);
-
-    if (progressBar) progressBar.style.width = "90%";
-
-    const { data: urlData } = client.storage
-      .from("quiz-media")
-      .getPublicUrl(storagePath);
-
-    if (!urlData?.publicUrl) throw new Error("تم الرفع لكن فشل توليد الرابط.");
-
-    const publicUrl = urlData.publicUrl;
-
-    updateQuestionData(questionId, mediaType, publicUrl);
-    rerenderCombinedMedia(questionId);
-
-    if (progressBar) progressBar.style.width = "100%";
-    if (progressTxt) progressTxt.textContent = "تم الرفع بنجاح ✓";
-    setTimeout(() => {
-      const stillProgressEl = document.getElementById(
-        `media-upload-progress-${questionId}`,
-      );
-      if (stillProgressEl) stillProgressEl.style.display = "none";
-    }, 2000);
-
-    showNotification(
-      "تم الرفع",
-      `تم رفع ${MEDIA_TYPE_LABELS[mediaType]} بنجاح وحفظ الرابط.`,
-      "success",
-    );
-  } catch (err) {
-    console.error("[uploadCombinedMediaFile]", err);
-    if (progressEl) progressEl.style.display = "none";
-    showNotification(
-      "خطأ في الرفع",
-      err.message || "حدث خطأ أثناء رفع الملف.",
-      "error",
-    );
-  } finally {
-    const stillZone = document.getElementById(`media-dropzone-${questionId}`);
-    if (stillZone) stillZone.style.opacity = "";
-  }
-}
-
-function updateImagePreview(questionId, imageUrl) {
-  const previewContainer = document.getElementById(
-    `image-preview-${questionId}`,
-  );
-  if (!previewContainer) return;
-
-  if (!imageUrl || !imageUrl.trim()) {
-    previewContainer.innerHTML = "";
-    return;
-  }
-
-  previewContainer.innerHTML =
-    '<div class="image-loading"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-loader-circle-icon lucide-loader-circle"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> جاري تحميل الصورة...</div>';
-
-  const img = new Image();
-  img.onload = function () {
-    previewContainer.innerHTML = `<img src="${escapeHtml(imageUrl)}" alt="معاينة الصورة" class="image-preview">`;
-  };
-  img.onerror = function () {
-    previewContainer.innerHTML =
-      '<div class="image-error"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-off-icon lucide-image-off"><line x1="2" x2="22" y1="2" y2="22"/><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/><line x1="13.5" x2="6" y1="13.5" y2="21"/><line x1="18" x2="21" y1="12" y2="15"/><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/><path d="M21 15V5a2 2 0 0 0-2-2H9"/></svg> فشل تحميل الصورة. تحقق من الرابط.</div>';
-  };
-  img.src = imageUrl;
-}
-
-function updateAudioPreview(questionId, audioUrl) {
-  const container = document.getElementById(`audio-preview-${questionId}`);
-  if (!container) return;
-  if (!audioUrl || !audioUrl.trim()) {
-    container.innerHTML = "";
-    return;
-  }
-  container.innerHTML = `
-    <audio class="question-audio-preview" controls preload="metadata">
-      <source src="${escapeHtml(audioUrl)}">
-      متصفحك لا يدعم تشغيل الصوت.
-    </audio>`;
-}
-
-function updateVideoPreview(questionId, videoUrl) {
-  const container = document.getElementById(`video-preview-${questionId}`);
-  if (!container) return;
-  if (!videoUrl || !videoUrl.trim()) {
-    container.innerHTML = "";
-    return;
-  }
-
-  // YouTube embed
-  const ytMatch = videoUrl.match(
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/,
-  );
-  if (ytMatch) {
-    container.innerHTML = `
-      <div class="video-preview-embed">
-        <iframe
-          src="https://www.youtube.com/embed/${ytMatch[1]}"
-          frameborder="0" allowfullscreen
-          loading="lazy"
-          title="معاينة الفيديو"
-        ></iframe>
-      </div>`;
-    return;
-  }
-
-  // Direct video file
-  container.innerHTML = `
-    <video class="question-video-preview" controls preload="metadata">
-      <source src="${escapeHtml(videoUrl)}">
-      متصفحك لا يدعم تشغيل الفيديو.
-    </video>`;
-}
 
 function updateQuestionData(questionId, field, value) {
   const question = quizData.questions.find((q) => q.id === questionId);
@@ -2906,7 +2542,7 @@ function updateQuestionNumbers() {
 // an `![Uploading filename…]()` placeholder at the cursor so the author can
 // keep typing, uploads the file in the background using the exact same
 // Supabase Storage path already used by the legacy image/audio/video
-// dropzone (uploadCombinedMediaFile), then swaps the placeholder text for
+// dropzone (uploadMediaFileForMarkdown), then swaps the placeholder text for
 // the final <img>/<video>/<audio> tag once the upload finishes.
 //
 // Pasting a YouTube / image / video / audio URL (instead of a file) inserts
@@ -2986,7 +2622,7 @@ function probeMediaDimensions(file, mediaType) {
 /**
  * Uploads a File to Supabase Storage using the same "quiz-media" bucket,
  * per-user path convention, and compression step as the legacy combined
- * media dropzone (uploadCombinedMediaFile), but returns the public URL
+ * media dropzone this replaces, but returns the public URL
  * instead of writing into a question.image/audio/video field. Throws with
  * a user-facing Arabic message on any failure — callers should catch and
  * surface it via showNotification.
@@ -4265,11 +3901,39 @@ function updateAutosaveIndicator(status) {
 }
 
 /**
+ * Fold legacy dedicated `image`/`audio`/`video` fields into the question
+ * body's own markdown as `![audio](url)`/`![video](url)`/`![alt](url)`
+ * tags, then strip the dedicated fields — so any pre-migration quiz opened
+ * for editing (a local draft, a shared/admin quiz, or a hand-crafted
+ * import) immediately looks and behaves like a native new-syntax quiz in
+ * the editor, with nothing left for the removed dropzone UI to read.
+ * Order (image, then audio, then video) matches the DB migration script
+ * in Section 7 of the migration plan, each on its own line. No-op if none
+ * of the three legacy fields are present.
+ */
+function foldLegacyMediaIntoQuestionBody(q) {
+  if (!q || (!q.image?.trim() && !q.audio?.trim() && !q.video?.trim())) {
+    return q;
+  }
+  const tags = [];
+  if (q.image?.trim()) tags.push(`![صورة توضيحية للسؤال](${q.image.trim()})`);
+  if (q.audio?.trim()) tags.push(`![audio](${q.audio.trim()})`);
+  if (q.video?.trim()) tags.push(`![video](${q.video.trim()})`);
+  const { image, audio, video, ...rest } = q;
+  const body = (rest.q || "").trim();
+  return {
+    ...rest,
+    q: body ? `${body}\n\n${tags.join("\n")}` : tags.join("\n"),
+  };
+}
+
+/**
  * Convert a question from the saved (exported) format back to the editor's
  * internal format.  Essay questions are stored as { q, answer } in
  * user_quizzes but the editor always uses { q, options: [answer] }.
  */
 function normalizeQuestionForEditor(q) {
+  q = foldLegacyMediaIntoQuestionBody(q);
   if (!Array.isArray(q.options)) {
     // Essay: answer field present, no options array. `answer` here becomes
     // the editor's isEssay marker (see ESSAY_MARKER) — it must stay
@@ -5462,14 +5126,16 @@ window.processImport = async function () {
       } else {
         importedCorrect = [];
       }
-      const question = {
+      const question = foldLegacyMediaIntoQuestionBody({
         id: questionId,
         q: q.q || "",
         options: q.options || ["", ""],
         correct: importedCorrect,
         image: q.image || "",
+        audio: q.audio || "",
+        video: q.video || "",
         explanation: q.explanation || "",
-      };
+      });
       quizData.questions.push(question);
       renderQuestion(question);
     });
