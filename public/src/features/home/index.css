@@ -3095,10 +3095,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     border-radius: 18px;
   }
 
-  /* .header.is-open {
-    padding-bottom: 96px;
-  } */
-
   .header h1 {
     font-size: 1.75rem;
   }

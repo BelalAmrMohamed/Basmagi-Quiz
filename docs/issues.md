@@ -8,12 +8,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 ## Patches
 
 ### Search Bar in the Home Page
-- `search-close::after` fix it
-- Fix Fix search input on phones, too much space above it.
-- Modal opens weirdly on phones.
+- `search-close::after` fix it, it's not perfect. Or reimplement it in a different way.
+- Fix search input on phones, too much space above it. ![screenshot on phones](image-1.png). When I open the search, there is too much space above it, which is incorrect. At first I though it was accounting for the `.search-results-summary`, but it shouldn't account for it when it's not open, and even when it is open there is still to much space above them `.search-container`.
+- The `.search-filters` menu opens weirdly on phones. It's not visible, doesn't appear to be an actual menu, the problem is probably that it's opening within the `.search-container` or the `.header` itself, while on desktops it opens correctuly as expected.
 
-
-All what happened in the last go is that `.header-search-icon` has less space between it and the bottom border of `.header`
 ### Courses & Folders OG Images
 - Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
