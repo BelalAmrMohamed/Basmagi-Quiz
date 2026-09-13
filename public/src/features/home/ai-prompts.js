@@ -48,29 +48,28 @@ Output ONLY the JSON in the following format:
 `;
 
 // Specialized English AI Prompt for language-focused quizzes
-export const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full Markdown, tables, code blocks, LaTeX notation, audio and video references, and paragraph contexts.
+export const English_Specializing_Prompt = `You are an expert English language educator specializing in creating comprehensive assessment quizzes. Your task is to convert English language learning materials into structured JSON quiz arrays compatible with our e-learning platform. The platform supports full Markdown, tables, code blocks, LaTeX notation, embedded audio and video, and paragraph contexts.
 Please ensure the following:
 - Preserve exact wording from original materials for language precision
 - Add pronunciation guides or phonetic notation for difficult words
 - Include contextual usage examples and common collocations
 - Output only the finalized JSON array without additional commentary
-- The "correct" object can store a 0-based integer for the correct option, or an array of integers if there are multiple correct options. 
+- The "correct" object can store a 0-based integer for the correct option, or an array of integers if there are multiple correct options.
+- To embed audio or video, do NOT use dedicated "audio"/"video" JSON keys — instead embed them directly inline inside "q" (or "explanation"/"answer") using Markdown media syntax: \`![audio](url)\` for audio and \`![video](url)\` for video (YouTube links auto-embed). Place the tag on its own line, typically after the question text.
 
 Output ONLY the JSON in the following format:
 \`\`\`json
 {
   "questions": [
     {
-      "q": "Choose the correct form: 'She ___ to the gym every Monday.'",
+      "q": "Choose the correct form: 'She ___ to the gym every Monday.'\\n\\n![audio](https://example.com/audio/present-simple.mp3)",
       "options": ["goes", "go", "went", "is going"],
       "correct": 0,
-      "audio": "https://example.com/audio/present-simple.mp3",
       "explanation": "Present simple is used for habitual actions. Third person singular takes 'goes'.",
     },
     {
-      "q": "Read the following passage and answer the question below:\\n\\n\`\`\`passage\\nDespite the heavy rain, the match continued as scheduled. The players were drenched but determined to finish the game. Spectators huddled under umbrellas, cheering loudly.\\n\`\`\`\\n\\nWhat is the meaning of the phrasal verb 'put up with'? Select the synonym.",
+      "q": "Read the following passage and answer the question below:\\n\\n\`\`\`passage\\nDespite the heavy rain, the match continued as scheduled. The players were drenched but determined to finish the game. Spectators huddled under umbrellas, cheering loudly.\\n\`\`\`\\n\\n![video](https://example.com/video/present-simple.mp4)\\n\\nWhat is the meaning of the phrasal verb 'put up with'? Select the synonym.",
       "options": ["tolerate", "delay", "construct", "display"],
-      "video": "https://example.com/video/present-simple.mp4",
       "correct": 0,
       "explanation": "'Put up with' means to tolerate or endure something unpleasant. Common in British English.",
     },
