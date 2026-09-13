@@ -19,6 +19,13 @@ import {
 } from "../../shared/rate-answers.js";
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import {
+  getMediaUrlCandidates as _getMediaUrlCandidates,
+  resolveMediaUrl as _resolveMediaUrl,
+  renderMediaElement as _renderMediaElement,
+  isYouTubeUrl,
+  getYouTubeVideoId,
+} from "../../shared/media-resolve.js";
+import {
   buildQuizInfoModalHtml,
   fetchCreatorProfile,
 } from "../../components/quiz-info-modal/quiz-info-html.js";
@@ -285,15 +292,9 @@ window.handleSelectForQuestion = (qIdx, optIdx) => {
     userAnswers[qIdx] = optIdx;
   }
 
-  lastChangedIdx = qIdx; // kept: still used by vertical bookmark/flag renders
+  lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   saveStateDebounced();
-  // Media-embedding fix: patch this specific card in place instead of
-  // calling renderQuestion() → renderAllQuestionsVertical(), which would
-  // innerHTML this card's .reloadable-context and remount any media
-  // embedded in the question/option markdown.
-  if (!patchQuestionCard(qIdx)) {
-    renderQuestion();
-  }
+  renderQuestion();
   renderMenuNavigationDebounced();
   maybeAutoSubmit();
 };
@@ -311,13 +312,10 @@ window.checkAnswerForQuestion = (qIdx) => {
     // For multiple choice, ensure answer exists (could be empty array)
     if (Array.isArray(userAnswer) && userAnswer.length === 0) return;
   }
-  lastChangedIdx = qIdx; // kept: still used by vertical bookmark/flag renders
+  lastChangedIdx = qIdx; // Bug 2 Fix: only rebuild this card
   lockedQuestions[qIdx] = true;
   saveStateDebounced();
-  // Media-embedding fix: patch in place (see patchQuestionCard above).
-  if (!patchQuestionCard(qIdx)) {
-    renderQuestion();
-  }
+  renderQuestion();
   renderMenuNavigationDebounced();
   updateNav();
 };
@@ -362,88 +360,18 @@ const MEDIA_SKELETON_HTML = `
     <span class="media-skeleton-label">جاري التحميل…</span>
   </div>`;
 
-// Build candidate URLs for a media path (site-root assets, then quiz-folder).
-const getMediaUrlCandidates = (url) => {
-  const trimmed = String(url || "").trim();
-  if (!trimmed) return [];
-  if (/^(https?:|data:|blob:)/i.test(trimmed)) return [trimmed];
-
-  const candidates = [];
-  const add = (candidate) => {
-    if (candidate && !candidates.includes(candidate))
-      candidates.push(candidate);
-  };
-
-  try {
-    if (trimmed.startsWith("/")) {
-      add(new URL(trimmed, window.location.origin).href);
-      return candidates;
-    }
-
-    // Convention: ./assets/… lives under public/assets/ (site root)
-    if (/^\.\/assets\//i.test(trimmed) || /^assets\//i.test(trimmed)) {
-      const sitePath = trimmed.replace(/^\.\//, "/");
-      add(new URL(sitePath, window.location.origin).href);
-    }
-
-    // Quiz-folder relative: co-located media (e.g. Test 1/Recording.mp3)
-    if (quizBaseUrl) {
-      add(new URL(trimmed, quizBaseUrl).href);
-      const fileName = trimmed.split("/").pop();
-      if (fileName && fileName !== trimmed) {
-        add(new URL(fileName, quizBaseUrl).href);
-      }
-    }
-
-    add(new URL(trimmed, window.location.href).href);
-  } catch {
-    add(trimmed);
-  }
-
-  return candidates;
-};
-
-const resolveMediaUrl = (url) => getMediaUrlCandidates(url)[0] || "";
-
-const getMediaMimeType = (url) => {
-  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
-  const types = {
-    mp3: "audio/mpeg",
-    wav: "audio/wav",
-    ogg: "audio/ogg",
-    m4a: "audio/mp4",
-    aac: "audio/aac",
-    mp4: "video/mp4",
-    webm: "video/webm",
-    ogv: "video/ogg",
-    mov: "video/quicktime",
-  };
-  return types[ext] || "";
-};
-
-const renderMediaElement = (tag, className, mediaUrl) => {
-  const src = resolveMediaUrl(mediaUrl);
-  // Do NOT add cache-busting to the initial src — it forces a network fetch
-  // on every render (even same-question re-renders) and prevents the browser
-  // from restoring the cached resource on page reload, which is the primary
-  // reason timestamp restoration was failing. Cache-busting is only applied
-  // by applyMediaSrc() when retrying a failed candidate URL.
-  const mime = getMediaMimeType(src);
-  const typeAttr = mime ? ` type="${escapeHtml(mime)}"` : "";
-  const candidates = escapeHtml(
-    JSON.stringify(getMediaUrlCandidates(mediaUrl)),
-  );
-  const raw = escapeHtml(mediaUrl);
-  const fallback =
-    tag === "audio"
-      ? "متصفحك لا يدعم تشغيل الصوت."
-      : "متصفحك لا يدعم تشغيل الفيديو.";
-  const playsinline = tag === "video" ? " playsinline" : "";
-  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHtml(src)}" data-media-raw="${raw}" data-media-candidates="${candidates}">
-        <source src="${escapeHtml(src)}"${typeAttr} />
-        ${fallback}
-      </${tag}>`;
-};
+// Media URL resolution, MIME sniffing, YouTube detection, and the bare
+// <audio>/<video> element renderer now live in the shared media-resolve.js
+// module (also used by result.js and by markdown.js's inline ![audio]/
+// ![video] tag renderer, so there's a single source of truth instead of
+// three diverging copies). Thin wrappers below bind the module's
+// `baseUrl` parameter to this page's `quizBaseUrl` so existing call sites
+// in this file don't need to change.
+const getMediaUrlCandidates = (url) =>
+  _getMediaUrlCandidates(url, quizBaseUrl);
+const resolveMediaUrl = (url) => _resolveMediaUrl(url, quizBaseUrl);
+const renderMediaElement = (tag, className, mediaUrl) =>
+  _renderMediaElement(tag, className, mediaUrl, quizBaseUrl);
 
 // === Helper: Render Question Image ===
 const renderQuestionImage = (imageUrl, resizeKey) => {
@@ -474,17 +402,6 @@ const renderQuestionAudio = (audioUrl, resizeKey) => {
       ${renderMediaElement("audio", "question-audio", audioUrl)}
     </div>
   `;
-};
-
-// Bug 4 Fix: detect YouTube URLs and extract the video ID.
-const YOUTUBE_RE =
-  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-
-const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
-
-const getYouTubeVideoId = (url) => {
-  const m = String(url || "").match(YOUTUBE_RE);
-  return m ? m[1] : null;
 };
 
 const renderQuestionVideo = (videoUrl, resizeKey) => {
@@ -2370,193 +2287,6 @@ function renderFullQuestionCard(q, idx, largeClass, mediaHTML, bodyHTML) {
   `;
 }
 
-// === Media-safe DOM patching ===
-// Media-embedding fix: handleSelect()/checkAnswer()/etc. used to call
-// renderQuestion(), which — even on its "same question" fast path — did
-// `reloadableEl.innerHTML = bodyHTML`, and bodyHTML always re-runs
-// renderMarkdown() on the question text, every option, and the
-// explanation. That's harmless for plain text, but now that markdown can
-// embed <img>/<video>/<audio>/YouTube directly in question text, options,
-// or explanations, replacing that innerHTML on every click would unmount
-// and reload any media sitting inside it — exactly the bug this project
-// exists to fix. Same root cause as the old q.image/q.audio/q.video
-// re-mount bug, just one layer deeper (inside markdown-rendered text
-// instead of the dedicated media siblings).
-//
-// The fix mirrors export-to-quiz.js's approach: interaction handlers no
-// longer touch .reloadable-context.innerHTML at all. They patch the
-// existing option-row classes/inputs, the check-answer button, and the
-// feedback block directly. Full HTML rebuilds (via renderQuestion()) are
-// reserved for actual navigation to a different question, where a fresh
-// mount is correct and expected.
-//
-// The .feedback block's explanation HTML (see patchFeedback) is populated
-// with renderMarkdown(explanation) exactly once, at the moment a question
-// is first locked — that's genuinely new content appearing for the first
-// time, not a remount of something that was already on screen, so it's
-// safe even if the explanation itself contains embedded media.
-function patchOptionRows(container, q, idx, { isLocked }) {
-  const isMultiple = Array.isArray(q.correct ?? q.answer);
-  const correctIdx = q.correct ?? q.answer;
-  const userSelected = userAnswers[idx];
-  const rows = container.querySelectorAll(".options-grid .option-row");
-
-  rows.forEach((row, i) => {
-    let isSelected;
-    if (isMultiple) {
-      isSelected = Array.isArray(userSelected) && userSelected.includes(i);
-    } else {
-      isSelected = userSelected === i;
-    }
-
-    const input = row.querySelector("input");
-    row.classList.toggle("selected", isSelected);
-    if (input) input.checked = isSelected;
-
-    if (isLocked) {
-      const isCorrectOption = isMultiple
-        ? Array.isArray(correctIdx) && correctIdx.includes(i)
-        : i === correctIdx;
-      row.classList.add("locked");
-      row.classList.toggle("correct", isCorrectOption);
-      row.classList.toggle("wrong", isSelected && !isCorrectOption);
-      if (input) input.disabled = true;
-      row.removeAttribute("onclick");
-    } else {
-      row.classList.remove("locked", "correct", "wrong");
-      if (input) input.disabled = false;
-      row.setAttribute("onclick", `window.handleSelect(${i})`);
-    }
-  });
-}
-
-function patchCheckButton(container, { disabled, hidden }) {
-  const btn = container.querySelector(".check-answer-btn");
-  if (!btn) return;
-  btn.disabled = !!disabled;
-  btn.classList.toggle("hidden", !!hidden);
-}
-
-function patchFeedback(container, q, idx, { isLocked }) {
-  const feedbackEl = container.querySelector(".feedback");
-  if (!feedbackEl) return;
-
-  if (!isLocked) {
-    feedbackEl.className = "feedback";
-    return;
-  }
-
-  const isEssay = isEssayQuestion(q);
-  const userSelected = userAnswers[idx];
-  const explanationText =
-    q.explanation || q.desc || q.info || "No explanation provided.";
-  // Rendered once, right when the question becomes locked — see note above.
-  const alreadyRendered = feedbackEl.dataset.renderedForIdx === String(idx) &&
-    feedbackEl.dataset.rendered === "1";
-
-  let isCorrect = false;
-  if (isEssay) {
-    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
-    isCorrect = essayScore >= 3;
-    feedbackEl.className = "feedback essay-feedback show";
-  } else {
-    const correctIdx = q.correct ?? q.answer;
-    if (Array.isArray(correctIdx)) {
-      isCorrect =
-        Array.isArray(userSelected) &&
-        userSelected.length === correctIdx.length &&
-        correctIdx.every((i) => userSelected.includes(i));
-    } else {
-      isCorrect = isAnswerCorrect(userSelected, correctIdx);
-    }
-    feedbackEl.className = `feedback show ${isCorrect ? "correct" : "wrong"}`;
-  }
-
-  if (!alreadyRendered) {
-    feedbackEl.innerHTML = isEssay
-      ? `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText)}</div>`
-      : `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText)}</div></div>`;
-    feedbackEl.dataset.renderedForIdx = String(idx);
-    feedbackEl.dataset.rendered = "1";
-  }
-}
-
-// Patches an already-mounted question card's interactive state (selection,
-// lock state, feedback) in place, without touching any markdown-rendered
-// media inside it. Returns false if the card isn't mounted (caller should
-// fall back to a full render).
-function patchQuestionCard(idx, { scrollFeedbackIntoView = false } = {}) {
-  const card =
-    quizStyle === "vertical"
-      ? document.getElementById(`q-${idx}`)
-      : els.questionContainer.querySelector(
-        `.question-card[data-question-index="${idx}"]`,
-      );
-  if (!card) return false;
-  const reloadableEl = card.querySelector(".reloadable-context");
-  if (!reloadableEl) return false;
-
-  const q = questions[idx];
-  const isLocked = !!lockedQuestions[idx];
-  const isEssay = isEssayQuestion(q);
-  const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
-
-  if (!isEssay) {
-    patchOptionRows(reloadableEl, q, idx, { isLocked });
-    const userSelected = userAnswers[idx];
-    const isMultiple = Array.isArray(q.correct ?? q.answer);
-    const checkDisabled = isMultiple
-      ? !Array.isArray(userSelected) || userSelected.length === 0
-      : userSelected === undefined;
-    patchCheckButton(reloadableEl, {
-      disabled: checkDisabled,
-      hidden: isLocked || !showCheckButton,
-    });
-  } else {
-    const textarea = reloadableEl.querySelector(
-      'textarea[id^="essayInput"]',
-    );
-    const btn = reloadableEl.querySelector(".check-answer-btn");
-    if (btn) {
-      const val = userAnswers[idx];
-      btn.disabled = !val || String(val).trim() === "";
-      btn.classList.toggle("hidden", isLocked || !showCheckButton);
-    }
-    if (textarea && isLocked) {
-      textarea.disabled = true;
-      textarea.classList.add("locked");
-    }
-    // The model-answer block only exists once an essay is locked, and an
-    // essay never unlocks — so this only ever needs to be INSERTED once,
-    // never removed or replaced. Safe to build fresh here since nothing
-    // was on screen before it.
-    if (isLocked && !reloadableEl.querySelector(".formal-answer")) {
-      const essayScore = gradeEssay(userAnswers[idx], getEssayAnswer(q));
-      const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-      const formalAnswerHTML = `
-        <div class="formal-answer">
-          <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
-          <strong style="text-align: center;">الإجابة النموذجية</strong>
-          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q))}</div>
-        </div>
-      `;
-      if (btn) {
-        btn.insertAdjacentHTML("afterend", formalAnswerHTML);
-      } else {
-        reloadableEl.insertAdjacentHTML("beforeend", formalAnswerHTML);
-      }
-    }
-  }
-
-  patchFeedback(reloadableEl, q, idx, { isLocked });
-
-  if (isLocked && scrollFeedbackIntoView) {
-    // no-op placeholder for future UX (kept explicit rather than implicit)
-  }
-
-  return true;
-}
-
 // === Event Handlers ===
 function handleSelect(index) {
   if (lockedQuestions[currentIdx]) return;
@@ -2582,15 +2312,8 @@ function handleSelect(index) {
   }
 
   saveStateDebounced();
-  lastChangedIdx = currentIdx; // kept: still used by vertical bookmark/flag renders
-  // Media-embedding fix: patch this card's DOM in place instead of calling
-  // renderQuestion() (which would innerHTML the .reloadable-context and
-  // remount any media embedded in the question/option markdown).
-  if (!patchQuestionCard(currentIdx)) {
-    // Defensive fallback if the card isn't mounted as expected.
-    renderQuestion();
-  }
-  updateNav();
+  lastChangedIdx = currentIdx; // Bug 2 Fix: tag for targeted pagination re-render
+  renderQuestion();
   renderMenuNavigationDebounced();
   maybeAutoSubmit();
 }
@@ -2837,12 +2560,7 @@ function checkAnswer() {
 
   lockedQuestions[currentIdx] = true;
   saveStateDebounced();
-  // Media-embedding fix: patch in place (see patchQuestionCard) rather than
-  // rebuilding .reloadable-context's innerHTML, which would remount any
-  // media embedded in the question text, options, or explanation markdown.
-  if (!patchQuestionCard(currentIdx)) {
-    renderQuestion();
-  }
+  renderQuestion();
   renderMenuNavigationDebounced();
   updateNav();
 }

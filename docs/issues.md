@@ -35,25 +35,8 @@ Check the rules for creating امتحانات and copying them and moving them.
 ### Admin actions and deletion flow (New Features)
 See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
 
-### Pending Continuism
-
-#### Markdown Engine Enhancement (Step 3: Migration & Cleanup)
-
-* Migrate existing quizzes' legacy `q.image`, `q.audio`, and `q.video` object fields into embedded markdown tags.
-* Delete the legacy rendering path, specifically `renderQuestionMedia` and related functions in both `quiz.js` and `export-to-quiz.js`.
-* Remove the old dedicated media dropzone UI in `create-quiz.js`.
-* Update the AI Agent system prompt in `ai-prompts.js` to stop emitting legacy media fields and instead embed media directly using the new Markdown syntax.
-
----
-
-### 
-
-#### Active Issue: `create-quiz.html` Start Screen UI Unresponsive
-
-* Interactive elements on the start screen are completely unresponsive to clicks.
-* Affected buttons include `.entry-item-new` (start new quiz), `.entry-item-draft` (open draft), and `.entry-item` (choose existing quiz).
-* Menus, including `.entry-item-more-wrap`, fail to open or trigger actions.
-* The browser console logs no errors when these elements are clicked.
+### Markdown Engine
+- See [Mrkdown Media Migration Plan](plans/markdown-media-migration-plan.md)
 
 ### Result Pages
 

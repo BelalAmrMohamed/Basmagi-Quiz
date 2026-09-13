@@ -6,181 +6,30 @@
  * page-specific logic here.
  *
  * Exports:
- * renderMarkdown(str)            → HTML string
+ * renderMarkdown(str, options)   → HTML string
+ *   options.mediaBaseUrl (optional): directory URL of the current quiz/
+ *   result page (e.g. `new URL("./", window.location.href).href`), passed
+ *   through to inline ![audio](url)/![video](url) tags so quiz-folder-
+ *   relative media paths resolve the same way dedicated-field media does
+ *   in quiz.js/result.js. Omit it and relative media paths fall back to
+ *   site-root/current-page resolution only (see media-resolve.js).
  *
  * Side-effects on first import:
  * • window.copyCodeBlock is registered so inline onclick="…"
  * attributes on copy buttons can reach it across any page.
  */
 
-// ─── 1b. GitHub-style media embedding ──────────────────────────────────────
-// Lets question text, options, explanations, and formal answers embed
-// images/video/audio/YouTube directly, the same way GitHub issue/release
-// bodies do: either via `<img>`/`<video>`/`<audio>` tags with explicit
-// width/height (written by the drag-and-drop/paste uploader — see
-// create-quiz.js), or via a bare pasted URL that gets auto-embedded.
-//
-// SECURITY: this is NOT a general HTML-passthrough feature. Only these
-// three tag names are recognised, and only a small attribute whitelist is
-// read off of each match — every other attribute (onerror=, onclick=,
-// style=, srcset=, arbitrary data-*, etc.) is discarded. The tag is always
-// REBUILT from scratch from the whitelisted values, never passed through
-// verbatim, so there is no way for stray attributes smuggled into the
-// source text to survive into the rendered output.
-//
-// This whole pass runs BEFORE escHtml() ever touches the string (it's
-// wired in as Step 0c of _renderMarkdownCore, alongside the other stash
-// steps), which is precisely why it has to be this strict: this is the one
-// place in the pipeline that is allowed to look at raw, unescaped `<...>`
-// text at all.
-
-const MEDIA_ALLOWED_PROTOCOL_RE = /^(https?:|data:image\/)/i;
-
-// Absolute http(s)/data URLs pass through untouched. Relative paths (as
-// used elsewhere in this app for same-origin assets) are left as-is too —
-// the browser resolves them against the page's own origin, same as any
-// other relative <img src>. Anything else (javascript:, vbscript:, etc.)
-// is rejected outright.
-function sanitizeMediaUrl(url) {
-  const trimmed = String(url || "").trim();
-  if (!trimmed) return "";
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !MEDIA_ALLOWED_PROTOCOL_RE.test(trimmed)) {
-    return ""; // rejects javascript:, vbscript:, file:, etc.
-  }
-  return trimmed;
-}
-
-// Reads one attribute's value off a raw (unescaped) tag-source string.
-// Supports "quoted", 'quoted', and bare values, matching how browsers
-// themselves parse attributes.
-function readAttr(tagSrc, name) {
-  const re = new RegExp(
-    `${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'>]+))`,
-    "i",
-  );
-  const m = tagSrc.match(re);
-  if (!m) return null;
-  return m[1] ?? m[2] ?? m[3] ?? "";
-}
-
-// Only digits (with an optional unit browsers already tolerate, e.g. "320"
-// or "320px") are accepted for width/height — this is a sizing hint, never
-// arbitrary CSS, so there's no injection surface even before HTML-escaping.
-function sanitizeDimension(value) {
-  if (value == null) return null;
-  const m = String(value).trim().match(/^(\d+)(?:px)?$/i);
-  return m ? m[1] : null;
-}
-
-function sanitizeAlt(value) {
-  return escHtml(String(value || "").trim());
-}
-
-const YOUTUBE_EMBED_RE =
-  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-
-function youtubeIframeHtml(videoId, widthAttr) {
-  const width = sanitizeDimension(widthAttr) || "560";
-  // 16:9 aspect ratio, matching the width the author (or default) chose.
-  const height = Math.round((parseInt(width, 10) * 9) / 16) || 315;
-  return `<div class="md-embed md-embed-video"><iframe class="md-video-embed" width="${width}" height="${height}" src="https://www.youtube-nocookie.com/embed/${escHtml(videoId)}" title="YouTube video" frameborder="0" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`;
-}
-
-// Rebuilds a sanitized <img>/<video>/<audio> tag from a raw regex match.
-// Returns "" (dropped) if the tag has no usable src.
-function sanitizeMediaTag(tagName, tagSrc) {
-  const rawSrc = readAttr(tagSrc, "src");
-  const src = sanitizeMediaUrl(rawSrc);
-  if (!src) return "";
-
-  // A <video>/<audio> src that's actually a YouTube link (pasted into the
-  // wrong tag, or hand-edited) still gets embedded correctly rather than
-  // producing a broken native player.
-  if (tagName !== "img") {
-    const ytMatch = src.match(YOUTUBE_EMBED_RE);
-    if (ytMatch) return youtubeIframeHtml(ytMatch[1], readAttr(tagSrc, "width"));
-  }
-
-  const width = sanitizeDimension(readAttr(tagSrc, "width"));
-  const height = sanitizeDimension(readAttr(tagSrc, "height"));
-  const widthAttr = width ? ` width="${width}"` : "";
-  // Per the GitHub convention this mirrors: audio players can only be
-  // resized horizontally (their native player has no adjustable height),
-  // so a height attribute is only ever emitted for img/video.
-  const heightAttr = tagName !== "audio" && height ? ` height="${height}"` : "";
-  const safeSrc = escHtml(src);
-
-  if (tagName === "img") {
-    const alt = sanitizeAlt(readAttr(tagSrc, "alt"));
-    return `<img src="${safeSrc}" alt="${alt}" class="md-img"${widthAttr}${heightAttr} loading="lazy">`;
-  }
-
-  if (tagName === "video") {
-    return `<div class="md-embed md-embed-video"><video src="${safeSrc}" class="md-video" controls preload="metadata" playsinline${widthAttr}${heightAttr}>متصفحك لا يدعم تشغيل الفيديو.</video></div>`;
-  }
-
-  // audio
-  return `<div class="md-embed md-embed-audio"><audio src="${safeSrc}" class="md-audio" controls preload="metadata"${widthAttr}>متصفحك لا يدعم تشغيل الصوت.</audio></div>`;
-}
-
-// Finds every <img ...>, <video ...>...</video>, and <audio ...>...</audio>
-// tag in raw text and replaces it with a sanitized, rebuilt equivalent (or
-// removes it if it has no usable src). Self-closing (<img .../> or <img ...>)
-// and the video/audio open+close form are both handled. Any inner content
-// of <video>/<audio> (e.g. a leftover fallback-text or <source> child from
-// hand-edited markup) is discarded — sources are read from the `src`
-// attribute only, matching what the uploader in create-quiz.js writes.
-function embedInlineMediaTags(str) {
-  return str.replace(
-    /<(img|video|audio)\b([^>]*)\/?>(?:[\s\S]*?<\/\1>)?/gi,
-    (whole, rawTagName, attrs) => {
-      const tagName = rawTagName.toLowerCase();
-      return sanitizeMediaTag(tagName, attrs);
-    },
-  );
-}
-
-// Auto-embeds bare pasted URLs (not already wrapped in markdown link/image
-// syntax) that point at a YouTube video or a direct image/video/audio
-// file. This is what makes "paste a YouTube link" or "paste an image URL"
-// work without the author needing to type any tag at all — mirrors
-// GitHub's own bare-URL auto-embed behavior for these link kinds.
-const DIRECT_IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg|avif)(\?.*)?$/i;
-const DIRECT_VIDEO_EXT_RE = /\.(mp4|webm|ogv|mov)(\?.*)?$/i;
-const DIRECT_AUDIO_EXT_RE = /\.(mp3|wav|ogg|m4a|aac)(\?.*)?$/i;
-const BARE_URL_RE = /(^|[\s(])(https?:\/\/[^\s<>()]+)/g;
-
-function autoEmbedBareMediaUrls(str) {
-  // Markdown link/image syntax ([text](url) / ![alt](url)) must win over
-  // bare-URL auto-embedding — otherwise the URL *inside* an already-correct
-  // `![alt](https://.../pic.png)` gets matched by BARE_URL_RE first and the
-  // classic syntax around it is left dangling/broken. Protect those spans
-  // by stashing them out (locally, via simple placeholders) before running
-  // the bare-URL scan, then restore them untouched afterwards.
-  const linkStash = [];
-  str = str.replace(/!?\[[^\]]*\]\([^)]+\)/g, (m) => {
-    const idx = linkStash.length;
-    linkStash.push(m);
-    return `\x00LK${idx}\x00`;
-  });
-
-  str = str.replace(BARE_URL_RE, (whole, lead, url) => {
-    const yt = url.match(YOUTUBE_EMBED_RE);
-    if (yt) return lead + youtubeIframeHtml(yt[1]);
-    if (DIRECT_IMAGE_EXT_RE.test(url)) {
-      return `${lead}<img src="${escHtml(url)}" alt="" class="md-img" loading="lazy">`;
-    }
-    if (DIRECT_VIDEO_EXT_RE.test(url)) {
-      return `${lead}<div class="md-embed md-embed-video"><video src="${escHtml(url)}" class="md-video" controls preload="metadata" playsinline>متصفحك لا يدعم تشغيل الفيديو.</video></div>`;
-    }
-    if (DIRECT_AUDIO_EXT_RE.test(url)) {
-      return `${lead}<div class="md-embed md-embed-audio"><audio src="${escHtml(url)}" class="md-audio" controls preload="metadata"></audio></div>`;
-    }
-    return whole; // not a recognised media URL — leave for the normal link/text pipeline
-  });
-
-  return str.replace(/\x00LK(\d+)\x00/g, (_, i) => linkStash[parseInt(i, 10)]);
-}
+// ─── 1. Shared media resolution (images / audio / video / YouTube) ────────────
+// Same module used by quiz.js and result.js for their (legacy, field-based)
+// media rendering, so inline ![audio]/![video] markdown tags resolve URLs,
+// sniff MIME types, and detect YouTube links identically to how dedicated
+// q.image/q.audio/q.video fields always have.
+import {
+  getMediaUrlCandidates,
+  getMediaMimeType,
+  isYouTubeUrl,
+  getYouTubeVideoId,
+} from "./media-resolve.js";
 
 // ─── 2. HTML escaping ─────────────────────────────────────────────────────────
 // Internal — escapes for safe insertion into markup.
@@ -210,9 +59,56 @@ export function unescapeHtmlEntities(s) {
 }
 
 // ─── 3. Inline Markdown formatter ─────────────────────────────────────────────
+
+// Matches the skeleton markup quiz.js's dedicated-field media renderer uses,
+// so inline media looks and behaves identically (same CSS, same
+// initMediaSkeletons() reveal-on-load / retry-on-error logic in quiz.js).
+const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><div class="skeleton-block skeleton-media"></div><span class="media-skeleton-label">جاري التحميل…</span></div>`;
+
+/**
+ * Renders one inline media tag: ![audio](url) or ![video](url).
+ * Mirrors quiz.js's renderQuestionAudio/renderQuestionVideo (same
+ * `.media-container`/skeleton wrapper, same YouTube-iframe branch for
+ * video), so media embedded directly in markdown behaves exactly like the
+ * legacy dedicated q.image/q.audio/q.video fields did.
+ * @param {"audio"|"video"} kind
+ * @param {string} url
+ * @param {string|null} mediaBaseUrl
+ */
+function renderInlineMediaTag(kind, url, mediaBaseUrl) {
+  const safe = (v) => escHtml(unescapeHtmlEntities(v));
+
+  if (kind === "video" && isYouTubeUrl(url)) {
+    const videoId = getYouTubeVideoId(url);
+    const embedSrc = `https://www.youtube.com/embed/${videoId}`;
+    return `<div class="media-container question-media-container question-video-container md-inline-media"><iframe class="question-video youtube-embed" src="${safe(embedSrc)}" data-media-raw="${safe(url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`;
+  }
+
+  const candidates = getMediaUrlCandidates(url, mediaBaseUrl);
+  const src = candidates[0] || "";
+  const mime = getMediaMimeType(src);
+  const typeAttr = mime ? ` type="${safe(mime)}"` : "";
+  const candidatesAttr = safe(JSON.stringify(candidates));
+  const fallback =
+    kind === "audio"
+      ? "متصفحك لا يدعم تشغيل الصوت."
+      : "متصفحك لا يدعم تشغيل الفيديو.";
+  const playsinline = kind === "video" ? " playsinline" : "";
+  const containerClass =
+    kind === "audio"
+      ? "question-media-container question-audio-container"
+      : "question-media-container question-video-container";
+
+  return `<div class="media-container ${containerClass} md-inline-media">${MD_MEDIA_SKELETON_HTML}<${kind} controls preload="metadata" class="question-${kind}"${playsinline} src="${safe(src)}" data-media-raw="${safe(url)}" data-media-candidates="${candidatesAttr}"><source src="${safe(src)}"${typeAttr} />${fallback}</${kind}></div>`;
+}
+
 // Receives an already-escHtml-encoded string; applies spans/tags for
-// bold, italic, code, links, images, and inline math ($…$).
-export function applyInline(s) {
+// bold, italic, code, links, images, media (audio/video), and inline math
+// ($…$).
+// @param {string} s
+// @param {{mediaBaseUrl?: string|null}} [options]
+export function applyInline(s, options = {}) {
+  const { mediaBaseUrl = null } = options;
   // ── Inline math $…$ ─────────────────────────────────────────────────────
   const iMathStash = [];
   s = s.replace(/\$([^\$\n]+)\$/g, (_, m) => {
@@ -279,11 +175,34 @@ export function applyInline(s) {
   // then escape exactly once.
   const safeUrl = (url) => escHtml(unescapeHtmlEntities(url));
 
-  // ── Images ──────────────────────────────────────────────────────────────
+  // ── Images / Audio / Video ────────────────────────────────────────────────
+  // ![alt](url)   -> <img>                          (unchanged legacy behavior)
+  // ![audio](url) -> <audio> (skeleton + retry, same as legacy q.audio field)
+  // ![video](url) -> <video>, or a YouTube iframe when the URL is a YouTube link
+  //
+  // The alt-text position doubles as a type keyword: literal "audio" or
+  // "video" (case-insensitive) switches to media rendering; any other alt
+  // text (including empty) renders a plain image, exactly as before — this
+  // keeps every existing `![...](...)  ` usage elsewhere in the app (e.g.
+  // docs screenshots, quiz images) working unchanged.
+  //
+  // URL matching was widened from `https?://`-only to also accept
+  // site-root-relative ("./assets/...", "assets/...") and other relative
+  // paths, since legacy media data includes quiz-folder-relative paths
+  // (e.g. "./assets/quiz-media/TEST_1/Part_1.mp4") that getMediaUrlCandidates()
+  // already knows how to resolve — the old images-only regex never needed
+  // this because dedicated-field images were normalized to absolute URLs by
+  // the previous non-markdown render path; embedding directly in markdown
+  // means we now receive whatever raw path form the data was saved with.
   s = s.replace(
-    /!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,
-    (_, alt, url) =>
-      `<img src="${safeUrl(url)}" alt="${safeUrl(alt)}" class="md-img" loading="lazy">`,
+    /!\[(audio|video|[^\]]*)\]\(([^\s)]+)\)/gi,
+    (_, kind, url) => {
+      const normalizedKind = kind.toLowerCase();
+      if (normalizedKind === "audio" || normalizedKind === "video") {
+        return renderInlineMediaTag(normalizedKind, url, mediaBaseUrl);
+      }
+      return `<img src="${safeUrl(url)}" alt="${safeUrl(kind)}" class="md-img" loading="lazy">`;
+    },
   );
   // ── Links ───────────────────────────────────────────────────────────────
   s = s.replace(
@@ -1280,7 +1199,10 @@ export function detectLang(code) {
 }
 
 // ─── 7. Core renderer ─────────────────────────────────────────────────────────
-export function _renderMarkdownCore(str) {
+// @param {string} str
+// @param {{mediaBaseUrl?: string|null}} [options] — see renderMarkdown()
+export function _renderMarkdownCore(str, options = {}) {
+  const { mediaBaseUrl = null } = options;
   const stash = [];
   const stashPush = (html) => {
     const idx = stash.length;
@@ -1339,26 +1261,6 @@ export function _renderMarkdownCore(str) {
     },
   );
 
-  // ── Step 0c: GitHub-style media embedding ──────────────────────────────
-  // Must run BEFORE any escaping/inline-processing touches the string, for
-  // the same reason as the two stash steps above: this is the only pass
-  // allowed to read raw `<...>` tag syntax, and it must see it before
-  // escHtml() turns every `<`/`>` into an entity. Order here matters too:
-  // explicit <img>/<video>/<audio> tags are handled first so a bare URL
-  // that's already inside one of those tags' src="..." isn't *also*
-  // matched and double-embedded by the bare-URL pass right after it.
-  str = embedInlineMediaTags(str);
-  str = autoEmbedBareMediaUrls(str);
-  // Each embed just produced (img/video/audio/iframe) is now raw HTML
-  // sitting in the string — stash it immediately so the line-tokenizer and
-  // inline-formatting passes below treat it as an opaque block, exactly
-  // like a fenced code block or passage, instead of trying to escape or
-  // reformat it.
-  str = str.replace(
-    /<img\b[^>]*>|<div class="md-embed[^"]*">[\s\S]*?<\/div>/g,
-    (html) => stashPush(html),
-  );
-
   // ── Step 1: Auto-wrap bare LaTeX lines ─────────────────────────────────────
   // Some quiz data embeds LaTeX commands without $ delimiters.
   // Detect lines that contain known commands but no $ or ` and wrap them.
@@ -1404,7 +1306,7 @@ export function _renderMarkdownCore(str) {
         row
           .replace(/^\||\|$/g, "")
           .split("|")
-          .map((cell) => applyInline(escHtml(cell.trim())));
+          .map((cell) => applyInline(escHtml(cell.trim()), { mediaBaseUrl }));
 
       const headers = parseRow(headerRow);
       const rows = bodyRows.trim().split("\n").filter(Boolean).map(parseRow);
@@ -1453,31 +1355,10 @@ export function _renderMarkdownCore(str) {
       .join("");
   };
 
-  // A line matches this ONLY when it is a stash token and nothing else
-  // (whitespace aside) — e.g. a fenced code block or a media tag sitting
-  // alone on its own line. This is the "whole line is a block" case and is
-  // rendered as an opaque block segment, matching the original behavior
-  // for code fences/passages.
-  const PURE_STASH_LINE_RE = /^\s*\x00ST\d+\x00\s*$/;
-  // Media-embedding fix: a stash token can now also appear MIXED into an
-  // otherwise-ordinary line — e.g. "- Option A <img .../>" (a list item
-  // with inline media) or "**Look:** <img .../>" (bold text with inline
-  // media). Previously ANY stash token anywhere on the line forced the
-  // whole line to be treated as a raw, un-tokenized "stash" block, which
-  // meant a list item containing an embedded image silently lost its `-`
-  // list marker (misclassified as a bare block) and broke list nesting for
-  // every item around it. escHtml()/applyInline() both pass `\x00ST{n}\x00`
-  // tokens through completely untouched (verified: no HTML-special
-  // characters, no markdown syntax characters), so it's safe to let lines
-  // with an embedded token fall through to the normal
-  // list/heading/blockquote/text detection below — the token is restored
-  // to its real HTML by the stash-replace pass at the very end of
-  // _renderMarkdownCore, same as always.
-
   // Tokenize
   const lineTokens = rawLines.map((line) => {
-    // Stash placeholder occupying the WHOLE line — pass through verbatim.
-    if (PURE_STASH_LINE_RE.test(line)) {
+    // Stash placeholder — pass through verbatim (with surrounding text escaped)
+    if (/\x00ST\d+\x00/.test(line)) {
       return { type: "stash", html: escapeAroundTokens(line) };
     }
     // Horizontal rule  ---  *** ___
@@ -1553,7 +1434,7 @@ export function _renderMarkdownCore(str) {
     if (tok.type === "text") {
       const lines = [];
       while (ti < lineTokens.length && lineTokens[ti].type === "text") {
-        lines.push(applyInline(escHtml(lineTokens[ti].content)));
+        lines.push(applyInline(escHtml(lineTokens[ti].content), { mediaBaseUrl }));
         ti++;
       }
       segments.push({
@@ -1602,9 +1483,9 @@ export function _renderMarkdownCore(str) {
       blockHtml = '<hr class="md-hr">';
     } else if (tok.type === "heading") {
       const lvl = tok.level;
-      blockHtml = `<h${lvl} class="md-h${lvl}">${applyInline(escHtml(tok.content))}</h${lvl}>`;
+      blockHtml = `<h${lvl} class="md-h${lvl}">${applyInline(escHtml(tok.content), { mediaBaseUrl })}</h${lvl}>`;
     } else if (tok.type === "blockquote") {
-      blockHtml = `<blockquote class="md-blockquote">${applyInline(escHtml(tok.content))}</blockquote>`;
+      blockHtml = `<blockquote class="md-blockquote">${applyInline(escHtml(tok.content), { mediaBaseUrl })}</blockquote>`;
     }
     segments.push({ type: "block", html: blockHtml });
     ti++;
@@ -1653,7 +1534,7 @@ export function _renderMarkdownCore(str) {
         if (item.indent > firstIndent) break;
 
         // ── Emit <li> for this item ────────────────────────────────────
-        let liContent = applyInline(escHtml(item.content));
+        let liContent = applyInline(escHtml(item.content), { mediaBaseUrl });
         i++;
 
         // If the next item is more indented, it forms a nested sub-list

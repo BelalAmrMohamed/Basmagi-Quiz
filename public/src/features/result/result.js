@@ -30,6 +30,17 @@ import {
 // scanDirections:           post-render direction scan for non-markdown elements
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 
+// ── Shared media URL resolution ────
+// Same module quiz.js uses, so both pages resolve quiz-folder-relative
+// media (e.g. "./assets/quiz-media/...") and detect YouTube URLs identically.
+import {
+  getMediaUrlCandidates as _getMediaUrlCandidates,
+  resolveMediaUrl as _resolveMediaUrl,
+  renderMediaElement as _renderMediaElement,
+  isYouTubeUrl,
+  getYouTubeVideoId,
+} from "../../shared/media-resolve.js";
+
 // Report Question Modal
 import {
   openReportModal,
@@ -63,72 +74,21 @@ const escapeHtml = (unsafe) => {
 };
 
 // ── Media Helper Functions ────────────────────────────────────────────────────
-const getMediaUrlCandidates = (url) => {
-  const trimmed = String(url || "").trim();
-  if (!trimmed) return [];
-  if (/^(https?:|data:|blob:)/i.test(trimmed)) return [trimmed];
+// Resolution/MIME/YouTube logic now lives in the shared media-resolve.js
+// module (also used by quiz.js and markdown.js's inline ![audio]/![video]
+// tags). This also fixes a gap this file previously had: it never resolved
+// quiz-folder-relative co-located media (e.g. "./assets/quiz-media/TEST_1/
+// Part_1.mp4") against the result page's own directory — only quiz.js did,
+// via its `quizBaseUrl`. `resultBaseUrl` below closes that gap; result.html
+// and quiz.html are sibling pages served from the same directory, so the
+// same "directory of the current page" resolution applies equally here.
+const resultBaseUrl = new URL("./", window.location.href).href;
 
-  const candidates = [];
-  const add = (candidate) => {
-    if (candidate && !candidates.includes(candidate))
-      candidates.push(candidate);
-  };
-
-  try {
-    if (trimmed.startsWith("/")) {
-      add(new URL(trimmed, window.location.origin).href);
-      return candidates;
-    }
-
-    // Convention: ./assets/… lives under public/assets/ (site root)
-    if (/^\.\/assets\//i.test(trimmed) || /^assets\//i.test(trimmed)) {
-      const sitePath = trimmed.replace(/^\.\//, "/");
-      add(new URL(sitePath, window.location.origin).href);
-    }
-
-    add(new URL(trimmed, window.location.href).href);
-  } catch {
-    add(trimmed);
-  }
-
-  return candidates;
-};
-
-const resolveMediaUrl = (url) => getMediaUrlCandidates(url)[0] || "";
-
-const getMediaMimeType = (url) => {
-  const ext = url.split(/[?#]/)[0].split(".").pop()?.toLowerCase();
-  const types = {
-    mp3: "audio/mpeg",
-    wav: "audio/wav",
-    ogg: "audio/ogg",
-    m4a: "audio/mp4",
-    aac: "audio/aac",
-    mp4: "video/mp4",
-    webm: "video/webm",
-    ogv: "video/ogg",
-    mov: "video/quicktime",
-  };
-  return types[ext] || "";
-};
-
-const renderMediaElement = (tag, className, mediaUrl) => {
-  const src = resolveMediaUrl(mediaUrl);
-  const srcWithCacheBust = src
-    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
-    : "";
-  const mime = getMediaMimeType(src);
-  const typeAttr = mime ? ` type="${escapeHTML(mime)}"` : "";
-  const fallback =
-    tag === "audio"
-      ? "Your browser doesn't support audio playback."
-      : "Your browser doesn't support video playback.";
-  const playsinline = tag === "video" ? " playsinline" : "";
-  return `<${tag} controls preload="metadata" class="${className}"${playsinline} src="${escapeHTML(srcWithCacheBust)}">
-    <source src="${escapeHTML(srcWithCacheBust)}"${typeAttr} />
-    ${fallback}
-  </${tag}>`;
-};
+const getMediaUrlCandidates = (url) =>
+  _getMediaUrlCandidates(url, resultBaseUrl);
+const resolveMediaUrl = (url) => _resolveMediaUrl(url, resultBaseUrl);
+const renderMediaElement = (tag, className, mediaUrl) =>
+  _renderMediaElement(tag, className, mediaUrl, resultBaseUrl);
 
 const renderQuestionImage = (imageUrl) => {
   if (!imageUrl) return "";
@@ -152,20 +112,11 @@ const renderQuestionAudio = (audioUrl) => {
   `;
 };
 
-// ── YouTube helpers (mirrors quiz.js) ────────────────────────────────────────
-const YOUTUBE_RE =
-  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
-const getYouTubeId = (url) => {
-  const m = String(url || "").match(YOUTUBE_RE);
-  return m ? m[1] : null;
-};
-
 const renderQuestionVideo = (videoUrl) => {
   if (!videoUrl) return "";
 
   if (isYouTubeUrl(videoUrl)) {
-    const videoId = getYouTubeId(videoUrl);
+    const videoId = getYouTubeVideoId(videoUrl);
     const embedSrc = `https://www.youtube.com/embed/${videoId}`;
     return `
       <div class="media-container question-media-container question-video-container">
@@ -767,14 +718,14 @@ function renderHeader(
         <h3><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award-icon lucide-award"><path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/></svg> شارات تم إكتسابها</h3>
         <div class="badge-grid">
           ${newBadges
-            .map(
-              (b) => `
+        .map(
+          (b) => `
             <div class="badge-item">
               <span class="badge-icon">${b.icon}</span>
               <span class="badge-name">${b.title}</span>
             </div>`,
-            )
-            .join("")}
+        )
+        .join("")}
         </div>
       </div>`;
   }
@@ -813,14 +764,13 @@ function renderHeader(
         <span class="sdt-label">خطأ</span>
         <span class="sdt-value sdt-wrong">${mcqWrong}</span>
       </div>
-      ${
-        mcqSkipped > 0
-          ? `
+      ${mcqSkipped > 0
+        ? `
       <div class="sdt-row">
         <span class="sdt-label">متخطى</span>
         <span class="sdt-value sdt-skipped">${mcqSkipped}</span>
       </div>`
-          : ""
+        : ""
       }
       <div class="sdt-row">
         <span class="sdt-label">المقالي</span>
@@ -867,14 +817,13 @@ function renderHeader(
         <span class="sdt-label">الإجابات الخاطئة</span>
         <span class="sdt-value sdt-wrong">${mcqWrong}</span>
       </div>
-      ${
-        mcqSkipped > 0
-          ? `
+      ${mcqSkipped > 0
+        ? `
       <div class="sdt-row">
         <span class="sdt-label">متخطى</span>
         <span class="sdt-value sdt-skipped">${mcqSkipped}</span>
       </div>`
-          : ""
+        : ""
       }
       <div class="sdt-row sdt-last">
         <span class="sdt-label">الحالة</span>
@@ -892,11 +841,10 @@ function renderHeader(
 
       <div class="score-header-body">
         <h2 class="score-greeting">
-          ${
-            passed
-              ? `🎉 أحسنت يا ${userNameHtml}!`
-              : `📚 استمر في المذاكرة يا ${userNameHtml}`
-          }
+          ${passed
+        ? `🎉 أحسنت يا ${userNameHtml}!`
+        : `📚 استمر في المذاكرة يا ${userNameHtml}`
+      }
         </h2>
 
         <div class="points-pill">
@@ -991,15 +939,14 @@ function renderReview(container, questions, userAnswers) {
               <div class="essay-text">${formalText}</div>
             </div>
           </div>
-          ${
-            explanationText
-              ? `
+          ${explanationText
+          ? `
           <div class="explanation">
             <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح</strong></div>
             <div class="explanation-body">${explanationText}</div>
           </div>`
-              : ""
-          }
+          : ""
+        }
         </div>`;
     } else {
       const correctIdx = q.correct ?? q.answer;
@@ -1084,15 +1031,14 @@ function renderReview(container, questions, userAnswers) {
           <div class="options-grid">
             ${optionsHtml}
           </div>
-          ${
-            explanationText
-              ? `
+          ${explanationText
+          ? `
           <div class="explanation">
             <div class="centered-label"><strong><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lightbulb-icon lucide-lightbulb"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> الشرح</strong></div>
             <div class="explanation-body">${explanationText}</div>
           </div>`
-              : ""
-          }
+          : ""
+        }
         </div>`;
     }
   });

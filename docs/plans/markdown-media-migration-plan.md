@@ -1,0 +1,569 @@
+# Markdown Media Engine + Legacy Migration — Implementation Plan
+
+## STATUS (updated — read this first)
+
+Implementation started following the build order in Section 8. Work paused
+partway through Section 8, step 3, due to low credits. **Nothing destructive
+has happened**: no Supabase writes, no legacy code deleted, no UI removed.
+Everything below is additive — the app should work exactly as it did before,
+with the new capability layered in alongside the old.
+
+### ✅ Done
+
+1. **New shared module `public/src/shared/media-resolve.js` created.**
+   Extracted `getMediaUrlCandidates`, `resolveMediaUrl`, `getMediaMimeType`,
+   `isYouTubeUrl`, `getYouTubeVideoId`, `renderMediaElement`, `escapeHtml`
+   from `quiz.js` (the more complete of the two prior copies) into one
+   module. This is now the single source of truth for media URL resolution.
+
+2. **`quiz.js` updated.** Its local copies of the above helpers were
+   replaced with thin wrappers that import from `media-resolve.js` and bind
+   `quizBaseUrl`. `renderQuestionImage`/`renderQuestionAudio`/
+   `renderQuestionVideo`/`renderQuestionMedia` are **untouched and still
+   active** — legacy dedicated-field media rendering still works exactly as
+   before. Syntax-checked with `node --check` (passes).
+
+3. **`result.js` updated**, same consolidation as `quiz.js`. This also
+   **fixed a real latent bug** noted during planning: `result.js` previously
+   had no quiz-folder-relative URL resolution at all (it was missing the
+   `baseUrl` branch `quiz.js` had). It now computes `resultBaseUrl =
+   new URL("./", window.location.href).href` (identical approach to
+   `quiz.js`'s `quizBaseUrl`) and passes it through, so relative media paths
+   like `./assets/quiz-media/TEST_1/Part_1.mp4` should now resolve correctly
+   on the results page too, where they may not have before. Legacy
+   `renderQuestionImage`/`Audio`/`Video`/`Media` are untouched and still
+   active. Syntax-checked with `node --check` (passes).
+
+4. **`markdown.js` — new inline media syntax implemented.**
+   - `![audio](url)` and `![video](url)` now render real `<audio>`/`<video>`
+     elements (or a YouTube iframe for video, auto-detected), reusing the
+     existing `![alt](url)` regex site with keyword dispatch. Verified via
+     standalone regex tests: case-insensitive (`![AUDIO]` works), and alt
+     text that merely *contains* the word "audio"/"video" (e.g. "my audio
+     recording") correctly falls through to plain image rendering — only an
+     exact keyword match switches modes. This means **zero regression risk**
+     to any existing `![...](...)` usage elsewhere (docs screenshots, the 13
+     production quizzes with plain images).
+   - URL matching was widened from `https?://`-only to also accept
+     relative/site-root paths (`./assets/...`, bare relative paths), since
+     legacy media data uses those and the old images-only regex never had
+     to handle them.
+   - Added `renderInlineMediaTag()`, mirroring `quiz.js`'s skeleton-wrapped
+     `.media-container` markup and YouTube-iframe branch exactly, so inline
+     media should look and behave identically to the old dedicated-field
+     version (same CSS classes, same `data-media-raw`/`data-media-candidates`
+     attributes for `initMediaSkeletons()` to pick up).
+   - Threaded a new optional `mediaBaseUrl` parameter through
+     `applyInline(s, options)` → `_renderMarkdownCore(str, options)`,
+     updating all 5 internal call sites that invoke `applyInline` (table
+     cells, paragraph text lines, headings, blockquotes, list items) to pass
+     `{ mediaBaseUrl }` through.
+
+### ⏳ Remaining (in order)
+
+1. **`markdown.js`: finish threading `mediaBaseUrl` to the public entry
+   point.** `applyInline` and `_renderMarkdownCore` both accept the option
+   now, but the exported `renderMarkdown(str)` function itself does **not
+   yet** accept or forward `{ mediaBaseUrl }` — it still calls
+   `_renderMarkdownCore(str)` with no options. This is the very next edit
+   needed; until it's done, the new `mediaBaseUrl`-aware plumbing is
+   unreachable from any real caller. Also update the file's header JSDoc
+   comment block (already partially updated) to reflect the final signature.
+   **Run `node --check` on `markdown.js` after this edit** — it has not
+   been syntax-checked since the `applyInline`/`_renderMarkdownCore` edits.
+
+2. **Wire `mediaBaseUrl` into actual `renderMarkdown(...)` call sites** in
+   `quiz.js` (pass `{ mediaBaseUrl: quizBaseUrl }`) and `result.js` (pass
+   `{ mediaBaseUrl: resultBaseUrl }`) — every call site that renders `q.q`,
+   `q.passage`, `q.explanation`/`desc`/`info`, each option, and
+   `getEssayAnswer(q)`/user essay answers. Not yet started.
+
+3. **Manual/functional verification** of the new syntax before touching
+   anything else: hand-edit one non-production test quiz row (or a local
+   fixture) to embed `![audio](...)`/`![video](...)` directly in `q.q`,
+   confirm correct rendering on `quiz.html`, confirm no-reload behavior on
+   answer-select/lock, confirm rendering on `result.html`. Not yet done —
+   important to do before proceeding further, since everything after this
+   builds on the syntax actually working.
+
+4. **`export-to-quiz.js`** — determine how it currently bundles
+   `renderMarkdown` into its static export template (inline copy vs. shared
+   reference) and update accordingly so exported quizzes also get the new
+   syntax. Not started.
+
+5. **`create-quiz.js` + `create-quiz.html`** — build the insert-at-cursor
+   UX (file drop/paste inserts a markdown media tag into the focused
+   textarea instead of writing to a dedicated `q.image`/`q.audio`/`q.video`
+   field). Not started. Legacy dropzone/chip UI is untouched and still
+   fully functional in the meantime.
+
+6. **`ai-prompts.js`** — update the AI agent's JSON example to embed media
+   inline via the new syntax instead of emitting `"audio"`/`"video"` keys.
+   Not started.
+
+7. **Supabase backup, migration script, verification, then legacy code
+   deletion** (Section 7 of this plan) — **not started, and per the
+   original instruction, the backup must be taken and presented before any
+   migration write happens.** No Supabase writes of any kind have occurred
+   yet; production data is untouched.
+
+8. Final regression pass across the 20 previously-affected production
+   quizzes plus a freshly-authored test quiz.
+
+### Notes for whoever picks this back up
+
+- All four modified files were shared as full-file downloads (not a diff)
+  since this session ended before they could be committed anywhere. Diff
+  them against the original zip to see exact changes if needed.
+- `quiz.js` and `result.js` still contain their old `renderQuestionMedia`
+  family functions, fully intact — do not delete these until steps 1–3
+  above are verified working, per the plan's original sequencing in
+  Section 8.
+- The `export-to-quiz.js`, `create-quiz.js`, and `ai-prompts.js` files in
+  the shared zip are **unmodified** — none of that work has started.
+
+
+## 0. Why this plan exists before any code changes
+
+`Claude.md` labels the migration "Step 3," implying the markdown engine already
+supports embedded audio/video. It doesn't. Verified in the codebase:
+
+- `public/src/shared/markdown.js` only implements `![alt](url)` **image**
+  syntax (line ~113-118), producing a real `<img>`. There is no audio/video
+  tag, fence, or renderer anywhere in the file.
+- `_SKIP_TAGS` already lists `AUDIO`/`VIDEO`/`IFRAME`/`SOURCE` so the
+  RTL/LTR direction engine won't destroy them — this is *preparatory*
+  infrastructure for embedded media, not evidence it's implemented.
+- `export-to-quiz.js`'s `renderQuestionMedia` (cited in `docs/issues.md` as
+  "learn from this") still reads legacy `q.image`/`q.audio`/`q.video` — it
+  demonstrates the non-reloading DOM pattern, not markdown-embedded media.
+- `docs/issues.md` (the author's own notes) confirms the sequencing:
+  fix quiz-page media reload bug → build markdown media embedding → *then*
+  migrate + delete legacy code. Step 1 is done (see below). Step 2 is not.
+
+Production data checked directly via Supabase (`esdfdzhtavraczrhxnmp`):
+**215 quizzes total, 20 contain legacy media** (13 `image`, 5 `audio`,
+6 `video` — some questions have more than one). All confined to the
+question-level `image`/`audio`/`video` fields; none found hiding in
+`options[]` or `explanation` as raw URLs.
+
+Prerequisite already satisfied: `quiz.js`'s `buildQuestionBodyHTML` already
+splits `mediaHTML` into persistent DOM siblings outside `.reloadable-context`,
+so media never unmounts/reloads on interaction (see comments at quiz.js:2102-2109).
+The new markdown-embedded renderer must preserve this property.
+
+---
+
+## 1. New Markdown Media Syntax
+
+### 1.1 Syntax design
+
+Extend the existing image syntax family rather than inventing something
+unrelated, so it reads naturally next to `![alt](url)`:
+
+```
+![img](url)                → image (alias of the existing ![alt](url); "img" literal or any alt text ending without a type keyword)
+![audio](url)               → <audio>
+![video](url)               → <video> or YouTube embed (auto-detected)
+```
+
+Concretely, reuse the **same bracket-paren shape**, and dispatch on a literal
+type keyword in the alt-text position:
+
+- `![audio](https://example.com/clip.mp3)`
+- `![video](https://example.com/clip.mp4)`
+- `![video](https://www.youtube.com/watch?v=XXXXXXXXXXX)` — YouTube URLs auto-embed via iframe, same detection regex already used in `quiz.js`/`result.js`.
+- `![alt text](https://example.com/photo.jpg)` — unchanged, existing image behavior. Alt text other than the literal `audio`/`video` keywords is always treated as an image (matches current behavior, zero regressions on the 13 quizzes with images and on all prose usage of `![...]()` elsewhere, e.g. `docs/issues.md`'s own screenshots).
+
+Rationale for reusing `![type](url)` instead of a new fence/tag:
+- Keeps one mental model ("media is an image-like markdown link") instead of three.
+- Trivial to migrate legacy data into: `` `![audio](${q.audio})` ``.
+- Keeps parsing localized to the existing image regex site in `markdown.js`,
+  minimizing surface area for new bugs.
+- Explicit `audio`/`video` keyword avoids the fragility of extension-sniffing
+  every media URL (which the current `create-quiz.js` dropzone already does
+  for uploads, but shouldn't have to for parsing untrusted markdown text —
+  a `.mp3` URL with query params or a CDN path with no extension should
+  still work, since the type is stated, not inferred).
+
+### 1.2 Where this can appear
+
+Per `docs/issues.md`: "This will allow quiz creators to add multiple pieces
+of media to each question or add media to options, explanations, and formal
+answers." So the new syntax must work anywhere `renderMarkdown()` is already
+called on quiz content: `q.q` (question body), `q.passage`, `q.options[]`,
+`q.explanation`/`q.desc`/`q.info`, `q.answer` (essay formal answer/model answer).
+No special-casing per field — if `renderMarkdown()` runs on it, media tags work
+in it. This is a natural consequence of implementing it inside `markdown.js`
+itself rather than as a pre/post-processing step tied to `q.q` specifically.
+
+### 1.3 Renderer implementation (`markdown.js`)
+
+Currently (line ~113-118):
+```js
+s = s.replace(
+  /!\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g,
+  (_, alt, url) => `<img src="${safeUrl(url)}" alt="${safeUrl(alt)}" class="md-img" loading="lazy">`,
+);
+```
+
+Two problems to fix while extending it:
+1. It only matches `https?://` URLs — legacy data includes relative paths
+   like `./assets/quiz-media/TEST_1/Part_1.mp4` (quiz-folder-relative) and
+   `./assets/...` (site-root-relative). The regex must accept those too,
+   matching what `getMediaUrlCandidates()` in `quiz.js`/`result.js` already
+   handles at render time.
+2. The URL resolution logic (`getMediaUrlCandidates`, `resolveMediaUrl`,
+   `getMediaMimeType`, YouTube detection) currently lives duplicated in both
+   `quiz.js` and `result.js`, already diverged (see 2.1). This must become
+   ONE shared module that `markdown.js` also imports, or the new syntax will
+   immediately fork into a third copy.
+
+**New shared module: `public/src/shared/media-resolve.js`**
+Extract from `quiz.js` (the more complete of the two copies — it has
+`quizBaseUrl` co-location resolution, which `result.js` lacks and should
+have had all along):
+- `getMediaUrlCandidates(url, baseUrl)` — `baseUrl` replaces the module-level
+  `quizBaseUrl` global so this is usable from any caller.
+- `resolveMediaUrl(url, baseUrl)`
+- `getMediaMimeType(url)`
+- `isYouTubeUrl(url)`, `getYouTubeVideoId(url)`
+- `escapeHtml` reused from wherever it already lives, or included locally.
+
+`quiz.js` and `result.js` both import from this module instead of keeping
+private copies. This also fixes the latent divergence bug where `result.js`
+always cache-busts audio/video src on every render (fine, one-shot page) but
+lacks `quizBaseUrl` resolution, meaning quiz-folder-relative video paths like
+`./assets/quiz-media/TEST_1/Part_1.mp4` may fail to resolve correctly on the
+results page today — worth a quick manual check during implementation.
+
+**In `markdown.js`**, replace the images block with:
+
+```js
+import { getMediaUrlCandidates, resolveMediaUrl, getMediaMimeType, isYouTubeUrl, getYouTubeVideoId } from "./media-resolve.js";
+
+// ── Media (images / audio / video / YouTube) ──────────────────────────────
+// ![alt](url)          -> <img>                 (unchanged legacy behavior)
+// ![audio](url)        -> <audio> with skeleton
+// ![video](url)        -> <video> or YouTube iframe, auto-detected
+const MEDIA_URL_RE = /(https?:\/\/[^\s)]+|\.{0,2}\/[^\s)]+)/; // http(s) OR relative/site-root path
+s = s.replace(
+  /!\[(audio|video|[^\]]*)\]\((\S+?)\)/g,
+  (full, kind, url) => {
+    if (kind !== "audio" && kind !== "video") {
+      // existing image path, unchanged
+      return `<img src="${safeUrl(url)}" alt="${safeUrl(kind)}" class="md-img" loading="lazy">`;
+    }
+    return renderInlineMediaTag(kind, url, quizBaseUrlForMarkdown);
+  },
+);
+```
+
+`renderInlineMediaTag(kind, url, baseUrl)` (new function in `markdown.js`,
+built directly from the existing logic in `quiz.js`'s
+`renderQuestionAudio`/`renderQuestionVideo`/`renderMediaElement`):
+- For `video`, checks `isYouTubeUrl` first → renders the same iframe markup
+  (`youtube-embed`, `allow="accelerometer; autoplay; ..."`, `loading="lazy"`)
+  already used in `quiz.js`/`export-to-quiz.js`/`result.js`.
+- Otherwise renders `<audio>`/`<video>` via the shared `renderMediaElement`
+  equivalent, wrapped in `.media-container` + `MEDIA_SKELETON_HTML` so the
+  existing skeleton/loading CSS and `initMediaSkeletons()` logic in `quiz.js`
+  keep working unmodified — inline media must look and behave identically
+  to the current dedicated-field media, or it's a regression for the 20
+  quizzes with existing media.
+- `quizBaseUrlForMarkdown`: `markdown.js` doesn't currently know about
+  per-quiz base URLs. `renderMarkdown()` needs an optional second parameter
+  (`renderMarkdown(str, { mediaBaseUrl } = {})`) that callers (`quiz.js`,
+  `result.js`, `export-to-quiz.js`, `create-quiz.js` preview) pass through.
+  All existing call sites keep working with the default (no base URL —
+  behaves like an absolute/site-root URL only, matching current non-quiz
+  usages of `renderMarkdown` elsewhere in the app, e.g. any static pages).
+
+### 1.4 Skeleton / non-reload behavior inside markdown-rendered content
+
+This is the trickiest part, because it's the entire reason media was pulled
+*out* of the body in the first place (issues.md's documented reload bug).
+
+`quiz.js`'s current fix works by **never re-rendering the media DOM nodes**:
+`buildQuestionBodyHTML` returns `mediaHTML` as a value the caller places in
+a persistent sibling, while `renderQuestion()` only replaces
+`.reloadable-context.innerHTML` on each interaction. With media embedded
+*inside* markdown-rendered question/option/explanation text, that split no
+longer exists — the media tag lives inside whatever `innerHTML` gets replaced.
+
+Mitigation, in order of preference:
+1. **Question body (`q.q`) itself is not part of `.reloadable-context` today**
+   (confirmed: `reloadableHeaderHTML` — which contains `q.q` via
+   `renderMarkdown(q.q)` — is rendered once per question change, not on every
+   button press within the *same* question; re-render happens on
+   answer-select for the feedback panel, not on the header). Need to verify
+   this precisely per interaction type (locking an answer, toggling
+   bookmark/flag, checking essay) — if any of these currently re-render the
+   header along with the reloadable content, that's exactly the "any embedded
+   media in the header will now reload" case, and it needs the same DOM-diff
+   treatment as media sections get today.
+2. For **options and explanation**, which do live inside content that gets
+   replaced when a question is locked/answered (feedback panel, correct/wrong
+   classes), embedded media in an option or explanation *will* reload every
+   time the surrounding container's `innerHTML` is replaced (e.g., every time
+   `isLocked` flips). Given quizzes rarely put media in options today (0 found
+   in production), and the immediate migration need is only for `q.image`/
+   `q.audio`/`q.video` on the question body — recommend implementing full
+   markdown-embedded media rendering everywhere (so options *can* carry it
+   per the feature ask), but scoping the *no-reload guarantee* explicitly to
+   the question body/passage on first pass, and documenting the options/
+   explanation reload behavior as a known, minor limitation to revisit if it
+   becomes a real problem (nothing in production exercises it yet).
+3. Regardless of (2), the `<audio>`/`<video>` element itself should carry
+   `data-media-raw`/`data-media-candidates` and go through the same
+   `initMediaSkeletons()` re-scan pattern so that even if a re-render
+   *does* happen, playback position isn't silently expected to persist
+   (browsers will reset playback position on re-creation regardless — that's
+   an unavoidable consequence of the container's `innerHTML` being replaced,
+   not something the skeleton logic can prevent).
+
+This means: **before shipping**, manually test a quiz with `![audio](...)`
+embedded directly in a question's `explanation` field, verify whether locking
+the answer restarts playback. If yes, that's an acceptable known limitation
+(matches what would happen with legacy fields too, if they were ever put in
+the explanation — which they structurally can't be today). Document this in
+the AI prompt / create-quiz UI copy so quiz authors know to prefer the
+question body/passage for anything that needs to play continuously.
+
+### 1.5 `_renderMarkdownCore` vs `applyInline` — confirm single implementation path
+
+`markdown.js` has two layers (`applyInline`, used for simple single-line
+contexts, and `_renderMarkdownCore`, the full block renderer used by
+`renderMarkdown`). Need to confirm during implementation whether the image
+regex at line ~113-118 is inside `applyInline` (looks that way from context)
+and whether `_renderMarkdownCore` calls `applyInline` for every text run —
+if the media regex is added only to `applyInline`, that should be the single
+source of truth reached by all rendering paths. Verify no second, separate
+image-rendering codepath exists elsewhere in `_renderMarkdownCore` that would
+need the same treatment (the syntax-highlighter's fake `![alt](url)` styling
+inside code fences at line ~582 is NOT a real renderer — confirmed it's
+decorative highlighting for displaying markdown-as-code in code blocks, not
+an actual media embed path, so it's out of scope).
+
+---
+
+## 2. `quiz.js` changes
+
+1. Replace local `getMediaUrlCandidates`/`resolveMediaUrl`/`getMediaMimeType`/
+   `isYouTubeUrl`/`getYouTubeVideoId`/`renderMediaElement` with imports from
+   the new `media-resolve.js` (2.1 above). Pass `quizBaseUrl` explicitly at
+   each call site instead of relying on the module-level variable, OR keep
+   the module-level `quizBaseUrl` in `quiz.js` and pass it into `renderMarkdown()`
+   calls as `{ mediaBaseUrl: quizBaseUrl }` — simplest path, minimal diff.
+2. Every `renderMarkdown(q.q)`, `renderMarkdown(q.explanation)`, per-option
+   `renderMarkdown(opt)`, `renderMarkdown(getEssayAnswer(q))`, etc. gets the
+   `{ mediaBaseUrl: quizBaseUrl }` option added.
+3. **Delete** `renderQuestionMedia`, `renderQuestionImage`, `renderQuestionAudio`,
+   `renderQuestionVideo`, `wrapMedia`, and the `mediaHTML` plumbing in
+   `buildQuestionBodyHTML` and its two call sites (quiz.js:1844, 2166) —
+   media now arrives already embedded in the markdown-rendered strings, no
+   separate render/placement step needed.
+   - **Do this only after step 1 (new syntax) is verified working**, and only
+     as part of the actual migration step (Section 4), not before — until
+     the DB migration runs, quizzes in production still rely on this legacy
+     path 100% of the time.
+4. `isLargeFormatQuestion` currently checks `q?.passage || q?.audio || q?.video`
+   (line 348) to decide layout. After migration, `q.audio`/`q.video` won't
+   exist anymore. Decide replacement heuristic — likely: does the *rendered*
+   `q.q`/`q.passage` markdown contain a media tag? Cheapest check: test the
+   raw markdown string for the `![audio](` / `![video](` / `![...](` pattern
+   before rendering, rather than parsing the rendered DOM. Add a small
+   `containsMedia(markdownStr)` helper (regex test, not full parse) used
+   for this layout decision only.
+5. `initMediaSkeletons(root)` currently scans `.media-container` elements
+   that were placed by the old dedicated renderer. After migration, the new
+   inline media renderer must still wrap its output in `.media-container`
+   with the same skeleton markup so this function keeps working unmodified
+   against the new markup (confirmed compatible by design in 1.3).
+
+## 3. `result.js` changes
+
+Simpler than `quiz.js` because `result.js` renders once per page load (no
+interactive re-render at all — confirmed by reading the review-card
+generation loop, which runs once in the `DOMContentLoaded` handler and is
+never re-invoked afterward).
+
+1. Same as quiz.js: replace local media-resolve copies with the shared
+   module import (this also fixes the `quizBaseUrl`-resolution gap noted
+   in 1.3 — `result.js` currently lacks it entirely).
+2. Add `{ mediaBaseUrl }` to the `renderMarkdown()` calls for `q.q`,
+   `q.explanation`, `opt` (options), `getEssayAnswer(q)`, `userAns`.
+   `result.js` needs its own source for `mediaBaseUrl` — check how it
+   currently resolves the quiz's base path (likely via `manifestEntry` or
+   `getManifest()`, same data quiz.js uses for `quizBaseUrl`) and wire it
+   the same way.
+3. **Delete** `renderQuestionMedia`, `renderQuestionImage`, `renderQuestionAudio`,
+   `renderQuestionVideo` and their two call sites (result.js:983, 1083) —
+   again, only as part of the migration step, not before.
+4. No skeleton/reload concerns here since there's no re-render — inline
+   media can use a simpler variant without the skeleton wrapper if desired,
+   though reusing the same wrapper keeps visual consistency with quiz.js and
+   costs nothing extra.
+
+## 4. `export-to-quiz.js` changes
+
+This generates **static, standalone HTML exports** (a quiz someone downloads
+and opens outside the platform) — confirmed by the file's self-contained
+inline-string-template structure (`renderQuestionMedia`, `escapeHTML`, etc.
+duplicated yet again, this time inline inside a giant template string, not
+importable as an ES module).
+
+Because this output is a static file with no build step at export time, it
+can't `import` the shared `media-resolve.js` module — the resolve/render
+logic must be **inlined into the export template string** (as it already is
+today), but updated to:
+1. Include the new `renderMarkdown` media-tag handling — meaning the
+   markdown renderer shipped inside this static export template must be
+   the *updated* `markdown.js` logic, not the current copy. Check how
+   `export-to-quiz.js` currently bundles `renderMarkdown` into the exported
+   HTML (likely inlines the whole module as a string) — the update should
+   flow through automatically once `markdown.js` itself is updated, *if*
+   that's how it's bundled; verify this during implementation rather than
+   assuming.
+2. Once confirmed, **delete** `renderQuestionMedia` and its three helpers
+   here too, same migration-gated timing as quiz.js/result.js.
+3. No skeleton/reload concern: static exports have no live interaction with
+   Supabase-backed re-renders; if the export's markdown renderer is the
+   same as the platform's, the same "options/explanation reload" caveat
+   from 1.4 applies equally here, and is equally low-risk given 0 production
+   quizzes use media in options.
+
+## 5. `create-quiz.js` changes
+
+### 5.1 What stays
+- `compressImageFile`, `detectMediaTypeFromFile`, `MEDIA_MIME_MAP`,
+  `MEDIA_MAX_SIZE`, `MEDIA_EXT_MAP`, `uploadCombinedMediaFile`'s actual
+  Supabase Storage upload logic — all of this is about **getting a file
+  into storage and getting a URL back**, which is orthogonal to how that
+  URL is referenced in text. None of this is legacy; it's needed regardless
+  of field-based or markdown-based storage.
+
+### 5.2 What changes
+- `renderCombinedMediaSection`, `setupCombinedMediaListeners`,
+  `rerenderCombinedMedia`, `addMediaFromLinkInput`, `removeQuestionMedia`,
+  `updateMediaPreview`/`updateImagePreview`/`updateAudioPreview`/
+  `updateVideoPreview`, and the dropzone UI in `create-quiz.html` (the
+  `.media-dropzone`, chip UI, per-type preview containers) are being
+  **removed** as legacy per `Claude.md`'s "remove the old dedicated media
+  dropzone UI" instruction.
+- Replacement UX: insert a media markdown tag directly into whichever text
+  field currently has focus (question body / option / explanation / formal
+  answer textarea), at the cursor position, when a file is dropped/selected
+  or a link is submitted:
+  1. On file drop/select: compress (if image) → `uploadCombinedMediaFile`
+     (unchanged) → get back a storage URL → insert
+     `![audio](url)`/`![video](url)`/`![alt](url)` at the cursor of the
+     currently-focused textarea using `detectMediaTypeFromFile` to pick the
+     tag kind.
+  2. On pasted link: `detectMediaTypeFromUrl` (already exists) picks the
+     tag kind, insert the markdown tag at cursor the same way.
+  3. Needs a small dropzone/paste-target attached per textarea (question
+     body, each option, explanation, formal answer) rather than one combined
+     dropzone per question — or, simpler: keep ONE dropzone per question but
+     require the author to click into the target field first (last-focused
+     textarea tracked in a module-level variable), inserting into whichever
+     field had focus when the file was dropped/link submitted. This is a
+     smaller UI change than rebuilding per-field dropzones and matches how
+     most markdown editors with paste-to-embed work.
+- `q.image`/`q.audio`/`q.video` are no longer read from or written to new
+  quizzes at all after this ships — `getActiveMediaFields`,
+  `isLargeFormatQuestion`'s legacy-field check, and the JSON-building code
+  at lines ~4385/4515 (`if (q.video?.trim()) out.video = q.video`, etc.)
+  all get removed as part of this same change, since new quizzes should
+  never write these fields again (per `docs/issues.md`: "Users shouldn't be
+  able to create Legacy... objects").
+- Needs UI copy/hint update in the dropzone (or its replacement) explaining
+  the new insert-at-cursor behavior, since this is a real workflow change
+  for anyone who used the old chip-based UI before.
+
+## 6. `ai-prompts.js` changes
+
+Simple once the syntax is settled: update the JSON example in
+`English_Specializing_Prompt` (and any other prompt using `"audio"`/`"video"`
+example keys — confirmed at least one at line ~62 and ~73) to instead show
+the markdown tag embedded directly in `"q"` or `"explanation"`:
+
+```
+"q": "Choose the correct form: 'She ___ to the gym every Monday.'\n\n![audio](https://example.com/audio/present-simple.mp3)",
+```
+
+removing `"audio": "..."` / `"video": "..."` as separate JSON keys entirely,
+and adding a short instruction line telling the model to embed media inline
+using `![audio](url)` / `![video](url)` rather than emitting dedicated
+fields. Should be a single, isolated diff — low risk, do this last.
+
+---
+
+## 7. Database Migration (only after 1–6 are built and verified)
+
+### 7.1 Backup (mandatory first step, before any writes)
+Full logical backup of the `basmagi-quiz` Supabase project
+(`esdfdzhtavraczrhxnmp`) — specifically the `quizzes` table's `data` column
+for all 215 rows, since that's the only table this migration touches. I'll
+present the backup (row count, checksum or full dump) before running
+anything further, per your original instruction.
+
+### 7.2 Migration logic
+For each of the 20 affected quizzes, for each question with `image`/`audio`/
+`video`:
+1. Build the markdown tag: `![audio](${q.audio})` / `![video](${q.video})` /
+   `![${altTextOrDefault}](${q.image})` (image alt text: reuse "Question
+   context image" default from current `renderQuestionImage`, since legacy
+   image objects never carried alt text).
+2. Append the tag(s) to `q.q` (question body) — the field the legacy
+   renderer visually placed media next to. Order: image, then audio, then
+   video, matching current `renderQuestionMedia`'s concatenation order,
+   each on its own line for clean markdown separation.
+3. Delete the `image`/`audio`/`video` keys from the question object.
+4. Write the updated `data` jsonb back.
+
+This should run as a single SQL `UPDATE` using `jsonb_set`/`jsonb_path_query`
+transformations (or, more safely given the nested array-of-objects shape and
+the need for per-question string concatenation, a small one-off Node script
+using the Supabase client, run once, that reads all 215 rows, transforms in
+JS, and writes back only the 20 changed rows) — recommend the script
+approach over raw SQL jsonb surgery, since string concatenation onto `q.q`
+per-array-element is awkward in pure SQL and much clearer to review as JS
+given this only runs once.
+
+### 7.3 Verification before cleanup
+After migration, before deleting any legacy code:
+1. Re-run the media-field-existence query from Section 0 — should return
+   0 for all three fields.
+2. Manually load at least one migrated quiz of each media type (image,
+   audio, video, YouTube-video) on `quiz.html` and `result.html` using the
+   *new* markdown-based rendering, confirm visual/functional parity with
+   how it looked before migration (screenshots before/after recommended).
+3. Only then proceed to delete `renderQuestionMedia` and related legacy
+   functions per Sections 2–5.
+
+---
+
+## 8. Suggested build order
+
+1. `media-resolve.js` shared module (extract, don't yet delete originals).
+2. `markdown.js` media tag support + `renderMarkdown(str, {mediaBaseUrl})` param.
+3. Wire `mediaBaseUrl` through `quiz.js` and `result.js` render calls
+   (additive — legacy dedicated-field rendering still active in parallel).
+4. Manual test: hand-craft a quiz question with `![audio](...)`/`![video](...)`
+   in `q.q` directly in a test quiz row, confirm rendering + no-reload
+   behavior on `quiz.html`, confirm rendering on `result.html`.
+5. `create-quiz.js` insert-at-cursor UX (new quizzes can now be authored
+   with the new syntax natively).
+6. `ai-prompts.js` update.
+7. Supabase backup, then migration script, then verification (Section 7).
+8. Delete legacy code: `renderQuestionMedia` family in `quiz.js`,
+   `result.js`, `export-to-quiz.js`; dropzone chip UI in `create-quiz.js`/
+   `create-quiz.html`; legacy field read/write in `create-quiz.js`'s
+   JSON-building code.
+9. Final regression pass across all 20 previously-affected quizzes plus a
+   freshly-authored test quiz using only the new UI.
+
+This order keeps the app fully functional at every intermediate step —
+nothing is deleted until its replacement is proven working end-to-end
+against real data.

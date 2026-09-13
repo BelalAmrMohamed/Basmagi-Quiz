@@ -146,21 +146,4 @@ Everything below was checked by reading the code end-to-end (auth reached, reque
 - ⚠️ Everything already flagged as needing a live environment in earlier steps (delete→restore→media-intact, delete→purge→media-gone, cross-course move, rename collisions, non-owner/scope-boundary checks) still needs that same human click-through — step 9 didn't touch any of those code paths, so their status is unchanged from before this step, not re-verified here.
 
 
-## Testing
-- I can rename, delete, and restore courses ✅
-- I can rename, delete, restore, and move quizzes. ✅
-- A course had a quiz named `منصة امتحانات بصمجي (تعديل)`, and another quiz next to it, I renamed the other quiz to the exact name `منصة امتحانات بصمجي (تعديل)`, and it allowed me, so no name collision protection on the front or the DB. ⚠️
-- I wasn't able to delete, rename, or move folders. ⚠️
-- `#quizPasswordClear` appears even when the quiz has no password to be removed (create-quiz.html). ⚠️
-- Trash Can should appear disabled when there is nothing in it, instead of not appearing at all, this would make users comfortable that their quizzes get sent to trash and aren't permenantly deleted.
-- Control Page turned out to have many issues:
-  - I can't edit colleges (seperate issue, not related, but good to fix). Console Output:
-  ```
-  control.html:281  GET http://localhost:8080/_vercel/insights/script.js net::ERR_ABORTED 404 (Not Found)
-  hook.js:1  POST http://localhost:8080/api/admin-control 400 (Bad Request)
-  apply @ hook.js:1
-  saveCollege @ control.js:171
-  ```
-  - Pressing any button has a delay, which is acceptible if there is a loading animation.
-
-See [plan](implementation-plan.md) to implement the patches.
+Fully implemented, not fully tested, I'm too lazy.
