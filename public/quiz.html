@@ -461,6 +461,35 @@
 
             <div class="menu-divider"></div>
 
+            <!-- View style switcher: pagination (one question per page) vs
+                 vertical (all questions in a scrollable list). Hidden by
+                 quiz.js at runtime when the quiz's meta.view forces a
+                 specific style — the teacher's setting then can't be
+                 overridden client-side. -->
+            <div class="quiz-view-style-section sidebar-expanded-only" id="quizViewStyleSection">
+                <div class="quiz-view-style-label">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                        <path d="M3 9h18" />
+                    </svg>
+                    <span class="menu-label">طريقة العرض</span>
+                </div>
+                <div class="quiz-view-style-toggle" id="quizViewStyleToggle" role="group" aria-label="طريقة عرض الأسئلة">
+                    <button type="button" class="quiz-view-style-btn" id="quizViewStylePagination"
+                        data-quiz-style="pagination" aria-pressed="true" title="سؤال واحد في كل صفحة">
+                        <span>تصفح</span>
+                    </button>
+                    <button type="button" class="quiz-view-style-btn" id="quizViewStyleVertical"
+                        data-quiz-style="vertical" aria-pressed="false" title="كل الأسئلة في قائمة واحدة">
+                        <span>قائمة</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="menu-divider sidebar-expanded-only" id="quizViewStyleDivider"></div>
+
             <!-- Question navigation — collapsible/accordion so it can be
                  tucked away to save vertical space; starts expanded. Only
                  relevant in the expanded sidebar (desktop expanded / mobile
@@ -579,7 +608,20 @@
 
         <!-- The questions get displayed here from the javascript -->
         <div id="questionContainer" class="loading">
-            <p>جاري تحضير الإختبار</p>
+            <div class="skeleton-card" aria-hidden="true">
+                <div class="skeleton-card-header">
+                    <span class="skeleton-badge"></span>
+                    <span class="skeleton-icon"></span>
+                </div>
+                <span class="skeleton-text skeleton-text--title"></span>
+                <span class="skeleton-text skeleton-text--line"></span>
+                <div class="skeleton-options">
+                    <span class="skeleton-option"></span>
+                    <span class="skeleton-option"></span>
+                    <span class="skeleton-option"></span>
+                    <span class="skeleton-option"></span>
+                </div>
+            </div>
         </div>
 
         <!-- navigation buttons at the bottom -->

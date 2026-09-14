@@ -31,6 +31,10 @@ import {
 } from "../../components/quiz-info-modal/quiz-info-html.js";
 import { loadFullQuizData } from "../home/quiz-data-loader.js";
 import { openReportModal, isQuestionReported } from "../../components/report-question/report-question.js";
+import {
+  isDownloadPasswordVerified,
+  markDownloadPasswordVerified,
+} from "../home/download-password.js";
 
 // Bug 1 Fix — "start of exam" notification moved out of the top-level
 // import block and wrapped in try/catch. It previously ran as a bare
@@ -111,6 +115,10 @@ const els = {
   viewToggle: document.getElementById("viewToggle"),
   viewIcon: document.getElementById("viewIcon"),
   viewText: document.getElementById("viewText"),
+  quizViewStyleSection: document.getElementById("quizViewStyleSection"),
+  quizViewStyleDivider: document.getElementById("quizViewStyleDivider"),
+  quizViewStylePagination: document.getElementById("quizViewStylePagination"),
+  quizViewStyleVertical: document.getElementById("quizViewStyleVertical"),
   quizSource: document.getElementById("quizSource"),
   quizInfoBtn: document.getElementById("quizInfoBtn"),
   quizInfoDialog: document.getElementById("quizInfoDialog"),
@@ -761,6 +769,68 @@ function toggleView() {
   renderMenuNavigation();
 }
 
+// === Quiz Display Style Switcher (pagination vs vertical) ===
+// Reflects the current quizStyle onto the sidebar's segmented toggle buttons.
+function updateQuizViewStyleButtons() {
+  if (els.quizViewStylePagination) {
+    els.quizViewStylePagination.setAttribute(
+      "aria-pressed",
+      quizStyle === "pagination" ? "true" : "false",
+    );
+  }
+  if (els.quizViewStyleVertical) {
+    els.quizViewStyleVertical.setAttribute(
+      "aria-pressed",
+      quizStyle === "vertical" ? "true" : "false",
+    );
+  }
+}
+
+// Switches between "pagination" (one question per page) and "vertical" (all
+// questions in a scrollable list) on the fly, preserving the user's exact
+// progress (currentIdx, answers, locks). Persists the choice both to the
+// user profile and to localStorage (mirroring how init() reads it back).
+window.switchQuizStyle = function switchQuizStyle(newStyle) {
+  if (newStyle !== "pagination" && newStyle !== "vertical") return;
+  if (newStyle === quizStyle) return;
+
+  // Snapshot media state from whichever view we're leaving so playback
+  // position isn't lost across the switch.
+  if (quizStyle !== "vertical") snapshotPaginationMedia(currentIdx);
+
+  quizStyle = newStyle;
+
+  if (userProfile && userProfile.setQuizStyle) {
+    userProfile.setQuizStyle(quizStyle);
+  }
+  try {
+    localStorage.setItem("quiz_style", quizStyle);
+  } catch (_) {
+    /* non-fatal — localStorage unavailable (e.g. private mode) */
+  }
+
+  updateQuizViewStyleButtons();
+
+  if (els.nextBtn) els.nextBtn.style.display = quizStyle === "vertical" ? "none" : "";
+  if (els.prevBtn) els.prevBtn.style.display = quizStyle === "vertical" ? "none" : "";
+
+  // Force a full rebuild rather than a partial patch, since we're switching
+  // the entire rendering mode, not answering a question.
+  lastChangedIdx = null;
+  els.questionContainer.classList.remove("vertical-style");
+
+  if (quizStyle === "vertical") {
+    renderAllQuestionsVertical({ smoothScroll: true });
+  } else {
+    // Ensure renderQuestion() treats this as "navigated to a different
+    // question" (full rebuild) rather than an in-place patch.
+    els.questionContainer.innerHTML = "";
+    renderQuestion();
+  }
+
+  renderMenuNavigation();
+};
+
 // === Breadcrumb Logic ===
 function updateBreadcrumb(meta) {
   if (!meta.path) return { courseName: "", fullBreadcrumb: "" };
@@ -1069,14 +1139,41 @@ async function init() {
     // whatever the student has locally configured (profile / localStorage).
     // The student's own preference is never consulted in that case — this is
     // intentionally not a "default", it's a hard override.
+    let quizStyleForced = false;
     if (metaData.view === "pagination" || metaData.view === "vertical") {
       quizStyle = metaData.view;
+      quizStyleForced = true;
     } else {
       quizStyle =
         userProfile && userProfile.getQuizStyle
           ? userProfile.getQuizStyle()
           : localStorage.getItem("quiz_style") || "pagination";
       if (quizStyle !== "vertical") quizStyle = "pagination";
+    }
+
+    // Wire up / reflect the sidebar's view-style switcher. When the teacher
+    // forces a style via meta.view, hide the switcher entirely rather than
+    // letting the student change it out from under that override.
+    // Uses .onclick (not addEventListener) so re-running init() — e.g. the
+    // popstate re-init path — safely replaces the handler instead of
+    // stacking duplicate listeners on the same persistent DOM elements.
+    if (els.quizViewStyleSection) {
+      if (quizStyleForced) {
+        els.quizViewStyleSection.style.display = "none";
+        if (els.quizViewStyleDivider) els.quizViewStyleDivider.style.display = "none";
+      } else {
+        els.quizViewStyleSection.style.display = "";
+        if (els.quizViewStyleDivider) els.quizViewStyleDivider.style.display = "";
+        updateQuizViewStyleButtons();
+        if (els.quizViewStylePagination) {
+          els.quizViewStylePagination.onclick = () =>
+            window.switchQuizStyle("pagination");
+        }
+        if (els.quizViewStyleVertical) {
+          els.quizViewStyleVertical.onclick = () =>
+            window.switchQuizStyle("vertical");
+        }
+      }
     }
 
     if (
@@ -1098,11 +1195,20 @@ async function init() {
     // (questions are never rendered) until the correct password is entered
     // in a dedicated pop-up dialog. Re-prompts on a wrong attempt; does not
     // give up access to any quiz data while locked.
+    //
+    // Shared memory with the home page's download-password gate: if the
+    // user already verified this quiz's password there (this tab session),
+    // skip the prompt entirely. Conversely, a password entered here is
+    // remembered the same way, so returning to the home page to download
+    // the same quiz won't ask again either.
     if (metaData.password) {
-      const unlocked = await promptForQuizPassword(metaData.password);
-      if (!unlocked) {
-        window.location.href = "/";
-        return;
+      if (!isDownloadPasswordVerified(examId)) {
+        const unlocked = await promptForQuizPassword(metaData.password);
+        if (!unlocked) {
+          window.location.href = "/";
+          return;
+        }
+        markDownloadPasswordVerified(examId);
       }
     }
 
@@ -2001,7 +2107,8 @@ function setQuestionHTML(html) {
   if (cached) restoreMediaFromMap(els.questionContainer, cached);
 }
 
-function renderAllQuestionsVertical() {
+function renderAllQuestionsVertical(opts) {
+  const smoothScroll = !!(opts && opts.smoothScroll);
   if (!els.questionContainer || !questions.length) return;
 
   const answeredCount = Object.keys(userAnswers).length;
@@ -2084,13 +2191,18 @@ function renderAllQuestionsVertical() {
   // After a page reload with restored progress, scroll the user back to
   // the question they were on without forcing them to scroll manually.
   // requestAnimationFrame ensures the cards are painted before we scroll.
-  // "instant" is intentional: smooth scrolling on a cold page load feels
-  // jarring and can overshoot on long quizzes.
-  if (currentIdx > 0) {
+  // "instant" is intentional on cold load: smooth scrolling on first paint
+  // feels jarring and can overshoot on long quizzes. When switching TO this
+  // view from pagination (smoothScroll: true), a smooth scroll instead
+  // gives the user visual continuity to the question they were just on.
+  if (currentIdx > 0 || smoothScroll) {
     requestAnimationFrame(() => {
       const targetCard = document.getElementById(`q-${currentIdx}`);
       if (targetCard)
-        targetCard.scrollIntoView({ behavior: "instant", block: "start" });
+        targetCard.scrollIntoView({
+          behavior: smoothScroll ? "smooth" : "instant",
+          block: "start",
+        });
     });
   }
 }
@@ -2331,6 +2443,7 @@ function renderQuestion() {
   } else {
     // Navigated to a different question (or first render): full rebuild,
     // including fresh media elements for the new question.
+    els.questionContainer.classList.remove("loading");
     const {
       largeClass,
       mediaHTML,
@@ -2540,7 +2653,7 @@ async function finish(skipconfirmationNotification) {
     if (window.syncProgressToServer) window.syncProgressToServer();
   } catch (e) { }
 
-  window.location.href = "result.html";
+  window.location.href = "result";
 }
 
 async function restart(skipconfirmationNotification) {

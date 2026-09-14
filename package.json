@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "npm run dev:vercel",
-    "dev:vercel": "npx vercel dev --local --listen 8080",
+    "dev:vercel": "concurrently -k -n vercel,sync -c blue,magenta \"npx vercel dev --local --listen 8081\" \"npx wait-on tcp:8081 && npx browser-sync start --proxy localhost:8081 --port 8080 --files 'public/**/*.html,public/src/**/*.js,public/src/**/*.css,api/**/*.js' --reload-delay 250 --no-open\"",
     "dev:static": "npx http-server public -p 8080 -o -c-1",
     "vercel": "vercel dev",
     "map": "node scripts/map.js",
-    "commit": "git add -A && git commit -am",
+    "commit": "node scripts/commit.js",
     "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD"
   },
   "keywords": [
@@ -21,7 +21,10 @@
   "author": "Belal Amr Mohamed",
   "license": "MIT",
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "browser-sync": "^3.0.4",
+    "concurrently": "^10.0.5",
+    "http-server": "^14.1.1",
+    "wait-on": "^9.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -95,7 +95,7 @@ Connect Password typing memory on the main page `download-password-form` to the 
 - `npm run dev` doesn't do hot reload.
 - Improve the `npm run commit` command in `package.json`:
   - When I pass a message to it (npm run commit -- "Updated quiz page"), it should use that message.
-  - But if I don't pass it a message, it should automatically write a message itself. So if quiz.js, quiz.html, and quiz.css are changed, and quiz-old.js was deleted, and quiz-new.js is added, the autmatically generated message should be like this `Updated quiz.js, quiz.html, & quiz.css. Deleted quiz-old.js. Added quiz-new.js`
+  - But if I don't pass it a message, it should automatically write a message itself. So if quiz.js, quiz.html, and quiz.css are changed, and quiz-old.js was deleted, and quiz-new.js is added, the autmatically generated message should be like this `Updated quiz.js, quiz.html, & quiz.css. Deleted quiz-old.js. Added quiz-new.js`. If that is too complex to do in a single command, you can write a simple script for it.
 
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.

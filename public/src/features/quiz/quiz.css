@@ -616,6 +616,70 @@ body.sidebar-expanded {
   display: flex;
 }
 
+/* ── View Style Switcher (pagination vs vertical) ────────────────────────── */
+.quiz-view-style-section {
+  padding: 4px 4px 6px;
+}
+
+.quiz-view-style-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 10px;
+  color: var(--color-text-secondary);
+}
+
+.quiz-view-style-label .menu-label {
+  opacity: 1;
+  max-width: none;
+  pointer-events: auto;
+  flex: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.quiz-view-style-toggle {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--color-background-secondary, #f5f5f5);
+  border: 1px solid var(--color-border);
+}
+
+.quiz-view-style-btn {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.quiz-view-style-btn:hover {
+  color: var(--color-text);
+}
+
+.quiz-view-style-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.quiz-view-style-btn[aria-pressed="true"] {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
 /* ── Retractable / Accordion Section (question navigation) ────────────────── */
 .sidebar:not(.expanded) .quiz-nav-section {
   margin-bottom: 0;
@@ -2841,6 +2905,92 @@ body.is-resizing-media .media-container.resizable-media {
 .loading::after {
   content: "...";
   animation: dots 1.5s infinite;
+}
+
+/* ── Advanced loading skeleton ────────────────────────────────────────────
+   Structural placeholder mimicking a real question card (header, title/body
+   lines, four option rows) while the quiz data loads. Base state is a flat
+   gray placeholder with no motion — the shimmer sweep is opt-in and strictly
+   scoped to [data-animations="enabled"] so "High Performance" mode always
+   gets the calm, static version, matching .skeleton-media's pattern. */
+.skeleton-card {
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--color-border-light);
+  background-color: var(--color-surface);
+  text-align: initial;
+}
+
+.loading::after {
+  display: none;
+}
+
+.skeleton-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.skeleton-badge,
+.skeleton-icon,
+.skeleton-text,
+.skeleton-option {
+  display: block;
+  border-radius: 10px;
+  background: linear-gradient(90deg,
+      var(--color-border) 0%,
+      var(--color-border-light) 40%,
+      var(--color-border) 80%);
+  background-size: 1200px 100%;
+}
+
+.skeleton-badge {
+  width: 60px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.skeleton-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 12px;
+}
+
+.skeleton-text--title {
+  width: 85%;
+  height: 20px;
+}
+
+.skeleton-text--line {
+  width: 55%;
+  margin-bottom: 24px;
+}
+
+.skeleton-options {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skeleton-option {
+  height: 54px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+}
+
+[data-animations="enabled"] .skeleton-badge,
+[data-animations="enabled"] .skeleton-icon,
+[data-animations="enabled"] .skeleton-text,
+[data-animations="enabled"] .skeleton-option {
+  animation: media-shimmer 1.6s ease-in-out infinite;
 }
 
 /* ─── 12. Responsive Breakpoint Adaptations ─────────────────────────────── */

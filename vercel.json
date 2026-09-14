@@ -2,6 +2,7 @@
   "buildCommand": null,
   "outputDirectory": "public",
   "framework": null,
+  "cleanUrls": true,
   "rewrites": [
     {
       "source": "/@:handle",
@@ -45,7 +46,7 @@
     },
     {
       "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|service-worker\\.js|.*\\.[a-zA-Z0-9]+$).*)",
-      "destination": "/index.html"
+      "destination": "/"
     }
   ]
 }

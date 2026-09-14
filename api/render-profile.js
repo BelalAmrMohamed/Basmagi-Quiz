@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY,
 );
 
-const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile.html");
+const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile");
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
 export default async function handler(req, res) {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 
   // NOTE: use case-insensitive matching here, same as admin-stats.js and
   // auth.js. A plain `.eq()` previously caused this route to silently
-  // 302-redirect to /profile.html for handles that didn't match on exact
+  // 302-redirect to /profile for handles that didn't match on exact
   // case/whitespace, which looked like "the profile doesn't exist" to
   // visitors even though the account and handle were both valid.
   const normalizedHandle = cleanHandle.toLowerCase().replace(/[%_\\]/g, "\\$&");
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
   if (error || !adminData) {
     // Admin not found
-    return res.redirect(302, "/profile.html");
+    return res.redirect(302, "/profile");
   }
 
   let html;
