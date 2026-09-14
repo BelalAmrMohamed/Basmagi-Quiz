@@ -7,19 +7,20 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Courses & Folders OG Images
-- Right Column of the info table aren't all on the same x access, some are slightly to the left, others to the right slightly.
+### Courses & Folders OG Images (og.js)
+- Right Column of the info table aren't all on the same x access, they are not perfectly aligned, some are slightly to the left, others to the right slightly.
 - (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
 
 ### امتحاناتك Rules
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 - The `نسخ لامتحاناتي` button doesn't show the animations when copying courses and folders, clicking it quits the menu instantly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
-- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
+- Menus:
+  - Pressing the more button on a quiz `.exam-more-btn`, the dropdown shows `.exam-dropdown-menu`, then pressing another more button on anohter quiz, the first one closes and the second shows (Correct Behavior).
+  - Right cliking a quiz shows the right-click menu `#userQuizContextMenu`, then pressing the more button `.exam-more-btn`, opens `.exam-dropdown-menu` on top of the right-click menu (Incorrect Behavior): Only one menu should be open.
 
-### Menus in امتحاناتك
-- Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
-- Right cliking a quiz shows the right-click menu "#userQuizContextMenu", then pressing the more button, opens `.exam-dropdown-menu` on top of the right-click menu (Incorrect Behavior): Only one menu should be open.
+### `.create-quiz-inline-modal`
+- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
 ### `.sidebar-brand-link`
 - Remove the link from that element and update its name, I don't want it to be a link (on all pages, including `documents-shell.js` and `quiz.html`).
@@ -45,7 +46,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Some vidoes will be displayed based on the percentage of the result.
 
 #### Score Guage
-- The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` to the result page.
+- The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
 ### Quiz Page
 - Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself.
@@ -57,10 +58,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 - If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
 
 ### App SEO and GEO 
-- Improve the SEO and GEO of the platform, take them to the next level, the objective is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform.
-
-### Translation and content expansion (Suggestion)
-- Add English translation support.
+- Generate a detailed implementation plan at `docs/plans/SEO-GEO-plan.md` to find every possible way to improve the SEO and GEO of the platform. One of the objectives is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. Also remove info about pages that got removed (like sign-in.html), and pages that aren't listed.
 
 ### Home Page
 
@@ -70,14 +68,17 @@ Check the rules for creating امتحانات and copying them and moving them.
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
   - Make an info modal for Folders.
-  - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
+  - (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
 ### Control.html
-`#collegeForm` doesn't have a loading skeleton/animation.
+- Give `#collegeForm` an advanced loading skeleton/animation.
+
+### Profile Page
+Update the display of the top admins to be similar to YouTube: ![similar](image-1.png).
 
 ### About.html
-- Open-source Angle
-- Add a short testimonial or review
+- Suggestion: Add an open-source Angle.
+- Suggestion: Add a short testimonial or review.
 `المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
 
 ### Create Quiz Page
@@ -100,5 +101,5 @@ Think of a new way to download quizzes, maybe throug canva.
 ### Download as Python
 Think about this suggestion, a new way to download quizzes.
 
-### Profile Page
-Update the display of the top admins to be similar to YouTube: ![similar](image-1.png)
+### Translation and content expansion (Suggestion)
+- Add English translation support.
