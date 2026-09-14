@@ -46,7 +46,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [3.19 MB, 1498 LOC]
+├── docs/ [3.19 MB, 1488 LOC]
 │   ├── plans/ [81.64 KB, 1186 LOC]
 │   │   ├── admin-actions-update-testing-results.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
@@ -481,8 +481,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 |-----------|---------------|
 | `public` | 103453 |
 | `api` | 8150 |
-| `docs` | 1498 |
-| `(root)` | 1198 |
+| `docs` | 1488 |
+| `(root)` | 1202 |
 | `supabase` | 969 |
 | `scripts` | 670 |
 
@@ -508,7 +508,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .js | 151 | 69017 | 2.77 MB |
 | .css | 26 | 32797 | 838.64 KB |
 | .html | 19 | 10284 | 624.94 KB |
-| .md | 8 | 2540 | 136.95 KB |
+| .md | 8 | 2534 | 135.95 KB |
 | .sql | 6 | 554 | 27.43 KB |
 | .json | 5 | 219 | 2.36 MB |
 | (no extension) | 1 | 22 | 1.06 KB |
@@ -516,7 +516,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .xml | 1 | 45 | 1.33 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **220** | **115938** | **6.74 MB** |
+| **Total** | **220** | **115932** | **6.74 MB** |
 
 ### Binary / Media Files (Physical Size)
 

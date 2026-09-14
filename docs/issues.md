@@ -16,7 +16,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 - The `نسخ لامتحاناتي` button doesn't show the animations when copying courses and folders, clicking it quits the menu instantly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
 - Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
-- Local Trash can button doesn't appear on the card itself, or in the `#userQuizContextMenu`
 
 ### Menus in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
@@ -26,12 +25,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Remove the link from that element and update its name, I don't want it to be a link (on all pages, including `documents-shell.js` and `quiz.html`).
 - Make the favicon on the right and the text `امتحانات بصمجي` on the left, since this is an RTL Platform.
 - Put a transition on it. Because when opening/closing the side-menu on desktops, it appears instantly while the side-menu on desktops has a transition/animation.
-
-### Admin actions and deletion flow (New Features)
-See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>)
-
-### Markdown Engine
-- See [Mrkdown Media Migration Plan](plans/markdown-media-migration-plan.md)
 
 ### Google Sign in on localhost.
 - Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
@@ -55,15 +48,11 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` to the result page.
 
 ### Quiz Page
-- Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view, while preseving there progress perfectly, and preserving the question index they were on.
 - Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself.
 - Media should appear in the middle of the container.
 
-#### Password
-Connect Password typing memory on the main page `download-password-form` to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
-
 ### Settings Page
-- The page shows false/placeholder values at start, which confuses some users. Implement a loading skeleton/state before displaying any info.
+- The page shows false/placeholder values at start, before loading the actual values from localstorage and DB, which confuses some users. Implement an advanced loading skeleton/state before displaying any info.
 - The carrot on the dropdowns is too close to the left border, fix the padding/margin or whatever is wrong.
 - If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
 
@@ -102,9 +91,10 @@ issues while testing the update:
 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
-- Pressing `ctrl + s` (saving) shouldn't redirect me to the main page.
+- Pressing `ctrl + s` (saving) shouldn't redirect me to the main page, instead it should just redirect ot the entry screen on the create-quiz page itlsef.
 - Pressing `ctrl + z` doesn't undo now. it only does undo to adding/removing questions, but not editing question text/options. Browser's native undo also doesn't work for the text input.
 Note: I went to the website, viewed one of the quizzes you edited, and there is a finding:
+- Now all the quizzes in the home page, when I press the تعديل button from the dropdown menu, it just opens /create, without the edit id, so I just land on the entry screen. This issue is for the main quizzes and local quizzes.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
