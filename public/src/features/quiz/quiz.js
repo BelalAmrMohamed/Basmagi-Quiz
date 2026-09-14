@@ -1812,16 +1812,12 @@ function buildVerticalQuestionBodyHTML(q, idx) {
 // exactly, which never call renderMarkdown() or touch innerHTML for an
 // answer update. This is what actually fixes inline <img>/<video>/<audio>
 // (living inside q.q/option text) getting destroyed and restarted on
-// every click — the previous "patch only .reloadable-context" approach
-// still re-ran renderMarkdown() on the question/option text every time,
-// which recreated all inline media and restarted playback.
-function applyAnswerStateToCard(cardEl, q, idx) {
+// every click.
+function patchQuestionAnswerState(cardEl, q, idx) {
   const isEssay = isEssayQuestion(q);
   const isLocked = !!lockedQuestions[idx];
   const userSelected = userAnswers[idx];
   const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
-
-  const checkBtn = cardEl.querySelector(".check-answer-btn");
 
   if (isEssay) {
     const textarea = cardEl.querySelector(`#essayInput-${idx}, .essay-textarea`);
@@ -1829,12 +1825,33 @@ function applyAnswerStateToCard(cardEl, q, idx) {
       textarea.disabled = isLocked;
       textarea.classList.toggle("locked", isLocked);
     }
+    const checkBtn = cardEl.querySelector(".check-answer-btn");
     if (checkBtn) {
       checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
       checkBtn.disabled = !userSelected || String(userSelected).trim() === "";
     }
-    const formalAnswerEl = cardEl.querySelector(".formal-answer");
-    if (formalAnswerEl) formalAnswerEl.classList.toggle("show", isLocked);
+    // The model-answer block (only shown once locked) and star rating are
+    // small enough, and different enough in structure pre/post-lock, that
+    // rebuilding just this one leaf sub-block is simpler and safer than
+    // trying to incrementally patch it — it carries no persistent media.
+    const essayContainer = cardEl.querySelector(".essay-container");
+    let formalAnswerEl = cardEl.querySelector(".formal-answer");
+    if (isLocked) {
+      const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+      const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
+      const formalHtml = `
+            <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
+            <strong style="text-align: center;">الإجابة النموذجية</strong>
+            <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>`;
+      if (!formalAnswerEl) {
+        formalAnswerEl = document.createElement("div");
+        formalAnswerEl.className = "formal-answer";
+        essayContainer?.insertAdjacentElement("afterend", formalAnswerEl);
+      }
+      formalAnswerEl.innerHTML = formalHtml;
+    } else if (formalAnswerEl) {
+      formalAnswerEl.remove();
+    }
   } else {
     const correctIdx = q.correct ?? q.answer;
     const isMultiple = isMultiSelectQuestion(q);
@@ -1858,10 +1875,13 @@ function applyAnswerStateToCard(cardEl, q, idx) {
           : i === singleCorrectIndex(q);
         row.classList.toggle("correct", isCorrectOption);
         row.classList.toggle("wrong", isSelected && !isCorrectOption);
+        row.removeAttribute("onclick");
       } else {
         row.classList.remove("correct", "wrong");
+        row.setAttribute("onclick", `window.handleSelectForQuestion(${idx}, ${i})`);
       }
     });
+    const checkBtn = cardEl.querySelector(".check-answer-btn");
     if (checkBtn) {
       checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
       const checkDisabled = isMultiple
@@ -1871,15 +1891,40 @@ function applyAnswerStateToCard(cardEl, q, idx) {
     }
   }
 
-  // Feedback content itself was already fully rendered (both text and the
-  // correct/wrong verdict it corresponds to) at question-mount time — see
-  // buildVerticalQuestionBodyHTML/buildQuestionBodyHTML above — so locking
-  // the question only needs to reveal it, never rebuild it.
+  // Feedback block: safe to fully regenerate — it holds only explanation/
+  // model-answer prose, never the question or option text, so there is no
+  // persistent media here to lose.
   const feedbackEl = cardEl.querySelector(".feedback");
   if (feedbackEl) {
-    feedbackEl.classList.toggle("show", isLocked);
+    let feedbackClass = "feedback";
+    let feedbackText = "";
+    const explanationText =
+      q.explanation || q.desc || q.info || "No explanation provided.";
+    if (isLocked) {
+      if (isEssay) {
+        const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+        feedbackClass += " essay-feedback show";
+        feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
+      } else {
+        const isMultiple = isMultiSelectQuestion(q);
+        const correctIdx = q.correct ?? q.answer;
+        const isCorrect = isMultiple
+          ? Array.isArray(userSelected) &&
+          Array.isArray(correctIdx) &&
+          userSelected.length === correctIdx.length &&
+          correctIdx.every((i) => userSelected.includes(i))
+          : isAnswerCorrect(userSelected, correctIdx);
+        feedbackClass += isCorrect ? " correct show" : " wrong show";
+        feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+      }
+    }
+    feedbackEl.className = feedbackClass;
+    feedbackEl.innerHTML = feedbackText;
+    scanDirections(feedbackEl);
   }
 
+  // Bookmark/flag/report buttons in the header can change independently
+  // (e.g. via the side menu) — keep them in sync too, cheaply.
   const isBookmarked = gameEngine.isBookmarked(examId, idx);
   const isFlagged = gameEngine.isFlagged(examId, idx);
   const bookmarkBtn = cardEl.querySelector(".bookmark-btn");
@@ -1888,124 +1933,7 @@ function applyAnswerStateToCard(cardEl, q, idx) {
   if (flagBtn) flagBtn.classList.toggle("active", isFlagged);
 }
 
-
-const isEssay = isEssayQuestion(q);
-const isLocked = !!lockedQuestions[idx];
-const userSelected = userAnswers[idx];
-const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
-
-if (isEssay) {
-  const textarea = cardEl.querySelector(`#essayInput-${idx}, .essay-textarea`);
-  if (textarea) {
-    textarea.disabled = isLocked;
-    textarea.classList.toggle("locked", isLocked);
-  }
-  const checkBtn = cardEl.querySelector(".check-answer-btn");
-  if (checkBtn) {
-    checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
-    checkBtn.disabled = !userSelected || String(userSelected).trim() === "";
-  }
-  // The model-answer block (only shown once locked) and star rating are
-  // small enough, and different enough in structure pre/post-lock, that
-  // rebuilding just this one leaf sub-block is simpler and safer than
-  // trying to incrementally patch it — it carries no persistent media.
-  const essayContainer = cardEl.querySelector(".essay-container");
-  let formalAnswerEl = cardEl.querySelector(".formal-answer");
-  if (isLocked) {
-    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
-    const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
-    const formalHtml = `
-          <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
-          <strong style="text-align: center;">الإجابة النموذجية</strong>
-          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>`;
-    if (!formalAnswerEl) {
-      formalAnswerEl = document.createElement("div");
-      formalAnswerEl.className = "formal-answer";
-      essayContainer?.insertAdjacentElement("afterend", formalAnswerEl);
-    }
-    formalAnswerEl.innerHTML = formalHtml;
-  } else if (formalAnswerEl) {
-    formalAnswerEl.remove();
-  }
-} else {
-  const correctIdx = q.correct ?? q.answer;
-  const isMultiple = isMultiSelectQuestion(q);
-  cardEl.querySelectorAll(".option-row").forEach((row, i) => {
-    let isSelected;
-    if (isMultiple) {
-      isSelected = Array.isArray(userSelected) && userSelected.includes(i);
-    } else {
-      isSelected = userSelected === i;
-    }
-    row.classList.toggle("selected", isSelected);
-    row.classList.toggle("locked", isLocked);
-    const input = row.querySelector("input");
-    if (input) {
-      input.checked = isSelected;
-      input.disabled = isLocked;
-    }
-    if (isLocked) {
-      const isCorrectOption = isMultiple
-        ? Array.isArray(correctIdx) && correctIdx.includes(i)
-        : i === singleCorrectIndex(q);
-      row.classList.toggle("correct", isCorrectOption);
-      row.classList.toggle("wrong", isSelected && !isCorrectOption);
-      row.removeAttribute("onclick");
-    } else {
-      row.classList.remove("correct", "wrong");
-      row.setAttribute("onclick", `window.handleSelectForQuestion(${idx}, ${i})`);
-    }
-  });
-  const checkBtn = cardEl.querySelector(".check-answer-btn");
-  if (checkBtn) {
-    checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
-    const checkDisabled = isMultiple
-      ? !Array.isArray(userSelected) || userSelected.length === 0
-      : userSelected === undefined;
-    checkBtn.disabled = checkDisabled;
-  }
-}
-
-// Feedback block: safe to fully regenerate — it holds only explanation/
-// model-answer prose, never the question or option text, so there is no
-// persistent media here to lose.
-const feedbackEl = cardEl.querySelector(".feedback");
-if (feedbackEl) {
-  let feedbackClass = "feedback";
-  let feedbackText = "";
-  const explanationText =
-    q.explanation || q.desc || q.info || "No explanation provided.";
-  if (isLocked) {
-    if (isEssay) {
-      const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
-      feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
-    } else {
-      const isMultiple = isMultiSelectQuestion(q);
-      const correctIdx = q.correct ?? q.answer;
-      const isCorrect = isMultiple
-        ? Array.isArray(userSelected) &&
-        Array.isArray(correctIdx) &&
-        userSelected.length === correctIdx.length &&
-        correctIdx.every((i) => userSelected.includes(i))
-        : isAnswerCorrect(userSelected, correctIdx);
-      feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
-    }
-  }
-  feedbackEl.className = feedbackClass;
-  feedbackEl.innerHTML = feedbackText;
-  scanDirections(feedbackEl);
-}
-
-// Bookmark/flag/report buttons in the header can change independently
-// (e.g. via the side menu) — keep them in sync too, cheaply.
-const isBookmarked = gameEngine.isBookmarked(examId, idx);
-const isFlagged = gameEngine.isFlagged(examId, idx);
-const bookmarkBtn = cardEl.querySelector(".bookmark-btn");
-if (bookmarkBtn) bookmarkBtn.classList.toggle("active", isBookmarked);
-const flagBtn = cardEl.querySelector(".flag-btn");
-if (flagBtn) flagBtn.classList.toggle("active", isFlagged);
+const applyAnswerStateToCard = patchQuestionAnswerState;
 
 // Structure inside .question-body:
 //   [.media-center-wrap …]   ← persistent, rendered once, never replaced
