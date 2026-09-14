@@ -13,6 +13,8 @@ export const CREATE_QUIZ_TOOL = {
   description:
     "Create a new quiz and save it for the user. Only call this when the user has explicitly confirmed they want the quiz created (e.g. after you've shown them a preview and they said yes/أنشئ/تمام). " +
     "For MCQ/True-False questions, `correct` MUST always be an array of 0-based option indices — use a single-element array like [2] for one correct answer, or multiple indices like [0, 2] if more than one option is correct. Omit `correct` (and `options`) entirely for essay/free-text questions and use `answer` instead. " +
+    "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index (in which case set it to `true`). " +
+    "To embed an image, audio, or video in a question, do NOT use dedicated fields — embed it directly inline inside `q` (or `explanation`/`answer`) using markdown bracket syntax: `![alt text](url)` for an image, `![audio](url)` for audio, `![video](url)` for video (YouTube links auto-embed). Place the tag on its own line, typically after the question text. " +
     "`folder` is the exact title of an existing folder or course (from the folder tree listing already given to you) to place the new quiz directly inside, e.g. so the user can ask for it under \"math/algebra\" instead of always landing at the top level — omit it (or pass null) to save at the top level, alongside courses.",
   input_schema: {
     type: "object",
@@ -34,6 +36,12 @@ export const CREATE_QUIZ_TOOL = {
             // in quiz-schema.js) unwraps a single-element array to a plain
             // integer for single-answer questions, so no behavior changes.
             correct: { type: "array", items: { type: "integer" } },
+            // Independent of `correct`'s length — see isMultiSelectQuestion()
+            // in rate-answers.js. Omitting this falls back to the legacy
+            // Array.isArray(correct) heuristic, which is always true now
+            // that `correct` is always an array, so the model should set
+            // this explicitly rather than rely on the fallback.
+            multiSelect: { type: "boolean" },
             answer: { type: "string" },
             explanation: { type: "string" },
           },
@@ -56,7 +64,9 @@ export const EDIT_QUIZ_TOOL = {
   description:
     "Edit an existing quiz's title, description, or questions. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
     "Identify the quiz using `currentTitle`, matched exactly against one of the titles already given to you. Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
-    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain, not just the changed ones.",
+    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain, not just the changed ones. " +
+    "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index. " +
+    "To embed an image, audio, or video in a question, do NOT use dedicated fields — embed it directly inline inside `q` (or `explanation`/`answer`) using markdown bracket syntax: `![alt text](url)` for an image, `![audio](url)` for audio, `![video](url)` for video (YouTube links auto-embed).",
   input_schema: {
     type: "object",
     properties: {
@@ -71,6 +81,7 @@ export const EDIT_QUIZ_TOOL = {
             q: { type: "string" },
             options: { type: "array", items: { type: "string" } },
             correct: { type: "array", items: { type: "integer" } },
+            multiSelect: { type: "boolean" },
             answer: { type: "string" },
             explanation: { type: "string" },
           },
@@ -110,7 +121,9 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
   description:
     "Edit the single quiz currently open in this page's editor — its title, description, and/or questions. There is only one quiz in scope on this page, so no identifier is needed. Only call this when the user has explicitly confirmed the specific change (e.g. after you've restated what will change and they said yes/عدّل/تمام). " +
     "Only include the fields that actually change — omit `questions` entirely if only the title/description changed. " +
-    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain (not just new/changed ones) — this is also how you fully replace the current quiz with a different one in a single call, without a separate reset step.",
+    "If `questions` is included, it REPLACES the quiz's entire question list, so include every question that should remain (not just new/changed ones) — this is also how you fully replace the current quiz with a different one in a single call, without a separate reset step. " +
+    "`multiSelect` controls whether the quiz-taker sees checkboxes (true) or radio buttons (false) — it is independent of how many indices are in `correct`. Default to `false` unless the user specifically wants a \"choose one or more\" question or `correct` has more than one index. " +
+    "To embed an image, audio, or video in a question, do NOT use dedicated fields — embed it directly inline inside `q` (or `explanation`/`answer`) using markdown bracket syntax: `![alt text](url)` for an image, `![audio](url)` for audio, `![video](url)` for video (YouTube links auto-embed).",
   input_schema: {
     type: "object",
     properties: {
@@ -124,6 +137,7 @@ export const EDIT_CURRENT_QUIZ_TOOL = {
             q: { type: "string" },
             options: { type: "array", items: { type: "string" } },
             correct: { type: "array", items: { type: "integer" } },
+            multiSelect: { type: "boolean" },
             answer: { type: "string" },
             explanation: { type: "string" },
           },

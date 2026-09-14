@@ -498,13 +498,6 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
         ta.setSelectionRange(urlStart, urlStart + "https://".length);
         break;
       }
-      case "image": {
-        const alt = selected || "وصف الصورة";
-        replaceTextareaRange(ta, start, end, `![${alt}](https://)`);
-        const urlStart = start + alt.length + 4; // after "![alt]("
-        ta.setSelectionRange(urlStart, urlStart + "https://".length);
-        break;
-      }
       case "table": {
         const rows =
           "| العمود 1 | العمود 2 |\n| --- | --- |\n| قيمة | قيمة |";
@@ -523,6 +516,40 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
   ta.focus();
   autoResizeMdSource(ta);
   ta.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/**
+ * Opens an OS file picker (accepting only the given media type's MIME
+ * types) and, once a file is chosen, runs it through the exact same
+ * upload-and-insert pipeline the drag-and-drop/paste dropzone uses
+ * (handleMarkdownMediaFile → uploadMediaFileForMarkdown → MEDIA_TAG_BUILDERS),
+ * inserting the resulting bracket-syntax tag into the currently-focused
+ * .md-source field. Used by the global toolbar's صورة/فيديو/صوت buttons —
+ * previously "صورة" inserted a bare `![alt](https://)` placeholder the
+ * author had to fill in by hand and "فيديو"/"صوت" didn't exist at all.
+ * @param {"image"|"audio"|"video"} mediaType
+ */
+function triggerMediaUploadForActiveField(mediaType) {
+  const ta = _activeMdSource;
+  if (!ta) {
+    _showNoFieldTip();
+    return;
+  }
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = Array.from(MEDIA_MIME_MAP[mediaType]).join(",");
+  input.style.display = "none";
+  input.addEventListener("change", () => {
+    const file = input.files && input.files[0];
+    if (file) {
+      handleMarkdownMediaFile(ta, file, () => {
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+    }
+    input.remove();
+  });
+  document.body.appendChild(input);
+  input.click();
 }
 
 /**
@@ -643,6 +670,15 @@ function setupGlobalMdBar() {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       const cmd = btn.dataset.gmdCmd || null;
+      // صورة / فيديو / صوت open a file picker and upload, exactly like
+      // dropping a file on the textarea, rather than inserting a bare
+      // `![alt](https://)` placeholder the author has to fill in by hand
+      // (and which, for video/audio, isn't even the right tag shape).
+      if (cmd === "image" || cmd === "video" || cmd === "audio") {
+        triggerMediaUploadForActiveField(cmd);
+        closeAllGmdDropdowns();
+        return;
+      }
       const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
       const heading = btn.dataset.gmdHeading || null;
       applyGlobalMdAction(cmd, latex, heading);
@@ -2057,8 +2093,13 @@ function updateStatistics() {
   // keep the numbers up-to-date; the modal itself is shown on demand.
   const totalQuestions = quizData.questions.length;
 
+  // Media is embedded inline in the question body as markdown bracket-syntax
+  // tags now (![alt](url) etc.) rather than a dedicated `image` field, so
+  // detect an inline image tag directly in `q.q` instead. `![audio](...)`/
+  // `![video](...)` are excluded since this stat is specifically "images".
+  const IMAGE_TAG_RE = /!\[(?!audio\]|video\])[^\]]*\]\([^\s)]+\)/i;
   const questionsWithImages = quizData.questions.filter(
-    (q) => q.image && q.image.trim(),
+    (q) => q.q && IMAGE_TAG_RE.test(q.q),
   ).length;
   const questionsWithExplanations = quizData.questions.filter(
     (q) => q.explanation && q.explanation.trim(),
@@ -2392,9 +2433,11 @@ function setupQuestionEventListeners(questionId) {
 // One dropzone + one link input per question, instead of three separate
 // always-visible sections. Admins can drop/select any file or paste any
 // link; the type (image / audio / video) is auto-detected from the file's
-// MIME type or the URL's extension/host (e.g. YouTube), then routed into
-// the matching `question.image` / `question.audio` / `question.video`
-// field. Non-admin users get the link input only (no upload).
+// MIME type or the URL's extension/host (e.g. YouTube), then inserted into
+// the question body as an inline markdown bracket-syntax tag (see
+// MEDIA_TAG_BUILDERS below) — there is no dedicated question.image/
+// question.audio/question.video field to write into anymore. Non-admin
+// users get the link input only (no upload).
 
 const MEDIA_MIME_MAP = {
   image: new Set([
@@ -2559,10 +2602,11 @@ function updateQuestionNumbers() {
 // literal escaped text.
 //
 // NOTE: pasting a YouTube / image / video / audio URL (instead of a file)
-// currently just inserts the URL as plain text — markdown.js does NOT
-// auto-embed bare URLs (only the bracket-syntax tags above), so a
-// bare-pasted URL renders as plain text, not media. If that's meant to
-// auto-embed, it needs its own fix; out of scope for this pass.
+// is wrapped in the matching bracket-syntax tag immediately (see the
+// "paste" listener in setupMarkdownMediaDropzone below) — markdown.js does
+// NOT auto-embed bare URLs on its own (only the bracket-syntax tags above
+// are recognized by renderMarkdown()), so the wrapping has to happen here,
+// at paste time.
 
 // BUG FIX: these must emit the bracket-syntax tags markdown.js's
 // renderMarkdown()/applyInline() actually recognizes today
@@ -2719,14 +2763,6 @@ async function handleMarkdownMediaFile(textarea, file, onChange) {
   }
 }
 
-// Recognises a pasted/dropped bare URL that points at a YouTube video or a
-// direct image/video/audio file — same detection markdown.js itself uses
-// to auto-embed bare URLs, kept in sync here just for the "is this actually
-// media, or just a plain link" decision at paste time.
-function isEmbeddableMediaUrl(url) {
-  return !!detectMediaTypeFromUrl(url) || /youtube\.com\/watch\?v=|youtu\.be\//i.test(url);
-}
-
 /**
  * Wires drag-and-drop and clipboard-paste media handling onto one
  * .md-source textarea. Called once per field from setupMdEditor(), so
@@ -2777,22 +2813,79 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     }
 
     // Case 2: plain-text paste that happens to BE a media URL (YouTube
-    // link, direct image/video/audio link). Let it insert as plain text —
-    // markdown.js already auto-embeds bare media URLs at render time — but
-    // still route it through the normal undo-safe insertion path rather
-    // than the browser's default paste, for consistency with Case 1.
+    // link, direct image/video/audio link). markdown.js does NOT auto-embed
+    // bare URLs — only the bracket-syntax tags (`![alt](url)` /
+    // `![audio](url)` / `![video](url)`) are recognized by renderMarkdown()
+    // — so wrap the pasted URL in the matching tag immediately, exactly
+    // like a file upload does, instead of inserting the bare URL as plain
+    // text (which used to render as an inert link/plain text, never as
+    // embedded media).
     const text = e.clipboardData?.getData("text/plain");
-    if (text && isEmbeddableMediaUrl(text.trim())) {
-      e.preventDefault();
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      replaceTextareaRange(textarea, start, end, text.trim());
-      autoResizeMdSource(
-        textarea,
-        textarea.id.startsWith("option-text-") ? 36 : 40,
-        textarea.id.startsWith("option-text-") ? 140 : 240,
+    if (text) {
+      const trimmed = text.trim();
+      const mediaType = detectMediaTypeFromUrl(trimmed);
+      if (mediaType) {
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const tag = MEDIA_TAG_BUILDERS[mediaType](trimmed);
+        replaceTextareaRange(textarea, start, end, tag);
+        autoResizeMdSource(
+          textarea,
+          textarea.id.startsWith("option-text-") ? 36 : 40,
+          textarea.id.startsWith("option-text-") ? 140 : 240,
+        );
+        if (onChange) onChange(textarea.value);
+        return;
+      }
+
+      // Case 3: a raw <img>/<video>/<audio> HTML snippet (not a bare URL).
+      // This is what many browsers/OSes put on the clipboard for "copy
+      // image" (e.g. right-click → copy image, or dragging an <img> out of
+      // a web page) — a full tag like
+      // `<img width="400" height="400" alt="x.jpg" src="https://...">`,
+      // not a plain link. markdown.js's renderMarkdown() has no raw-HTML
+      // media tag support at all (removed in an earlier migration step),
+      // so pasting this as-is renders as literal escaped `<img ...>` text
+      // — this was the actual root cause of the reported bug (screenshot
+      // showed the literal tag, not a broken image). Extract just the
+      // src/data URL and rebuild it as the correct bracket-syntax tag.
+      const htmlTagMatch = trimmed.match(
+        /^<(img|video|audio|source)\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i,
       );
-      if (onChange) onChange(textarea.value);
+      if (htmlTagMatch) {
+        const [, tagName, src] = htmlTagMatch;
+        const lowerTag = tagName.toLowerCase();
+        let resolvedType;
+        if (lowerTag === "img") {
+          resolvedType = "image";
+        } else if (lowerTag === "video" || lowerTag === "audio") {
+          resolvedType = lowerTag;
+        } else {
+          // Bare <source src="..."> has no type of its own — check whether
+          // the pasted snippet also included its wrapping <video>/<audio>
+          // tag (e.g. a whole `<video><source src="..."></video>` block)
+          // before falling back to extension sniffing, since ".webm" alone
+          // is ambiguous between audio and video containers.
+          resolvedType = /<video\b/i.test(trimmed)
+            ? "video"
+            : /<audio\b/i.test(trimmed)
+              ? "audio"
+              : detectMediaTypeFromUrl(src) || "video";
+        }
+        e.preventDefault();
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const tag = MEDIA_TAG_BUILDERS[resolvedType](src);
+        replaceTextareaRange(textarea, start, end, tag);
+        autoResizeMdSource(
+          textarea,
+          textarea.id.startsWith("option-text-") ? 36 : 40,
+          textarea.id.startsWith("option-text-") ? 140 : 240,
+        );
+        if (onChange) onChange(textarea.value);
+        return;
+      }
     }
     // Anything else (plain text, non-media links): fall through to the
     // browser's default paste behavior.
@@ -3705,13 +3798,6 @@ function validateQuiz() {
       }
     }
 
-    if (q.image && q.image.trim()) {
-      try {
-        new URL(q.image);
-      } catch {
-        errors.push(`السؤال ${questionNum}: رابط الصورة غير صحيح`);
-      }
-    }
   });
 
   return errors;
@@ -4391,11 +4477,10 @@ function updateSaveMenuOptionForSharedEdit() {
 // ============================================================================
 
 function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
+  // Media lives inline inside `q.q` as markdown bracket-syntax tags — there
+  // are no dedicated image/audio/video fields to carry over anymore.
   const questions = (quizToSave.questions || []).map((q) => {
     const out = { q: q.q };
-    if (q.image?.trim()) out.image = q.image;
-    if (q.audio?.trim()) out.audio = q.audio;
-    if (q.video?.trim()) out.video = q.video;
     // Normalize essay: old 1-option → new answer field
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] ?? "";
@@ -4410,6 +4495,13 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
             ? [q.correct]
             : [];
       }
+      // Persist the explicit multiSelect flag (see rate-answers.js /
+      // setMultiSelect above) so the checkbox-vs-radio choice survives a
+      // save — omitting it here would silently lose it on every save,
+      // falling back to the legacy Array.isArray(correct) heuristic on
+      // next load (which is now always true, since `correct` is always
+      // an array — that would make every saved question look multi-select).
+      if (q.multiSelect !== undefined) out.multiSelect = Boolean(q.multiSelect);
     }
     if (q.explanation?.trim()) out.explanation = q.explanation;
     return out;
@@ -4523,9 +4615,6 @@ window.exportQuiz = function () {
   };
   const exportQuestions = quizData.questions.map((q) => {
     const out = { q: q.q };
-    if (q.image?.trim()) out.image = q.image;
-    if (q.audio?.trim()) out.audio = q.audio;
-    if (q.video?.trim()) out.video = q.video;
     // Essay question: has 1 option (legacy) or has `answer` field → export as { q, answer }
     if (Array.isArray(q.options) && q.options.length === 1) {
       out.answer = q.options[0] || "";
@@ -4540,6 +4629,7 @@ window.exportQuiz = function () {
             ? [q.correct]
             : [];
       }
+      if (q.multiSelect !== undefined) out.multiSelect = Boolean(q.multiSelect);
     }
     if (q.explanation?.trim()) out.explanation = q.explanation;
     return out;
@@ -4792,7 +4882,6 @@ function renderQuestionPreviewHtml(q, index) {
   return `
       <div class="preview-question">
         <h4 class="text-rtl">السؤال ${index + 1}: ${renderMarkdown(q.q)}</h4>
-        ${q.image ? `<img src="${escapeHtml(q.image)}" class="preview-image" alt="صورة السؤال" onerror="this.style.display='none'">` : ""}
         ${optionsHtml}
         ${q.explanation ? `<div class="preview-explanation"><svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-0.125em;margin-left:4px"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg> ${renderMarkdown(q.explanation)}</div>` : ""}
       </div>
@@ -5176,6 +5265,13 @@ window.processImport = async function () {
         q: q.q || "",
         options: q.options || ["", ""],
         correct: importedCorrect,
+        // Absence (rather than false) is meaningful — see
+        // normalizeCorrectField's doc comment — so only set it when the
+        // imported JSON actually specifies it, preserving the
+        // pre-multiSelect backward-compat fallback for imports that don't.
+        ...(q.multiSelect !== undefined
+          ? { multiSelect: Boolean(q.multiSelect) }
+          : {}),
         image: q.image || "",
         audio: q.audio || "",
         video: q.video || "",

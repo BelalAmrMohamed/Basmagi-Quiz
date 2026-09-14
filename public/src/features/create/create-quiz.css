@@ -2276,14 +2276,8 @@ body.reorder-mode-active .question-card {
     transform 0.2s;
 }
 
-.option-item.correct {
-  background-color: var(--quiz-option-correct-bg);
-  border-color: var(--color-success);
-}
-
 .option-item:hover {
   border-color: var(--color-primary-hover);
-  transform: translateX(-2px);
 }
 
 .option-item.correct {
