@@ -2534,6 +2534,16 @@ body.is-resizing-media .media-container.resizable-media {
   border-left: 5px solid;
   background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
   border-color: #0ea5e9;
+  /* Always present in the DOM once rendered (pre-rendered alongside the
+     question), shown only once the essay is locked/checked — a pure CSS
+     toggle via .show, matching .feedback below, so checking the answer
+     never has to re-render (and re-fetch media inside) the question
+     card's markdown. */
+  display: none;
+}
+
+.formal-answer.show {
+  display: block;
 }
 
 [data-theme="dark-slate"] .formal-answer,

@@ -1728,33 +1728,6 @@ function buildVerticalQuestionBodyHTML(q, idx) {
   const isBookmarked = gameEngine.isBookmarked(examId, idx);
   const isFlagged = gameEngine.isFlagged(examId, idx);
   const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
-  let feedbackClass = "feedback";
-  let feedbackText = "";
-  const explanationText =
-    q.explanation || q.desc || q.info || "No explanation provided.";
-
-  if (isLocked) {
-    let isCorrect = false;
-    if (isEssay) {
-      const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
-      isCorrect = essayScore >= 3;
-      feedbackClass += " essay-feedback show";
-      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
-    } else {
-      if (isMultiple) {
-        isCorrect =
-          Array.isArray(userSelected) &&
-          Array.isArray(correctIdx) &&
-          userSelected.length === correctIdx.length &&
-          correctIdx.every((i) => userSelected.includes(i));
-      } else {
-        isCorrect = isAnswerCorrect(userSelected, correctIdx);
-      }
-      feedbackClass += isCorrect ? " correct show" : " wrong show";
-      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
-    }
-  }
-
   const alreadyReported = quizDbId ? isQuestionReported(quizDbId, idx) : false;
   const reportBtnHtml = quizDbId
     ? `<button class="report-question-btn ${alreadyReported ? "active" : ""}" onclick="window.reportQuestion(${idx})" title="${alreadyReported ? "تم الإبلاغ عن هذا السؤال" : "الإبلاغ عن خطأ في هذا السؤال"}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-triangle-alert"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>`
@@ -1792,9 +1765,55 @@ function buildVerticalQuestionBodyHTML(q, idx) {
     <div class="question-text" role="heading" aria-level="2">${renderMarkdown(q.q, { mediaBaseUrl: quizBaseUrl })}</div>
   `;
 
+  // Feedback/model-answer content is ALWAYS rendered here, up front —
+  // never deferred to a later "reveal" render — and is shown/hidden
+  // purely via CSS (.show class, display:none by default; see quiz.css).
+  // This mirrors export-to-quiz.js's static-export player exactly: its
+  // .explanation div is written into the page once and only ever gets a
+  // "show" class toggled on click, with no re-render at all. Computing it
+  // up front (rather than only once locked) means checking the answer
+  // NEVER calls renderMarkdown() or touches the question card's markup —
+  // only classList/attribute toggles on nodes that already exist — so any
+  // inline <img>/<video>/<audio> in the question text, options, or this
+  // feedback text itself is mounted exactly once and never rebuilt.
+  let feedbackCorrectClass = "";
+  let feedbackText = "";
+  const explanationText =
+    q.explanation || q.desc || q.info || "No explanation provided.";
+  if (isEssay) {
+    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+    feedbackCorrectClass = "essay-feedback";
+    feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
+  } else {
+    let isCorrect;
+    if (isMultiple) {
+      isCorrect =
+        Array.isArray(userSelected) &&
+        Array.isArray(correctIdx) &&
+        userSelected.length === correctIdx.length &&
+        correctIdx.every((i) => userSelected.includes(i));
+    } else {
+      isCorrect = isAnswerCorrect(userSelected, correctIdx);
+    }
+    feedbackCorrectClass = isCorrect ? "correct" : "wrong";
+    feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+  }
+  const feedbackShowClass = isLocked ? ` ${feedbackCorrectClass} show` : "";
+  const feedbackHtml = `<div class="feedback${feedbackShowClass}" data-correct-class="${feedbackCorrectClass}">${feedbackText}</div>`;
+
   if (isEssay) {
     const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
     const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
+    // Formal-answer block is likewise always rendered (hidden via CSS
+    // until locked) — see the .formal-answer/.show rule added to
+    // quiz.css — instead of being conditionally inserted into the markup
+    // only once isLocked is true.
+    const formalAnswerHtml = `
+      <div class="formal-answer${isLocked ? " show" : ""}">
+        <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
+        <strong style="text-align: center;">الإجابة النموذجية</strong>
+        <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>
+      </div>`;
     return {
       largeClass,
       mediaHTML,
@@ -1804,14 +1823,8 @@ function buildVerticalQuestionBodyHTML(q, idx) {
           <textarea id="essayInput-${idx}" class="essay-textarea ${isLocked ? "locked" : ""}" placeholder="اكتب إجابتك هنا..." ${isLocked ? "disabled" : ""} oninput="window.handleEssayInputForQuestion(${idx})">${escapeHtml(userSelected || "")}</textarea>
         </div>
         <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${!userSelected || String(userSelected).trim() === "" ? "disabled" : ""}>تحقق من الإجابة</button>
-        ${isLocked
-          ? `<div class="formal-answer">            
-          <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
-          <strong style="text-align: center;">الإجابة النموذجية</strong>
-          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div></div>`
-          : ""
-        }
-        <div class="${feedbackClass}">${feedbackText}</div>
+        ${formalAnswerHtml}
+        ${feedbackHtml}
       `,
     };
   }
@@ -1856,12 +1869,218 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       ${header}
       <div class="options-grid">${optionsHtml}</div>
       <button class="check-answer-btn ${isLocked || !showCheckButton ? "hidden" : ""}" title="إظهار الإجابة الصحيحة" onclick="window.checkAnswerForQuestion(${idx})" ${checkDisabled ? "disabled" : ""}>تحقق من الإجابة</button>
-      <div class="${feedbackClass}">${feedbackText}</div>
+      ${feedbackHtml}
     `,
   };
 }
 
-// Full (first-render) vertical card.
+// === Answer-state DOM toggle (NO re-render, ever) ===
+// Selecting an option or checking the answer must NEVER re-render the
+// question card — not even a "small" patch of it. The question card
+// (question text, options, feedback, formal-answer) is built exactly
+// ONCE, by buildVerticalQuestionBodyHTML/buildQuestionBodyHTML, the first
+// time a question is shown. From that point on, this function is the
+// ONLY thing interactions call, and it does nothing but toggle
+// classList/checked/disabled on nodes that already exist in the DOM —
+// mirroring export-to-quiz.js's selectAnswer/checkAnswerForQuestion
+// exactly, which never call renderMarkdown() or touch innerHTML for an
+// answer update. This is what actually fixes inline <img>/<video>/<audio>
+// (living inside q.q/option text) getting destroyed and restarted on
+// every click — the previous "patch only .reloadable-context" approach
+// still re-ran renderMarkdown() on the question/option text every time,
+// which recreated all inline media and restarted playback.
+function applyAnswerStateToCard(cardEl, q, idx) {
+  const isEssay = isEssayQuestion(q);
+  const isLocked = !!lockedQuestions[idx];
+  const userSelected = userAnswers[idx];
+  const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
+
+  const checkBtn = cardEl.querySelector(".check-answer-btn");
+
+  if (isEssay) {
+    const textarea = cardEl.querySelector(`#essayInput-${idx}, .essay-textarea`);
+    if (textarea) {
+      textarea.disabled = isLocked;
+      textarea.classList.toggle("locked", isLocked);
+    }
+    if (checkBtn) {
+      checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
+      checkBtn.disabled = !userSelected || String(userSelected).trim() === "";
+    }
+    const formalAnswerEl = cardEl.querySelector(".formal-answer");
+    if (formalAnswerEl) formalAnswerEl.classList.toggle("show", isLocked);
+  } else {
+    const correctIdx = q.correct ?? q.answer;
+    const isMultiple = isMultiSelectQuestion(q);
+    cardEl.querySelectorAll(".option-row").forEach((row, i) => {
+      let isSelected;
+      if (isMultiple) {
+        isSelected = Array.isArray(userSelected) && userSelected.includes(i);
+      } else {
+        isSelected = userSelected === i;
+      }
+      row.classList.toggle("selected", isSelected);
+      row.classList.toggle("locked", isLocked);
+      const input = row.querySelector("input");
+      if (input) {
+        input.checked = isSelected;
+        input.disabled = isLocked;
+      }
+      if (isLocked) {
+        const isCorrectOption = isMultiple
+          ? Array.isArray(correctIdx) && correctIdx.includes(i)
+          : i === singleCorrectIndex(q);
+        row.classList.toggle("correct", isCorrectOption);
+        row.classList.toggle("wrong", isSelected && !isCorrectOption);
+      } else {
+        row.classList.remove("correct", "wrong");
+      }
+    });
+    if (checkBtn) {
+      checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
+      const checkDisabled = isMultiple
+        ? !Array.isArray(userSelected) || userSelected.length === 0
+        : userSelected === undefined;
+      checkBtn.disabled = checkDisabled;
+    }
+  }
+
+  // Feedback content itself was already fully rendered (both text and the
+  // correct/wrong verdict it corresponds to) at question-mount time — see
+  // buildVerticalQuestionBodyHTML/buildQuestionBodyHTML above — so locking
+  // the question only needs to reveal it, never rebuild it.
+  const feedbackEl = cardEl.querySelector(".feedback");
+  if (feedbackEl) {
+    feedbackEl.classList.toggle("show", isLocked);
+  }
+
+  const isBookmarked = gameEngine.isBookmarked(examId, idx);
+  const isFlagged = gameEngine.isFlagged(examId, idx);
+  const bookmarkBtn = cardEl.querySelector(".bookmark-btn");
+  if (bookmarkBtn) bookmarkBtn.classList.toggle("active", isBookmarked);
+  const flagBtn = cardEl.querySelector(".flag-btn");
+  if (flagBtn) flagBtn.classList.toggle("active", isFlagged);
+}
+
+
+const isEssay = isEssayQuestion(q);
+const isLocked = !!lockedQuestions[idx];
+const userSelected = userAnswers[idx];
+const showCheckButton = quizMode !== "exam" && quizMode !== "timed_exam";
+
+if (isEssay) {
+  const textarea = cardEl.querySelector(`#essayInput-${idx}, .essay-textarea`);
+  if (textarea) {
+    textarea.disabled = isLocked;
+    textarea.classList.toggle("locked", isLocked);
+  }
+  const checkBtn = cardEl.querySelector(".check-answer-btn");
+  if (checkBtn) {
+    checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
+    checkBtn.disabled = !userSelected || String(userSelected).trim() === "";
+  }
+  // The model-answer block (only shown once locked) and star rating are
+  // small enough, and different enough in structure pre/post-lock, that
+  // rebuilding just this one leaf sub-block is simpler and safer than
+  // trying to incrementally patch it — it carries no persistent media.
+  const essayContainer = cardEl.querySelector(".essay-container");
+  let formalAnswerEl = cardEl.querySelector(".formal-answer");
+  if (isLocked) {
+    const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+    const stars = "★".repeat(essayScore) + "☆".repeat(5 - essayScore);
+    const formalHtml = `
+          <strong style="text-align: center;">(${essayScore}/5) ${stars}</strong>
+          <strong style="text-align: center;">الإجابة النموذجية</strong>
+          <div class="formal-answer-text">${renderMarkdown(getEssayAnswer(q), { mediaBaseUrl: quizBaseUrl })}</div>`;
+    if (!formalAnswerEl) {
+      formalAnswerEl = document.createElement("div");
+      formalAnswerEl.className = "formal-answer";
+      essayContainer?.insertAdjacentElement("afterend", formalAnswerEl);
+    }
+    formalAnswerEl.innerHTML = formalHtml;
+  } else if (formalAnswerEl) {
+    formalAnswerEl.remove();
+  }
+} else {
+  const correctIdx = q.correct ?? q.answer;
+  const isMultiple = isMultiSelectQuestion(q);
+  cardEl.querySelectorAll(".option-row").forEach((row, i) => {
+    let isSelected;
+    if (isMultiple) {
+      isSelected = Array.isArray(userSelected) && userSelected.includes(i);
+    } else {
+      isSelected = userSelected === i;
+    }
+    row.classList.toggle("selected", isSelected);
+    row.classList.toggle("locked", isLocked);
+    const input = row.querySelector("input");
+    if (input) {
+      input.checked = isSelected;
+      input.disabled = isLocked;
+    }
+    if (isLocked) {
+      const isCorrectOption = isMultiple
+        ? Array.isArray(correctIdx) && correctIdx.includes(i)
+        : i === singleCorrectIndex(q);
+      row.classList.toggle("correct", isCorrectOption);
+      row.classList.toggle("wrong", isSelected && !isCorrectOption);
+      row.removeAttribute("onclick");
+    } else {
+      row.classList.remove("correct", "wrong");
+      row.setAttribute("onclick", `window.handleSelectForQuestion(${idx}, ${i})`);
+    }
+  });
+  const checkBtn = cardEl.querySelector(".check-answer-btn");
+  if (checkBtn) {
+    checkBtn.classList.toggle("hidden", isLocked || !showCheckButton);
+    const checkDisabled = isMultiple
+      ? !Array.isArray(userSelected) || userSelected.length === 0
+      : userSelected === undefined;
+    checkBtn.disabled = checkDisabled;
+  }
+}
+
+// Feedback block: safe to fully regenerate — it holds only explanation/
+// model-answer prose, never the question or option text, so there is no
+// persistent media here to lose.
+const feedbackEl = cardEl.querySelector(".feedback");
+if (feedbackEl) {
+  let feedbackClass = "feedback";
+  let feedbackText = "";
+  const explanationText =
+    q.explanation || q.desc || q.info || "No explanation provided.";
+  if (isLocked) {
+    if (isEssay) {
+      const essayScore = gradeEssay(userSelected, getEssayAnswer(q));
+      feedbackClass += " essay-feedback show";
+      feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
+    } else {
+      const isMultiple = isMultiSelectQuestion(q);
+      const correctIdx = q.correct ?? q.answer;
+      const isCorrect = isMultiple
+        ? Array.isArray(userSelected) &&
+        Array.isArray(correctIdx) &&
+        userSelected.length === correctIdx.length &&
+        correctIdx.every((i) => userSelected.includes(i))
+        : isAnswerCorrect(userSelected, correctIdx);
+      feedbackClass += isCorrect ? " correct show" : " wrong show";
+      feedbackText = `<div class="feedback-body"><div class="mcq-explanation-label"><strong>الشرح</strong></div><div class="feedback-body-text">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div></div>`;
+    }
+  }
+  feedbackEl.className = feedbackClass;
+  feedbackEl.innerHTML = feedbackText;
+  scanDirections(feedbackEl);
+}
+
+// Bookmark/flag/report buttons in the header can change independently
+// (e.g. via the side menu) — keep them in sync too, cheaply.
+const isBookmarked = gameEngine.isBookmarked(examId, idx);
+const isFlagged = gameEngine.isFlagged(examId, idx);
+const bookmarkBtn = cardEl.querySelector(".bookmark-btn");
+if (bookmarkBtn) bookmarkBtn.classList.toggle("active", isBookmarked);
+const flagBtn = cardEl.querySelector(".flag-btn");
+if (flagBtn) flagBtn.classList.toggle("active", isFlagged);
+
 // Structure inside .question-body:
 //   [.media-center-wrap …]   ← persistent, rendered once, never replaced
 //   .reloadable-context       ← replaced on every answer interaction
@@ -1943,9 +2162,11 @@ function renderAllQuestionsVertical() {
   if (els.progressText)
     els.progressText.textContent = `${Math.round(progressPercent)}% (${answeredCount}/${questions.length})`;
 
-  // Partial re-render (vertical mode): if we know which card changed, only
-  // patch that card's .reloadable-context. Media (.media-center-wrap siblings)
-  // are intentionally left untouched — audio/video/YouTube keeps playing.
+  // Partial re-render (vertical mode): if we know which card changed, patch
+  // ONLY the small set of answer-state DOM bits via patchQuestionAnswerState
+  // (option selection/lock classes, check button, feedback block) — the
+  // question text and option labels are never regenerated, so any inline
+  // <img>/<video>/<audio> media inside them is never destroyed/recreated.
   if (
     lastChangedIdx !== null &&
     document.getElementById(`q-${lastChangedIdx}`)
@@ -1954,19 +2175,10 @@ function renderAllQuestionsVertical() {
     lastChangedIdx = null;
 
     const existingCard = document.getElementById(`q-${targetIdx}`);
-    const { largeClass, html: bodyHTML } = buildVerticalQuestionBodyHTML(
-      questions[targetIdx],
-      targetIdx,
-    );
-
     const reloadableEl = existingCard.querySelector(".reloadable-context");
 
     if (reloadableEl) {
-      reloadableEl.innerHTML = bodyHTML;
-      existingCard.className = `question-card vertical-question-card${largeClass}`;
-      // Re-scan only the patched section to keep direction classes in sync.
-      scanDirections(reloadableEl);
-      // initMediaSkeletons is NOT called here — media was not re-created.
+      patchQuestionAnswerState(reloadableEl, questions[targetIdx], targetIdx);
     } else {
       // Defensive fallback: full rebuild for this card only,
       // with media state snapshot/restore.
@@ -2236,30 +2448,27 @@ function renderQuestion() {
       progressPercent,
     )}% (${answeredCount}/${questions.length})`;
 
-  const {
-    largeClass,
-    mediaHTML,
-    html: bodyHTML,
-  } = buildQuestionBodyHTML(q, currentIdx);
-
-  els.questionContainer.classList.remove("loading");
-
   const existingCard = els.questionContainer.querySelector(".question-card");
   const sameQuestion =
     existingCard && Number(existingCard.dataset.questionIndex) === currentIdx;
 
   if (sameQuestion) {
-    // In-place update for the same question (e.g. after answering or checking).
-    // ONLY patch .reloadable-context — media siblings are left completely alone
-    // so audio/video/YouTube never unmounts or loses playback state.
+    els.questionContainer.classList.remove("loading");
+    // In-place update for the same question (e.g. after answering or
+    // checking): patch ONLY the small set of answer-state DOM bits via
+    // patchQuestionAnswerState (option classes, check button, feedback) —
+    // question text and option labels are never regenerated, so inline
+    // <img>/<video>/<audio> media inside them is never destroyed/recreated.
     const reloadableEl = existingCard.querySelector(".reloadable-context");
     if (reloadableEl) {
-      reloadableEl.innerHTML = bodyHTML;
-      existingCard.className = `question-card${largeClass}`;
-      scanDirections(reloadableEl);
-      // No initMediaSkeletons here — media was not re-created.
+      patchQuestionAnswerState(reloadableEl, q, currentIdx);
     } else {
       // Defensive fallback (unexpected DOM shape): full rebuild.
+      const {
+        largeClass,
+        mediaHTML,
+        html: bodyHTML,
+      } = buildQuestionBodyHTML(q, currentIdx);
       setQuestionHTML(
         renderFullQuestionCard(q, currentIdx, largeClass, mediaHTML, bodyHTML),
       );
@@ -2268,6 +2477,11 @@ function renderQuestion() {
   } else {
     // Navigated to a different question (or first render): full rebuild,
     // including fresh media elements for the new question.
+    const {
+      largeClass,
+      mediaHTML,
+      html: bodyHTML,
+    } = buildQuestionBodyHTML(q, currentIdx);
     setQuestionHTML(
       renderFullQuestionCard(q, currentIdx, largeClass, mediaHTML, bodyHTML),
     );

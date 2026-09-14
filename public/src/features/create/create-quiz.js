@@ -519,37 +519,49 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
 }
 
 /**
- * Opens an OS file picker (accepting only the given media type's MIME
- * types) and, once a file is chosen, runs it through the exact same
- * upload-and-insert pipeline the drag-and-drop/paste dropzone uses
- * (handleMarkdownMediaFile → uploadMediaFileForMarkdown → MEDIA_TAG_BUILDERS),
- * inserting the resulting bracket-syntax tag into the currently-focused
- * .md-source field. Used by the global toolbar's صورة/فيديو/صوت buttons —
- * previously "صورة" inserted a bare `![alt](https://)` placeholder the
- * author had to fill in by hand and "فيديو"/"صوت" didn't exist at all.
+ * Inserts an empty `<img>`/`<video>`/`<audio>` HTML tag with a blank
+ * `src=""` at the cursor of the currently-focused .md-source field, for
+ * the author to paste a link into by hand — matching the raw-HTML-tag
+ * support markdown.js's renderMarkdown() now has (see the "Step -1: Raw
+ * HTML media tags" block in markdown.js's _renderMarkdownCore, and
+ * _renderRawImageTag / _renderRawMediaTag there for how an empty src
+ * renders as a small placeholder rather than a broken element).
+ *
+ * Used by the global toolbar's صورة/فيديو/صوت buttons. Two earlier
+ * attempts at this got it wrong: first inserting a bare `![alt](https://)`
+ * bracket-syntax placeholder (not the customizable tag shape asked for,
+ * and with no attribute slots for width/height), then jumping straight to
+ * an OS file picker for every user (wrong for two reasons: non-admins
+ * aren't meant to upload media into the DB at all, and a picker is no
+ * help when the author already has a link to paste). The actual ask is
+ * simpler than either: just drop in the empty tag and let the author
+ * paste their own src.
  * @param {"image"|"audio"|"video"} mediaType
  */
-function triggerMediaUploadForActiveField(mediaType) {
+function triggerMediaInsertForActiveField(mediaType) {
   const ta = _activeMdSource;
   if (!ta) {
     _showNoFieldTip();
     return;
   }
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = Array.from(MEDIA_MIME_MAP[mediaType]).join(",");
-  input.style.display = "none";
-  input.addEventListener("change", () => {
-    const file = input.files && input.files[0];
-    if (file) {
-      handleMarkdownMediaFile(ta, file, () => {
-        ta.dispatchEvent(new Event("input", { bubbles: true }));
-      });
-    }
-    input.remove();
-  });
-  document.body.appendChild(input);
-  input.click();
+  const tag =
+    mediaType === "image"
+      ? `<img width="400" height="400" alt="" src="" />`
+      : `<${mediaType} src=""></${mediaType}>`;
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  replaceTextareaRange(ta, start, end, tag);
+  autoResizeMdSource(
+    ta,
+    ta.id.startsWith("option-text-") ? 36 : 40,
+    ta.id.startsWith("option-text-") ? 140 : 240,
+  );
+  ta.dispatchEvent(new Event("input", { bubbles: true }));
+  // Place the cursor inside src="" so the author can paste their link
+  // immediately without having to click/select it themselves.
+  const srcIdx = tag.indexOf('src=""') + 5;
+  ta.setSelectionRange(start + srcIdx, start + srcIdx);
+  ta.focus();
 }
 
 /**
@@ -670,12 +682,12 @@ function setupGlobalMdBar() {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       const cmd = btn.dataset.gmdCmd || null;
-      // صورة / فيديو / صوت open a file picker and upload, exactly like
-      // dropping a file on the textarea, rather than inserting a bare
+      // صورة / فيديو / صوت open the media-insert dialog (link field for
+      // everyone, upload for admins only), rather than inserting a bare
       // `![alt](https://)` placeholder the author has to fill in by hand
       // (and which, for video/audio, isn't even the right tag shape).
       if (cmd === "image" || cmd === "video" || cmd === "audio") {
-        triggerMediaUploadForActiveField(cmd);
+        triggerMediaInsertForActiveField(cmd);
         closeAllGmdDropdowns();
         return;
       }
@@ -2093,13 +2105,17 @@ function updateStatistics() {
   // keep the numbers up-to-date; the modal itself is shown on demand.
   const totalQuestions = quizData.questions.length;
 
-  // Media is embedded inline in the question body as markdown bracket-syntax
-  // tags now (![alt](url) etc.) rather than a dedicated `image` field, so
-  // detect an inline image tag directly in `q.q` instead. `![audio](...)`/
-  // `![video](...)` are excluded since this stat is specifically "images".
-  const IMAGE_TAG_RE = /!\[(?!audio\]|video\])[^\]]*\]\([^\s)]+\)/i;
+  // Media is embedded inline in the question body as raw HTML tags now
+  // (<img src="...">, <video>, <audio>) rather than a dedicated `image`
+  // field or bracket-syntax markdown, so detect an inline <img> tag
+  // directly in `q.q` instead. <video>/<audio> are excluded since this
+  // stat is specifically "images". Also matches the older bracket-syntax
+  // form (![alt](url), excluding ![audio]/![video]) for quizzes saved
+  // before this change.
+  const IMAGE_TAG_RE = /<img\b[^>]*\bsrc=/i;
+  const LEGACY_IMAGE_BRACKET_RE = /!\[(?!audio\]|video\])[^\]]*\]\([^\s)]+\)/i;
   const questionsWithImages = quizData.questions.filter(
-    (q) => q.q && IMAGE_TAG_RE.test(q.q),
+    (q) => q.q && (IMAGE_TAG_RE.test(q.q) || LEGACY_IMAGE_BRACKET_RE.test(q.q)),
   ).length;
   const questionsWithExplanations = quizData.questions.filter(
     (q) => q.explanation && q.explanation.trim(),
@@ -2434,10 +2450,10 @@ function setupQuestionEventListeners(questionId) {
 // always-visible sections. Admins can drop/select any file or paste any
 // link; the type (image / audio / video) is auto-detected from the file's
 // MIME type or the URL's extension/host (e.g. YouTube), then inserted into
-// the question body as an inline markdown bracket-syntax tag (see
-// MEDIA_TAG_BUILDERS below) — there is no dedicated question.image/
-// question.audio/question.video field to write into anymore. Non-admin
-// users get the link input only (no upload).
+// the question body as a raw HTML media tag (see buildMediaHtmlTag below)
+// — there is no dedicated question.image/question.audio/question.video
+// field to write into anymore. Non-admin users get the link input only
+// (no upload).
 
 const MEDIA_MIME_MAP = {
   image: new Set([
@@ -2595,49 +2611,46 @@ function updateQuestionNumbers() {
 // keep typing, uploads the file in the background using the exact same
 // Supabase Storage path already used by the legacy image/audio/video
 // dropzone (uploadMediaFileForMarkdown), then swaps the placeholder text for
-// the final bracket-syntax tag (`![alt](url)` / `![audio](url)` /
-// `![video](url)`) once the upload finishes — this is the only media tag
-// format markdown.js's renderMarkdown() recognizes (see MEDIA_TAG_BUILDERS
-// below); raw <img>/<video>/<audio> HTML is NOT recognized and renders as
-// literal escaped text.
+// the final raw HTML media tag (`<img src="...">` / `<audio src="...">` /
+// `<video src="...">`, built by buildMediaHtmlTag) once the upload finishes.
+// markdown.js's renderMarkdown() renders these tags directly (see "Step -1:
+// Raw HTML media tags" in _renderMarkdownCore) — width/height/alt
+// attributes on <img> are preserved through to the rendered element.
 //
 // NOTE: pasting a YouTube / image / video / audio URL (instead of a file)
-// is wrapped in the matching bracket-syntax tag immediately (see the
-// "paste" listener in setupMarkdownMediaDropzone below) — markdown.js does
-// NOT auto-embed bare URLs on its own (only the bracket-syntax tags above
-// are recognized by renderMarkdown()), so the wrapping has to happen here,
-// at paste time.
+// is wrapped in the matching raw HTML tag immediately (see the "paste"
+// listener in setupMarkdownMediaDropzone below); pasting an already-complete
+// <img>/<video>/<audio> HTML snippet (e.g. copied from a browser's "copy
+// image" action) is inserted as-is, since markdown.js understands it
+// natively.
 
-// BUG FIX: these must emit the bracket-syntax tags markdown.js's
-// renderMarkdown()/applyInline() actually recognizes today
-// (`![alt](url)`, `![audio](url)`, `![video](url)`) — NOT raw HTML
-// <img>/<video>/<audio> tags. markdown.js's raw-HTML media renderer was
-// intentionally removed in an earlier migration step (moving from raw
-// HTML media tags to the bracket syntax), so a raw tag inserted here gets
-// HTML-escaped by escHtml() on render (since it's just ordinary question
-// text as far as the engine is concerned) and shows up as literal
-// escaped `<...>` text instead of a rendered element — this was exactly
-// the create-quiz upload bug reported by the user.
-//
-// The bracket syntax has no attribute slots, so width/height can no
-// longer be embedded in the tag itself — this matches the fact that no
-// resize-handle UI actually exists anywhere in this file (only a stale
-// comment referenced one); images/video always render responsively via
-// the shared `.md-img`/media-container CSS (max-width: 100%; height:
-// auto) regardless of the file's native dimensions, same as every other
-// image already embedded this way. See MEDIA_TAG_BUILDERS callers below
-// — dimension probing is kept only to cap the compressed image size
-// before upload, not to bake attributes into the tag.
-const MEDIA_TAG_BUILDERS = {
-  // alt text intentionally fixed (not the raw filename): bracket-syntax alt
-  // text can't contain "]" or a newline without breaking the tag, and using
-  // a fixed string matches the alt text already used by migrated legacy
-  // image tags ("صورة توضيحية للسؤال" — "illustrative image for the
-  // question") for consistency across old and new content.
-  image: (url) => `![صورة توضيحية للسؤال](${url})`,
-  video: (url) => `![video](${url})`,
-  audio: (url) => `![audio](${url})`,
-};
+/**
+ * Builds the raw HTML media tag markdown.js's renderMarkdown() now renders
+ * directly (see the "Step -1: Raw HTML media tags" block in markdown.js's
+ * _renderMarkdownCore) — an `<img>` tag for images, `<video>`/`<audio>`
+ * for everything else. YouTube links are inserted as an ordinary
+ * `<video src="youtube-url">` tag too; markdown.js detects the YouTube URL
+ * itself and swaps in an iframe embed at render time, so no special case
+ * is needed here.
+ * @param {"image"|"audio"|"video"} mediaType
+ * @param {string} url
+ * @param {{width?: number, height?: number, alt?: string}} [opts]
+ */
+function buildMediaHtmlTag(mediaType, url, opts = {}) {
+  const esc = (v) => String(v ?? "").replace(/"/g, "&quot;");
+  if (mediaType === "image") {
+    const dims =
+      (opts.width ? ` width="${opts.width}"` : "") +
+      (opts.height ? ` height="${opts.height}"` : "");
+    // alt text intentionally fixed (not the raw filename), matching the
+    // alt text already used by migrated legacy image tags ("صورة توضيحية
+    // للسؤال" — "illustrative image for the question") for consistency
+    // across old and new content.
+    const alt = opts.alt ?? "صورة توضيحية للسؤال";
+    return `<img${dims} alt="${esc(alt)}" src="${esc(url)}" />`;
+  }
+  return `<${mediaType} src="${esc(url)}"></${mediaType}>`;
+}
 
 /**
  * Uploads a File to Supabase Storage using the same "quiz-media" bucket,
@@ -2649,8 +2662,16 @@ const MEDIA_TAG_BUILDERS = {
  */
 async function uploadMediaFileForMarkdown(file, mediaType) {
   let workingFile = file;
+  let dims = null;
   if (mediaType === "image") {
     workingFile = await compressImageFile(workingFile);
+    try {
+      const bitmap = await createImageBitmap(workingFile);
+      dims = { width: bitmap.width, height: bitmap.height };
+      bitmap.close?.();
+    } catch {
+      dims = null; // dimensions are cosmetic (width/height attrs) — fine to omit
+    }
   }
 
   if (workingFile.size > MEDIA_MAX_SIZE[mediaType]) {
@@ -2690,7 +2711,7 @@ async function uploadMediaFileForMarkdown(file, mediaType) {
     .getPublicUrl(storagePath);
   if (!urlData?.publicUrl) throw new Error("تم الرفع لكن فشل توليد الرابط.");
 
-  return urlData.publicUrl;
+  return { url: urlData.publicUrl, dims };
 }
 
 /**
@@ -2749,8 +2770,12 @@ async function handleMarkdownMediaFile(textarea, file, onChange) {
   };
 
   try {
-    const publicUrl = await uploadMediaFileForMarkdown(file, mediaType);
-    const tag = MEDIA_TAG_BUILDERS[mediaType](publicUrl);
+    const { url: publicUrl, dims } = await uploadMediaFileForMarkdown(file, mediaType);
+    const tag = buildMediaHtmlTag(mediaType, publicUrl, {
+      width: dims?.width,
+      height: dims?.height,
+      alt: file.name,
+    });
     replacePlaceholder(tag);
   } catch (err) {
     console.error("[handleMarkdownMediaFile]", err);
@@ -2813,13 +2838,14 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
     }
 
     // Case 2: plain-text paste that happens to BE a media URL (YouTube
-    // link, direct image/video/audio link). markdown.js does NOT auto-embed
-    // bare URLs — only the bracket-syntax tags (`![alt](url)` /
-    // `![audio](url)` / `![video](url)`) are recognized by renderMarkdown()
-    // — so wrap the pasted URL in the matching tag immediately, exactly
-    // like a file upload does, instead of inserting the bare URL as plain
-    // text (which used to render as an inert link/plain text, never as
-    // embedded media).
+    // link, direct image/video/audio link). Wrap the pasted URL in the
+    // matching raw HTML media tag immediately — markdown.js's
+    // renderMarkdown() renders real <img>/<video>/<audio> tags directly
+    // (see "Step -1: Raw HTML media tags" in markdown.js's
+    // _renderMarkdownCore) and detects YouTube URLs itself to swap in an
+    // iframe embed, so a plain `<video src="youtube-url">` is enough here
+    // — instead of inserting the bare URL as plain text, which would
+    // otherwise just sit there as inert text, never becoming embedded media.
     const text = e.clipboardData?.getData("text/plain");
     if (text) {
       const trimmed = text.trim();
@@ -2828,7 +2854,7 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
         e.preventDefault();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const tag = MEDIA_TAG_BUILDERS[mediaType](trimmed);
+        const tag = buildMediaHtmlTag(mediaType, trimmed);
         replaceTextareaRange(textarea, start, end, tag);
         autoResizeMdSource(
           textarea,
@@ -2844,40 +2870,21 @@ function setupMarkdownMediaDropzone(textarea, onChange) {
       // image" (e.g. right-click → copy image, or dragging an <img> out of
       // a web page) — a full tag like
       // `<img width="400" height="400" alt="x.jpg" src="https://...">`,
-      // not a plain link. markdown.js's renderMarkdown() has no raw-HTML
-      // media tag support at all (removed in an earlier migration step),
-      // so pasting this as-is renders as literal escaped `<img ...>` text
-      // — this was the actual root cause of the reported bug (screenshot
-      // showed the literal tag, not a broken image). Extract just the
-      // src/data URL and rebuild it as the correct bracket-syntax tag.
-      const htmlTagMatch = trimmed.match(
-        /^<(img|video|audio|source)\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/i,
+      // not a plain link. markdown.js now renders raw <img>/<video>/<audio>
+      // tags directly, so the pasted snippet can be inserted as-is with no
+      // rebuilding — the only work here is recognizing that it IS one of
+      // these tags (so we intercept the default paste and use our own
+      // insert-at-cursor logic instead of the browser's, which would just
+      // dump the raw text in verbatim in the same way, but without the
+      // auto-resize/onChange bookkeeping the other cases get).
+      const isMediaTag = /^<(img|video|audio|source)\b[^>]*\bsrc=["'][^"']*["'][^>]*>/i.test(
+        trimmed,
       );
-      if (htmlTagMatch) {
-        const [, tagName, src] = htmlTagMatch;
-        const lowerTag = tagName.toLowerCase();
-        let resolvedType;
-        if (lowerTag === "img") {
-          resolvedType = "image";
-        } else if (lowerTag === "video" || lowerTag === "audio") {
-          resolvedType = lowerTag;
-        } else {
-          // Bare <source src="..."> has no type of its own — check whether
-          // the pasted snippet also included its wrapping <video>/<audio>
-          // tag (e.g. a whole `<video><source src="..."></video>` block)
-          // before falling back to extension sniffing, since ".webm" alone
-          // is ambiguous between audio and video containers.
-          resolvedType = /<video\b/i.test(trimmed)
-            ? "video"
-            : /<audio\b/i.test(trimmed)
-              ? "audio"
-              : detectMediaTypeFromUrl(src) || "video";
-        }
+      if (isMediaTag) {
         e.preventDefault();
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
-        const tag = MEDIA_TAG_BUILDERS[resolvedType](src);
-        replaceTextareaRange(textarea, start, end, tag);
+        replaceTextareaRange(textarea, start, end, trimmed);
         autoResizeMdSource(
           textarea,
           textarea.id.startsWith("option-text-") ? 36 : 40,
@@ -4033,11 +4040,12 @@ function updateAutosaveIndicator(status) {
 
 /**
  * Fold legacy dedicated `image`/`audio`/`video` fields into the question
- * body's own markdown as `![audio](url)`/`![video](url)`/`![alt](url)`
- * tags, then strip the dedicated fields — so any pre-migration quiz opened
- * for editing (a local draft, a shared/admin quiz, or a hand-crafted
- * import) immediately looks and behaves like a native new-syntax quiz in
- * the editor, with nothing left for the removed dropzone UI to read.
+ * body's own markdown as `<img src="...">`/`<audio src="...">`/
+ * `<video src="...">` tags, then strip the dedicated fields — so any
+ * pre-migration quiz opened for editing (a local draft, a shared/admin
+ * quiz, or a hand-crafted import) immediately looks and behaves like a
+ * native new-syntax quiz in the editor, with nothing left for the removed
+ * dropzone UI to read.
  * Order (image, then audio, then video) matches the DB migration script
  * in Section 7 of the migration plan, each on its own line. No-op if none
  * of the three legacy fields are present.
@@ -4047,9 +4055,9 @@ function foldLegacyMediaIntoQuestionBody(q) {
     return q;
   }
   const tags = [];
-  if (q.image?.trim()) tags.push(`![صورة توضيحية للسؤال](${q.image.trim()})`);
-  if (q.audio?.trim()) tags.push(`![audio](${q.audio.trim()})`);
-  if (q.video?.trim()) tags.push(`![video](${q.video.trim()})`);
+  if (q.image?.trim()) tags.push(buildMediaHtmlTag("image", q.image.trim()));
+  if (q.audio?.trim()) tags.push(buildMediaHtmlTag("audio", q.audio.trim()));
+  if (q.video?.trim()) tags.push(buildMediaHtmlTag("video", q.video.trim()));
   const { image, audio, video, ...rest } = q;
   const body = (rest.q || "").trim();
   return {
@@ -4477,8 +4485,9 @@ function updateSaveMenuOptionForSharedEdit() {
 // ============================================================================
 
 function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
-  // Media lives inline inside `q.q` as markdown bracket-syntax tags — there
-  // are no dedicated image/audio/video fields to carry over anymore.
+  // Media lives inline inside `q.q` as raw HTML tags (<img>/<video>/
+  // <audio>) — there are no dedicated image/audio/video fields to carry
+  // over anymore.
   const questions = (quizToSave.questions || []).map((q) => {
     const out = { q: q.q };
     // Normalize essay: old 1-option → new answer field

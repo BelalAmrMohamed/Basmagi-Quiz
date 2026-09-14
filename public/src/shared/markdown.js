@@ -69,6 +69,51 @@ export function unescapeHtmlEntities(s) {
 export const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><div class="skeleton-block skeleton-media"></div><span class="media-skeleton-label">جاري التحميل…</span></div>`;
 
 /**
+ * Renders a raw `<img>` tag's src/alt/width/height into a safe <img>
+ * element. Used by the raw-HTML-media-tag stash step in
+ * _renderMarkdownCore (see there for why raw tags need special handling).
+ * An empty src (the toolbar inserts `src=""` for the author to fill in by
+ * hand) renders a small placeholder instead of a broken image icon.
+ * @param {string} src
+ * @param {string} alt
+ * @param {string|undefined} width
+ * @param {string|undefined} height
+ * @param {string|null} mediaBaseUrl
+ */
+export function _renderRawImageTag(src, alt, width, height, mediaBaseUrl) {
+  const safe = (v) => escHtml(unescapeHtmlEntities(v || ""));
+  if (!src || !src.trim()) {
+    return `<div class="media-container md-inline-media md-media-empty"><span class="media-skeleton-label">صورة بلا رابط بعد</span></div>`;
+  }
+  const candidates = getMediaUrlCandidates(src, mediaBaseUrl);
+  const resolvedSrc = candidates[0] || src;
+  const dims =
+    (width ? ` width="${safe(width)}"` : "") +
+    (height ? ` height="${safe(height)}"` : "");
+  return `<img src="${safe(resolvedSrc)}" alt="${safe(alt)}" class="md-img"${dims} loading="lazy" data-media-raw="${safe(src)}">`;
+}
+
+/**
+ * Renders a raw `<video>`/`<audio>` tag's src into the same markup
+ * `renderInlineMediaTag` produces for bracket-syntax `![video]`/![audio]`
+ * tags (skeleton wrapper, YouTube-iframe branch for video, source-type
+ * sniffing) — so both authoring styles behave identically. Used by the
+ * raw-HTML-media-tag stash step in _renderMarkdownCore.
+ * An empty src (the toolbar inserts `src=""` for the author to fill in by
+ * hand) renders a small placeholder instead of a broken player.
+ * @param {"video"|"audio"} kind
+ * @param {string} src
+ * @param {string|null} mediaBaseUrl
+ */
+export function _renderRawMediaTag(kind, src, mediaBaseUrl) {
+  if (!src || !src.trim()) {
+    const label = kind === "video" ? "فيديو بلا رابط بعد" : "ملف صوتي بلا رابط بعد";
+    return `<div class="media-container md-inline-media md-media-empty"><span class="media-skeleton-label">${label}</span></div>`;
+  }
+  return renderInlineMediaTag(kind, src, mediaBaseUrl);
+}
+
+/**
  * Renders one inline media tag: ![audio](url) or ![video](url).
  * Mirrors quiz.js's renderQuestionAudio/renderQuestionVideo (same
  * `.media-container`/skeleton wrapper, same YouTube-iframe branch for
@@ -1215,6 +1260,50 @@ export function _renderMarkdownCore(str, options = {}) {
     stash.push(html);
     return `\x00ST${idx}\x00`;
   };
+
+  // ── Step -1: Raw HTML media tags: <img>, <video>, <audio> ─────────────────
+  // The editor's صورة/فيديو/صوت toolbar buttons insert real HTML tags
+  // (e.g. `<img width="400" height="400" alt="x.jpg" src="...">`), not
+  // bracket syntax — matching how a raw `<img>`/`<video>`/`<audio>` snippet
+  // pasted from a browser's "copy image"/"copy video" action looks. Every
+  // other step in this engine treats raw text as plain prose and escapes
+  // it (see escapeAroundTokens / applyInline(escHtml(...)) below), which
+  // would otherwise turn these tags into inert, literally-visible text —
+  // so, like fenced code/passage blocks, pull them out and render them
+  // FIRST, before anything else gets a chance to touch or escape them.
+  //
+  // `src` may legitimately be empty (`src=""`) right after the toolbar
+  // inserts a blank tag for the author to fill in by hand — that's
+  // rendered as a small "no source yet" placeholder rather than a broken
+  // <img>/<video>/<audio> element.
+  //
+  // Bracket syntax (`![alt](url)`, `![audio](url)`, `![video](url)`,
+  // handled later in applyInline) still works too, for any older content
+  // saved before this HTML-tag support existed — both forms are accepted.
+  str = str.replace(
+    /<img\b([^>]*)\/?>/gi,
+    (full, attrs) => {
+      const src = (attrs.match(/\bsrc=["']([^"']*)["']/i) || [])[1] ?? null;
+      if (src === null) return full; // not a src-bearing <img> we understand
+      const alt = (attrs.match(/\balt=["']([^"']*)["']/i) || [])[1] || "";
+      const width = (attrs.match(/\bwidth=["']?(\d+)["']?/i) || [])[1];
+      const height = (attrs.match(/\bheight=["']?(\d+)["']?/i) || [])[1];
+      return stashPush(_renderRawImageTag(src, alt, width, height, mediaBaseUrl));
+    },
+  );
+  str = str.replace(
+    /<(video|audio)\b([^>]*)>([\s\S]*?)<\/\1>|<(video|audio)\b([^>]*)\/>/gi,
+    (full, tag1, attrs1, inner, tag2, attrs2) => {
+      const tag = (tag1 || tag2).toLowerCase();
+      const attrs = attrs1 || attrs2 || "";
+      let src = (attrs.match(/\bsrc=["']([^"']*)["']/i) || [])[1];
+      if (src === undefined && inner) {
+        src = (inner.match(/<source\b[^>]*\bsrc=["']([^"']*)["']/i) || [])[1];
+      }
+      if (src === undefined) return full; // not a src-bearing tag we understand
+      return stashPush(_renderRawMediaTag(tag, src, mediaBaseUrl));
+    },
+  );
 
   // ── Step 0a: Fenced passage blocks  ```passage … ``` ──────────────────────
   // A passage fence renders its body as full markdown (not a code block).

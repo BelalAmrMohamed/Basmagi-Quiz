@@ -57,6 +57,22 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 ### Quiz Page
 - Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on, instead of .
 - Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view, while preseving there progress perfectly, and preserving the question index they were on.
+- Reload issue:
+```md
+I tested everything. In the create-quiz page, they work as expected, but in the quiz page, there is the extremely notorious issue that I documented a while ago to AI but based on my latest testing, it was never fixed.
+
+The quiz page for some fucking stupid reason rerenders the whole question body, and it has a stupid <div> called `.reloadable-context`, I don't understand why the fuck does it need to reload the whole fucking question when a user presses a button.
+
+see `export-to-quiz.js`, it doesn't reload the question on every interaction.
+
+Quiz page should never, ever, ever, ever, reload the question body at all, never, never reload it. It's replaying all media again. 
+
+I is an extremely notorious issue that I tried to fix before, but AI seems too stupid, whenever I ask it to fix it and completely removing reloading once and for all, it doesn't do it, instead, it renders all media out of the question body itself, which is an extremely stupid solution.
+
+Fix it.
+```
+- Delete all legacy code
+- Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them.
 
 #### Password
 Connect Password typing memory on the main page to the quiz page: When there is a quiz with a password, and the user downloads the quiz, he has to enter the password once, and they can download the quiz many times, because it's remembered that they know that password. The objective is to connect that to the quiz page, so when the user enters the password to download the quiz, then takes it in the quiz page, he shouldn't be asked for it again. 
@@ -103,14 +119,8 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
 - Pressing `ctrl + s` (saving) shouldn't redirect me to the main page.
+- Pressing `ctrl + z` doesn't undo now. it only does undo to adding/removing questions, but not editing question text/options. Browser's native undo also doesn't work for the text input.
 Note: I went to the website, viewed one of the quizzes you edited, and there is a finding:
-- Before this update, quizzes could have 1 correct answer or multiple answers.
-- When it's one correct answer, the quiz page would show radio buttons on the options.
-- When it's multiple answers, the quiz page would show checkboxes on the options.
-
-That design wasn't perfect, because in the create-quiz page, creators didn't have the ability to force show checkboxes on questions with 1 correct answer (for "choose one or more" type quizzes).
-
-That got even worse, as now all questions created through the create-quiz page now (based on my light testing) show checkboxes on all questions.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
