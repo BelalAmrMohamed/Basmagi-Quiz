@@ -2612,6 +2612,23 @@ ${quizInfoModalHtml}
     return question.answer;
   };
 
+  // Mirrors isMultiSelectQuestion()/singleCorrectIndex() from
+  // shared/rate-answers.js — duplicated here (rather than imported) because
+  // this whole block is serialized into a standalone exported HTML file's
+  // inline <script>, which can't import ES modules from the platform.
+  // Keep these two in sync with rate-answers.js if that file's logic ever
+  // changes.
+  const isMultiSelectQuestion = (q) => {
+    if (q && typeof q === "object" && "multiSelect" in q) {
+      return Boolean(q.multiSelect);
+    }
+    return Array.isArray(q && q.correct);
+  };
+  const singleCorrectIndex = (q) => {
+    const c = (q && q.correct !== undefined) ? q.correct : (q && q.answer);
+    return Array.isArray(c) ? c[0] : c;
+  };
+
   const quizApp = {
     userAnswers: new Array(questions.length).fill(null),
     submitted: false,
@@ -2786,9 +2803,9 @@ ${quizInfoModalHtml}
           const modelEl = document.getElementById(\`modelAns\${i}\`);
           if (modelEl) modelEl.classList.add('show', 'answer-key-reveal');
         } else {
-          const isMultiple = Array.isArray(q.correct);
+          const isMultiple = isMultiSelectQuestion(q);
           card.querySelectorAll('.option-btn').forEach((btn, k) => {
-            const isCorrectOption = isMultiple ? q.correct.includes(k) : k === q.correct;
+            const isCorrectOption = isMultiple ? q.correct.includes(k) : k === singleCorrectIndex(q);
             if (isCorrectOption) btn.classList.add('correct', 'answer-key-reveal');
           });
         }
@@ -2855,7 +2872,7 @@ ${quizInfoModalHtml}
             const card = document.getElementById(\`q\${i}\`);
             if (card) {
               card.classList.add('answered');
-              const isMultiple = Array.isArray(q.correct);
+              const isMultiple = isMultiSelectQuestion(q);
               const buttons = card.querySelectorAll('.option-btn');
               buttons.forEach((btn, j) => {
                 const isSelected = isMultiple ? Array.isArray(ans) && ans.includes(j) : j === ans;
@@ -3365,7 +3382,7 @@ ${quizInfoModalHtml}
               <em>لا توجد خيارات إجابة متاحة لهذا السؤال</em>
             </div>\`;
       } else {
-        const isMultiple = Array.isArray(q.correct);
+        const isMultiple = isMultiSelectQuestion(q);
         const userSelected = this.userAnswers[i];
         optionsHtml = \`<div class="options">\${
           q.options.map((opt, j) => {
@@ -3378,7 +3395,7 @@ ${quizInfoModalHtml}
             // but scoped to just this question's buttons.
             let lockedClass = "";
             if (isLocked) {
-              const isCorrectOption = isMultiple ? q.correct.includes(j) : j === q.correct;
+              const isCorrectOption = isMultiple ? q.correct.includes(j) : j === singleCorrectIndex(q);
               const wasSelected = isMultiple
                 ? Array.isArray(userSelected) && userSelected.includes(j)
                 : j === userSelected;
@@ -3443,7 +3460,7 @@ ${quizInfoModalHtml}
       if (this.submitted || this.lockedQuestions.has(qIndex)) return;
   
       const q = questions[qIndex];
-      const isMultiple = Array.isArray(q.correct);
+      const isMultiple = isMultiSelectQuestion(q);
       const card = document.getElementById(\`q\${qIndex}\`);
       
       if (isMultiple) {
@@ -3549,11 +3566,11 @@ ${quizInfoModalHtml}
       } else {
         const card = document.getElementById(\`q\${qIndex}\`);
         const buttons = card ? card.querySelectorAll(".option-btn") : [];
-        const isMultiple = Array.isArray(q.correct);
+        const isMultiple = isMultiSelectQuestion(q);
         buttons.forEach((btn, k) => {
           btn.classList.add("disabled");
           btn.disabled = true;
-          const isCorrectOption = isMultiple ? q.correct.includes(k) : k === q.correct;
+          const isCorrectOption = isMultiple ? q.correct.includes(k) : k === singleCorrectIndex(q);
           const wasSelected = isMultiple ? Array.isArray(ans) && ans.includes(k) : k === ans;
           if (isCorrectOption) btn.classList.add("correct");
           else if (wasSelected) btn.classList.add("wrong");
@@ -3768,25 +3785,38 @@ ${quizInfoModalHtml}
   
     handleMCQSubmission(q, qIndex) {
       const userAns = this.userAnswers[qIndex];
-      // Handle both single correct answer and multiple correct answers (array)
+      // Local isAnswerCorrect mirrors shared/rate-answers.js's version
+      // (this file is a standalone-exported bundle, can't import it).
+      // BUG FIX: the previous version used correct.includes(ans) without
+      // checking userAns/correct are the same length or shape, which could
+      // wrongly mark a partial multi-select pick as fully correct.
       const isAnswerCorrect = (ans, correct) => {
         if (ans === undefined || ans === null) return false;
-        if (Array.isArray(correct)) return correct.includes(ans);
+        if (Array.isArray(correct)) {
+          if (Array.isArray(ans)) {
+            if (ans.length !== correct.length) return false;
+            return correct.every((c) => ans.includes(c));
+          }
+          return correct.length === 1 && correct[0] === ans;
+        }
         return ans === correct;
       };
       const isCorrect = isAnswerCorrect(userAns, q.correct);
   
       const card = document.getElementById(\`q\${qIndex}\`);
       const buttons = card.querySelectorAll(".option-btn");
-      
+      const isMultiple = isMultiSelectQuestion(q);
+  
       buttons.forEach((btn, k) => {
         btn.classList.add("disabled");
         btn.disabled = true;
-        // Handle both single and array of correct answers
-        const isCorrectOption = Array.isArray(q.correct) ? q.correct.includes(k) : k === q.correct;
+        const isCorrectOption = isMultiple ? q.correct.includes(k) : k === singleCorrectIndex(q);
+        const wasSelected = isMultiple
+          ? Array.isArray(userAns) && userAns.includes(k)
+          : k === userAns;
         if (isCorrectOption) {
           btn.classList.add("correct");
-        } else if (k === userAns && !isCorrect) {
+        } else if (wasSelected && !isCorrect) {
           btn.classList.add("wrong");
         }
       });
@@ -4065,7 +4095,7 @@ ${quizInfoModalHtml}
             e.preventDefault();
             const qIndex = this.getActiveQuestionIndex();
             const q = questions[qIndex];
-            if (q && !Array.isArray(q.correct)) {
+            if (q && !isMultiSelectQuestion(q)) {
               this.selectAnswer(qIndex, index);
             }
           }

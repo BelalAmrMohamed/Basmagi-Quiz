@@ -18,6 +18,8 @@ import {
   isEssayQuestion,
   calculateQuizMetrics,
   isAnswerCorrect,
+  isMultiSelectQuestion,
+  singleCorrectIndex,
 } from "../../shared/rate-answers.js";
 
 import {
@@ -950,7 +952,7 @@ function renderReview(container, questions, userAnswers) {
         </div>`;
     } else {
       const correctIdx = q.correct ?? q.answer;
-      const isMultiple = Array.isArray(correctIdx);
+      const isMultiple = isMultiSelectQuestion(q);
       const isSkipped =
         userAns === undefined ||
         userAns === null ||
@@ -963,6 +965,7 @@ function renderReview(container, questions, userAnswers) {
       } else if (isMultiple) {
         isCorrect =
           Array.isArray(userAns) &&
+          Array.isArray(correctIdx) &&
           userAns.length === correctIdx.length &&
           correctIdx.every((idx) => userAns.includes(idx));
       } else {
@@ -994,7 +997,7 @@ function renderReview(container, questions, userAnswers) {
 
           const isCorrectOption = isMultiple
             ? Array.isArray(correctIdx) && correctIdx.includes(i)
-            : i === correctIdx;
+            : i === singleCorrectIndex(q);
 
           if (isCorrectOption) optionClass += " correct";
           if (isSelected && !isCorrectOption) optionClass += " wrong";

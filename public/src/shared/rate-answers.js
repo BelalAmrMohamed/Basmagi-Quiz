@@ -7,13 +7,53 @@ export const isEssayQuestion = (q) => {
   return !Array.isArray(q.options) && q.answer !== undefined;
 };
 
+// === Helper: Check if a question's UI should render checkboxes (multi-
+// select) vs. radio buttons (single-select) ===
+// Storage format going forward: `correct` is ALWAYS an array (even for a
+// single correct answer, e.g. [2]) — `multiSelect` is the sole, explicit
+// signal for which input control to render, completely independent of
+// `correct`'s shape.
+// Backward compatibility: older questions saved before this field existed
+// don't have `multiSelect` at all. For those (and only those — the `in`
+// check below is what detects "predates this field"), fall back to the old
+// heuristic (Array.isArray(q.correct)) so already-saved quizzes keep
+// rendering exactly as before.
+export const isMultiSelectQuestion = (q) => {
+  if (q && typeof q === "object" && "multiSelect" in q) {
+    return Boolean(q.multiSelect);
+  }
+  return Array.isArray(q?.correct);
+};
+
+// === Helper: the single correct option index for a single-select question,
+// regardless of whether `correct` is stored as the new always-array format
+// ([2]) or the legacy bare-number format (2). Only meaningful when
+// isMultiSelectQuestion(q) is false — a multi-select question should use
+// q.correct (or q.correct ?? q.answer) as an array directly instead.
+export const singleCorrectIndex = (q) => {
+  const c = q?.correct ?? q?.answer;
+  return Array.isArray(c) ? c[0] : c;
+};
+
 // === Helper: Check if answer is correct (handles single value or array) ===
+// `correctValue` (q.correct) may be:
+//   - an array (current/new format, always used going forward — including
+//     single-answer questions, e.g. [2])
+//   - a bare number (legacy format, still present on old unmigrated rows)
+// `userAnswer` mirrors whichever shape the quiz UI collected it in, which
+// itself follows isMultiSelectQuestion(q) — so a multi-select question's
+// userAnswer is always an array, and a single-select question's is always
+// a bare number, regardless of which shape `correctValue` happens to be.
 export function isAnswerCorrect(userAnswer, correctValue) {
   if (userAnswer === undefined || userAnswer === null) return false;
   if (Array.isArray(correctValue)) {
-    if (!Array.isArray(userAnswer)) return false;
-    if (userAnswer.length !== correctValue.length) return false;
-    return correctValue.every(c => userAnswer.includes(c));
+    if (Array.isArray(userAnswer)) {
+      if (userAnswer.length !== correctValue.length) return false;
+      return correctValue.every(c => userAnswer.includes(c));
+    }
+    // Single-select UI (bare number answer) against an always-array
+    // single-correct-answer question, e.g. correct: [2], userAnswer: 2.
+    return correctValue.length === 1 && correctValue[0] === userAnswer;
   }
   return userAnswer === correctValue;
 }

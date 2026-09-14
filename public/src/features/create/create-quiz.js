@@ -19,6 +19,7 @@ import { loadFullQuizData, checkQuizHasPassword } from "../home/quiz-data-loader
 import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
+import { isMultiSelectQuestion } from "../../shared/rate-answers.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -2092,6 +2093,7 @@ window.addQuestion = function () {
     q: "",
     options: ["", ""],
     correct: [],
+    multiSelect: false,
     explanation: "",
   };
 
@@ -2258,6 +2260,13 @@ function renderQuestion(question, insertAtIndex = null) {
                              </svg>
                             <span>طي/توسيع السؤال</span>
                         </button>
+                        ${!isEssay
+      ? `<button type="button" id="multiSelectToggle-${question.id}" class="question-menu-option" role="menuitem" onclick="setMultiSelect(${question.id}, ${!isMultiSelectQuestion(question)}); closeAllQuestionMenus();">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v-4a4 4 0 0 1 8 0v4"/></svg>
+                            <span>${isMultiSelectQuestion(question) ? "تحويل إلى إجابة واحدة فقط" : "اختر إجابة واحدة أو أكثر"}</span>
+                        </button>`
+      : ""
+    }
                         <button type="button" class="question-menu-option" role="menuitem" onclick="duplicateQuestion(${question.id}); closeAllQuestionMenus();">
                             <svg xmlns="http://www.w3.org/2000/svg" class="page-data-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                             <span>مضاعفة السؤال</span>
@@ -2543,81 +2552,48 @@ function updateQuestionNumbers() {
 // keep typing, uploads the file in the background using the exact same
 // Supabase Storage path already used by the legacy image/audio/video
 // dropzone (uploadMediaFileForMarkdown), then swaps the placeholder text for
-// the final <img>/<video>/<audio> tag once the upload finishes.
+// the final bracket-syntax tag (`![alt](url)` / `![audio](url)` /
+// `![video](url)`) once the upload finishes — this is the only media tag
+// format markdown.js's renderMarkdown() recognizes (see MEDIA_TAG_BUILDERS
+// below); raw <img>/<video>/<audio> HTML is NOT recognized and renders as
+// literal escaped text.
 //
-// Pasting a YouTube / image / video / audio URL (instead of a file) inserts
-// the URL as plain text — the shared markdown engine (markdown.js) already
-// auto-embeds bare media URLs on render, so no special tag is needed there.
+// NOTE: pasting a YouTube / image / video / audio URL (instead of a file)
+// currently just inserts the URL as plain text — markdown.js does NOT
+// auto-embed bare URLs (only the bracket-syntax tags above), so a
+// bare-pasted URL renders as plain text, not media. If that's meant to
+// auto-embed, it needs its own fix; out of scope for this pass.
 
+// BUG FIX: these must emit the bracket-syntax tags markdown.js's
+// renderMarkdown()/applyInline() actually recognizes today
+// (`![alt](url)`, `![audio](url)`, `![video](url)`) — NOT raw HTML
+// <img>/<video>/<audio> tags. markdown.js's raw-HTML media renderer was
+// intentionally removed in an earlier migration step (moving from raw
+// HTML media tags to the bracket syntax), so a raw tag inserted here gets
+// HTML-escaped by escHtml() on render (since it's just ordinary question
+// text as far as the engine is concerned) and shows up as literal
+// escaped `<...>` text instead of a rendered element — this was exactly
+// the create-quiz upload bug reported by the user.
+//
+// The bracket syntax has no attribute slots, so width/height can no
+// longer be embedded in the tag itself — this matches the fact that no
+// resize-handle UI actually exists anywhere in this file (only a stale
+// comment referenced one); images/video always render responsively via
+// the shared `.md-img`/media-container CSS (max-width: 100%; height:
+// auto) regardless of the file's native dimensions, same as every other
+// image already embedded this way. See MEDIA_TAG_BUILDERS callers below
+// — dimension probing is kept only to cap the compressed image size
+// before upload, not to bake attributes into the tag.
 const MEDIA_TAG_BUILDERS = {
-  image: (url, filename, w, h) =>
-    `<img width="${w}" height="${h}" alt="${escapeHtml(filename)}" src="${escapeHtml(url)}" />`,
-  video: (url, filename, w, h) =>
-    `<video width="${w}" height="${h}" src="${escapeHtml(url)}" controls></video>`,
-  // Per spec: audio can only be resized horizontally — no height attribute.
-  audio: (url, filename, w) =>
-    `<audio width="${w}" src="${escapeHtml(url)}" controls></audio>`,
+  // alt text intentionally fixed (not the raw filename): bracket-syntax alt
+  // text can't contain "]" or a newline without breaking the tag, and using
+  // a fixed string matches the alt text already used by migrated legacy
+  // image tags ("صورة توضيحية للسؤال" — "illustrative image for the
+  // question") for consistency across old and new content.
+  image: (url) => `![صورة توضيحية للسؤال](${url})`,
+  video: (url) => `![video](${url})`,
+  audio: (url) => `![audio](${url})`,
 };
-
-// Default sizing applied to a freshly-uploaded file, before the creator
-// drags to resize. Images/video get a sensible preview size; audio players
-// have a fixed native height so only width matters.
-const MEDIA_DEFAULT_DIMENSIONS = {
-  image: { width: 480, height: 320 },
-  video: { width: 480, height: 270 },
-  audio: { width: 320 },
-};
-
-/**
- * Reads the natural width/height of an image or video File by loading it
- * into a throwaway element, so the inserted tag's dimensions actually match
- * the file's own aspect ratio (capped to a reasonable default width) rather
- * than always using a fixed box. Falls back to MEDIA_DEFAULT_DIMENSIONS if
- * the file can't be probed (e.g. an unsupported codec) or for audio, which
- * has no visual dimensions to read.
- */
-function probeMediaDimensions(file, mediaType) {
-  return new Promise((resolve) => {
-    if (mediaType === "audio") {
-      resolve(MEDIA_DEFAULT_DIMENSIONS.audio);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    const cleanup = () => URL.revokeObjectURL(url);
-    const fallback = () => {
-      cleanup();
-      resolve(MEDIA_DEFAULT_DIMENSIONS[mediaType]);
-    };
-    const maxWidth = MEDIA_DEFAULT_DIMENSIONS[mediaType].width;
-
-    if (mediaType === "image") {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxWidth / (img.naturalWidth || maxWidth));
-        cleanup();
-        resolve({
-          width: Math.round((img.naturalWidth || maxWidth) * scale),
-          height: Math.round((img.naturalHeight || maxWidth) * scale),
-        });
-      };
-      img.onerror = fallback;
-      img.src = url;
-    } else {
-      const video = document.createElement("video");
-      video.preload = "metadata";
-      video.onloadedmetadata = () => {
-        const scale = Math.min(1, maxWidth / (video.videoWidth || maxWidth));
-        cleanup();
-        resolve({
-          width: Math.round((video.videoWidth || maxWidth) * scale),
-          height: Math.round((video.videoHeight || maxWidth) * scale),
-        });
-      };
-      video.onerror = fallback;
-      video.src = url;
-    }
-  });
-}
 
 /**
  * Uploads a File to Supabase Storage using the same "quiz-media" bucket,
@@ -2729,16 +2705,8 @@ async function handleMarkdownMediaFile(textarea, file, onChange) {
   };
 
   try {
-    const [publicUrl, dims] = await Promise.all([
-      uploadMediaFileForMarkdown(file, mediaType),
-      probeMediaDimensions(file, mediaType),
-    ]);
-    const tag = MEDIA_TAG_BUILDERS[mediaType](
-      publicUrl,
-      file.name,
-      dims.width,
-      dims.height,
-    );
+    const publicUrl = await uploadMediaFileForMarkdown(file, mediaType);
+    const tag = MEDIA_TAG_BUILDERS[mediaType](publicUrl);
     replacePlaceholder(tag);
   } catch (err) {
     console.error("[handleMarkdownMediaFile]", err);
@@ -3091,6 +3059,11 @@ function commitReorderFromDom() {
  * Normalize a question's `correct` field to always be an array of indices.
  * Older/imported data may still use a single number — this coerces it in
  * place so every render/export path can assume an array.
+ *
+ * Does NOT set `multiSelect` — its absence is meaningful (it signals a
+ * pre-multiSelect question for isMultiSelectQuestion()'s backward-compat
+ * fallback in rate-answers.js). Only setMultiSelect()/newly-created
+ * questions set it explicitly.
  */
 function normalizeCorrectField(question) {
   if (!question) return;
@@ -3101,6 +3074,33 @@ function normalizeCorrectField(question) {
     question.correct = [];
   }
 }
+
+/**
+ * Explicitly sets a question's `multiSelect` flag (true = checkboxes /
+ * multiple correct answers allowed, false = radio buttons / exactly one
+ * correct answer), independent of how many options are currently marked
+ * correct. This is what the per-question "اختر إجابة واحدة أو أكثر" menu
+ * toggle calls.
+ *
+ * Turning multiSelect OFF on a question that currently has more than one
+ * correct answer marked keeps only the first (lowest-index) one, since a
+ * single-select question can only have exactly one correct answer — the
+ * creator is told this via a confirmation before it happens (see the
+ * onclick wiring in renderQuestion()).
+ */
+window.setMultiSelect = function (questionId, multiSelect) {
+  const question = quizData.questions.find((q) => q.id === questionId);
+  if (!question) return;
+  pushHistorySnapshot();
+  normalizeCorrectField(question);
+  question.multiSelect = Boolean(multiSelect);
+  if (!question.multiSelect && question.correct.length > 1) {
+    question.correct = [question.correct[0]];
+  }
+  rerenderOptions(questionId);
+  updateIncompleteState(questionId);
+  autosave();
+};
 
 function renderOptions(question) {
   if (question.answer) {
@@ -3125,17 +3125,23 @@ function renderOptions(question) {
   }
 
   normalizeCorrectField(question);
+  const isMultiple = isMultiSelectQuestion(question);
 
-  // ── MCQ / True-False — checkboxes so more than one option can be correct ──
+  // ── MCQ / True-False: checkboxes when multiSelect, radio buttons when not ──
   return question.options
     .map((option, index) => {
       const optId = `option-text-${question.id}-${index}`;
       const isCorrect = question.correct.includes(index);
+      const inputType = isMultiple ? "checkbox" : "radio";
+      const inputName = isMultiple
+        ? undefined
+        : `correct-answer-${question.id}`;
       return `
         <div class="option-item ${isCorrect ? "correct" : ""}" id="option-${question.id}-${index}">
             <input 
-                type="checkbox" 
+                type="${inputType}" 
                 class="option-checkbox"
+                ${inputName ? `name="${inputName}"` : ""}
                 ${isCorrect ? "checked" : ""}
                 onchange="toggleCorrectAnswer(${question.id}, ${index})"
                 title="تحديد كإجابة صحيحة"
@@ -3178,18 +3184,32 @@ window.updateOption = function (questionId, optionIndex, value) {
 };
 
 /** Toggle whether an option is one of the correct answers (multi-select) */
+/** Toggle whether an option is one of the correct answers.
+ * When question.multiSelect is true, behaves as multi-select (any number of
+ * options can be marked). When false (or unset on a new question), behaves
+ * as single-select: marking one option replaces `correct` entirely with
+ * just that option, so exactly one answer is ever marked correct — matching
+ * the radio-button UI rendered for these questions in renderOptions().
+ */
 window.toggleCorrectAnswer = function (questionId, optionIndex) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (question) {
     pushHistorySnapshot();
     normalizeCorrectField(question);
-    const pos = question.correct.indexOf(optionIndex);
-    if (pos === -1) {
-      question.correct.push(optionIndex);
+    if (isMultiSelectQuestion(question)) {
+      const pos = question.correct.indexOf(optionIndex);
+      if (pos === -1) {
+        question.correct.push(optionIndex);
+      } else {
+        question.correct.splice(pos, 1);
+      }
+      question.correct.sort((a, b) => a - b);
     } else {
-      question.correct.splice(pos, 1);
+      // Single-select: this option becomes the one and only correct answer
+      // (a radio button can't be "unchecked" by clicking it again, matching
+      // native radio semantics — exactly one option must be selected).
+      question.correct = [optionIndex];
     }
-    question.correct.sort((a, b) => a - b);
     rerenderOptions(questionId);
     updateIncompleteState(questionId);
     autosave();
@@ -3204,6 +3224,28 @@ function rerenderOptions(questionId) {
   if (container) {
     container.innerHTML = renderOptions(question);
     setupOptionMdEditors(questionId);
+  }
+
+  // ── Keep the "multiSelect" menu toggle's label/action in sync ──────────────
+  // renderOptions() above already reflects the current multiSelect state in
+  // the option inputs themselves; this keeps the "⋮" dropdown's toggle entry
+  // (which lives outside options-container, in the question header) matching
+  // too, without needing a full question-card re-render.
+  const multiSelectBtn = document.getElementById(
+    `multiSelectToggle-${questionId}`,
+  );
+  if (multiSelectBtn) {
+    const nowMultiple = isMultiSelectQuestion(question);
+    multiSelectBtn.setAttribute(
+      "onclick",
+      `setMultiSelect(${questionId}, ${!nowMultiple}); closeAllQuestionMenus();`,
+    );
+    const label = multiSelectBtn.querySelector("span");
+    if (label) {
+      label.textContent = nowMultiple
+        ? "تحويل إلى إجابة واحدة فقط"
+        : "اختر إجابة واحدة أو أكثر";
+    }
   }
 
   // ── Keep card class, label, and button in sync with question type ──────────
@@ -3287,6 +3329,7 @@ window.convertEssayToMcq = function (questionId) {
   // Keep the model-answer text as the first option
   while (question.options.length < 4) question.options.push("");
   question.correct = [0];
+  question.multiSelect = false;
   // Clear the essay marker/text — every isEssay check in this file is a
   // truthy test on `answer`, so leaving it set (even to the old essay
   // answer text) would keep this question rendering as an essay question
@@ -3720,6 +3763,7 @@ window.addQuestionFromTemplate = function (templateType) {
       q: "",
       options: ["", "", "", ""],
       correct: [0],
+      multiSelect: false,
       image: "",
       audio: "",
       video: "",
@@ -3729,6 +3773,7 @@ window.addQuestionFromTemplate = function (templateType) {
       q: "",
       options: ["True", "False"],
       correct: [0],
+      multiSelect: false,
       image: "",
       audio: "",
       video: "",

@@ -16,6 +16,8 @@ import {
   gradeEssay,
   isEssayQuestion,
   isAnswerCorrect,
+  isMultiSelectQuestion,
+  singleCorrectIndex,
 } from "../../shared/rate-answers.js";
 import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 import {
@@ -274,7 +276,7 @@ window.handleSelectForQuestion = (qIdx, optIdx) => {
   if (lockedQuestions[qIdx]) return;
 
   const q = questions[qIdx];
-  const isMultiple = Array.isArray(q.correct);
+  const isMultiple = isMultiSelectQuestion(q);
 
   if (isMultiple) {
     // Multiple selection: toggle the checkbox
@@ -1074,6 +1076,7 @@ async function init() {
         } else {
           out.options = q.options;
           if (q.correct !== undefined) out.correct = q.correct;
+          if (q.multiSelect !== undefined) out.multiSelect = q.multiSelect;
         }
         return out;
       });
@@ -1719,7 +1722,7 @@ function createListItem(q, idx) {
 function buildVerticalQuestionBodyHTML(q, idx) {
   const isEssay = isEssayQuestion(q);
   const correctIdx = q.correct ?? q.answer;
-  const isMultiple = Array.isArray(correctIdx);
+  const isMultiple = isMultiSelectQuestion(q);
   const isLocked = !!lockedQuestions[idx];
   const userSelected = userAnswers[idx];
   const isBookmarked = gameEngine.isBookmarked(examId, idx);
@@ -1741,6 +1744,7 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       if (isMultiple) {
         isCorrect =
           Array.isArray(userSelected) &&
+          Array.isArray(correctIdx) &&
           userSelected.length === correctIdx.length &&
           correctIdx.every((i) => userSelected.includes(i));
       } else {
@@ -1826,8 +1830,8 @@ function buildVerticalQuestionBodyHTML(q, idx) {
       if (isLocked) {
         optionClass += " locked";
         const isCorrectOption = isMultiple
-          ? correctIdx.includes(i)
-          : i === correctIdx;
+          ? Array.isArray(correctIdx) && correctIdx.includes(i)
+          : i === singleCorrectIndex(q);
         if (isCorrectOption) optionClass += " correct";
         if (isSelected && !isCorrectOption) optionClass += " wrong";
       }
@@ -2056,9 +2060,10 @@ function buildQuestionBodyHTML(q, idx) {
       feedbackClass += " essay-feedback show";
       feedbackText = `<strong>الشرح</strong> <div class="feedback-body">${renderMarkdown(explanationText, { mediaBaseUrl: quizBaseUrl })}</div>`;
     } else {
-      if (Array.isArray(correctIdx)) {
+      if (isMultiSelectQuestion(q)) {
         isCorrect =
           Array.isArray(userSelected) &&
+          Array.isArray(correctIdx) &&
           userSelected.length === correctIdx.length &&
           correctIdx.every((i) => userSelected.includes(i));
       } else {
@@ -2143,7 +2148,7 @@ function buildQuestionBodyHTML(q, idx) {
     };
   }
 
-  const isMultiple = Array.isArray(q.correct);
+  const isMultiple = isMultiSelectQuestion(q);
 
   return {
     largeClass,
@@ -2167,7 +2172,7 @@ function buildQuestionBodyHTML(q, idx) {
             optionClass += " locked";
             const isCorrectOption = isMultiple
               ? Array.isArray(q.correct) && q.correct.includes(i)
-              : i === q.correct;
+              : i === singleCorrectIndex(q);
             if (isCorrectOption) optionClass += " correct";
             if (isSelected && !isCorrectOption) optionClass += " wrong";
           }
@@ -2292,7 +2297,7 @@ function handleSelect(index) {
   if (lockedQuestions[currentIdx]) return;
 
   const q = questions[currentIdx];
-  const isMultiple = Array.isArray(q.correct);
+  const isMultiple = isMultiSelectQuestion(q);
 
   if (isMultiple) {
     // Multiple selection: toggle the checkbox

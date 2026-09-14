@@ -105,6 +105,7 @@ export async function buildJsonQuizExport(
     } else {
       out.options = q.options;
       if (q.correct !== undefined && q.correct !== null) out.correct = q.correct;
+      if (q.multiSelect !== undefined) out.multiSelect = q.multiSelect;
     }
     if (q.explanation?.trim()) out.explanation = q.explanation;
     return out;
