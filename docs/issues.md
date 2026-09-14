@@ -66,6 +66,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 #### Improvements
 - The side menu admin badge/favicon should be improved. It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
+- I really admire the animations on the `.offline-icon` element on `offline.html`, very intuitive. I want to implement such animation on hover state on the elements in the side-menu on all pages. You can update the HTML, the CSS, and anything to implement that
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
