@@ -64,10 +64,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 ### Home Page
 
-#### Onboarding Pop Up `.landing-card`
-- Make it a full screen, instead of a modal. Not a different page, but takes full width/height, no rounded corners.
-- Redesign/Overhaul: I want new ideas/features for the landing card.
-
 #### Improvements
 - The side menu admin badge/favicon should be improved. It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
