@@ -100,5 +100,4 @@ if (!message) {
 }
 
 git(["commit", "-m", message]);
-// console.log("Committed.");
 console.log(`git commit -m "${message}"`);

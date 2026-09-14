@@ -69,17 +69,12 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Redesign/Overhaul: I want new ideas/features for the landing card.
 
 #### Improvements
-- The side menu admin badge and favicon size should be improved visually.
+- The side menu admin badge/favicon should be improved. It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
   - Make an info modal for Folders.
   - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
-
-### URLs
-- Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links:
-issues while testing the update:
-- The تعديل button for admins on quizzes on the main page, sends the admin to `/create`, which doesn't include the edit id of the quiz, meaning admins don't actually get to edit it.
 
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.
@@ -91,10 +86,6 @@ issues while testing the update:
 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
-- Pressing `ctrl + s` (saving) shouldn't redirect me to the main page, instead it should just redirect ot the entry screen on the create-quiz page itlsef.
-- Pressing `ctrl + z` doesn't undo now. it only does undo to adding/removing questions, but not editing question text/options. Browser's native undo also doesn't work for the text input.
-Note: I went to the website, viewed one of the quizzes you edited, and there is a finding:
-- Now all the quizzes in the home page, when I press the تعديل button from the dropdown menu, it just opens /create, without the edit id, so I just land on the entry screen. This issue is for the main quizzes and local quizzes.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
