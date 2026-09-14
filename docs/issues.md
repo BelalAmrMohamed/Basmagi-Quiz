@@ -16,6 +16,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
 - The `نسخ لامتحاناتي` button doesn't show the animations when copying courses and folders, clicking it quits the menu instantly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
 - Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
+- Local Trash can button doesn't appear on the card itself, or in the `#userQuizContextMenu`
 
 ### Menus in امتحاناتك
 - Pressing the more button on a quiz, the dropdown shows, then pressing another more button on anohter quiz, the first one closes, the second shows (Correct Behavior).
@@ -101,6 +102,15 @@ Connect Password typing memory on the main page to the quiz page: When there is 
 
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
+- Pressing `ctrl + s` (saving) shouldn't redirect me to the main page.
+Note: I went to the website, viewed one of the quizzes you edited, and there is a finding:
+- Before this update, quizzes could have 1 correct answer or multiple answers.
+- When it's one correct answer, the quiz page would show radio buttons on the options.
+- When it's multiple answers, the quiz page would show checkboxes on the options.
+
+That design wasn't perfect, because in the create-quiz page, creators didn't have the ability to force show checkboxes on questions with 1 correct answer (for "choose one or more" type quizzes).
+
+That got even worse, as now all questions created through the create-quiz page now (based on my light testing) show checkboxes on all questions.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
