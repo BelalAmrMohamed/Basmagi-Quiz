@@ -339,7 +339,7 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     editOpt.onclick = (e) => {
       e.stopPropagation();
       closeMenu();
-      window.location.href = `create-quiz.html?edit=${encodeURIComponent(quiz.id)}`;
+      window.location.href = `create-quiz?edit=${encodeURIComponent(quiz.id)}`;
     };
     menu.appendChild(editOpt);
 

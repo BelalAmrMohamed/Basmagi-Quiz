@@ -868,7 +868,7 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     if (targetType === "item") {
       contextMenuEl.appendChild(
         createMenuItem(EDIT_SVG, "تعديل الامتحان", () => {
-          window.location.href = `create-quiz.html?edit=${encodeURIComponent(targetId)}`;
+          window.location.href = `create-quiz?edit=${encodeURIComponent(targetId)}`;
         }),
       );
     }

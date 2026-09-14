@@ -1008,6 +1008,20 @@ function showEntryScreen() {
   entryScreen.style.display = "block";
   document.body.classList.remove("quiz-form-active");
 
+  // Strip any ?edit=/?id=&mode=edit params left over from a deep-linked
+  // edit session — now that saving returns here in-page (instead of
+  // navigating to "/"), the address bar would otherwise keep pointing at
+  // a quiz that's no longer open for editing.
+  if (window.location.search) {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("edit") || url.searchParams.has("id") || url.searchParams.has("mode")) {
+      url.searchParams.delete("edit");
+      url.searchParams.delete("id");
+      url.searchParams.delete("mode");
+      history.replaceState(null, "", url.pathname + url.search);
+    }
+  }
+
   renderEntryItemsGrid();
 }
 
@@ -1909,6 +1923,17 @@ function updateCharCount(elementId, current, max) {
 // KEYBOARD SHORTCUTS
 // ============================================================================
 
+/** True if `el` is something the user can type into directly — an
+ * INPUT/TEXTAREA (covers every .md-source field: question/option/
+ * explanation text) or a contentEditable node. Used to keep global
+ * single-key/Ctrl shortcuts from hijacking keystrokes meant for the
+ * field itself (native undo, text entry, etc.). */
+function isTextEditableElement(el) {
+  if (!el) return false;
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || el.isContentEditable;
+}
+
 function setupKeyboardShortcuts() {
   document.addEventListener("keydown", (e) => {
     // Alt+N: Add new question.
@@ -1932,11 +1957,25 @@ function setupKeyboardShortcuts() {
     // Ctrl+Z: Undo. Ctrl+Y or Ctrl+Shift+Z: Redo (both are common
     // conventions — Ctrl+Y matches the shortcut already printed on
     // #redoBtn's title attribute in create-quiz.html).
-    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+    //
+    // Both are skipped while focus is inside a text-editable field (any
+    // .md-source textarea — question/option/explanation text — or any
+    // other input/textarea/contentEditable). Structural undo/redo has no
+    // text-level granularity (see the UNDO/REDO section's header comment:
+    // per-keystroke text edits are deliberately excluded from the
+    // snapshot stack), so previously this handler's unconditional
+    // e.preventDefault() blocked the browser's own native undo for that
+    // field — which normally handles text edits — before it could ever
+    // run, then fired the structural undo instead, which had nothing
+    // relevant to restore. Leaving Ctrl+Z/Y alone here lets the field's
+    // native undo take over, exactly as intended.
+    const isTextEditTarget = isTextEditableElement(e.target);
+    if (!isTextEditTarget && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
       e.preventDefault();
       performUndo();
     }
     if (
+      !isTextEditTarget &&
       (e.ctrlKey || e.metaKey) &&
       (e.key.toLowerCase() === "y" ||
         (e.shiftKey && e.key.toLowerCase() === "z"))
@@ -1966,12 +2005,9 @@ function setupKeyboardShortcuts() {
     }
 
     // ?: Show shortcuts
-    if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
-      const target = e.target;
-      if (target.tagName !== "INPUT" && target.tagName !== "TEXTAREA") {
-        e.preventDefault();
-        toggleShortcuts();
-      }
+    if (e.key === "?" && !e.ctrlKey && !e.metaKey && !isTextEditableElement(e.target)) {
+      e.preventDefault();
+      toggleShortcuts();
     }
   });
 }
@@ -4743,7 +4779,11 @@ window.saveLocally = function () {
         "success",
       );
       if (editingQuizId) {
-        setTimeout(() => (window.location.href = "/"), 1000);
+        setTimeout(() => {
+          editingQuizId = null;
+          currentDraftId = null;
+          showEntryScreen();
+        }, 1000);
       }
     } else {
       showNotification("خطأ", "فشل حفظ الامتحان", "error");
@@ -4838,7 +4878,10 @@ async function saveSharedQuizEdit() {
     }
 
     showNotification("تم الحفظ!", "تم حفظ تعديلات الامتحان بنجاح", "success");
-    setTimeout(() => (window.location.href = "/"), 1000);
+    setTimeout(() => {
+      sharedEditDbId = null;
+      showEntryScreen();
+    }, 1000);
   } catch (err) {
     hideLoading();
     console.error("Error saving shared quiz edit:", err);
