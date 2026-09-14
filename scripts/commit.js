@@ -97,8 +97,8 @@ if (!message) {
     console.log("Nothing to commit — working tree is clean.");
     process.exit(0);
   }
-  console.log(`No message given — generated one:\n  "${message}"`);
 }
 
 git(["commit", "-m", message]);
-console.log("Committed.");
+// console.log("Committed.");
+console.log(`git commit -m "${message}"`);
