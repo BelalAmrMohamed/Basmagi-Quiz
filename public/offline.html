@@ -170,7 +170,7 @@
     }
 
     button.loading .btn-text {
-      display: none;
+      opacity: 0.85;
     }
 
     /* Animations */
@@ -196,6 +196,12 @@
     @keyframes spin {
       to {
         transform: rotate(360deg);
+      }
+    }
+
+    @keyframes dash {
+      to {
+        stroke-dashoffset: 100;
       }
     }
 
@@ -264,15 +270,12 @@
     <button type="button" id="retry-btn" onclick="manualRetry()">
       <span class="btn-text">إعادة المحاولة الآن</span>
       <span class="spinner"></span>
-      <span class="loading-text" style="display: none;">جاري التحقق...</span>
     </button>
   </main>
 
   <script>
     const btn = document.getElementById('retry-btn');
     const card = document.getElementById('card');
-    const loadingText = document.querySelector('.loading-text');
-    const btnText = document.querySelector('.btn-text');
 
     // Function to safely redirect back
     function redirectBack() {
@@ -287,13 +290,23 @@
     // Ping server to check ACTUAL internet (not just router connection)
     async function checkActualConnection() {
       try {
-        // Pinging the favicon with a cache-buster to ensure it reaches the web
-        const response = await fetch('/favicon.png?_=' + new Date().getTime(), {
-          method: 'HEAD',
-          cache: 'no-store',
-          signal: AbortSignal.timeout(3000) // 3 second timeout
-        });
-        return response.ok;
+        // Build an abort controller manually — AbortSignal.timeout() isn't
+        // available in every environment (some sandboxed/older WebViews),
+        // and a synchronous throw there would otherwise skip straight to
+        // the catch without ever settling predictably.
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        try {
+          const response = await fetch('/favicon.png?_=' + Date.now(), {
+            method: 'HEAD',
+            cache: 'no-store',
+            signal: controller.signal
+          });
+          return response.ok;
+        } finally {
+          clearTimeout(timeoutId);
+        }
       } catch (error) {
         return false;
       }
@@ -309,7 +322,6 @@
       // UI Loading state
       btn.classList.add('loading');
       btn.disabled = true;
-      loadingText.style.display = 'block';
 
       const isReallyOnline = await checkActualConnection();
 
@@ -324,8 +336,6 @@
       // Revert UI
       btn.classList.remove('loading');
       btn.disabled = false;
-      loadingText.style.display = 'none';
-      btnText.style.display = 'block';
 
       // Shake animation to indicate failure
       card.classList.remove('shake');
