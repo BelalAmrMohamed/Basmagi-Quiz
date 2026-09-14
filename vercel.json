@@ -3,7 +3,50 @@
   "outputDirectory": "public",
   "framework": null,
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/sign-in.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/sign-in",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/login.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/login",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/log-in.html",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
+    {
+      "source": "/sitemap-dynamic.xml",
+      "destination": "/api/seo?type=sitemap"
+    },
+    {
+      "source": "/feed.xml",
+      "destination": "/api/seo?type=feed&format=rss"
+    },
+    {
+      "source": "/feed.json",
+      "destination": "/api/seo?type=feed&format=json"
+    },
+    {
+      "source": "/llms-full.txt",
+      "destination": "/api/seo?type=llms-full"
+    },
     {
       "source": "/@:handle",
       "destination": "/api/render-profile?handle=:handle"
@@ -45,8 +88,18 @@
       "destination": "/api/college-quiz"
     },
     {
-      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|service-worker\\.js|about$|control$|create-quiz$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
+      "source": "/api/reports",
+      "destination": "/api/college-quiz"
+    },
+    {
+      "source": "/((?!api/|_vercel/|assets/|src/|favicon\\.|manifest\\.json|robots\\.txt|sitemap\\.xml|sitemap-static\\.xml|llms\\.txt|service-worker\\.js|about$|control$|create-quiz$|how-to-create-a-quiz$|how-to-upload-a-quiz$|how-to-use-ai-agent$|oauth-callback$|offline$|onboarding$|privacy-policy$|profile$|quiz$|reports$|result$|settings$|terms-of-service$|.*\\.[a-zA-Z0-9]+$).*)",
       "destination": "/"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/seo?type=cron",
+      "schedule": "0 4 * * *"
     }
   ]
 }

@@ -196,6 +196,17 @@ export default async function handler(req, res) {
     if (description) {
       html = replaceMetaContent(html, "name", "description", description);
     }
+
+    // Robots: quiz.html the *template* is noindex (bare /quiz.html should
+    // never be indexed — see docs/plans/SEO-GEO-plan.md Phase 0.1), but a
+    // successfully resolved /quiz/:id page is real, indexable content —
+    // override the template's default back to index,follow here.
+    html = replaceMetaContent(
+      html,
+      "name",
+      "robots",
+      "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+    );
   }
 
   // ── 5. Respond ────────────────────────────────────────────────────────────

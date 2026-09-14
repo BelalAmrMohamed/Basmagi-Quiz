@@ -1603,8 +1603,8 @@
      (change name, theme, animations, contact dev, install app) remain. */
   .sidebar nav>a[href="/"],
   .sidebar nav>a[href="profile.html"],
-  .sidebar nav>a[href="create-quiz.html"],
-  .sidebar nav>a[href="settings.html"] {
+  .sidebar nav>a[href="create-quiz"],
+  .sidebar nav>a[href="settings"] {
     display: none;
   }
 

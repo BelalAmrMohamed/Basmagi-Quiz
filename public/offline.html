@@ -4,9 +4,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0088cc">
+  <meta name="theme-color" content="#0088cc" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <title>غير متصل — منصة امتحانات بصمجي</title>
   <link rel="icon" href="/favicon.png" type="image/png">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://basmagi-quiz.vercel.app/offline" />
+
+  <!-- Modern Arabic Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
   <style>
     :root {
       --bg: #f0f4f8;
@@ -14,89 +23,330 @@
       --text: #1a2332;
       --muted: #5a6a7a;
       --accent: #0088cc;
+      --accent-hover: #0077b3;
       --border: #d8e0e8;
+      --shadow: rgba(26, 35, 50, 0.08);
+      --error: #ef4444;
+    }
+
+    /* Dark Mode Auto-Switch */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --surface: #1e293b;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --shadow: rgba(0, 0, 0, 0.25);
+      }
     }
 
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     body {
-      margin: 0;
       min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
-      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-      background:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 136, 204, 0.18), transparent),
-        var(--bg);
+      font-family: 'Cairo', "Segoe UI", Tahoma, Arial, sans-serif;
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 136, 204, 0.15), transparent), var(--bg);
       color: var(--text);
+      transition: background-color 0.3s, color 0.3s;
     }
 
     main {
       width: min(420px, 100%);
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 36px 28px;
+      border-radius: 24px;
+      padding: 40px 32px;
       text-align: center;
-      box-shadow: 0 12px 40px rgba(26, 35, 50, 0.08);
+      box-shadow: 0 20px 40px var(--shadow);
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+      transform: translateY(20px);
     }
 
-    .logo {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 18px;
-      border-radius: 16px;
+    /* Top small logo */
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      font-weight: 700;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .brand img {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+    }
+
+    /* Hero SVG Animation */
+    .offline-icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      animation: float 4s ease-in-out infinite;
+      color: var(--muted);
+    }
+
+    .offline-icon path {
+      stroke-dasharray: 100;
+      animation: dash 3s linear infinite alternate;
     }
 
     h1 {
-      margin: 0 0 10px;
-      font-size: 1.35rem;
+      margin: 0 0 12px;
+      font-size: 1.5rem;
       font-weight: 700;
+      color: var(--text);
     }
 
     p {
-      margin: 0 0 24px;
+      margin: 0 0 32px;
       color: var(--muted);
-      line-height: 1.7;
-      font-size: 0.95rem;
+      line-height: 1.6;
+      font-size: 1rem;
     }
 
     button {
       appearance: none;
       border: none;
-      border-radius: 12px;
-      padding: 12px 22px;
-      font-size: 1rem;
-      font-weight: 600;
+      border-radius: 14px;
+      padding: 14px 28px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      font-weight: 700;
       cursor: pointer;
       background: var(--accent);
       color: #fff;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 136, 204, 0.3);
     }
 
-    button:active {
-      transform: scale(0.98);
+    button:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 136, 204, 0.4);
+    }
+
+    button:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* Spinner for button */
+    .spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    button.loading .spinner {
+      display: block;
+    }
+
+    button.loading .btn-text {
+      display: none;
+    }
+
+    /* Animations */
+    @keyframes fadeUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(0, 136, 204, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(0, 136, 204, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(0, 136, 204, 0);
+      }
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-5px);
+      }
+
+      50% {
+        transform: translateX(5px);
+      }
+
+      75% {
+        transform: translateX(-5px);
+      }
+    }
+
+    .shake {
+      animation: shake 0.4s ease-in-out;
     }
   </style>
 </head>
 
 <body>
-  <main>
-    <img class="logo" src="/favicon.png" alt="بصمجي" width="64" height="64">
-    <h1>أنت غير متصل بالإنترنت</h1>
-    <p>تحقق من اتصالك ثم أعد المحاولة. المنصة تحتاج إنترنت لفتح الصفحات والامتحانات.</p>
-    <button type="button" onclick="location.reload()">إعادة المحاولة</button>
+  <main id="card">
+    <div class="brand">
+      <img src="/favicon.png" alt="بصمجي" width="24" height="24" onerror="this.style.display='none'">
+      <span>منصة امتحانات بصمجي</span>
+    </div>
+
+    <!-- Animated Offline SVG Icon -->
+    <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23"></line>
+      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+      <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+    </svg>
+
+    <h1 aria-live="assertive">أنت غير متصل بالإنترنت</h1>
+    <p>يبدو أنك فقدت الاتصال بالشبكة. تحتاج المنصة إلى إنترنت نشط لفتح الامتحانات وحفظ إجاباتك.</p>
+
+    <button type="button" id="retry-btn" onclick="manualRetry()">
+      <span class="btn-text">إعادة المحاولة الآن</span>
+      <span class="spinner"></span>
+      <span class="loading-text" style="display: none;">جاري التحقق...</span>
+    </button>
   </main>
+
   <script>
-    window.addEventListener("online", () => {
+    const btn = document.getElementById('retry-btn');
+    const card = document.getElementById('card');
+    const loadingText = document.querySelector('.loading-text');
+    const btnText = document.querySelector('.btn-text');
+
+    // Function to safely redirect back
+    function redirectBack() {
       const ref = document.referrer;
       if (ref && ref.indexOf(location.origin) === 0) {
         location.replace(ref);
       } else {
         location.replace("/");
+      }
+    }
+
+    // Ping server to check ACTUAL internet (not just router connection)
+    async function checkActualConnection() {
+      try {
+        // Pinging the favicon with a cache-buster to ensure it reaches the web
+        const response = await fetch('/favicon.png?_=' + new Date().getTime(), {
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(3000) // 3 second timeout
+        });
+        return response.ok;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    // Manual button click logic
+    async function manualRetry() {
+      if (!navigator.onLine) {
+        triggerError();
+        return;
+      }
+
+      // UI Loading state
+      btn.classList.add('loading');
+      btn.disabled = true;
+      loadingText.style.display = 'block';
+
+      const isReallyOnline = await checkActualConnection();
+
+      if (isReallyOnline) {
+        redirectBack();
+      } else {
+        triggerError();
+      }
+    }
+
+    function triggerError() {
+      // Revert UI
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      loadingText.style.display = 'none';
+      btnText.style.display = 'block';
+
+      // Shake animation to indicate failure
+      card.classList.remove('shake');
+      void card.offsetWidth; // Trigger reflow
+      card.classList.add('shake');
+    }
+
+    // Automatic check when browser detects network changes
+    window.addEventListener("online", async () => {
+      const isReallyOnline = await checkActualConnection();
+      if (isReallyOnline) {
+        redirectBack();
+      }
+    });
+
+    // Check immediately on load (in case they load this page from cache while actually online)
+    window.addEventListener('load', () => {
+      if (navigator.onLine) {
+        checkActualConnection().then(isOnline => {
+          if (isOnline) redirectBack();
+        });
       }
     });
   </script>

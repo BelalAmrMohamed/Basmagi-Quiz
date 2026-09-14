@@ -330,7 +330,7 @@ export function renderLandingScreen() {
     if (window.location.hash) {
       sessionStorage.setItem("intended_redirect_hash", window.location.hash);
     }
-    window.location.href = "onboarding.html";
+    window.location.href = "onboarding";
   };
 
   const secondaryBtn = document.createElement("button");

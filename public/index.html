@@ -89,6 +89,11 @@
     <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icon-32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="assets/images/icon-16.png">
 
+    <!-- Feeds (SEO/GEO discovery — see docs/plans/SEO-GEO-plan.md §6.4) -->
+    <link rel="alternate" type="application/rss+xml" title="أحدث امتحانات بصمجي"
+        href="https://basmagi-quiz.vercel.app/feed.xml">
+    <link rel="alternate" type="application/feed+json" href="https://basmagi-quiz.vercel.app/feed.json">
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
@@ -124,42 +129,76 @@
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       "itemListElement": [
-        { 
-          "@type": "ListItem", 
-          "position": 1, 
-          "name": "منصة امتحانات بصمجي", 
-          "item": "https://basmagi-quiz.vercel.app/" 
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "منصة امتحانات بصمجي",
+          "item": "https://basmagi-quiz.vercel.app/"
         },
-        { 
-          "@type": "ListItem", 
-          "position": 2, 
-          "name": "إنشاء امتحانات", 
-          "item": "https://basmagi-quiz.vercel.app/create-quiz.html" 
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "عن المنصة",
+          "item": "https://basmagi-quiz.vercel.app/about"
         },
-        { 
-          "@type": "ListItem", 
-          "position": 3, 
-          "name": "الحساب", 
-          "item": "https://basmagi-quiz.vercel.app/profile.html" 
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "إنشاء امتحانات",
+          "item": "https://basmagi-quiz.vercel.app/create-quiz"
         },
-        { 
-          "@type": "ListItem", 
-          "position": 4, 
-          "name": "الإعدادات", 
-          "item": "https://basmagi-quiz.vercel.app/settings.html" 
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "كيفية إنشاء امتحان",
+          "item": "https://basmagi-quiz.vercel.app/how-to-create-a-quiz"
         },
-        { 
-          "@type": "ListItem", 
-          "position": 6, 
-          "name": "شروط الخدمة", 
-          "item": "https://basmagi-quiz.vercel.app/terms-of-service.html" 
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "سياسة الخصوصية",
+          "item": "https://basmagi-quiz.vercel.app/privacy-policy"
         },
-        { 
-          "@type": "ListItem", 
-          "position": 7, 
-          "name": "سياسة الخصوصية", 
-          "item": "https://basmagi-quiz.vercel.app/privacy-policy.html" 
+        {
+          "@type": "ListItem",
+          "position": 6,
+          "name": "شروط الخدمة",
+          "item": "https://basmagi-quiz.vercel.app/terms-of-service"
         }
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "منصة امتحانات بصمجي",
+      "alternateName": "Basmagi Quiz Platform",
+      "url": "https://basmagi-quiz.vercel.app/",
+      "description": "منصة تعليمية عربية مجانية تحتوي على مكتبة امتحانات تفاعلية خاصة بكلية الحاسبات والمعلومات ولجميع المراحل التعليمية",
+      "inLanguage": "ar",
+      "sameAs": [
+        "https://github.com/BelalAmrMohamed/Basmagi-Quiz",
+        "https://x.com/BelalAmrDev",
+        "https://portfolio-of-belal.vercel.app/"
+      ]
+    }
+    </script>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "EducationalOrganization",
+      "name": "منصة امتحانات بصمجي",
+      "alternateName": "Basmagi Quiz Platform",
+      "url": "https://basmagi-quiz.vercel.app/",
+      "description": "منصة تعليمية عربية مجانية تحتوي على مكتبة امتحانات تفاعلية خاصة بكلية الحاسبات والمعلومات ولجميع المراحل التعليمية",
+      "inLanguage": "ar",
+      "sameAs": [
+        "https://github.com/BelalAmrMohamed/Basmagi-Quiz",
+        "https://x.com/BelalAmrDev",
+        "https://portfolio-of-belal.vercel.app/"
       ]
     }
     </script>
@@ -430,7 +469,7 @@
                 <span class="menu-label">الصفحة الرئيسية</span>
             </a>
 
-            <a href="create-quiz.html" title="إنشاء امتحانات" class="menu-item" data-tooltip="إنشاء امتحانات">
+            <a href="create-quiz" title="إنشاء امتحانات" class="menu-item" data-tooltip="إنشاء امتحانات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
@@ -493,7 +532,7 @@
                         <span>الحساب</span>
                     </a>
 
-                    <a href="reports.html" class="side-menu-profile-dropdown-item" role="menuitem">
+                    <a href="reports" class="side-menu-profile-dropdown-item" role="menuitem">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                             aria-hidden="true">
@@ -685,7 +724,7 @@
         <!-- Pinned bottom actions stay outside the scrollable nav so long
                   menus cannot paint underneath them. -->
         <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
-            <a href="settings.html" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
+            <a href="settings" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
@@ -725,7 +764,7 @@
             <span class="bottom-nav-label">الرئيسية</span>
         </a>
 
-        <a href="create-quiz.html" class="bottom-nav-item" data-bottom-nav="create">
+        <a href="create-quiz" class="bottom-nav-item" data-bottom-nav="create">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -747,7 +786,7 @@
             <span class="bottom-nav-label">الحساب</span>
         </a>
 
-        <a href="settings.html" class="bottom-nav-item" data-bottom-nav="settings" aria-current="page">
+        <a href="settings" class="bottom-nav-item" data-bottom-nav="settings" aria-current="page">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -1074,9 +1113,9 @@
 
         <footer class="watermark" role="contentinfo">
             <p>
-                <a href="about.html" rel="noopener noreferrer"
-                    aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">عن المنصة</a> |
-                <a href="privacy-policy.html">سياسة الخصوصية</a> | <a href="terms-of-service.html">شروط الخدمة</a>
+                <a href="about" rel="noopener noreferrer" aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">عن
+                    المنصة</a> |
+                <a href="privacy-policy">سياسة الخصوصية</a> | <a href="terms-of-service">شروط الخدمة</a>
             </p>
         </footer>
     </div>
