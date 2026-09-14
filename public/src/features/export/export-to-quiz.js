@@ -8,20 +8,16 @@ import { showNotification } from "../../components/notifications/notifications.j
 // Question helpers
 import { gradeEssay, calculateQuizMetrics, isAnswerCorrect } from "../../shared/rate-answers.js";
 
-// Shared media URL resolution (relative-to-platform-origin -> absolute URL).
-// See public/src/shared/media-url.js for the full rationale.
-import { resolveMediaUrl, isLocalPath } from "../../shared/media-url.js";
-
-// Shared media resolution for INLINE markdown media tags (![audio](url)/
-// ![video](url)) — a deliberately separate module/name-space from
-// media-url.js above. media-url.js's resolveMediaUrl(url) resolves a
-// legacy dedicated q.image/q.audio/q.video field against a fixed platform
-// origin for standalone-file portability; media-resolve.js's
+// Shared media resolution for INLINE markdown media tags (<img>/<video>/
+// <audio> tags authored inside q.q/q.explanation/etc). The legacy
+// dedicated q.image/q.audio/q.video fields and their platform-origin
+// resolution (media-url.js's resolveMediaUrl/isLocalPath) have been
+// removed — all question media is now authored inline, and its src is
+// always a full absolute URL, so no resolution is needed for it either.
 // getMediaUrlCandidates(url, baseUrl)/getMediaMimeType/isYouTubeUrl/
-// getYouTubeVideoId resolve markdown-embedded media against the *quiz's
-// own* base URL (folder co-location) the same way quiz.js/result.js do.
-// No name collisions between the two modules' exports — verified before
-// adding this import. Only imported here so applyInline's dependency
+// getYouTubeVideoId below resolve markdown-embedded media against the
+// *quiz's own* base URL (folder co-location) the same way quiz.js/
+// result.js do. Only imported here so applyInline's dependency
 // renderInlineMediaTag (also imported below) can be .toString()-inlined
 // into the export template with a complete, standalone dependency chain.
 import {
@@ -157,7 +153,11 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     showAnswersButton = false,
     layout = "pagination",
   } = exportOptions;
-  const processedQuestions = await convertImagesToBase64(questions);
+  // No local-path/base64 conversion needed here — question media (inline
+  // <img>/<video>/<audio> tags inside q.q) is always a full absolute URL,
+  // and the legacy per-question image/video/audio fields this used to
+  // read no longer exist. Pass questions straight through.
+  const processedQuestions = questions;
 
   const authorIdentifier = config.authorId || config.authorHandle;
   let creatorProfile = null;
@@ -1350,60 +1350,6 @@ export async function buildStandaloneQuizHtml(config, questions, exportOptions =
     color: var(--text-primary);
     line-height: 1.65;
     text-wrap: pretty;
-  }
-
-  /* ── Question Image ──────────────────────────────────────────── */
-  .question-image-container {
-    margin-bottom: 22px;
-    text-align: center;
-    position: relative;
-    min-height: 180px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: var(--bg-secondary);
-  }
-
-  .skeleton-loader {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      var(--bg-secondary) 25%,
-      var(--bg-tertiary) 50%,
-      var(--bg-secondary) 75%
-    );
-    background-size: 200% 100%;
-    animation: skeleton-loading 1.5s infinite;
-  }
-
-  @keyframes skeleton-loading {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  .question-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: var(--radius-md);
-    opacity: 0;
-    transition: opacity 0.35s ease;
-    display: block;
-    margin: 0 auto;
-    position: relative;
-    z-index: 1;
-  }
-
-  .question-image.loaded {
-    opacity: 1;
-    animation: fade-in 0.35s ease-in;
-  }
-
-  @keyframes fade-in {
-    from { opacity: 0; transform: scale(0.98); }
-    to   { opacity: 1; transform: scale(1); }
   }
 
   /* ── Reading Passage ──────────────────────────────────────────── */
@@ -2655,7 +2601,6 @@ ${quizInfoModalHtml}
       this.setupKeyboardNavigation();
       this.setupModalClickOutside();
       this.startQuizTimer();
-      this.setupImageLoading();
       this.setupQuizTitle();
       this.setupInfoDialog();
       this.setupPager();
@@ -3177,89 +3122,6 @@ ${quizInfoModalHtml}
       }
     },
     
-    renderQuestionImage(imageUrl, qIndex) {
-      if (!imageUrl) return "";
-      return \`
-        <div class="question-image-container">
-          <div class="skeleton-loader" id="skeleton\${qIndex}"></div>
-          <img 
-            src="\${this.escapeHTML(imageUrl)}" 
-            alt="Question context image" 
-            class="question-image"
-            id="img\${qIndex}"
-            data-index="\${qIndex}"
-          />
-        </div>
-      \`;
-    },
-
-    renderQuestionAudio(audioUrl, qIndex) {
-      if (!audioUrl) return "";
-      return \`
-        <div class="question-media-container question-audio-container">
-          <audio controls preload="metadata" class="question-audio" id="audio\${qIndex}">
-            <source src="\${this.escapeHTML(audioUrl)}" />
-            Your browser doesn't support audio playback.
-          </audio>
-        </div>
-      \`;
-    },
-
-    renderQuestionVideo(videoUrl, qIndex) {
-      if (!videoUrl) return "";
-
-      // Built via RegExp(string) rather than a /regex/ literal: a literal
-      // regex here sits inside the outer quizHTML template literal, and its
-      // backslash escapes get consumed by that outer literal's own escape
-      // processing before the regex is ever parsed by the browser --
-      // silently stripping every backslash and producing an invalid
-      // pattern at runtime. Building the pattern from plain string pieces
-      // (zero backslashes in the source) sidesteps that entirely.
-      // NOTE: "." and "?" are regex metacharacters, so they must be escaped
-      // *within the pattern string* to match literally -- using a
-      // char-code-built backslash (not a literal "\\") to keep zero
-      // backslashes in this file's own source.
-      const BACKSLASH = String.fromCharCode(92);
-      const DOT = BACKSLASH + String.fromCharCode(46);
-      const SLASH = BACKSLASH + String.fromCharCode(47);
-      const QMARK = BACKSLASH + String.fromCharCode(63);
-      const YOUTUBE_RE = new RegExp(
-        "(?:youtube" + DOT + "com" + SLASH +
-          "(?:watch" + QMARK + "(?:.*&)?v=|embed" + SLASH + "|v" + SLASH + "|shorts" + SLASH + ")" +
-          "|youtu" + DOT + "be" + SLASH +
-          ")([a-zA-Z0-9_-]{11})",
-        "i"
-      );
-      const ytMatch = String(videoUrl).match(YOUTUBE_RE);
-
-      if (ytMatch) {
-        const embedSrc = \`https://www.youtube-nocookie.com/embed/\${ytMatch[1]}\`;
-        return \`
-          <div class="question-media-container question-video-container">
-            <iframe
-              class="question-video youtube-embed"
-              id="video\${qIndex}"
-              src="\${this.escapeHTML(embedSrc)}"
-              frameborder="0"
-              referrerpolicy="strict-origin-when-cross-origin"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
-              loading="lazy"
-            ></iframe>
-          </div>
-        \`;
-      }
-
-      return \`
-        <div class="question-media-container question-video-container">
-          <video controls preload="metadata" playsinline class="question-video" id="video\${qIndex}">
-            <source src="\${this.escapeHTML(videoUrl)}" />
-            Your browser doesn't support video playback.
-          </video>
-        </div>
-      \`;
-    },
-
     renderReadingPassage(passage) {
       if (!passage) return "";
       return \`
@@ -3267,30 +3129,6 @@ ${quizInfoModalHtml}
           <div class="passage-content">\${renderMarkdown(passage)}</div>
         </div>
       \`;
-    },
-
-    renderQuestionMedia(q, qIndex) {
-      return [
-        this.renderQuestionImage(q.image, qIndex),
-        this.renderQuestionAudio(q.audio, qIndex),
-        this.renderQuestionVideo(q.video, qIndex),
-      ].join("");
-    },
-  
-    setupImageLoading() {
-      document.querySelectorAll('.question-image').forEach(img => {
-        img.addEventListener('load', function() {
-          const index = this.dataset.index;
-          const skeleton = document.getElementById(\`skeleton\${index}\`);
-          if (skeleton) skeleton.style.display = 'none';
-          this.classList.add('loaded');
-          this.style.display = 'block';
-        });
-        
-        img.addEventListener('error', function() {
-          this.parentElement.style.display = 'none';
-        });
-      });
     },
   
     escapeHTML(str) {
@@ -3448,7 +3286,6 @@ ${quizInfoModalHtml}
           
           \${this.renderReadingPassage(q.passage)}
           <div class="question-text">\${renderMarkdown(q.q)}</div>
-          \${this.renderQuestionMedia(q, i)}
           \${optionsHtml}
           \${checkAnswerBtnHtml}
           \${explanationHtml}
@@ -3904,7 +3741,6 @@ ${quizInfoModalHtml}
       this.renderQuiz();
       this.renderNav();
       this.updateProgress();
-      this.setupImageLoading();
       
       this.stopTimer();
       this.startQuizTimer();
@@ -4285,46 +4121,6 @@ export async function exportToQuiz(config, questions, exportOptions = {}) {
     "./favicon.png",
   );
 }
-
-// Image Helpers
-const convertImagesToBase64 = async (questions) => {
-  const processedQuestions = [];
-
-  for (const question of questions) {
-    const processedQuestion = { ...question };
-
-    if (question.image) {
-      // If it's a local path or needs conversion
-      if (isLocalPath(question.image)) {
-        console.log(`Converting local image to base64: ${question.image}`);
-        const base64 = await getDataUrl(question.image);
-        if (base64) {
-          processedQuestion.image = base64;
-        } else {
-          console.warn(`Failed to convert ${question.image}, keeping original`);
-          // Keep original - will show alt text if broken
-        }
-      }
-      // Remote URLs or already base64 - keep as is
-    }
-
-    // Video/audio can't be feasibly inlined as base64 (file size), so
-    // relative paths are rewritten to absolute URLs against the platform's
-    // origin instead — see shared/media-url.js. Fall back to the original
-    // string on a genuine resolution failure (empty/malformed URL) so a
-    // broken value doesn't get silently wiped out.
-    if (question.video) {
-      processedQuestion.video = resolveMediaUrl(question.video) || question.video;
-    }
-    if (question.audio) {
-      processedQuestion.audio = resolveMediaUrl(question.audio) || question.audio;
-    }
-
-    processedQuestions.push(processedQuestion);
-  }
-
-  return processedQuestions;
-};
 
 const getDataUrl = (url) => {
   return new Promise((resolve) => {

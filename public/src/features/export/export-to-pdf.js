@@ -51,17 +51,6 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     padding: 0 !important;
   }
   ${backgroundChoice === "dark" ? "" : `
-  /* Fix #pdf-contrast: light background needs the CSS custom properties
-     that shared/markdown-css.js's MARKDOWN_CSS relies on throughout
-     (--color-text-primary, --color-background, etc.) flipped too — the
-     previous fix only overrode a handful of hardcoded-hex selectors
-     directly in export-to-html.js's own <style> block, but every
-     markdown-rendered question/option/explanation body still resolved
-     --color-text-primary to the dark-theme "#fff" default declared in
-     that file's :root block, which is invisible on the new white page.
-     Redeclaring the variables here (after the original :root block, so
-     these win on source order) fixes every var(--...)-based rule at
-     once instead of chasing each one individually. */
   :root {
     --color-primary: #3b82f6 !important;
     --color-primary-light: rgba(59, 130, 246, 0.12) !important;
@@ -75,19 +64,9 @@ const PDF_PRINT_CSS = (backgroundChoice = "light") => `
     --color-error: #dc2626 !important;
     --color-code: #1a1a1a !important;
   }
-  /* The [data-theme="light"]-scoped rules already defined in
-     markdown-css.js (table striping, code syntax-highlight colors, the
-     inline-code block) are activated by exportToPdf() actually setting
-     data-theme="light" on the <html> tag before printing (see
-     export-to-pdf.js, right after this CSS is spliced in) — that
-     attribute can't be set from inside this CSS string, only from the
-     caller that has the full HTML string to splice into. color-scheme
-     below only affects native form-control/scrollbar rendering. */
+
   html { color-scheme: light; }
 
-  /* Light background: the on-screen dark theme's card/text colors need
-     flipping too, or content is unreadable (dark text on dark card,
-     etc. inherited from the interactive-HTML dark theme). */
   .question-card { background: #f8f9fa !important; border-color: #ddd !important; }
   .q-header, .rd-label { color: #555 !important; }
   .q-text, h1, .score-label, .rd-value { color: #1a1a1a !important; }

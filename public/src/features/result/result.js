@@ -35,13 +35,7 @@ import { renderMarkdown, scanDirections } from "../../shared/markdown.js";
 // ── Shared media URL resolution ────
 // Same module quiz.js uses, so both pages resolve quiz-folder-relative
 // media (e.g. "./assets/quiz-media/...") and detect YouTube URLs identically.
-import {
-  getMediaUrlCandidates as _getMediaUrlCandidates,
-  resolveMediaUrl as _resolveMediaUrl,
-  renderMediaElement as _renderMediaElement,
-  isYouTubeUrl,
-  getYouTubeVideoId,
-} from "../../shared/media-resolve.js";
+
 
 // Report Question Modal
 import {
@@ -75,78 +69,16 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-// ── Media Helper Functions ────────────────────────────────────────────────────
-// Resolution/MIME/YouTube logic now lives in the shared media-resolve.js
-// module (also used by quiz.js and markdown.js's inline ![audio]/![video]
-// tags). This also fixes a gap this file previously had: it never resolved
-// quiz-folder-relative co-located media (e.g. "./assets/quiz-media/TEST_1/
-// Part_1.mp4") against the result page's own directory — only quiz.js did,
-// via its `quizBaseUrl`. `resultBaseUrl` below closes that gap; result.html
-// and quiz.html are sibling pages served from the same directory, so the
-// same "directory of the current page" resolution applies equally here.
+// ── Media base URL ─────────────────────────────────────────────────────────
+// All question media (inline <img>/<audio>/<video> tags inside q.q/
+// q.passage) is resolved and rendered by renderMarkdown() itself via its
+// mediaBaseUrl option below — the legacy q.image/q.audio/q.video fields and
+// their dedicated renderers have been removed. `resultBaseUrl` still closes
+// the gap this file previously had: it resolves quiz-folder-relative
+// co-located media (e.g. "./assets/quiz-media/TEST_1/Part_1.mp4") against
+// the result page's own directory, same as quiz.js's `quizBaseUrl` — result.
+// html and quiz.html are sibling pages served from the same directory.
 const resultBaseUrl = new URL("./", window.location.href).href;
-
-const getMediaUrlCandidates = (url) =>
-  _getMediaUrlCandidates(url, resultBaseUrl);
-const resolveMediaUrl = (url) => _resolveMediaUrl(url, resultBaseUrl);
-const renderMediaElement = (tag, className, mediaUrl) =>
-  _renderMediaElement(tag, className, mediaUrl, resultBaseUrl);
-
-const renderQuestionImage = (imageUrl) => {
-  if (!imageUrl) return "";
-  const src = resolveMediaUrl(imageUrl);
-  const srcWithCacheBust = src
-    ? `${src}${src.includes("?") ? "&" : "?"}_cb=${Date.now()}`
-    : "";
-  return `
-    <div class="media-container question-image-container">
-      <img src="${escapeHTML(srcWithCacheBust)}" alt="Question image"
-           class="question-image" onerror="this.parentElement.style.display='none'"/>
-    </div>`;
-};
-
-const renderQuestionAudio = (audioUrl) => {
-  if (!audioUrl) return "";
-  return `
-    <div class="media-container question-media-container question-audio-container">
-      ${renderMediaElement("audio", "question-audio", audioUrl)}
-    </div>
-  `;
-};
-
-const renderQuestionVideo = (videoUrl) => {
-  if (!videoUrl) return "";
-
-  if (isYouTubeUrl(videoUrl)) {
-    const videoId = getYouTubeVideoId(videoUrl);
-    const embedSrc = `https://www.youtube.com/embed/${videoId}`;
-    return `
-      <div class="media-container question-media-container question-video-container">
-        <iframe
-          class="question-video youtube-embed"
-          src="${escapeHTML(embedSrc)}"
-          data-media-raw="${escapeHTML(videoUrl)}"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      </div>`;
-  }
-
-  return `
-    <div class="media-container question-media-container question-video-container">
-      ${renderMediaElement("video", "question-video", videoUrl)}
-    </div>
-  `;
-};
-
-const renderQuestionMedia = (q) =>
-  [
-    renderQuestionImage(q.image),
-    renderQuestionAudio(q.audio),
-    renderQuestionVideo(q.video),
-  ].join("");
 
 const renderReadingPassage = (passage) => {
   if (!passage) return "";
@@ -930,7 +862,6 @@ function renderReview(container, questions, userAnswers) {
           </div>
           ${renderReadingPassage(q.passage)}
           <div class="q-text">${renderMarkdown(q.q, { mediaBaseUrl: resultBaseUrl })}</div>
-          ${renderQuestionMedia(q)}
           <div class="essay-comparison">
             <div class="essay-answer-box user-essay">
               <div class="centered-label small-text"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg> إجابتك</div>
@@ -1030,7 +961,6 @@ function renderReview(container, questions, userAnswers) {
           </div>
           ${renderReadingPassage(q.passage)}
           <div class="q-text">${renderMarkdown(q.q, { mediaBaseUrl: resultBaseUrl })}</div>
-          ${renderQuestionMedia(q)}
           <div class="options-grid">
             ${optionsHtml}
           </div>

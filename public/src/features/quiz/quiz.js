@@ -24,8 +24,6 @@ import {
   getMediaUrlCandidates as _getMediaUrlCandidates,
   resolveMediaUrl as _resolveMediaUrl,
   renderMediaElement as _renderMediaElement,
-  isYouTubeUrl,
-  getYouTubeVideoId,
 } from "../../shared/media-resolve.js";
 import {
   buildQuizInfoModalHtml,
@@ -353,14 +351,8 @@ const getEssayAnswer = (q) => q.answer ?? "";
 // Fix 2: Removed the automatic >400-char heuristic that previously
 // promoted long questions into a passage/large-card layout.
 // Large format now only applies when the question has an explicit
-// passage, audio, or video field — never for long plain text.
-const isLargeFormatQuestion = (q) => !!(q?.passage || q?.audio || q?.video);
-
-const MEDIA_SKELETON_HTML = `
-  <div class="media-skeleton" aria-hidden="true">
-    <div class="skeleton-block skeleton-media"></div>
-    <span class="media-skeleton-label">جاري التحميل…</span>
-  </div>`;
+// reading passage — media is inline in q.q now, so it no longer factors in.
+const isLargeFormatQuestion = (q) => !!q?.passage;
 
 // Media URL resolution, MIME sniffing, YouTube detection, and the bare
 // <audio>/<video> element renderer now live in the shared media-resolve.js
@@ -375,79 +367,16 @@ const resolveMediaUrl = (url) => _resolveMediaUrl(url, quizBaseUrl);
 const renderMediaElement = (tag, className, mediaUrl) =>
   _renderMediaElement(tag, className, mediaUrl, quizBaseUrl);
 
-// === Helper: Render Question Image ===
-const renderQuestionImage = (imageUrl, resizeKey) => {
-  if (!imageUrl) return "";
-  const src = resolveMediaUrl(imageUrl);
-  const candidates = escapeHtml(
-    JSON.stringify(getMediaUrlCandidates(imageUrl)),
-  );
-  return `
-    <div class="media-container question-image-container" data-resize-key="${escapeHtml(resizeKey)}-image">
-      ${MEDIA_SKELETON_HTML}
-      <img
-        src="${escapeHtml(src)}"
-        alt="Question context image"
-        class="question-image"
-        data-media-raw="${escapeHtml(imageUrl)}"
-        data-media-candidates="${candidates}"
-      />
-    </div>
-  `;
-};
-
-const renderQuestionAudio = (audioUrl, resizeKey) => {
-  if (!audioUrl) return "";
-  return `
-    <div class="media-container question-media-container question-audio-container" data-resize-key="${escapeHtml(resizeKey)}-audio">
-      ${MEDIA_SKELETON_HTML}
-      ${renderMediaElement("audio", "question-audio", audioUrl)}
-    </div>
-  `;
-};
-
-const renderQuestionVideo = (videoUrl, resizeKey) => {
-  if (!videoUrl) return "";
-
-  // Bug 4 Fix: render a YouTube iframe instead of a <video> element.
-  if (isYouTubeUrl(videoUrl)) {
-    const videoId = getYouTubeVideoId(videoUrl);
-    const embedSrc = `https://www.youtube.com/embed/${videoId}`;
-    return `
-      <div class="media-container question-media-container question-video-container" data-resize-key="${escapeHtml(resizeKey)}-youtube">
-        <iframe
-          class="question-video youtube-embed"
-          src="${escapeHtml(embedSrc)}"
-          data-media-raw="${escapeHtml(videoUrl)}"
-          frameborder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowfullscreen
-          loading="lazy"
-        ></iframe>
-      </div>
-    `;
-  }
-
-  return `
-    <div class="media-container question-media-container question-video-container" data-resize-key="${escapeHtml(resizeKey)}-video">
-      ${MEDIA_SKELETON_HTML}
-      ${renderMediaElement("video", "question-video", videoUrl)}
-    </div>
-  `;
-};
-
-// Fix B: each media element is wrapped in .media-center-wrap (display:flex;
-//         justify-content:center) so it is always horizontally centered
-//         regardless of LTR/RTL page direction or the current container width.
-const wrapMedia = (html) =>
-  html ? `<div class="media-center-wrap">${html}</div>` : "";
-
-const renderQuestionMedia = (q, resizeKey) =>
-  [
-    wrapMedia(renderQuestionImage(q.image, resizeKey)),
-    wrapMedia(renderQuestionAudio(q.audio, resizeKey)),
-    wrapMedia(renderQuestionVideo(q.video, resizeKey)),
-  ].join("");
+// Legacy per-question q.image/q.audio/q.video fields and their dedicated
+// renderers (renderQuestionImage/Audio/Video) have been removed — all
+// question media is now authored as inline <img>/<audio>/<video> tags
+// inside q.q (and q.passage), rendered by renderMarkdown() itself (see
+// markdown.js's "Step -1: Raw HTML media tags"), which reuses the same
+// .media-container/skeleton/candidate-retry machinery below. renderQuestionMedia
+// is kept as a no-op so the two card-build call sites (which still expect a
+// separate mediaHTML string to place outside the reloadable/patchable
+// region) don't need restructuring.
+const renderQuestionMedia = (_q, _resizeKey) => "";
 
 const renderReadingPassage = (passage) => {
   if (!passage) return "";
@@ -1063,9 +992,6 @@ async function init() {
       // Map user questions to ensure correct format, handling both old and new essay style
       questions = userQuiz.questions.map((q) => {
         const out = { q: q.q };
-        if (q.image) out.image = q.image;
-        if (q.audio) out.audio = q.audio;
-        if (q.video) out.video = q.video;
         if (q.passage) out.passage = q.passage;
         if (q.explanation) out.explanation = q.explanation;
         // Normalize essay: old 1-option → new answer field

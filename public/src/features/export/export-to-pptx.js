@@ -309,6 +309,28 @@ export async function exportToPptx(
         .trim();
     };
 
+    // Question media is now authored as inline <img>/<video>/<audio> tags
+    // inside q.q rather than dedicated question.image/video/audio fields.
+    // addRichBlock understands Markdown syntax but not raw HTML, so: pull
+    // the first inline <img src="..."> out for the existing image-slide
+    // layout below (getImageDimensions/addImage), the first inline
+    // <video>/<audio> src for the existing placeholder-and-hyperlink
+    // treatment, and strip all inline media tags out of the plain text so
+    // they don't show up as literal markup on the slide.
+    const extractFirstInlineMediaSrc = (text, tagNames) => {
+      if (!text) return null;
+      const re = new RegExp(`<(${tagNames.join("|")})\\b[^>]*\\bsrc=["']([^"']+)["']`, "i");
+      const match = String(text).match(re);
+      return match ? { tag: match[1].toLowerCase(), src: match[2] } : null;
+    };
+    const stripInlineMediaTags = (text) => {
+      if (!text) return text;
+      return String(text)
+        .replace(/<(img|video|audio|source)\b[^>]*\/?>(?:<\/\1>)?/gi, "")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n");
+    };
+
     /**
      * Returns true when the string contains Markdown or LaTeX math tokens that
      * cannot be reliably represented as native PptxGenJS text runs.
@@ -1118,7 +1140,12 @@ export async function exportToPptx(
       const userAns = userAnswers[index];
       const hasUserAnswer =
         isResultsMode && userAns !== undefined && userAns !== null;
-      const questionText = sanitizeText(question.q || "");
+      const inlineImageMatch = extractFirstInlineMediaSrc(question.q, ["img"]);
+      const inlineMediaMatch = extractFirstInlineMediaSrc(question.q, ["video", "audio"]);
+      const inlineImageSrc = inlineImageMatch?.src || null;
+      const inlineMediaSrc = inlineMediaMatch?.src || null;
+      const inlineMediaIsAudio = inlineMediaMatch?.tag === "audio";
+      const questionText = stripInlineMediaTags(sanitizeText(question.q || ""));
 
       // ── Per-question mutable slide state ──
       // Fix #7 (empty slides): `slide` is created LAZILY on first real
@@ -1395,9 +1422,9 @@ export async function exportToPptx(
       // ===========================
       // QUESTION IMAGE (if present)
       // ===========================
-      if (question.image) {
+      if (inlineImageSrc) {
         try {
-          const imgDims = await getImageDimensions(question.image);
+          const imgDims = await getImageDimensions(inlineImageSrc);
           const aspectRatio = imgDims.width / imgDims.height;
           const isWide = aspectRatio >= 1.2;
 
@@ -1425,7 +1452,7 @@ export async function exportToPptx(
               currentY -
               estimateTextHeight(sanitizeText(questionText), 16, textWidth);
             getSlide().addImage({
-              path: question.image,
+              path: inlineImageSrc,
               x: MARGIN + textWidth + 0.2,
               y: Math.max(imgY, CONTENT_TOP + 0.35),
               w: imgSize.width,
@@ -1437,7 +1464,7 @@ export async function exportToPptx(
             // Stacked: image then text
             maybeNewSlide(imgSize.height + 0.2);
             getSlide().addImage({
-              path: question.image,
+              path: inlineImageSrc,
               x: (SLIDE_WIDTH - imgSize.width) / 2,
               y: currentY,
               w: imgSize.width,
@@ -1479,10 +1506,11 @@ export async function exportToPptx(
       // the resolved URL in a browser. Always stacked above the question
       // text's own image handling (no side-by-side special case here —
       // that's only worth the complexity for the image path already
-      // handled above). Schema doesn't combine question.image with
-      // question.video/audio in practice, so this is a simple sequential
-      // block rather than an if/else with the image branch above.
-      const mediaUrl = question.video || question.audio;
+      // handled above). Schema doesn't combine an inline <img> with an
+      // inline <video>/<audio> in the same question in practice, so this
+      // is a simple sequential block rather than an if/else with the
+      // image branch above.
+      const mediaUrl = inlineMediaSrc;
       if (mediaUrl) {
         const resolvedMediaUrl = resolveMediaUrl(mediaUrl);
         const youtubeId = extractYoutubeId(mediaUrl);
@@ -1527,8 +1555,7 @@ export async function exportToPptx(
           }
         } else {
           // ── Direct video/audio file: labeled placeholder + hyperlink ──
-          const isAudio = Boolean(question.audio) && !question.video;
-          addMediaPlaceholder(isAudio ? "🎵 Audio" : "🎬 Video", resolvedMediaUrl);
+          addMediaPlaceholder(inlineMediaIsAudio ? "🎵 Audio" : "🎬 Video", resolvedMediaUrl);
         }
         addSpacer(0.15);
       }
@@ -1610,11 +1637,11 @@ export async function exportToPptx(
             answerKeyEntries.push({
               index,
               type: "essay",
-              answer: sanitizeText(question.answer),
+              answer: stripInlineMediaTags(sanitizeText(question.answer)),
             });
           } else {
             addLabel("CORRECT ANSWER / KEY POINTS:", COLORS.success, 10);
-            await addRichBlock(sanitizeText(question.answer), {
+            await addRichBlock(stripInlineMediaTags(sanitizeText(question.answer)), {
               fontSizePt: 12,
               colorHex: COLORS.textDark,
               bgHex: COLORS.correctBg,
@@ -1764,7 +1791,7 @@ export async function exportToPptx(
               currentY += optH + 0.06;
             } else {
               // Fallback to plain text if image render failed
-              const plain = `${label}. ${sanitizeText(optText)}`;
+              const plain = `${label}. ${stripInlineMediaTags(sanitizeText(optText))}`;
               const optH = Math.max(
                 estimateTextHeight(plain, 12, USABLE_WIDTH - 0.2),
                 0.35,
@@ -1787,7 +1814,7 @@ export async function exportToPptx(
             }
           } else if (!useTwoCols) {
             // ── Single-column plain text: native PptxGenJS text ──
-            const plain = `${label}. ${sanitizeText(optText)}`;
+            const plain = `${label}. ${stripInlineMediaTags(sanitizeText(optText))}`;
             const optH = Math.max(
               estimateTextHeight(plain, 12, colWidth - 0.2),
               0.35,
@@ -1932,13 +1959,13 @@ export async function exportToPptx(
         if (answerPlacement === "final-page" && includeAnswers) {
           const entry = answerKeyEntries.find((e) => e.index === index);
           if (entry) {
-            entry.explanation = sanitizeText(question.explanation);
+            entry.explanation = stripInlineMediaTags(sanitizeText(question.explanation));
           } else {
             // No key entry for this question (its answer wasn't recorded)
             // — fall through to the inline render rather than silently
             // dropping the explanation.
             addLabel("💡 EXPLANATION:", COLORS.primary, 10);
-            await addRichBlock(sanitizeText(question.explanation), {
+            await addRichBlock(stripInlineMediaTags(sanitizeText(question.explanation)), {
               fontSizePt: 11,
               colorHex: COLORS.textDark, // Fix #2b: was COLORS.textMedium (low contrast on explanationBg)
               bgHex: COLORS.explanationBg,
@@ -1947,7 +1974,7 @@ export async function exportToPptx(
           }
         } else {
           addLabel("💡 EXPLANATION:", COLORS.primary, 10);
-          await addRichBlock(sanitizeText(question.explanation), {
+          await addRichBlock(stripInlineMediaTags(sanitizeText(question.explanation)), {
             fontSizePt: 11,
             colorHex: COLORS.textDark, // Fix #2b: was COLORS.textMedium (low contrast on explanationBg)
             bgHex: COLORS.explanationBg,
@@ -2010,9 +2037,9 @@ export async function exportToPptx(
           Math.max(estimateTextHeight(text, 12, USABLE_WIDTH - 0.2), 0.32) +
           (explanationText
             ? Math.max(
-                estimateTextHeight(explanationText, 11, USABLE_WIDTH - 0.2),
-                0.28,
-              )
+              estimateTextHeight(explanationText, 11, USABLE_WIDTH - 0.2),
+              0.28,
+            )
             : 0);
         if (akY + rowH + 0.06 > CONTENT_BOTTOM) {
           akSlide = addContentSlide();

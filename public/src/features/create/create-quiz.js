@@ -2727,6 +2727,20 @@ async function uploadMediaFileForMarkdown(file, mediaType) {
  * one tracks its own unique placeholder string.
  */
 async function handleMarkdownMediaFile(textarea, file, onChange) {
+  // Uploading to the shared "quiz-media" Supabase bucket is an admin-only
+  // action (non-admins can still paste a link — see Case 2/3 in
+  // setupMarkdownMediaDropzone's paste handler — they just can't push new
+  // binaries into shared storage). Drag-and-drop and clipboard file-paste
+  // are the only two entry points that reach this function, so gating here
+  // covers both without duplicating the check at each call site.
+  if (!isAdmin) {
+    showNotification(
+      "غير مسموح",
+      "رفع الملفات متاح للمشرفين فقط. الصقوا رابط الملف مباشرة بدلاً من ذلك.",
+      "error",
+    );
+    return;
+  }
   const mediaType = detectMediaTypeFromFile(file);
   if (!mediaType) {
     showNotification(
@@ -4039,40 +4053,11 @@ function updateAutosaveIndicator(status) {
 }
 
 /**
- * Fold legacy dedicated `image`/`audio`/`video` fields into the question
- * body's own markdown as `<img src="...">`/`<audio src="...">`/
- * `<video src="...">` tags, then strip the dedicated fields — so any
- * pre-migration quiz opened for editing (a local draft, a shared/admin
- * quiz, or a hand-crafted import) immediately looks and behaves like a
- * native new-syntax quiz in the editor, with nothing left for the removed
- * dropzone UI to read.
- * Order (image, then audio, then video) matches the DB migration script
- * in Section 7 of the migration plan, each on its own line. No-op if none
- * of the three legacy fields are present.
- */
-function foldLegacyMediaIntoQuestionBody(q) {
-  if (!q || (!q.image?.trim() && !q.audio?.trim() && !q.video?.trim())) {
-    return q;
-  }
-  const tags = [];
-  if (q.image?.trim()) tags.push(buildMediaHtmlTag("image", q.image.trim()));
-  if (q.audio?.trim()) tags.push(buildMediaHtmlTag("audio", q.audio.trim()));
-  if (q.video?.trim()) tags.push(buildMediaHtmlTag("video", q.video.trim()));
-  const { image, audio, video, ...rest } = q;
-  const body = (rest.q || "").trim();
-  return {
-    ...rest,
-    q: body ? `${body}\n\n${tags.join("\n")}` : tags.join("\n"),
-  };
-}
-
-/**
  * Convert a question from the saved (exported) format back to the editor's
  * internal format.  Essay questions are stored as { q, answer } in
  * user_quizzes but the editor always uses { q, options: [answer] }.
  */
 function normalizeQuestionForEditor(q) {
-  q = foldLegacyMediaIntoQuestionBody(q);
   if (!Array.isArray(q.options)) {
     // Essay: answer field present, no options array. `answer` here becomes
     // the editor's isEssay marker (see ESSAY_MARKER) — it must stay
@@ -5269,7 +5254,7 @@ window.processImport = async function () {
       } else {
         importedCorrect = [];
       }
-      const question = foldLegacyMediaIntoQuestionBody({
+      const question = {
         id: questionId,
         q: q.q || "",
         options: q.options || ["", ""],
@@ -5281,11 +5266,8 @@ window.processImport = async function () {
         ...(q.multiSelect !== undefined
           ? { multiSelect: Boolean(q.multiSelect) }
           : {}),
-        image: q.image || "",
-        audio: q.audio || "",
-        video: q.video || "",
         explanation: q.explanation || "",
-      });
+      };
       quizData.questions.push(question);
       renderQuestion(question);
     });

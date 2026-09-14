@@ -11,57 +11,6 @@ import {
   calculateQuizMetrics,
 } from "../../shared/rate-answers.js";
 
-// Shared media URL resolution (relative-to-platform-origin -> absolute URL).
-// Local paths here are NOT actually unavailable — they're stored relative
-// to the platform's own origin (to save space in the free-tier Supabase
-// DB) but the files are hosted live on Vercel at a fixed origin, so they
-// just need that origin prepended to become a working absolute link.
-// See public/src/shared/media-url.js for the full rationale.
-import { resolveMediaUrl } from "../../shared/media-url.js";
-
-// Same YouTube detection/ID-extraction as quiz.js, duplicated here since
-// this module is loaded standalone (no shared import) and only needs the
-// URL-parsing half, not the player-rendering half.
-const YOUTUBE_RE =
-  /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-const isYouTubeUrl = (url) => YOUTUBE_RE.test(String(url || ""));
-const getYouTubeVideoId = (url) => {
-  const match = String(url || "").match(YOUTUBE_RE);
-  return match ? match[1] : null;
-};
-
-// Builds the markdown line(s) for a question's audio/video media, if any.
-// - YouTube links become a plain watch link (markdown can't embed players).
-// - Other video/audio links are resolved to an absolute URL (platform-
-//   relative paths get the platform's real origin prepended — see
-//   resolveMediaUrl) and rendered as a working link. A "not available"
-//   note is only used as a genuine fallback, for paths that fail to
-//   resolve into a usable URL at all.
-const mdMediaLink = (q) => {
-  let out = "";
-  if (q.video) {
-    if (isYouTubeUrl(q.video)) {
-      const videoId = getYouTubeVideoId(q.video);
-      const watchUrl = videoId
-        ? `https://www.youtube.com/watch?v=${videoId}`
-        : q.video;
-      out += `> 🎬 [Watch on YouTube](${watchUrl})\n\n`;
-    } else {
-      const resolvedVideo = resolveMediaUrl(q.video);
-      out += resolvedVideo
-        ? `> 🎬 [Video](${resolvedVideo})\n\n`
-        : `> 🎬 *Video not available in exported file*  \n\n`;
-    }
-  }
-  if (q.audio) {
-    const resolvedAudio = resolveMediaUrl(q.audio);
-    out += resolvedAudio
-      ? `> 🔊 [Audio](${resolvedAudio})\n\n`
-      : `> 🔊 *Audio not available in exported file*  \n\n`;
-  }
-  return out;
-};
-
 // Converts \n to markdown line breaks (two trailing spaces + newline).
 // Backtick code blocks and inline code pass through as-is since .md renders them natively.
 const mdLineBreaks = (str) => {
@@ -162,19 +111,9 @@ export function buildQuizMarkdown(config, questions, userAnswers = [], mdOptions
 
   questions.forEach((q, index) => {
     const userAns = userAnswers[index];
-    let imageLink = "";
-
-    if (q.image) {
-      const resolvedImage = resolveMediaUrl(q.image);
-      imageLink = resolvedImage
-        ? `![Question Image](${resolvedImage})\n\n`
-        : `> 📷 *Image not available in exported file*  \n\n`;
-    }
-
-    const mediaLink = mdMediaLink(q);
 
     markdown += `## Question ${index + 1}\n`;
-    markdown += `${mdLineBreaks(q.q)}\n${imageLink}${mediaLink}\n\n`;
+    markdown += `${mdLineBreaks(q.q)}\n\n`;
 
     if (isEssayQuestion(q)) {
       // Fix #exportOptions: user's essay answer/score still needs

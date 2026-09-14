@@ -19,96 +19,10 @@ import {
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
 
-// Same reasoning as export-to-quiz.js's resolveMediaUrl(): some question
-// videos/audio are stored as paths relative to the platform's own origin
-// (to save Supabase space). That resolves fine on the live site but breaks
-// once the same path ends up in a downloaded file (opened via file:// or —
-// for PDF — printed from a detached iframe with no meaningful base URL).
-const PLATFORM_ORIGIN = "https://basmagi-quiz.vercel.app";
-const resolveMediaUrl = (url) => {
-    if (!url || typeof url !== "string") return url;
-    if (/^(https?:|data:|blob:)/i.test(url)) return url;
-    // Fix #file-origin: a file:// page's window.location.origin serializes to
-    // the literal (truthy) string "null" per spec, which silently defeated
-    // the `|| PLATFORM_ORIGIN` fallback and let a relative path survive
-    // unresolved into the exported file — see export-to-quiz.js's
-    // resolveMediaUrl for the full explanation.
-    const winOrigin =
-        typeof window !== "undefined" && window.location && window.location.origin;
-    const origin =
-        winOrigin && winOrigin !== "null" && !/^file:/i.test(winOrigin)
-            ? winOrigin
-            : PLATFORM_ORIGIN;
-    try {
-        return new URL(url, origin).href;
-    } catch {
-        return url;
-    }
-};
-
-const YOUTUBE_RE =
-    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-
-/**
- * Renders a question's audio as an inline <audio> player (works both when
- * viewed live in a browser and when opened as a downloaded .html file,
- * since the URL is already resolved to an absolute one by the time this
- * runs). Not shown in the print/PDF pipeline in any special way — an
- * <audio> control simply doesn't print, so PDF export instead prints the
- * fallback link text below it.
- * @param {string} audioUrl
- * @returns {string}
- */
-function renderQuestionAudio(audioUrl) {
-    if (!audioUrl) return "";
-    const resolved = resolveMediaUrl(audioUrl);
-    return `
-    <div class="question-media-container question-audio-container">
-        <audio controls preload="metadata" class="question-audio">
-            <source src="${resolved}" />
-            Your browser doesn't support audio playback.
-        </audio>
-        <div class="question-media-print-link">🎵 Audio: <a href="${resolved}" target="_blank" rel="noopener noreferrer">${resolved}</a></div>
-    </div>`;
-}
-
-/**
- * Renders a question's video. YouTube links get a linked thumbnail
- * (img.youtube.com always exists for any valid video ID and is a real
- * <img>, so — unlike an <iframe> embed — it actually shows up when
- * printed to PDF). Direct video files get a real <video> for on-screen/
- * interactive-HTML use, plus the same printable fallback link.
- * @param {string} videoUrl
- * @returns {string}
- */
-function renderQuestionVideo(videoUrl) {
-    if (!videoUrl) return "";
-    const resolved = resolveMediaUrl(videoUrl);
-    const ytMatch = String(videoUrl).match(YOUTUBE_RE);
-
-    if (ytMatch) {
-        const videoId = ytMatch[1];
-        const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        const thumbUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-        return `
-    <div class="question-media-container question-video-container">
-        <a href="${watchUrl}" target="_blank" rel="noopener noreferrer" class="question-video-thumb-link">
-            <img src="${thumbUrl}" alt="YouTube video thumbnail" class="question-video-thumb">
-            <span class="question-video-play-badge">▶</span>
-        </a>
-        <div class="question-media-print-link">🎬 Video: <a href="${watchUrl}" target="_blank" rel="noopener noreferrer">${watchUrl}</a></div>
-    </div>`;
-    }
-
-    return `
-    <div class="question-media-container question-video-container">
-        <video controls preload="metadata" playsinline class="question-video">
-            <source src="${resolved}" />
-            Your browser doesn't support video playback.
-        </video>
-        <div class="question-media-print-link">🎬 Video: <a href="${resolved}" target="_blank" rel="noopener noreferrer">${resolved}</a></div>
-    </div>`;
-}
+// Question media (images/audio/video) is authored as inline <img>/<audio>/
+// <video> tags inside q.q and rendered by renderMarkdown() itself, which
+// carries the tag's src through as-is; all media src values are full
+// absolute URLs, so no separate resolution/rendering is needed here.
 
 export async function buildQuizHtml(
     config,
@@ -130,13 +44,10 @@ export async function buildQuizHtml(
         answerPlacement = "inline",
     } = htmlOptions;
 
-    // Convert local images to base64
-    const processedQuestions = await convertImagesToBase64(questions);
-
     let hasMCQ = false,
         hasTrueFalse = false,
         hasEssay = false;
-    processedQuestions.forEach((q) => {
+    questions.forEach((q) => {
         if (isEssayQuestion(q)) hasEssay = true;
         // Fix #classification-crash: same isEssayQuestion blind spot as
         // the per-question loop below — a question with neither options
@@ -316,7 +227,7 @@ export async function buildQuizHtml(
   </head>
   <body>
       <h1>${config.title || "Quiz Examination"}</h1>
-      <div class="meta">Total Questions: ${processedQuestions.length
+      <div class="meta">Total Questions: ${questions.length
         } • Type: ${questionType} • Date: ${date}</div>
   `;
 
@@ -355,7 +266,7 @@ export async function buildQuizHtml(
             isEssayOnly,
             percentage,
             actualPercentage,
-        } = calculateQuizMetrics(processedQuestions, userAnswers);
+        } = calculateQuizMetrics(questions, userAnswers);
         const totalScore = mcqCorrect + essayScoreTotal;
         const totalPoss = mcqTotal + essayMaxTotal;
         // Use actualPercentage (holistic) for the hero circle; fall back to percentage for safety.
@@ -408,7 +319,7 @@ export async function buildQuizHtml(
     </div>`;
     }
 
-    processedQuestions.forEach((q, index) => {
+    questions.forEach((q, index) => {
         const userAns = userAnswers[index];
         const isSkipped = userAns === undefined || userAns === null;
         // Fix #multi-correct: q.correct may be an array (e.g. [0, 2]) for
@@ -427,9 +338,6 @@ export async function buildQuizHtml(
               <span>Question ${index + 1}</span>
               <span>${isEssayQuestion(q) ? "Essay" : "MCQ"}</span>
           </div>
-          ${q.image ? `<img src="${q.image}" class="question-image" alt="Question Image" onerror="this.alt='[Image not available]'; this.style.border='2px dashed #666';">` : ""}
-          ${renderQuestionAudio(q.audio)}
-          ${renderQuestionVideo(q.video)}
           <div class="q-text">${renderMarkdown(q.q)}</div>`;
 
         if (isEssayQuestion(q)) {
@@ -580,66 +488,3 @@ export async function exportToHtml(config, questions, userAnswers = []) {
         "./assets/images/HTML_Icon.png",
     );
 }
-
-// Image Helpers
-const convertImagesToBase64 = async (questions) => {
-    const processedQuestions = [];
-
-    for (const question of questions) {
-        const processedQuestion = { ...question };
-
-        if (question.image) {
-            // If it's a local path or needs conversion
-            if (isLocalPath(question.image)) {
-                console.log(`Converting local image to base64: ${question.image}`);
-                const base64 = await getDataUrl(question.image);
-                if (base64) {
-                    processedQuestion.image = base64;
-                } else {
-                    console.warn(`Failed to convert ${question.image}, keeping original`);
-                    // Keep original - will show alt text if broken
-                }
-            }
-            // Remote URLs or already base64 - keep as is
-        }
-
-        processedQuestions.push(processedQuestion);
-    }
-
-    return processedQuestions;
-};
-
-const isLocalPath = (url) => {
-    if (!url) return false;
-    // Check for relative paths (./, ../, or no protocol)
-    if (url.startsWith("./") || url.startsWith("../") || url.startsWith("/")) {
-        return true;
-    }
-    // Check if it lacks a protocol (http://, https://, data:)
-    return !/^(https?:|data:)/i.test(url);
-};
-
-const getDataUrl = (url) => {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
-            try {
-                resolve(canvas.toDataURL("image/jpeg"));
-            } catch (e) {
-                console.warn("Failed to convert image to data URL", e);
-                resolve(null);
-            }
-        };
-        img.onerror = () => {
-            console.warn("Failed to load image for PDF export", url);
-            resolve(null);
-        };
-        img.src = url;
-    });
-};

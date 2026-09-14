@@ -122,6 +122,34 @@ export async function exportToWord(
         .trim();
     };
 
+    // Question media is now authored as inline <img>/<video>/<audio> tags
+    // inside q.q rather than a dedicated question.image field. Word can't
+    // render raw HTML, so: pull out every <img src="..."> for real
+    // ImageRun embedding below (via the existing processImageForWord
+    // pipeline), and strip all three tag types out of the plain text so
+    // they don't show up as literal markup in the document. <video>/
+    // <audio> have no Word equivalent — like the old code's handling of
+    // question.video/question.audio (never embedded, silently dropped —
+    // see the docx export's known limitations), they're just removed
+    // rather than embedded.
+    const extractInlineImages = (text) => {
+      if (!text) return [];
+      const urls = [];
+      const re = /<img\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi;
+      let match;
+      while ((match = re.exec(text))) {
+        if (match[1]) urls.push(match[1]);
+      }
+      return urls;
+    };
+    const stripInlineMediaTags = (text) => {
+      if (!text) return text;
+      return String(text)
+        .replace(/<(img|video|audio|source)\b[^>]*\/?>(?:<\/\1>)?/gi, "")
+        .replace(/[ \t]+\n/g, "\n") // trailing spaces left behind on emptied lines
+        .replace(/\n{3,}/g, "\n\n"); // collapse blank-line runs left by removed tags
+    };
+
     // ===========================
     // Document Title
     // ===========================
@@ -530,7 +558,8 @@ export async function exportToWord(
 
       const isEssay = isEssayQuestion(question);
       const userAns = userAnswers[index];
-      const questionText = sanitizeText(question.q);
+      const inlineImageUrls = extractInlineImages(question.q);
+      const questionText = stripInlineMediaTags(sanitizeText(question.q));
 
       // Question Header Paragraph
       const questionHeaderChildren = [
@@ -581,9 +610,11 @@ export async function exportToWord(
       // Card Children (goes inside the table cell)
       const cardChildren = [questionHeader, questionParagraph];
 
-      // Process and add image if exists
-      if (question.image) {
-        const imageInfo = await processImageForWord(question.image);
+      // Embed every inline <img> found in the question text as a real
+      // Word image (was previously limited to a single question.image
+      // field; inline authoring allows more than one per question).
+      for (const imgUrl of inlineImageUrls) {
+        const imageInfo = await processImageForWord(imgUrl);
         if (imageInfo.success) {
           cardChildren.push(
             new Paragraph({
@@ -606,8 +637,8 @@ export async function exportToWord(
       // Render options
       if (isEssay) {
         // Essay Answer
-        const userText = sanitizeText(userAns || "لم تُجِب");
-        const formalAnswer = sanitizeText(question.answer);
+        const userText = stripInlineMediaTags(sanitizeText(userAns || "لم تُجِب"));
+        const formalAnswer = stripInlineMediaTags(sanitizeText(question.answer));
 
         // User Answer Box
         if (isResultsMode) {
@@ -717,7 +748,7 @@ export async function exportToWord(
         question.options.forEach((opt, optIndex) => {
           const isUserAns = optIndex === userAns;
           const isCorrectAns = optIndex === question.correct;
-          const sanitizedOption = sanitizeText(opt);
+          const sanitizedOption = stripInlineMediaTags(sanitizeText(opt));
 
           const prefix = String.fromCharCode(65 + optIndex);
           let marker = "";
@@ -761,7 +792,7 @@ export async function exportToWord(
 
       // Add explanation if exists
       if (question.explanation) {
-        const expText = sanitizeText(question.explanation);
+        const expText = stripInlineMediaTags(sanitizeText(question.explanation));
         cardChildren.push(
           new Paragraph({
             spacing: { before: 300, after: 100 },
