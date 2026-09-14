@@ -50,15 +50,17 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 ### Quiz Page
 - Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself.
-- Media should appear in the middle of the container.
+  - Media appears with size that is already in the objects like `<img>`, it appears with handles that the user can use to resize the media himself.
+  - Images / videos get 4 resize handles, one on each corner.
+  - Audio get 2 handles, one on the right, other on the left, since its height doesn't change.
 
 ### Settings Page
-- The page shows false/placeholder values at start, before loading the actual values from localstorage and DB, which confuses some users. Implement an advanced loading skeleton/state before displaying any info.
+- The page shows false/placeholder values at start, before loading the actual values from localstorage and DB, which confuses some users. Implement an advanced loading skeleton/state before displaying any info, including the dropdowns, loading for every element.
 - The carrot on the dropdowns is too close to the left border, fix the padding/margin or whatever is wrong.
 - If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
 
 ### App SEO and GEO 
-- Generate a detailed implementation plan at `docs/plans/SEO-GEO-plan.md` to find every possible way to improve the SEO and GEO of the platform. One of the objectives is that whenever a new quiz, folder, or course get added to the platform, Google knows about it, just like when a new YouTube video dropds Google knows about it. AI and search engines should know about the whole platform. Also remove info about pages that got removed (like sign-in.html), and pages that aren't listed.
+- plan at `docs/plans/SEO-GEO-plan.md`, last partial chat at `docs\plans\Claude-SEO-GEO plan implementation adjustments-20260914-1621.md`
 
 ### Home Page
 
@@ -82,7 +84,8 @@ Update the display of the top admins to be similar to YouTube: ![similar](image-
 `المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
 
 ### Create Quiz Page
-- Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules
+- Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules.
+- Add a button for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options). This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
