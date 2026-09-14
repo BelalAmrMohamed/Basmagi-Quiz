@@ -55,7 +55,6 @@ See [Implementation Plan](<plans/Admin actions and deletion flow for quizzes.md>
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` to the result page.
 
 ### Quiz Page
-- Advanced Loading skeletong on the quiz.html page that works also when the `الاداء الفائق` mode is on, instead of .
 - Allow users to switch view on the quiz page (Between Pagination and Vertical), when there is not a compulsory view, while preseving there progress perfectly, and preserving the question index they were on.
 - Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself.
 - Media should appear in the middle of the container.
@@ -89,13 +88,9 @@ Connect Password typing memory on the main page `download-password-form` to the 
   - Add: Number of Views or people who solved a quiz on each quiz. (Suggestion)
 
 ### URLs
-- Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
-
-### Testing Issue
-- `npm run dev` doesn't do hot reload.
-- Improve the `npm run commit` command in `package.json`:
-  - When I pass a message to it (npm run commit -- "Updated quiz page"), it should use that message.
-  - But if I don't pass it a message, it should automatically write a message itself. So if quiz.js, quiz.html, and quiz.css are changed, and quiz-old.js was deleted, and quiz-new.js is added, the autmatically generated message should be like this `Updated quiz.js, quiz.html, & quiz.css. Deleted quiz-old.js. Added quiz-new.js`. If that is too complex to do in a single command, you can write a simple script for it.
+- Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links:
+issues while testing the update:
+- The تعديل button for admins on quizzes on the main page, sends the admin to `/create`, which doesn't include the edit id of the quiz, meaning admins don't actually get to edit it.
 
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.
