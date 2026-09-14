@@ -92,7 +92,10 @@ Connect Password typing memory on the main page `download-password-form` to the 
 - Remove `.html` from the end of each page link. so `/result.html` becomes `/result`, and `/onboarding.html` becomes `/onboarding`, and so on. Also Update any redirects to redirect to these updated links.
 
 ### Testing Issue
-`npm run dev` doesn't do hot reload.
+- `npm run dev` doesn't do hot reload.
+- Improve the `npm run commit` command in `package.json`:
+  - When I pass a message to it (npm run commit -- "Updated quiz page"), it should use that message.
+  - But if I don't pass it a message, it should automatically write a message itself. So if quiz.js, quiz.html, and quiz.css are changed, and quiz-old.js was deleted, and quiz-new.js is added, the autmatically generated message should be like this `Updated quiz.js, quiz.html, & quiz.css. Deleted quiz-old.js. Added quiz-new.js`
 
 ### Control.html
 `#collegeForm` doesn't have a loading skeleton/animation.
