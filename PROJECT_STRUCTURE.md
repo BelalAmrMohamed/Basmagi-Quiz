@@ -17,7 +17,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── vercel.json
-├── api/ [406.72 KB, 9504 LOC]
+├── api/ [413.94 KB, 9658 LOC]
 │   ├── ai-agent/ [52.42 KB, 1094 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
@@ -49,7 +49,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [1.06 MB, 1482 LOC]
+├── docs/ [1.06 MB, 1494 LOC]
 │   ├── plans/ [81.64 KB, 1186 LOC]
 │   │   ├── admin-actions-update-testing-results.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
@@ -63,7 +63,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── issues.md
 │   └── NOTES.md
 │
-├── public/ [200.11 MB, 104193 LOC]
+├── public/ [200.15 MB, 105101 LOC]
 │   ├── assets/ [196.19 MB, 0 LOC]
 │   │   ├── images/ [3.96 MB, 0 LOC]
 │   │   │   ├── thumbnails/ [3.07 MB, 0 LOC]
@@ -236,7 +236,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   └── videos/ [354.78 KB, 0 LOC]
 │   │       └── AD.mp4
 │   │
-│   ├── src/ [3.24 MB, 93080 LOC]
+│   ├── src/ [3.25 MB, 93640 LOC]
 │   │   ├── components/ [633.74 KB, 16661 LOC]
 │   │   │   ├── ai-agent/ [381.26 KB, 8926 LOC]
 │   │   │   │   ├── ai-agent-attach-launcher.js
@@ -281,7 +281,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │       ├── side-menu.css
 │   │   │       └── side-menu.js
 │   │   │
-│   │   ├── features/ [2.24 MB, 66091 LOC]
+│   │   ├── features/ [2.26 MB, 66651 LOC]
 │   │   │   ├── control/ [67.73 KB, 2290 LOC]
 │   │   │   │   ├── control-stats.css
 │   │   │   │   ├── control.css
@@ -370,7 +370,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │   │   ├── onboarding.css
 │   │   │   │   └── onboarding.js
 │   │   │   │
-│   │   │   ├── profile/ [172.91 KB, 5383 LOC]
+│   │   │   ├── profile/ [192.32 KB, 5943 LOC]
 │   │   │   │   ├── heatmapOverflow.js
 │   │   │   │   ├── infiniteScroll.js
 │   │   │   │   ├── leaderboardIdentity.js
@@ -486,10 +486,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Directory | Lines of Code |
 |-----------|---------------|
-| `public` | 104193 |
-| `api` | 9504 |
-| `docs` | 1482 |
-| `(root)` | 1267 |
+| `public` | 105101 |
+| `api` | 9658 |
+| `docs` | 1494 |
+| `(root)` | 1268 |
 | `scripts` | 1031 |
 | `supabase` | 969 |
 
@@ -503,8 +503,8 @@ The map is useful for quickly identifying the layout of the project, understandi
 | `public/src/features/export/export-to-quiz.js` | 4148 |
 | `public/src/features/quiz/quiz.js` | 3486 |
 | `public/src/features/quiz/quiz.css` | 3393 |
+| `public/src/features/profile/profile.css` | 3196 |
 | `public/src/components/ai-agent/ai-agent.css` | 2870 |
-| `public/src/features/profile/profile.css` | 2811 |
 | `public/src/components/ai-agent/ai-agent-chat.js` | 2787 |
 | `public/src/components/side-menu/side-menu.css` | 2170 |
 
@@ -512,10 +512,10 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 154 | 70408 | 2.84 MB |
-| .css | 26 | 33007 | 842.77 KB |
-| .html | 19 | 10778 | 646.38 KB |
-| .md | 9 | 2536 | 136.71 KB |
+| .js | 154 | 70737 | 2.85 MB |
+| .css | 26 | 33392 | 854.11 KB |
+| .html | 19 | 11126 | 662.39 KB |
+| .md | 9 | 2549 | 137.23 KB |
 | .sql | 6 | 554 | 27.43 KB |
 | .json | 4 | 276 | 146.3 KB |
 | .txt | 2 | 26 | 2.06 KB |
@@ -524,7 +524,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .mjs | 1 | 362 | 14.02 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **226** | **118446** | **4.63 MB** |
+| **Total** | **226** | **119521** | **4.67 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -540,4 +540,4 @@ The map is useful for quickly identifying the layout of the project, understandi
 | **Total** | **153** | **197.2 MB** |
 
 **Grand Total Files:** 379  
-**Total Repository Size:** 201.83 MB
+**Total Repository Size:** 201.87 MB

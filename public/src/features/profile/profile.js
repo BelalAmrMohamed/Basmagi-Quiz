@@ -1049,7 +1049,146 @@ document.addEventListener("click", (event) => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", async () => {
+// ============================================================
+// SKELETON / FIRST-PAINT HANDSHAKE
+// ------------------------------------------------------------
+// profile.html marks .container with .is-profile-loading in inline critical
+// CSS (so it applies before profile.css has downloaded) and paints
+// #profileSkeleton. Everything above the fold on this page — points, level,
+// badge count, history, heatmap — comes from localStorage via gameEngine and
+// needs no network at all, so the skeleton only has to survive until the
+// first synchronous render, not until the API calls finish.
+// ============================================================
+let skeletonDismissed = false;
+
+function hideProfileSkeleton() {
+  if (skeletonDismissed) return;
+  skeletonDismissed = true;
+
+  const container = document.querySelector(".container");
+  if (container) container.classList.remove("is-profile-loading");
+
+  // Clear the aria-live region rather than leaving "loading…" parked in it,
+  // which would otherwise be re-announced by some screen readers on any
+  // later DOM mutation inside it.
+  const status = document.getElementById("profileLoadingStatus");
+  if (status) status.textContent = "";
+
+  // Drop the skeleton nodes from the DOM once the cross-fade has finished
+  // rather than leaving ~40 shimmer elements running compositor animations
+  // behind a display:none for the life of the page.
+  const skeleton = document.getElementById("profileSkeleton");
+  if (skeleton) {
+    setTimeout(() => skeleton.remove(), 260);
+  }
+
+  window.__profileSkeletonHidden = true;
+}
+
+// Failsafe. If a render throws before reaching the normal dismissal below,
+// the user would otherwise be stuck staring at a shimmer forever — far worse
+// than the blank page this replaced. Deliberately generous: it should never
+// be what actually fires.
+setTimeout(hideProfileSkeleton, 8000);
+
+// ============================================================
+// TOUCH / KEYBOARD AFFORDANCE FOR THE EMPTY-STATE ICON DRAW
+// ------------------------------------------------------------
+// The stroke-draw was hover-only, so on touch devices it never ran. On
+// pointer-coarse devices, run it briefly when an empty state scrolls into
+// view instead (see .empty-state.is-drawing in profile.css). Skipped
+// entirely under prefers-reduced-motion.
+// ============================================================
+function initEmptyStateIconDraw() {
+  if (typeof window.matchMedia !== "function") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!window.matchMedia("(hover: none)").matches) return;
+  if (typeof IntersectionObserver !== "function") return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-drawing");
+        // One pass, then stop — an infinite alternate loop on a phone is
+        // needless battery drain for a decorative flourish.
+        setTimeout(() => entry.target.classList.remove("is-drawing"), 2400);
+        observer.unobserve(entry.target);
+      });
+    },
+    { threshold: 0.4 },
+  );
+
+  const scan = () => {
+    document
+      .querySelectorAll(".empty-state:not([data-draw-bound])")
+      .forEach((el) => {
+        el.setAttribute("data-draw-bound", "1");
+        observer.observe(el);
+      });
+  };
+
+  scan();
+  // Empty states are injected asynchronously by the widget renderers, so
+  // re-scan as they arrive rather than only at load.
+  const mo = new MutationObserver(scan);
+  mo.observe(document.body, { childList: true, subtree: true });
+}
+
+// ============================================================
+// MANIFEST HYDRATION (non-blocking)
+// ------------------------------------------------------------
+// getManifest() hits three Supabase tables behind a 15s timeout. It used to
+// be awaited before ANY rendering, which is what made this page sit blank
+// for up to ten seconds. Nothing above the fold depends on it: examList is
+// only read to resolve exam titles/categories in category-mastery, flagged
+// questions, and history rows. So: paint from localStorage first, fetch the
+// manifest in parallel, and re-render only the two widgets that consume it
+// when (or if) it lands.
+// ============================================================
+function hydrateManifest({ isVisitorView = false } = {}) {
+  return getManifest()
+    .then((manifest) => {
+      setExamList(manifest.examList || []);
+      window.__examListCache = examList;
+
+      // Visitor view (/@handle) hides every owner-only section — history,
+      // bookmarks, flagged questions, category mastery — because they're
+      // sourced from the VIEWER's own localStorage, not the visited user's.
+      // Re-rendering them here would quietly repopulate those hidden
+      // sections with the viewer's private data, so cache the list and stop.
+      if (isVisitorView) return manifest;
+
+      // Re-render only the manifest-dependent widgets. Everything else is
+      // already on screen and correct; re-running the full refreshUI() here
+      // would re-trigger the network fetches and reset scroll positions in
+      // the infinite lists.
+      const user = gameEngine.getUserData();
+      renderCategoryMastery(user, examList);
+      renderFlaggedQuestions(user, examList);
+      renderHistory(user);
+      return manifest;
+    })
+    .catch((err) => {
+      // Non-fatal by design. Without titles the affected rows fall back to
+      // their IDs, which is a far better outcome than a blank page.
+      console.error("Failed to load quiz manifest:", err);
+      return null;
+    });
+}
+
+// Defers non-critical work to the first idle slot so it can't compete with
+// the first paint. Falls back to a short timeout on Safari, which still
+// doesn't ship requestIdleCallback.
+function whenIdle(fn, timeout = 1200) {
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(fn, { timeout });
+  } else {
+    setTimeout(fn, 1);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
   // Add overlay backdrop click handler for all contact overlays
   document.querySelectorAll(".contact-overlay").forEach((overlay) => {
     overlay.addEventListener("click", (e) => {
@@ -1058,30 +1197,61 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Guard: Only run profile initialisation if we're on the profile page
-  if (!document.getElementById("totalPoints")) return;
+  if (!document.getElementById("totalPoints")) {
+    // Still clear the skeleton — another page reusing this bundle should
+    // never inherit a stuck loading state.
+    hideProfileSkeleton();
+    return;
+  }
 
   const adminHandleMeta = document.querySelector('meta[name="admin:handle"]');
   const isVisitorView = !!adminHandleMeta;
 
-  try {
-    const manifest = await getManifest();
-    setExamList(manifest.examList || []);
-    window.__examListCache = examList;
-  } catch (err) {
-    console.error("Failed to load quiz manifest:", err);
-  }
+  // Kick the manifest off IMMEDIATELY, before any rendering, but do not
+  // await it — this is the single change that takes first paint from
+  // "whenever Supabase answers" to "next frame".
+  const manifestPromise = hydrateManifest({ isVisitorView });
 
   if (isVisitorView) {
     const visitedHandle = adminHandleMeta.content;
     const currentToken = ++refreshToken;
-    setupVisitorView(visitedHandle);
+
+    // setupVisitorView() is async (it awaits admin-stats internally) but
+    // everything it does BEFORE that await is synchronous DOM work — the
+    // rail hiding, avatar/thumbnail from meta tags, the name. Not awaiting
+    // it here lets the leaderboard fetch start in the same tick instead of
+    // queueing behind the stats call.
+    const visitorReady = setupVisitorView(visitedHandle);
+
     // Real leaderboard, with the visited profile's row highlighted instead
     // of the viewer's own (the viewer has no meaningful position here, and
     // may not even be an admin) — see renderLeaderboard's visitedHandle param.
-    renderLeaderboard({}, "User", currentToken, visitedHandle);
+    const leaderboardReady = renderLeaderboard(
+      {},
+      "User",
+      currentToken,
+      visitedHandle,
+    );
+
+    // The identity band is fully populated from the server-injected meta
+    // tags by this point, so the skeleton has nothing left to hide.
+    hideProfileSkeleton();
+
+    // Kept only so an unhandled rejection in either can't surface as a
+    // console error the user can't act on; both already handle their own
+    // failures internally.
+    Promise.allSettled([visitorReady, leaderboardReady, manifestPromise]);
   } else {
-    initAvatarPicker();
+    // refreshUI() is synchronous apart from the network calls it fires and
+    // forgets, and reads entirely from localStorage — so this paints the
+    // real dashboard on the very next frame.
     refreshUI();
+    hideProfileSkeleton();
+
+    // Avatar picker pulls in the cropper/featured-avatar machinery and is
+    // only needed once the user actually clicks edit. Deferring it off the
+    // critical path keeps it out of the first-paint budget.
+    whenIdle(() => initAvatarPicker());
 
     window.addEventListener("avatarUpdated", () => {
       const currentName = localStorage.getItem("username") || "مستخدم";
@@ -1096,13 +1266,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     // hidden/backgrounded (covers navigating away, switching tabs, closing
     // the tab on most browsers) — see syncProgressToServer for why this
     // never feeds back into what's rendered on this page.
-    syncProgressToServer();
+    //
+    // Now idle-deferred: it's a pure write with no effect on anything
+    // rendered here, so letting it contend with first paint bought nothing.
+    whenIdle(() => syncProgressToServer(), 3000);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") {
         syncProgressToServer();
       }
     });
   }
+
+  initEmptyStateIconDraw();
 });
 
 function renderAvatar(user, currentName) {
@@ -1321,7 +1496,7 @@ function renderHistory(user) {
     containerEl: container,
     items: user.history || [],
     renderItem: historyItemHtml,
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" d="M3 3v18h18"/><path class="icon-line" d="M7 15l4-4 3 3 5-6"/></svg></div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M3 3v18h18"/><path class="icon-line" pathLength="1" d="M7 15l4-4 3 3 5-6"/></svg></div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
     mode: "button",
   });
   historyList.mount();

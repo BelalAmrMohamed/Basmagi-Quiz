@@ -259,7 +259,7 @@ export async function renderCategoryMastery(user, examList) {
   const examIds = Object.keys(progress);
 
   if (examIds.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M8 17V11"/><path d="M13 17V7"/><path d="M18 17v-4"/></svg></div><p>أكمل امتحاناً واحداً على الأقل لعرض نقاط قوتك</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M3 3v18h18"/><path class="icon-line" pathLength="1" d="M8 17V11"/><path class="icon-line" pathLength="1" d="M13 17V7"/><path class="icon-line" pathLength="1" d="M18 17v-4"/></svg></div><p>أكمل امتحاناً واحداً على الأقل لعرض نقاط قوتك</p></div>`;
     return;
   }
 
@@ -441,7 +441,7 @@ export function renderFlaggedQuestions(user, examList) {
     containerEl: container,
     items: keys,
     renderItem: (key) => flaggedItemHtml(key, examList),
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V3"/></svg></div><p>لا توجد أسئلة معلّمة للمراجعة</p></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path class="icon-line" pathLength="1" d="M4 22V3"/></svg></div><p>لا توجد أسئلة معلّمة للمراجعة</p></div>`,
     mode: "button",
   });
   flaggedListInstance.mount();
@@ -509,7 +509,7 @@ export async function renderUploadedQuizzes(handle = null) {
       containerEl: container,
       items: uploads,
       renderItem: uploadedQuizItemHtml,
-      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></svg></div><p>لم يتم رفع أي امتحانات بعد</p></div>`,
+      emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" pathLength="1" d="M12 3v12"/><path class="icon-line" pathLength="1" d="m7 8 5-5 5 5"/><path class="icon-line" pathLength="1" d="M5 21h14"/></svg></div><p>لم يتم رفع أي امتحانات بعد</p></div>`,
       mode: "button",
     });
     uploadedQuizzesListInstance.mount();

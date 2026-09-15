@@ -156,9 +156,173 @@
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
 
     <script type="module" src="src/shared/theme-controller.js"></script>
-    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
-    <link rel="modulepreload" href="src/shared/avatarPicker.js">
+
+    <!-- ============================================================
+         RESOURCE HINTS
+         The two origins this page blocks on are Supabase (manifest +
+         admin-stats, via the CDN client below) and jsDelivr (the client
+         itself). Opening those connections during head parse overlaps
+         DNS + TLS + TCP with the rest of the document instead of paying
+         for them serially at first fetch.
+         ============================================================ -->
+    <link rel="preconnect" href="https://esdfdzhtavraczrhxnmp.supabase.co" crossorigin>
+    <link rel="dns-prefetch" href="https://esdfdzhtavraczrhxnmp.supabase.co">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- ============================================================
+         MODULE PRELOAD GRAPH
+         profile.js imports nine modules, several of which import further.
+         Without these hints the browser can't discover any of them until
+         profile.js itself has downloaded AND parsed — a two-to-three level
+         request waterfall on the critical path. Listing the first level
+         explicitly collapses it into one parallel burst.
+         ============================================================ -->
+    <link rel="modulepreload" href="src/features/profile/profile.js">
+    <link rel="modulepreload" href="src/shared/gameEngine.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
+    <link rel="modulepreload" href="src/shared/quizManifest.js">
+    <link rel="modulepreload" href="src/shared/supabaseClientRegistry.js">
+    <link rel="modulepreload" href="src/shared/public-config.js">
+    <link rel="modulepreload" href="src/shared/adminAuth.js">
+    <link rel="modulepreload" href="src/shared/userProfile.js">
+    <link rel="modulepreload" href="src/features/profile/profileWidgets.js">
+    <link rel="modulepreload" href="src/features/profile/infiniteScroll.js">
+    <link rel="modulepreload" href="src/features/profile/levelGauge.js">
+    <link rel="modulepreload" href="src/features/profile/leaderboardIdentity.js">
+    <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
+    <!-- avatarPicker is no longer on the critical path (profile.js now
+         initialises it in an idle callback), so it's prefetched at low
+         priority rather than preloaded at high priority. -->
+    <link rel="prefetch" href="src/shared/avatarPicker.js" as="script" crossorigin>
+
+    <!-- ============================================================
+         CRITICAL SKELETON CSS — INLINE ON PURPOSE
+         profile.css is ~79KB and render-blocking; if the skeleton's own
+         rules lived only in there, the page would still be blank for the
+         entire duration of that download, which defeats the point. These
+         few rules are the minimum needed to paint a correct-looking
+         skeleton during head parse. The full skeleton styling (shimmer
+         detail, responsive breakpoints, reduced-motion) is in profile.css
+         and simply refines what's already on screen when it arrives.
+         ============================================================ -->
+    <style>
+        .container.is-profile-loading>.identity-band,
+        .container.is-profile-loading>.profile-layout,
+        .container.is-profile-loading>#adminStatsGrid {
+            visibility: hidden;
+            position: absolute;
+            inset-inline: 0;
+            opacity: 0;
+        }
+
+        .container:not(.is-profile-loading)>.profile-skeleton {
+            display: none;
+        }
+
+        .profile-skeleton .skeleton-block {
+            background-color: var(--color-background-secondary, #e9edf2);
+            border-radius: 8px;
+        }
+
+        .profile-skeleton .skeleton-identity {
+            border-radius: 24px;
+            background-color: var(--color-surface, #fff);
+            border: 1px solid var(--color-border-light, #e2e8f0);
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .profile-skeleton .skeleton-cover {
+            height: clamp(135px, 19vw, 250px);
+        }
+
+        .profile-skeleton .skeleton-identity-body {
+            padding: 0 24px 24px;
+        }
+
+        .profile-skeleton .skeleton-identity-header {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 16px 24px;
+            margin-block-start: -64px;
+            padding-block-end: 12px;
+        }
+
+        .profile-skeleton .skeleton-avatar {
+            width: 128px;
+            height: 128px;
+            min-width: 128px;
+            border-radius: 50%;
+        }
+
+        .profile-skeleton .skeleton-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 14px;
+            margin-block-start: 20px;
+        }
+
+        .profile-skeleton .skeleton-stat-card {
+            height: 74px;
+            border-radius: 14px;
+        }
+
+        .profile-skeleton .skeleton-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .profile-skeleton .skeleton-layout.no-rail {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .profile-skeleton .skeleton-layout.no-rail .skeleton-rail {
+            display: none;
+        }
+
+        /* Visitor view (/@handle): setupVisitorView() hides .profile-rail
+           and collapses .profile-layout to one column, so the skeleton has
+           to do the same or the 340px rail track vanishes on swap and
+           shifts the whole main column sideways. Driven off the attribute
+           the bootstrap script sets, because the skeleton layout element
+           doesn't exist yet when that script runs. */
+        .container[data-visitor-view] .skeleton-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .container[data-visitor-view] .skeleton-rail {
+            display: none;
+        }
+
+        /* Visually-hidden live region (no .sr-only utility existed in this
+           page's stylesheets). Clip-based rather than display:none so the
+           text is still exposed to assistive tech. */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .profile-skeleton .skeleton-layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .profile-skeleton .skeleton-rail {
+                display: none;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -689,7 +853,185 @@
         })();
     </script>
 
-    <div class="container">
+    <div class="container" id="profileContainer">
+
+        <!-- ============================================================
+             LOADING-STATE BOOTSTRAP
+             Synchronous, inline, non-deferred — it must run mid-parse so
+             .is-profile-loading is on .container before the browser paints
+             anything below, exactly like the sidebar anti-flash script at
+             the top of <body>.
+
+             Gated on JS being enabled: if the class were hard-coded into
+             the markup above, a no-JS visitor (or a visitor whose module
+             bundle 404s) would be left permanently staring at a shimmer
+             with the real content hidden underneath. Adding it from script
+             means the failure mode is "no skeleton", not "no page".
+
+             Also mirrors the visitor-view rail collapse onto the skeleton:
+             render-profile.js injects <meta name="admin:handle"> for
+             /@handle, and setupVisitorView() hides .profile-rail for those
+             views — so reserving the 340px rail track in the skeleton would
+             produce a visible reflow the moment real content swapped in.
+             ============================================================ -->
+        <script>
+            (function () {
+                try {
+                    var container = document.currentScript.parentElement;
+                    container.classList.add("is-profile-loading");
+
+                    if (document.querySelector('meta[name="admin:handle"]')) {
+                        container.setAttribute("data-visitor-view", "1");
+                    }
+
+                    // Last-resort failsafe, independent of profile.js. The
+                    // matching timer inside profile.js only helps if that
+                    // module actually loaded and ran; this one covers the
+                    // case where it never did.
+                    setTimeout(function () {
+                        container.classList.remove("is-profile-loading");
+                    }, 10000);
+                } catch (e) {
+                    console.error("Profile loading-state init error:", e);
+                }
+            })();
+        </script>
+
+        <!-- ============================================================
+             PROFILE SKELETON
+             Structural stand-in for everything below, held in the DOM only
+             while .container has .is-profile-loading. The node tree mirrors
+             the real one (identity band -> cover -> overlapping avatar ->
+             4 stat chips -> .profile-layout's main/rail split) so the
+             handoff to real content produces no cumulative layout shift.
+
+             aria-hidden + role="presentation": this conveys no information
+             a screen reader can use, and the aria-busy region below is what
+             actually announces the loading state.
+
+             profile.js removes this subtree outright ~260ms after the swap
+             rather than leaving ~40 animated nodes parked behind a
+             display:none for the rest of the session.
+             ============================================================ -->
+        <div class="profile-skeleton" id="profileSkeleton" aria-hidden="true" role="presentation">
+
+            <div class="skeleton-identity">
+                <div class="skeleton-block skeleton-cover"></div>
+                <div class="skeleton-identity-body">
+                    <div class="skeleton-identity-header">
+                        <div class="skeleton-block skeleton-avatar"></div>
+                        <div class="skeleton-identity-text">
+                            <div class="skeleton-block skeleton-line is-title"></div>
+                            <div class="skeleton-block skeleton-line is-meta"></div>
+                            <div class="skeleton-block skeleton-line is-bio"></div>
+                        </div>
+                    </div>
+
+                    <!-- Four chips, matching the real .stats-grid: points,
+                         quizzes, badges, level. -->
+                    <div class="skeleton-stats">
+                        <div class="skeleton-block skeleton-stat-card"></div>
+                        <div class="skeleton-block skeleton-stat-card"></div>
+                        <div class="skeleton-block skeleton-stat-card"></div>
+                        <div class="skeleton-block skeleton-stat-card"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="skeleton-layout" id="profileSkeletonLayout">
+
+                <div class="skeleton-main">
+                    <!-- Activity heatmap — spans the full widget row -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-block skeleton-body-tall"></div>
+                    </div>
+
+                    <!-- Category mastery -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-block skeleton-body-short"></div>
+                    </div>
+
+                    <!-- Quiz history — dense 56px rows, matching .history-item -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-rows">
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                        </div>
+                    </div>
+
+                    <!-- Bookmarks -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-rows">
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="skeleton-rail">
+                    <!-- Badges -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-block skeleton-body-short"></div>
+                    </div>
+
+                    <!-- Next badges -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-rows">
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="skeleton-card">
+                        <div class="skeleton-card-head">
+                            <div class="skeleton-block"></div>
+                            <div class="skeleton-block"></div>
+                        </div>
+                        <div class="skeleton-rows">
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                            <div class="skeleton-block skeleton-row"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Politely announces the loading state to assistive tech, since
+             the skeleton itself is aria-hidden. Cleared by profile.js on
+             dismissal so it isn't re-announced on later DOM updates. -->
+        <div id="profileLoadingStatus" class="sr-only" role="status" aria-live="polite">
+            جارٍ تحميل الملف الشخصي…
+        </div>
+
 
         <!-- ============================================================
              IDENTITY BAND — Facebook/X-style profile header: a short
@@ -1374,7 +1716,13 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- `defer` (was parser-blocking). Deferred classic scripts still execute
+         in document order and still run BEFORE any module below them, so
+         profile.js's guarantee that window.supabase exists is unchanged —
+         but the parser no longer stalls on a cross-origin fetch, and this
+         download now overlaps the module graph above instead of serializing
+         with it. -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="src/features/profile/profile.js"></script>
     <script type="module">
         import { initHeatmapOverflowSync } from "./src/features/profile/heatmapOverflow.js";

@@ -61,9 +61,20 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 ### Home Page
 
-#### Improvements
-- The side menu admin badge/favicon should be improved. It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
-- I really admire the animations on the `.section-icon` element on `profile.html`, very intuitive (the `section-icon-draw` keyframes). I want to implement similar hover animation state on the items in the side-menu on all pages. I tried doing it myself, I added `menu-item-draw` keyframes in `public\src\components\side-menu\side-menu.css` and commented out the bad trasform, but it doesn't work. Probably because the HTML SVGs themselves need to be updated.
+#### Admin / Developer Badge
+- The side menu admin badge/favicon is bad looking (`.nav-badge-overlay` on phone's `#bottomNav` and desktop's `#sidebar`). It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
+
+#### Side-Menu Icons
+Implement an SVG line-drawing hover animation on side menu items, modeled after `.section-icon` and `section-icon-draw` keyframes in `profile.html`.
+
+1. **SVG Structure Update:** Inspect and update the inline SVG icons inside side menu items to ensure `path` elements are compatible with stroke drawing.
+2. **CSS Fixes (`public/src/components/side-menu/side-menu.css`):**
+   - Clean up existing `menu-item-draw` (broken) keyframes and remove unused/broken transform rules.
+   - Calculate or dynamically apply the required `stroke-dasharray` and `stroke-dashoffset` on hover/active states.
+3. The Hover animation of the icons should be excluded from the "الأداء الفائق" mode (`html[data-motion="reduced"]`)
+
+#### Info
+
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
@@ -77,6 +88,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 When a user visits the profile page for `/@handle`, it takes so much time to load (many seconds, but less than 10 seconds), and in that time the page appears emtpy like this: ![screenshot of loading](image-2.png)
   - Implement an advanced loading skeleton on `/profile` and `/@handle`
   - Find all possible ways to improve performance.
+- The Hover animation of icons should be excluded from the "الأداء الفائق" mode (`html[data-motion="reduced"]`)
 
 ### About.html
 - Suggestion: Add an open-source Angle.
