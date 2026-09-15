@@ -1667,12 +1667,6 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   height: 44px;
 }
 
-/* Every empty-state <path> is emitted with pathLength="1" (profile.js /
-   profileWidgets.js), which re-scales the path's own geometry to a length of
-   exactly 1 for dash purposes. That makes a single dasharray correct for all
-   of them regardless of how long the real path is — previously a flat 80 was
-   too long for short paths ("M3 3v18h18") and too short for long ones, so the
-   same icon drew inconsistently path-to-path. */
 .empty-state-icon .icon-line {
   --icon-draw-length: 1;
   stroke-dasharray: 1;
@@ -1684,10 +1678,6 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   color: var(--color-primary, #6366f1);
 }
 
-/* :focus-within keeps the affordance reachable by keyboard, and .is-drawing
-   is the touch/pointer-coarse hook profile.js toggles via IntersectionObserver
-   (there is no hover state on touch, so the animation was previously dead on
-   mobile entirely). */
 .empty-state:hover .empty-state-icon .icon-line,
 .empty-state:focus-within .empty-state-icon .icon-line,
 .empty-state.is-drawing .empty-state-icon .icon-line {
@@ -1733,6 +1723,7 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   flex-direction: row-reverse;
   gap: 6px;
   min-width: 0;
+  justify-content: center;
 }
 
 /* Edge fades live on the body wrapper — NOT on .heatmap-grid. Masking the
@@ -1785,9 +1776,6 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   white-space: nowrap;
 }
 
-/* Matches the month-label row's height at the top of each .heatmap-col,
-         so the day-letter rows beneath it still line up with the grid's cell
-         rows despite the grid having one extra header cell per column. */
 .heatmap-daylabels-spacer {
   height: 16px !important;
 }
@@ -1800,20 +1788,20 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   overflow-y: hidden;
   padding-block-end: 8px;
   padding-block-start: 2px;
-  /* Extra inline padding so absolute month labels aren't clipped by the
-           scrollport edge on phones (labels don't contribute to scrollWidth). */
   padding-inline: 6px;
   scroll-snap-type: x proximity;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
-  /* Never center an overflowing flex row — start-side content becomes
-           unreachable. Sparse years still look fine packed to the start. */
   justify-content: flex-start;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   touch-action: pan-x pinch-zoom;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+}
+
+.heatmap-grid.is-overflowing {
+  flex: 1 1 0%;
 }
 
 .heatmap-grid::-webkit-scrollbar {

@@ -49,7 +49,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
 ### Quiz Page
-- Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself.
+- Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself so it works on the `/result`, `/create-quiz`, and `/quiz`.
   - Media appears with size that is already in the objects like `<img>`, it appears with handles that the user can use to resize the media himself.
   - Images / videos get 4 resize handles, one on each corner.
   - Audio get 2 handles, one on the right, other on the left, since its height doesn't change.
@@ -82,12 +82,9 @@ Implement an SVG line-drawing hover animation on side menu items, modeled after 
   - (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
 ### Control.html
-- Give `#collegeForm` an advanced loading skeleton/animation.
+- Give `#collegeForm` an advanced loading skeleton/animation, too.
 
 ### Profile Page
-When a user visits the profile page for `/@handle`, it takes so much time to load (many seconds, but less than 10 seconds), and in that time the page appears emtpy like this: ![screenshot of loading](image-2.png)
-  - Implement an advanced loading skeleton on `/profile` and `/@handle`
-  - Find all possible ways to improve performance.
 - The Hover animation of icons should be excluded from the "الأداء الفائق" mode (`html[data-motion="reduced"]`)
 
 ### About.html
