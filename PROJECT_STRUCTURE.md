@@ -17,7 +17,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 ├── PROJECT_STRUCTURE.md
 ├── README.md
 ├── vercel.json
-├── api/ [382.42 KB, 9002 LOC]
+├── api/ [406.34 KB, 9496 LOC]
 │   ├── ai-agent/ [52.42 KB, 1094 LOC]
 │   │   ├── _keyPool.js
 │   │   ├── _providerClients.js
@@ -49,19 +49,18 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── upload-quiz.js
 │   └── user-profile.js
 │
-├── docs/ [1.04 MB, 2436 LOC]
-│   ├── plans/ [150.42 KB, 2143 LOC]
+├── docs/ [997.87 KB, 1480 LOC]
+│   ├── plans/ [81.64 KB, 1186 LOC]
 │   │   ├── admin-actions-update-testing-results.md
 │   │   ├── ai-agent-on-quiz-page-prompt.md
-│   │   ├── Claude-SEO-GEO plan implementation adjustments-20260914-1621.md
-│   │   ├── SEO-GEO-plan.md
 │   │   └── unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md
 │   │
 │   ├── Database-Schema-Context.md
 │   ├── image-1.png
 │   ├── image-5.png
 │   ├── image.png
-│   └── issues.md
+│   ├── issues.md
+│   └── NOTES.md
 │
 ├── public/ [200.09 MB, 103758 LOC]
 │   ├── assets/ [196.19 MB, 0 LOC]
@@ -442,6 +441,7 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── how-to-upload-a-quiz.html
 │   ├── how-to-use-ai-agent.html
 │   ├── index.html
+│   ├── llms.txt
 │   ├── manifest.json
 │   ├── oauth-callback.html
 │   ├── offline.html
@@ -454,16 +454,18 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   ├── robots.txt
 │   ├── service-worker.js
 │   ├── settings.html
+│   ├── sitemap-static.xml
 │   ├── sitemap.xml
 │   └── terms-of-service.html
 │
-├── scripts/ [23.32 KB, 669 LOC]
+├── scripts/ [37.34 KB, 1031 LOC]
 │   ├── lib/ [7.45 KB, 227 LOC]
 │   │   ├── quizId.js
 │   │   └── quizPath.js
 │   │
 │   ├── commit.js
-│   └── map.js
+│   ├── map.js
+│   └── seo-check.mjs
 │
 └── supabase/ [43.04 KB, 969 LOC]
     ├── migrations/ [27.43 KB, 554 LOC]
@@ -484,11 +486,11 @@ The map is useful for quickly identifying the layout of the project, understandi
 | Directory | Lines of Code |
 |-----------|---------------|
 | `public` | 103758 |
-| `api` | 9002 |
-| `docs` | 2436 |
-| `(root)` | 1260 |
+| `api` | 9496 |
+| `docs` | 1480 |
+| `(root)` | 1264 |
+| `scripts` | 1031 |
 | `supabase` | 969 |
-| `scripts` | 669 |
 
 ### Top 10 Largest Code Files
 
@@ -509,18 +511,19 @@ The map is useful for quickly identifying the layout of the project, understandi
 
 | Extension | Files | Lines of Code | Size |
 |-----------|-------|---------------|------------|
-| .js | 154 | 69855 | 2.81 MB |
+| .js | 154 | 70349 | 2.83 MB |
 | .css | 26 | 32797 | 838.63 KB |
-| .html | 19 | 10602 | 634.91 KB |
-| .md | 10 | 3488 | 204.63 KB |
+| .html | 19 | 10604 | 634.96 KB |
+| .md | 9 | 2531 | 136.77 KB |
 | .sql | 6 | 554 | 27.43 KB |
-| .json | 4 | 271 | 146.13 KB |
+| .json | 4 | 276 | 146.3 KB |
+| .txt | 2 | 26 | 2.06 KB |
+| .xml | 2 | 21 | 1.4 KB |
 | (no extension) | 1 | 22 | 1.06 KB |
-| .txt | 1 | 4 | 79 B |
-| .xml | 1 | 45 | 1.33 KB |
+| .mjs | 1 | 362 | 14.02 KB |
 | .toml | 1 | 415 | 15.61 KB |
 | .yml | 1 | 41 | 1.02 KB |
-| **Total** | **224** | **118094** | **4.64 MB** |
+| **Total** | **226** | **117998** | **4.61 MB** |
 
 ### Binary / Media Files (Physical Size)
 
@@ -535,5 +538,5 @@ The map is useful for quickly identifying the layout of the project, understandi
 | .svg | 1 | 19.48 KB |
 | **Total** | **152** | **197.12 MB** |
 
-**Grand Total Files:** 376  
-**Total Repository Size:** 201.75 MB
+**Grand Total Files:** 378  
+**Total Repository Size:** 201.73 MB
