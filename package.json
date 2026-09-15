@@ -10,7 +10,8 @@
     "vercel": "vercel dev",
     "map": "node scripts/map.js",
     "commit": "node scripts/commit.js",
-    "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD"
+    "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD",
+    "seo:check": "node scripts/seo-check.mjs"
   },
   "keywords": [
     "examination",

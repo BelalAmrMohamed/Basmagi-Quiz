@@ -60,7 +60,8 @@ Check the rules for creating امتحانات and copying them and moving them.
 - If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
 
 ### App SEO and GEO 
-- Implementation complete per `docs/plans/SEO-GEO-plan.md` (source of truth for scope/phases — see that file for what's done vs. remaining, e.g. `scripts/seo-check.mjs`'s ongoing use and the Phase 6 stretch items).
+- Implementation complete per `docs/plans/SEO-GEO-plan.md` (source of truth for scope/phases — see that file for what's done vs. remaining, e.g. Phase 6 stretch items). Phase 5.2's `npm run seo:check` (`scripts/seo-check.mjs`) now exists and should be run against production after every deploy that touches SEO surfaces.
+- Fixed during this pass: `public/result.html` was missing its `<meta name="robots" content="noindex, nofollow">` tag (Phase 0.1 gap `seo:check` would have caught) — added.
 - **Ongoing hygiene (Phase 5.3):** review the Search Console 404 report monthly; add redirects or accept as legitimate removals. Last reviewed: not yet — do this after the first month live.
 
 ### Home Page
