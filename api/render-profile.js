@@ -11,7 +11,7 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY,
 );
 
-const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile");
+const TEMPLATE_PATH = path.join(process.cwd(), "public", "profile.html");
 const SITE_ORIGIN = "https://basmagi-quiz.vercel.app";
 
 export default async function handler(req, res) {
