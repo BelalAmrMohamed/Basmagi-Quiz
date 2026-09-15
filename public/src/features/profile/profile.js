@@ -279,14 +279,14 @@ async function renderAdminGallery(myToken = refreshToken) {
 
       let badgeHtml = "";
       if (entry.isOwner) {
-        badgeHtml = `<span class="admin-gallery-badge role-badge developer-badge" title="مطور" aria-label="مطور"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>`;
+        badgeHtml = `<span class="admin-gallery-badge role-badge developer-badge" title="مطور" aria-label="مطور"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>`;
       } else if (entry.role === "admin") {
-        badgeHtml = `<span class="admin-gallery-badge role-badge admin-badge" title="مشرف" aria-label="مشرف"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`;
+        badgeHtml = `<span class="admin-gallery-badge role-badge admin-badge" title="مشرف" aria-label="مشرف"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`;
       }
 
       const cardInner = `
         <span class="admin-gallery-avatar-wrap">
-          <img class="admin-gallery-avatar" src="${avatar}" alt="الصورة الشخصية لـ ${displayName}" loading="lazy" width="72" height="72">
+          <img class="admin-gallery-avatar" src="${avatar}" alt="الصورة الشخصية لـ ${displayName}" loading="lazy" width="96" height="96">
           ${badgeHtml}
         </span>
         <span class="admin-gallery-handle" dir="ltr">@${handle}</span>
@@ -323,7 +323,40 @@ async function renderAdminGallery(myToken = refreshToken) {
     if (nextBtn) {
       nextBtn.onclick = () => scrollByCard(isRtl ? -1 : 1);
     }
+    // Bug 4: the arrows are only useful when the strip actually overflows
+    // its container — with few admins (or a wide viewport) everything
+    // fits and the arrows would just sit there doing nothing. Re-checked
+    // on resize since the overflow state depends on viewport width, not
+    // just item count.
+    window.addEventListener("resize", updateAdminGalleryArrowVisibility);
   }
+
+  updateAdminGalleryArrowVisibility();
+}
+
+// Shows/hides .admin-gallery-arrow buttons based on whether #adminGallery
+// currently overflows horizontally. Safe to call any time after the
+// gallery has been rendered (including from the resize listener below,
+// where the gallery may since have been emptied/hidden).
+//
+// Uses removeProperty() rather than setting display:"" so the existing
+// @media (max-width: 480px) { display: none } rule in profile.css can
+// still win on small screens — an inline style="" left behind by a wider
+// viewport would otherwise out-specificity that media query once set.
+function updateAdminGalleryArrowVisibility() {
+  const galleryEl = document.getElementById("adminGallery");
+  const prevBtn = document.getElementById("adminGalleryPrev");
+  const nextBtn = document.getElementById("adminGalleryNext");
+  if (!galleryEl || !prevBtn || !nextBtn) return;
+
+  const isOverflowing = galleryEl.scrollWidth > galleryEl.clientWidth;
+  [prevBtn, nextBtn].forEach((btn) => {
+    if (isOverflowing) {
+      btn.style.removeProperty("display");
+    } else {
+      btn.style.display = "none";
+    }
+  });
 }
 
 // Role info modal — replaces the old generic showNotification() toast on
@@ -1288,7 +1321,7 @@ function renderHistory(user) {
     containerEl: container,
     items: user.history || [],
     renderItem: historyItemHtml,
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path class="icon-line" d="M3 3v18h18"/><path class="icon-line" d="M7 15l4-4 3 3 5-6"/></svg></div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
     mode: "button",
   });
   historyList.mount();

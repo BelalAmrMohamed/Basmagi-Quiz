@@ -984,7 +984,7 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  width: 96px;
+  width: 120px;
   scroll-snap-align: start;
   text-decoration: none;
   color: inherit;
@@ -1004,38 +1004,32 @@ a.admin-gallery-item:focus-visible {
 
 .admin-gallery-avatar-wrap {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   flex-shrink: 0;
 }
 
 .admin-gallery-avatar {
-  width: 72px;
-  height: 72px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   object-fit: cover;
   display: block;
   box-shadow: var(--shadow-sm);
-  /* The notch cut into the bottom-end corner is carved out of the avatar
-             itself (not the badge) via a radial-gradient mask, so the badge
-             sits recessed into the circle the way YouTube channel badges do
-             rather than just floating on top of it. Physical corner
-             (bottom-right) intentionally does not mirror in RTL — the
-             badge's own inset below matches it exactly. */
-  -webkit-mask-image: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 4px),
+  -webkit-mask-image: radial-gradient(circle 17px at calc(100% - 12px) calc(100% - 12px),
       transparent 98%,
       #000 100%);
-  mask-image: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 4px),
+  mask-image: radial-gradient(circle 17px at calc(100% - 12px) calc(100% - 12px),
       transparent 98%,
       #000 100%);
 }
 
 .admin-gallery-badge.role-badge {
   position: absolute;
-  inset-inline-end: -2px;
-  inset-block-end: -2px;
-  width: 24px;
-  height: 24px;
+  inset-inline-end: -3px;
+  inset-block-end: -3px;
+  width: 30px;
+  height: 30px;
   border-width: 0;
   cursor: default;
 }
@@ -1654,11 +1648,28 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   margin-bottom: 12px;
   opacity: 0.35;
   color: var(--color-text-secondary);
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease;
 }
 
 .empty-state-icon svg {
   width: 44px;
   height: 44px;
+}
+
+.empty-state-icon .icon-line {
+  stroke-dasharray: 80;
+  stroke-dashoffset: 0;
+}
+
+.empty-state:hover .empty-state-icon {
+  opacity: 0.6;
+  color: var(--color-primary, #6366f1);
+}
+
+.empty-state:hover .empty-state-icon .icon-line {
+  animation: section-icon-draw 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 
 /* ============================================================

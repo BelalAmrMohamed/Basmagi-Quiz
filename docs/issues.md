@@ -74,7 +74,9 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Give `#collegeForm` an advanced loading skeleton/animation.
 
 ### Profile Page
-Update the display of the top admins to be similar to YouTube: ![similar](image-1.png).
+When a user visits the profile page for `/@handle`, it takes so much time to load (many seconds, but less than 10 seconds), and in that time the page appears emtpy like this: ![screenshot of loading](image-2.png)
+  - Implement an advanced loading skeleton on `/profile` and `/@handle`
+  - Find all possible ways to improve performance.
 
 ### About.html
 - Suggestion: Add an open-source Angle.
