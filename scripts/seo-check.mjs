@@ -206,6 +206,9 @@ async function checkFeeds() {
     const rss = await get("/feed.xml");
     if (rss.ok && /<rss[\s>]/i.test(rss.text)) {
         pass("/feed.xml returns valid-looking RSS");
+        const itemCount = [...rss.text.matchAll(/<item>/g)].length;
+        if (itemCount > 0) pass(`/feed.xml has ${itemCount} <item> entr(y/ies)`);
+        else fail("/feed.xml has at least one <item>", "0 items — feed is structurally valid but empty");
     } else {
         fail("/feed.xml returns valid-looking RSS", rss.ok ? "no <rss> root" : `HTTP ${rss.status}`);
     }
@@ -216,6 +219,8 @@ async function checkFeeds() {
             const parsed = JSON.parse(json.text);
             if (parsed.items && Array.isArray(parsed.items)) {
                 pass("/feed.json parses with an items[] array");
+                if (parsed.items.length > 0) pass(`/feed.json has ${parsed.items.length} item(s)`);
+                else fail("/feed.json has at least one item", "items[] is empty");
             } else {
                 fail("/feed.json parses with an items[] array", "items missing/not array");
             }

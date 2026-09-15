@@ -392,6 +392,54 @@ async function handleIndexNowKey(req, res) {
     return res.status(200).send(configuredKey);
 }
 
+// ── Debug (temporary, read-only, no PII/secrets) ─────────────────────────────
+// Diagnoses "sitemap/feed/llms-full are empty" without needing Vercel log
+// access: reports per-table row counts + error messages only (never row
+// content, no auth). Safe to leave in — it's read-only and exposes nothing
+// beyond what the public sitemap already reveals (counts, not content) plus
+// error strings, which a public Supabase-status page would show anyway.
+async function handleDebugCatalog(req, res) {
+    const [coursesRes, foldersRes, quizzesRes, profilesRes] = await Promise.all([
+        supabaseCatalogTableProbe("courses", "id, name, education_type, college, year, term, created_at, updated_at"),
+        supabaseCatalogTableProbe("folders", "id, course_id, parent_folder_id, name, created_at, updated_at"),
+        supabaseCatalogTableProbe("quizzes", "data, password, created_at, synced_at, course_id, folder_id"),
+        supabaseCatalogTableProbe("admin_users", "handle, display_name, updated_at"),
+    ]);
+
+    const catalog = await loadPublicCatalog();
+
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json({
+        rawProbes: { courses: coursesRes, folders: foldersRes, quizzes: quizzesRes, admin_users: profilesRes },
+        loadPublicCatalogResult: catalog
+            ? {
+                  courses: catalog.courses.length,
+                  folders: catalog.folders.length,
+                  quizzes: catalog.quizzes.length,
+                  profiles: catalog.profiles.length,
+              }
+            : "null (every table failed)",
+    });
+}
+
+async function supabaseCatalogTableProbe(table, columns) {
+    try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        const { data, error, count } = await supabase.from(table).select(columns, { count: "exact" }).limit(1);
+        return {
+            ok: !error,
+            errorMessage: error?.message || null,
+            errorCode: error?.code || null,
+            totalRowCount: count ?? null,
+            sampleRowReturned: Array.isArray(data) && data.length > 0,
+        };
+    } catch (err) {
+        return { ok: false, errorMessage: err.message, errorCode: "thrown" };
+    }
+}
+
 // ── Dispatch ─────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -406,6 +454,7 @@ export default async function handler(req, res) {
     if (type === "llms-full") return handleLlmsFull(req, res);
     if (type === "cron") return handleCron(req, res);
     if (type === "indexnow-key") return handleIndexNowKey(req, res);
+    if (type === "debug-catalog") return handleDebugCatalog(req, res);
 
     return res.status(400).json({ error: "Unknown or missing ?type=" });
 }

@@ -97,21 +97,28 @@ export async function loadPublicCatalog() {
         supabase.from("admin_users").select("handle, display_name, updated_at").not("handle", "is", null),
     ]);
 
-    if (coursesRes.error || foldersRes.error || quizzesRes.error || profilesRes.error) {
-        console.error(
-            "[catalog] load failed:",
-            coursesRes.error?.message,
-            foldersRes.error?.message,
-            quizzesRes.error?.message,
-            profilesRes.error?.message,
-        );
+    // Degrade per-table instead of all-or-nothing: one table erroring (RLS
+    // gap, transient timeout, etc.) used to null out the *entire* catalog,
+    // silently zeroing courses/folders/profiles even when those three
+    // queries succeeded fine. Log each failure but only drop the table that
+    // actually failed, so e.g. a quizzes-only outage still yields a sitemap
+    // with every course/folder/profile URL intact.
+    if (coursesRes.error) console.error("[catalog] courses query failed:", coursesRes.error.message);
+    if (foldersRes.error) console.error("[catalog] folders query failed:", foldersRes.error.message);
+    if (quizzesRes.error) console.error("[catalog] quizzes query failed:", quizzesRes.error.message);
+    if (profilesRes.error) console.error("[catalog] admin_users query failed:", profilesRes.error.message);
+
+    // Only truly bail (return null -> callers fall back to an empty/static
+    // response) when EVERY query failed — a total Supabase outage. Any
+    // partial success still produces a partial-but-real catalog.
+    if (coursesRes.error && foldersRes.error && quizzesRes.error && profilesRes.error) {
         return null;
     }
 
-    const rawCourses = coursesRes.data || [];
-    const rawFolders = foldersRes.data || [];
-    const rawQuizzes = quizzesRes.data || [];
-    const rawProfiles = profilesRes.data || [];
+    const rawCourses = coursesRes.error ? [] : (coursesRes.data || []);
+    const rawFolders = foldersRes.error ? [] : (foldersRes.data || []);
+    const rawQuizzes = quizzesRes.error ? [] : (quizzesRes.data || []);
+    const rawProfiles = profilesRes.error ? [] : (profilesRes.data || []);
 
     // ── Courses ────────────────────────────────────────────────────────────
     const collidingSlugs = findCollidingSlugs(rawCourses);
