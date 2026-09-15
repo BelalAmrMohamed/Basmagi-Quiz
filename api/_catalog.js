@@ -94,7 +94,11 @@ export async function loadPublicCatalog() {
         supabase.from("courses").select("id, name, education_type, college, year, term, created_at, updated_at"),
         supabase.from("folders").select("id, course_id, parent_folder_id, name, created_at, updated_at"),
         fetchAllQuizzes(),
-        supabase.from("admin_users").select("handle, display_name, updated_at").not("handle", "is", null),
+        // admin_users has no updated_at column (confirmed live: 42703 "column
+        // admin_users.updated_at does not exist") — created_at is the only
+        // timestamp available, so profile lastmod is necessarily "when the
+        // admin account was created", not "when their profile last changed".
+        supabase.from("admin_users").select("handle, display_name, created_at").not("handle", "is", null),
     ]);
 
     // Degrade per-table instead of all-or-nothing: one table erroring (RLS
@@ -191,7 +195,7 @@ export async function loadPublicCatalog() {
             handle: p.handle,
             displayName: p.display_name || p.handle,
             url: profileUrl(p.handle),
-            lastmod: p.updated_at || null,
+            lastmod: p.created_at || null, // no updated_at column on admin_users
         });
     }
 

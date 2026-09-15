@@ -204,7 +204,7 @@ Node.js serverless (same anon-client pattern as render-course.js). Returns `appl
 1. `quizzes`: `.select("data, password, created_at, synced_at, course_id, folder_id")` — emit one `<url>` per row where `data->meta->id` is non-empty, `password` is NULL/empty **and** no matching `quiz_access.password_hash` (join client-side by `path` from a 4th small query on `quiz_access`), and the quiz has a resolvable course/folder (or legacy path). URL: `https://basmagi-quiz.vercel.app/quiz/{meta.id}`. `lastmod` = `coalesce(synced_at, created_at)`.
 2. `courses`: `.select("id, name, education_type, created_at, updated_at")` → `/course/{toSlug(name)}` (append `?education_type=` only for colliding slugs, §4.4). `lastmod` = `coalesce(updated_at, created_at)`.
 3. `folders`: `.select("id, course_id, name, parent_folder_id, created_at, updated_at")` → resolve the full ancestor slug chain (walk `parent_folder_id` up to the course, build the path recursively, emit once per node): `/course/{courseSlug}/{folderSlug1}/...`. Use the same slug helpers as render-course.js (single source: copy `toSlug` into a tiny `api/_urls.js` shared module).
-4. `admin_users`: `.select("handle, updated_at")` with non-null handles → `/@{handle}`.
+4. `admin_users`: `.select("handle, created_at")` with non-null handles → `/@{handle}`. (No `updated_at` column exists on this table — confirmed live via `42703`; `created_at` is the only timestamp available, so profile `lastmod` reflects account-creation time, not last-edit time.)
 
 **Guards:**
 - Skip quizzes with no `meta.id`, with passwords, private (`quiz_access`), or whose `data.meta.title` is empty.
@@ -354,13 +354,13 @@ Follows the [llmstxt.org](https://llmstxt.org) convention. This is the file Chat
 > منصة تعليمية عربية مجانية تحتوي على مكتبة امتحانات تفاعلية خاصة بكلية
 > الحاسبات والمعلومات ولجميع المراحل التعليمية، مع أسئلة اختيار من متعدد
 > وصح/خطأ ومقالي، وشرح لكل سؤال، وتصحيح فوري، ونسخ لامتحاناتك، ومتابعة
-> تقدمك، ومساعد ذكاء اصطناعي (الباشــمبصمج).
+> تقدمك، ومساعد ذكاء اصطناعي (الباشمبصمج).
 
 ## المميزات الأساسية
 - [إنشاء امتحاناتك التفاعلية](https://basmagi-quiz.vercel.app/create-quiz): أنشئ امتحانًا بصيغ اختيار من متعدد، صح/خطأ، ومقالي مع شرح وصور وفيديو.
 - [كيفية إنشاء امتحان](https://basmagi-quiz.vercel.app/how-to-create-a-quiz): دليل خطوة بخطوة.
 - [كيفية رفع امتحان للمشرفين](https://basmagi-quiz.vercel.app/how-to-upload-a-quiz): دليل الإدخال الجماعي.
-- [الباشــمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات.
+- [الباشمبصمج — مساعد AI](https://basmagi-quiz.vercel.app/how-to-use-ai-agent): مساعد ذكاء اصطناعي لفهم وشرح الأسئلة وتحضير الامتحانات.
 
 ## التخصصات والمواد (قائمة كاملة محدثة باستمرار)
 - [القائمة الكاملة للمواد والمجلدات والامتحانات العامة](https://basmagi-quiz.vercel.app/llms-full.txt)
