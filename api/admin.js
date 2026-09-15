@@ -21,6 +21,8 @@
 // NOTE: The "change_code" / access-code actions were removed in v6.1.
 // =============================================================================
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
+import { notifySearchEngines } from "./_seoNotify.js";
+import { toSlug, absUrl, quizUrl } from "./_urls.js";
 import { createClient } from "@supabase/supabase-js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
 import {
@@ -402,6 +404,7 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
   const restoredIds = new Set();
   const restoredNames = [];
   const failures = [];
+  const restoredUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2)
 
   for (const row of sorted) {
     try {
@@ -411,6 +414,7 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
         if (error) throw new Error(error.message);
         restoredIds.add(row.original_id);
         restoredNames.push(snap.name);
+        restoredUrls.push(absUrl(`/course/${toSlug(snap.name)}`));
       } else if (row.item_type === "folder") {
         const snap = { ...row.snapshot };
         // Fall back to root-of-course if the parent folder no longer exists
@@ -473,6 +477,8 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
         if (error) throw new Error(error.message);
         restoredIds.add(row.original_id);
         restoredNames.push(snap.title);
+        const restoredMetaId = snap.data?.meta?.id;
+        if (restoredMetaId && !snap.password) restoredUrls.push(quizUrl(restoredMetaId));
         if (snap.uploaded_by) {
           try {
             await supabase.rpc("increment_uploaded_quizzes", { p_admin_id: snap.uploaded_by });
@@ -494,6 +500,15 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
     .map((row) => row.id);
   if (restoredTrashRowIds.length) {
     await supabase.from("trash_items").delete().in("id", restoredTrashRowIds);
+  }
+
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2) — a restored quiz
+  // is a "new YouTube video drops" event same as a fresh upload; folder
+  // URLs aren't announced here (would need an extra ancestor-slug walk)
+  // but the daily cron sweep (api/seo.js handleCron) picks them up via
+  // updated_at/created_at regardless.
+  if (restoredUrls.length > 0) {
+    notifySearchEngines({ add: restoredUrls, reason: "trash-restore" });
   }
 
   return res.status(failures.length && !restoredNames.length ? 500 : 200).json({
@@ -719,6 +734,17 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
     return res.status(500).json({ error: "فشل حذف العنصر الأساسي بعد نقل محتوياته لسلة المهملات." });
   }
 
+  // Optional SEO/GEO log signal (plan §7.1: "remove" URLs aren't submitted
+  // to IndexNow — no delete verb in the protocol — this only affects the
+  // log line; actual removal is reflected by the sitemap/feed/llms-full
+  // simply no longer listing these URLs once regenerated).
+  const removedQuizUrls = quizzes
+    .filter((q) => !q.password && q.data?.meta?.id)
+    .map((q) => quizUrl(q.data.meta.id));
+  if (removedQuizUrls.length > 0) {
+    notifySearchEngines({ remove: removedQuizUrls, reason: `delete-${itemType}` });
+  }
+
   return res.status(200).json({
     success: true,
     trashed: true,
@@ -806,6 +832,21 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     return res.status(500).json({ error: "فشل نقل العنصر." });
   }
 
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2). A quiz's URL
+  // (/quiz/{meta.id}) doesn't change when it moves between folders/courses
+  // — only its llms-full.txt/feed listing context does — so this is a
+  // content-changed "add", not a remove+add pair. Folder moves change the
+  // folder's own URL (new ancestor slug chain); left to the daily cron
+  // sweep rather than resolved inline here to keep this handler's blast
+  // radius limited to what it already touches.
+  if (itemType === "quiz") {
+    const { data: movedQuiz } = await supabase.from("quizzes").select("data, password").eq("id", itemId).maybeSingle();
+    const movedMetaId = movedQuiz?.data?.meta?.id;
+    if (movedMetaId && !movedQuiz.password) {
+      notifySearchEngines({ add: [quizUrl(movedMetaId)], reason: "move-item:quiz" });
+    }
+  }
+
   // Moving a folder into a DIFFERENT course must cascade the new course_id
   // to every descendant folder and quiz. The DB consistency triggers
   // (folders_enforce_course_consistency / quizzes_enforce_course_consistency
@@ -880,6 +921,14 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       console.error("[admin:rename-item] quiz rename failed:", error.message);
       return res.status(500).json({ error: "فشل إعادة تسمية الامتحان." });
     }
+    // Fire-and-forget SEO/GEO publish signal (plan §7.2). A quiz's URL is
+    // /quiz/{meta.id}, which a title-only rename never changes — so this is
+    // an "add" (re-announce updated content at the same URL), not a
+    // remove+add pair.
+    const metaId = updatedData?.meta?.id;
+    if (metaId && !fetched.row.password) {
+      notifySearchEngines({ add: [quizUrl(metaId)], reason: "rename-item:quiz" });
+    }
   } else {
     const table = itemType === "folder" ? "folders" : "courses";
     const { error } = await supabase
@@ -901,6 +950,17 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
       }
       console.error("[admin:rename-item] failed:", error.message);
       return res.status(500).json({ error: "فشل إعادة التسمية." });
+    }
+    // Fire-and-forget SEO/GEO publish signal (plan §7.2): a course/folder
+    // rename changes its slug, i.e. its URL — both the OLD url (now 404,
+    // "remove") and the freshly-slugged NEW url ("add") should ideally be
+    // reported. Building the full ancestor-slug chain for a folder here
+    // would need an extra walk this handler doesn't otherwise do; kept
+    // simple/best-effort by only announcing the course case (single
+    // segment, cheap) and letting the daily cron sweep (api/seo.js
+    // handleCron, keyed off updated_at) pick up renamed folders within 24h.
+    if (itemType === "course") {
+      notifySearchEngines({ add: [absUrl(`/course/${toSlug(nameCheck.clean)}`)], reason: "rename-item:course" });
     }
   }
 

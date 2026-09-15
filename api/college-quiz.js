@@ -38,6 +38,8 @@ import { createClient } from "@supabase/supabase-js";
 import { requireAdmin, applyCors, handleAuthError } from "./_middleware.js";
 import { resolveAdminId, isAuthorizedForItem, getTrashRetentionDays, computeExpiresAt } from "./_trash.js";
 import { isRateLimited } from "./_rateLimit.js";
+import { notifySearchEngines } from "./_seoNotify.js";
+import { quizUrl } from "./_urls.js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -156,6 +158,13 @@ async function handleDeleteQuiz(req, res) {
         } catch (rpcErr) {
             console.error("Failed to call decrement_uploaded_quizzes RPC:", rpcErr.message || rpcErr);
         }
+    }
+
+    // Optional SEO/GEO log signal (plan §7.2: "a delete isn't an add" —
+    // IndexNow has no delete verb, so this only affects the log line; the
+    // sitemap/feed/llms-full simply stop listing the URL once regenerated).
+    if (!quiz.password) {
+        notifySearchEngines({ remove: [quizUrl(id)], reason: "delete-quiz" });
     }
 
     return res.status(200).json({ success: true, trashed: true });

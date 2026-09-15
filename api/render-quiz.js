@@ -207,6 +207,16 @@ export default async function handler(req, res) {
       "robots",
       "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
     );
+
+    // JSON-LD (plan §8.4): Quiz + BreadcrumbList. Only injected on the
+    // successful-lookup branch, same as the robots override above — a
+    // 404/user-copy page has no real entity to describe.
+    const quizJsonLd = buildQuizJsonLd(meta, title, description, canonicalUrl);
+    const breadcrumbJsonLd = await buildBreadcrumbChain(meta, canonicalUrl, title);
+    const jsonLdScripts =
+      `  <script type="application/ld+json">${JSON.stringify(quizJsonLd)}</script>\n` +
+      `  <script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>\n`;
+    html = html.replace("</head>", `${jsonLdScripts}</head>`);
   }
 
   // ── 5. Respond ────────────────────────────────────────────────────────────
@@ -265,6 +275,110 @@ async function fetchQuizMeta(quizId) {
     description: quizMeta.description || null,
     questionCount: quizStats.questionCount != null ? quizStats.questionCount : null,
     questionTypes: formatQuestionTypes(quizStats.questionTypes),
+    courseId: data.course_id || null,
+    folderId: data.folder_id || null,
+    createdAt: data.created_at || null,
+    syncedAt: data.synced_at || null,
+  };
+}
+
+// =============================================================================
+// JSON-LD (plan §8.4) — Quiz + BreadcrumbList
+// =============================================================================
+
+// Mirrors render-course.js's toSlug() exactly (kept in sync manually — this
+// is a separate Node serverless function, same convention as api/_urls.js's
+// header comment explains).
+function toSlug(str) {
+  return String(str || "").trim().replace(/-/g, "--").replace(/\s+/g, "-");
+}
+
+/**
+ * Walks course_id/folder_id up to build the breadcrumb chain for a quiz:
+ * home -> course -> [folder...] -> quiz. Best-effort: any lookup failure
+ * just shortens the breadcrumb rather than failing the page render, since
+ * JSON-LD is supplementary structured data, not the page's core content.
+ */
+async function buildBreadcrumbChain(meta, canonicalUrl, title) {
+  const items = [{ name: "الرئيسية", url: SITE_ORIGIN }];
+
+  try {
+    if (meta.courseId) {
+      const { data: course } = await supabase
+        .from("courses")
+        .select("id, name")
+        .eq("id", meta.courseId)
+        .maybeSingle();
+
+      if (course?.name) {
+        const courseSlug = toSlug(course.name);
+        items.push({ name: course.name, url: `${SITE_ORIGIN}/course/${encodeURIComponent(courseSlug)}` });
+
+        if (meta.folderId) {
+          // Walk parent_folder_id up to the course root, then reverse, to
+          // get an ordered folder chain — same traversal shape as
+          // render-course.js's fetchFolderPath(), done in reverse (leaf ->
+          // root) since we start from a known folder id, not a slug path.
+          const folderChain = [];
+          let currentId = meta.folderId;
+          let guard = 0;
+          while (currentId && guard < 20) {
+            guard += 1;
+            const { data: folder } = await supabase
+              .from("folders")
+              .select("id, name, parent_folder_id")
+              .eq("id", currentId)
+              .maybeSingle();
+            if (!folder) break;
+            folderChain.unshift(folder);
+            currentId = folder.parent_folder_id;
+          }
+
+          let pathAcc = courseSlug;
+          for (const folder of folderChain) {
+            pathAcc += `/${toSlug(folder.name)}`;
+            items.push({ name: folder.name, url: `${SITE_ORIGIN}/course/${encodeURIComponent(pathAcc)}` });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[render-quiz] breadcrumb chain lookup failed (non-fatal):", err?.message || err);
+  }
+
+  items.push({ name: title, url: canonicalUrl });
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  };
+}
+
+function buildQuizJsonLd(meta, title, description, canonicalUrl) {
+  return {
+    "@context": "https://schema.org",
+    "@type": ["LearningResource", "Quiz"],
+    name: title,
+    description: description || title,
+    learningResourceType: "Exam / Practice Test",
+    educationalUse: "Assessment",
+    isAccessibleForFree: true,
+    dateCreated: meta.createdAt || undefined,
+    dateModified: meta.syncedAt || meta.createdAt || undefined,
+    url: canonicalUrl,
+    inLanguage: "ar",
+    author: { "@type": "Organization", name: "منصة امتحانات بصمجي", url: SITE_ORIGIN },
+    provider: {
+      "@type": "Organization",
+      name: "منصة امتحانات بصمجي",
+      sameAs: ["https://github.com/BelalAmrMohamed/Basmagi-Quiz"],
+    },
   };
 }
 

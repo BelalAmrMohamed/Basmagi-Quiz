@@ -48,6 +48,8 @@ import {
   parseDbPath,
 } from "../scripts/lib/quizPath.js";
 import { resolveCourse, resolveFolderPath, validateBatchCourseRules } from "./_courseFolders.js";
+import { notifySearchEngines } from "./_seoNotify.js";
+import { quizUrl } from "./_urls.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -257,6 +259,13 @@ async function handleSingleUpload(req, res, adminPayload) {
     }
   }
 
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2) — never awaited, and
+  // skipped entirely for password-protected quizzes since those must never
+  // appear in the sitemap/feed/llms-full (same guard api/_catalog.js uses).
+  if (!passwordHash && cleanQuiz?.meta?.id) {
+    notifySearchEngines({ add: [quizUrl(cleanQuiz.meta.id)], reason: "upload-quiz:single" });
+  }
+
   return res.status(201).json({
     success: true,
     id: data.id,
@@ -390,6 +399,7 @@ async function handleFolderUpload(req, res, adminPayload) {
   }
 
   const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, failed: [] };
+  const uploadedQuizUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2 rule of thumb)
 
   for (const item of items) {
     if (item.type === "course") continue; // already resolved above
@@ -476,6 +486,7 @@ async function handleFolderUpload(req, res, adminPayload) {
           continue;
         }
         results.quizzesUploaded++;
+        uploadedQuizUrls.push(quizUrl(cleanQuiz.meta.id));
 
         if (adminId) {
           try {
@@ -488,6 +499,12 @@ async function handleFolderUpload(req, res, adminPayload) {
     } catch (e) {
       results.failed.push({ name: item.name || "?", reason: e.message });
     }
+  }
+
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2) — one batched call
+  // after the loop, never per-item inside it.
+  if (uploadedQuizUrls.length > 0) {
+    notifySearchEngines({ add: uploadedQuizUrls, reason: "upload-quiz:folder" });
   }
 
   const isSuccess = results.quizzesUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;

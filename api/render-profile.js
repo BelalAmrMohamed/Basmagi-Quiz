@@ -118,6 +118,25 @@ export default async function handler(req, res) {
   html = replaceMetaContent(html, "name", "twitter:description", description);
   html = replaceMetaContent(html, "name", "description", description);
 
+  // JSON-LD (plan §8.4): ProfilePage with a Person `about`.
+  const profileJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    name: title,
+    url: canonicalUrl,
+    inLanguage: "ar",
+    about: {
+      "@type": "Person",
+      name: displayLabel,
+      url: canonicalUrl,
+      image: thumbnailValue || undefined,
+    },
+  };
+  html = html.replace(
+    "</head>",
+    `  <script type="application/ld+json">${JSON.stringify(profileJsonLd)}</script>\n</head>`,
+  );
+
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.setHeader(
     "Cache-Control",

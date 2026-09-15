@@ -6,6 +6,9 @@
 // operations on the `courses` and `folders` tables in Supabase.
 // =============================================================================
 
+import { notifySearchEngines } from "./_seoNotify.js";
+import { toSlug, absUrl } from "./_urls.js";
+
 /**
  * Validates course placement rules across a batch of items being uploaded.
  *
@@ -148,6 +151,14 @@ export async function resolveCourse(supabase, { educationType, college, year, te
     throw new Error(insertErr.message || "فشل إنشاء المادة في قاعدة البيانات.");
   }
 
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2) — only on genuine
+  // creation, not the `existing` early-return above (get-or-create; an
+  // already-known course needs no re-announcement). Uses the plain
+  // /course/{slug} form without ?education_type=, matching what a fresh
+  // course usually resolves to; any slug-collision disambiguation is
+  // picked up by the next sitemap/cron sweep regardless.
+  notifySearchEngines({ add: [absUrl(`/course/${toSlug(inserted.name)}`)], reason: "course-create" });
+
   return inserted;
 }
 
@@ -166,6 +177,8 @@ export async function resolveFolderPath(supabase, { courseId, segments, adminId 
   if (!segments || segments.length === 0) return null;
 
   let currentParentId = null;
+  const resolvedNames = []; // accumulated for building full slug-chain URLs below
+  let courseSlugForNotify = null;
 
   for (const rawSeg of segments) {
     const segName = (rawSeg || "").trim();
@@ -186,6 +199,7 @@ export async function resolveFolderPath(supabase, { courseId, segments, adminId 
     const { data: existing, error: selErr } = await query.maybeSingle();
     if (existing) {
       currentParentId = existing.id;
+      resolvedNames.push(existing.name);
       continue;
     }
 
@@ -205,12 +219,32 @@ export async function resolveFolderPath(supabase, { courseId, segments, adminId 
       const { data: retryData } = await query.maybeSingle();
       if (retryData) {
         currentParentId = retryData.id;
+        resolvedNames.push(retryData.name);
         continue;
       }
       throw new Error(insErr.message || `فشل إنشاء المجلد "${segName}".`);
     }
 
     currentParentId = inserted.id;
+    resolvedNames.push(inserted.name);
+
+    // Fire-and-forget SEO/GEO publish signal (plan §7.2) — only for the
+    // segment(s) actually just created, not pre-existing ones matched
+    // above. Needs the course's own slug to build the full chain; fetched
+    // lazily (once per call, not per segment) since most calls resolve at
+    // least one existing segment before hitting a new leaf.
+    if (courseSlugForNotify === null) {
+      const { data: courseRow } = await supabase
+        .from("courses")
+        .select("name")
+        .eq("id", courseId)
+        .maybeSingle();
+      courseSlugForNotify = courseRow?.name ? toSlug(courseRow.name) : "";
+    }
+    if (courseSlugForNotify) {
+      const chainPath = resolvedNames.map((n) => toSlug(n)).join("/");
+      notifySearchEngines({ add: [absUrl(`/course/${courseSlugForNotify}/${chainPath}`)], reason: "folder-create" });
+    }
   }
 
   return currentParentId;

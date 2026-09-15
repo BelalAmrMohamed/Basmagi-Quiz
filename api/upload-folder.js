@@ -42,6 +42,8 @@ import { validateQuizPayload, validatePath, computeStats } from "./_validateQuiz
 import { generateQuizId } from "../scripts/lib/quizId.js";
 import { isValidEducationType, validateTrackPath, buildDbPath, parseDbPath, buildDbColumns } from "../scripts/lib/quizPath.js";
 import { resolveCourse, resolveFolderPath, validateBatchCourseRules } from "./_courseFolders.js";
+import { notifySearchEngines } from "./_seoNotify.js";
+import { quizUrl } from "./_urls.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -169,6 +171,7 @@ export default async function handler(req, res) {
   }
 
   const results = { coursesCount: courseIdByName.size, foldersCreated: 0, quizzesUploaded: 0, failed: [] };
+  const uploadedQuizUrls = []; // batched for one notifySearchEngines call after the loop (plan §7.2 rule of thumb)
 
   for (const item of items) {
     if (item.type === "course") continue; // already resolved as courseId above
@@ -259,6 +262,7 @@ export default async function handler(req, res) {
           continue;
         }
         results.quizzesUploaded++;
+        if (!passwordHash) uploadedQuizUrls.push(quizUrl(cleanQuiz.meta.id));
       }
     } catch (e) {
       results.failed.push({ name: item.name || "?", reason: e.message });
@@ -271,6 +275,12 @@ export default async function handler(req, res) {
     } catch (rpcErr) {
       console.error("[upload-folder] Failed to call increment_uploaded_quizzes RPC:", rpcErr.message || rpcErr);
     }
+  }
+
+  // Fire-and-forget SEO/GEO publish signal (plan §7.2) — one batched call
+  // after the loop, never per-item inside it.
+  if (uploadedQuizUrls.length > 0) {
+    notifySearchEngines({ add: uploadedQuizUrls, reason: "upload-folder" });
   }
 
   const isSuccess = results.quizzesUploaded > 0 || results.foldersCreated > 0 || courseIdByName.size > 0;

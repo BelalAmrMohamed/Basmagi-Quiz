@@ -364,6 +364,34 @@ async function handleCron(req, res) {
     });
 }
 
+// ── IndexNow key verification file ───────────────────────────────────────────
+// IndexNow requires a static-looking file at https://{host}/{key}.txt whose
+// body is exactly the key string, matching the `key`/`keyLocation` that
+// api/_seoNotify.js sends on every ping. Serving it dynamically from the same
+// INDEXNOW_KEY env var (instead of a hand-committed public/<key>.txt file)
+// means the two can never drift out of sync — see docs/plans/SEO-GEO-plan.md
+// "IndexNow key file abuse" risk row and the user's explicit adjustment.
+//
+// Routed via a vercel.json wildcard rewrite:
+//   GET /:key([a-f0-9]{32}).txt -> /api/seo?type=indexnow-key&key=:key
+// The handler only serves the body when the requested :key segment matches
+// process.env.INDEXNOW_KEY exactly; any other 32-hex-char guess 404s, so this
+// can't be used to probe or serve arbitrary content.
+async function handleIndexNowKey(req, res) {
+    const requestedKey = req.query?.key;
+    const configuredKey = process.env.INDEXNOW_KEY;
+
+    if (!configuredKey || !requestedKey || requestedKey !== configuredKey) {
+        return res.status(404).send("Not found");
+    }
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    // The key file itself never changes unless INDEXNOW_KEY is rotated; long
+    // cache is fine and reduces load from repeated IndexNow key verification.
+    res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+    return res.status(200).send(configuredKey);
+}
+
 // ── Dispatch ─────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -377,6 +405,7 @@ export default async function handler(req, res) {
     if (type === "feed") return handleFeed(req, res);
     if (type === "llms-full") return handleLlmsFull(req, res);
     if (type === "cron") return handleCron(req, res);
+    if (type === "indexnow-key") return handleIndexNowKey(req, res);
 
     return res.status(400).json({ error: "Unknown or missing ?type=" });
 }

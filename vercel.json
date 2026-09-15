@@ -48,6 +48,10 @@
       "destination": "/api/seo?type=llms-full"
     },
     {
+      "source": "/:key([a-f0-9]{32}).txt",
+      "destination": "/api/seo?type=indexnow-key&key=:key"
+    },
+    {
       "source": "/@:handle",
       "destination": "/api/render-profile?handle=:handle"
     },

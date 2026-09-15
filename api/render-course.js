@@ -232,6 +232,101 @@ export default async function handler(req, res) {
 
     html = replaceMetaContent(html, "name", "description", description);
 
+    // ── 4b. JSON-LD + visible spider island (plan §8.4/§8.5) ──────────────────
+    // Kept as its own step, fetching real immediate children so the
+    // ItemList/noscript island reflect actual content rather than just the
+    // counts already computed above. Best-effort: a failure here degrades to
+    // "no children listed" rather than failing the whole page render, since
+    // this is supplementary discoverability, not the SPA's core content.
+    let rawChildren = { folders: [], quizzes: [] };
+    try {
+        rawChildren = await fetchImmediateChildren(folderMeta ? folderMeta.id : meta.id, !!folderMeta);
+    } catch (err) {
+        console.error("[render-course] immediate-children lookup failed (non-fatal):", err?.message || err);
+    }
+    // Child folder URLs need the full slug chain back to the course root,
+    // which only the caller (this scope) knows at this point.
+    const childFolderBase = folderMeta
+        ? `${courseSlugPath}/${folderMeta.path.map((seg) => toSlug(seg)).join("/")}`
+        : courseSlugPath;
+    const children = {
+        folders: rawChildren.folders.map((f) => ({
+            name: f.name,
+            url: `/course/${encodeURIComponent(childFolderBase)}/${encodeURIComponent(toSlug(f.name))}`,
+        })),
+        quizzes: rawChildren.quizzes,
+    };
+
+    const breadcrumbItems = [{ name: "الرئيسية", url: SITE_ORIGIN }];
+    breadcrumbItems.push({ name: meta.name, url: `${SITE_ORIGIN}/course/${encodeURIComponent(courseSlugPath)}` });
+    if (folderMeta) {
+        let acc = courseSlugPath;
+        for (const seg of folderMeta.path) {
+            acc += `/${toSlug(seg)}`;
+            breadcrumbItems.push({ name: seg, url: `${SITE_ORIGIN}/course/${encodeURIComponent(acc)}` });
+        }
+    }
+
+    const breadcrumbJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: breadcrumbItems.map((item, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: item.name,
+            item: item.url,
+        })),
+    };
+
+    const childItems = [
+        ...children.folders.map((f) => ({ name: f.name, url: `${SITE_ORIGIN}${f.url}` })),
+        ...children.quizzes.map((q) => ({ name: q.title, url: `${SITE_ORIGIN}${q.url}` })),
+    ];
+
+    const collectionJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        name: title,
+        description,
+        url: canonicalUrl,
+        inLanguage: "ar",
+        isPartOf: { "@type": "WebSite", name: "منصة امتحانات بصمجي", url: SITE_ORIGIN },
+    };
+
+    const itemListJsonLd = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        itemListElement: childItems.map((item, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            name: item.name,
+            url: item.url,
+        })),
+    };
+
+    const jsonLdScripts =
+        `  <script type="application/ld+json">${JSON.stringify(collectionJsonLd)}</script>\n` +
+        (childItems.length
+            ? `  <script type="application/ld+json">${JSON.stringify(itemListJsonLd)}</script>\n`
+            : "") +
+        `  <script type="application/ld+json">${JSON.stringify(breadcrumbJsonLd)}</script>\n`;
+    html = html.replace("</head>", `${jsonLdScripts}</head>`);
+
+    // Visible-but-offscreen spider island (plan §8.5): real <a> links to
+    // immediate children, for HTML-only crawlers/LLM fetchers that don't
+    // execute the SPA's client-side router. Wrapped in <noscript> so it
+    // never affects the JS-enabled app UI, and inserted right after <body>
+    // so it exists regardless of how deep index.html's own body markup is.
+    if (childItems.length > 0) {
+        const islandLinks = childItems
+            .map((item) => `<li><a href="${escapeHtml(item.url)}">${escapeHtml(item.name)}</a></li>`)
+            .join("");
+        const island =
+            `<noscript><div class="seo-catalog" style="position:absolute;left:-9999px" aria-hidden="true">` +
+            `<h2>${escapeHtml(title)}</h2><ul>${islandLinks}</ul></div></noscript>`;
+        html = html.replace(/<body[^>]*>/i, (bodyTag) => `${bodyTag}\n${island}`);
+    }
+
     // ── 5. Respond ─────────────────────────────────────────────────────────────
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
@@ -372,6 +467,54 @@ async function fetchFolderPath(courseId, pathSlugs) {
         folderCount: folderCount || 0,
         quizCount: quizCount || 0,
     };
+}
+
+/**
+ * Fetches the real immediate children (direct-child folders + quizzes, no
+ * deeper subtree walk — matching the existing folderCount/quizCount
+ * semantics above) of either a course or a folder, for the CollectionPage
+ * ItemList JSON-LD and the noscript spider island (plan §8.4/§8.5).
+ * Excludes password-protected quizzes, same guard as api/_catalog.js's
+ * sitemap/feed/llms-full query set.
+ *
+ * @param {string} parentId - course.id or folder.id
+ * @param {boolean} isFolder - true when parentId is a folder id
+ * @returns {Promise<{folders: Array<{name:string}>, quizzes: Array<{title:string,url:string}>}>}
+ *   (folder URLs are resolved by the caller, which knows the full slug chain)
+ */
+async function fetchImmediateChildren(parentId, isFolder) {
+    const folderQuery = isFolder
+        ? supabase.from("folders").select("id, name").eq("parent_folder_id", parentId)
+        : supabase.from("folders").select("id, name").eq("course_id", parentId).is("parent_folder_id", null);
+    const quizQuery = isFolder
+        ? supabase.from("quizzes").select("data, password").eq("folder_id", parentId)
+        : supabase.from("quizzes").select("data, password").eq("course_id", parentId).is("folder_id", null);
+
+    const [{ data: folderRows, error: folderErr }, { data: quizRows, error: quizErr }] = await Promise.all([
+        folderQuery,
+        quizQuery,
+    ]);
+
+    if (folderErr) console.error("[render-course] children folder lookup error:", folderErr.message);
+    if (quizErr) console.error("[render-course] children quiz lookup error:", quizErr.message);
+
+    // Folder URLs need the full slug chain back to the course root, which
+    // this function's caller already knows (courseSlugPath/folderMeta.path)
+    // but a child folder one level down doesn't — resolved here by walking
+    // up via the same shape fetchFolderPath() uses, kept local and simple
+    // since this is one extra level, not an arbitrary-depth walk.
+    const folders = (folderRows || []).map((f) => ({ name: f.name }));
+
+    const quizzes = [];
+    for (const q of quizRows || []) {
+        if (q.password) continue; // exclude password-gated quizzes (plan §4.3 "quiz_access is unused" note)
+        const metaId = q.data?.meta?.id;
+        const title = q.data?.meta?.title;
+        if (!metaId || !title) continue;
+        quizzes.push({ title, url: `/quiz/${encodeURIComponent(metaId)}` });
+    }
+
+    return { folders, quizzes };
 }
 
 // =============================================================================
