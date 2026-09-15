@@ -66,13 +66,6 @@ export function refreshUI(options = {}) {
   renderBadges(user);
   if (!skipNetworkFetches) {
     renderLeaderboard(user, currentName, myToken);
-    // Top Admins gallery — same data source as before (/api/admin-stats?
-    // leaderboard=true), just rendered into the new gallery markup instead
-    // of leaderboard rows. Runs on both the owner dashboard and visitor
-    // view (see setupVisitorView below); gated on skipNetworkFetches here
-    // the same way renderLeaderboard is, since a local-only refresh
-    // shouldn't re-hit the network.
-    renderAdminGallery(myToken);
   }
   renderActivityHeatmap(user);
   renderCategoryMastery(user, examList);
@@ -191,6 +184,15 @@ export function refreshUI(options = {}) {
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
       fetchAndRenderAdminStats(undefined, myToken, false);
     }
+    if (!skipNetworkFetches) {
+      // Top Admins gallery — admin/dev-only on the owner's own dashboard
+      // (gated on roleInfo, same as renderUploadedQuizzes/
+      // fetchAndRenderAdminStats above), so a regular, non-admin user's
+      // /profile never shows #adminGallerySection. Still runs
+      // unconditionally on visitor view (setupVisitorView below), since
+      // every /@handle profile belongs to an admin/dev by definition.
+      renderAdminGallery(myToken);
+    }
   } else {
     setActivityLabel(null);
   }
@@ -237,11 +239,12 @@ function applyRoleBadges(role, isOwner) {
 // Top Admins gallery — horizontal, scrollable strip of every top admin
 // (not just the current one), shown at the bottom of .profile-main on
 // both a visited /@handle profile and the admin/dev owner's own
-// dashboard. Data source is the same endpoint the old admin leaderboard
-// card used (/api/admin-stats?leaderboard=true — see admin.js's
-// isLeaderboard branch) — handle, avatar, role, isOwner, and
-// uploaded-quiz count per admin — just rendered as gallery cards instead
-// of leaderboard rows.
+// dashboard (never on a regular, non-admin user's own /profile — see
+// the roleInfo-gated call site in refreshUI()). Data source is the same
+// endpoint the old admin leaderboard card used (/api/admin-stats?
+// leaderboard=true — see admin.js's isLeaderboard branch) — handle,
+// avatar, role, isOwner, and uploaded-quiz count per admin — just
+// rendered as gallery cards instead of leaderboard rows.
 let adminGalleryArrowsWired = false;
 async function renderAdminGallery(myToken = refreshToken) {
   const section = document.getElementById("adminGallerySection");
@@ -724,12 +727,15 @@ async function setupVisitorView(handle) {
   const masteryCard = document.querySelector(".category-mastery-card");
   if (masteryCard) masteryCard.style.display = "none";
 
-  const badgeContainer = document.getElementById("badgeContainer");
-  if (badgeContainer) badgeContainer.parentElement.style.display = "none";
-  const nextBadges = document.getElementById("nextBadges");
-  if (nextBadges) nextBadges.parentElement.style.display = "none";
-  const statsContainer = document.getElementById("statsContainer");
-  if (statsContainer) statsContainer.parentElement.style.display = "none";
+  // .profile-rail on a visited /@handle profile carries nothing a visitor
+  // can see: badges, next-badges, and stats are all owner-only, and the
+  // local leaderboard hides itself for visitors too (renderLeaderboard's
+  // isVisitor check). Rather than leave the rail's 340px column visible
+  // but empty, hide the whole rail and collapse the grid to one column.
+  const profileRail = document.querySelector(".profile-rail");
+  if (profileRail) profileRail.style.display = "none";
+  const profileLayout = document.querySelector(".profile-layout");
+  if (profileLayout) profileLayout.classList.add("no-rail");
 
   const heatmapCard = document.querySelector(".heatmap-widget-card");
   if (heatmapCard) heatmapCard.style.display = "";
@@ -1282,7 +1288,7 @@ function renderHistory(user) {
     containerEl: container,
     items: user.history || [],
     renderItem: historyItemHtml,
-    emptyHtml: `<div class="empty-state"><div class="empty-state-icon">📜</div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
+    emptyHtml: `<div class="empty-state"><div class="empty-state-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div><h3>لا يوجد سجل امتحانات بعد</h3></div>`,
     mode: "button",
   });
   historyList.mount();

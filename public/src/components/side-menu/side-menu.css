@@ -715,15 +715,20 @@
   will-change: transform;
 }
 
-/* Icons lift and scale up slightly on hover/focus — a quick, springy nudge
-   rather than a slow ease, similar to the sidebar icon interaction on
-   claude.ai. Kept subtle (4% scale, 1px lift) so it reads as responsive
-   rather than showy. Disabled entirely under reduced motion / High
-   Performance Mode via the global [data-motion="reduced"] rule in
-   themes.css, which zeroes the transition-duration above. */
-.menu-item:hover svg,
-.menu-item:focus-visible svg {
-  transform: scale(1.08) translateY(-1px);
+.menu-item:hover svg path,
+.menu-item:focus-visible svg path {
+  /* transform: scale(1.08) translateY(-1px); */
+  animation: menu-item-draw 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+@keyframes menu-item-draw {
+  0% {
+    stroke-dashoffset: 0;
+  }
+
+  100% {
+    stroke-dashoffset: 60;
+  }
 }
 
 .menu-item:active svg {

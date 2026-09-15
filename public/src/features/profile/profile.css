@@ -909,6 +909,15 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
   align-items: start;
 }
 
+/* Applied (alongside hiding .profile-rail) on a visited /@handle profile,
+   where the rail never has anything visitor-visible in it (badges,
+   next-badges, and stats are owner-only; the local leaderboard hides
+   itself too) — collapses the grid to a single full-width column instead
+   of leaving the 340px rail track reserved as blank space. */
+.profile-layout.no-rail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .profile-main {
   min-width: 0;
   display: flex;
@@ -1639,9 +1648,17 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
 }
 
 .empty-state-icon {
-  font-size: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 12px;
-  opacity: 0.3;
+  opacity: 0.35;
+  color: var(--color-text-secondary);
+}
+
+.empty-state-icon svg {
+  width: 44px;
+  height: 44px;
 }
 
 /* ============================================================
