@@ -56,7 +56,7 @@
                 var t = sessionStorage.getItem('__bq_adm');
                 if (t) {
                     var p = JSON.parse(atob(t.split('.')[1]));
-                    var icon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                    var icon = p.isOwner ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 3.5l2.02 4.6 5.02.46-3.8 3.34 1.13 4.9L12 14.35l-4.37 2.45 1.13-4.9-3.8-3.34 5.02-.46z'/%3E%3C/svg%3E" : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 4.2l5.4 2v4.3c0 3.9-2.3 7.1-5.4 8-3.1-.9-5.4-4.1-5.4-8V6.2z'/%3E%3Cpath stroke='%234f46e5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none' d='M9 12.1l2 2 4-4.2'/%3E%3C/svg%3E";
                     document.write('<style>.nav-badge-overlay { display: block !important; content: url("' + icon + '"); }</style>');
                 }
             } catch (e) { }
@@ -856,7 +856,7 @@
                         }
                         var b = document.createElement('img');
                         b.className = 'nav-badge-overlay';
-                        b.src = role === 'owner' ? 'assets/images/white-icon.png' : 'favicon.png';
+                        b.src = role === 'owner' ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 3.5l2.02 4.6 5.02.46-3.8 3.34 1.13 4.9L12 14.35l-4.37 2.45 1.13-4.9-3.8-3.34 5.02-.46z'/%3E%3C/svg%3E" : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 4.2l5.4 2v4.3c0 3.9-2.3 7.1-5.4 8-3.1-.9-5.4-4.1-5.4-8V6.2z'/%3E%3Cpath stroke='%234f46e5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none' d='M9 12.1l2 2 4-4.2'/%3E%3C/svg%3E";
                         b.alt = '';
                         b.title = role === 'owner' ? 'مطوّر المنصة' : 'مشرف';
                         // Sizing/position/fill/ring all come from the single
@@ -1169,12 +1169,12 @@
                             <textarea id="profileBioTextarea" class="profile-bio-textarea" dir="auto" maxlength="280"
                                 placeholder="أضف وصفاً عن نفسك..."></textarea>
                             <div class="profile-bio-form-actions">
-                                <span id="profileBioCounter" class="profile-bio-counter">0/280</span>
                                 <div class="profile-bio-form-buttons">
+                                    <button id="saveBioBtn" type="button" class="profile-bio-save-btn">حفظ</button>
                                     <button id="cancelBioBtn" type="button"
                                         class="profile-bio-cancel-btn">إلغاء</button>
-                                    <button id="saveBioBtn" type="button" class="profile-bio-save-btn">حفظ</button>
                                 </div>
+                                <span id="profileBioCounter" class="profile-bio-counter">0/280</span>
                             </div>
                         </div>
                     </div>

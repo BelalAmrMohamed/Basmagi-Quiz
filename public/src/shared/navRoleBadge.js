@@ -22,12 +22,28 @@
 // the badge a positioning context that actually corresponds to the thing it is
 // supposed to be badging. Visuals live in side-menu.css.
 
-/** Role → badge artwork. Owner art is a flat white glyph; admin art is the
- *  full-colour favicon. side-menu.css picks a fill per role so both stay
- *  legible (amber behind the white glyph, near-white behind the colour mark). */
+/** Role → badge artwork.
+ *
+ *  This used to point at the site's favicon (a detailed lightbulb-with-
+ *  question-mark illustration) shrunk into an 18px/14px circle. Multi-tone
+ *  illustrative art with fine detail — highlights, rays, a thin question
+ *  mark — simply doesn't resolve at that size; it reads as a smudge next to
+ *  a small profile photo, which is exactly the "not clearly visible" problem
+ *  this replaces.
+ *
+ *  In its place: the exact same two glyphs profile.js already draws for
+ *  `.admin-gallery-badge` (the admin gallery cards on the profile page) —
+ *  code-chevrons `</>` for owner/developer, a shield outline for admin —
+ *  as bare `currentColor` strokes with no fill, inlined as SVG data URIs.
+ *  Reusing that art (rather than inventing a third look) means the nav
+ *  badge and the profile-page badge read as the same design language. Both
+ *  render white via `currentColor` on `color: #fff`; side-menu.css supplies
+ *  the surrounding disc colour per role. */
 const BADGE_ART = {
-    owner: "assets/images/white-icon.png",
-    admin: "favicon.png",
+    owner:
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='16 18 22 12 16 6'/%3E%3Cpolyline points='8 6 2 12 8 18'/%3E%3C/svg%3E",
+    admin:
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/%3E%3C/svg%3E",
 };
 
 const BADGE_TITLE = {
@@ -127,9 +143,14 @@ export function mountNavRoleBadge(img, roleInfo) {
     // distinguishable only by artwork, so both sat in the same gold medallion.
     badge.dataset.role = role;
 
-    const art = BADGE_ART[role];
-    if (!badge.getAttribute("src")) badge.src = art;
-    else if (!badge.src.endsWith(art)) badge.src = art;
+    // Compare against the role we last painted rather than the resolved
+    // `src` string: data URIs get percent-decoded and re-serialised by the
+    // browser, so a raw `endsWith(art)` check against the original literal
+    // can mismatch even when the badge is already showing the right glyph.
+    if (badge.dataset.artRole !== role) {
+        badge.src = BADGE_ART[role];
+        badge.dataset.artRole = role;
+    }
 
     badge.style.display = "block";
     return badge;

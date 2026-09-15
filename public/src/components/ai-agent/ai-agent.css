@@ -51,51 +51,6 @@
   flex: 1;
 }
 
-/* ── Tabs ──
-   Structural chrome — always RTL to match the app's own UI language,
-   independent of whatever direction an individual chat message ends up
-   being. Chat/settings CONTENT below gets its direction purely from
-   per-element .text-rtl/.text-ltr classes (see markdown.js), not from a
-   blanket rule on .ai-agent-widget. */
-.ai-agent-tabs {
-  display: flex;
-  direction: rtl;
-  border-bottom: 1.5px solid var(--color-border);
-  background: var(--color-background-secondary);
-}
-
-.ai-agent-tab-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-secondary);
-  font-family: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 2px solid transparent;
-}
-
-.ai-agent-tab-btn:hover {
-  color: var(--color-text-primary);
-  background: var(--color-primary-light);
-}
-
-.ai-agent-tab-btn.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
-}
-
-.ai-agent-tab-btn svg {
-  flex-shrink: 0;
-}
-
 /* ── Panels ──
    Defensive: both the base rule (hide) and the .active rule (show) are
    scoped to the exact same specificity everywhere this class is used
@@ -114,20 +69,7 @@
   display: flex !important;
 }
 
-/* ── Chat tab ──
-   No blanket `direction` here — each .ai-agent-msg carries its own
-   .text-rtl/.text-ltr class from the per-message detection engine (see
-   ai-agent-chat.js::appendMessage / markdown.js::detectDirection), so
-   English and Arabic messages align independently in the same list. */
-
-/* Model selector bar (see modelBar in createChatPanel, ai-agent-chat.js).
-   Rendered here in its DEFAULT position — directly in the chat panel,
-   above the messages — for any embedding that doesn't relocate it (see
-   panel.modelBarEl). display:none by default; ai-agent.js's desktop
-   sidebar moves this exact node into .ai-agent-sidebar-model-slot below
-   instead of leaving it here, so in practice this position is mobile/
-   non-sidebar-only, and mobile never shows it (Settings tab remains the
-   only place to change models there). */
+/* ── Chat tab ── */
 .ai-agent-chat-model-bar {
   display: none;
   padding: 8px 10px;
@@ -139,10 +81,6 @@
   width: 100%;
   border: 1.5px solid var(--color-border);
   border-radius: 8px;
-  /* BUG FIX (plan #12): the field is `direction: rtl`, so the browser
-     draws the dropdown caret on the LEFT edge — with the old symmetric
-     10px padding the caret sat almost flush against the left border.
-     Give the caret side extra breathing room. */
   padding: 6px 10px 6px 30px;
   font-family: inherit;
   font-size: 0.8rem;
@@ -312,31 +250,7 @@
   }
 }
 
-/* ── Edit-in-place mode (Claude-style "edit and resubmit") ──
-   Swapped in by enterEditMode() in ai-agent-chat.js, replacing the
-   bubble's static text with a textarea + إرسال/إلغاء controls. Widens the
-   bubble to the same max-width other bubbles allow but drops the
-   gradient/colored background in favor of a plain editable-field look,
-   since the point here is "this is now a form", not "this is still a
-   sent message". */
-/* ── Edit-in-place mode (Claude-style "edit and resubmit") ──
-   Swapped in by enterEditMode() in ai-agent-chat.js, replacing the
-   bubble's static text with a textarea + إرسال/إلغاء controls. Widens the
-   bubble to the same max-width other bubbles allow but drops the
-   gradient/colored background in favor of a plain editable-field look,
-   since the point here is "this is now a form", not "this is still a
-   sent message".
-   BUG FIX: max-width/width here were 92%, but the PARENT
-   .ai-agent-msg-wrap (a flex column with align-items: flex-end for user
-   messages) is itself capped at max-width: 85% and never stretches its
-   child past its own content width — so the "92%" only ever applied to
-   92% of that already-85%-capped, content-sized parent (in practice far
-   narrower still, since align-items: flex-end shrinks the wrap to fit
-   its widest child, and before editing that's just the short original
-   message bubble). The result was a barely-usable, near-collapsed
-   textarea. Widen the wrap itself while editing (via the parent
-   selector below) so the 92% here is 92% of the actual messages column,
-   matching what editing is meant to look like. */
+/* ── Edit-in-place mode (Claude-style "edit and resubmit") */
 .ai-agent-msg-wrap:has(.ai-agent-msg--editing),
 .ai-agent-msg-wrap--editing {
   max-width: 100%;
@@ -423,18 +337,6 @@
   color: #fff;
 }
 
-/* File chip shown inside a user's own message bubble when they sent an
-   attachment (see appendMessage()'s attachmentName param in
-   ai-agent-chat.js) — makes the sent file visible in the chat itself
-   (and in reopened history), not just something the AI silently saw.
-   Now a real <button> (was a <div>) so it's clickable to open the same
-   preview modal as a pending .ai-agent-attachment-tile — restyled to
-   match that tile's bordered/tinted look (see .ai-agent-attachment-tile
-   below) rather than the old plain translucent pill, per that shared
-   visual language being the actual ask (both surfaces represent "an
-   attachment", so they should read as the same kind of element). Stays a
-   horizontal chip rather than literally becoming a square tile, since
-   this one sits inline inside message text rather than in its own row. */
 .ai-agent-msg-attachment {
   display: flex;
   align-items: center;

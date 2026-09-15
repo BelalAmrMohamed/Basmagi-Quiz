@@ -1935,26 +1935,32 @@ html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(n 
 /* ============================================================================
    ROLE BADGE — Admin / Developer marker on nav avatars
    ============================================================================
-   Rebuilt from scratch. The previous "authority seal" was a gold medallion
-   built from three stacked radial/linear gradients, a border, four box-shadow
-   layers and a drop-shadow filter, held at a permanent rotate(16deg) — which
-   tipped the artwork inside it over with it — running an infinite 3.6s
-   brightness loop at rest and a 0.85s keyframe on hover that swung it through
-   ±18deg at up to 1.42 scale. At 17px none of that detail resolved: it read as
-   a muddy amber smudge that wobbled.
+   Third rebuild, matching .admin-gallery-badge (profile.css) — the same
+   small role marker already used on the profile page's admin gallery cards.
+   That one just works: a small solid-colour disc with a bare stroke icon,
+   no ring, sitting in a notch cut out of the avatar photo's own corner
+   instead of stacked on top of it.
 
-   What replaced it:
-     · Upright. No rotation, so the logo inside sits level.
-     · One two-stop gradient instead of three stacked ones.
-     · A solid ring in the page background colour, which is what actually makes
-       a small badge legible — it punches the badge cleanly off the avatar
-       behind it instead of relying on a shadow to imply separation.
-     · Distinct fills per role (see data-role below). The two roles used to be
-       told apart only by the artwork inside the identical gold disc.
-     · No idle animation. Hover is a single 200ms scale + halo.
+   The previous two rounds fixed positioning, then swapped the artwork for a
+   flat glyph, but kept building the badge as a separate disc layered ON TOP
+   of the avatar with a ring to punch it free — which is exactly the part
+   that kept looking busy at nav-icon size: a ring, a halo-on-hover, a scale
+   transform, all fighting a 14-18px space that a 96px profile-card badge
+   never had to justify.
 
-   Positioning is owned by .nav-badge-anchor; see navRoleBadge.js for why that
-   wrapper exists. */
+   What's here now, mirroring .admin-gallery-badge exactly:
+     · `.nav-avatar-has-badge` masks a circular notch out of the avatar
+       image's own corner (mask-image, not a shape drawn over it) so the
+       badge sits IN the avatar, not floating above it.
+     · The badge is a plain gradient disc + bare white icon, no ring,
+       no halo, no idle animation — and per your correction, no hover
+       feedback at all, matching .admin-gallery-badge.role-badge:hover.
+     · Same two role gradients as .role-badge.admin-badge / .developer-badge
+       in profile.css, so the nav badge and the profile-page badge read as
+       the same design language rather than two competing ones.
+
+   Positioning is owned by .nav-badge-anchor; see navRoleBadge.js for why
+   that wrapper exists and for how the notch class gets applied/removed. */
 
 /* Positioning context hugging the avatar glyph. Sized by its contents (the
    avatar image, or the default-icon SVG that swaps with it), and layout-neutral
@@ -1968,128 +1974,61 @@ html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(n 
   line-height: 0;
 }
 
-.nav-badge-overlay {
-  /* Ring colour tracks the surface the badge sits on. Deliberately NOT
-     var(--color-surface): the glass themes resolve that to a 0.7-alpha white,
-     and a translucent ring lets the avatar bleed through exactly where the
-     separation is needed most. Overridden per theme below. */
-  --nav-badge-ring: #ffffff;
-
-  /* Owner default — white-icon.png is a flat white glyph, so it needs a
-     saturated fill behind it. Admin overrides this below. */
-  --nav-badge-size: 18px;
-  --nav-badge-inset: 3px;
-  --nav-badge-fill-hi: #fbbf24;
-  --nav-badge-fill-lo: #d97706;
-  --nav-badge-edge: rgba(120, 53, 15, 0.5);
-  --nav-badge-halo: rgba(245, 158, 11, 0.45);
-
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: var(--nav-badge-size);
-  height: var(--nav-badge-size);
-  z-index: 10;
-  box-sizing: border-box;
-  padding: var(--nav-badge-inset);
-  object-fit: contain;
-  border-radius: 50%;
-  background-image:
-    linear-gradient(160deg,
-      var(--nav-badge-fill-hi) 0%,
-      var(--nav-badge-fill-lo) 100%);
-  /* Ring, hairline edge, and one grounding shadow. The ring is listed first so
-     it paints over the tinted edge behind it, leaving a crisp 0.5px outline. */
-  box-shadow:
-    0 0 0 2px var(--nav-badge-ring),
-    0 0 0 2.5px var(--nav-badge-edge),
-    0 1px 3px rgba(0, 0, 0, 0.25);
-  transform: scale(1);
-  transform-origin: center center;
-  transition:
-    transform 200ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
-    box-shadow 200ms ease;
-  cursor: help;
+/* Cuts a circular notch out of the avatar's own bottom-right corner so the
+   badge sits recessed into the photo instead of stacked above it — the same
+   technique as .admin-gallery-avatar in profile.css, sized down for the
+   28px/24px nav avatar instead of the 96px profile-card one. Only applied
+   while a badge is actually mounted (see navRoleBadge.js), so avatars
+   without a role never carry a pointless mask. */
+.menu-item-avatar.nav-avatar-has-badge,
+.bottom-nav-avatar.nav-avatar-has-badge {
+  -webkit-mask-image: radial-gradient(circle 7px at calc(100% - 5px) calc(100% - 5px),
+      transparent 99%,
+      #000 100%);
+  mask-image: radial-gradient(circle 7px at calc(100% - 5px) calc(100% - 5px),
+      transparent 99%,
+      #000 100%);
 }
 
-/* Admin — favicon.png is the full-colour platform mark, so it gets a near-white
-   disc to read against (an amber fill would fight it) with an indigo edge
-   carrying the role distinction instead. */
+.nav-badge-overlay {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 14px;
+  height: 14px;
+  z-index: 10;
+  box-sizing: border-box;
+  padding: 2.5px;
+  object-fit: contain;
+  border-radius: 50%;
+  /* Owner default. Admin overrides below. Same two gradients as
+     .role-badge.admin-badge / .developer-badge in profile.css. */
+  background-image: linear-gradient(135deg, #fbbf24, #d97706);
+  box-shadow: 0 2px 5px rgba(217, 119, 6, 0.4);
+}
+
 .nav-badge-overlay[data-role="admin"] {
-  --nav-badge-fill-hi: #ffffff;
-  --nav-badge-fill-lo: #e0e7ff;
-  --nav-badge-edge: rgba(79, 70, 229, 0.45);
-  --nav-badge-halo: rgba(99, 102, 241, 0.45);
+  background-image: linear-gradient(135deg, #3b82f6, #1e40af);
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.4);
 }
 
 [data-theme="dark"] .nav-badge-overlay {
   --nav-badge-ring: #1e1e1e;
 }
 
-[data-theme="dark-slate"] .nav-badge-overlay {
-  --nav-badge-ring: #1e293b;
-}
-
-/* Hover / focus — one clean lift. The ring stays put and the tinted edge opens
-   into a halo, so the badge grows without shifting off its corner. */
+/* No ring, no hover, no idle motion, no reduced-motion override needed for
+   any of it: matching .admin-gallery-badge.role-badge:hover in profile.css,
+   which explicitly resets transform to none. The badge is a static marker,
+   not an interactive control — same size on desktop and mobile since it was
+   never inflated past a size that needed to shrink for touch/hover. */
 .menu-item:hover .nav-badge-overlay,
 .menu-item:focus-visible .nav-badge-overlay,
+.menu-item:active .nav-badge-overlay,
 .bottom-nav-item-profile:hover .nav-badge-overlay,
 .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
+.bottom-nav-item-profile:active .nav-badge-overlay,
 .nav-badge-overlay:hover {
-  transform: scale(1.16);
-  box-shadow:
-    0 0 0 2px var(--nav-badge-ring),
-    0 0 0 4px var(--nav-badge-halo),
-    0 2px 6px rgba(0, 0, 0, 0.28);
-}
-
-.menu-item:active .nav-badge-overlay,
-.bottom-nav-item-profile:active .nav-badge-overlay {
-  transform: scale(0.94);
-  transition-duration: 110ms;
-}
-
-@media (max-width: 768px) {
-
-  /* The bottom-nav avatar is a 24px icon — the badge scales down with it and
-     the ring thins so it does not swallow the mark inside. */
-  .bottom-nav-item-profile .nav-badge-overlay {
-    --nav-badge-size: 14px;
-    --nav-badge-inset: 2px;
-    top: -3px;
-    right: -3px;
-    box-shadow:
-      0 0 0 1.5px var(--nav-badge-ring),
-      0 0 0 2px var(--nav-badge-edge),
-      0 1px 2px rgba(0, 0, 0, 0.25);
-  }
-
-  .bottom-nav-item-profile:hover .nav-badge-overlay,
-  .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
-  .bottom-nav-item-profile .nav-badge-overlay:hover {
-    box-shadow:
-      0 0 0 1.5px var(--nav-badge-ring),
-      0 0 0 3px var(--nav-badge-halo),
-      0 2px 5px rgba(0, 0, 0, 0.28);
-  }
-}
-
-/* "الأداء الفائق" (High Performance) — the badge keeps its full appearance,
-   it just stops moving. The hover state still reads because the halo is a
-   box-shadow swap, not a transform, so there is no need to fake a scale here
-   the way the old rule did. */
-html[data-motion="reduced"] .nav-badge-overlay,
-html[data-motion="reduced"] .menu-item:hover .nav-badge-overlay,
-html[data-motion="reduced"] .menu-item:focus-visible .nav-badge-overlay,
-html[data-motion="reduced"] .bottom-nav-item-profile:hover .nav-badge-overlay,
-html[data-motion="reduced"] .bottom-nav-item-profile:focus-visible .nav-badge-overlay,
-html[data-motion="reduced"] .menu-item:active .nav-badge-overlay,
-html[data-motion="reduced"] .bottom-nav-item-profile:active .nav-badge-overlay,
-html[data-motion="reduced"] .nav-badge-overlay:hover {
-  animation: none !important;
-  transition: none !important;
-  transform: none !important;
+  transform: none;
 }
 
 /* ============================================================================

@@ -378,6 +378,10 @@ body.sidebar-expanded {
   border-color: var(--color-primary, #6366f1);
 }
 
+.profile-bio-textarea:placeholder-shown {
+  text-align: right;
+}
+
 .profile-bio-form-actions {
   display: flex;
   align-items: center;
