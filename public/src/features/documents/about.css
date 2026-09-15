@@ -373,7 +373,7 @@ html[data-theme="dark-slate"] .about-page {
   background-repeat: no-repeat;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+html[data-motion="normal"] {
   .about-page .platform-stat-loading .platform-stat-value::after {
     animation: about-stat-shimmer 1.6s ease-in-out infinite;
   }
@@ -948,7 +948,7 @@ html[data-theme="dark-slate"] .about-page {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
 
   .about-page .principle:nth-child(2),
   .about-page .creator-stamp {

@@ -1476,8 +1476,18 @@ html[data-motion="reduced"] {
      where the cancelled animation was in its cycle. */
   .menu-item:hover .menu-icon-line,
   .menu-item:focus-visible .menu-icon-line,
-  .menu-item:active .menu-icon-line {
+  .menu-item:active .menu-icon-line,
+  .menu-item:hover .menu-icon-line:nth-child(2),
+  .menu-item:focus-visible .menu-icon-line:nth-child(2),
+  .menu-item:active .menu-icon-line:nth-child(2),
+  .menu-item:hover .menu-icon-line:nth-child(3),
+  .menu-item:focus-visible .menu-icon-line:nth-child(3),
+  .menu-item:active .menu-icon-line:nth-child(3),
+  .menu-item:hover .menu-icon-line:nth-child(n + 4),
+  .menu-item:focus-visible .menu-icon-line:nth-child(n + 4),
+  .menu-item:active .menu-icon-line:nth-child(n + 4) {
     animation: none !important;
+    animation-delay: 0s !important;
     stroke-dashoffset: 0 !important;
   }
 }

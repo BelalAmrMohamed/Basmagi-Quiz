@@ -1875,8 +1875,21 @@ html[data-motion="reduced"] .menu-item:active svg {
 html[data-motion="reduced"] .menu-item:hover .menu-icon-line,
 html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line,
 html[data-motion="reduced"] .menu-item:active .menu-icon-line,
-html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line {
+html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line,
+html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(2),
+html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(2),
+html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(2),
+html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(2),
+html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(3),
+html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(3),
+html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(3),
+html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(3),
+html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(n + 4),
+html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(n + 4),
+html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(n + 4),
+html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(n + 4) {
   animation: none !important;
+  animation-delay: 0s !important;
   stroke-dashoffset: 0 !important;
 }
 

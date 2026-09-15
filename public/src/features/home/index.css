@@ -3292,7 +3292,7 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   background-repeat: no-repeat;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+html[data-motion="normal"] {
   .skeleton-block {
     animation: shimmer 1.6s ease-in-out infinite;
   }

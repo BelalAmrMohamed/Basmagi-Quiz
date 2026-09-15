@@ -3148,14 +3148,9 @@ html[data-motion="reduced"] {
 }
 
 /* ============================================================
-   REDUCED MOTION
-   profile.css previously had no prefers-reduced-motion block at all.
-   Covers the new skeleton shimmer and the pre-existing icon-draw /
-   content-fade animations together, since a user who asked for less
-   motion shouldn't get an infinite shimmer loop on every page load.
+   REDUCED MOTION 
    ============================================================ */
-@media (prefers-reduced-motion: reduce) {
-
+html[data-motion="reduced"] {
   .skeleton-block {
     animation: none;
     /* Drop the sheen entirely and lean on a flat tint — without the sweep

@@ -924,7 +924,7 @@ body.sidebar-expanded .global-md-bar {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
 
   .entry-skeleton-heading::after,
   .entry-skeleton-tile::after {

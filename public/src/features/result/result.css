@@ -1064,7 +1064,7 @@ body.sidebar-expanded {
 }
 
 /* ─── Review Card Stagger Animation ──────────────────────────────────────── */
-@media (prefers-reduced-motion: no-preference) {
+html[data-motion="normal"] {
   @keyframes card-fadein {
     from {
       opacity: 0;

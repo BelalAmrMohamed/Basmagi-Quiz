@@ -1174,7 +1174,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+html[data-motion="reduced"] {
   .ai-agent-dictation-wave-bars span {
     animation: none;
     transform: scaleY(0.7);

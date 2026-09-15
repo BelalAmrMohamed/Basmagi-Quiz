@@ -512,7 +512,7 @@ input::placeholder {
     background-repeat: no-repeat;
 }
 
-@media (prefers-reduced-motion: no-preference) {
+html[data-motion="normal"] {
     .control-skeleton-block {
         animation: control-shimmer 1.6s ease-in-out infinite;
     }
