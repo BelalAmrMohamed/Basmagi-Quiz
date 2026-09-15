@@ -22,20 +22,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  padding: 40px 24px;
+  padding-top: 16px;
+  padding-left: 16px;
   padding-right: calc(var(--sidebar-collapsed-width) + 16px);
+  padding-bottom: 40px;
   transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow-x: hidden;
-  /* BUG FIX (".watermark climbs up very high when there is not enough
-     content"): .container below relies on `flex: 1` + `margin-top: auto`
-     on .watermark to stick the footer to the bottom of the viewport. Both
-     of those only do anything once .container's own PARENT is a flex
-     container — `flex: 1` has nothing to grow inside of otherwise, so on a
-     short page (little content in #contentArea) .container just shrank to
-     fit its content's natural height, and the footer sat directly under
-     that short content instead of at the bottom of the screen. body itself
-     needs to actually be the flex column .container flexes inside of. */
   display: flex;
   flex-direction: column;
 }
@@ -3074,10 +3067,10 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
 @media (max-width: 768px) {
   body {
-    padding-top: 24px;
-    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
+    padding-top: 16px;
     padding-left: 16px;
     padding-right: 16px;
+    padding-bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px) + 16px);
   }
 
   body.sidebar-expanded {

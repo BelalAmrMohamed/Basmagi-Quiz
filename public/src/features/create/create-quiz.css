@@ -48,8 +48,7 @@ body {
   min-height: 100vh;
   padding-top: 40px;
   padding-bottom: 40px;
-  padding-left: 24px;
-  /* physical left — the non-sidebar side */
+  padding-left: 16px;
   padding-right: calc(var(--sidebar-collapsed-width) + 16px);
   transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;

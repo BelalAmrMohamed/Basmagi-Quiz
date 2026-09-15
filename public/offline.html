@@ -67,9 +67,7 @@
       padding: 40px 32px;
       text-align: center;
       box-shadow: 0 20px 40px var(--shadow);
-      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-      opacity: 0;
-      transform: translateY(20px);
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     /* Top small logo */
@@ -90,19 +88,70 @@
       border-radius: 6px;
     }
 
-    /* Hero SVG Animation */
+    /* =================================== */
+    /* -- Hero SVG Styling & Base State -- */
+    /* =================================== */
     .offline-icon {
       width: 120px;
       height: 120px;
       margin: 0 auto 24px;
-      animation: float 4s ease-in-out infinite;
-      color: var(--muted);
+      display: block;
+      color: var(--muted, #94a3b8);
+      cursor: pointer;
+      transition: color 0.3s ease;
     }
 
-    .offline-icon path {
+    /* Set up dash pattern on all vector paths */
+    .offline-icon path,
+    .offline-icon line {
       stroke-dasharray: 100;
-      animation: dash 3s linear infinite alternate;
+      stroke-dashoffset: 0;
     }
+
+    /* Color change on hover */
+    .offline-icon:hover {
+      color: var(--offline-warning, #ef4444);
+    }
+
+    /* LINE-DRAWING ANIMATION ON HOVER */
+    .offline-icon:hover path,
+    .offline-icon:hover line {
+      animation: line-draw 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    }
+
+    /* Stagger the drawing effect sequentially across the waves */
+    .offline-icon:hover .wave-inner {
+      animation-delay: 0s;
+    }
+
+    .offline-icon:hover .wave-mid {
+      animation-delay: 0.15s;
+    }
+
+    .offline-icon:hover .wave-outer {
+      animation-delay: 0.3s;
+    }
+
+    .offline-icon:hover .slash {
+      animation-delay: 0.45s;
+    }
+
+    /* Keyframe: Line draws out completely, then erases back */
+    @keyframes line-draw {
+      0% {
+        stroke-dashoffset: 0;
+        /* Line is completely drawn */
+      }
+
+      100% {
+        stroke-dashoffset: 100;
+        /* Line completely erases/retracts along path */
+      }
+    }
+
+    /* ========================== */
+    /* -- Hero SVG Styling End -- */
+    /* ========================== */
 
     h1 {
       margin: 0 0 12px;
@@ -175,7 +224,12 @@
 
     /* Animations */
     @keyframes fadeUp {
-      to {
+      0% {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      100% {
         opacity: 1;
         transform: translateY(0);
       }
@@ -252,16 +306,15 @@
       <span>منصة امتحانات بصمجي</span>
     </div>
 
-    <!-- Animated Offline SVG Icon -->
-    <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+    <!-- Optimized SVG with targeted element classes -->
+    <svg class="offline-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
       stroke-linecap="round" stroke-linejoin="round">
-      <line x1="1" y1="1" x2="23" y2="23"></line>
-      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
-      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
-      <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
-      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
-      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
-      <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      <path class="wave wave-outer" d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+      <path class="wave wave-mid" d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39M16.72 11.06A10.94 10.94 0 0 1 19 12.55">
+      </path>
+      <path class="wave wave-inner" d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+      <circle class="dot" cx="12" cy="20" r="1" fill="currentColor"></circle>
+      <line class="slash" x1="2" y1="2" x2="22" y2="22"></line>
     </svg>
 
     <h1 aria-live="assertive">أنت غير متصل بالإنترنت</h1>

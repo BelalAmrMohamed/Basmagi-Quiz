@@ -506,7 +506,7 @@ function _handleSSO(provider) {
   // 2. Async: get the OAuth URL without triggering navigation
   (async () => {
     try {
-      const callbackUrl = window.location.origin + "/oauth-callback.html";
+      const callbackUrl = window.location.origin + "/oauth-callback";
       const { data, error } = await _supabaseClient.auth.signInWithOAuth({
         provider,
         options: {

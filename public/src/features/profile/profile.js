@@ -183,7 +183,14 @@ export function refreshUI(options = {}) {
       // isVisitorContext=false: this is the owner's own dashboard, so the
       // response is a sync confirmation only — it never overwrites the
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
-      fetchAndRenderAdminStats(undefined, myToken, false);
+      // Featured Creator Card (see renderFeaturedCreatorCard): every admin
+      // account gets one here too, not just on the /@handle visitor view —
+      // uses the handle already resolved above (currentHandle) and this
+      // same fetch's role/avatar/uploadedQuizzes.
+      fetchAndRenderAdminStats(undefined, myToken, false).then((stats) => {
+        if (myToken !== refreshToken || !stats) return;
+        if (currentHandle) renderFeaturedCreatorCard(currentHandle, stats);
+      });
     }
   } else {
     setActivityLabel(null);
@@ -224,6 +231,61 @@ function applyRoleBadges(role, isOwner) {
     roleBadge.title = "مشرف";
     roleBadge.setAttribute("aria-label", "مشرف — اضغط لمعرفة المزيد");
   }
+}
+
+// Featured Creator Card — YouTube "featured channels"-style strip shown
+// at the bottom of .profile-main, on both a visited /@handle profile and
+// the admin/dev owner's own dashboard. Every /@handle profile belongs to
+// an admin_users row (see render-profile.js / admin.js's handleStats —
+// the route simply doesn't exist for regular users), so visitor view
+// always gets one; the owner's own dashboard gets one too whenever
+// getAdminRoleInfo() resolves (see refreshUI). Either way it replaces the
+// old experience of that admin only speaking for themselves via a
+// highlighted row inside #adminLeaderboardCard (hidden alongside this —
+// see renderLeaderboard's hasFeaturedCard).
+function renderFeaturedCreatorCard(handle, visitedRole) {
+  const card = document.getElementById("featuredCreatorCard");
+  if (!card || !visitedRole) return;
+
+  const nameEl = document.getElementById("featuredCreatorName");
+  const handleEl = document.getElementById("featuredCreatorHandle");
+  const metaEl = document.getElementById("featuredCreatorMeta");
+  const avatarImg = document.getElementById("featuredCreatorAvatar");
+  const badgeEl = document.getElementById("featuredCreatorRoleBadge");
+
+  const displayName = visitedRole.displayName || handle;
+  nameEl.textContent = displayName;
+  handleEl.textContent = "@" + handle;
+
+  const quizzes = visitedRole.uploadedQuizzes || 0;
+  metaEl.textContent = `${quizzes.toLocaleString()} امتحان مرفوع`;
+
+  if (avatarImg) {
+    avatarImg.src = adminAvatarUrl({
+      avatarUrl: visitedRole.avatarUrl,
+      displayName,
+      handle,
+    });
+    avatarImg.alt = `الصورة الشخصية لـ ${displayName}`;
+  }
+
+  if (badgeEl) {
+    if (visitedRole.isOwner) {
+      badgeEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+      badgeEl.className = "role-badge developer-badge";
+      badgeEl.title = "مطور";
+      badgeEl.style.display = "inline-flex";
+    } else if (visitedRole.role === "admin") {
+      badgeEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      badgeEl.className = "role-badge admin-badge";
+      badgeEl.title = "مشرف";
+      badgeEl.style.display = "inline-flex";
+    } else {
+      badgeEl.style.display = "none";
+    }
+  }
+
+  card.style.display = "";
 }
 
 // Role info modal — replaces the old generic showNotification() toast on
@@ -353,6 +415,7 @@ async function fetchAndRenderAdminStats(
         thumbnailUrl: data.thumbnailUrl || null,
         displayName: data.displayName || null,
         bio: data.bio || null,
+        uploadedQuizzes: data.uploadedQuizzes || 0,
         totalPoints:
           typeof data.totalPoints !== "undefined" ? data.totalPoints : 0,
         totalQuizzes:
@@ -786,6 +849,7 @@ async function setupVisitorView(handle) {
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
     applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
   }
+  renderFeaturedCreatorCard(handle, visitedRole);
   if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
     renderVisitorAvatar(visitedRole.avatarUrl, handle);
   }
@@ -1253,8 +1317,13 @@ function renderBadges(user) {
       .join("") || "اكسب الشارات بإكمال الامتحانات!";
 }
 
-// visitedHandle: when set (visitor /@handle view), only the admin
-// leaderboard is shown — the local bots board is owner-profile only.
+// visitedHandle: when set (visitor /@handle view), the admin leaderboard
+// card is hidden — that admin now speaks for themselves via the Featured
+// Creator Card at the bottom of .profile-main (renderFeaturedCreatorCard)
+// instead of being buried as a highlighted row inside the full "top
+// admins" leaderboard. On the owner's own dashboard the same applies when
+// the owner is themselves an admin/dev (roleInfo truthy) — a regular user's
+// own dashboard has no featured card and keeps the leaderboard as-is.
 async function renderLeaderboard(
   user,
   currentName,
@@ -1272,14 +1341,21 @@ async function renderLeaderboard(
     currentName || localStorage.getItem("username") || "مستخدم";
   const highlightHandle = visitedHandle || (roleInfo && roleInfo.handle);
   const isVisitor = !!visitedHandle;
+  // Featured Creator Card replaces this leaderboard card specifically for
+  // an admin/dev's own identity — visiting one (isVisitor) or being one
+  // (roleInfo truthy) on their own dashboard.
+  const hasFeaturedCard = isVisitor || !!roleInfo;
 
   if (localCard) localCard.hidden = isVisitor;
-  if (adminCard) adminCard.hidden = false;
+  if (adminCard) adminCard.hidden = hasFeaturedCard;
 
   if (!isVisitor && localEl) {
     renderLocalLeaderboard(localEl, user, displayName);
   }
 
+  // Still fetched/populated in the background even when hidden above, so
+  // it's ready instantly if this ever needs to be shown again — cheap
+  // given renderAdminLeaderboard already no-ops safely on fetch failure.
   await renderAdminLeaderboard(
     adminEl,
     highlightHandle,

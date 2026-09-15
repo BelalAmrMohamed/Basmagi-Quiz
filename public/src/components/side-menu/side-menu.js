@@ -1091,12 +1091,11 @@ function injectMobileAdminAndReportsMenuItems() {
     `;
 
     const mobileReportsLink = document.createElement("a");
-    mobileReportsLink.href = "reports.html";
+    mobileReportsLink.href = "reports";
     mobileReportsLink.className = "menu-item mobile-only-menu-item";
     mobileReportsLink.id = "sideMenuMobileReportsLink";
     const isReportsPage =
-      window.location.pathname.endsWith("/reports.html") ||
-      window.location.pathname.endsWith("/reports");
+      window.location.pathname.endsWith("/reports")
     if (isReportsPage) {
       mobileReportsLink.classList.add("active");
     }

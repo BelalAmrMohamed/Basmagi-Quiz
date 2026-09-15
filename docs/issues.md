@@ -73,6 +73,9 @@ Check the rules for creating امتحانات and copying them and moving them.
 ### Control.html
 - Give `#collegeForm` an advanced loading skeleton/animation.
 
+### Fix offline page
+- When the user is offline, the offline page appears, pressing the `#retry-btn` button makes whole `#card` element disappear. Fix that, instead of the whole card disappearing, put a loading circle animation on the button, if retrying fails, remove the loading animation, so the user can press it again.
+
 ### Profile Page
 Update the display of the top admins to be similar to YouTube: ![similar](image-1.png).
 

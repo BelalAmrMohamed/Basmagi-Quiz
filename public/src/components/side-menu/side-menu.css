@@ -1602,7 +1602,7 @@
      (الرئيسية / الحساب / إنشاء / الإعدادات). Only the leftover links
      (change name, theme, animations, contact dev, install app) remain. */
   .sidebar nav>a[href="/"],
-  .sidebar nav>a[href="profile.html"],
+  .sidebar nav>a[href="profile"],
   .sidebar nav>a[href="create-quiz"],
   .sidebar nav>a[href="settings"] {
     display: none;

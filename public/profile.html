@@ -334,7 +334,7 @@
 
                     <div class="side-menu-profile-dropdown-divider" role="separator"></div>
 
-                    <a href="profile.html" class="side-menu-profile-dropdown-item" role="menuitem">
+                    <a href="profile" class="side-menu-profile-dropdown-item" role="menuitem">
                         <img class="side-menu-profile-dropdown-item-avatar" id="sideMenuDropdownItemAvatar" src=""
                             alt="" style="display:none;">
                         <svg id="sideMenuDropdownItemAvatarIcon" xmlns="http://www.w3.org/2000/svg" width="18"
@@ -594,7 +594,7 @@
             <span class="bottom-nav-label">إنشاء</span>
         </a>
 
-        <a href="profile.html" class="bottom-nav-item active bottom-nav-item-profile" data-bottom-nav="leaderboard">
+        <a href="profile" class="bottom-nav-item active bottom-nav-item-profile" data-bottom-nav="leaderboard">
             <span class="bottom-nav-icon bottom-nav-icon-profile">
 
                 <img class="bottom-nav-avatar" id="navBottomAvatar" src="" alt="" style="display:none;">
@@ -929,6 +929,30 @@
                 <section class="content-section">
                     <h2>🚩 أسئلة للمراجعة</h2>
                     <div id="flaggedList" class="history-list">
+                    </div>
+                </section>
+
+                <!-- Featured Creator Card — YouTube-"featured channels"-style
+                     strip shown on both a visited /@handle profile and the
+                     admin/dev owner's own dashboard (see
+                     renderFeaturedCreatorCard() in profile.js). Replaces the
+                     old behaviour of leaving that admin's own leaderboard
+                     row to speak for them; hidden by default (and on every
+                     non-admin profile/account). -->
+                <section class="content-section" id="featuredCreatorCard" style="display:none;">
+                    <div class="featured-creator-card">
+                        <span class="featured-creator-avatar-wrap">
+                            <img id="featuredCreatorAvatar" class="featured-creator-avatar" src="" alt="" loading="lazy"
+                                width="64" height="64">
+                        </span>
+                        <div class="featured-creator-info">
+                            <span class="featured-creator-name-row">
+                                <span id="featuredCreatorName" class="featured-creator-name"></span>
+                                <span id="featuredCreatorRoleBadge" class="role-badge" style="display:none;"></span>
+                            </span>
+                            <span id="featuredCreatorHandle" class="featured-creator-handle" dir="ltr"></span>
+                            <span id="featuredCreatorMeta" class="featured-creator-meta"></span>
+                        </div>
                     </div>
                 </section>
             </div>

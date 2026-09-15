@@ -101,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const p = window.location.pathname;
   const isIndexPage =
     p === "/" ||
-    p.endsWith("/index.html") ||
     p.endsWith("/index") ||
     /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p);
   if (!isIndexPage) return;

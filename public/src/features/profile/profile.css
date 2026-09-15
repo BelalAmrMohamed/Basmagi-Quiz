@@ -30,15 +30,12 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  /* Keep the non-sidebar side separate from the page-owned sidebar inset. */
-  padding-top: 40px;
+  padding-top: 16px;
   padding-bottom: 40px;
-  padding-left: 24px;
+  padding-left: 16px;
   padding-right: calc(var(--sidebar-collapsed-width) + 16px);
   transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  /* clip (not hidden) so nested overflow-x:auto scrollers like the activity
-           heatmap can still receive horizontal pans on mobile WebKit. */
   overflow-x: clip;
 }
 
@@ -51,6 +48,12 @@ body.sidebar-expanded {
   margin-inline: auto;
   position: relative;
   z-index: 1;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding-right: 16px;
+  }
 }
 
 /* ============================================================
@@ -923,6 +926,92 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
   font-size: 1.15rem;
   font-weight: 700;
   margin-bottom: 14px;
+}
+
+/* ============================================================
+         FEATURED CREATOR CARD — YouTube "featured channels"-style
+         strip at the bottom of .profile-main on a visited /@handle
+         profile (every such profile belongs to an admin/dev — see
+         renderFeaturedCreatorCard() in profile.js). Round avatar +
+         name/badge + handle + upload count, left-aligned as one row;
+         wraps to a centered column on narrow viewports.
+         ============================================================ */
+.featured-creator-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 8px 4px;
+}
+
+.featured-creator-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.featured-creator-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.featured-creator-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.featured-creator-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.featured-creator-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Smaller, inline "verified"-style variant of .role-badge (defined at
+     32px for the profile header) — same gradients/icon, sized down to sit
+     beside the name like a verification tick. */
+.featured-creator-name-row .role-badge {
+  width: 18px;
+  height: 18px;
+  border-width: 0;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.featured-creator-name-row .role-badge:hover {
+  transform: none;
+}
+
+.featured-creator-handle {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.featured-creator-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 480px) {
+  .featured-creator-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .featured-creator-name-row {
+    justify-content: center;
+  }
 }
 
 /* ============================================================
