@@ -27,10 +27,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 - Make the favicon on the right and the text `امتحانات بصمجي` on the left, since this is an RTL Platform.
 - Put a transition on it. Because when opening/closing the side-menu on desktops, it appears instantly while the side-menu on desktops has a transition/animation.
 
-### Google Sign in on localhost.
-- Signing in doesn't work on localhost for somereason. ![alt text](image-6.png) See [last solution attempt with AI](unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md)
-- See ![screenshot of browser console errors](image.png)
-
 ## New Features
 
 ### Result Pages
@@ -64,14 +60,11 @@ Check the rules for creating امتحانات and copying them and moving them.
 #### Admin / Developer Badge
 - The side menu admin badge/favicon is bad looking (`.nav-badge-overlay` on phone's `#bottomNav` and desktop's `#sidebar`). It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
 
-#### Side-Menu Icons
-Implement an SVG line-drawing hover animation on side menu items, modeled after `.section-icon` and `section-icon-draw` keyframes in `profile.html`.
-
-1. **SVG Structure Update:** Inspect and update the inline SVG icons inside side menu items to ensure `path` elements are compatible with stroke drawing.
-2. **CSS Fixes (`public/src/components/side-menu/side-menu.css`):**
-   - Clean up existing `menu-item-draw` (broken) keyframes and remove unused/broken transform rules.
-   - Calculate or dynamically apply the required `stroke-dasharray` and `stroke-dashoffset` on hover/active states.
-3. The Hover animation of the icons should be excluded from the "الأداء الفائق" mode (`html[data-motion="reduced"]`)
+#### Animations
+These animations should be excluded from the "الأداء الفائق" (`html[data-motion="reduced"]`) mode, meaning they should work even when the mode is on, these are features that shouldn't be dispabled when that mode is on when `data-motion` is set to "reduced":
+- The hover state of the icons on the `#sidebar`; `.menu-item`. In the `quiz.html` page, and on the rest of the platform.
+- The loading shimmer/skeleton on all pages, including these (control.html, index.html, create-quiz.html, profile.html, quiz.html, and any other page that has a loading skeleton).
+- The profile page's icons; `.section-icon`.
 
 #### Info
 
