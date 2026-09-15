@@ -757,15 +757,36 @@
                 // INSTANT BADGE INJECTION
                 try {
                     if (sessionStorage.getItem('__bq_adm') && parent && !parent.querySelector('.nav-badge-overlay')) {
-                        parent.style.position = 'relative';
                         var p = JSON.parse(atob(sessionStorage.getItem('__bq_adm').split('.')[1]));
-                        var badgeIcon = p.isOwner ? 'assets/images/white-icon.png' : 'favicon.png';
+                        var role = p.isOwner ? 'owner' : 'admin';
+                        // Anchor the badge to the avatar glyph rather than to
+                        // `parent`. For the bottom nav `parent` is the tight
+                        // .bottom-nav-icon box and is fine as-is; for the sidebar
+                        // it is the whole .menu-item ROW, so pinning the badge to
+                        // its corner parked it out in the row's padding, well clear
+                        // of the avatar. Mirrors resolveBadgeHost() in
+                        // navRoleBadge.js — inlined so the badge lands correctly on
+                        // the first paint, before any module has loaded.
+                        var glyph = parent.querySelector('.' + t.iconClass);
+                        var host = parent;
+                        if (parent.classList.contains('bottom-nav-icon')) {
+                            parent.style.position = 'relative';
+                        } else {
+                            host = document.createElement('span');
+                            host.className = 'nav-badge-anchor';
+                            parent.insertBefore(host, glyph || img);
+                            if (glyph) host.appendChild(glyph);
+                            host.appendChild(img);
+                        }
                         var b = document.createElement('img');
                         b.className = 'nav-badge-overlay';
-                        b.src = badgeIcon;
+                        b.src = role === 'owner' ? 'assets/images/white-icon.png' : 'favicon.png';
                         b.alt = '';
+                        b.title = role === 'owner' ? 'مطوّر المنصة' : 'مشرف';
+                        // Drives the per-role fill in side-menu.css.
+                        b.setAttribute('data-role', role);
                         b.style.cssText = 'position:absolute;z-index:10;display:block;';
-                        parent.appendChild(b);
+                        host.appendChild(b);
                     }
                 } catch (e) { }
             });

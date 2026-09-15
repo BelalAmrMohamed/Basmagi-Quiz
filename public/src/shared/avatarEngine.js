@@ -5,6 +5,7 @@
 // object, and a corrupt/oversized avatar can never break quiz progress.
 
 import { getAdminRoleInfo } from "../shared/adminAuth.js";
+import { mountNavRoleBadge } from "../shared/navRoleBadge.js";
 
 const AVATAR_KEY = "quiz_user_avatar";
 // Thumbnail is a separate key/column from the avatar (see admin_users.
@@ -373,11 +374,11 @@ export const avatarEngine = {
       DEFAULT_AVATAR_PALETTE[getBits(0, 3) % DEFAULT_AVATAR_PALETTE.length];
     const c2 =
       DEFAULT_AVATAR_PALETTE[
-        (getBits(3, 3) + 1) % DEFAULT_AVATAR_PALETTE.length
+      (getBits(3, 3) + 1) % DEFAULT_AVATAR_PALETTE.length
       ];
     const c3 =
       DEFAULT_AVATAR_PALETTE[
-        (getBits(6, 3) + 2) % DEFAULT_AVATAR_PALETTE.length
+      (getBits(6, 3) + 2) % DEFAULT_AVATAR_PALETTE.length
       ];
 
     const gradId1 = `bgGrad${hash}`;
@@ -407,39 +408,36 @@ export const avatarEngine = {
       <rect width="100" height="100" fill="url(#${gradId1})"/>
       
       <g transform="translate(50, 50) rotate(${getBits(15, 3) * 45})">
-        ${
-          shape1 === 0
-            ? `<circle cx="-15" cy="-15" r="45" fill="url(#${gradId2})" opacity="0.9"/>`
-            : shape1 === 1
-              ? `<rect x="-35" y="-35" width="70" height="70" rx="16" fill="url(#${gradId2})" opacity="0.9"/>`
-              : shape1 === 2
-                ? `<polygon points="0,-50 45,35 -45,35" fill="url(#${gradId2})" opacity="0.9"/>`
-                : `<path d="M-40,0 A40,40 0 1,1 40,0" fill="url(#${gradId2})" opacity="0.9"/>`
-        }
+        ${shape1 === 0
+        ? `<circle cx="-15" cy="-15" r="45" fill="url(#${gradId2})" opacity="0.9"/>`
+        : shape1 === 1
+          ? `<rect x="-35" y="-35" width="70" height="70" rx="16" fill="url(#${gradId2})" opacity="0.9"/>`
+          : shape1 === 2
+            ? `<polygon points="0,-50 45,35 -45,35" fill="url(#${gradId2})" opacity="0.9"/>`
+            : `<path d="M-40,0 A40,40 0 1,1 40,0" fill="url(#${gradId2})" opacity="0.9"/>`
+      }
       </g>
 
       <g transform="translate(50, 50) rotate(${getBits(18, 3) * 45})">
-        ${
-          shape2 === 0
-            ? `<circle cx="20" cy="20" r="35" fill="url(#${gradId3})" opacity="0.8"/>`
-            : shape2 === 1
-              ? `<rect x="-15" y="-15" width="50" height="50" rx="12" fill="url(#${gradId3})" opacity="0.8"/>`
-              : shape2 === 2
-                ? `<polygon points="-30,-15 30,-15 0,45" fill="url(#${gradId3})" opacity="0.8"/>`
-                : `<path d="M-35,15 A35,35 0 1,0 35,15" fill="url(#${gradId3})" opacity="0.8"/>`
-        }
+        ${shape2 === 0
+        ? `<circle cx="20" cy="20" r="35" fill="url(#${gradId3})" opacity="0.8"/>`
+        : shape2 === 1
+          ? `<rect x="-15" y="-15" width="50" height="50" rx="12" fill="url(#${gradId3})" opacity="0.8"/>`
+          : shape2 === 2
+            ? `<polygon points="-30,-15 30,-15 0,45" fill="url(#${gradId3})" opacity="0.8"/>`
+            : `<path d="M-35,15 A35,35 0 1,0 35,15" fill="url(#${gradId3})" opacity="0.8"/>`
+      }
       </g>
       
       <g transform="translate(50, 50) rotate(${getBits(21, 3) * 45})">
-        ${
-          shape3 === 0
-            ? `<circle cx="-25" cy="25" r="12" fill="#ffffff" opacity="0.5"/>`
-            : shape3 === 1
-              ? `<rect x="-35" y="15" width="25" height="25" rx="6" fill="#ffffff" opacity="0.5"/>`
-              : shape3 === 2
-                ? `<polygon points="25,-25 40,-5 10,-5" fill="#ffffff" opacity="0.5"/>`
-                : `<circle cx="25" cy="-25" r="10" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6"/>`
-        }
+        ${shape3 === 0
+        ? `<circle cx="-25" cy="25" r="12" fill="#ffffff" opacity="0.5"/>`
+        : shape3 === 1
+          ? `<rect x="-35" y="15" width="25" height="25" rx="6" fill="#ffffff" opacity="0.5"/>`
+          : shape3 === 2
+            ? `<polygon points="25,-25 40,-5 10,-5" fill="#ffffff" opacity="0.5"/>`
+            : `<circle cx="25" cy="-25" r="10" fill="none" stroke="#ffffff" stroke-width="4" opacity="0.6"/>`
+      }
       </g>
       
       <circle cx="50" cy="50" r="44" fill="none" stroke="#ffffff" stroke-opacity="0.2" stroke-width="1.5"/>
@@ -500,7 +498,7 @@ export function syncNavAvatars() {
   let roleInfo = null;
   try {
     roleInfo = getAdminRoleInfo();
-  } catch (err) {}
+  } catch (err) { }
 
   targets.forEach(({ imgId, iconClass }) => {
     const img = document.getElementById(imgId);
@@ -510,20 +508,11 @@ export function syncNavAvatars() {
     const icon = parent ? parent.querySelector(`.${iconClass}`) : null;
 
     if (roleInfo && parent) {
-      parent.style.position = "relative";
-      let overlay = parent.querySelector(".nav-badge-overlay");
-
-      if (!overlay) {
-        overlay = document.createElement("img");
-        // Visuals (medallion, idle sheen, stamp hover) live in side-menu.css.
-        overlay.className = "nav-badge-overlay";
-        overlay.alt = "";
-        parent.appendChild(overlay);
-      }
-      overlay.src = roleInfo.isOwner
-        ? "assets/images/white-icon.png"
-        : "favicon.png";
-      overlay.style.display = "block";
+      // Structure + artwork are owned by navRoleBadge.js; visuals by
+      // side-menu.css. This used to hand-build the overlay and pin it to
+      // `parent` — which for the sidebar is the whole `.menu-item` row, not
+      // the avatar, hence the badge's old off-to-the-side position.
+      mountNavRoleBadge(img, roleInfo);
     }
 
     // Verify the image actually decodes before swapping it in, so a

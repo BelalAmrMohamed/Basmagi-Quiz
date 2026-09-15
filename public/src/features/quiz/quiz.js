@@ -3,7 +3,16 @@
 // Temporary | For performance debugging
 console.log("quiz.js loaded successfully");
 
+// Quiz page ports its own standalone sidebar (see quiz.css) rather than
+// sharing side-menu.js, so it needs its own call to stamp pathLength/dash
+// geometry onto the sidebar's icons — otherwise the `menu-item-draw` hover
+// animation in quiz.css has nothing to draw. Safe to call this early: it
+// waits for DOMContentLoaded internally and then watches for any menu items
+// injected later in the page's lifecycle.
+initMenuIconDrawing();
+
 import { getManifest } from "../../shared/quizManifest.js";
+import { initMenuIconDrawing } from "../../components/side-menu/menu-icon-draw.js";
 import { gameEngine } from "../../shared/gameEngine.js";
 import {
   _confirm,

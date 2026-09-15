@@ -423,7 +423,12 @@ body.sidebar-expanded {
     transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.12s ease;
   transform: scale(1) translateY(0);
-  will-change: transform;
+  /* `will-change: transform` used to sit here, permanently promoting every
+     sidebar icon to its own compositor layer for a transform that only ever
+     fires on hover/active. Dropped for the same reason as the equivalent rule
+     in side-menu.css: the standing raster layer softened the hairline strokes
+     the line-draw animation below relies on, for a transform cheap enough to
+     composite on demand anyway. */
 }
 
 /* Icons lift and scale up slightly on hover/focus — a quick, springy nudge
@@ -437,6 +442,65 @@ body.sidebar-expanded {
 .menu-item:active svg {
   transform: scale(0.94) translateY(0);
   transition-duration: 0.12s;
+}
+
+/* ── Icon line-draw animation ─────────────────────────────────────────────
+   Quiz page ports its sidebar markup/CSS standalone rather than sharing
+   side-menu.css, so this mirrors the fix made there rather than importing it:
+   see side-menu.css for the full rationale. In short — profile.css's fixed
+   `stroke-dasharray: 60` doesn't generalise across this icon set (a keyboard
+   glyph mixes a ~60-unit rect with 0.01-unit dot paths), so
+   menu-icon-draw.js stamps `pathLength="1"` + `.menu-icon-line` onto every
+   drawable shape at runtime, letting one dash length cover any icon.
+   One pass per hover, not an infinite loop — a nav rail gets hovered
+   constantly en route elsewhere, and a permanently cycling icon under the
+   cursor reads as a glitch rather than a flourish. */
+.menu-icon-line {
+  --menu-icon-draw-length: 1;
+  stroke-dasharray: var(--menu-icon-draw-length, 1);
+  stroke-dashoffset: 0;
+}
+
+.menu-item:hover .menu-icon-line,
+.menu-item:focus-visible .menu-icon-line,
+.menu-item:active .menu-icon-line {
+  animation: menu-item-draw 1.2s cubic-bezier(0.45, 0, 0.55, 1) both;
+}
+
+/* Sub-shapes trail each other slightly so a multi-part icon redraws stroke by
+   stroke instead of snapping back as one flat block. `both` fill-mode holds
+   each shape at the 0% frame (fully drawn) through its delay, so the stagger
+   never causes a flash of missing strokes. */
+.menu-item:hover .menu-icon-line:nth-child(2),
+.menu-item:focus-visible .menu-icon-line:nth-child(2),
+.menu-item:active .menu-icon-line:nth-child(2) {
+  animation-delay: 55ms;
+}
+
+.menu-item:hover .menu-icon-line:nth-child(3),
+.menu-item:focus-visible .menu-icon-line:nth-child(3),
+.menu-item:active .menu-icon-line:nth-child(3) {
+  animation-delay: 110ms;
+}
+
+.menu-item:hover .menu-icon-line:nth-child(n + 4),
+.menu-item:focus-visible .menu-icon-line:nth-child(n + 4),
+.menu-item:active .menu-icon-line:nth-child(n + 4) {
+  animation-delay: 165ms;
+}
+
+@keyframes menu-item-draw {
+  0% {
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dashoffset: var(--menu-icon-draw-length, 1);
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
 }
 
 /* Collapsed: center icons perfectly. gap must be 0 — the .menu-label still
@@ -1401,6 +1465,20 @@ html[data-motion="reduced"] {
   .menu-item:focus-visible svg,
   .menu-item:active svg {
     transform: none !important;
+  }
+
+  /* "الأداء الفائق" (High Performance) switches the icon line-draw off
+     entirely — see side-menu.css's equivalent rule for the full rationale.
+     Cancelling the animation outright (rather than relying on the global
+     animation-duration crush elsewhere in the theme system) avoids a style
+     recalc on every icon each time the cursor crosses the rail, and pinning
+     the offset back to 0 guarantees the strokes stay whole regardless of
+     where the cancelled animation was in its cycle. */
+  .menu-item:hover .menu-icon-line,
+  .menu-item:focus-visible .menu-icon-line,
+  .menu-item:active .menu-icon-line {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
   }
 }
 

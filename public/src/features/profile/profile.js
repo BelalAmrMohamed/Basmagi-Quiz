@@ -66,6 +66,17 @@ export function refreshUI(options = {}) {
   renderBadges(user);
   if (!skipNetworkFetches) {
     renderLeaderboard(user, currentName, myToken);
+    // Top Admins gallery ("أفضل المشرفين") — a public showcase of every top
+    // admin, not something specific to the viewer. It belongs here, alongside
+    // the leaderboard, rather than inside the roleInfo-gated block further
+    // down: that block only runs for signed-in admin/dev accounts on their
+    // own dashboard, so a regular (or signed-out) user hitting /profile never
+    // reached this call and the section stayed permanently hidden for them.
+    // renderAdminGallery has no auth dependency — it hits the public
+    // /api/admin-stats?leaderboard=true endpoint and hides its own section
+    // if the response is empty or the fetch fails — so it's safe to run
+    // unconditionally for every viewer here.
+    renderAdminGallery(myToken);
   }
   renderActivityHeatmap(user);
   renderCategoryMastery(user, examList);
@@ -184,15 +195,6 @@ export function refreshUI(options = {}) {
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
       fetchAndRenderAdminStats(undefined, myToken, false);
     }
-    if (!skipNetworkFetches) {
-      // Top Admins gallery — admin/dev-only on the owner's own dashboard
-      // (gated on roleInfo, same as renderUploadedQuizzes/
-      // fetchAndRenderAdminStats above), so a regular, non-admin user's
-      // /profile never shows #adminGallerySection. Still runs
-      // unconditionally on visitor view (setupVisitorView below), since
-      // every /@handle profile belongs to an admin/dev by definition.
-      renderAdminGallery(myToken);
-    }
   } else {
     setActivityLabel(null);
   }
@@ -236,15 +238,21 @@ function applyRoleBadges(role, isOwner) {
   }
 }
 
-// Top Admins gallery — horizontal, scrollable strip of every top admin
-// (not just the current one), shown at the bottom of .profile-main on
-// both a visited /@handle profile and the admin/dev owner's own
-// dashboard (never on a regular, non-admin user's own /profile — see
-// the roleInfo-gated call site in refreshUI()). Data source is the same
-// endpoint the old admin leaderboard card used (/api/admin-stats?
-// leaderboard=true — see admin.js's isLeaderboard branch) — handle,
-// avatar, role, isOwner, and uploaded-quiz count per admin — just
-// rendered as gallery cards instead of leaderboard rows.
+// Top Admins gallery ("أفضل المشرفين") — horizontal, scrollable strip of
+// every top admin (not just the current viewer). Public: shown at the
+// bottom of .profile-main on a visited /@handle profile, and on /profile
+// for every viewer regardless of role — signed-out, regular signed-in, or
+// admin/dev alike — since it's a showcase of the platform's admins, not a
+// personal dashboard widget. (Previously the /profile call site sat inside
+// the roleInfo-gated block in refreshUI(), so it only ever rendered for a
+// signed-in admin/dev viewing their own dashboard; every other visitor
+// saw #adminGallerySection stay in its default `display:none`. Moved to
+// run alongside the leaderboard instead.) Data source is the same endpoint
+// the old admin leaderboard card used (/api/admin-stats?leaderboard=true —
+// see admin.js's isLeaderboard branch) — handle, avatar, role, isOwner, and
+// uploaded-quiz count per admin — just rendered as gallery cards instead of
+// leaderboard rows. Needs no auth: it's a public GET and the function hides
+// its own section if the response is empty or the fetch fails.
 let adminGalleryArrowsWired = false;
 async function renderAdminGallery(myToken = refreshToken) {
   const section = document.getElementById("adminGallerySection");

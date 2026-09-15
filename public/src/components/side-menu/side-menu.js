@@ -5,8 +5,15 @@
 // ============================================================================
 
 import { mountSignInDialog, openSignInDialog } from "../log-in/sign-in.js";
+import { initMenuIconDrawing } from "./menu-icon-draw.js";
 
 mountSignInDialog();
+
+// Stamps pathLength/dash geometry onto every menu + bottom-nav icon so the
+// `menu-item-draw` hover animation in side-menu.css has something to draw.
+// Watches for late-injected rows (mobile admin/reports buttons below, the docs
+// links in documents-shell.js) so those animate too. See menu-icon-draw.js.
+initMenuIconDrawing();
 
 // ── PWA Install Prompt — captured globally so it works on every page ─────────
 (function () {
@@ -666,6 +673,10 @@ import {
   getSharedSupabaseClient,
   ensureSharedSupabaseClient,
 } from "../../shared/supabaseClientRegistry.js";
+import {
+  mountNavRoleBadge,
+  unmountNavRoleBadge,
+} from "../../shared/navRoleBadge.js";
 
 // ============================================================================
 // ADMIN BADGE — post-load refresh
@@ -687,29 +698,20 @@ function refreshNavBadges() {
   targets.forEach(({ imgId }) => {
     const img = document.getElementById(imgId);
     if (!img) return;
-    const parent = img.parentElement;
-    if (!parent) return;
-
-    const existing = parent.querySelector(".nav-badge-overlay");
 
     if (!roleInfo) {
       // No longer an admin (or session cleared) — remove any stale badge.
-      if (existing) existing.remove();
+      unmountNavRoleBadge(img);
       return;
     }
 
-    if (existing) return; // already correctly showing a badge
-
-    parent.style.position = "relative";
-    const badgeIcon = roleInfo.isOwner
-      ? "assets/images/white-icon.png"
-      : "favicon.png";
-    const b = document.createElement("img");
-    b.className = "nav-badge-overlay";
-    b.src = badgeIcon;
-    b.alt = "";
-    b.style.cssText = "position:absolute;z-index:10;display:block;";
-    parent.appendChild(b);
+    // mountNavRoleBadge is idempotent and owns the anchor/positioning, so this
+    // safely re-runs over a badge the page's pre-paint inline script already
+    // injected — it just refreshes the role if it changed. The hand-rolled
+    // version this replaced bailed out the moment a badge existed, so an
+    // admin→owner (or owner→admin) transition mid-session kept the old
+    // artwork until a full reload.
+    mountNavRoleBadge(img, roleInfo);
   });
 }
 

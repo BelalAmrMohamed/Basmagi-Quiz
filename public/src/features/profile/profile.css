@@ -1153,6 +1153,28 @@ h3:hover .section-icon .icon-line {
   }
 }
 
+/* "الأداء الفائق" (High Performance) turns the line-draw off across the page.
+   This is the data-motion counterpart to the prefers-reduced-motion block at
+   the end of this file, which already covered these same selectors — the OS
+   preference was honoured but the in-app toggle was not, so switching High
+   Performance on left every heading and stat-card icon still looping.
+
+   themes.css does crush animation-duration to 0.001ms under this attribute,
+   but that is not sufficient on its own here: `section-icon-draw` ends at
+   stroke-dashoffset: var(--icon-draw-length) — the fully ERASED frame — so
+   collapsing its duration to zero just lands on the erased end state. Nothing
+   pins the strokes back, which is why the icons need an explicit cancel plus a
+   reset of the offset rather than a shorter duration. */
+html[data-motion="reduced"] h2:hover .section-icon .icon-line,
+html[data-motion="reduced"] h3:hover .section-icon .icon-line,
+html[data-motion="reduced"] .stat-card:hover .icon .section-icon .icon-line,
+html[data-motion="reduced"] .empty-state:hover .empty-state-icon .icon-line,
+html[data-motion="reduced"] .empty-state:focus-within .empty-state-icon .icon-line,
+html[data-motion="reduced"] .empty-state.is-drawing .empty-state-icon .icon-line {
+  animation: none !important;
+  stroke-dashoffset: 0 !important;
+}
+
 /* ============================================================
          HISTORY / BOOKMARKS / FLAGGED — dense list rows
          All three widgets reuse .history-item, rebuilt as a compact
@@ -2758,39 +2780,14 @@ html[data-motion="reduced"] {
 }
 
 /* ==================== Nav Role Badge Overlay ==================== */
-/* Small role badge (owner/admin) pinned to the corner of the nav avatar.
-         Injected by avatarEngine.js's syncNavAvatars() (and mirrored by the
-         synchronous instant-badge script in profile.html's <head> so it paints
-         on first frame) onto both the desktop sidebar avatar (.menu-item-avatar,
-         larger) and the mobile bottom-nav avatar (.bottom-nav-avatar, much
-         smaller icon-sized image). A single fixed 16px/top:3px/right:3px was
-         previously hardcoded in JS for both contexts, which fit the sidebar but
-         covered most of the smaller bottom-nav icon on mobile. Sizing now lives
-         here so each context can be tuned independently. */
-.nav-badge-overlay {
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  top: 3px;
-  right: 3px;
-  border-radius: 50%;
-  z-index: 10;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.25));
-}
-
-@media (max-width: 768px) {
-
-  /* Bottom-nav avatar is a small icon-sized image — scale the badge down
-           and pull it further into the corner so it no longer overlaps the
-           avatar itself. */
-  .bottom-nav-item-profile .nav-badge-overlay {
-    width: 11px;
-    height: 11px;
-    top: -1px;
-    right: -1px;
-  }
-}
+/* Intentionally empty. This file used to carry its own .nav-badge-overlay
+         sizing/position block, duplicating the one in side-menu.css. Since
+         profile.html loads side-menu.css *after* profile.css and both rules had
+         identical specificity, every shared property here was already being
+         overwritten — the block only ever contributed confusion about which of
+         the two was authoritative, and a second place to forget to update.
+         The badge is now owned entirely by side-menu.css (loaded on every page
+         that has a sidebar, this one included). */
 
 .heatmap-hover-card {
   min-width: max-content;
