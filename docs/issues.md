@@ -60,6 +60,8 @@ Check the rules for creating امتحانات and copying them and moving them.
 #### Admin / Developer Badge
 - The side menu admin badge/favicon is bad looking (`.nav-badge-overlay` on phone's `#bottomNav` and desktop's `#sidebar`). It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
 
+It's still so bad; I'm thinking of the same badge that exists  on .admin-gallery, the .admin-gallery-badge. So simple. also make a cutout for it in the #navSidebarAvatar, do you understand what I mean?
+
 #### Animations
 These animations should be excluded from the "الأداء الفائق" (`html[data-motion="reduced"]`) mode, meaning they should work even when the mode is on, these are features that shouldn't be dispabled when that mode is on when `data-motion` is set to "reduced":
 - The hover state of the icons on the `#sidebar`; `.menu-item`. In the `quiz.html` page, and on the rest of the platform.
@@ -67,7 +69,6 @@ These animations should be excluded from the "الأداء الفائق" (`html[
 - The profile page's icons; `.section-icon`.
 
 #### Info
-
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
@@ -77,9 +78,6 @@ These animations should be excluded from the "الأداء الفائق" (`html[
 ### Control.html
 - Give `#collegeForm` an advanced loading skeleton/animation, too.
 
-### Profile Page
-- The Hover animation of icons should be excluded from the "الأداء الفائق" mode (`html[data-motion="reduced"]`)
-
 ### About.html
 - Suggestion: Add an open-source Angle.
 - Suggestion: Add a short testimonial or review.
@@ -88,6 +86,7 @@ These animations should be excluded from the "الأداء الفائق" (`html[
 ### Create Quiz Page
 - Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules.
 - Add a button for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options). This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
+- The background animations doesn't work on the page, `themes.css` updated variabled used by elements to give them a bit of opacity, so the bg animations can appear through them, the create-quiz page might not be using them. 
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
