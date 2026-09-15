@@ -12,7 +12,6 @@
 // pass in whatever data they already fetched.
 
 import { avatarEngine } from "../../shared/avatarEngine.js";
-import { gameEngine } from "../../shared/gameEngine.js";
 
 // ==================== Shared hover-card tooltip ====================
 // One tooltip element lives in <body> and is repositioned/repopulated on
@@ -202,28 +201,6 @@ export function loreForBot(name) {
 }
 
 // ==================== Admin identities ====================
-
-// Builds the inner HTML for a real admin's hover card (the outer
-// .lb-hover-card element itself is the single shared tooltip — see
-// attachHoverCard above — so this only returns its contents).
-// entry: { handle, displayName, totalQuizzes, currentLevel, avatarUrl?, totalPoints? }
-export function adminHoverCardHtml(entry) {
-  const name = entry.displayName || entry.handle;
-  const level = entry.currentLevel || 1;
-  const quizzes = (entry.totalQuizzes || 0).toLocaleString();
-  const points = typeof entry.totalPoints === "number" ? entry.totalPoints.toLocaleString() : null;
-  const handle = (entry.handle || "").replace(/^@/, "");
-  const profileHref = handle ? `/@${encodeURIComponent(handle)}` : null;
-
-  return `
-    <span class="lb-hover-name">${name}</span>
-    <span class="lb-hover-stats">
-      <span class="lb-hover-stat"><strong>${level}</strong> المستوى</span>
-      <span class="lb-hover-stat"><strong>${quizzes}</strong> امتحان مرفوع</span>
-      ${points !== null ? `<span class="lb-hover-stat"><strong>${points}</strong> نقطة</span>` : ""}
-    </span>
-    ${profileHref ? `<a class="lb-hover-profile-link" href="${profileHref}">عرض الملف الشخصي</a>` : ""}`;
-}
 
 export function adminAvatarUrl(entry) {
   if (entry.avatarUrl) return entry.avatarUrl;

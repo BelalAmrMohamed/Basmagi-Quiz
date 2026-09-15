@@ -63,7 +63,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 #### Improvements
 - The side menu admin badge/favicon should be improved. It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
-- I really admire the animations on the `.offline-icon` element on `offline.html`, very intuitive. I want to implement such animation on hover state on the elements in the side-menu on all pages. You can update the HTML, the CSS, and anything to implement that
+- I really admire the animations on the `.offline-icon` element on `offline.html`, very intuitive (the `line-draw` animation). I want to implement similar hover animation state on the items in the side-menu on all pages.
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
@@ -72,9 +72,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 ### Control.html
 - Give `#collegeForm` an advanced loading skeleton/animation.
-
-### Fix offline page
-- When the user is offline, the offline page appears, pressing the `#retry-btn` button makes whole `#card` element disappear. Fix that, instead of the whole card disappearing, put a loading circle animation on the button, if retrying fails, remove the loading animation, so the user can press it again.
 
 ### Profile Page
 Update the display of the top admins to be similar to YouTube: ![similar](image-1.png).

@@ -20,9 +20,9 @@ import { getToken } from "../../shared/adminAuth.js";
 // visitor-view fetchAndRenderAdminStats() equivalent) returned — null/
 // undefined for a regular user.
 export function activityLabelFor(roleInfo) {
-  if (roleInfo && roleInfo.isOwner) return "📈 نشاط المطور";
-  if (roleInfo && roleInfo.role === "admin") return "📈 نشاط المشرف";
-  return "📈 نشاطك";
+  if (roleInfo && roleInfo.isOwner) return " نشاط المطور";
+  if (roleInfo && roleInfo.role === "admin") return " نشاط المشرف";
+  return " نشاطك";
 }
 
 // Local calendar YYYY-MM-DD — not UTC via toISOString — so Egypt (UTC+3)

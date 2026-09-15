@@ -776,6 +776,16 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
   flex-shrink: 0;
 }
 
+.stat-card .icon .section-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--color-text-primary);
+}
+
+.stat-card:hover .icon .section-icon .icon-line {
+  animation: section-icon-draw 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
 .stat-card .info {
   display: flex;
   flex-direction: column;
@@ -879,6 +889,11 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
     font-size: 1.2rem;
   }
 
+  #adminStatsGrid .stat-card .icon .section-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
   #adminStatsGrid .stat-card .value {
     font-size: 0.95rem;
   }
@@ -929,88 +944,200 @@ html[data-motion="reduced"] .level-gauge-leveled-up {
 }
 
 /* ============================================================
-         FEATURED CREATOR CARD — YouTube "featured channels"-style
-         strip at the bottom of .profile-main on a visited /@handle
-         profile (every such profile belongs to an admin/dev — see
-         renderFeaturedCreatorCard() in profile.js). Round avatar +
-         name/badge + handle + upload count, left-aligned as one row;
-         wraps to a centered column on narrow viewports.
+         TOP ADMINS GALLERY — horizontal scrollable strip of all top
+         admins at the bottom of .profile-main, replacing the old
+         #adminLeaderboardCard vertical list. Each item: circular avatar
+         with a YouTube-style notch-cut role badge, handle, upload count.
          ============================================================ */
-.featured-creator-card {
+.admin-gallery-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 8px 4px;
+  gap: 8px;
 }
 
-.featured-creator-avatar-wrap {
-  flex-shrink: 0;
-}
-
-.featured-creator-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--color-surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.featured-creator-info {
+.admin-gallery {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  padding: 6px 2px 10px;
+  flex: 1;
   min-width: 0;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-gallery-item {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.featured-creator-name-row {
-  display: flex;
   align-items: center;
-  gap: 6px;
-  min-width: 0;
+  gap: 8px;
+  flex-shrink: 0;
+  width: 96px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  padding: 6px 4px 8px;
+  border-radius: 12px;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
-.featured-creator-name {
-  font-size: 1.1rem;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+a.admin-gallery-item:hover,
+a.admin-gallery-item:focus-visible {
+  background: var(--color-background-secondary);
+  transform: translateY(-2px);
+  outline: none;
 }
 
-/* Smaller, inline "verified"-style variant of .role-badge (defined at
-     32px for the profile header) — same gradients/icon, sized down to sit
-     beside the name like a verification tick. */
-.featured-creator-name-row .role-badge {
-  width: 18px;
-  height: 18px;
-  border-width: 0;
-  cursor: default;
+.admin-gallery-avatar-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
   flex-shrink: 0;
 }
 
-.featured-creator-name-row .role-badge:hover {
+.admin-gallery-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  box-shadow: var(--shadow-sm);
+  /* The notch cut into the bottom-end corner is carved out of the avatar
+             itself (not the badge) via a radial-gradient mask, so the badge
+             sits recessed into the circle the way YouTube channel badges do
+             rather than just floating on top of it. Physical corner
+             (bottom-right) intentionally does not mirror in RTL — the
+             badge's own inset below matches it exactly. */
+  -webkit-mask-image: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 4px),
+      transparent 98%,
+      #000 100%);
+  mask-image: radial-gradient(circle 15px at calc(100% - 4px) calc(100% - 4px),
+      transparent 98%,
+      #000 100%);
+}
+
+.admin-gallery-badge.role-badge {
+  position: absolute;
+  inset-inline-end: -2px;
+  inset-block-end: -2px;
+  width: 24px;
+  height: 24px;
+  border-width: 0;
+  cursor: default;
+}
+
+.admin-gallery-badge.role-badge:hover {
   transform: none;
 }
 
-.featured-creator-handle {
-  font-size: 0.85rem;
-  color: var(--color-text-secondary);
+.admin-gallery-handle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
 }
 
-.featured-creator-meta {
-  font-size: 0.8rem;
+.admin-gallery-meta {
+  font-size: 0.7rem;
   color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.admin-gallery-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.admin-gallery-arrow svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-gallery-arrow:hover {
+  background: var(--color-background-secondary);
+  color: var(--color-text-primary);
+  transform: scale(1.08);
+}
+
+.admin-gallery-arrow:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
 }
 
 @media (max-width: 480px) {
-  .featured-creator-card {
-    flex-direction: column;
-    text-align: center;
+  .admin-gallery-arrow {
+    display: none;
+  }
+}
+
+/* ============================================================
+         SECTION-HEADING ICONS — replace the old emoji glyphs in
+         .profile-main / .profile-rail heading text with inline SVGs,
+         following the same hover line-draw approach as .offline-icon
+         (public/offline.html): dash-array set on each path, animated on
+         hover by animating stroke-dashoffset. #badgeContainer's own
+         per-badge icons are untouched (those come from BADGES data, not
+         a heading here).
+         ============================================================ */
+.content-section h2,
+.sidebar-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-icon {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  color: var(--color-primary, #6366f1);
+  transition: color 0.2s ease;
+}
+
+.section-icon .icon-line {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+h2:hover .section-icon,
+h3:hover .section-icon {
+  color: var(--color-primary-hover, #4f46e5);
+}
+
+h2:hover .section-icon .icon-line,
+h3:hover .section-icon .icon-line {
+  animation: section-icon-draw 1.2s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+@keyframes section-icon-draw {
+  0% {
+    stroke-dashoffset: 0;
   }
 
-  .featured-creator-name-row {
-    justify-content: center;
+  100% {
+    stroke-dashoffset: 60;
   }
 }
 
@@ -1465,42 +1592,6 @@ html[dir="ltr"] .history-actions .nav-btn.primary::before {
   font-size: 0.85rem;
   margin-bottom: 6px;
   white-space: normal;
-}
-
-.lb-hover-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.lb-hover-stat {
-  font-size: 0.72rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-}
-
-.lb-hover-stat strong {
-  color: var(--color-text-primary);
-  font-weight: 800;
-}
-
-.lb-hover-profile-link {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-primary);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.lb-hover-profile-link:hover,
-.lb-hover-profile-link:focus-visible {
-  border-bottom-color: var(--color-primary);
-  outline: none;
 }
 
 .lb-hover-card-lore {
@@ -2250,6 +2341,11 @@ html[data-motion="reduced"] {
 
   .stat-card .icon {
     font-size: 1.4rem;
+  }
+
+  .stat-card .icon .section-icon {
+    width: 1.4rem;
+    height: 1.4rem;
   }
 
   .stat-card .value {

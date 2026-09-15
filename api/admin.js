@@ -1375,7 +1375,7 @@ async function handleStats(req, res) {
     const { data, error } = await supabase
       .from("admin_users")
       .select(
-        "display_name, handle, uploaded_quizzes, current_level, avatar_url, thumbnail_url, total_points",
+        "display_name, handle, uploaded_quizzes, current_level, avatar_url, thumbnail_url, total_points, email",
       )
       .order("uploaded_quizzes", { ascending: false })
       .limit(10);
@@ -1384,11 +1384,15 @@ async function handleStats(req, res) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Shape to match what the client (renderLeaderboard) reads: totalQuizzes
+    // Shape to match what the client (Top Admins gallery) reads: totalQuizzes
     // and displayName. Returning the raw uploaded_quizzes/display_name column
     // names here previously left entry.totalQuizzes undefined client-side,
-    // which threw inside renderLeaderboard's try/catch and silently fell
-    // back to a hardcoded mock leaderboard.
+    // which threw inside the renderer's try/catch and silently fell back to
+    // a hardcoded mock leaderboard.
+    // role/isOwner: same derivation as the single-admin lookup below (email
+    // intentionally excluded from the response for the same enumeration
+    // reason noted there — this is a public/anon-key read).
+    const ownerEmails = getOwnerEmails();
     const leaderboard = (data || []).map((row) => ({
       handle: row.handle,
       displayName: row.display_name || null,
@@ -1397,6 +1401,10 @@ async function handleStats(req, res) {
       avatarUrl: row.avatar_url || null,
       thumbnailUrl: row.thumbnail_url || null,
       totalPoints: row.total_points || 0,
+      role: "admin",
+      isOwner: !!(
+        row.email && ownerEmails.includes(row.email.trim().toLowerCase())
+      ),
     }));
 
     return res.status(200).json(leaderboard);

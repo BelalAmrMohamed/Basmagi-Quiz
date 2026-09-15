@@ -26,7 +26,6 @@ import { renderLevelGauge } from "./levelGauge.js";
 import {
   generateBotAvatarDataUrl,
   loreForBot,
-  adminHoverCardHtml,
   adminAvatarUrl,
   attachHoverCard,
 } from "./leaderboardIdentity.js";
@@ -67,6 +66,13 @@ export function refreshUI(options = {}) {
   renderBadges(user);
   if (!skipNetworkFetches) {
     renderLeaderboard(user, currentName, myToken);
+    // Top Admins gallery — same data source as before (/api/admin-stats?
+    // leaderboard=true), just rendered into the new gallery markup instead
+    // of leaderboard rows. Runs on both the owner dashboard and visitor
+    // view (see setupVisitorView below); gated on skipNetworkFetches here
+    // the same way renderLeaderboard is, since a local-only refresh
+    // shouldn't re-hit the network.
+    renderAdminGallery(myToken);
   }
   renderActivityHeatmap(user);
   renderCategoryMastery(user, examList);
@@ -183,25 +189,20 @@ export function refreshUI(options = {}) {
       // isVisitorContext=false: this is the owner's own dashboard, so the
       // response is a sync confirmation only — it never overwrites the
       // localStorage-driven totalPoints/totalQuizzes/totalBadges/currentLevel.
-      // Featured Creator Card (see renderFeaturedCreatorCard): every admin
-      // account gets one here too, not just on the /@handle visitor view —
-      // uses the handle already resolved above (currentHandle) and this
-      // same fetch's role/avatar/uploadedQuizzes.
-      fetchAndRenderAdminStats(undefined, myToken, false).then((stats) => {
-        if (myToken !== refreshToken || !stats) return;
-        if (currentHandle) renderFeaturedCreatorCard(currentHandle, stats);
-      });
+      fetchAndRenderAdminStats(undefined, myToken, false);
     }
   } else {
     setActivityLabel(null);
   }
 }
 
-// Sets the 📈 activity-card heading text based on role: "نشاط المشرف" for
+// Sets the activity-card heading text based on role: "نشاط المشرف" for
 // admins, "نشاط المطور" for owners/devs, plain "نشاطك" for everyone else
 // (regular users, or before role info has resolved).
 function setActivityLabel(roleInfo) {
-  const titleEl = document.getElementById("activityHeatmapTitle");
+  // Text lives in a dedicated inner span (not the h3 itself) so this can
+  // update the label without wiping out the heading's .section-icon SVG.
+  const titleEl = document.getElementById("activityHeatmapTitleText");
   if (titleEl) titleEl.textContent = activityLabelFor(roleInfo);
 }
 
@@ -233,59 +234,93 @@ function applyRoleBadges(role, isOwner) {
   }
 }
 
-// Featured Creator Card — YouTube "featured channels"-style strip shown
-// at the bottom of .profile-main, on both a visited /@handle profile and
-// the admin/dev owner's own dashboard. Every /@handle profile belongs to
-// an admin_users row (see render-profile.js / admin.js's handleStats —
-// the route simply doesn't exist for regular users), so visitor view
-// always gets one; the owner's own dashboard gets one too whenever
-// getAdminRoleInfo() resolves (see refreshUI). Either way it replaces the
-// old experience of that admin only speaking for themselves via a
-// highlighted row inside #adminLeaderboardCard (hidden alongside this —
-// see renderLeaderboard's hasFeaturedCard).
-function renderFeaturedCreatorCard(handle, visitedRole) {
-  const card = document.getElementById("featuredCreatorCard");
-  if (!card || !visitedRole) return;
+// Top Admins gallery — horizontal, scrollable strip of every top admin
+// (not just the current one), shown at the bottom of .profile-main on
+// both a visited /@handle profile and the admin/dev owner's own
+// dashboard. Data source is the same endpoint the old admin leaderboard
+// card used (/api/admin-stats?leaderboard=true — see admin.js's
+// isLeaderboard branch) — handle, avatar, role, isOwner, and
+// uploaded-quiz count per admin — just rendered as gallery cards instead
+// of leaderboard rows.
+let adminGalleryArrowsWired = false;
+async function renderAdminGallery(myToken = refreshToken) {
+  const section = document.getElementById("adminGallerySection");
+  const galleryEl = document.getElementById("adminGallery");
+  if (!section || !galleryEl) return;
 
-  const nameEl = document.getElementById("featuredCreatorName");
-  const handleEl = document.getElementById("featuredCreatorHandle");
-  const metaEl = document.getElementById("featuredCreatorMeta");
-  const avatarImg = document.getElementById("featuredCreatorAvatar");
-  const badgeEl = document.getElementById("featuredCreatorRoleBadge");
-
-  const displayName = visitedRole.displayName || handle;
-  nameEl.textContent = displayName;
-  handleEl.textContent = "@" + handle;
-
-  const quizzes = visitedRole.uploadedQuizzes || 0;
-  metaEl.textContent = `${quizzes.toLocaleString()} امتحان مرفوع`;
-
-  if (avatarImg) {
-    avatarImg.src = adminAvatarUrl({
-      avatarUrl: visitedRole.avatarUrl,
-      displayName,
-      handle,
-    });
-    avatarImg.alt = `الصورة الشخصية لـ ${displayName}`;
+  let admins = [];
+  try {
+    const res = await fetch("/api/admin-stats?leaderboard=true");
+    // A newer refreshUI() call started while this fetch was in flight —
+    // discard this response so it can't overwrite fresher DOM state.
+    if (myToken !== refreshToken) return;
+    if (res.ok) admins = await res.json();
+  } catch (e) {
+    // no-op: section stays hidden below, same as the old leaderboard's
+    // silent-fail-to-empty-state behavior.
   }
 
-  if (badgeEl) {
-    if (visitedRole.isOwner) {
-      badgeEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
-      badgeEl.className = "role-badge developer-badge";
-      badgeEl.title = "مطور";
-      badgeEl.style.display = "inline-flex";
-    } else if (visitedRole.role === "admin") {
-      badgeEl.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
-      badgeEl.className = "role-badge admin-badge";
-      badgeEl.title = "مشرف";
-      badgeEl.style.display = "inline-flex";
-    } else {
-      badgeEl.style.display = "none";
+  if (!Array.isArray(admins) || admins.length === 0) {
+    section.style.display = "none";
+    galleryEl.innerHTML = "";
+    return;
+  }
+
+  galleryEl.innerHTML = admins
+    .map((entry) => {
+      const displayName = entry.displayName || entry.handle;
+      const avatar = adminAvatarUrl(entry);
+      const quizzes = (entry.totalQuizzes || 0).toLocaleString();
+      const handle = (entry.handle || "").replace(/^@/, "");
+      const profileHref = handle ? `/@${encodeURIComponent(handle)}` : null;
+
+      let badgeHtml = "";
+      if (entry.isOwner) {
+        badgeHtml = `<span class="admin-gallery-badge role-badge developer-badge" title="مطور" aria-label="مطور"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>`;
+      } else if (entry.role === "admin") {
+        badgeHtml = `<span class="admin-gallery-badge role-badge admin-badge" title="مشرف" aria-label="مشرف"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>`;
+      }
+
+      const cardInner = `
+        <span class="admin-gallery-avatar-wrap">
+          <img class="admin-gallery-avatar" src="${avatar}" alt="الصورة الشخصية لـ ${displayName}" loading="lazy" width="72" height="72">
+          ${badgeHtml}
+        </span>
+        <span class="admin-gallery-handle" dir="ltr">@${handle}</span>
+        <span class="admin-gallery-meta">${quizzes} امتحان مرفوع</span>
+      `;
+
+      return profileHref
+        ? `<a class="admin-gallery-item" role="listitem" href="${profileHref}" aria-label="عرض الملف الشخصي لـ ${displayName}">${cardInner}</a>`
+        : `<div class="admin-gallery-item" role="listitem">${cardInner}</div>`;
+    })
+    .join("");
+
+  section.style.display = "";
+
+  if (!adminGalleryArrowsWired) {
+    adminGalleryArrowsWired = true;
+    const prevBtn = document.getElementById("adminGalleryPrev");
+    const nextBtn = document.getElementById("adminGalleryNext");
+    // One card's worth of scroll per click (avatar + gaps); recalculated
+    // per click rather than cached, since the gallery's contents (and
+    // therefore item width) can change between refreshes.
+    const scrollByCard = (dir) => {
+      const item = galleryEl.querySelector(".admin-gallery-item");
+      const amount = item ? item.getBoundingClientRect().width + 16 : 200;
+      galleryEl.scrollBy({ left: dir * amount, behavior: "smooth" });
+    };
+    // RTL-aware: "prev"/"next" here mean visually left/right arrow
+    // buttons, not fixed scroll directions, so the actual scrollBy sign
+    // is derived from the page's own direction rather than hardcoded.
+    const isRtl = document.documentElement.dir === "rtl";
+    if (prevBtn) {
+      prevBtn.onclick = () => scrollByCard(isRtl ? 1 : -1);
+    }
+    if (nextBtn) {
+      nextBtn.onclick = () => scrollByCard(isRtl ? -1 : 1);
     }
   }
-
-  card.style.display = "";
 }
 
 // Role info modal — replaces the old generic showNotification() toast on
@@ -849,7 +884,10 @@ async function setupVisitorView(handle) {
   if (visitedRole && (visitedRole.role || visitedRole.isOwner)) {
     applyRoleBadges(visitedRole.role, !!visitedRole.isOwner);
   }
-  renderFeaturedCreatorCard(handle, visitedRole);
+  // Top Admins gallery — same call as the owner-dashboard path in
+  // refreshUI(); visitor view has no local-only refresh gate, so this
+  // just runs unconditionally here.
+  renderAdminGallery(refreshToken);
   if (!avatarMeta && visitedRole && visitedRole.avatarUrl) {
     renderVisitorAvatar(visitedRole.avatarUrl, handle);
   }
@@ -1317,13 +1355,13 @@ function renderBadges(user) {
       .join("") || "اكسب الشارات بإكمال الامتحانات!";
 }
 
-// visitedHandle: when set (visitor /@handle view), the admin leaderboard
-// card is hidden — that admin now speaks for themselves via the Featured
-// Creator Card at the bottom of .profile-main (renderFeaturedCreatorCard)
-// instead of being buried as a highlighted row inside the full "top
-// admins" leaderboard. On the owner's own dashboard the same applies when
-// the owner is themselves an admin/dev (roleInfo truthy) — a regular user's
-// own dashboard has no featured card and keeps the leaderboard as-is.
+// .profile-rail's local leaderboard hides on a visited /@handle profile
+// (the viewer has no meaningful position on someone else's page, and may
+// not even be an admin) — see the visitedHandle param, still passed in
+// from the visitor-view call site below. The admin leaderboard this
+// function used to also populate has been removed entirely in favor of
+// the Top Admins gallery (renderAdminGallery) at the bottom of
+// .profile-main.
 async function renderLeaderboard(
   user,
   currentName,
@@ -1331,38 +1369,18 @@ async function renderLeaderboard(
   visitedHandle = null,
 ) {
   const localCard = document.getElementById("localLeaderboardCard");
-  const adminCard = document.getElementById("adminLeaderboardCard");
   const localEl = document.getElementById("localLeaderboard");
-  const adminEl = document.getElementById("adminLeaderboard");
-  if (!adminEl) return;
+  if (!localEl) return;
 
-  const roleInfo = getAdminRoleInfo();
   const displayName =
     currentName || localStorage.getItem("username") || "مستخدم";
-  const highlightHandle = visitedHandle || (roleInfo && roleInfo.handle);
   const isVisitor = !!visitedHandle;
-  // Featured Creator Card replaces this leaderboard card specifically for
-  // an admin/dev's own identity — visiting one (isVisitor) or being one
-  // (roleInfo truthy) on their own dashboard.
-  const hasFeaturedCard = isVisitor || !!roleInfo;
 
   if (localCard) localCard.hidden = isVisitor;
-  if (adminCard) adminCard.hidden = hasFeaturedCard;
 
-  if (!isVisitor && localEl) {
+  if (!isVisitor) {
     renderLocalLeaderboard(localEl, user, displayName);
   }
-
-  // Still fetched/populated in the background even when hidden above, so
-  // it's ready instantly if this ever needs to be shown again — cheap
-  // given renderAdminLeaderboard already no-ops safely on fetch failure.
-  await renderAdminLeaderboard(
-    adminEl,
-    highlightHandle,
-    displayName,
-    visitedHandle,
-    myToken,
-  );
 }
 
 function renderLocalLeaderboard(leaderboardEl, user, displayName) {
@@ -1426,63 +1444,6 @@ function renderLocalLeaderboard(leaderboardEl, user, displayName) {
       );
     }
   });
-}
-
-async function renderAdminLeaderboard(
-  leaderboardEl,
-  highlightHandle,
-  displayName,
-  visitedHandle,
-  myToken,
-) {
-  try {
-    const res = await fetch("/api/admin-stats?leaderboard=true");
-
-    // A newer refreshUI() call started while this fetch was in flight —
-    // discard this response so it can't overwrite fresher DOM state.
-    if (myToken !== refreshToken) return;
-
-    if (!res.ok) {
-      leaderboardEl.innerHTML = `<div class="empty-state"><p>تعذر تحميل لوحة المسؤولين</p></div>`;
-      return;
-    }
-
-    const admins = await res.json();
-
-    leaderboardEl.innerHTML = admins
-      .map((entry, i) => {
-        const isHighlighted = entry.handle === highlightHandle;
-        const label = isHighlighted
-          ? visitedHandle
-            ? entry.displayName || entry.handle
-            : displayName + " (أنت)"
-          : entry.displayName || entry.handle;
-        const avatar = adminAvatarUrl(entry);
-
-        return `
-          <div class="lb-row lb-row-avatar ${isHighlighted ? "highlight" : ""}" role="listitem" aria-label="الترتيب ${i + 1}: ${label}، ${entry.totalQuizzes.toLocaleString()} امتحان">
-            <span class="lb-rank" aria-hidden="true">${i + 1}</span>
-            <span class="lb-avatar-hover">
-              <img class="lb-avatar" src="${avatar}" alt="" loading="lazy" width="32" height="32">
-            </span>
-            <span class="lb-name" title="${entry.displayName || entry.handle}">${label}</span>
-            <strong class="lb-metric">${entry.totalQuizzes.toLocaleString()} إختبار</strong>
-          </div>
-        `;
-      })
-      .join("");
-
-    leaderboardEl.querySelectorAll(".lb-row").forEach((row, i) => {
-      const avatarHover = row.querySelector(".lb-avatar-hover");
-      if (avatarHover) {
-        attachHoverCard(avatarHover, adminHoverCardHtml(admins[i]), "", {
-          interactive: true,
-        });
-      }
-    });
-  } catch (err) {
-    leaderboardEl.innerHTML = `<div class="empty-state"><p>تعذر تحميل لوحة المسؤولين</p></div>`;
-  }
 }
 
 // Expose for other modules (quiz result flow) to trigger immediate sync

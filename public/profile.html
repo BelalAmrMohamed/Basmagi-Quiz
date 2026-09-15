@@ -823,28 +823,52 @@
                 <!-- Enhanced Stats Grid -->
                 <div class="stats-grid" id="userStatsGrid">
                     <div class="stat-card">
-                        <div class="icon">💎</div>
+                        <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path class="icon-line" d="m6 3 6 7 6-7" />
+                                <path class="icon-line" d="M3 9h18" />
+                                <path class="icon-line" d="M12 21 3 9l3-6h12l3 6Z" />
+                            </svg></div>
                         <div class="info">
                             <span class="label">إجمالي النقاط</span>
                             <span class="value" id="totalPoints">0</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="icon">📚</div>
+                        <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path class="icon-line" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                <path class="icon-line"
+                                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+                            </svg></div>
                         <div class="info">
                             <span class="label">الامتحانات المُجتازة</span>
                             <span class="value" id="totalQuizzes">0</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="icon">🏆</div>
+                        <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path class="icon-line" d="M8 21h8" />
+                                <path class="icon-line" d="M12 17v4" />
+                                <path class="icon-line" d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+                                <path class="icon-line" d="M17 5h2a2 2 0 0 1 2 2 4 4 0 0 1-4 4" />
+                                <path class="icon-line" d="M7 5H5a2 2 0 0 0-2 2 4 4 0 0 0 4 4" />
+                            </svg></div>
                         <div class="info">
                             <span class="label">الشارات المكتسبة</span>
                             <span class="value" id="totalBadges">0</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="icon">⭐</div>
+                        <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path class="icon-line" d="M12 2.5 15 9l7 1-5 5 1.3 7L12 18.5 5.7 22 7 15 2 10l7-1Z" />
+                            </svg></div>
                         <div class="info">
                             <span class="label">المستوى الحالي</span>
                             <span class="value" id="currentLevel">1</span>
@@ -857,21 +881,33 @@
         <!-- Admin specific Stats Grid (hidden by default) -->
         <div id="adminStatsGrid" class="stats-grid" style="display:none; margin-bottom: 24px;">
             <div class="stat-card">
-                <div class="icon">📤</div>
+                <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path class="icon-line" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <path class="icon-line" d="M17 8 12 3 7 8" />
+                        <path class="icon-line" d="M12 3v12" />
+                    </svg></div>
                 <div class="info">
                     <span class="label">إجمالي الامتحانات المرفوعة</span>
                     <span class="value" id="adminUploadedQuizzes">0</span>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="icon">🚩</div>
+                <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path class="icon-line" d="M5 3v18" />
+                        <path class="icon-line" d="M5 4h13l-3 4 3 4H5" />
+                    </svg></div>
                 <div class="info">
                     <span class="label">إجمالي البلاغات</span>
                     <span class="value" id="adminReportsCount">0</span>
                 </div>
             </div>
             <div class="stat-card">
-                <div class="icon">✅</div>
+                <div class="icon"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path class="icon-line" d="M20 6 9 17l-5-5" />
+                    </svg></div>
                 <div class="info">
                     <span class="label">البلاغات التي تم حلها</span>
                     <span class="value" id="adminResolvedReportsCount">0</span>
@@ -882,7 +918,8 @@
         <!-- ============================================================
              MAIN GRID — two columns on desktop:
                .profile-main  (wide, start side): heatmap, mastery,
-                               history, bookmarks, flagged questions
+                               history, bookmarks, flagged questions,
+                               top admins gallery
                .profile-rail  (340px, sticky):    badges, next badges,
                                leaderboard, quick stats
              Collapses to a single column on tablet/mobile, main content
@@ -894,13 +931,24 @@
                 <div class="widget-row">
                     <!-- Activity Heatmap -->
                     <div class="sidebar-card heatmap-widget-card">
-                        <h3 id="activityHeatmapTitle">📈 نشاطك</h3>
+                        <h3 id="activityHeatmapTitle"><svg class="section-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path class="icon-line" d="M3 3v18h18" />
+                                <path class="icon-line" d="M18.7 8 12 14.7l-3.5-3.5L3 16.7" />
+                            </svg> <span id="activityHeatmapTitleText">نشاطك</span></h3>
                         <div id="activityHeatmap"></div>
                     </div>
 
                     <!-- Category Mastery -->
                     <div class="sidebar-card category-mastery-card">
-                        <h3>🧠 نقاط قوتك</h3>
+                        <h3><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path class="icon-line"
+                                    d="M9.5 2a3.5 3.5 0 0 0-3.5 3.5v.5A2.5 2.5 0 0 0 4 8.5 2.5 2.5 0 0 0 5.5 13a3 3 0 0 0 2 5 3 3 0 0 0 5.5-1.7V5.5A3.5 3.5 0 0 0 9.5 2Z" />
+                                <path class="icon-line"
+                                    d="M14.5 2a3.5 3.5 0 0 1 3.5 3.5v.5A2.5 2.5 0 0 1 20 8.5 2.5 2.5 0 0 1 18.5 13a3 3 0 0 1-2 5 3 3 0 0 1-5.5-1.7" />
+                            </svg> نقاط قوتك</h3>
                         <div id="categoryMastery"></div>
                     </div>
                 </div>
@@ -910,78 +958,127 @@
                      (same pattern as #adminStatsGrid) and only shown once
                      role is known to belong to an admin/dev account. -->
                 <section class="content-section" id="uploadedQuizzesSection" style="display:none;">
-                    <h2>📤 الامتحانات المرفوعة</h2>
+                    <h2><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <path class="icon-line" d="M17 8 12 3 7 8" />
+                            <path class="icon-line" d="M12 3v12" />
+                        </svg> الامتحانات المرفوعة</h2>
                     <div id="uploadedQuizzesList" class="history-list">
                     </div>
                 </section>
 
                 <section class="content-section">
-                    <h2>📜 التاريخ</h2>
+                    <h2><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M3 12a9 9 0 1 0 3-6.7" />
+                            <path class="icon-line" d="M3 4v5h5" />
+                            <path class="icon-line" d="M12 7v5l4 2" />
+                        </svg> التاريخ</h2>
                     <div id="historyList" class="history-list">
                     </div>
                 </section>
 
                 <section class="content-section" id="bookmarks-section">
-                    <h2>⭐ الأسئلة المفضلة</h2>
+                    <h2><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M12 2.5 15 9l7 1-5 5 1.3 7L12 18.5 5.7 22 7 15 2 10l7-1Z" />
+                        </svg> الأسئلة المفضلة</h2>
                     <div id="bookmarksListContainer" class="history-list"></div>
                 </section>
 
                 <section class="content-section">
-                    <h2>🚩 أسئلة للمراجعة</h2>
+                    <h2><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M5 3v18" />
+                            <path class="icon-line" d="M5 4h13l-3 4 3 4H5" />
+                        </svg> أسئلة للمراجعة</h2>
                     <div id="flaggedList" class="history-list">
                     </div>
                 </section>
 
-                <!-- Featured Creator Card — YouTube-"featured channels"-style
-                     strip shown on both a visited /@handle profile and the
-                     admin/dev owner's own dashboard (see
-                     renderFeaturedCreatorCard() in profile.js). Replaces the
-                     old behaviour of leaving that admin's own leaderboard
-                     row to speak for them; hidden by default (and on every
-                     non-admin profile/account). -->
-                <section class="content-section" id="featuredCreatorCard" style="display:none;">
-                    <div class="featured-creator-card">
-                        <span class="featured-creator-avatar-wrap">
-                            <img id="featuredCreatorAvatar" class="featured-creator-avatar" src="" alt="" loading="lazy"
-                                width="64" height="64">
-                        </span>
-                        <div class="featured-creator-info">
-                            <span class="featured-creator-name-row">
-                                <span id="featuredCreatorName" class="featured-creator-name"></span>
-                                <span id="featuredCreatorRoleBadge" class="role-badge" style="display:none;"></span>
-                            </span>
-                            <span id="featuredCreatorHandle" class="featured-creator-handle" dir="ltr"></span>
-                            <span id="featuredCreatorMeta" class="featured-creator-meta"></span>
-                        </div>
+                <!-- Top Admins gallery — horizontal scrollable strip of all
+                     top admins (not just the current one), shown on both a
+                     visited /@handle profile and the admin/dev owner's own
+                     dashboard. Replaces the old #adminLeaderboardCard
+                     (vertical rows in .profile-rail) with a browsable
+                     gallery of avatars at the bottom of .profile-main. See
+                     renderAdminGallery() in profile.js. Hidden by default
+                     until populated (no admins / fetch failure). -->
+                <section class="content-section" id="adminGallerySection" style="display:none;">
+                    <h2 id="adminGalleryHeading">
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M8 21h8" />
+                            <path class="icon-line" d="M12 17v4" />
+                            <path class="icon-line" d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+                            <path class="icon-line" d="M17 5h2a2 2 0 0 1 2 2 4 4 0 0 1-4 4" />
+                            <path class="icon-line" d="M7 5H5a2 2 0 0 0-2 2 4 4 0 0 0 4 4" />
+                        </svg>
+                        أفضل المشرفين
+                    </h2>
+                    <div class="admin-gallery-wrap">
+                        <button type="button" class="admin-gallery-arrow admin-gallery-arrow-start"
+                            id="adminGalleryPrev" aria-label="التالي">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </button>
+                        <div class="admin-gallery" id="adminGallery" role="list"></div>
+                        <button type="button" class="admin-gallery-arrow admin-gallery-arrow-end" id="adminGalleryNext"
+                            aria-label="السابق">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6" />
+                            </svg>
+                        </button>
                     </div>
                 </section>
             </div>
 
             <div class="profile-rail">
                 <div class="sidebar-card">
-                    <h3>🏅 شاراتك</h3>
+                    <h3><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle class="icon-line" cx="12" cy="8" r="6" />
+                            <path class="icon-line" d="M8.5 13.5 7 22l5-3 5 3-1.5-8.5" />
+                        </svg> شاراتك</h3>
                     <div id="badgeContainer" class="badge-display-grid">
                     </div>
                 </div>
 
                 <div class="sidebar-card">
-                    <h3>🎯 الشارات القادمة</h3>
+                    <h3><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle class="icon-line" cx="12" cy="12" r="9" />
+                            <circle class="icon-line" cx="12" cy="12" r="5" />
+                            <circle class="icon-line" cx="12" cy="12" r="1" />
+                        </svg> الشارات القادمة</h3>
                     <div id="nextBadges">
                     </div>
                 </div>
 
                 <div class="sidebar-card" id="localLeaderboardCard">
-                    <h3>🎯 المتصدرين</h3>
+                    <h3><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M8 21h8" />
+                            <path class="icon-line" d="M12 17v4" />
+                            <path class="icon-line" d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+                            <path class="icon-line" d="M17 5h2a2 2 0 0 1 2 2 4 4 0 0 1-4 4" />
+                            <path class="icon-line" d="M7 5H5a2 2 0 0 0-2 2 4 4 0 0 0 4 4" />
+                        </svg> المتصدرين</h3>
                     <div id="localLeaderboard" class="leaderboard-list" role="list"></div>
                 </div>
 
-                <div class="sidebar-card" id="adminLeaderboardCard">
-                    <h3>🏆 أفضل المشرفين</h3>
-                    <div id="adminLeaderboard" class="leaderboard-list" role="list"></div>
-                </div>
-
                 <div class="sidebar-card">
-                    <h3>📊 الإحصاءات</h3>
+                    <h3><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="icon-line" d="M3 3v18h18" />
+                            <path class="icon-line" d="M8 17V11" />
+                            <path class="icon-line" d="M13 17V7" />
+                            <path class="icon-line" d="M18 17v-4" />
+                        </svg> الإحصاءات</h3>
                     <div id="statsContainer" class="stats-container">
                         <div class="stat-row">
                             <span>معدل الدقة</span>
