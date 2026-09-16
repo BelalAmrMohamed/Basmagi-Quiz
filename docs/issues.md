@@ -46,13 +46,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ### Home Page
 
-#### Animations
-These animations should be excluded from the "الأداء الفائق" (`html[data-motion="reduced"]`) mode, meaning they should work even when the mode is on, these are features that shouldn't be dispabled when that mode is on when `data-motion` is set to "reduced":
-- The hover state of the icons on the `#sidebar`; `.menu-item`. In the `quiz.html` page, and on the rest of the platform.
-- The loading shimmer/skeleton on all pages, including these (control.html, index.html, create-quiz.html, profile.html, quiz.html, and any other page that has a loading skeleton).
-- The profile page's icons; `.section-icon`.
-
-#### Info
+#### Info Modals
 - Quizzes, Folders, and Courses store so much info (Check their tables in [DB Context](Database-Schema-Context.md)):
   - Extend the info in the quiz info modal `quiz-info-dialog` (don't show the password ofcourse, but you can show an indication like (privacy: has password) or a similar label)
   - Extend the info in the course info modal, too.
