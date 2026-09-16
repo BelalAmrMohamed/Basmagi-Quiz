@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.3.4] - 2026-09-16
+### Changed
+- Updated ackage.json
+- Updated issues.md, naming-rule-audit-handoff-prompt.md, side-menu.css, category-view.js, copy-to-my-quizzes.js, exam-dropdown-menu.js, index.css, root-view.js, user-quizzes-folders.js, quiz.css, themes.css, & commit.js. Deleted amtihanatak-naming-rule-audit.md & content-rules.md. Added git-changes.js & release.js.
+- Updated PROJECT_STRUCTURE.md, issues.md, & ai-agent-on-quiz-page-prompt.md.
+- Updated CHANGELOG.md, _itemActions.js, admin.js, issues.md, package-lock.json, package.json, privacy-policy.html, service-worker.js, create-quiz.js, quiz-file-import.js, user-quizzes-view.js, console-core.js, & terms-of-service.html. Deleted amtihanatak-naming-rule-audit.md. Added amtihanatak-naming-rule-audit.md, content-rules.md, & naming-rule-audit-handoff-prompt.md.
+- Added amtihanatak-naming-rule-audit.md.
+- Updated quiz.css.
+- Updated issues.md, create-quiz.html, index.html, profile.html, quiz.html, reports.html, result.html, settings.html, side-menu.css, documents-shell.js, & quiz.css.
+- Updated og.js.
+- Updated create-quiz.html, index.html, profile.html, quiz.html, reports.html, result.html, settings.html, ai-agent.css, side-menu.css, documents-shell.js, quiz.css, & themes.css.
+- Updated issues.md, create-quiz.html, index.html, profile.html, quiz.html, reports.html, result.html, settings.html, side-menu.css, control.css, create-quiz.css, about.css, documents-shell.js, index.css, profile.css, quiz.css, settings.css, & themes.css.
+- Updated issues.md, settings.html, index.css, root-view.js, settings.css, & settings.js.
+- Updated PROJECT_STRUCTURE.md, issues.md, create-quiz.html, index.html, profile.html, reports.html, result.html, settings.html, side-menu.css, documents-shell.js, & navRoleBadge.js.
+- Updated issues.md.
+- Updated create-quiz.html, index.html, profile.html, reports.html, result.html, settings.html, ai-agent.css, side-menu.css, exam-dropdown-menu.css, index.css, profile.css, & navRoleBadge.js.
+- Updated issues.md. Deleted image-1.png, image-2.png, image-5.png, image.png, & unsolved-localhost-sign-in-issue--maybe-related-to-AOth-console-config-or-DB-config.md.
+- Updated PROJECT_STRUCTURE.md, ai-agent.css, side-menu.css, control.css, create-quiz.css, about.css, index.css, profile.css, quiz.css, & result.css.
+- Updated PROJECT_STRUCTURE.md, create-quiz.html, index.html, profile.html, result.html, settings.html, side-menu.css, side-menu.js, profile.css, profile.js, quiz.css, quiz.js, & avatarEngine.js. Added menu-icon-draw.js & navRoleBadge.js.
+- Updated issues.md & profile.css.
+- Updated PROJECT_STRUCTURE.md, render-profile.js, issues.md, profile.html, profile.css, profile.js, & profileWidgets.js.
+- Updated PROJECT_STRUCTURE.md, issues.md, profile.css, & profile.js. Added image-2.png.
+- Updated PROJECT_STRUCTURE.md, issues.md, side-menu.css, profile.css, profile.js, & profileWidgets.js.
+- Updated PROJECT_STRUCTURE.md, admin.js, issues.md, profile.html, leaderboardIdentity.js, profile.css, profile.js, & profileWidgets.js.
+- Updated issues.md, package-lock.json, package.json, control.html, create-quiz.html, index.html, offline.html, onboarding.html, privacy-policy.html, profile.html, reports.html, result.html, service-worker.js, settings.html, sign-in.js, side-menu.css, side-menu.js, create-quiz.css, documents-shell.js, index-entrypoint.js, index.css, sign-in.js, profile.css, profile.js, console-core.js, & terms-of-service.html.
+- Fixed Broken admins profiles
+- Updated PROJECT_STRUCTURE.md.
+- Updated issues.md. Deleted SEO-GEO-plan.md. Added NOTES.md.
+- Updated _catalog.js, seo.js, & SEO-GEO-plan.md.
+- Updated _catalog.js, seo.js, SEO-GEO-plan.md, llms.txt, & seo-check.mjs.
+- Updated issues.md, package.json, & result.html. Added seo-check.mjs.
+- Updated _courseFolders.js, admin.js, college-quiz.js, render-course.js, render-profile.js, render-quiz.js, seo.js, upload-folder.js, upload-quiz.js, issues.md, sitemap.xml, & vercel.json. Deleted Claude-SEO-GEO plan implementation adjustments-20260914-1621.md. Added llms.txt & sitemap-static.xml.
+- Updated PROJECT_STRUCTURE.md. Deleted reports.js.
+- Updated offline.html.
+- Fixed old-style links. Added seo.js and other /api routs. Still didn't delete old /api routes that got merged.
+- Updated issues.md. Added Claude-SEO-GEO plan implementation adjustments-20260914-1621.md.
+- Added SEO-GEO-plan.md.
+- Updated issues.md. Deleted basmagi_quiz_backup_pre_media_migration.json.
+- Updated issues.md & landing-screen.js.
+- Updated issues.md & commit.js.
+- Updated commit.js.
+- Updated create-quiz.js, exam-card.js, user-quiz-card.js, user-quizzes-folders.js, & vercel.json.
+- Updated PROJECT_STRUCTURE.md & issues.md.
+- Updated render-profile.js, issues.md, package-lock.json, package.json, manifest.json, quiz.html, sitemap.xml, download-password.js, quiz.css, quiz.js, & vercel.json. Added commit.js.
+- Updated issues.md
+- Updated quiz.js
+- Removed legacy image, video, audio object logic
+- Updated create-quiz
+- Updated create-quizjs and others
+- Updated docs
+- Updated ai-prompts.js
+- Updated markdown-media-migration-plan.md
+- Updated create-quiz.js
+- Deleted file
+- Fixed Create-Quiz Page
+- Partial Markdown Engine Enhancements #3
+- Documented create-quiz page failure, not yet resolved
+- Partial Markdown Engine Enhancements #2
+- Partial Markdown Engine Enhancements
+- Fixed search
+- .
+- Partially fixed search for the الله اعلم times
+- updated search.css
+- Partially fixed search
+- Updated search.css
+- Fixed search partially
+- Updated side-menu
+- Updated docs/issues.md
+- Updated AI Agent favicon. Now size matched when side-bar expands/minimizes
+- updated home page search
+- Updated search
+
 ## [8.3.3] - 2026-9-16
 
 ### Fixed امتحاناتك naming-rule gaps
