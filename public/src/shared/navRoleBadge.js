@@ -153,6 +153,20 @@ export function mountNavRoleBadge(img, roleInfo) {
     }
 
     badge.style.display = "block";
+
+    // Cuts the circular notch into the avatar's own corner (see side-menu.css)
+    // so the badge sits recessed into the photo, matching .admin-gallery-badge
+    // on the profile page. Scoped to the real <img>, not the default-icon SVG
+    // that swaps in when there's no avatar set — a mask cut into a small icon
+    // glyph (rather than a photo) has nothing to recede into and just clips it.
+    if (
+        img.tagName === "IMG" &&
+        (img.classList.contains("menu-item-avatar") ||
+            img.classList.contains("bottom-nav-avatar"))
+    ) {
+        img.classList.add("nav-avatar-has-badge");
+    }
+
     return badge;
 }
 
@@ -174,4 +188,5 @@ export function unmountNavRoleBadge(img) {
     scope
         .querySelectorAll(".nav-badge-overlay")
         .forEach((el) => el.remove());
+    img.classList?.remove("nav-avatar-has-badge");
 }

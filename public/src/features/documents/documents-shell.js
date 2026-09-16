@@ -144,13 +144,6 @@ if (sidebarNav) {
     "beforeend",
     `<div class="menu-divider" role="separator" aria-hidden="true"></div>` +
     `<div class="docs-menu-heading sidebar-expanded-only" aria-hidden="true">المستندات</div>` +
-    // Search only makes sense once the sidebar is wide enough to show an
-    // input + labels — hidden on the collapsed icon-rail via
-    // sidebar-expanded-only, same convention every other text control in
-    // this sidebar already follows (see the theme controls section
-    // above). With only six links this is a small convenience, not a
-    // necessity, but it's cheap and scales naturally if more docs are
-    // added later.
     `<div class="docs-menu-search-wrap sidebar-expanded-only">` +
     `<input type="search" id="docsMenuSearch" class="docs-menu-search" placeholder="بحث في المستندات" aria-label="بحث في المستندات" autocomplete="off">` +
     `</div>` +

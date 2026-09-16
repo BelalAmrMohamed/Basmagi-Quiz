@@ -698,7 +698,7 @@
                         }
                         var b = document.createElement('img');
                         b.className = 'nav-badge-overlay';
-                        b.src = role === 'owner' ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 3.5l2.02 4.6 5.02.46-3.8 3.34 1.13 4.9L12 14.35l-4.37 2.45 1.13-4.9-3.8-3.34 5.02-.46z'/%3E%3C/svg%3E" : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ffffff' d='M12 4.2l5.4 2v4.3c0 3.9-2.3 7.1-5.4 8-3.1-.9-5.4-4.1-5.4-8V6.2z'/%3E%3Cpath stroke='%234f46e5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' fill='none' d='M9 12.1l2 2 4-4.2'/%3E%3C/svg%3E";
+                        b.src = role === 'owner' ? "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%234f46e5' d='M22.5 12l-1.93-2.67.24-3.26-3.15-.99-1.63-2.84-3.03 1.25L12 2.5l-2.03.99-3.03-1.25-1.63 2.84-3.15.99.24 3.26L.5 12l1.93 2.67-.24 3.26 3.15.99 1.63 2.84 3.03-1.25L12 21.5l2.03-.99 3.03 1.25 1.63-2.84 3.15-.99-.24-3.26L22.5 12z'/%3E%3Cpath fill='%23ffffff' d='M10.5 16l-4-4 1.41-1.41 2.59 2.58 6.59-6.59L18.5 8z'/%3E%3C/svg%3E" : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z'/%3E%3C/svg%3E";
                         b.alt = '';
                         b.title = role === 'owner' ? 'مطوّر المنصة' : 'مشرف';
                         // Drives the per-role fill in side-menu.css.

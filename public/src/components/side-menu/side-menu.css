@@ -2001,19 +2001,14 @@ html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(n 
   padding: 2.5px;
   object-fit: contain;
   border-radius: 50%;
-  /* Owner default. Admin overrides below. Same two gradients as
-     .role-badge.admin-badge / .developer-badge in profile.css. */
-  background-image: linear-gradient(135deg, #fbbf24, #d97706);
-  box-shadow: 0 2px 5px rgba(217, 119, 6, 0.4);
+  /* Owner default. Admin overrides below. */
+  background: linear-gradient(135deg, #a855f7, #6d28d9);
+  box-shadow: 0 2px 5px rgba(109, 40, 217, 0.4);
 }
 
 .nav-badge-overlay[data-role="admin"] {
-  background-image: linear-gradient(135deg, #3b82f6, #1e40af);
+  background: linear-gradient(135deg, #3b82f6, #1e40af);
   box-shadow: 0 2px 5px rgba(37, 99, 235, 0.4);
-}
-
-[data-theme="dark"] .nav-badge-overlay {
-  --nav-badge-ring: #1e1e1e;
 }
 
 /* No ring, no hover, no idle motion, no reduced-motion override needed for

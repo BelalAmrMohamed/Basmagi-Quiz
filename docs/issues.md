@@ -57,11 +57,6 @@ Check the rules for creating امتحانات and copying them and moving them.
 
 ### Home Page
 
-#### Admin / Developer Badge
-- The side menu admin badge/favicon is bad looking (`.nav-badge-overlay` on phone's `#bottomNav` and desktop's `#sidebar`). It's currently so bad, I want a total redesign/overhaul of it, on the side-menu on desktops, and on bottom nav on phones.
-
-It's still so bad; I'm thinking of the same badge that exists  on .admin-gallery, the .admin-gallery-badge. So simple. also make a cutout for it in the #navSidebarAvatar, do you understand what I mean?
-
 #### Animations
 These animations should be excluded from the "الأداء الفائق" (`html[data-motion="reduced"]`) mode, meaning they should work even when the mode is on, these are features that shouldn't be dispabled when that mode is on when `data-motion` is set to "reduced":
 - The hover state of the icons on the `#sidebar`; `.menu-item`. In the `quiz.html` page, and on the rest of the platform.
