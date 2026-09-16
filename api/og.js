@@ -1037,6 +1037,23 @@ const ICON_CARD = { left: 24, top: 25, width: 380, height: 465, rotationDeg: -6 
 // pinned to the bottom instead of immediately under the info rows.
 const COURSE_CONTENT = { left: 470, right: 1152, top: 56, bottom: 630 - 40 };
 
+// Info-table column widths — FIXED pixels, not percentages. The table
+// itself always renders at the full content-column width (see
+// `contentWidth` below, used as the table's `width: "100%"`), so its
+// total pixel width is already a known constant; deriving the two column
+// widths from that constant up front (once) means every row gets the
+// exact same column boundary. This replaces an earlier version that used
+// percentage flex-basis ("1 1 54%" / "0 0 46%") directly on each row's
+// columns — percentages recompute per row, and Satori's layout doesn't
+// always resolve that computation to an identical pixel figure for rows
+// with very different content lengths ("2" vs "Computer Science"),
+// which is what produced the misaligned-column bug (values/keys not
+// sitting on a shared x-position row to row). Split kept at the same
+// 54/46 ratio as before for visual continuity.
+const INFO_TABLE_WIDTH = COURSE_CONTENT.right - COURSE_CONTENT.left; // 682
+const INFO_TABLE_VALUE_COL_WIDTH = Math.round(INFO_TABLE_WIDTH * 0.54);
+const INFO_TABLE_KEY_COL_WIDTH = INFO_TABLE_WIDTH - INFO_TABLE_VALUE_COL_WIDTH;
+
 async function renderCourseImage(courseId, folderPath) {
   const [fontData, meta] = await Promise.all([
     loadFont().catch((err) => {
@@ -1211,12 +1228,29 @@ async function renderCourseImage(courseId, folderPath) {
               // the array in their actual final left-to-right paint
               // order — value first (left), key second (right) — with no
               // `order` property at all.
+              //
+              // NOTE on column widths: these were originally percentage
+              // flex-basis ("1 1 54%" / "0 0 46%"). Percentages resolve
+              // against each row's own computed width, and because Satori
+              // (unlike a browser) doesn't always re-settle every row to
+              // an IDENTICAL final pixel width in a flex column, two rows
+              // with very different content lengths ("2" vs "Computer
+              // Science") could each compute a very slightly different
+              // 54%-of-row pixel value — which shows up as the value
+              // column's left edge (and therefore the text start
+              // position) drifting a few px row to row, i.e. the
+              // "right column isn't aligned" bug. Fixed PIXEL widths
+              // (derived from the table's own known, constant rendered
+              // width — see INFO_TABLE_WIDTH below) give every row the
+              // exact same column boundary regardless of content, since
+              // there's no per-row percentage math left to disagree.
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
-                    flex: "1 1 54%",
+                    flex: `0 0 ${INFO_TABLE_VALUE_COL_WIDTH}px`,
+                    width: `${INFO_TABLE_VALUE_COL_WIDTH}px`,
                     justifyContent: "flex-start",
                     alignItems: "center",
                     padding: "14px 22px",
@@ -1256,7 +1290,8 @@ async function renderCourseImage(courseId, folderPath) {
                 props: {
                   style: {
                     display: "flex",
-                    flex: "0 0 46%",
+                    flex: `0 0 ${INFO_TABLE_KEY_COL_WIDTH}px`,
+                    width: `${INFO_TABLE_KEY_COL_WIDTH}px`,
                     justifyContent: "flex-end",
                     alignItems: "center",
                     padding: "14px 22px",
@@ -1494,7 +1529,27 @@ async function renderCourseImage(courseId, folderPath) {
                               type: "div",
                               props: {
                                 style: { display: "flex", fontWeight: "700", color: "#374151" },
-                                children: parentCourseLine,
+                                // Pre-mirrored with renderBidiText — this leaf
+                                // was previously the one place in the file
+                                // rendering a raw, un-mirrored Arabic string
+                                // (every other Arabic text leaf, e.g. the
+                                // title at renderBidiText(title, isArabic)
+                                // and the quiz thumbnail's courseName pill,
+                                // already goes through this). Satori doesn't
+                                // run the Unicode bidi algorithm, so a
+                                // multi-word Arabic course name painted here
+                                // unmirrored (e.g. "اللغة العربية") came out
+                                // in raw storage order — reversed relative to
+                                // correct visual order ("العربية اللغة").
+                                // The parent div's own `direction: "ltr"`
+                                // (see the row wrapper above) is exactly the
+                                // "container holding pre-mirrored text must
+                                // be ltr" case from renderBidiText's doc
+                                // comment, so no other change is needed here.
+                                children: renderBidiText(
+                                  parentCourseLine,
+                                  detectArabic(parentCourseLine),
+                                ),
                               },
                             },
                           ],
