@@ -197,22 +197,12 @@ body.sidebar-expanded {
 .sidebar nav {
   flex: 1;
   overflow-y: auto;
-  /*
-   * overflow-x: clip (not hidden) — critical distinction:
-   *   hidden → creates a Block Formatting Context (BFC) that traps children's
-   *            translateY transforms inside the element's paint bounds, causing
-   *            theme-selector-btn:active translateY(-2px) to be clipped at top.
-   *   clip   → clips visually without creating a BFC, so children's transforms
-   *            can paint outside the block edge. Supported in all modern browsers.
-   */
   overflow-x: clip;
   padding: 8px 8px 24px;
   display: flex;
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
-  /* RTL scrollbar fix: keeps the scrollbar on the right edge, closer to the
-     sidebar's inner border, while .menu-item children set direction: rtl. */
   direction: ltr;
 }
 
@@ -478,20 +468,11 @@ body.sidebar-expanded {
     transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.12s ease;
   transform: scale(1) translateY(0);
-  /* `will-change: transform` used to sit here, permanently promoting every
-     sidebar icon to its own compositor layer for a transform that only ever
-     fires on hover/active. Dropped for the same reason as the equivalent rule
-     in side-menu.css: the standing raster layer softened the hairline strokes
-     the line-draw animation below relies on, for a transform cheap enough to
-     composite on demand anyway. */
 }
 
-/* Icons lift and scale up slightly on hover/focus — a quick, springy nudge
-   rather than a slow ease. Kept subtle (8% scale, 1px lift) so it reads as
-   responsive rather than showy. */
 .menu-item:hover svg,
 .menu-item:focus-visible svg {
-  transform: scale(1.08) translateY(-1px);
+  /* transform: scale(1.08) translateY(-1px); */
 }
 
 .menu-item:active svg {
@@ -746,6 +727,7 @@ body.sidebar-expanded {
   gap: 10px;
   padding: 4px 6px 10px;
   color: var(--color-text-secondary);
+  direction: rtl;
 }
 
 .quiz-view-style-label .menu-label {
