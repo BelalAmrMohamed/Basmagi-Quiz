@@ -1,6 +1,6 @@
 {
   "name": "basamgi-quiz",
-  "version": "8.3.3",
+  "version": "8.3.4",
   "description": "Vanilla JS examination platform with quiz creation and export features",
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "vercel": "vercel dev",
     "map": "node scripts/map.js",
     "commit": "node scripts/commit.js",
+    "release": "node scripts/release.js",
     "zip": "git archive --format=zip --output=basmagi-quiz.zip HEAD",
     "seo:check": "node scripts/seo-check.mjs"
   },

@@ -30,20 +30,6 @@
   flex: 1;
 }
 
-/* Row wrapper around sidebar + .ai-agent-body (see ai-agent.js — `row` is
-   the actual parent of both, sibling of `tabs` under .ai-agent-widget).
-   BUG FIX: a previous version tried to lay the sidebar and body out side
-   by side by making .ai-agent-body itself `flex-direction: row-reverse`
-   on desktop — but the sidebar was never a CHILD of .ai-agent-body (it's
-   a sibling, both children of .ai-agent-widget), so that rule had no
-   sidebar to lay out next to and did nothing. Sidebar and body ended up
-   stacking vertically like ordinary column children of the
-   always-column .ai-agent-widget, leaving a large empty gap below a
-   short, fixed-max-height panel inside a much taller desktop modal. This
-   wrapper is the actual node that becomes a flex row on desktop (see
-   .ai-agent-desktop-layout .ai-agent-row below). On mobile it's a plain
-   block — same "just a passthrough" role .ai-agent-body used to describe
-   on its own. */
 .ai-agent-row {
   display: flex;
   flex-direction: column;
@@ -51,8 +37,7 @@
   flex: 1;
 }
 
-/* ── Panels ──
-   Defensive: both the base rule (hide) and the .active rule (show) are
+/* ── Panels ── Defensive: both the base rule (hide) and the .active rule (show) are
    scoped to the exact same specificity everywhere this class is used
    (including nested under .ai-agent-modal-card below), so an inactive
    panel can never be visible regardless of which container it renders
@@ -1485,34 +1470,13 @@ body.sidebar-expanded .ai-agent-fab {
 }
 
 .ai-agent-modal-card {
-  /* BUG FIX: the shared .modal-card base rule supplies its 90% width (=
-     the side "margins" on phones) via `width: 90%`, but this override was
-     replacing it with a flat `width: 100%` — 100% of the flex-centered
-     .modal-overlay, i.e. the full viewport width, with nothing left for
-     side gutters. Use the same 90% the rest of the app's modals rely on,
-     capped by max-width on larger screens, instead of re-deriving sizing
-     from scratch. */
   width: 90%;
   max-width: 460px;
   padding: 0;
   overflow: hidden;
-  /* Containing block for the mobile sidebar sheet's `position: absolute`
-     (see .ai-agent-sidebar's <900px rules below) — without this it would
-     anchor to the nearest OTHER positioned ancestor (or the viewport),
-     rather than sliding up from within this card's own rounded-corner
-     bounds the way the main site's side-menu bottom sheet does. */
   position: relative;
   display: flex;
   flex-direction: column;
-  /* PHASE 7 (stop resizing the modal window): fixed `height`, not
-     `max-height`. `max-height` is a ceiling — the modal still shrinks to
-     fit its content below that ceiling, which is exactly what produced
-     the "flashes twice" symptom (opening empty, then growing/settling
-     once the empty-state message or first messages render). A fixed
-     `height` makes this the ONE size for the mobile breakpoint,
-     regardless of content; internal panels scroll instead (see
-     .ai-agent-modal-card .ai-agent-panel below, already overflow-y:auto
-     via min-height:0/max-height:none). */
   height: min(640px, 88vh);
   box-sizing: border-box;
 }
@@ -1526,11 +1490,6 @@ body.sidebar-expanded .ai-agent-fab {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* The mobile sidebar button sits before this in source order,
-     .close-btn after — space-between (inherited from the shared
-     .modal-header rule) would otherwise push the title flush against
-     whichever of those is visible instead of staying visually centered
-     between them. */
   flex: 1;
   justify-content: center;
 }
@@ -1573,9 +1532,21 @@ body.sidebar-expanded .ai-agent-fab {
   max-height: none;
 }
 
+@media (max-width: 768px) {
+  .ai-agent-modal-card {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
 @media (max-width: 640px) {
   .ai-agent-modal-card {
-    /* Fixed height, same rationale as the base rule above. */
     height: min(560px, 80vh);
   }
 }
@@ -1625,6 +1596,7 @@ body.sidebar-expanded .ai-agent-fab {
     backdrop-filter: none;
   }
 
+  /* 
   .ai-agent-modal-card {
     width: 100%;
     max-width: none;
@@ -1634,12 +1606,9 @@ body.sidebar-expanded .ai-agent-fab {
     border-radius: 0;
     border: none;
     box-shadow: none;
-  }
+  } */
 
   .ai-agent-modal-card .modal-header {
-    /* Extra top padding so the header clears a phone's status bar /
-       camera cutout now that the card runs flush to the physical top
-       edge instead of floating with margin around it. */
     padding-top: calc(18px + env(safe-area-inset-top, 0px));
   }
 }
@@ -1668,25 +1637,15 @@ body.sidebar-expanded .ai-agent-fab {
   .ai-agent-sidebar {
     position: absolute;
     inset-block: 0;
-    /* BUG FIX (plan #10): the sheet used to anchor to the RIGHT edge of
-       the card (`right: 0`) and slide in from the right, while the
-       desktop sidebar sits on the LEFT — inconsistent. Anchor it to the
-       left edge and slide in from the left to match desktops. */
     left: 0;
     right: auto;
     z-index: 5;
-    /* BUG FIX (plan #11): it was min(86vw, 320px) — on a typical
-       ~380px phone that's over 86% of the modal's 90vw (~342px), i.e.
-       the entire chat surface. Shrink it so the chat stays usable with
-       the drawer open. */
-    width: min(76vw, 300px) !important;
+    /* width: min(76vw, 300px) !important; */
+    width: 100%;
     height: 100%;
     border-inline-start: none;
     border-inline-start: 1px solid var(--color-border);
     border-radius: 0;
-    /* The left-anchored sheet's RIGHT edge faces the chat — a shadow
-       cast to the +x direction (positive offset = to the right, i.e.
-       onto the chat) is what reads correctly for a left-side sheet. */
     box-shadow: var(--shadow-xl, 8px 0 24px rgba(0, 0, 0, 0.18));
     transform: translateX(-100%);
     transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -1697,9 +1656,6 @@ body.sidebar-expanded .ai-agent-fab {
     transform: translateX(0);
   }
 
-  /* Collapse only ever applies on desktop (see ai-agent.js's own
-     applySidebarCollapsedState doc comment) — force the sheet fully
-     expanded on mobile regardless of the persisted collapsed state. */
   .ai-agent-sidebar--mobile-open.ai-agent-sidebar--collapsed {
     width: min(76vw, 300px) !important;
     height: 100%;
@@ -2298,25 +2254,16 @@ body.sidebar-expanded .ai-agent-fab {
    reflected in real time either way. */
 @media (min-width: 901px) {
   .ai-agent-modal-card.ai-agent-desktop-layout {
-    /* BUG FIX: the base .ai-agent-modal-card rule sets
-       `max-width: 460px` (the mobile/narrow-viewport ceiling) with no
-       desktop override, so this `width: min(92vw, 860px)` was being
-       silently clamped back down to 460px on every desktop screen —
-       `max-width` isn't overridden just because `width` is re-declared
-       elsewhere; it's a separate property and the old rule was still in
-       effect. Raising the ceiling here is what actually lets the modal
-       reach its intended desktop size instead of staying phone-narrow. */
-    max-width: 860px;
-    /* PHASE 7: fixed `width`/`height`, not content-driven — same
-       rationale as the mobile fixed-height rule above, applied to the
-       desktop breakpoint's own target dimensions. */
-    width: min(92vw, 860px);
-    height: min(760px, 90vh);
+    /* max-width: 860px; */
+    /* width: min(92vw, 860px); */
+    /* height: min(760px, 90vh); */
+    max-width: none;
+    width: 92vw;
+    height: 90vh;
   }
 
   .ai-agent-desktop-layout .ai-agent-row {
     flex-direction: row-reverse;
-    /* RTL: sidebar visually on the LEFT, panels on the right */
     min-height: 0;
     flex: 1;
   }
@@ -2333,39 +2280,12 @@ body.sidebar-expanded .ai-agent-fab {
     flex-shrink: 0;
   }
 
-  /* .ai-agent-sidebar--collapsed's own 56px !important (declared above,
-     outside this breakpoint) wins over this 220px whenever the collapsed
-     class is present, so the toggle works identically regardless of
-     exactly which breakpoint currently applies the sidebar's visibility. */
-
-  /* BUG FIX: .ai-agent-panel's base rule caps height at 480px (a sane
-     limit for the mobile modal's own ~560-640px max-height) — left
-     unchanged here, the wide 760px-tall desktop modal would show that
-     short, fixed-height panel with a large empty gap below/beside it
-     inside the now-much-taller .ai-agent-body. Desktop needs the panel to
-     actually fill the row's available height instead. */
   .ai-agent-desktop-layout .ai-agent-panel {
     flex: 1;
     min-width: 0;
     min-height: 0;
     max-height: none;
   }
-
-  /* The model bar (see relocateModelBar() in ai-agent.js) now lives
-     inside the sidebar's own slot instead of above the chat panel's
-     input row — see .ai-agent-sidebar-model-slot below for its styling.
-     No panel-level display override needed here anymore. */
-
-  /* The tab strip's Chat/History/Settings buttons all stay visible and
-     functional on desktop too. The sidebar's own "عرض كل السجل" button is
-     a shortcut to the same History tab (see sidebarShowAllBtn in
-     ai-agent.js) — a PREVIOUS version hid this tab button on desktop on
-     the assumption the sidebar shortcut made it redundant, but the top
-     tab strip is the first place someone looks for History/Settings, so
-     hiding it read as "the history tab disappeared" rather than "there's
-     a shortcut for it now". Both entry points doing the same thing is
-     harmless; hiding the more discoverable one wasn't worth the
-     de-duplication. */
 }
 
 /* ── `@` mention menu (ai-agent-mention-menu.js) ──
@@ -2490,13 +2410,6 @@ body.sidebar-expanded .ai-agent-fab {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  /* Quick-Access labels are literal Latin identifiers ("@Last_Created_Quiz")
-     shown inside this menu's inherited RTL layout (.exam-action-btn) —
-     without an explicit direction they visually reverse (the `@` renders
-     trailing instead of leading, e.g. "Quiz_Last_Created@"). dir="auto" on
-     the element (see buildRow) already picks the right per-string
-     direction; this just makes sure the browser also aligns the text to
-     that same detected side rather than the row's own RTL start-alignment. */
   unicode-bidi: plaintext;
   font-weight: 600;
   line-height: 1.35;
@@ -2615,14 +2528,6 @@ body.sidebar-expanded .ai-agent-fab {
 @media (max-width: 900px) {
   .ai-agent-mobile-sidebar-toggle {
     display: flex;
-    /* BUG FIX: the mobile drawer this button opens slides in from the
-       LEFT (see .ai-agent-sidebar's `left: 0` / translateX rules above),
-       but this button is the FIRST child in .modal-header's source order
-       (kept that way so #aiAgentModalTitle's flex:1 stays visually
-       centered between it and .close-btn — see the comment on
-       #aiAgentModalTitle) — in this RTL layout, "first child" renders on
-       the RIGHT, opposite the drawer it triggers. `order` flips only the
-       visual position, leaving source order (and the centering) intact. */
     order: 3;
   }
 
@@ -2676,10 +2581,6 @@ body.sidebar-expanded .ai-agent-fab {
    every other modal in this app uses; these rules only add what's
    specific to this modal's own content. */
 .ai-agent-attachment-preview-overlay {
-  /* .modal-overlay's own z-index (--z-modal) sits below the AI Agent
-     panel this preview is opened from — use the app's existing
-     "modal-above-a-modal" token (--z-modal-top, themes.css) instead of
-     inventing a one-off value here. */
   z-index: var(--z-modal-top, 11000);
 }
 
