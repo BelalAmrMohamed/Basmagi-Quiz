@@ -260,6 +260,20 @@ body.sidebar-expanded {
   min-width: 0;
 }
 
+/* Brand wordmark text: fades in/out in sync with the sidebar's own
+   expand/collapse timing instead of popping in instantly, since the
+   sidebar-header itself relies on display:none/flex which cannot
+   transition on its own. */
+.sidebar-brand-text {
+  opacity: 0;
+  transition: opacity 0s;
+}
+
+.sidebar.expanded .sidebar-brand-text {
+  opacity: 1;
+  transition: opacity 150ms ease 100ms;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -1421,6 +1435,11 @@ body.sidebar-expanded {
     transition: none !important;
   }
 
+  .sidebar-brand-text {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+
   .theme-section-header {
     justify-content: center !important;
     padding: 8px 14px !important;
@@ -1448,7 +1467,6 @@ html[data-motion="reduced"] {
   .toggle-switch::after,
   .side-menu-backdrop,
   .menu-item,
-  .menu-item svg,
   .theme-selector-btn,
   .sidebar-collapse-btn,
   .sidebar-favicon,
@@ -1461,35 +1479,10 @@ html[data-motion="reduced"] {
     transition: none !important;
   }
 
-  .menu-item:hover svg,
-  .menu-item:focus-visible svg,
-  .menu-item:active svg {
-    transform: none !important;
-  }
-
-  /* "الأداء الفائق" (High Performance) switches the icon line-draw off
-     entirely — see side-menu.css's equivalent rule for the full rationale.
-     Cancelling the animation outright (rather than relying on the global
-     animation-duration crush elsewhere in the theme system) avoids a style
-     recalc on every icon each time the cursor crosses the rail, and pinning
-     the offset back to 0 guarantees the strokes stay whole regardless of
-     where the cancelled animation was in its cycle. */
-  .menu-item:hover .menu-icon-line,
-  .menu-item:focus-visible .menu-icon-line,
-  .menu-item:active .menu-icon-line,
-  .menu-item:hover .menu-icon-line:nth-child(2),
-  .menu-item:focus-visible .menu-icon-line:nth-child(2),
-  .menu-item:active .menu-icon-line:nth-child(2),
-  .menu-item:hover .menu-icon-line:nth-child(3),
-  .menu-item:focus-visible .menu-icon-line:nth-child(3),
-  .menu-item:active .menu-icon-line:nth-child(3),
-  .menu-item:hover .menu-icon-line:nth-child(n + 4),
-  .menu-item:focus-visible .menu-icon-line:nth-child(n + 4),
-  .menu-item:active .menu-icon-line:nth-child(n + 4) {
-    animation: none !important;
-    animation-delay: 0s !important;
-    stroke-dashoffset: 0 !important;
-  }
+  /* .menu-item svg / the icon hover+draw animation are intentionally left
+     out of the reduced-motion kill switch above: the sidebar and menu-item
+     icon hover state stays active even under "الأداء الفائق"
+     (High Performance / reduced motion) mode. */
 }
 
 /* ─── 4. Sidebar Menu & Navigation ──────────────────────────────────────── */

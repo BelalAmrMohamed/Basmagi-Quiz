@@ -50,11 +50,6 @@ Check the rules for creating امتحانات and copying them and moving them.
   - Images / videos get 4 resize handles, one on each corner.
   - Audio get 2 handles, one on the right, other on the left, since its height doesn't change.
 
-### Settings Page
-- The page shows false/placeholder values at start, before loading the actual values from localstorage and DB, which confuses some users. Implement an advanced loading skeleton/state before displaying any info, including the dropdowns, loading for every element.
-- The carrot on the dropdowns is too close to the left border, fix the padding/margin or whatever is wrong.
-- If the user is subscribed to a college or academic stage but not to any specific courses, display a message/banner to them telling him that the courses that will appear to him on the home page are all courses; additionally, remove the "الغاء الاشتراك" button from the home page when the user isn't subscribed to any course and all courses are being displayed, since that button doesn't work then.
-
 ### Home Page
 
 #### Animations

@@ -510,12 +510,10 @@ input::placeholder {
             var(--bg-card2) 100%);
     background-size: 600px 100%;
     background-repeat: no-repeat;
-}
-
-html[data-motion="normal"] {
-    .control-skeleton-block {
-        animation: control-shimmer 1.6s ease-in-out infinite;
-    }
+    /* Loading skeletons stay animated regardless of "الأداء الفائق" /
+       reduced-motion mode, so this is unconditional rather than gated
+       behind html[data-motion="normal"]. */
+    animation: control-shimmer 1.6s ease-in-out infinite;
 }
 
 /* Inline text-line skeleton — for single-value spots like #ownerEmailDisplay */

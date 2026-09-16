@@ -1157,11 +1157,10 @@ h3:hover .section-icon .icon-line {
   }
 }
 
-/* "الأداء الفائق" (High Performance) turns the line-draw off across the page.
-   This is the data-motion counterpart to the prefers-reduced-motion block at
-   the end of this file, which already covered these same selectors — the OS
-   preference was honoured but the in-app toggle was not, so switching High
-   Performance on left every heading and stat-card icon still looping.
+/* "الأداء الفائق" (High Performance) turns the line-draw off for empty-state
+   icons only. .section-icon (heading + stat-card icons) is intentionally
+   excluded from this kill switch — that hover animation stays active even
+   under High Performance / reduced motion mode.
 
    themes.css does crush animation-duration to 0.001ms under this attribute,
    but that is not sufficient on its own here: `section-icon-draw` ends at
@@ -1169,9 +1168,6 @@ h3:hover .section-icon .icon-line {
    collapsing its duration to zero just lands on the erased end state. Nothing
    pins the strokes back, which is why the icons need an explicit cancel plus a
    reset of the offset rather than a shorter duration. */
-html[data-motion="reduced"] h2:hover .section-icon .icon-line,
-html[data-motion="reduced"] h3:hover .section-icon .icon-line,
-html[data-motion="reduced"] .stat-card:hover .icon .section-icon .icon-line,
 html[data-motion="reduced"] .empty-state:hover .empty-state-icon .icon-line,
 html[data-motion="reduced"] .empty-state:focus-within .empty-state-icon .icon-line,
 html[data-motion="reduced"] .empty-state.is-drawing .empty-state-icon .icon-line {
@@ -3155,26 +3151,20 @@ html[data-motion="reduced"] {
    REDUCED MOTION 
    ============================================================ */
 html[data-motion="reduced"] {
-  .skeleton-block {
-    animation: none;
-    /* Drop the sheen entirely and lean on a flat tint — without the sweep
-       the gradient would otherwise freeze mid-position and read as a
-       lopsided smudge. */
-    background-image: none;
-    opacity: 0.7;
-  }
+  /* .skeleton-block's shimmer is intentionally left running under reduced
+     motion — the loading skeleton keeps animating even in "الأداء الفائق"
+     (High Performance) mode. */
 
   .container:not(.is-profile-loading)>.identity-band,
   .container:not(.is-profile-loading)>.profile-layout {
     animation: none;
   }
 
+  /* .section-icon (heading + stat-card icons) is intentionally excluded
+     from this kill switch — see the block above for the full rationale. */
   .empty-state:hover .empty-state-icon .icon-line,
   .empty-state:focus-within .empty-state-icon .icon-line,
-  .empty-state.is-drawing .empty-state-icon .icon-line,
-  .stat-card:hover .icon .section-icon .icon-line,
-  h2:hover .section-icon .icon-line,
-  h3:hover .section-icon .icon-line {
+  .empty-state.is-drawing .empty-state-icon .icon-line {
     animation: none;
   }
 }

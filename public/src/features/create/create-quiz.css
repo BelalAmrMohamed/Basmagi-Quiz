@@ -924,13 +924,9 @@ body.sidebar-expanded .global-md-bar {
   }
 }
 
-html[data-motion="reduced"] {
-
-  .entry-skeleton-heading::after,
-  .entry-skeleton-tile::after {
-    animation: none;
-  }
-}
+/* .entry-skeleton-heading / .entry-skeleton-tile shimmer stays animated
+   under reduced motion — the loading skeleton keeps sweeping even in
+   "الأداء الفائق" (High Performance) mode. */
 
 .entry-item:hover .entry-item-thumb,
 .entry-item:focus-visible .entry-item-thumb,

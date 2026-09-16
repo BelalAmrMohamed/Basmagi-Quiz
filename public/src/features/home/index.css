@@ -3265,12 +3265,10 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   background-image: var(--gradient-loading-skeleton);
   background-size: 1200px 100%;
   background-repeat: no-repeat;
-}
-
-html[data-motion="normal"] {
-  .skeleton-block {
-    animation: shimmer 1.6s ease-in-out infinite;
-  }
+  /* Loading skeletons stay animated regardless of "الأداء الفائق" /
+     reduced-motion mode, so this is unconditional rather than gated
+     behind html[data-motion="normal"]. */
+  animation: shimmer 1.6s ease-in-out infinite;
 }
 
 .skeleton-icon {

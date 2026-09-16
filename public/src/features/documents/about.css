@@ -371,12 +371,10 @@ html[data-theme="dark-slate"] .about-page {
       var(--about-line) 100%);
   background-size: 300px 100%;
   background-repeat: no-repeat;
-}
-
-html[data-motion="normal"] {
-  .about-page .platform-stat-loading .platform-stat-value::after {
-    animation: about-stat-shimmer 1.6s ease-in-out infinite;
-  }
+  /* Loading skeletons stay animated regardless of "الأداء الفائق" /
+     reduced-motion mode, so this is unconditional rather than gated
+     behind html[data-motion="normal"]. */
+  animation: about-stat-shimmer 1.6s ease-in-out infinite;
 }
 
 @keyframes about-stat-shimmer {

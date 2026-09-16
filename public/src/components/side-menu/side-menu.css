@@ -210,6 +210,20 @@
   min-width: 0;
 }
 
+/* Brand wordmark text: fades in/out in sync with the sidebar's own
+   expand/collapse timing instead of popping in instantly, since the
+   sidebar-header itself relies on display:none/flex which cannot
+   transition on its own. */
+.sidebar-brand-text {
+  opacity: 0;
+  transition: opacity 0s;
+}
+
+.sidebar.expanded .sidebar-brand-text {
+  opacity: 1;
+  transition: opacity 150ms ease 100ms;
+}
+
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -1642,6 +1656,11 @@
     transition: none !important;
   }
 
+  .sidebar-brand-text {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+
   .theme-section-header {
     justify-content: center !important;
     padding: 8px 14px !important;
@@ -1846,7 +1865,6 @@ html[data-motion="reduced"] .toggle-switch,
 html[data-motion="reduced"] .toggle-switch::after,
 html[data-motion="reduced"] .side-menu-backdrop,
 html[data-motion="reduced"] .menu-item,
-html[data-motion="reduced"] .menu-item svg,
 html[data-motion="reduced"] .theme-selector-btn,
 html[data-motion="reduced"] .sidebar-collapse-btn,
 html[data-motion="reduced"] .sidebar-favicon,
@@ -1859,39 +1877,10 @@ html[data-motion="reduced"] body {
   transition: none !important;
 }
 
-html[data-motion="reduced"] .menu-item:hover svg,
-html[data-motion="reduced"] .menu-item:focus-visible svg,
-html[data-motion="reduced"] .menu-item:active svg {
-  transform: none !important;
-}
-
-/* "الأداء الفائق" (High Performance) switches the icon line-draw off entirely.
-   themes.css already crushes every animation-duration to 0.001ms under this
-   attribute, but relying on that alone leaves the animation *running* — just
-   instantly — which still costs a style recalc on each of ~20 icons every time
-   the cursor crosses the rail. Cancelling it outright is the cheaper, more
-   honest behaviour, and pinning the offset back to 0 guarantees the strokes
-   stay whole no matter where the cancelled animation was in its cycle. */
-html[data-motion="reduced"] .menu-item:hover .menu-icon-line,
-html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line,
-html[data-motion="reduced"] .menu-item:active .menu-icon-line,
-html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line,
-html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(2),
-html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(2),
-html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(2),
-html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(2),
-html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(3),
-html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(3),
-html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(3),
-html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(3),
-html[data-motion="reduced"] .menu-item:hover .menu-icon-line:nth-child(n + 4),
-html[data-motion="reduced"] .menu-item:focus-visible .menu-icon-line:nth-child(n + 4),
-html[data-motion="reduced"] .menu-item:active .menu-icon-line:nth-child(n + 4),
-html[data-motion="reduced"] .bottom-nav-item:active .menu-icon-line:nth-child(n + 4) {
-  animation: none !important;
-  animation-delay: 0s !important;
-  stroke-dashoffset: 0 !important;
-}
+/* .menu-item svg / the icon hover+draw animation (below) are intentionally
+   left out of the reduced-motion kill switch above: the sidebar and
+   menu-item icon hover state stays active even under "الأداء الفائق"
+   (High Performance / reduced motion) mode. */
 
 /* ============================================================================
    User Name

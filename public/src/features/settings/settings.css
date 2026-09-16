@@ -1107,12 +1107,11 @@ body.sidebar-expanded .site-footer {
    ACCESSIBILITY IMPROVEMENTS
    ============================================================================ */
 
-/* Reduce motion for users who prefer it */
-html[data-motion="reduced"] * {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-}
+/* Reduced motion is handled globally by themes.css's html[data-motion="reduced"]
+   kill switch, which already excludes loading skeletons and the sidebar icon
+   hover animation from being disabled. A blanket `html[data-motion="reduced"] *`
+   rule used to live here with no exclusions of its own, which silently
+   re-crushed those excluded animations on this page specifically. */
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
@@ -1168,6 +1167,7 @@ html[data-motion="reduced"] * {
   border-color: #4b5563;
   color: #ffffff;
 }
+
 /* ============================================================================
    LOADING SKELETON
    ============================================================================
@@ -1206,6 +1206,7 @@ html[data-motion="reduced"] * {
 }
 
 @keyframes skeleton-pulse {
+
   0%,
   100% {
     opacity: 0.55;
