@@ -254,14 +254,6 @@ body.sidebar-expanded {
 
 .sidebar-brand-link {
   display: flex;
-  /* Parent document is RTL (html dir="rtl"), and nothing here resets that,
-     so plain "row" (the default) already lays out the first DOM child on
-     the right and the last on the left — no row-reverse needed. Markup
-     order is therefore icon-first, text-second (see index.html etc.),
-     matching the sidebar being anchored to the right edge: icon on the
-     right, wordmark on the left. row-reverse was tried here first but
-     that flips AGAINST the inherited RTL flow, not with it, and pushed
-     the icon to the left instead. */
   align-items: center;
   gap: 10px;
   text-decoration: none;

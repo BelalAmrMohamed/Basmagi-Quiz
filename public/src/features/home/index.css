@@ -4300,6 +4300,15 @@ kbd {
   transition: all 0.2s;
   font-family: inherit;
   font-weight: 600;
+  /* BUG FIX: .create-quiz-inline-modal is a column flex container with no
+     align-items override, so its default `align-items: stretch` was
+     stretching this button — a direct child — to the modal's full width.
+     `display: inline-flex` only governs how *this* button lays out its own
+     children (icon/label/arrow); it doesn't opt the button itself out of
+     being stretched by its flex parent. align-self: flex-start makes it
+     size to its own content instead, matching every other icon+label pill
+     button in this modal. */
+  align-self: flex-start;
 }
 
 .create-quiz-modal__copy-prompt-btn:hover {

@@ -20,6 +20,7 @@
 import { positionExamDropdownMenu } from "./floating-position.js";
 import { escapeHtml } from "./escape-html.js";
 import { INFO_ICON_SVG, COPY_CHECK_ICON_SVG } from "./icons.js";
+import { closeUserQuizContextMenu } from "./user-quizzes-folders.js";
 
 /** Removes any currently-open dropdown menu(s). Defensive — normally only
  * one can be open at a time since opening a new one closes the last. Also
@@ -58,6 +59,16 @@ export function openExamDropdownMenu(triggerBtn, buildContent) {
   // toggle-close would never trigger.
   const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
   closeAllExamDropdownMenus();
+  // BUG FIX — overlay exclusivity: #userQuizContextMenu (the right-click
+  // menu in user-quizzes-folders.js) and this dropdown used to be two
+  // independent overlay systems, each only aware of closing copies of
+  // itself. The .exam-more-btn onclick that leads here already calls
+  // e.stopPropagation(), so a click opening this dropdown never reached the
+  // document-level listener that would otherwise close the context menu —
+  // the two could end up open at once. Closing it here (the mirror of
+  // showContextMenu() calling closeAllExamDropdownMenus() before it opens)
+  // means opening either overlay always closes the other.
+  closeUserQuizContextMenu();
   if (wasOpenForThisTrigger) {
     return null;
   }

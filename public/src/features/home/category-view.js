@@ -3,9 +3,6 @@
 // CATEGORY VIEW — the drilled-into category screen (subcategory + exam
 // cards), the category card builder, and lazy root-category listing.
 // ============================================================================
-// BUG FIX: removed a dead, commented-out debug setTimeout/console.log block
-// left over from a prior debugging session (see renderCategory below).
-// ============================================================================
 
 import { toSlug } from "./slug-utils.js";
 import { container, title } from "./dom-refs.js";
@@ -119,10 +116,6 @@ export function renderCategory(category) {
           urlAttempted: url,
         });
       }
-      // BUG FIX (removed dead code): a commented-out setTimeout/console.log
-      // block left over from debugging a since-fixed search-manager.js issue
-      // was removed from here — it never executed, but it was noise for
-      // anyone reading this function.
     }
     // Update search context when entering a category
     const searchManager = getSearchManager();
@@ -302,7 +295,8 @@ export function createCategoryCard(
         copyLink.type = "button";
         copyLink.className = "exam-action-btn";
         copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
-        copyLink.onclick = async () => {
+        copyLink.onclick = async (e) => {
+          e.stopPropagation();
           await navigator.clipboard.writeText(folderUrl);
           closeMenu();
           showNotification("تم النسخ", "تم نسخ رابط المجلد.", "success");
@@ -313,7 +307,8 @@ export function createCategoryCard(
         shareLink.type = "button";
         shareLink.className = "exam-action-btn";
         shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
-        shareLink.onclick = async () => {
+        shareLink.onclick = async (e) => {
+          e.stopPropagation();
           closeMenu();
           if (navigator.share) {
             await navigator.share({ title: courseData.name, url: folderUrl }).catch(() => { });
@@ -328,13 +323,11 @@ export function createCategoryCard(
         copyToMine.type = "button";
         copyToMine.className = "exam-action-btn";
         copyToMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
-        copyToMine.onclick = async () => {
+        copyToMine.onclick = async (e) => {
+          e.stopPropagation();
           await withCopyButtonLoadingState(copyToMine, () =>
             copyCategoryTreeToUserQuizzes(courseData, getCategoryTree(), "folder"),
           );
-          // BUG FIX: refresh the "امتحاناتك" card's subtext right away
-          // instead of leaving it stale until the next navigation back to
-          // the root view (see refreshUserQuizzesCard() in course-count.js).
           refreshUserQuizzesCard();
           closeMenu();
         };

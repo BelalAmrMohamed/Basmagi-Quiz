@@ -184,24 +184,8 @@
   display: none;
   align-items: center;
   justify-content: space-between;
-  /* Right padding (physical, not logical — this is deliberately NOT
-     padding-inline, since it's tuned to one specific edge) is set so the
-     favicon's center lands exactly 32px from the sidebar's right edge:
-     10px padding + 18px (half of the 36px icon) = 28px, which didn't
-     match the collapsed rail's 44px-button center (32px from the edge)
-     and caused a small horizontal jump on toggle. 14px + 18px = 32px
-     aligns the two exactly.
-     Top padding is likewise tuned (14px, not the original 8px) so the
-     favicon's vertical center also lands 32px from the sidebar's top —
-     matching the collapsed .sidebar-favicon button's own center
-     (10px margin-top + 44px/2), which otherwise sat 6px lower than this
-     header's icon and caused a small vertical jump on toggle too. */
   padding: 14px 10px 8px 14px;
   padding-right: 14px;
-  /* Floor only — actual height is padding (14+8=22px) + the 36px icon =
-     58px, taller than this min-height, so min-height no longer drives the
-     box; it just guards against ever collapsing shorter than 52px if the
-     icon/padding values change later. */
   min-height: 52px;
   width: 100%;
   box-sizing: border-box;
@@ -214,14 +198,6 @@
 
 .sidebar-brand-link {
   display: flex;
-  /* Parent document is RTL (html dir="rtl"), and nothing here resets that,
-     so plain "row" (the default) already lays out the first DOM child on
-     the right and the last on the left — no row-reverse needed. Markup
-     order is therefore icon-first, text-second (see index.html etc.),
-     matching the sidebar being anchored to the right edge: icon on the
-     right, wordmark on the left. row-reverse was tried here first but
-     that flips AGAINST the inherited RTL flow, not with it, and pushed
-     the icon to the left instead. */
   align-items: center;
   gap: 10px;
   text-decoration: none;
@@ -229,15 +205,6 @@
   min-width: 0;
 }
 
-/* Brand wordmark text: fades in/out in sync with the sidebar's own
-   expand/collapse timing instead of popping in instantly, since the
-   sidebar-header itself relies on display:none/flex which cannot
-   transition on its own.
-   Previously an SVG <text> element baked into the same coordinate system
-   as the favicon <image>; now a plain <span> so the favicon can be a
-   regular CSS-sized <img> instead (see .sidebar-logo, .sidebar-favicon-img
-   below) — pixel parity between collapsed/expanded icon states no longer
-   depends on two different coordinate systems happening to agree. */
 .sidebar-brand-text {
   opacity: 0;
   transition: opacity 0s;
@@ -259,10 +226,6 @@
   pointer-events: none;
 }
 
-/* Expanded-header favicon: the SAME class/sizing rule the collapsed rail's
-   .sidebar-favicon-img already uses (36×36px, see that rule further down),
-   so the icon is pixel-identical and never resizes/shifts when toggling
-   .expanded — there is exactly one place that defines this size. */
 .sidebar-logo .sidebar-favicon-img {
   width: 36px;
   height: 36px;
@@ -435,22 +398,15 @@
 .side-menu-profile-dropdown {
   display: none;
   position: fixed;
-  /* escapes the <nav> ancestor's overflow-x: clip, which
-                       would otherwise silently clip an absolutely-positioned
-                       popover that extends past the sidebar's left edge.
-                       JS sets top/right inline on open (see side-menu.js). */
   width: 240px;
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-border);
   border-radius: 12px;
   box-shadow: var(--shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.18));
   padding: 0 0 6px;
-  /* no top/side padding: the header's cover strip bleeds
-                        flush to the popover's top edge and both side edges */
   z-index: 1000;
   direction: rtl;
   overflow: hidden;
-  /* clips the cover strip's border-radius to the popover's own rounded top corners */
 }
 
 .side-menu-profile-dropdown.open {
@@ -609,13 +565,6 @@
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
-  /* BUG FIX: --color-text is not a defined token anywhere in themes.css
-     (only --color-text-primary/-secondary/-tertiary exist) — a var()
-     reference to an undefined custom property with no fallback makes the
-     whole `color` declaration invalid, so it fell back to inheriting
-     from an ancestor instead of the intended theme-aware text color. That
-     inherited value happened to still be legible for the `<a>` items
-     above this one, which is why only some rows looked affected. */
   color: var(--color-text-primary);
   text-decoration: none;
   cursor: pointer;
@@ -779,27 +728,7 @@
   transition-duration: var(--duration-fast, 120ms);
 }
 
-/* ── Icon line-draw animation ─────────────────────────────────────────────
-   Modelled on `.section-icon` / `section-icon-draw` in profile.css: the icon
-   strokes wipe away and redraw themselves on hover.
-
-   The previous version of this block animated `stroke-dashoffset` to a
-   hard-coded 60 while never setting `stroke-dasharray`, so there was no dash
-   pattern to offset and the whole thing was a no-op. It also only selected
-   `svg path`, missing the `circle` / `rect` / `line` / `polyline` shapes that
-   make up most of the Lucide icon set.
-
-   Both are fixed by menu-icon-draw.js, which stamps `pathLength="1"` and the
-   `.menu-icon-line` class onto every drawable shape at runtime. pathLength
-   normalises each shape's length to 1 regardless of its real geometry, so the
-   single dash length below covers the keyboard icon's 60-unit body and its
-   0.01-unit key dots equally — no per-icon tuning, and new menu items pick the
-   effect up automatically.
-
-   Unlike profile.css's `infinite alternate` loop, this runs ONE pass and
-   settles back to the intact icon. A nav rail gets hovered constantly on the
-   way to somewhere else; a permanently cycling icon under the cursor reads as
-   a glitch rather than a flourish. */
+/* ── Icon line-draw animation ───────────────────────────────────────────── */
 .menu-icon-line {
   /* Drives both the dash length and the keyframe's end value, so the two can
      never drift apart. 1 = the full normalised path length set by
@@ -922,23 +851,7 @@
 }
 
 /* ── Tooltips (collapsed state, desktop only) ────────────────────────────── */
-/* Sidebar is on the RIGHT → tooltips appear to the LEFT of each icon.
- *
- * This used to be a plain [data-tooltip]::after pseudo-element positioned
- * with `right: calc(100% + 10px)`. That only ever worked for the two
- * .sidebar-pinned-actions buttons (contactDevBtn / install-app), which sit
- * OUTSIDE <nav>. Every other .menu-item lives INSIDE <nav>, and .sidebar
- * nav has `overflow-x: clip` (see that rule's comment) — which hard-clips
- * anything painted past nav's left/right edges, including a ::after
- * positioned a full icon-width outside the icon itself. So the label
- * silently never became visible for any in-nav item.
- *
- * Fixed the same way the profile dropdown already solves this exact
- * problem (see positionTooltip()/side-menu.js): one shared element,
- * `position: fixed` (not absolute), positioned via JS from the hovered/
- * focused icon's getBoundingClientRect(). `fixed` escapes nav's clipping
- * ancestor entirely, so this now works for every .menu-item uniformly.
- */
+
 .sidebar-hover-tooltip {
   position: fixed;
   background: var(--color-surface, #fff);
@@ -966,9 +879,7 @@
   height: 1px;
   background: var(--color-border);
   margin-block: 8px;
-  /* logical: top/bottom only — no physical left/right */
   margin-inline: 4px;
-  /* logical: replaces margin: 8px 4px */
   flex-shrink: 0;
 }
 
@@ -1150,13 +1061,7 @@
   display: flex;
 }
 
-/* ── Retractable / Accordion Section (theme + animation controls) ───────────
-   Collapsible so the appearance/performance controls can be tucked away to
-   save vertical space in a long sidebar. Only meaningful in the expanded
-   sidebar / mobile sheet — the collapsed 64px rail hides this whole
-   section via the existing .sidebar:not(.expanded) rules further up and
-   shows its own single icon-only entry point instead
-   (.sidebar-collapsed-only), which just expands the sidebar on click. */
+/* ── Retractable / Accordion Section (theme + animation controls) ─────────── */
 .theme-controls-toggle {
   display: flex;
   align-items: center;
@@ -1492,9 +1397,7 @@
   padding: 9px 12px;
   cursor: pointer;
   margin-block-end: 8px;
-  /* logical bottom: replaces margin: 0 4px 4px */
   margin-inline: 4px;
-  /* logical left/right */
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -1578,20 +1481,8 @@
     border-top: 1px solid var(--color-border);
     border-radius: 24px 24px 0 0;
     transform: translateY(100%);
-    /* hidden below the viewport */
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: none;
-    /*
-     * .sidebar stays locked/non-scrolling on mobile — <nav> is the single
-     * scroll owner (below). Previously .sidebar itself scrolled, which put
-     * an unstyled native scrollbar flush against the sheet's own rounded
-     * edge (all the thin/custom scrollbar rules only ever targeted nav,
-     * never .sidebar) — a big ugly bar right on the outer corner. Locking
-     * .sidebar and moving .sidebar-pinned-actions to be nav's last child
-     * (see that rule's comment) gives mobile one clean scroll region with
-     * the existing thin-scrollbar styling, while .sidebar-header/
-     * .sidebar-drag-handle stay visible via their own position: sticky.
-     */
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1605,12 +1496,7 @@
     bottom: calc(var(--bottom-nav-height, 54px) + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Drag handle — real element, grabbable and draggable (see side-menu.js).
-     Generous 44px touch-target height even though the visible bar is thin,
-     per standard mobile hit-target sizing; the bar itself is centered
-     inside it. .sidebar is locked/non-scrolling on mobile (nav is the
-     sole scroll owner), so the handle is simply always visible by being
-     outside nav's scroll — no sticky positioning needed. */
+  /* Drag handle — real element, grabbable and draggable (see side-menu.js). */
   .sidebar-drag-handle {
     display: flex;
     align-items: center;
@@ -1738,10 +1624,6 @@
   }
 
   /* ── Bottom Navigation Bar ────────────────────────────────────────────── */
-  /* --bottom-nav-height now lives centrally in themes.css :root alongside
-     the other layout tokens (--sidebar-collapsed-width, etc.) — no need
-     to redeclare it here, this media query just consumes it. */
-
   .bottom-nav {
     position: fixed;
     left: 0;

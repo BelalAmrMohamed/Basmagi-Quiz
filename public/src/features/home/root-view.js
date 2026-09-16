@@ -3,13 +3,6 @@
 // ROOT VIEW — the home screen: "امتحاناتك" folder card + subscribed courses
 // (or all courses, if none subscribed).
 // ============================================================================
-// BUG FIXES applied here:
-//   1. Removed a leftover debug console.log that captured a full
-//      new Error().stack on every single navigation back to this view.
-//   2. Deduplicated ~170 lines of copy-pasted course-info-tooltip-building
-//      code (two near-identical ~85-line blocks) into calls to the shared,
-//      HTML-escaped attachCourseInfoTooltip() — see course-info-tooltip.js.
-// ============================================================================
 
 import { userProfile } from "../../shared/userProfile.js";
 import { getSubscribedCourses } from "../../shared/filterUtils.js";
@@ -87,7 +80,8 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
       copyLink.type = "button";
       copyLink.className = "exam-action-btn";
       copyLink.innerHTML = `${COPY_ICON_SVG}<span>نسخ الرابط</span>`;
-      copyLink.onclick = async () => {
+      copyLink.onclick = async (e) => {
+        e.stopPropagation();
         await navigator.clipboard.writeText(folderUrl);
         closeMenu();
         showNotification("تم النسخ", "تم نسخ رابط المادة.", "success");
@@ -98,7 +92,8 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
       shareLink.type = "button";
       shareLink.className = "exam-action-btn";
       shareLink.innerHTML = `${SHARE_ICON_SVG}<span>مشاركة الرابط</span>`;
-      shareLink.onclick = async () => {
+      shareLink.onclick = async (e) => {
+        e.stopPropagation();
         closeMenu();
         if (navigator.share) {
           await navigator.share({ title: course.name, url: folderUrl }).catch(() => { });
@@ -113,13 +108,11 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
       copyMine.type = "button";
       copyMine.className = "exam-action-btn";
       copyMine.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
-      copyMine.onclick = async () => {
+      copyMine.onclick = async (e) => {
+        e.stopPropagation();
         await withCopyButtonLoadingState(copyMine, () =>
           copyCategoryTreeToUserQuizzes(course, categoryTree, "course"),
         );
-        // BUG FIX: refresh the "امتحاناتك" card's subtext right away
-        // instead of leaving it stale until the next navigation back to
-        // the root view (see refreshUserQuizzesCard() above).
         refreshUserQuizzesCard();
         closeMenu();
       };
@@ -187,7 +180,8 @@ function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe =
         unsubscribe.type = "button";
         unsubscribe.className = "exam-action-btn exam-action-btn--danger";
         unsubscribe.textContent = "إلغاء الاشتراك";
-        unsubscribe.onclick = async () => {
+        unsubscribe.onclick = async (e) => {
+          e.stopPropagation();
           if (!(await _confirm("هل أنت متأكد من إلغاء الاشتراك في هذه المادة؟"))) return;
           userProfile.setSubscribedCourses(
             userProfile.getSubscribedCourseIds().filter((id) => id !== course.id),
@@ -257,10 +251,6 @@ export async function renderRootCategories() {
     if (isRestoring()) {
       history.replaceState({ view: "root" }, "", rootPath);
     } else {
-      // BUG FIX (removed leftover debug log): this branch used to log a
-      // captured `new Error().stack` on every single navigation back to the
-      // root view — a real production perf/console-noise cost (stack
-      // capture isn't free) left over from a prior debugging session.
       history.pushState({ view: "root" }, "", rootPath);
     }
 

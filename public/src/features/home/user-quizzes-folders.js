@@ -10,6 +10,7 @@ import { getSubjectIcon } from "./subject-icons.js";
 import { MORE_DOTS_ICON_SVG } from "./icons.js";
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 import { getTrashItemCount } from "./user-quizzes-trash.js";
+import { closeAllExamDropdownMenus } from "./exam-dropdown-menu.js";
 
 // Current navigation state
 export let currentFolderId = null;
@@ -837,6 +838,25 @@ export function initContextMenu() {
   });
 }
 
+/**
+ * BUG FIX — overlay exclusivity: #userQuizContextMenu (this file's
+ * right-click menu) and .exam-dropdown-menu (exam-dropdown-menu.js's ⋮
+ * dropdown) used to be two independent overlay systems with no awareness of
+ * each other. This menu was closed only by the document-level click
+ * listener registered in initContextMenu() above, but .exam-more-btn's
+ * onclick calls e.stopPropagation() before opening its dropdown — so that
+ * click never reached this listener, and both menus could end up open at
+ * once. Exported so exam-dropdown-menu.js's openExamDropdownMenu() can call
+ * it before opening its own menu, the same way showContextMenu() below
+ * calls closeAllExamDropdownMenus() before opening this one. A no-op if the
+ * menu was never created or is already hidden.
+ */
+export function closeUserQuizContextMenu() {
+  if (!contextMenuEl) return;
+  contextMenuEl.style.display = "none";
+  customMenuJustOpened = false;
+}
+
 export function showContextMenu(e, targetType, targetId, targetTitle) {
   initContextMenu();
 
@@ -848,6 +868,12 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
     // Do NOT call e.preventDefault() — the native menu will open
     return;
   }
+
+  // BUG FIX: close any open ⋮ dropdown menu before opening this one — see
+  // closeUserQuizContextMenu()'s doc comment above for the other half of
+  // this fix. Without this, right-clicking a card while its own ⋮ dropdown
+  // (or another card's) was still open left both visible simultaneously.
+  closeAllExamDropdownMenus();
 
   e.preventDefault();
   contextMenuEl.innerHTML = "";

@@ -7,19 +7,25 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Performance (Globally, but specially the main page)
+Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
+
+Example: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to add the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is inserted at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.  
+
 ### Quiz Page
 - On `vertical` mode, the `#menuNavContainer` doesn't go through the questions when the user scrolls through the page, so if the user scrolls from question 1 -> 4, the `#menuNavContainer` doesn't update.
 - The page's loading skeleton animation isn't properly excluded from the "الاداء الفائق" `[data-motion="reduced"]` like the other pages are. See `public\src\styles\themes.css` for proper exclusion.
 
-### امتحاناتك Rules
-- See `docs\plans\amtihanatak-naming-rule-audit.md` and `docs\plans\naming-rule-audit-handoff-prompt.md`
-- See `docs\plans\content-rules.md`
-
 ### `.create-quiz-inline-modal`
-- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
+- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), it should be properly excluded from that mode. See `public/src/styles/themes.css`. And the button should be above inside the `,create-quiz-modal__header`, because it's small, and also to give space for the arrow on its right to move.
+- Remove the "الإغلاق" button from the `.prompt-selection-modal`, and make it a normal `x` button at the top left of the modal.
+- But before you do any of these 2, think with me what is the best way to implement this?
+  - Should we keep things as they currently are? `.copyAiPromptBtn` on the `.create-quiz-inline-modal` that opens another modal just for 3 buttons?
+  - Should we instead delete the whole `.copyAiPromptBtn` with the `.prompt-selection-modal` and put the 3 buttons directly on `.create-quiz-inline-modal`?
+  - What do you think is the better approach?
 
 ### `.sidebar-brand-link`
-- Put a better transition on it. Because when opening/closing the `#sidebar`, it appears instantly while the `#sidebar` has a nice transition/animation.
+- Put a better transition on it. Because when expanding/collapsing the `#sidebar`, it appears instantly while the `#sidebar` has a nice transition/animation. I tried solving this issue many times and tried many things, but no matter what transitions I put on `.sidebar-brand-link` or `.sidebar-brand-text`, nothing actually gets affected when expanding/collapsing the `#sidebar`
 
 ## New Features
 
@@ -43,6 +49,7 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
   - Media appears with size that is already in the objects like `<img>`, it appears with handles that the user can use to resize the media himself.
   - Images / videos get 4 resize handles, one on each corner.
   - Audio get 2 handles, one on the right, other on the left, since its height doesn't change.
+- Performance Improvements: Currently the markdown engine has a custom text-direction detection mechanism, which works perfectly, but recently I discovered that there is an HTML attribute `dir="auto"`, which does basically the same thing. So to improve performance, I want to do an overhaul of the engine, anything that exists natively in HTML, CSS, or as a browser API, should be used as it's, we shouldn't reinvent the wheel, specially if it exists natively. That would improve performance extremely well. But the only thing that I found that has a native alternative is the text-direction detection engine, my own search didn't find anything else, so I want you to search in that engine for anything that can be done natively in HTML or CSS and is being reinvented in JS, look for everything, you can search the web for modern CSS & HTML, because sometimes they add new things, but look for compatibility with browsers ofcourse (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
 
 ### Home Page
 
