@@ -383,9 +383,33 @@ function setupAutoSave() {
   });
 }
 
+function updateAllCoursesNotice() {
+  const notice = document.getElementById("allCoursesNotice");
+  if (!notice) return;
+
+  // Same condition as the home page's fallback banner (root-view.js): the
+  // user has zero course subscriptions, so the home page shows every course
+  // as a fallback instead of a personalized list — whether they set an
+  // academic stage and just never picked specific courses, or skipped
+  // onboarding entirely. Both cases land on the same "all courses" screen,
+  // so both get the same explanation.
+  const hasNoSubscriptions = userProfile.getSubscribedCourseIds().length === 0;
+
+  if (hasNoSubscriptions) {
+    notice.textContent =
+      "أنت غير مشترك في أي مادة محددة حالياً، لذا ستظهر لك جميع المواد في الصفحة الرئيسية.";
+    notice.style.display = "";
+  } else {
+    notice.textContent = "";
+    notice.style.display = "none";
+  }
+}
+
 function renderCourseManagerList() {
   const listContainer = document.getElementById("courseManagerList");
   if (!listContainer) return;
+
+  updateAllCoursesNotice();
 
   const displayFilters = getTrackFilters();
   delete displayFilters.year;
@@ -454,6 +478,7 @@ function renderFeaturedCourseManagerList() {
 window.toggleCourseSubscription = function (courseId) {
   try {
     userProfile.toggleSubscription(courseId);
+    updateAllCoursesNotice();
   } catch (error) {
     console.error("Error toggling subscription:", error);
   }
@@ -488,6 +513,15 @@ async function init() {
   bindOptionCards("defaultMode");
 
   setupAutoSave();
+
+  // Reveal the real form and drop the skeleton only now that every field
+  // above has actually been populated with the user's real saved values —
+  // this is the whole point of the skeleton: no in-between frame where a
+  // default/placeholder value is visible before snapping to the real one.
+  const skeleton = document.getElementById("settingsSkeleton");
+  const content = document.getElementById("settingsForm");
+  if (skeleton) skeleton.remove();
+  if (content) content.classList.remove("is-loading");
 }
 
 init();

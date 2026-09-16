@@ -717,7 +717,80 @@
             <p>غيّر اسمك، معلوماتك الأكاديمية، والمواد التي تدرسها</p>
         </header>
 
-        <form id="settingsForm">
+        <!-- Loading skeleton — shown until settings.js has both the saved
+             profile (localStorage, synchronous) and the quiz manifest
+             (network) ready, so nothing on the page ever briefly shows
+             false/placeholder values (e.g. "الجامعة" / "All Faculties")
+             before snapping to the user's real saved settings. Structurally
+             mirrors #settingsContent below (same cards, same row/option
+             counts) so the swap doesn't cause a layout jump. Removed from
+             the DOM (not just hidden) once settings.js finishes loading. -->
+        <div id="settingsSkeleton" class="settings-skeleton" aria-hidden="true" aria-label="جاري تحميل الإعدادات">
+            <section class="settings-card">
+                <div class="skeleton-line skeleton-heading"></div>
+                <div class="skeleton-line skeleton-hint"></div>
+                <div class="skeleton-row">
+                    <div class="skeleton-line skeleton-label"></div>
+                    <div class="skeleton-select"></div>
+                </div>
+                <div class="skeleton-row">
+                    <div class="skeleton-line skeleton-label"></div>
+                    <div class="skeleton-select"></div>
+                </div>
+                <div class="skeleton-row">
+                    <div class="skeleton-line skeleton-label"></div>
+                    <div class="skeleton-select"></div>
+                </div>
+                <div class="skeleton-row">
+                    <div class="skeleton-line skeleton-label"></div>
+                    <div class="skeleton-select"></div>
+                </div>
+            </section>
+
+            <section class="settings-card">
+                <div class="skeleton-line skeleton-heading"></div>
+                <div class="skeleton-line skeleton-hint"></div>
+                <div class="skeleton-course-grid">
+                    <div class="skeleton-course-item"></div>
+                    <div class="skeleton-course-item"></div>
+                    <div class="skeleton-course-item"></div>
+                    <div class="skeleton-course-item"></div>
+                </div>
+            </section>
+
+            <section class="settings-card">
+                <div class="skeleton-line skeleton-heading"></div>
+                <div class="skeleton-line skeleton-hint"></div>
+                <div class="skeleton-course-grid">
+                    <div class="skeleton-course-item"></div>
+                    <div class="skeleton-course-item"></div>
+                </div>
+            </section>
+
+            <section class="settings-card">
+                <div class="skeleton-line skeleton-heading"></div>
+                <div class="skeleton-option-cards">
+                    <div class="skeleton-option-card"></div>
+                    <div class="skeleton-option-card"></div>
+                </div>
+            </section>
+
+            <section class="settings-card">
+                <div class="skeleton-line skeleton-heading"></div>
+                <div class="skeleton-line skeleton-hint"></div>
+                <div class="skeleton-option-cards">
+                    <div class="skeleton-option-card"></div>
+                    <div class="skeleton-option-card"></div>
+                    <div class="skeleton-option-card"></div>
+                    <div class="skeleton-option-card"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Real content — hidden until settings.js populates every field
+             (selects, course toggles, option cards) with the user's actual
+             saved values, then reveals this and removes the skeleton above. -->
+        <form id="settingsForm" class="settings-content is-loading">
 
 
             <!-- Academic -->
@@ -759,9 +832,14 @@
                 <h2 id="courses-heading"><span>🎓</span> اشتراكات المواد</h2>
                 <p class="profile-hint">إضافة أو حذف مواد من المواد المتاحة بكليتك</p>
 
+                <!-- "All courses shown" notice — shown by settings.js when the
+                     user has an academic stage/college set but no specific
+                     course subscriptions yet (so the home page falls back to
+                     showing every course). Hidden by default/empty. -->
+                <p id="allCoursesNotice" class="all-courses-notice" role="status" style="display:none;"></p>
+
                 <div id="courseManagerList" class="course-list-grid">
                     <!-- Javascript will populate this list -->
-                    <div style="padding:20px; text-align:center;">جاري تحميل المواد...</div>
                 </div>
             </section>
 
@@ -771,7 +849,7 @@
                 <p class="profile-hint">مواد عامة متاحة لجميع المسارات الدراسية</p>
 
                 <div id="featuredCourseManagerList" class="course-list-grid">
-                    <div style="padding:20px; text-align:center;">جاري تحميل المواد المميزة...</div>
+                    <!-- Javascript will populate this list -->
                 </div>
             </section>
 

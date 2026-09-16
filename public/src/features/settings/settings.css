@@ -171,6 +171,21 @@ body.sidebar-expanded {
   width: 100%;
 }
 
+/* Custom dropdown chevron: the page is RTL, which puts the browser's native
+   select arrow flush against the left border with almost no breathing room.
+   Replacing it with our own SVG background lets us control that spacing
+   directly instead of fighting the native (non-stylable) arrow's position. */
+.settings-row select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-left: 40px;
+  background-repeat: no-repeat;
+  background-position: left 14px center;
+  background-size: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 .settings-row input:focus,
 .settings-row select:focus {
   outline: none;
@@ -723,6 +738,11 @@ body.sidebar-expanded .site-footer {
     padding: 12px 14px;
   }
 
+  .settings-row select {
+    padding-left: 38px;
+    background-position: left 12px center;
+  }
+
   .option-card {
     padding: 16px;
   }
@@ -833,6 +853,12 @@ body.sidebar-expanded .site-footer {
   .settings-row select {
     font-size: 0.9rem;
     padding: 10px 12px;
+  }
+
+  .settings-row select {
+    padding-left: 34px;
+    background-position: left 10px center;
+    background-size: 14px;
   }
 
   .option-cards {
@@ -991,6 +1017,12 @@ body.sidebar-expanded .site-footer {
     padding: 10px;
   }
 
+  .settings-row select {
+    padding-left: 32px;
+    background-position: left 10px center;
+    background-size: 14px;
+  }
+
   .option-card {
     padding: 12px;
     gap: 10px;
@@ -1135,4 +1167,150 @@ html[data-motion="reduced"] * {
   background: #1f2937;
   border-color: #4b5563;
   color: #ffffff;
+}
+/* ============================================================================
+   LOADING SKELETON
+   ============================================================================
+   Shown in place of #settingsForm until settings.js has resolved both the
+   saved profile (localStorage) and the quiz manifest (network), so the page
+   never flashes false/placeholder values (default dropdown options, "جاري
+   التحميل..." text) before snapping to the user's real settings. See
+   settings.js's init(): the skeleton is removed and .settings-content loses
+   .is-loading in the same tick that every field is actually populated.
+   ============================================================================ */
+
+.settings-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-content.is-loading {
+  display: none !important;
+}
+
+.settings-content {
+  animation: settings-content-in 0.35s ease;
+}
+
+@keyframes settings-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.skeleton-line,
+.skeleton-select,
+.skeleton-course-item,
+.skeleton-option-card {
+  background: var(--color-border);
+  border-radius: 8px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 1em;
+  border-radius: 6px;
+}
+
+.skeleton-heading {
+  width: 55%;
+  height: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.skeleton-hint {
+  width: 75%;
+  height: 0.95rem;
+  margin-bottom: 24px;
+}
+
+.skeleton-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.skeleton-row:last-child {
+  margin-bottom: 0;
+}
+
+.skeleton-label {
+  width: 30%;
+  height: 0.95rem;
+}
+
+.skeleton-select {
+  height: 46px;
+  border-radius: 12px;
+}
+
+.skeleton-course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.skeleton-course-item {
+  min-height: 80px;
+  border-radius: 12px;
+}
+
+.skeleton-option-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.skeleton-option-card {
+  height: 76px;
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .skeleton-course-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+/* ============================================================================
+   ALL-COURSES NOTICE
+   ============================================================================
+   Shown above the course subscription list when the user has an academic
+   stage/college set but hasn't subscribed to any specific course yet — in
+   that state the home page falls back to showing every course, so this
+   clarifies why. See settings.js. */
+
+.all-courses-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-primary);
+  font-size: 0.9rem;
+  line-height: 1.5;
 }

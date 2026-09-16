@@ -44,7 +44,7 @@ Check the rules for creating امتحانات and copying them and moving them.
 #### Score Guage
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
-### Quiz Page
+### `public/src/shared/markdown.js`
 - Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself so it works on the `/result`, `/create-quiz`, and `/quiz`.
   - Media appears with size that is already in the objects like `<img>`, it appears with handles that the user can use to resize the media himself.
   - Images / videos get 4 resize handles, one on each corner.
@@ -70,10 +70,10 @@ These animations should be excluded from the "الأداء الفائق" (`html[
   - Make an info modal for Folders.
   - (Suggestion) Add: Number of Views or people who solved a quiz on each quiz.
 
-### Control.html
-- Give `#collegeForm` an advanced loading skeleton/animation, too.
+### `public\control.html` Page
+- Give `#collegeForm` an advanced loading skeleton/animation like the others.
 
-### About.html
+### `public\about.html` Page
 - Suggestion: Add an open-source Angle.
 - Suggestion: Add a short testimonial or review.
 `المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).

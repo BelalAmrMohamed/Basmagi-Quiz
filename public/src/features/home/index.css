@@ -2900,6 +2900,48 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   opacity: 0.85;
 }
 
+/* All-courses fallback banner — shown above the grid when the user has an
+   academic stage set but no specific course subscriptions, so every course
+   is being shown as a fallback (see renderRootCategories() in root-view.js). */
+.all-courses-banner {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  background: var(--color-primary-light);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.all-courses-banner-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.all-courses-banner-text {
+  flex: 1 1 240px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.all-courses-banner-link {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.all-courses-banner-link:hover {
+  opacity: 0.85;
+}
+
 /* Empty State */
 .empty-state {
   text-align: center;

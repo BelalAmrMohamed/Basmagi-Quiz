@@ -69,7 +69,7 @@ import { showNotification } from "../../components/notifications/notifications.j
 import { _confirm } from "../../components/notifications/notifications.js";
 import { toSlug } from "./slug-utils.js";
 
-function attachCourseActionsMenu(card, course, categoryTree) {
+function attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe = true } = {}) {
   const moreBtn = document.createElement("button");
   moreBtn.type = "button";
   moreBtn.className = "exam-more-btn exam-more-btn--lg";
@@ -178,19 +178,25 @@ function attachCourseActionsMenu(card, course, categoryTree) {
         menu.appendChild(adminSubmenu);
       }
 
-      const unsubscribe = document.createElement("button");
-      unsubscribe.type = "button";
-      unsubscribe.className = "exam-action-btn exam-action-btn--danger";
-      unsubscribe.textContent = "إلغاء الاشتراك";
-      unsubscribe.onclick = async () => {
-        if (!(await _confirm("هل أنت متأكد من إلغاء الاشتراك في هذه المادة؟"))) return;
-        userProfile.setSubscribedCourses(
-          userProfile.getSubscribedCourseIds().filter((id) => id !== course.id),
-        );
-        closeMenu();
-        renderRootCategories();
-      };
-      menu.appendChild(unsubscribe);
+      // Only offered when the course is a real subscription (see the
+      // "all courses" fallback branch in renderRootCategories(), where the
+      // user isn't subscribed to anything yet — unsubscribing there would
+      // be a no-op button that looks like it works but does nothing).
+      if (showUnsubscribe) {
+        const unsubscribe = document.createElement("button");
+        unsubscribe.type = "button";
+        unsubscribe.className = "exam-action-btn exam-action-btn--danger";
+        unsubscribe.textContent = "إلغاء الاشتراك";
+        unsubscribe.onclick = async () => {
+          if (!(await _confirm("هل أنت متأكد من إلغاء الاشتراك في هذه المادة؟"))) return;
+          userProfile.setSubscribedCourses(
+            userProfile.getSubscribedCourseIds().filter((id) => id !== course.id),
+          );
+          closeMenu();
+          renderRootCategories();
+        };
+        menu.appendChild(unsubscribe);
+      }
     });
   };
   card.appendChild(moreBtn);
@@ -294,6 +300,23 @@ export async function renderRootCategories() {
     container.innerHTML = "";
     container.className = "grid-container";
     container.setAttribute("aria-busy", "false");
+
+    // Info banner: shown whenever the user has zero course subscriptions,
+    // so every course on the platform is being shown as a fallback instead
+    // of a personalized list — whether they set an academic stage and just
+    // never picked specific courses, or skipped onboarding entirely. Both
+    // land on this same "all courses" screen, so both get the explanation.
+    if (subscribedCourses.length === 0) {
+      const banner = document.createElement("div");
+      banner.className = "all-courses-banner";
+      banner.setAttribute("role", "status");
+      banner.innerHTML = `
+        <span class="all-courses-banner-icon" aria-hidden="true">ℹ️</span>
+        <span class="all-courses-banner-text">أنت غير مشترك في أي مادة محددة حالياً، لذا نعرض لك جميع المواد المتاحة. يمكنك اختيار موادك من صفحة الإعدادات.</span>
+        <a href="/settings" class="all-courses-banner-link">الذهاب للإعدادات</a>
+      `;
+      container.appendChild(banner);
+    }
 
     const fragment = document.createDocumentFragment();
 
@@ -463,7 +486,7 @@ export async function renderRootCategories() {
         // tooltip-building code (identical to the "all courses" branch
         // below except for the unsubscribe button) — now a single shared,
         // escaped builder. See course-info-tooltip.js.
-        attachCourseActionsMenu(card, course, categoryTree);
+        attachCourseActionsMenu(card, course, categoryTree, { showUnsubscribe: true });
 
         card.onclick = () => renderCategory(categoryTree[course.key]);
         fragment.appendChild(card);
@@ -481,8 +504,10 @@ export async function renderRootCategories() {
         );
 
         // DEDUPLICATION: same shared builder as the subscribed-courses
-        // branch above, without the unsubscribe button (not subscribed yet).
-        attachCourseActionsMenu(card, category, categoryTree);
+        // branch above. The unsubscribe action is hidden here — the user
+        // isn't actually subscribed to anything, so there's nothing valid
+        // for it to remove (see the "all courses" banner above the grid).
+        attachCourseActionsMenu(card, category, categoryTree, { showUnsubscribe: false });
 
         card.onclick = () => renderCategory(category);
         fragment.appendChild(card);
