@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [8.3.3] - 2026-9-16
+
+### Fixed امتحاناتك naming-rule gaps
+Audited every path that can create/rename/move/copy a quiz, folder, or course against the existing rule ("no 2 elements of the same type and the same name at the same level") — see [docs/amtihanatak-naming-rule-audit.md](docs/amtihanatak-naming-rule-audit.md) for the full trace. Found 7 paths that skipped the guard other paths already used, plus one closely-related twin gap found while fixing them:
+
+**Local "امتحاناتك" (`user_quizzes`)** — all now route through the existing `hasSameLevelCollision()`:
+- JSON file import (`quiz-file-import.js`) no longer silently creates duplicate root-level quizzes; colliding files are skipped with a warning listing which ones.
+- The quiz editor's "save new quiz" and "update existing quiz" paths (`create-quiz.js`) now reject a same-level title collision instead of saving over it.
+- The quiz editor's own rename button (`window.renameEntryItem`, a second implementation separate from the home page's `renameItem()`) now checks the same rule.
+- The AI Helper's `edit_quiz` tool call now checks the rule when the model actually changes a quiz's title, matching what the human rename path already enforced.
+
+**Shared/Supabase-backed quizzes** — folders and courses already had DB uniqueness constraints backing this rule; quizzes didn't, so a new `hasQuizNameCollision()` helper (`api/_itemActions.js`) does the equivalent app-level check, scoped to `course_id`/`folder_id`:
+- Renaming a shared quiz (`action=rename-item`) now rejects a same-level duplicate title.
+- Editing a shared quiz's title (`action=update-quiz`) now rejects a same-level duplicate title.
+- Moving a shared quiz into a folder/course that already holds a same-titled quiz (`action=move-item`) is now blocked, matching the behavior folders already had via their DB constraint.
+
 ## [8.3.1] - 2026-9-9
 
 ### Updated og.js

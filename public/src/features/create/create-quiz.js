@@ -20,6 +20,7 @@ import { createAIAgentFab } from "../../components/ai-agent/ai-agent.js";
 import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-agent-default-prompts.js";
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { isMultiSelectQuestion } from "../../shared/rate-answers.js";
+import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -1407,7 +1408,21 @@ window.closeAllQuestionMenus = function () {
     .forEach((menu) => menu.classList.remove("open"));
 };
 
-/** Rename a saved quiz directly in user_quizzes, then refresh the grid. */
+/**
+ * Rename a saved quiz directly in user_quizzes, then refresh the grid.
+ *
+ * BUG FIX: this is a second, independent rename implementation from
+ * renameItem() (user-quizzes-folders.js) — the one the home page's
+ * "امتحاناتك" context menu/card ⋮ menu use, which already enforces the
+ * same-level naming rule (hasSameLevelCollision). This entry-screen version
+ * skipped that check entirely (and didn't even look at parentId), so a
+ * rename here could silently collide with a same-titled sibling. Not
+ * delegated to renameItem() itself: that function also calls
+ * renderUserQuizzesView(), which touches breadcrumb/navigation-stack DOM
+ * that only exists on the home page, not this one — so the check is
+ * reused directly and this function keeps its own (already-correct) grid
+ * refresh.
+ */
 window.renameEntryItem = async function (event, quizId) {
   event.stopPropagation();
   closeAllEntryItemMenus();
@@ -1425,11 +1440,29 @@ window.renameEntryItem = async function (event, quizId) {
   const currentTitle = quiz.meta?.title || quiz.title || "";
   const newTitle = await _prompt("أدخل الاسم الجديد:", currentTitle);
   if (!newTitle || !newTitle.trim()) return;
+  const trimmedTitle = newTitle.trim();
+
+  const parentId = quiz.meta?.parentId || null;
+  if (
+    hasSameLevelCollision(userQuizzes, {
+      type: quiz.meta?.type || "quiz",
+      title: trimmedTitle,
+      parentId,
+      excludeId: quizId,
+    })
+  ) {
+    showNotification(
+      "الاسم مستخدم",
+      "يوجد عنصر بنفس الاسم والنوع في هذا المستوى. اختر اسماً مختلفاً.",
+      "warning",
+    );
+    return;
+  }
 
   if (quiz.meta) {
-    quiz.meta.title = newTitle.trim();
+    quiz.meta.title = trimmedTitle;
   } else {
-    quiz.title = newTitle.trim();
+    quiz.title = trimmedTitle;
   }
   localStorage.setItem("user_quizzes", JSON.stringify(userQuizzes));
   renderEntryItemsGrid();
@@ -4585,11 +4618,33 @@ function buildQuizPayload(quizToSave, quizId, existingCreatedAt) {
   };
 }
 
+/**
+ * @returns {string|null} the new quiz's id, or null on failure — a thrown
+ *   error (storage failure) and a same-level name collision are both
+ *   reported the same way to the caller (see saveLocally's `if (quizId)`
+ *   branch), but a collision sets `saveToUserQuizzes.lastError` first so the
+ *   caller can show a specific message instead of the generic fallback.
+ */
 function saveToUserQuizzes(quizToSave) {
   try {
     const existingQuizzes = JSON.parse(
       localStorage.getItem("user_quizzes") || "[]",
     );
+    const title = quizToSave.title?.trim() || "Untitled";
+
+    // BUG FIX: this page's own "new quiz" save path never went through the
+    // same-level naming rule (see hasSameLevelCollision's doc comment in
+    // user-quizzes-folders.js) that every other create/rename/move/copy
+    // path already enforces — a quiz saved here could silently collide
+    // with an existing root-level quiz of the same title. New quizzes
+    // saved from this page always land at root (buildQuizPayload never
+    // sets meta.parentId), so only root needs checking.
+    if (hasSameLevelCollision(existingQuizzes, { type: "quiz", title, parentId: null })) {
+      saveToUserQuizzes.lastError =
+        "يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
+      return null;
+    }
+
     const quizId = `user_quiz_${Date.now()}`;
     const newQuiz = { id: quizId, ...buildQuizPayload(quizToSave, quizId) };
     existingQuizzes.push(newQuiz);
@@ -4601,6 +4656,10 @@ function saveToUserQuizzes(quizToSave) {
   }
 }
 
+/**
+ * @returns {string|null} the quiz's id, or null on failure — same
+ *   `lastError` convention as saveToUserQuizzes (see its doc comment).
+ */
 function updateInUserQuizzes(quizId, quizToSave) {
   try {
     const existingQuizzes = JSON.parse(
@@ -4609,6 +4668,25 @@ function updateInUserQuizzes(quizId, quizToSave) {
     const quizIndex = existingQuizzes.findIndex((q) => q.id === quizId);
     if (quizIndex === -1) return null;
     const existing = existingQuizzes[quizIndex];
+    const title = quizToSave.title?.trim() || "Untitled";
+
+    // BUG FIX: editing this page's title field is a rename in every sense
+    // the naming rule cares about (same type, same level, new title) but
+    // never went through hasSameLevelCollision — excludeId keeps this from
+    // false-flagging the quiz against its own pre-edit row.
+    if (
+      hasSameLevelCollision(existingQuizzes, {
+        type: "quiz",
+        title,
+        parentId: existing.meta?.parentId || null,
+        excludeId: quizId,
+      })
+    ) {
+      updateInUserQuizzes.lastError =
+        "يوجد امتحان بنفس الاسم في هذا المستوى من امتحاناتك بالفعل.";
+      return null;
+    }
+
     const payload = buildQuizPayload(
       quizToSave,
       quizId,
@@ -4786,7 +4864,13 @@ window.saveLocally = function () {
         }, 1000);
       }
     } else {
-      showNotification("خطأ", "فشل حفظ الامتحان", "error");
+      showNotification(
+        "خطأ",
+        saveToUserQuizzes.lastError || updateInUserQuizzes.lastError || "فشل حفظ الامتحان",
+        "error",
+      );
+      saveToUserQuizzes.lastError = null;
+      updateInUserQuizzes.lastError = null;
     }
   }, 500);
 };

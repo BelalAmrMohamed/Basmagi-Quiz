@@ -34,6 +34,7 @@ import {
   findFolderByName,
   moveItemsToFolder,
   expandSelectionWithDescendants,
+  hasSameLevelCollision,
 } from "./user-quizzes-folders.js";
 import { openSignInDialog } from "../../components/log-in/sign-in.js";
 import { container, title } from "./dom-refs.js";
@@ -174,6 +175,28 @@ function handleEditQuizToolCall(toolCall) {
 
   const existing = quizzes[index];
   const newTitle = input.title || qz(existing, "title");
+
+  // BUG FIX: a title change here is a rename in every sense the same-level
+  // naming rule cares about (hasSameLevelCollision, see its doc comment in
+  // user-quizzes-folders.js) but this tool call never checked it — unlike
+  // the human-driven rename path (renameItem), which does. Only relevant
+  // when the model actually changed the title; excludeId keeps the quiz
+  // from colliding with its own pre-edit row.
+  const existingId = qz(existing, "id") || existing.id;
+  if (
+    newTitle !== qz(existing, "title") &&
+    hasSameLevelCollision(quizzes, {
+      type: "quiz",
+      title: newTitle,
+      parentId: existing.meta?.parentId || null,
+      excludeId: existingId,
+    })
+  ) {
+    const err = new Error(`edit_quiz: renaming to "${newTitle}" collides with an existing quiz`);
+    err.userMessage = `يوجد امتحان بنفس الاسم "${newTitle}" في هذا المستوى بالفعل.`;
+    throw err;
+  }
+
   const parsed = {
     // Only overwrite questions if the model actually sent a replacement
     // list — omitting `questions` in the tool call means "keep as-is",
@@ -188,7 +211,7 @@ function handleEditQuizToolCall(toolCall) {
     },
   };
 
-  const entry = buildUserQuizEntry(qz(existing, "id") || existing.id, parsed, newTitle);
+  const entry = buildUserQuizEntry(existingId, parsed, newTitle);
   quizzes[index] = entry;
   setInStorage("user_quizzes", JSON.stringify(quizzes));
 

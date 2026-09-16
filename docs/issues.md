@@ -7,21 +7,19 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### Quiz Page
+- On `vertical` mode, the `#menuNavContainer` doesn't go through the questions when the user scrolls through the page, so if the user scrolls from question 1 -> 4, the `#menuNavContainer` doesn't update.
+- The page's loading skeleton animation isn't properly excluded from the "الاداء الفائق" `[data-motion="reduced"]` like the other pages are. See `public\src\styles\themes.css` for proper exclusion.
+
 ### امتحاناتك Rules
-Check the rules for creating امتحانات and copying them and moving them.
-**No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
-- The `نسخ لامتحاناتي` button doesn't show the animations when copying courses and folders, clicking it quits the menu instantly, then after a while, the course/folder gets copied. Between my press to the button the first time, and the course/folder being actually copied, I got confused, so I opened the menu again and pressed the `نسخ لامتحاناتي` button again, after the lag/loading time finished, the course/folder was copied many times.
-- Menus:
-  - Pressing the more button on a quiz `.exam-more-btn`, the dropdown shows `.exam-dropdown-menu`, then pressing another more button on anohter quiz, the first one closes and the second shows (Correct Behavior).
-  - Right cliking a quiz shows the right-click menu `#userQuizContextMenu`, then pressing the more button `.exam-more-btn`, opens `.exam-dropdown-menu` on top of the right-click menu (Incorrect Behavior): Only one menu should be open.
+- See `docs\plans\amtihanatak-naming-rule-audit.md` and `docs\plans\naming-rule-audit-handoff-prompt.md`
+- See `docs\plans\content-rules.md`
 
 ### `.create-quiz-inline-modal`
 - Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), and the button is too wide.
 
 ### `.sidebar-brand-link`
-- Remove the link from that element and update its name, I don't want it to be a link (on all pages, including `documents-shell.js` and `quiz.html`).
-- Make the favicon on the right and the text `امتحانات بصمجي` on the left, since this is an RTL Platform.
-- Put a transition on it. Because when opening/closing the side-menu on desktops, it appears instantly while the side-menu on desktops has a transition/animation.
+- Put a better transition on it. Because when opening/closing the `#sidebar`, it appears instantly while the `#sidebar` has a nice transition/animation.
 
 ## New Features
 

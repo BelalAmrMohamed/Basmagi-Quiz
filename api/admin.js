@@ -34,7 +34,7 @@ import {
   purgeQuizMedia,
   collectCascadeItems,
 } from "./_trash.js";
-import { canPlaceItemServer, validateItemName } from "./_itemActions.js";
+import { canPlaceItemServer, validateItemName, hasQuizNameCollision } from "./_itemActions.js";
 import { validateQuizPayload, computeStats } from "./_validateQuiz.js";
 import crypto from "crypto";
 
@@ -810,6 +810,24 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
+  // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 7): quizzes have
+  // no DB uniqueness constraint, so the 23505 branch below — which is what
+  // actually catches this for folders — never fires for a quiz moved into a
+  // destination that already holds a same-titled quiz. Checked explicitly,
+  // scoped to the destination course/folder rather than the quiz's current
+  // one.
+  if (itemType === "quiz") {
+    const collision = await hasQuizNameCollision(supabase, {
+      courseId: targetCourseId,
+      folderId: targetFolderId,
+      title: fetched.row.title,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد امتحان آخر بهذا الاسم في المكان الوجهة." });
+    }
+  }
+
   const table = itemType === "quiz" ? "quizzes" : "folders";
   const updates =
     itemType === "quiz"
@@ -822,9 +840,10 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     // supabase/migrations/20260901195646_courses_and_folders.sql) — moving
     // a folder into a destination that already has a same-named child hits
     // this the same way a rename can (see handleRenameItem's matching
-    // branch). Quizzes have no equivalent constraint, so this only ever
-    // fires for itemType === "folder", but checking the code rather than
-    // itemType keeps this correct if that ever changes.
+    // branch). Quizzes are now pre-checked above instead (no DB constraint
+    // to trip), so this branch only ever fires for itemType === "folder" in
+    // practice — kept keyed on the error code rather than itemType so it
+    // stays correct if that ever changes.
     if (error.code === "23505") {
       return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
     }
@@ -912,6 +931,21 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   }
 
   if (itemType === "quiz") {
+    // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 5): quizzes
+    // have no DB uniqueness constraint the way folders/courses do, so a
+    // rename here previously never checked for a same-titled sibling at
+    // the same course/folder — unlike folders/courses, which get a
+    // friendly "name already taken" 400 via the 23505 branch below.
+    const collision = await hasQuizNameCollision(supabase, {
+      courseId: fetched.row.course_id,
+      folderId: fetched.row.folder_id,
+      title: nameCheck.clean,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد امتحان آخر بهذا الاسم في نفس المكان." });
+    }
+
     const updatedData = { ...fetched.row.data, meta: { ...fetched.row.data?.meta, title: nameCheck.clean } };
     const { error } = await supabase
       .from("quizzes")
@@ -1039,6 +1073,21 @@ async function handleUpdateQuiz(req, res, adminPayload, adminId, supabase) {
   // Preserve path-derived fields from the existing row — see header comment.
   cleanQuiz.meta.path = fetched.row.data?.meta?.path;
   cleanQuiz.meta.author_id = fetched.row.data?.meta?.author_id ?? fetched.row.uploaded_by ?? null;
+
+  // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 6): an edit-mode
+  // title change wrote straight to the row with no duplicate check at all —
+  // not even the path+filename check upload-quiz.js does on create. Edit
+  // never relocates a quiz (see header comment above), so the check is
+  // scoped to the row's own existing course_id/folder_id.
+  const titleCollision = await hasQuizNameCollision(supabase, {
+    courseId: fetched.row.course_id,
+    folderId: fetched.row.folder_id,
+    title: cleanQuiz.meta.title,
+    excludeId: id,
+  });
+  if (titleCollision) {
+    return res.status(400).json({ error: "يوجد امتحان آخر بهذا الاسم في نفس المكان." });
+  }
 
   const updates = {
     title: cleanQuiz.meta.title,

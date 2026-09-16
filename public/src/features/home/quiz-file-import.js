@@ -8,6 +8,7 @@ import { getFromStorage, setInStorage } from "../../shared/storage-helpers.js";
 import { parseQuizJson } from "../../shared/quiz-json.js";
 import { buildUserQuizEntry } from "./quiz-schema.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { hasSameLevelCollision } from "./user-quizzes-folders.js";
 
 function defaultTitleFromFilename(name) {
   return String(name || "quiz")
@@ -134,6 +135,12 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
 
   const existingQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
   let importedCount = 0;
+  // Names skipped for colliding with an existing root-level quiz (or with
+  // another file already imported earlier in this same batch — checked
+  // against `existingQuizzes`, which each accepted entry is pushed into
+  // immediately below, same pattern copyCategoryTreeToUserQuizzes uses for
+  // its own partial-success reporting).
+  const skippedNames = [];
 
   for (const file of validFiles) {
     let text;
@@ -174,6 +181,14 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
         continue;
       }
       entries.forEach((entry) => {
+        const title = entry.meta?.title || "";
+        // Imports always land at root (buildUserQuizEntry leaves parentId
+        // unset) — same-level rule (see hasSameLevelCollision's doc
+        // comment in user-quizzes-folders.js) only needs to check root here.
+        if (hasSameLevelCollision(existingQuizzes, { type: "quiz", title, parentId: null })) {
+          skippedNames.push(title || file.name);
+          return;
+        }
         existingQuizzes.push(entry);
         importedCount++;
       });
@@ -202,6 +217,13 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
       `تم إنشاء ${quizCountText} في "امتحاناتك"`,
       "success",
     );
+    if (skippedNames.length) {
+      showNotification(
+        "تم تخطي بعض الملفات",
+        `يوجد امتحان بنفس الاسم في المستوى الرئيسي بالفعل: ${skippedNames.join("، ")}`,
+        "warning",
+      );
+    }
 
     if (refresh) {
       const { renderRootCategories } = await import("./root-view.js");
@@ -209,6 +231,12 @@ export async function importJsonQuizFiles(files, { refresh = true } = {}) {
       renderRootCategories();
       renderUserQuizzesView();
     }
+  } else if (skippedNames.length) {
+    showNotification(
+      "موجود بالفعل",
+      `يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل: ${skippedNames.join("، ")}`,
+      "warning",
+    );
   } else if (validFiles.length) {
     showNotification(
       "لم يُستورد شيء",
