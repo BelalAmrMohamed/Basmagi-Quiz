@@ -155,13 +155,6 @@ body {
    sheet with backdrop. Layout/behavior is unchanged from the previous
    shared-sidebar implementation — only the source of these rules changed.
    ============================================================================ */
-
-/* ── CSS Variables ────────────────────────────────────────────────────────── */
-:root {
-  --sidebar-collapsed-width: 64px;
-  --sidebar-expanded-width: 240px;
-}
-
 /* ── Body padding shifts with sidebar (RTL: sidebar is on the right) ────── */
 body {
   padding-right: calc(var(--sidebar-collapsed-width) + 16px);

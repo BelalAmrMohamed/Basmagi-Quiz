@@ -5,13 +5,6 @@
   Desktop: 64px collapsed → 240px expanded (left-fixed, full-height)
   Mobile (≤768px): hidden off-screen, slides in from left with backdrop
    ============================================================================ */
-
-/* ── CSS Variables ────────────────────────────────────────────────────────── */
-:root {
-  --sidebar-collapsed-width: 64px;
-  --sidebar-expanded-width: 240px;
-}
-
 /* ── Sidebar Panel ────────────────────────────────────────────────────────── */
 .sidebar {
   position: fixed;

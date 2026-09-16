@@ -466,7 +466,9 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *,
   .section-icon, .section-icon *,
-  .menu-icon-line, .menu-item svg, .menu-item svg *),
+  .menu-icon-line,
+  .menu-item svg, .menu-item svg *,
+  .bottom-nav-icon svg, .bottom-nav-icon svg *),
 html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *,
   .ai-agent-msg-loading, .ai-agent-msg-loading *,
   .ai-agent-typing, .ai-agent-typing *,
@@ -477,7 +479,9 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *,
   .section-icon, .section-icon *,
-  .menu-icon-line, .menu-item svg, .menu-item svg *)::before,
+  .menu-icon-line,
+  .menu-item svg, .menu-item svg *,
+  .bottom-nav-icon svg, .bottom-nav-icon svg *)::before,
 html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-wave *,
   .ai-agent-msg-loading, .ai-agent-msg-loading *,
   .ai-agent-typing, .ai-agent-typing *,
@@ -488,7 +492,9 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   [class*="spinner"], [class*="spinner"] *,
   [class*="loader"], [class*="loader"] *,
   .section-icon, .section-icon *,
-  .menu-icon-line, .menu-item svg, .menu-item svg *)::after {
+  .menu-icon-line,
+  .menu-item svg, .menu-item svg *,
+  .bottom-nav-icon svg, .bottom-nav-icon svg *)::after {
   animation-duration: 0.001ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;

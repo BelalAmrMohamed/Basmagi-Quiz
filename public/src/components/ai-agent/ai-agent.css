@@ -1764,15 +1764,7 @@ body.sidebar-expanded .ai-agent-fab {
   padding: 8px;
 }
 
-/* ── Sidebar header (mirrors .sidebar-header / .sidebar-brand-link /
-   .sidebar-logo / .sidebar-favicon / .sidebar-collapse-btn in
-   side-menu.css exactly) ──
-   Three elements, exactly one pair visible at a time depending on
-   .ai-agent-sidebar--collapsed:
-     - .ai-agent-sidebar-favicon: collapsed-rail-only, own logo, the
-       expand trigger.
-     - .ai-agent-sidebar-brand + .ai-agent-sidebar-collapse-btn:
-       expanded-only, wordmark/name + the collapse trigger. */
+/* ── Sidebar header ── */
 .ai-agent-sidebar-header {
   display: flex;
   align-items: center;
