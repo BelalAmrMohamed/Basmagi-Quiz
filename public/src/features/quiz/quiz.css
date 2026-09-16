@@ -234,7 +234,24 @@ body.sidebar-expanded {
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px 8px 14px;
+  /* Right padding (physical, not logical — this is deliberately NOT
+     padding-inline, since it's tuned to one specific edge) is set so the
+     favicon's center lands exactly 32px from the sidebar's right edge:
+     10px padding + 18px (half of the 36px icon) = 28px, which didn't
+     match the collapsed rail's 44px-button center (32px from the edge)
+     and caused a small horizontal jump on toggle. 14px + 18px = 32px
+     aligns the two exactly.
+     Top padding is likewise tuned (14px, not the original 8px) so the
+     favicon's vertical center also lands 32px from the sidebar's top —
+     matching the collapsed .sidebar-favicon button's own center
+     (10px margin-top + 44px/2), which otherwise sat 6px lower than this
+     header's icon and caused a small vertical jump on toggle too. */
+  padding: 14px 10px 8px 14px;
+  padding-right: 14px;
+  /* Floor only — actual height is padding (14+8=22px) + the 36px icon =
+     58px, taller than this min-height, so min-height no longer drives the
+     box; it just guards against ever collapsing shorter than 52px if the
+     icon/padding values change later. */
   min-height: 52px;
   width: 100%;
   box-sizing: border-box;
@@ -247,7 +264,16 @@ body.sidebar-expanded {
 
 .sidebar-brand-link {
   display: flex;
+  /* Parent document is RTL (html dir="rtl"), and nothing here resets that,
+     so plain "row" (the default) already lays out the first DOM child on
+     the right and the last on the left — no row-reverse needed. Markup
+     order is therefore icon-first, text-second (see index.html etc.),
+     matching the sidebar being anchored to the right edge: icon on the
+     right, wordmark on the left. row-reverse was tried here first but
+     that flips AGAINST the inherited RTL flow, not with it, and pushed
+     the icon to the left instead. */
   align-items: center;
+  gap: 10px;
   text-decoration: none;
   color: inherit;
   min-width: 0;
@@ -256,10 +282,20 @@ body.sidebar-expanded {
 /* Brand wordmark text: fades in/out in sync with the sidebar's own
    expand/collapse timing instead of popping in instantly, since the
    sidebar-header itself relies on display:none/flex which cannot
-   transition on its own. */
+   transition on its own.
+   Previously an SVG <text> element baked into the same coordinate system
+   as the favicon <image>; now a plain <span> so the favicon can be a
+   regular CSS-sized <img> instead (see .sidebar-logo, .sidebar-favicon-img
+   below) — pixel parity between collapsed/expanded icon states no longer
+   depends on two different coordinate systems happening to agree. */
 .sidebar-brand-text {
   opacity: 0;
   transition: opacity 0s;
+  font-family: Tajawal, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: currentColor;
+  white-space: nowrap;
 }
 
 .sidebar.expanded .sidebar-brand-text {
@@ -271,6 +307,18 @@ body.sidebar-expanded {
   display: flex;
   align-items: center;
   pointer-events: none;
+}
+
+/* Expanded-header favicon: the SAME class/sizing rule the collapsed rail's
+   .sidebar-favicon-img already uses (36×36px, see that rule further down),
+   so the icon is pixel-identical and never resizes/shifts when toggling
+   .expanded — there is exactly one place that defines this size. */
+.sidebar-logo .sidebar-favicon-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* In-header collapse button when sidebar is expanded */

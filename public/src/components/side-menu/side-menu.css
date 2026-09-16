@@ -184,7 +184,24 @@
   display: none;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px 8px 14px;
+  /* Right padding (physical, not logical — this is deliberately NOT
+     padding-inline, since it's tuned to one specific edge) is set so the
+     favicon's center lands exactly 32px from the sidebar's right edge:
+     10px padding + 18px (half of the 36px icon) = 28px, which didn't
+     match the collapsed rail's 44px-button center (32px from the edge)
+     and caused a small horizontal jump on toggle. 14px + 18px = 32px
+     aligns the two exactly.
+     Top padding is likewise tuned (14px, not the original 8px) so the
+     favicon's vertical center also lands 32px from the sidebar's top —
+     matching the collapsed .sidebar-favicon button's own center
+     (10px margin-top + 44px/2), which otherwise sat 6px lower than this
+     header's icon and caused a small vertical jump on toggle too. */
+  padding: 14px 10px 8px 14px;
+  padding-right: 14px;
+  /* Floor only — actual height is padding (14+8=22px) + the 36px icon =
+     58px, taller than this min-height, so min-height no longer drives the
+     box; it just guards against ever collapsing shorter than 52px if the
+     icon/padding values change later. */
   min-height: 52px;
   width: 100%;
   box-sizing: border-box;
@@ -197,7 +214,16 @@
 
 .sidebar-brand-link {
   display: flex;
+  /* Parent document is RTL (html dir="rtl"), and nothing here resets that,
+     so plain "row" (the default) already lays out the first DOM child on
+     the right and the last on the left — no row-reverse needed. Markup
+     order is therefore icon-first, text-second (see index.html etc.),
+     matching the sidebar being anchored to the right edge: icon on the
+     right, wordmark on the left. row-reverse was tried here first but
+     that flips AGAINST the inherited RTL flow, not with it, and pushed
+     the icon to the left instead. */
   align-items: center;
+  gap: 10px;
   text-decoration: none;
   color: inherit;
   min-width: 0;
@@ -206,10 +232,20 @@
 /* Brand wordmark text: fades in/out in sync with the sidebar's own
    expand/collapse timing instead of popping in instantly, since the
    sidebar-header itself relies on display:none/flex which cannot
-   transition on its own. */
+   transition on its own.
+   Previously an SVG <text> element baked into the same coordinate system
+   as the favicon <image>; now a plain <span> so the favicon can be a
+   regular CSS-sized <img> instead (see .sidebar-logo, .sidebar-favicon-img
+   below) — pixel parity between collapsed/expanded icon states no longer
+   depends on two different coordinate systems happening to agree. */
 .sidebar-brand-text {
   opacity: 0;
   transition: opacity 0s;
+  font-family: Tajawal, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  color: currentColor;
+  white-space: nowrap;
 }
 
 .sidebar.expanded .sidebar-brand-text {
@@ -221,6 +257,18 @@
   display: flex;
   align-items: center;
   pointer-events: none;
+}
+
+/* Expanded-header favicon: the SAME class/sizing rule the collapsed rail's
+   .sidebar-favicon-img already uses (36×36px, see that rule further down),
+   so the icon is pixel-identical and never resizes/shifts when toggling
+   .expanded — there is exactly one place that defines this size. */
+.sidebar-logo .sidebar-favicon-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 /* In-header collapse button when sidebar is expanded */
@@ -1916,37 +1964,7 @@ html[data-motion="reduced"] body {
 
 /* ============================================================================
    ROLE BADGE — Admin / Developer marker on nav avatars
-   ============================================================================
-   Third rebuild, matching .admin-gallery-badge (profile.css) — the same
-   small role marker already used on the profile page's admin gallery cards.
-   That one just works: a small solid-colour disc with a bare stroke icon,
-   no ring, sitting in a notch cut out of the avatar photo's own corner
-   instead of stacked on top of it.
-
-   The previous two rounds fixed positioning, then swapped the artwork for a
-   flat glyph, but kept building the badge as a separate disc layered ON TOP
-   of the avatar with a ring to punch it free — which is exactly the part
-   that kept looking busy at nav-icon size: a ring, a halo-on-hover, a scale
-   transform, all fighting a 14-18px space that a 96px profile-card badge
-   never had to justify.
-
-   What's here now, mirroring .admin-gallery-badge exactly:
-     · `.nav-avatar-has-badge` masks a circular notch out of the avatar
-       image's own corner (mask-image, not a shape drawn over it) so the
-       badge sits IN the avatar, not floating above it.
-     · The badge is a plain gradient disc + bare white icon, no ring,
-       no halo, no idle animation — and per your correction, no hover
-       feedback at all, matching .admin-gallery-badge.role-badge:hover.
-     · Same two role gradients as .role-badge.admin-badge / .developer-badge
-       in profile.css, so the nav badge and the profile-page badge read as
-       the same design language rather than two competing ones.
-
-   Positioning is owned by .nav-badge-anchor; see navRoleBadge.js for why
-   that wrapper exists and for how the notch class gets applied/removed. */
-
-/* Positioning context hugging the avatar glyph. Sized by its contents (the
-   avatar image, or the default-icon SVG that swaps with it), and layout-neutral
-   inside the flex row it sits in. */
+   ============================================================================ */
 .nav-badge-anchor {
   position: relative;
   display: inline-flex;
@@ -1956,12 +1974,6 @@ html[data-motion="reduced"] body {
   line-height: 0;
 }
 
-/* Cuts a circular notch out of the avatar's own bottom-right corner so the
-   badge sits recessed into the photo instead of stacked above it — the same
-   technique as .admin-gallery-avatar in profile.css, sized down for the
-   28px/24px nav avatar instead of the 96px profile-card one. Only applied
-   while a badge is actually mounted (see navRoleBadge.js), so avatars
-   without a role never carry a pointless mask. */
 .menu-item-avatar.nav-avatar-has-badge,
 .bottom-nav-avatar.nav-avatar-has-badge {
   -webkit-mask-image: radial-gradient(circle 7px at calc(100% - 5px) calc(100% - 5px),

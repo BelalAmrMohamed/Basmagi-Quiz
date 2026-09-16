@@ -7,10 +7,6 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
-### Courses & Folders OG Images (og.js)
-- Right Column of the info table aren't all on the same x access, they are not perfectly aligned, some are slightly to the left, others to the right slightly.
-- (On Folders OG Images) When the course name is Arabic (like "اللغة العربية"), it gets reversed (e.g., "العربية اللغة")
-
 ### امتحاناتك Rules
 Check the rules for creating امتحانات and copying them and moving them.
 **No 2 elements of the same type and the same name should exist at the same course/folder (or root امتحاناتك)**
