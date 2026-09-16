@@ -2254,9 +2254,6 @@ body.sidebar-expanded .ai-agent-fab {
    reflected in real time either way. */
 @media (min-width: 901px) {
   .ai-agent-modal-card.ai-agent-desktop-layout {
-    /* max-width: 860px; */
-    /* width: min(92vw, 860px); */
-    /* height: min(760px, 90vh); */
     max-width: none;
     width: 92vw;
     height: 90vh;

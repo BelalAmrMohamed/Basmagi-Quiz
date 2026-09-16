@@ -1077,7 +1077,7 @@ function createMenuItem(iconSvg, label, onClick, isDanger = false, disabledReaso
     padding: 5px 14px; cursor: ${disabled ? "not-allowed" : "pointer"};
     color: ${disabled ? "var(--color-text-tertiary, var(--color-text-secondary))" : (isDanger ? "var(--color-danger, #dc2626)" : "var(--color-text-primary)")};
     opacity: ${disabled ? "0.55" : "1"};
-    font-size: 0.88rem; transition: background 0.15s; display: flex; align-items: center; gap: 10px;
+    font-size: 0.88rem; display: flex; align-items: center; gap: 10px;
   `;
   item.innerHTML = `<span style="flex-shrink:0;display:flex;align-items:center;opacity:0.75">${iconSvg}</span><span>${label}</span>`;
   if (disabled) item.title = disabledReason;
