@@ -371,11 +371,15 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
 }
 
 .media-container.resizable-media > img,
-.media-container.resizable-media > audio,
 .media-container.resizable-media > video,
 .media-container.resizable-media > iframe {
   width: 100%;
   height: 100%;
+}
+
+.media-container.resizable-media > audio {
+  width: 100%;
+  height: 52px;
 }
 
 .question-image-container.resizable-media .question-image,
@@ -501,6 +505,43 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   .question-audio-container .resize-handle--e::before {
     width: 6px;
     height: 40px;
+  }
+
+  .resize-handle--nw,
+  .resize-handle--ne,
+  .resize-handle--sw,
+  .resize-handle--se {
+    opacity: 1;
+    width: 30px;
+    height: 30px;
+  }
+
+  .resize-handle--nw::before,
+  .resize-handle--ne::before,
+  .resize-handle--sw::before,
+  .resize-handle--se::before {
+    width: 14px;
+    height: 14px;
+  }
+
+  .resize-handle--nw {
+    top: -15px;
+    left: -15px;
+  }
+
+  .resize-handle--ne {
+    top: -15px;
+    right: -15px;
+  }
+
+  .resize-handle--sw {
+    bottom: -15px;
+    left: -15px;
+  }
+
+  .resize-handle--se {
+    bottom: -15px;
+    right: -15px;
   }
 }
 

@@ -64,6 +64,7 @@ import {
   _saveMediaSize,
   _saveMediaSizeDebounced,
   _equipResizableMedia,
+  _equipMediaSkeleton,
   _scanResizableMedia,
 } from "../../shared/markdown.js";
 
@@ -2555,6 +2556,8 @@ ${quizInfoModalHtml}
   ${_saveMediaSizeDebounced.toString()}
 
   ${_equipResizableMedia.toString()}
+
+  ${_equipMediaSkeleton.toString()}
 
   ${_scanResizableMedia.toString()}
 

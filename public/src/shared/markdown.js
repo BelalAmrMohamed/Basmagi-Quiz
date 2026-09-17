@@ -120,8 +120,8 @@ export function _renderRawImageTag(src, alt, width, height, mediaBaseUrl) {
   const dims =
     (width ? ` width="${safe(width)}"` : "") +
     (height ? ` height="${safe(height)}"` : "");
-  const img = `<img src="${safe(resolvedSrc)}" alt="${safe(alt)}" class="md-img"${dims} loading="lazy" data-media-raw="${safe(src)}">`;
-  return `<div class="media-container md-inline-media" data-resize-key="${safe(resizeKey)}" data-resize-kind="image">${img}</div>`;
+  const img = `<img src="${safe(resolvedSrc)}" alt="${safe(alt)}" class="md-img question-image"${dims} loading="lazy" data-media-raw="${safe(src)}">`;
+  return `<div class="media-container question-media-container question-image-container md-inline-media" data-resize-key="${safe(resizeKey)}" data-resize-kind="image">${img}</div>`;
 }
 
 /**
@@ -464,6 +464,119 @@ export function _equipResizableMedia(container) {
 }
 
 /**
+ * Reveals inline media (hides its loading skeleton) once it's actually
+ * loaded, and retries the next candidate URL on error — same reveal-on-
+ * load / retry-on-error logic quiz.js's initMediaSkeletons has always had,
+ * moved into the engine itself so it also runs on /create-quiz and /result,
+ * which never called quiz.js's copy and so left every audio/video/image
+ * permanently stuck behind its loading skeleton. Guarded by
+ * `data-skeleton-init` so it only binds once per container.
+ * @param {HTMLElement} container
+ */
+export function _equipMediaSkeleton(container) {
+  if (container.dataset.skeletonInit) return;
+  container.dataset.skeletonInit = "1";
+
+  const media = container.querySelector("img, audio, video");
+  const skeleton = container.querySelector(".media-skeleton");
+  if (!media || !skeleton) return;
+
+  let candidates = [];
+  try {
+    candidates = JSON.parse(media.dataset.mediaCandidates || "[]");
+  } catch {
+    candidates = getMediaUrlCandidates(media.dataset.mediaRaw || media.src);
+  }
+  if (!candidates.length) candidates = [media.src];
+
+  const currentUrl = media.src;
+  const currentBaseUrl = currentUrl ? currentUrl.split("?")[0] : "";
+  let candidateIdx = Math.max(
+    0,
+    candidates.findIndex((url) => url === currentBaseUrl || url === currentUrl),
+  );
+
+  const reveal = () => {
+    skeleton.classList.add("media-skeleton--hidden");
+    media.classList.add("media-loaded");
+  };
+
+  const showError = () => {
+    skeleton.classList.remove("media-skeleton--hidden");
+    skeleton.classList.add("media-skeleton--error");
+    skeleton.innerHTML =
+      '<span class="media-error">تعذّر تحميل الوسائط. تحقق من المسار أو الرابط.</span>';
+  };
+
+  const applyMediaSrc = (el, url) => {
+    const urlWithCacheBust = url
+      ? `${url}${url.includes("?") ? "&" : "?"}_cb=${Date.now()}`
+      : url;
+    el.src = urlWithCacheBust;
+    const source = el.querySelector && el.querySelector("source");
+    if (source) source.src = urlWithCacheBust;
+    if (el.tagName !== "IMG") el.load();
+  };
+
+  const tryNextCandidate = () => {
+    candidateIdx += 1;
+    if (candidateIdx < candidates.length) {
+      applyMediaSrc(media, candidates[candidateIdx]);
+      return true;
+    }
+    showError();
+    return false;
+  };
+
+  if (media.tagName === "IMG") {
+    const onLoad = () => reveal();
+    const onError = () => {
+      if (!tryNextCandidate()) return;
+      media.addEventListener("load", onLoad, { once: true });
+      media.addEventListener("error", onError, { once: true });
+    };
+    if (media.complete && media.naturalWidth > 0) {
+      reveal();
+    } else {
+      media.addEventListener("load", onLoad, { once: true });
+      media.addEventListener("error", onError, { once: true });
+    }
+    return;
+  }
+
+  const onMediaReady = () => {
+    if (media.readyState >= 1) reveal();
+  };
+  const onMediaError = () => {
+    if (!tryNextCandidate()) return;
+    media.addEventListener("loadedmetadata", onMediaReady, { once: true });
+    media.addEventListener("canplay", onMediaReady, { once: true });
+    media.addEventListener("error", onMediaError, { once: true });
+  };
+
+  media.addEventListener("loadedmetadata", onMediaReady, { once: true });
+  media.addEventListener("loadeddata", onMediaReady, { once: true });
+  media.addEventListener("canplay", onMediaReady, { once: true });
+  media.addEventListener("error", onMediaError, { once: true });
+
+  onMediaReady();
+
+  requestAnimationFrame(() => {
+    if (!skeleton.classList.contains("media-skeleton--hidden")) onMediaReady();
+  });
+
+  setTimeout(() => {
+    if (
+      !skeleton.classList.contains("media-skeleton--hidden") &&
+      !skeleton.classList.contains("media-skeleton--error") &&
+      media.readyState >= 1
+    ) {
+      reveal();
+    }
+  }, 500);
+}
+
+/**
  * Scans `root` for not-yet-equipped resizable media containers and equips
  * them. Exported so export-to-quiz.js's static-export bundler can inline it
  * (same .toString()-serialization pattern as scanDirections/renderMarkdown).
@@ -472,6 +585,7 @@ export function _equipResizableMedia(container) {
 export function _scanResizableMedia(root = document) {
   if (!root.querySelectorAll) return;
   root.querySelectorAll(".media-container[data-resize-key]").forEach(_equipResizableMedia);
+  root.querySelectorAll(".media-container").forEach(_equipMediaSkeleton);
 }
 
 // ── Delegated drag-resize (registered once, module-load side effect) ──────

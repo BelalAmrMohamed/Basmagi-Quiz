@@ -30,12 +30,9 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
 ### `public/src/shared/markdown.js`
-- Videos and YouTube videos get the resize handles perfectly, as I expected.
-- But the audio got messed up; I can't see the audio controls, but I can see the resize handles (see the first screenshot).
-- And images don't get the resize handles, and they appear aligned to the left instead of the middle (see the second screenshot).
-- YouTube resize handles aren't visible on phones and are hard to catch.
-- Audio and normal videos don't load at all on /result​ and /create-quiz​ pages; they keep loading forever.
-*Tested on localhost*
+- Resize Handle Issues:
+  - Images don't get the resize handles, and they appear aligned to the left or right instead of the middle. ![screenshot](image-2.png).
+  *Tested on localhost*
 
 - `docs\plans\md-engine-prompt.md`
 
@@ -58,9 +55,16 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 `المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
 
 ### Create Quiz Page
-- Performance: create-quiz.js is 5000+ lines in one file — This is a good candidate to split into modules.
-- Add a button for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options). This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
+
+#### Fix
 - The background animations doesn't work on the page, `themes.css` updated variabled used by elements to give them a bit of opacity, so the bg animations can appear through them, the create-quiz page might not be using them. 
+
+#### New Features
+- Add a button for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options). This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
+- Add a dynamic question navigator. Similar to the question navigator at `quiz.html`, but it increases when a new question gets added, and decreases when a question gets deleted.
+
+#### Performance
+- `create-quiz.js` is 5000+ lines in one file — This is a good candidate to split into modules.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
 Currently the AI Agent is open for all admins and for users who have level 10 or more. But I want to make that dynamic. 2 phases.
