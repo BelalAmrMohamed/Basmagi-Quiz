@@ -7,18 +7,6 @@
   --about-sage: #a8c3a0;
   --about-coral: #d8785f;
   --about-line: rgba(23, 34, 29, .16);
-  /* Dedicated pair for the "inverted" highlight card (3rd .principle) —
-     explicitly declared per theme rather than reusing --about-ink/
-     --about-paper for both the page's normal colors AND this card's
-     inverted ones. Those two swap MEANING between light and dark themes
-     (ink=dark-on-light in light mode, but ink=light-on-dark in dark mode),
-     so a rule built from "background: ink, text: paper" quietly stops
-     being an inversion at all in dark themes — the card's background
-     ends up light while its text stays a light color hardcoded for a
-     dark background, i.e. unreadable. Naming these for what they ARE
-     (a dark chip / a light chip) instead of reusing tokens whose meaning
-     depends on the active theme keeps the pairing correct in every theme.
-     Also known as: 3rd-nth principle. */
   --about-highlight-bg: #17221d;
   --about-highlight-ink: #f3f0e8;
   --about-highlight-muted: #c9d4cc;
@@ -371,9 +359,6 @@ html[data-theme="dark-slate"] .about-page {
       var(--about-line) 100%);
   background-size: 300px 100%;
   background-repeat: no-repeat;
-  /* Loading skeletons stay animated regardless of "الأداء الفائق" /
-     reduced-motion mode, so this is unconditional rather than gated
-     behind html[data-motion="normal"]. */
   animation: about-stat-shimmer 1.6s ease-in-out infinite;
 }
 
@@ -549,12 +534,6 @@ html[data-theme="dark-slate"] .about-page {
   width: 100%;
   aspect-ratio: 1200 / 630;
   background-color: var(--about-highlight-bg);
-  /* Placeholder art until a real screenshot of the portfolio site is
-     available — drop the file at
-     /public/assets/images/portfolio-thumbnail.jpg and swap the url()
-     below to it; the aspect-ratio box above will hold it exactly like a
-     real OG unfurl. Currently reusing the developer photo as a stand-in
-     so the card isn't just an empty tinted rectangle. */
   background-image:
     linear-gradient(135deg, color-mix(in srgb, var(--about-coral) 22%, transparent), transparent 60%),
     url('/assets/images/portfolio-thumbnail.jpg');

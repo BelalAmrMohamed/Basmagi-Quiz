@@ -341,13 +341,6 @@
 .dl-settings-rows {
   display: flex;
   flex-direction: column;
-  /* Fix #separator: previously this gap PLUS every row's own
-     border-bottom combined to look like two separator lines stacked
-     with a gap between them, especially visible on exports that don't
-     reach a `:last-child` row with content (e.g. no PDF-only background
-     row), so the last two *visible* rows each ended up bordered with a
-     gap in between. Rows now rely on the border alone for separation;
-     the gap collapses to 0 so there's exactly one line between rows. */
   gap: 0;
 }
 

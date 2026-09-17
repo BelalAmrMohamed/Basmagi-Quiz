@@ -13,11 +13,9 @@
   right: 24px;
   display: flex;
   flex-direction: column-reverse;
-  /* Newest items at the bottom visually */
   gap: 12px;
   z-index: var(--z-notification);
   pointer-events: none;
-  /* Click-through empty space */
 }
 
 /* =========================
@@ -25,25 +23,18 @@
      ========================= */
 .notification.glass-toast {
   pointer-events: auto;
-  /* Re-enable clicks on the toast itself */
   position: relative;
   display: flex;
-
-  /* Glassmorphism Look (From Visual Source) */
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-
-  /* Layout */
   border-radius: 12px;
   padding: 16px;
   min-width: 320px;
   max-width: 400px;
   color: #333;
-
-  /* Animation Entry */
   animation: toastSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
   transition: all 0.3s ease;
 }
@@ -54,7 +45,6 @@
 .notification-content {
   display: flex;
   align-items: center;
-  /* Center icon vertically with text */
   gap: 16px;
   width: 100%;
 }
@@ -77,7 +67,6 @@
   flex-direction: column;
   gap: 4px;
   flex: 1;
-  /* Take up remaining space */
 }
 
 .notification-content strong {
@@ -99,15 +88,12 @@
   position: absolute;
   top: -8px;
   right: -8px;
-
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(0, 0, 0, 0.1);
   color: #333;
-
   border-radius: 50%;
   width: 24px;
   height: 24px;
-
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,7 +211,6 @@
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.4);
-  /* Fallback */
   backdrop-filter: blur(4px);
   z-index: var(--z-modal-top);
   display: flex;
@@ -234,7 +219,6 @@
   opacity: 0;
   transition: opacity 0.3s ease;
   pointer-events: none;
-  /* Prevent interaction while hidden */
 }
 
 .confirmation-overlay.show {
@@ -253,7 +237,6 @@
   transform: scale(0.9);
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  /* Bouncy scale */
 }
 
 .confirmation-modal.show {
@@ -273,16 +256,6 @@
   text-align: center;
   line-height: 1.5;
   margin: 0;
-  /* BUG FIX: _confirm()/_alert()/_prompt() escape the message via
-     escapeHtml() (textContent → innerHTML) and drop it straight into this
-     <p>, but default HTML whitespace collapsing still applies to that
-     resulting text — every "\n" a caller passes in (e.g. the multi-line
-     "حذف الكل" warning) was rendering as a plain space instead of an actual
-     line break. white-space: pre-line preserves "\n"/"\r\n" as real line
-     breaks while still collapsing runs of plain spaces/tabs the normal way,
-     so callers can keep writing template-literal messages with embedded
-     newlines without needing <br> tags (which escapeHtml would strip
-     anyway, by design — see its own doc comment). */
   white-space: pre-line;
 }
 
@@ -419,10 +392,6 @@
   font-weight: 700;
   color: var(--color-error, #dc2626);
   text-align: center;
-  /* Preserve exactly what escapeHtml() produced, including any leading/
-     trailing whitespace in the phrase itself — this text exists specifically
-     so the user can visually compare it character-for-character against
-     what they type. */
   white-space: pre-wrap;
   word-break: break-word;
   user-select: all;

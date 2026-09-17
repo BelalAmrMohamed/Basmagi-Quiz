@@ -37,10 +37,14 @@
   /* ── Fluid spacing scale ──────────────────────────────────────────────────
      Each var interpolates between a min (mobile) and max (desktop) value.
      Change only these to retune the whole layout.                         */
-  --space-xs: clamp(0.5rem, 1vw, 0.75rem); /*  8px → 12px */
-  --space-sm: clamp(0.75rem, 2vw, 1.25rem); /* 12px → 20px */
-  --space-md: clamp(1rem, 3vw, 1.875rem); /* 16px → 30px */
-  --space-lg: clamp(1.25rem, 4vw, 2.5rem); /* 20px → 40px */
+  --space-xs: clamp(0.5rem, 1vw, 0.75rem);
+  /*  8px → 12px */
+  --space-sm: clamp(0.75rem, 2vw, 1.25rem);
+  /* 12px → 20px */
+  --space-md: clamp(1rem, 3vw, 1.875rem);
+  /* 16px → 30px */
+  --space-lg: clamp(1.25rem, 4vw, 2.5rem);
+  /* 20px → 40px */
 
   /* ── Fluid typography ───────────────────────────────────────────────────── */
   --text-sm: clamp(0.8rem, 1.5vw, 0.9rem);
@@ -68,7 +72,7 @@
   padding: 0;
 }
 
-html{
+html {
   scrollbar-width: thin;
 }
 
@@ -79,10 +83,12 @@ body {
   background: var(--bg-gradient);
   color: var(--text-main);
   min-height: 100vh;
-  min-height: 100dvh; /* respect mobile address-bar collapse */
+  min-height: 100dvh;
+  /* respect mobile address-bar collapse */
   display: flex;
   justify-content: center;
-  align-items: flex-start; /* avoids clipping on short viewports */
+  align-items: flex-start;
+  /* avoids clipping on short viewports */
   padding: var(--space-sm);
   direction: rtl;
 }
@@ -101,7 +107,6 @@ body {
   box-shadow: var(--shadow);
   width: 100%;
   max-width: 800px;
-  /* No min-height on mobile — content decides height */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -170,7 +175,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  min-width: 0; /* prevents flex blowout */
+  min-width: 0;
+  /* prevents flex blowout */
 }
 
 /* ── 8. Step Panels ─────────────────────────────────────────────────────────── */
@@ -191,6 +197,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -201,9 +208,11 @@ body {
 html[data-motion="reduced"] .step-panel {
   animation: none;
 }
+
 html[data-motion="reduced"] * {
   transition-duration: 0.01ms !important;
 }
+
 html[data-motion="reduced"] .welcome-icon {
   animation: none;
 }
@@ -280,17 +289,20 @@ html[data-motion="reduced"] .welcome-icon {
   flex-direction: column;
   align-items: center;
   gap: var(--space-xs);
-  min-height: 80px; /* minimum 44 px tap target included */
+  min-height: 80px;
+  /* minimum 44 px tap target included */
 }
 
 .selection-card:hover {
   background: rgba(0, 0, 0, 0.06);
   transform: translateY(-2px);
 }
+
 .selection-card:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
 .selection-card.selected {
   border-color: var(--primary);
   background: rgba(0, 136, 204, 0.05);
@@ -300,6 +312,7 @@ html[data-motion="reduced"] .welcome-icon {
 .card-icon {
   font-size: clamp(1.5rem, 4vw, 2rem);
 }
+
 .card-label {
   font-weight: 600;
   font-size: var(--text-sm);
@@ -328,10 +341,11 @@ html[data-motion="reduced"] .welcome-icon {
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-input:checked + .toggle-switch {
+input:checked+.toggle-switch {
   background-color: var(--primary);
 }
-input:checked + .toggle-switch::after {
+
+input:checked+.toggle-switch::after {
   transform: translateX(20px);
 }
 
@@ -343,7 +357,8 @@ input:checked + .toggle-switch::after {
   align-items: center;
   gap: var(--space-xs);
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-  flex-wrap: wrap; /* prevents overflow on very narrow screens */
+  flex-wrap: wrap;
+  /* prevents overflow on very narrow screens */
 }
 
 /* ── 13. Buttons ────────────────────────────────────────────────────────────── */
@@ -357,7 +372,8 @@ input:checked + .toggle-switch::after {
   transition: var(--transition);
   border: none;
   white-space: nowrap;
-  min-height: 44px; /* WCAG 2.5.5 touch target */
+  min-height: 44px;
+  /* WCAG 2.5.5 touch target */
 }
 
 @media (min-width: 480px) {
@@ -370,6 +386,7 @@ input:checked + .toggle-switch::after {
   background: transparent;
   color: var(--text-secondary);
 }
+
 .btn-secondary:hover {
   background: rgba(0, 0, 0, 0.05);
   color: var(--text-main);
@@ -380,6 +397,7 @@ input:checked + .toggle-switch::after {
   color: white;
   box-shadow: var(--shadow-sm);
 }
+
 .btn-primary:hover {
   background: var(--primary-dark);
   transform: translateY(-2px);
@@ -441,6 +459,7 @@ input:checked + .toggle-switch::after {
 }
 
 @keyframes bounce {
+
   0%,
   20%,
   50%,
@@ -448,9 +467,11 @@ input:checked + .toggle-switch::after {
   100% {
     transform: translateY(0);
   }
+
   40% {
     transform: translateY(-20px);
   }
+
   60% {
     transform: translateY(-10px);
   }
@@ -501,8 +522,10 @@ input:checked + .toggle-switch::after {
 .course-list .toggle-container:has(input:checked) .toggle-switch {
   background: var(--color-primary, #6366f1);
 }
+
 .course-list .toggle-container:has(input:checked) .toggle-switch::after {
-  transform: translateX(24px); /* 52px - 20px knob - 4px margin = 28px travel */
+  transform: translateX(24px);
+  /* 52px - 20px knob - 4px margin = 28px travel */
 }
 
 /* Course cards: single column on mobile, responsive grid above that */
@@ -521,6 +544,7 @@ input:checked + .toggle-switch::after {
 .course-list::-webkit-scrollbar {
   width: 6px;
 }
+
 .course-list::-webkit-scrollbar-thumb {
   background: var(--color-border, #ddd);
   border-radius: 3px;
@@ -565,7 +589,8 @@ input:checked + .toggle-switch::after {
 
 .course-list .course-info {
   flex: 1;
-  min-width: 0; /* required for text-overflow: ellipsis */
+  min-width: 0;
+  /* required for text-overflow: ellipsis */
   text-align: right;
 }
 
@@ -591,29 +616,38 @@ input:checked + .toggle-switch::after {
     align-items: flex-start;
     padding: 8px;
   }
+
   .wizard-header {
     padding: 10px var(--space-md);
   }
+
   .wizard-header h1 {
     font-size: var(--text-lg);
     margin-bottom: 2px;
   }
+
   .wizard-header p {
     display: none;
-  } /* reclaim vertical space */
+  }
+
+  /* reclaim vertical space */
   .progress-container {
     padding: 8px var(--space-md) 0;
   }
+
   .wizard-content {
     padding: var(--space-xs) var(--space-md);
   }
+
   .wizard-actions {
     padding: 8px var(--space-md);
   }
+
   .welcome-icon {
     font-size: 2rem;
     margin-bottom: 8px;
   }
+
   .course-list {
     max-height: 180px;
   }

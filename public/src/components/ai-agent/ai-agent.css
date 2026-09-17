@@ -679,11 +679,6 @@
   border-radius: 12px;
   background: var(--color-surface);
   overflow: hidden;
-  /* Clickable now (opens the attachment preview modal — see
-     openAttachmentPreviewModal) — cursor + a subtle hover/focus lift so
-     that's discoverable, without disturbing the remove button's own
-     hover state (that button stops click propagation, see its own
-     listener in buildAttachmentTile). */
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.1s ease;
 }
@@ -1008,9 +1003,6 @@
   background: currentColor;
   transform-origin: center;
   animation: ai-agent-wave-bounce 1s ease-in-out infinite;
-  /* Smooths the per-frame transform set by startMicMetering() in
-     ai-agent-chat.js so bars glide between volume samples rather than
-     snapping. */
   transition: transform 0.08s ease-out;
 }
 
@@ -1403,7 +1395,6 @@ html[data-motion="reduced"] {
   right: calc(20px + var(--sidebar-collapsed-width, 0px));
   bottom: 20px;
   z-index: var(--z-tooltip, 6000);
-  /* transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease, box-shadow 0.2s ease; */
   width: 56px;
   height: 56px;
   border: none;
@@ -1411,12 +1402,8 @@ html[data-motion="reduced"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* background: linear-gradient(135deg, #4F6EF7 0%, #A855F7 100%); */
   background: transparent;
-  /* color: #fff; */
   cursor: pointer;
-  /* box-shadow: var(--shadow-lg); */
-  /* transition: transform 0.2s ease, box-shadow 0.2s ease; */
 }
 
 .ai-agent-fab:hover {
@@ -2242,16 +2229,7 @@ body.sidebar-expanded .ai-agent-fab {
   opacity: 0.85;
 }
 
-/* ── Desktop layout (Task 4) ──
-   Wider modal + the sidebar shown alongside the active panel, in place of
-   the mobile tabbed-only layout. Gated on .ai-agent-desktop-layout (set
-   via matchMedia in ai-agent.js) rather than a bare @media block wrapping
-   .ai-agent-modal-card directly, so JS can keep it in sync with a live
-   resize without this stylesheet needing its own separate breakpoint
-   logic duplicated in two places. The breakpoint value itself (901px)
-   still needs to roughly agree with DESKTOP_BREAKPOINT_QUERY in
-   ai-agent.js — both exist only so a window resize crossing this size is
-   reflected in real time either way. */
+/* ── Desktop layout ── Wider modal + the sidebar shown alongside the active panel */
 @media (min-width: 901px) {
   .ai-agent-modal-card.ai-agent-desktop-layout {
     max-width: none;
@@ -2356,12 +2334,6 @@ body.sidebar-expanded .ai-agent-fab {
   box-sizing: border-box;
   flex-shrink: 0;
   min-height: 40px;
-  /* Quick-Access rows can be tall (title + description on 2 lines) while
-     database rows are single-line; align icon/check to the top of the row
-     rather than .exam-action-btn's inherited vertical-center alignment,
-     so a two-line row doesn't push its icon down to the row's vertical
-     middle — which read as "misaligned" next to the single-line rows
-     immediately above/below it. */
   align-items: flex-start;
   padding: 10px 12px;
 }

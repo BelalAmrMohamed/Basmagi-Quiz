@@ -17,7 +17,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 - The page's loading skeleton animation isn't properly excluded from the "الاداء الفائق" `[data-motion="reduced"]` like the other pages are. See `public\src\styles\themes.css` for proper exclusion.
 
 ### `.create-quiz-inline-modal`
-- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), it should be properly excluded from that mode. See `public/src/styles/themes.css`. And the button should be above inside the `,create-quiz-modal__header`, because it's small, and also to give space for the arrow on its right to move.
+- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), it should be properly excluded from that mode. See `public/src/styles/themes.css`. And the `.copyAiPromptBtn` button should be above inside the `.create-quiz-modal__header`, because it's small, and also to give space for the arrow on its right to move.
 - Remove the "الإغلاق" button from the `.prompt-selection-modal`, and make it a normal `x` button at the top left of the modal.
 - But before you do any of these 2, think with me what is the best way to implement this?
   - Should we keep things as they currently are? `.copyAiPromptBtn` on the `.create-quiz-inline-modal` that opens another modal just for 3 buttons?
