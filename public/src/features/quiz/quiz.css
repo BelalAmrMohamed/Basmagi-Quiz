@@ -2311,7 +2311,11 @@ dialog.quiz-password-dialog {
   background-size: 1200px 100%;
 }
 
-[data-animations="enabled"] .skeleton-media {
+/* Unconditional for the same reason as .skeleton-badge/.skeleton-icon/
+   .skeleton-text/.skeleton-option above: loading skeletons keep
+   shimmering even in High Performance mode, matching the home page's
+   .skeleton-block. */
+.skeleton-media {
   animation: media-shimmer 1.6s ease-in-out infinite;
 }
 
@@ -3090,10 +3094,15 @@ body.is-resizing-media .media-container.resizable-media {
   border: 2px solid var(--color-border);
 }
 
-[data-animations="enabled"] .skeleton-badge,
-[data-animations="enabled"] .skeleton-icon,
-[data-animations="enabled"] .skeleton-text,
-[data-animations="enabled"] .skeleton-option {
+/* Loading skeletons stay animated regardless of "الأداء الفائق" /
+   reduced-motion mode (see the html[data-motion="reduced"] exclusion
+   list in themes.css, which excludes [class*="skeleton"]), matching
+   .skeleton-block's pattern on the home page — so this is
+   unconditional rather than gated behind [data-animations="enabled"]. */
+.skeleton-badge,
+.skeleton-icon,
+.skeleton-text,
+.skeleton-option {
   animation: media-shimmer 1.6s ease-in-out infinite;
 }
 

@@ -1259,6 +1259,8 @@ async function renderCourseImage(courseId, folderPath) {
                     fontSize: "24px",
                     borderRight: "1px solid rgba(15,23,42,0.08)",
                     direction: "ltr",
+                    whiteSpace: "nowrap",
+                    textAlign: "left",
                   },
                   children: String(row.val),
                 },
@@ -1285,6 +1287,21 @@ async function renderCourseImage(courseId, folderPath) {
               // it, the text is already in final left-to-right paint
               // order, so there's no per-run RTL spacing applied and no
               // word order left to get backwards.
+              // NOTE on `whiteSpace`/`textAlign` here: fixed-pixel column
+              // widths (above) fixed the column BOUNDARY drifting row to
+              // row, but the visible right edges of "التعليم"/"العام"/
+              // "الترم" were still landing at different x-positions within
+              // an otherwise identically-sized, `justifyContent: flex-end`
+              // box. `justifyContent` positions the text's flex-item
+              // *box*, but without an explicit `textAlign` Satori doesn't
+              // reliably right-align the glyph run's own contents inside
+              // that box for every string (confirmed by direct
+              // rendering — short single-word Arabic labels of different
+              // lengths each drifted independently). The title element
+              // above already pairs `justifyContent: flex-end` with
+              // `textAlign: "right"` (+ `whiteSpace: nowrap` so the box
+              // never wraps and quietly narrows) for exactly this reason;
+              // this column needed the same pairing.
               {
                 type: "div",
                 props: {
@@ -1299,6 +1316,8 @@ async function renderCourseImage(courseId, folderPath) {
                     fontWeight: "400",
                     fontSize: "24px",
                     direction: "ltr",
+                    whiteSpace: "nowrap",
+                    textAlign: "right",
                   },
                   children: renderBidiText(row.label, detectArabic(row.label)),
                 },
