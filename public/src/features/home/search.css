@@ -170,7 +170,7 @@
   min-width: 0;
 }
 
-.search-input::placeholder {
+.search-input:placeholder-shown {
   color: var(--color-text-tertiary, #999);
   font-weight: 400;
   text-align: right;

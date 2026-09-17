@@ -7,6 +7,10 @@ Issues in here have to be studies and tested well, then turned into a plan, befo
 
 ## Patches
 
+### `api\og.js` Og Images
+- Special courses don't get the (مادة مميزة) badge ![screenshot](image.png)
+- Normal courses tables right column's text isn't aligned under each other perfectly (probably related to rendering of Arabic). ![screenshot](image-1.png). Look for these words in the screenshot "التعليم", "العام", and "الترم", they aren't aligned under each other perfectly, that is the issue.
+
 ### Performance (Globally, but specially the main page)
 Performance Improvements: Currently, there are many custom mechanism fucntionalities built in JS that works perfectly, but it may exist natively in HTML, CSS, or as a browser API. In that case we shouldn't reinvent the wheel, specially if it exists natively. Anything that exists natively in HTML, CSS, or as a browser API should be used that way and we should delete any custom JS implementation that has native alternatives. That would improve performance very well. Search for everything, anything that can be implemented in HTML & CSS directly without JS should be done so. You can search the web for modern HTML & CSS, because sometimes they add new things, but watch out for compatibility with different browsers (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
 
@@ -77,3 +81,6 @@ Think about this suggestion, a new way to download quizzes.
 
 ### Translation and content expansion (Suggestion)
 - Add English translation support.
+
+### Offline Page
+- Should match the theme mode stored in localStorage.

@@ -165,9 +165,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 10px 8px 14px;
-  padding-right: 14px;
-  min-height: 52px;
+  padding: 0 10px 0 14px;
+  min-height: 0;
   width: 100%;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -177,7 +176,9 @@
   pointer-events: none;
   transition:
     max-width 250ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 150ms ease;
+    opacity 150ms ease,
+    min-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar.expanded .sidebar-header {
@@ -185,9 +186,13 @@
   opacity: 1;
   overflow: visible;
   pointer-events: auto;
+  padding: 14px 10px 8px 14px;
+  min-height: 52px;
   transition:
     max-width 250ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 150ms ease 100ms;
+    opacity 150ms ease 100ms,
+    min-height 250ms cubic-bezier(0.4, 0, 0.2, 1),
+    padding 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-brand-link {
