@@ -212,6 +212,308 @@ ul.md-list > li > ul.md-list > li > ul.md-list {
   display: block;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   INLINE MEDIA CONTAINERS + USER-RESIZABLE MEDIA
+   Mirrored from src/styles/markdown.css (see that file for the full doc
+   comment). Static exports (export-to-html/pdf/pptx) never run the
+   companion resize JS from markdown.js — since those outputs bake
+   renderMarkdown()'s string result into non-interactive/print HTML — so
+   these rules are inert there and only take effect in export-to-quiz.js's
+   fully-interactive standalone quiz export, which DOES inline the resize
+   JS below alongside this stylesheet.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.media-container {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 52px;
+  width: 100%;
+  max-width: 100%;
+  margin: 8px auto;
+}
+
+.media-container.md-media-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  padding: 16px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.question-image-container {
+  text-align: center;
+  min-height: 160px;
+}
+
+.question-image,
+.md-img.md-inline-media,
+.media-container img.md-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.question-audio-container .question-audio {
+  display: block;
+  width: 100%;
+  height: 52px;
+  min-width: 300px;
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 480px) {
+  .question-audio-container .question-audio {
+    min-width: 250px;
+  }
+}
+
+.question-video-container .question-video {
+  display: block;
+  width: 100%;
+  max-height: min(420px, 55vh);
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+
+.question-video-container .youtube-embed {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  min-height: 200px;
+  max-height: min(420px, 55vh);
+  border-radius: 12px;
+  border: 2px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Media Shimmer Skeletons */
+.media-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 120px;
+  padding: 24px;
+  border-radius: 12px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-background-secondary);
+}
+
+.media-skeleton--hidden {
+  display: none;
+}
+
+.media-skeleton--error {
+  border-style: solid;
+  border-color: var(--color-error);
+  background: var(--color-error-light);
+}
+
+.skeleton-media {
+  width: 100%;
+  max-width: 320px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg,
+      var(--color-border) 0%,
+      var(--color-border-light) 40%,
+      var(--color-border) 80%);
+  background-size: 1200px 100%;
+  animation: media-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes media-shimmer {
+  0% {
+    background-position: -1200px 0;
+  }
+
+  100% {
+    background-position: 1200px 0;
+  }
+}
+
+.media-skeleton-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.media-error {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-error);
+  text-align: center;
+}
+
+/* ── User-Resizable Media ──────────────────────────────────────────────── */
+.media-container.resizable-media {
+  max-width: 100%;
+  width: fit-content;
+  touch-action: none;
+}
+
+.media-container.resizable-media > img,
+.media-container.resizable-media > audio,
+.media-container.resizable-media > video,
+.media-container.resizable-media > iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.question-image-container.resizable-media .question-image,
+.media-container.resizable-media img.md-img {
+  height: 100%;
+  object-fit: contain;
+}
+
+.question-video-container.resizable-media .question-video,
+.question-video-container.resizable-media .youtube-embed {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.question-audio-container.resizable-media {
+  min-height: 52px;
+  max-height: 200px;
+}
+
+.question-image-container.resizable-media,
+.question-video-container.resizable-media {
+  min-height: 120px;
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resize-handle::before {
+  content: "";
+  display: block;
+  background: var(--color-primary);
+  border: 2px solid var(--color-background);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.media-container.resizable-media:hover .resize-handle,
+.media-container.resizable-media:focus-within .resize-handle,
+.resize-handle.is-active {
+  opacity: 1;
+}
+
+.resize-handle--nw,
+.resize-handle--ne,
+.resize-handle--sw,
+.resize-handle--se {
+  width: 20px;
+  height: 20px;
+}
+
+.resize-handle--nw::before,
+.resize-handle--ne::before,
+.resize-handle--sw::before,
+.resize-handle--se::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.resize-handle--nw {
+  top: -10px;
+  left: -10px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--ne {
+  top: -10px;
+  right: -10px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--sw {
+  bottom: -10px;
+  left: -10px;
+  cursor: nesw-resize;
+}
+
+.resize-handle--se {
+  bottom: -10px;
+  right: -10px;
+  cursor: nwse-resize;
+}
+
+.resize-handle--w,
+.resize-handle--e {
+  width: 12px;
+  height: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: ew-resize;
+}
+
+.resize-handle--w {
+  left: -6px;
+}
+
+.resize-handle--e {
+  right: -6px;
+}
+
+.resize-handle--w::before,
+.resize-handle--e::before {
+  width: 4px;
+  height: 32px;
+  border-radius: 100px;
+}
+
+@media (pointer: coarse) {
+  .question-audio-container .resize-handle--w,
+  .question-audio-container .resize-handle--e {
+    width: 28px;
+    opacity: 1;
+  }
+
+  .question-audio-container .resize-handle--w::before,
+  .question-audio-container .resize-handle--e::before {
+    width: 6px;
+    height: 40px;
+  }
+}
+
+body.is-resizing-media {
+  user-select: none;
+  cursor: nwse-resize;
+}
+
+body.is-resizing-media .media-container.resizable-media {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 
 /* ══════════════════════════════════════════════════════════════════════════════
    KATEX / MATH

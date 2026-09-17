@@ -56,6 +56,15 @@ import {
   COPY_LABEL,
   renderInlineMediaTag,
   MD_MEDIA_SKELETON_HTML,
+  _hashForResizeKey,
+  _makeResizeKey,
+  RESIZE_STORAGE_PREFIX,
+  _getMediaSizeStorageKey,
+  _loadSavedMediaSize,
+  _saveMediaSize,
+  _saveMediaSizeDebounced,
+  _equipResizableMedia,
+  _scanResizableMedia,
 } from "../../shared/markdown.js";
 
 import { MARKDOWN_CSS } from "../../shared/markdown-css.js";
@@ -2518,6 +2527,168 @@ ${quizInfoModalHtml}
   const MD_MEDIA_SKELETON_HTML = ${JSON.stringify(MD_MEDIA_SKELETON_HTML)};
 
   ${renderInlineMediaTag.toString()}
+
+  // ── User-resizable media (drag-resize handles on inline images/audio/
+  // video/YouTube embeds) — same functions markdown.js registers as a
+  // module-load side effect in the live app. Inlined here in dependency
+  // order: hashing/key helpers first (referenced by bare closure inside
+  // renderInlineMediaTag/_renderRawImageTag/_renderRawMediaTag above and
+  // below), then storage helpers, then _equipResizableMedia/
+  // _scanResizableMedia, then the delegated pointerdown/pointermove/
+  // pointerup listeners + MutationObserver themselves (copied as a plain
+  // statement block, not a named function, since that's how markdown.js
+  // registers them too — see its own "registered once, module-load side
+  // effect" comment).
+  ${_hashForResizeKey.toString()}
+
+  ${_makeResizeKey.toString()}
+
+  const RESIZE_STORAGE_PREFIX = ${JSON.stringify(RESIZE_STORAGE_PREFIX)};
+
+  ${_getMediaSizeStorageKey.toString()}
+
+  ${_loadSavedMediaSize.toString()}
+
+  ${_saveMediaSize.toString()}
+
+  const _resizeSaveDebounces = new Map();
+  ${_saveMediaSizeDebounced.toString()}
+
+  ${_equipResizableMedia.toString()}
+
+  ${_scanResizableMedia.toString()}
+
+  if (typeof document !== "undefined") {
+    let activeDrag = null;
+
+    document.addEventListener("pointerdown", (eDown) => {
+      const handle = eDown.target.closest && eDown.target.closest(".resize-handle");
+      if (!handle) return;
+      const container = handle.closest(".media-container[data-resize-key]");
+      if (!container) return;
+
+      eDown.preventDefault();
+      eDown.stopPropagation();
+      handle.setPointerCapture(eDown.pointerId);
+      handle.classList.add("is-active");
+      document.body.classList.add("is-resizing-media");
+
+      const resizeKey = container.dataset.resizeKey;
+      const isAudio = container.dataset.resizeKind === "audio";
+      const startW = container.offsetWidth;
+      const startH = container.offsetHeight;
+
+      const mediaEl = container.querySelector("img, video, iframe, audio");
+      const isIframe = typeof HTMLIFrameElement !== "undefined" && mediaEl instanceof HTMLIFrameElement;
+      const aspectRatio =
+        mediaEl instanceof HTMLImageElement && mediaEl.naturalWidth > 0
+          ? mediaEl.naturalWidth / mediaEl.naturalHeight
+          : mediaEl instanceof HTMLVideoElement && mediaEl.videoWidth > 0
+            ? mediaEl.videoWidth / mediaEl.videoHeight
+            : isIframe
+              ? 16 / 9
+              : startH > 0
+                ? startW / startH
+                : 16 / 9;
+
+      const minW = isAudio ? 200 : 120;
+      const minH = isAudio ? 52 : 80;
+      const maxW = container.parentElement
+        ? container.parentElement.clientWidth
+        : window.innerWidth;
+
+      activeDrag = {
+        pointerId: eDown.pointerId,
+        handle,
+        container,
+        resizeKey,
+        isAudio,
+        startW,
+        startH,
+        startX: eDown.clientX,
+        startY: eDown.clientY,
+        aspectRatio,
+        minW,
+        minH,
+        maxW,
+      };
+    });
+
+    document.addEventListener("pointermove", (eMove) => {
+      if (!activeDrag || eMove.pointerId !== activeDrag.pointerId) return;
+      const {
+        handle, container, resizeKey, isAudio,
+        startW, startH, startX, startY, aspectRatio, minW, minH, maxW,
+      } = activeDrag;
+
+      const dxRaw = eMove.clientX - startX;
+      const dyRaw = eMove.clientY - startY;
+      const cl = handle.classList;
+      const isRight = cl.contains("resize-handle--ne") || cl.contains("resize-handle--se") || cl.contains("resize-handle--e");
+      const isBottom = cl.contains("resize-handle--sw") || cl.contains("resize-handle--se");
+
+      const dx = isRight ? dxRaw : -dxRaw;
+      const dy = isBottom ? dyRaw : -dyRaw;
+
+      if (isAudio) {
+        const newW = Math.max(minW, Math.min(maxW, startW + dx * 2));
+        container.style.width = \`\${newW}px\`;
+        _saveMediaSizeDebounced(resizeKey, Math.round(newW), null);
+        return;
+      }
+
+      const scaleByX = (startW + dx * 2) / startW;
+      const scaleByY = (startH + dy * 2) / startH;
+      const scale = Math.abs(dxRaw) >= Math.abs(dyRaw) ? scaleByX : scaleByY;
+      let newW = Math.max(minW, Math.min(maxW, startW * scale));
+      let newH = newW / aspectRatio;
+      if (newH < minH) {
+        newH = minH;
+        newW = newH * aspectRatio;
+      }
+
+      container.style.width = \`\${newW}px\`;
+      container.style.height = \`\${newH}px\`;
+      _saveMediaSizeDebounced(resizeKey, Math.round(newW), Math.round(newH));
+    });
+
+    const endDrag = () => {
+      if (!activeDrag) return;
+      activeDrag.handle.classList.remove("is-active");
+      document.body.classList.remove("is-resizing-media");
+      activeDrag = null;
+    };
+    document.addEventListener("pointerup", endDrag);
+    document.addEventListener("pointercancel", endDrag);
+
+    const scheduleResizeScan = (() => {
+      let scheduled = false;
+      return () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          _scanResizableMedia(document);
+        });
+      };
+    })();
+
+    if (document.body) {
+      new MutationObserver(scheduleResizeScan).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+      scheduleResizeScan();
+    } else {
+      document.addEventListener("DOMContentLoaded", () => {
+        new MutationObserver(scheduleResizeScan).observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+        scheduleResizeScan();
+      });
+    }
+  }
 
   ${applyInline.toString()}
   

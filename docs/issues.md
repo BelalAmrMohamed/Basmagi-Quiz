@@ -30,11 +30,15 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 - The result page displays the score increase, but doesn't display the updated score. Bring the `#identityLevel` from the profile page to the result page.
 
 ### `public/src/shared/markdown.js`
-- Users should be able to resize media with the resize handles. I don't know why the fucking AI removed them. Implement it in the markdown engine itself so it works on the `/result`, `/create-quiz`, and `/quiz`.
-  - Media appears with size that is already in the objects like `<img>`, it appears with handles that the user can use to resize the media himself.
-  - Images / videos get 4 resize handles, one on each corner.
-  - Audio get 2 handles, one on the right, other on the left, since its height doesn't change.
-- Performance Improvements: Currently the markdown engine has a custom text-direction detection mechanism, which works perfectly, but recently I discovered that there is an HTML attribute `dir="auto"`, which does basically the same thing. So to improve performance, I want to do an overhaul of the engine, anything that exists natively in HTML, CSS, or as a browser API, should be used as it's, we shouldn't reinvent the wheel, specially if it exists natively. That would improve performance extremely well. But the only thing that I found that has a native alternative is the text-direction detection engine, my own search didn't find anything else, so I want you to search in that engine for anything that can be done natively in HTML or CSS and is being reinvented in JS, look for everything, you can search the web for modern CSS & HTML, because sometimes they add new things, but look for compatibility with browsers ofcourse (minimum requirenment: Chrome). But I don't want to miss up any functionality, this is just for performance, not to change any fucntionality.
+- Videos and YouTube videos get the resize handles perfectly, as I expected.
+- But the audio got messed up; I can't see the audio controls, but I can see the resize handles (see the first screenshot).
+- And images don't get the resize handles, and they appear aligned to the left instead of the middle (see the second screenshot).
+- YouTube resize handles aren't visible on phones and are hard to catch.
+- Audio and normal videos don't load at all on /result​ and /create-quiz​ pages; they keep loading forever.
+*Tested on localhost*
+
+- `docs\plans\md-engine-prompt.md`
+
 
 ### Home Page
 

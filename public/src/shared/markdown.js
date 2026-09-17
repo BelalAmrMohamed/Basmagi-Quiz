@@ -68,6 +68,30 @@ export function unescapeHtmlEntities(s) {
 // references this by bare closure, same situation as _HL_KEYWORDS/ICON_COPY.
 export const MD_MEDIA_SKELETON_HTML = `<div class="media-skeleton" aria-hidden="true"><div class="skeleton-block skeleton-media"></div><span class="media-skeleton-label">جاري التحميل…</span></div>`;
 
+// ─── 3a. Resizable-media key derivation ────────────────────────────────────
+// Every inline media element gets a stable `data-resize-key` so
+// _initMediaResize (see the "Feature: User-Resizable Media" section further
+// down) can persist a user-dragged size across re-renders, page navigation,
+// and reloads — the same size sticks to the same piece of media because the
+// key is derived from the media's own URL (plus the page it's rendered on),
+// never from render order/position, which would shuffle if content above it
+// changes.
+// Exported so export-to-quiz.js's static-export bundler can inline it
+// (renderInlineMediaTag/_renderRawImageTag/_renderRawMediaTag reference it
+// by bare closure, same .toString()-serialization pattern as escHtml above).
+export function _hashForResizeKey(s) {
+  let h = 0;
+  const str = String(s || "");
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return (h >>> 0).toString(36);
+}
+
+export function _makeResizeKey(kind, url, mediaBaseUrl) {
+  return `${kind}_${_hashForResizeKey(mediaBaseUrl || "")}_${_hashForResizeKey(url || "")}`;
+}
+
 /**
  * Renders a raw `<img>` tag's src/alt/width/height into a safe <img>
  * element. Used by the raw-HTML-media-tag stash step in
@@ -87,10 +111,17 @@ export function _renderRawImageTag(src, alt, width, height, mediaBaseUrl) {
   }
   const candidates = getMediaUrlCandidates(src, mediaBaseUrl);
   const resolvedSrc = candidates[0] || src;
+  // Render with the tag's own inline width/height (author-set or
+  // previously-saved resize dimensions) so the image keeps its existing
+  // on-screen size rather than snapping back to natural/100% width, then
+  // wrap it in the same .media-container the other media kinds use so the
+  // resize-handle machinery (_initMediaResize) can attach to it uniformly.
+  const resizeKey = _makeResizeKey("image", src, mediaBaseUrl);
   const dims =
     (width ? ` width="${safe(width)}"` : "") +
     (height ? ` height="${safe(height)}"` : "");
-  return `<img src="${safe(resolvedSrc)}" alt="${safe(alt)}" class="md-img"${dims} loading="lazy" data-media-raw="${safe(src)}">`;
+  const img = `<img src="${safe(resolvedSrc)}" alt="${safe(alt)}" class="md-img"${dims} loading="lazy" data-media-raw="${safe(src)}">`;
+  return `<div class="media-container md-inline-media" data-resize-key="${safe(resizeKey)}" data-resize-kind="image">${img}</div>`;
 }
 
 /**
@@ -132,7 +163,8 @@ export function renderInlineMediaTag(kind, url, mediaBaseUrl) {
   if (kind === "video" && isYouTubeUrl(url)) {
     const videoId = getYouTubeVideoId(url);
     const embedSrc = `https://www.youtube.com/embed/${videoId}`;
-    return `<div class="media-container question-media-container question-video-container md-inline-media"><iframe class="question-video youtube-embed" src="${safe(embedSrc)}" data-media-raw="${safe(url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`;
+    const resizeKey = _makeResizeKey("video", url, mediaBaseUrl);
+    return `<div class="media-container question-media-container question-video-container md-inline-media" data-resize-key="${safe(resizeKey)}" data-resize-kind="video"><iframe class="question-video youtube-embed" src="${safe(embedSrc)}" data-media-raw="${safe(url)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>`;
   }
 
   const candidates = getMediaUrlCandidates(url, mediaBaseUrl);
@@ -149,8 +181,9 @@ export function renderInlineMediaTag(kind, url, mediaBaseUrl) {
     kind === "audio"
       ? "question-media-container question-audio-container"
       : "question-media-container question-video-container";
+  const resizeKey = _makeResizeKey(kind, url, mediaBaseUrl);
 
-  return `<div class="media-container ${containerClass} md-inline-media">${MD_MEDIA_SKELETON_HTML}<${kind} controls preload="metadata" class="question-${kind}"${playsinline} src="${safe(src)}" data-media-raw="${safe(url)}" data-media-candidates="${candidatesAttr}"><source src="${safe(src)}"${typeAttr} />${fallback}</${kind}></div>`;
+  return `<div class="media-container ${containerClass} md-inline-media" data-resize-key="${safe(resizeKey)}" data-resize-kind="${kind}">${MD_MEDIA_SKELETON_HTML}<${kind} controls preload="metadata" class="question-${kind}"${playsinline} src="${safe(src)}" data-media-raw="${safe(url)}" data-media-candidates="${candidatesAttr}"><source src="${safe(src)}"${typeAttr} />${fallback}</${kind}></div>`;
 }
 
 // Receives an already-escHtml-encoded string; applies spans/tags for
@@ -326,7 +359,270 @@ window.copyCodeBlock = (btn) => {
     });
 };
 
-// ─── 6. Syntax highlighter ────────────────────────────────────────────────────
+// ─── 5b. Feature: User-Resizable Media ─────────────────────────────────────
+// Restores drag-resizing of inline media (previously only available for the
+// legacy dedicated q.image/q.audio/q.video fields via quiz.js's now-orphaned
+// initMediaResize — nothing sets data-resize-key anymore since all media
+// moved to inline markdown, see the "Step -1" comment in _renderMarkdownCore
+// and MD_MEDIA_SKELETON_HTML's own doc comment above).
+//
+// Implemented directly in the engine (not as a page-level init call) so it
+// works uniformly across quiz.html, create-quiz.html and result.html without
+// any of those pages needing to know it exists: a single MutationObserver
+// registered once on module import (same side-effect-on-import pattern as
+// window.copyCodeBlock above) watches the whole document for newly-rendered
+// `.media-container[data-resize-key]` elements — which renderInlineMediaTag/
+// _renderRawImageTag/_renderRawMediaTag above already tag every inline image,
+// audio, video and YouTube embed with — and equips each one the first time
+// it appears. Drag handling itself is a single pair of delegated
+// pointerdown/pointermove/pointerup listeners on `document`, so newly
+// rendered containers are draggable immediately with no per-element binding.
+//
+// Handle count per the spec: images/video get 4 corner handles (proportional
+// resize, aspect ratio locked); audio gets 2 handles, one on each side
+// (width-only — its height is fixed by the browser's native player chrome).
+export const RESIZE_STORAGE_PREFIX = "md_resizable_media_";
+
+export function _getMediaSizeStorageKey(resizeKey) {
+  return `${RESIZE_STORAGE_PREFIX}${resizeKey}`;
+}
+
+export function _loadSavedMediaSize(resizeKey) {
+  try {
+    const raw = localStorage.getItem(_getMediaSizeStorageKey(resizeKey));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (
+      parsed &&
+      typeof parsed.width === "number" &&
+      (typeof parsed.height === "number" || parsed.height === null)
+    ) {
+      return parsed;
+    }
+  } catch {
+    /* ignore malformed/legacy entries */
+  }
+  return null;
+}
+
+export function _saveMediaSize(resizeKey, width, height) {
+  try {
+    localStorage.setItem(
+      _getMediaSizeStorageKey(resizeKey),
+      JSON.stringify({ width, height }),
+    );
+  } catch {
+    /* localStorage may be full/unavailable; resizing still works this session */
+  }
+}
+
+// Debounce writes so dragging a handle doesn't hammer localStorage on every
+// pointermove. Keyed per resizeKey so concurrent resizes (unlikely, but
+// possible with multiple media elements) don't clobber each other's timers.
+export const _resizeSaveDebounces = new Map();
+export function _saveMediaSizeDebounced(resizeKey, width, height) {
+  clearTimeout(_resizeSaveDebounces.get(resizeKey));
+  _resizeSaveDebounces.set(
+    resizeKey,
+    setTimeout(() => _saveMediaSize(resizeKey, width, height), 400),
+  );
+}
+
+/**
+ * Injects the appropriate resize handles into one `.media-container` and
+ * restores any previously-saved size. Safe to call multiple times on the
+ * same container (guarded by `data-resize-init`).
+ * @param {HTMLElement} container
+ */
+export function _equipResizableMedia(container) {
+  if (container.dataset.resizeInit) return;
+  container.dataset.resizeInit = "1";
+  container.classList.add("resizable-media");
+
+  const resizeKey = container.dataset.resizeKey;
+  const isAudio = container.dataset.resizeKind === "audio";
+
+  // Images/video/YouTube get 4 corner handles; audio gets 2 side handles
+  // (left/right) since its height is fixed by the native player.
+  const handleDirs = isAudio ? ["w", "e"] : ["nw", "ne", "sw", "se"];
+  handleDirs.forEach((dir) => {
+    if (container.querySelector(`.resize-handle--${dir}`)) return;
+    const h = document.createElement("div");
+    h.className = `resize-handle resize-handle--${dir}`;
+    h.setAttribute("aria-hidden", "true");
+    container.appendChild(h);
+  });
+
+  // Restore a previously-dragged size. Otherwise leave the container's
+  // existing inline size attributes (e.g. an <img>'s width/height, or a
+  // size a prior renderMarkdown call already baked in) exactly as rendered.
+  const saved = _loadSavedMediaSize(resizeKey);
+  if (saved) {
+    container.style.width = `${saved.width}px`;
+    if (!isAudio && saved.height) container.style.height = `${saved.height}px`;
+  }
+}
+
+/**
+ * Scans `root` for not-yet-equipped resizable media containers and equips
+ * them. Exported so export-to-quiz.js's static-export bundler can inline it
+ * (same .toString()-serialization pattern as scanDirections/renderMarkdown).
+ * @param {HTMLElement|Document} [root=document]
+ */
+export function _scanResizableMedia(root = document) {
+  if (!root.querySelectorAll) return;
+  root.querySelectorAll(".media-container[data-resize-key]").forEach(_equipResizableMedia);
+}
+
+// ── Delegated drag-resize (registered once, module-load side effect) ──────
+// Aspect ratio priority: natural media dimensions > explicit 16:9 for
+// iframes (YouTube) > current rendered box size as a last resort. Corner
+// handles scale symmetrically from the container's center (matching the
+// flex-centered layout most media sits in) so dragging never shifts the
+// element sideways.
+if (typeof document !== "undefined") {
+  let activeDrag = null;
+
+  document.addEventListener("pointerdown", (eDown) => {
+    const handle = eDown.target.closest && eDown.target.closest(".resize-handle");
+    if (!handle) return;
+    const container = handle.closest(".media-container[data-resize-key]");
+    if (!container) return;
+
+    eDown.preventDefault();
+    eDown.stopPropagation();
+    handle.setPointerCapture(eDown.pointerId);
+    handle.classList.add("is-active");
+    document.body.classList.add("is-resizing-media");
+
+    const resizeKey = container.dataset.resizeKey;
+    const isAudio = container.dataset.resizeKind === "audio";
+    const startW = container.offsetWidth;
+    const startH = container.offsetHeight;
+
+    const mediaEl = container.querySelector("img, video, iframe, audio");
+    const isIframe = typeof HTMLIFrameElement !== "undefined" && mediaEl instanceof HTMLIFrameElement;
+    const aspectRatio =
+      mediaEl instanceof HTMLImageElement && mediaEl.naturalWidth > 0
+        ? mediaEl.naturalWidth / mediaEl.naturalHeight
+        : mediaEl instanceof HTMLVideoElement && mediaEl.videoWidth > 0
+          ? mediaEl.videoWidth / mediaEl.videoHeight
+          : isIframe
+            ? 16 / 9
+            : startH > 0
+              ? startW / startH
+              : 16 / 9;
+
+    const minW = isAudio ? 200 : 120;
+    const minH = isAudio ? 52 : 80;
+    const maxW = container.parentElement
+      ? container.parentElement.clientWidth
+      : window.innerWidth;
+
+    activeDrag = {
+      pointerId: eDown.pointerId,
+      handle,
+      container,
+      resizeKey,
+      isAudio,
+      startW,
+      startH,
+      startX: eDown.clientX,
+      startY: eDown.clientY,
+      aspectRatio,
+      minW,
+      minH,
+      maxW,
+    };
+  });
+
+  document.addEventListener("pointermove", (eMove) => {
+    if (!activeDrag || eMove.pointerId !== activeDrag.pointerId) return;
+    const {
+      handle, container, resizeKey, isAudio,
+      startW, startH, startX, startY, aspectRatio, minW, minH, maxW,
+    } = activeDrag;
+
+    const dxRaw = eMove.clientX - startX;
+    const dyRaw = eMove.clientY - startY;
+    const cl = handle.classList;
+    const isRight = cl.contains("resize-handle--ne") || cl.contains("resize-handle--se") || cl.contains("resize-handle--e");
+    const isBottom = cl.contains("resize-handle--sw") || cl.contains("resize-handle--se");
+
+    // Positive dx/dy = growing. Each handle drags symmetrically from the
+    // center (×2) so the container never shifts sideways in its centered
+    // flex parent.
+    const dx = isRight ? dxRaw : -dxRaw;
+    const dy = isBottom ? dyRaw : -dyRaw;
+
+    if (isAudio) {
+      const newW = Math.max(minW, Math.min(maxW, startW + dx * 2));
+      container.style.width = `${newW}px`;
+      _saveMediaSizeDebounced(resizeKey, Math.round(newW), null);
+      return;
+    }
+
+    // Corner handle: dominant drag axis drives the scale, the other
+    // dimension follows the locked aspect ratio.
+    const scaleByX = (startW + dx * 2) / startW;
+    const scaleByY = (startH + dy * 2) / startH;
+    const scale = Math.abs(dxRaw) >= Math.abs(dyRaw) ? scaleByX : scaleByY;
+    let newW = Math.max(minW, Math.min(maxW, startW * scale));
+    let newH = newW / aspectRatio;
+    if (newH < minH) {
+      newH = minH;
+      newW = newH * aspectRatio;
+    }
+
+    container.style.width = `${newW}px`;
+    container.style.height = `${newH}px`;
+    _saveMediaSizeDebounced(resizeKey, Math.round(newW), Math.round(newH));
+  });
+
+  const endDrag = () => {
+    if (!activeDrag) return;
+    activeDrag.handle.classList.remove("is-active");
+    document.body.classList.remove("is-resizing-media");
+    activeDrag = null;
+  };
+  document.addEventListener("pointerup", endDrag);
+  document.addEventListener("pointercancel", endDrag);
+
+  // Watch the whole document for newly-rendered media containers (pages
+  // simply do `el.innerHTML = renderMarkdown(...)`; there is no dedicated
+  // "markdown was just inserted" hook to call into instead) and equip any
+  // that appear. Runs an initial scan too, in case markdown.js is imported
+  // after some markdown-rendered content already exists in the DOM.
+  const scheduleResizeScan = (() => {
+    let scheduled = false;
+    return () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        _scanResizableMedia(document);
+      });
+    };
+  })();
+
+  if (document.body) {
+    new MutationObserver(scheduleResizeScan).observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+    scheduleResizeScan();
+  } else {
+    document.addEventListener("DOMContentLoaded", () => {
+      new MutationObserver(scheduleResizeScan).observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+      scheduleResizeScan();
+    });
+  }
+}
+
+
 // Zero-dependency tokeniser that emits <span class="sh-*"> tokens.
 // Supports: js/ts/jsx/tsx, python, css/scss/less, html/xml/svg, bash/sh/zsh,
 //           json, sql, java, c/cpp/c#, go, rust, ruby, swift, kotlin, php,
