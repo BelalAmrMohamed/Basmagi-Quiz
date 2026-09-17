@@ -58,10 +58,11 @@ const SETTINGS_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" he
 // .sidebar-favicon/.sidebar-collapse-btn hover-crossfade rules, which
 // .ai-agent-sidebar-favicon/.ai-agent-sidebar-collapse-btn in ai-agent.css
 // replicate for these same three icons.
-const SIDEBAR_EXPAND_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-agent-sidebar-expand-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`;
+const SIDEBAR_EXPAND_DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-panel-left"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>`;
+const SIDEBAR_EXPAND_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ai-agent-sidebar-expand-icon" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`;
 const SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-default"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/></svg>`;
 const SIDEBAR_COLLAPSE_HOVER_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-hover" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/><path d="m10 15-3-3 3-3"/></svg>`;
-
+// SIDEBAR_EXPAND_HOVER_ICON_SVG
 // Matches the >=901px breakpoint in ai-agent.css's desktop-layout rules —
 // kept as a named constant here so the JS toggle and the CSS media query
 // can never silently drift apart from each other.
@@ -270,7 +271,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   sidebarFaviconBtn.title = "توسيع الشريط الجانبي";
   sidebarFaviconBtn.innerHTML =
     '<img src="/assets/images/el-bash-mebasmag--no-bg.png" alt="الباشــمبصمج" class="ai-agent-sidebar-favicon-img">' +
-    SIDEBAR_EXPAND_ICON_SVG;
+    SIDEBAR_EXPAND_HOVER_ICON_SVG;
 
   // (2) Expanded header: full logo/name + (3) the collapse button —
   // grouped exactly like .sidebar-header/.sidebar-brand-link/
