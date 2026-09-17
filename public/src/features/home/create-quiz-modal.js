@@ -71,17 +71,17 @@ export function openInlineCreateQuizModal() {
         <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-plus create-quiz-modal__title-icon"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
         إنشاء امتحان جديد
       </h2>
+      <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+        <span class="create-quiz-modal__copy-prompt-btn-label">Prompt</span>
+        <span id="createQuizPromptHintArrow" class="create-quiz-modal__prompt-hint-arrow" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="35" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
+        </span>
+      </button>
       <button type="button" id="inlineQuizClose" class="create-quiz-modal__close-btn" aria-label="إغلاق">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
       </button>
     </div>
-    <button type="button" id="copyAiPromptBtn" class="create-quiz-modal__copy-prompt-btn">
-      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles create-quiz-modal__copy-prompt-btn-icon"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
-      Prompt
-      <span id="createQuizPromptHintArrow" class="create-quiz-modal__prompt-hint-arrow" aria-hidden="true">
-      <svg xmlns="http://www.w3.org/2000/svg" width="35" height="18" viewBox="0 0 44 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M42 9H4"/><path d="m11 2-7 7 7 7"/></svg>
-      </span>
-    </button>
     <p class="create-quiz-modal__subtitle">قم باستخدام ميزة الـ \`prompt\` لتحويل أي امتحان تملكه إلى كود باستخدام الذكاء الإصطناعي</p>
     <div class="create-quiz-modal__form-group">
       <label for="inlineQuizTitle" class="create-quiz-modal__label">عنوان الامتحان</label>
@@ -417,7 +417,10 @@ export function openPromptSelectionModal() {
   }
 
   modalCard.innerHTML = `
-    <h2 id="promptSelectionTitle" style="margin-bottom: 16px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; color: var(--color-text-primary);">
+    <button type="button" id="promptSelectionClose" class="create-quiz-modal__close-btn prompt-selection-modal__close-btn" aria-label="إغلاق">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <h2 id="promptSelectionTitle" style="margin-bottom: 16px; font-size: 1.3rem; display: flex; align-items: center; gap: 10px; color: var(--color-text-primary); padding-left: 36px;">
     <svg xmlns="http://www.w3.org/2000/svg" height="24" width="24" viewBox="0 -960 960 960" fill="currentColor" style="color: var(--color-primary);">
       <path d="M160-120v-200q0-33 23.5-56.5T240-400h480q33 0 56.5 23.5T800-320v200H160Zm200-320q-83 0-141.5-58.5T160-640q0-83 58.5-141.5T360-840h240q83 0 141.5 58.5T800-640q0 83-58.5 141.5T600-440H360ZM240-200h480v-120H240v120Zm120-320h240q50 0 85-35t35-85q0-50-35-85t-85-35H360q-50 0-85 35t-35 85q0 50 35 85t85 35Zm28.5-91.5Q400-623 400-640t-11.5-28.5Q377-680 360-680t-28.5 11.5Q320-657 320-640t11.5 28.5Q343-600 360-600t28.5-11.5Zm240 0Q640-623 640-640t-11.5-28.5Q617-680 600-680t-28.5 11.5Q560-657 560-640t11.5 28.5Q583-600 600-600t28.5-11.5ZM480-200Zm0-440Z"/>
     </svg>
@@ -456,17 +459,13 @@ export function openPromptSelectionModal() {
         </div>
       </button>
     </div>
-    
-    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end;">
-      <button type="button" id="promptSelectionCancel" style="padding: 10px 16px; background: transparent; border: 1.5px solid var(--color-border); border-radius: 8px; color: var(--color-text-secondary); font-family: inherit; cursor: pointer; transition: all 0.2s;">إغلاق</button>
-    </div>
   `;
 
   overlay.appendChild(modalCard);
   document.body.appendChild(overlay);
 
   const promptButtons = modalCard.querySelectorAll(".prompt-btn");
-  const cancelBtn = modalCard.querySelector("#promptSelectionCancel");
+  const closeBtn = modalCard.querySelector("#promptSelectionClose");
 
   // Close modal function — MUST be defined before being referenced.
   // BUG FIX: previously this modal only removed its document-level Escape
@@ -529,16 +528,11 @@ export function openPromptSelectionModal() {
     };
   });
 
-  // Handle cancel button
-  cancelBtn.onmouseover = () => {
-    cancelBtn.style.background = "var(--color-background-secondary)";
-    cancelBtn.style.color = "var(--color-text-primary)";
-  };
-  cancelBtn.onmouseout = () => {
-    cancelBtn.style.background = "transparent";
-    cancelBtn.style.color = "var(--color-text-secondary)";
-  };
-  cancelBtn.onclick = close;
+  // Close button — .create-quiz-modal__close-btn already supplies the
+  // hover styling (see index.css), matching the same `x` button used by
+  // .create-quiz-inline-modal instead of a separate text-styled "إغلاق"
+  // button down in the footer.
+  closeBtn.onclick = close;
 
   // Escape-key and overlay-click dismissal are already wired by
   // wireModalDismiss() above — no separate handlers needed here.

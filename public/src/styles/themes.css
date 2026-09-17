@@ -504,16 +504,6 @@ html[data-motion="reduced"] *:not(.ai-agent-dictation-wave, .ai-agent-dictation-
   scroll-behavior: auto !important;
 }
 
-html[data-motion="reduced"] .create-quiz-modal__prompt-hint-arrow {
-  animation: none !important;
-  transition: none !important;
-}
-
-html[data-motion="reduced"] .create-quiz-modal__prompt-hint-arrow--hidden {
-  opacity: 0 !important;
-  transform: translateY(-50%) translateX(-6px) scale(0.8) !important;
-}
-
 /* Scrollbar */
 * {
   scrollbar-width: thin;

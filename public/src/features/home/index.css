@@ -4187,6 +4187,17 @@ kbd {
     height: 20px;
   }
 
+  /* Header now holds 3 items (title, Prompt button, close button) instead
+     of 2 — on very narrow phones, drop the Prompt button's text label and
+     keep just its icon so the title still has room to breathe. */
+  .create-quiz-modal__copy-prompt-btn {
+    padding: 4px 8px;
+  }
+
+  .create-quiz-modal__copy-prompt-btn-label {
+    display: none;
+  }
+
   .create-quiz-modal__form-group--content {
     /* Let the textarea's own flex-shrink do the work instead of a fixed
        margin eating into the shrinking height budget. */
@@ -4232,16 +4243,44 @@ kbd {
 }
 
 /* ==========================================================================
+   Prompt Selection Modal
+   (opened from .create-quiz-modal__copy-prompt-btn — pick one of the 3 AI
+   prompt presets to copy). Previously closed only via a text "إغلاق"
+   button in a footer row; now uses the same `x` icon-button convention as
+   every other modal in the app (.create-quiz-modal__close-btn), placed at
+   the modal's top-left corner (the RTL "start" corner is top-right, where
+   the title begins — top-left mirrors where .create-quiz-modal__close-btn
+   sits relative to its own header, just without a header row to share
+   here, so it's positioned absolutely against the card itself instead).
+   ========================================================================== */
+.prompt-selection-modal {
+  position: relative;
+}
+
+.prompt-selection-modal__close-btn {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+}
+
+/* ==========================================================================
    Create Quiz Modal
    (inline-create-quiz flow triggered from the profile "New Quiz" action)
    ========================================================================== */
 
 .create-quiz-modal__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.create-quiz-modal__title {
+  /* Let the Prompt button and the close button keep their own size instead
+     of being squeezed — the title is the one that should truncate/wrap
+     first if the header ever gets tight. */
+  min-width: 0;
 }
 
 .create-quiz-modal__close-btn {
@@ -4284,7 +4323,6 @@ kbd {
 
 .create-quiz-modal__copy-prompt-btn {
   position: relative;
-  margin-bottom: 14px;
   font-size: 0.7rem;
   padding: 4px 10px;
   border-radius: 8px;
@@ -4298,15 +4336,16 @@ kbd {
   transition: all 0.2s;
   font-family: inherit;
   font-weight: 600;
-  /* BUG FIX: .create-quiz-inline-modal is a column flex container with no
-     align-items override, so its default `align-items: stretch` was
-     stretching this button — a direct child — to the modal's full width.
-     `display: inline-flex` only governs how *this* button lays out its own
-     children (icon/label/arrow); it doesn't opt the button itself out of
-     being stretched by its flex parent. align-self: flex-start makes it
-     size to its own content instead, matching every other icon+label pill
-     button in this modal. */
-  align-self: flex-start;
+  /* Now a direct child of .create-quiz-modal__header (a row flex
+     container, see above) rather than of the column-flex modal card
+     itself, so it no longer needs the old align-self: flex-start /
+     margin-bottom hack that used to keep it from being stretched to the
+     modal's full width — the header's own `align-items: center` and
+     `justify-content: space-between` place it correctly between the title
+     and the close button. Living inside the header (rather than as its own
+     block below it) also frees up room to its right for the hint arrow to
+     bounce into, per the header's flex gap. */
+  flex-shrink: 0;
 }
 
 .create-quiz-modal__copy-prompt-btn:hover {
@@ -4696,9 +4735,6 @@ kbd {
   box-shadow:
     0 2px 8px -1px color-mix(in srgb, var(--color-primary) 50%, transparent),
     var(--shadow-sm);
-  /* Draw the checkmark as a background SVG. Pseudo-elements (::after/::before)
-     are unreliable on replaced elements like <input>, which is what made the
-     previous checkmark render distorted — an inline SVG sidesteps that. */
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5L6.5 11.5L12.5 4.5'/></svg>");
   background-repeat: no-repeat;
   background-position: center;
@@ -4713,13 +4749,6 @@ kbd {
 /* ── Floating bulk action bar ── */
 .bulk-action-bar {
   position: fixed;
-  /* BUG FIX: was a flat `bottom: 24px` with z-index: 1000 — on phones
-     that sits underneath the fixed .bottom-nav (z-index ~4001, height
-     reserved via --bottom-nav-height) instead of above it, and at the
-     same bottom-center-ish height band as the AI Helper FAB
-     (bottom-right), so the two visually collided once both were on
-     screen at once. Push it up above the bottom nav's reserved height
-     and raise it to the same "always reachable" layer as the FAB. */
   bottom: calc(24px + var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);

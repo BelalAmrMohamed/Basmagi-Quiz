@@ -65,8 +65,12 @@
         (function () {
             const savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
             const savedAnimations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+            const savedHighPerformance = localStorage.getItem("quiz_high_performance_pref") === "enabled";
+            const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
             document.documentElement.setAttribute("data-theme", savedTheme);
-            document.documentElement.setAttribute("data-animations", savedAnimations ? "enabled" : "disabled");
+            document.documentElement.setAttribute("data-animations", (savedAnimations && !reducedMotion && !savedHighPerformance) ? "enabled" : "disabled");
+            document.documentElement.setAttribute("data-motion", (savedHighPerformance || reducedMotion) ? "reduced" : "normal");
         })();
     </script>
 

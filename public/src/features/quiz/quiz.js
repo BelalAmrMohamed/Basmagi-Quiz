@@ -1547,6 +1547,24 @@ async function init() {
     if (els.viewToggle) {
       els.viewToggle.addEventListener("click", toggleView);
     }
+
+    let scrollNavRaf = null;
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (quizStyle !== "vertical") return;
+        if (scrollNavRaf) return;
+        scrollNavRaf = requestAnimationFrame(() => {
+          scrollNavRaf = null;
+          const activeIdx = getActiveVerticalQuestionIndex();
+          if (activeIdx !== currentIdx) {
+            currentIdx = activeIdx;
+            renderMenuNavigationDebounced();
+          }
+        });
+      },
+      { passive: true },
+    );
   } catch (err) {
     console.error("Initialization Error:", err);
     if (els.questionContainer) {

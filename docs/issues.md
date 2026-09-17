@@ -12,25 +12,6 @@ Performance Improvements: Currently, there are many custom mechanism fucntionali
 
 Example: I lately found out that the `/quiz` page was rendering questions through the JS once, then when the user submits their answer, the JS renders the question again to add the explanation & formal answer, I removed it and depended fully on CSS & HTML, the whole question including explanation & formal answer is inserted at the first render, then I make things visible when the user submits the answer using CSS classes. That approach to get away from JS improved performance alot.  
 
-### Quiz Page
-- On `vertical` mode, the `#menuNavContainer` doesn't go through the questions when the user scrolls through the page, so if the user scrolls from question 1 -> 4, the `#menuNavContainer` doesn't update.
-- The page's loading skeleton animation isn't properly excluded from the "الاداء الفائق" `[data-motion="reduced"]` like the other pages are. See `public\src\styles\themes.css` for proper exclusion.
-
-### `.create-quiz-inline-modal`
-- Fix the `.copyAiPromptBtn` with its arrow in the `.create-quiz-inline-modal`, the arrow's animation is broken on "الأداء الفائق" mode (data-motion="reduced"), it should be properly excluded from that mode. See `public/src/styles/themes.css`. And the `.copyAiPromptBtn` button should be above inside the `.create-quiz-modal__header`, because it's small, and also to give space for the arrow on its right to move.
-- Remove the "الإغلاق" button from the `.prompt-selection-modal`, and make it a normal `x` button at the top left of the modal.
-- But before you do any of these 2, think with me what is the best way to implement this?
-  - Should we keep things as they currently are? `.copyAiPromptBtn` on the `.create-quiz-inline-modal` that opens another modal just for 3 buttons?
-  - Should we instead delete the whole `.copyAiPromptBtn` with the `.prompt-selection-modal` and put the 3 buttons directly on `.create-quiz-inline-modal`?
-  - What do you think is the better approach?
-
-### `.sidebar-brand-link`
-- Put a better transition on it. Because when expanding/collapsing the `#sidebar`, it appears instantly while the `#sidebar` has a nice transition/animation. I tried solving this issue many times and tried many things, but no matter what transitions I put on `.sidebar-brand-link` or `.sidebar-brand-text`, nothing actually gets affected when expanding/collapsing the `#sidebar`
-
-### AI Agent Icons At `901px`
-- At `900px` screen width, the expand and collapse icons of the side-menu on the AI Agent are wrong, both `.ai-agent-sidebar-collapse-btn.ai-agent-mobile-sidebar-toggle` and `.ai-agent-sidebar-collapse-btn` show the same 2 icons (`SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG` and `SIDEBAR_COLLAPSE_HOVER_ICON_SVG`). The icons are correct for when the assistant's sidebar is open, meaning they are correct for `.ai-agent-sidebar-collapse-btn` only, but `.ai-agent-sidebar-collapse-btn.ai-agent-mobile-sidebar-toggle` should show `SIDEBAR_EXPAND_HOVER_ICON_SVG` when hovered, and this one default: `SIDEBAR_EXPAND_DEFAULT_ICON_SVG`
-*Note: The icons are correct at desktops, don't touch them their, just fix them on screens less than 901px in width*
-
 ## New Features
 
 ### Result Pages
