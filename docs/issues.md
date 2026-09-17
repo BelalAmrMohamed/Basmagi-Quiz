@@ -27,6 +27,11 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ### `.sidebar-brand-link`
 - Put a better transition on it. Because when expanding/collapsing the `#sidebar`, it appears instantly while the `#sidebar` has a nice transition/animation. I tried solving this issue many times and tried many things, but no matter what transitions I put on `.sidebar-brand-link` or `.sidebar-brand-text`, nothing actually gets affected when expanding/collapsing the `#sidebar`
 
+### AI Agent Icons At `901px`
+- At `900px` screen width, the expand and collapse icons of the side-menu on the AI Agent are wrong, both `.ai-agent-sidebar-collapse-btn.ai-agent-mobile-sidebar-toggle` and `.ai-agent-sidebar-collapse-btn` show the same 2 icons (`SIDEBAR_COLLAPSE_DEFAULT_ICON_SVG` and `SIDEBAR_COLLAPSE_HOVER_ICON_SVG`). The icons are correct for when the assistant's sidebar is open, meaning they are correct for `.ai-agent-sidebar-collapse-btn` only, but `.ai-agent-sidebar-collapse-btn.ai-agent-mobile-sidebar-toggle` should show `SIDEBAR_EXPAND_ICON_SVG` when hovered, and this one normally: ``
+
+*Note: The icons are correct at desktops, don't touch them their, just fix them on screens less than 901px in width*
+
 ## New Features
 
 ### Result Pages

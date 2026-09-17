@@ -630,7 +630,7 @@
 }
 
 .ai-agent-suggestion-chip {
-  width: 100%;
+  width: fit-content;
   text-align: start;
   border: 1.5px solid var(--color-border);
   border-radius: 14px;
@@ -641,7 +641,6 @@
   font-family: inherit;
   line-height: 1.4;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .ai-agent-suggestion-chip:hover {
@@ -862,6 +861,10 @@
 .ai-agent-chat-input:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.ai-agent-chat-input:placeholder-shown {
+  text-align: right;
 }
 
 .ai-agent-send-btn {
@@ -1458,7 +1461,7 @@ body.sidebar-expanded .ai-agent-fab {
 
 .ai-agent-modal-card {
   width: 90%;
-  max-width: 460px;
+  max-width: none;
   padding: 0;
   overflow: hidden;
   position: relative;
@@ -1529,12 +1532,6 @@ body.sidebar-expanded .ai-agent-fab {
     border-radius: 0;
     border: none;
     box-shadow: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .ai-agent-modal-card {
-    height: min(560px, 80vh);
   }
 }
 

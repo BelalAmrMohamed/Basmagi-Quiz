@@ -3609,11 +3609,9 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 .user-quiz-search-actions {
   grid-column: 1 / -1;
   display: none;
-  /* hidden on desktop — shown in mobile query below */
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
 }
 
 @media (max-width: 768px) {
