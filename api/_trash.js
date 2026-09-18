@@ -191,21 +191,32 @@ export async function sweepExpiredTrash(supabase) {
 }
 
 /**
- * Cascade-collects every folder/quiz nested (to any depth) under a given
- * folder or course, so a folder/course delete can trash the whole subtree
- * in one batch. Returns raw rows (not yet snapshotted) grouped by type.
+ * Cascade-collects every folder/quiz/lesson nested (to any depth) under a
+ * given folder or course, so a folder/course delete can trash the whole
+ * subtree in one batch. Returns raw rows (not yet snapshotted) grouped by
+ * type.
+ *
+ * Lessons are collected exactly the way quizzes already are (same
+ * course_id/folder_id columns, same breadth-first walk) — this was a gap
+ * left over from Phase 1/2 (lessons existed, but nothing that cascades a
+ * folder/course delete knew about them yet, so deleting a folder containing
+ * a lesson would silently orphan it: the lesson row would survive with a
+ * folder_id/course_id pointing at now-deleted rows). Fixed here as part of
+ * Phase 3's delete-lesson support, since the authoring page is what finally
+ * makes lessons common enough for this gap to matter in practice.
  * @param {import('@supabase/supabase-js').SupabaseClient} supabase
  * @param {{courseId?: string, folderId?: string}} scope - exactly one of these
- * @returns {Promise<{folders: object[], quizzes: object[]}>}
+ * @returns {Promise<{folders: object[], quizzes: object[], lessons: object[]}>}
  */
 export async function collectCascadeItems(supabase, { courseId, folderId }) {
     const folders = [];
     const quizzes = [];
+    const lessons = [];
 
     // Breadth-first walk of the folder tree under the given root (course or
     // a specific folder). folder_id/parent_folder_id are the only edges we
-    // need to walk; course_id lets us grab all course-level quizzes/folders
-    // in one query up front when starting from a course.
+    // need to walk; course_id lets us grab all course-level quizzes/lessons/
+    // folders in one query up front when starting from a course.
     let frontierFolderIds = [];
 
     if (courseId) {
@@ -223,6 +234,13 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
             .eq("course_id", courseId)
             .is("folder_id", null);
         (topQuizzes || []).forEach((q) => quizzes.push(q));
+
+        const { data: topLessons } = await supabase
+            .from("lessons")
+            .select("*")
+            .eq("course_id", courseId)
+            .is("folder_id", null);
+        (topLessons || []).forEach((l) => lessons.push(l));
     } else if (folderId) {
         frontierFolderIds = [folderId];
     }
@@ -238,7 +256,13 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
             .select("*")
             .in("folder_id", frontierFolderIds);
 
+        const { data: childLessons } = await supabase
+            .from("lessons")
+            .select("*")
+            .in("folder_id", frontierFolderIds);
+
         (childQuizzes || []).forEach((q) => quizzes.push(q));
+        (childLessons || []).forEach((l) => lessons.push(l));
 
         const nextIds = (childFolders || []).map((f) => f.id);
         (childFolders || []).forEach((f) => folders.push(f));
@@ -246,15 +270,21 @@ export async function collectCascadeItems(supabase, { courseId, folderId }) {
     }
 
     // When starting directly from a folder (not a course), that folder's own
-    // direct quizzes also need collecting — the loop above only walks
-    // *descendant* folders' quizzes, starting one level down.
+    // direct quizzes/lessons also need collecting — the loop above only
+    // walks *descendant* folders' quizzes/lessons, starting one level down.
     if (folderId) {
         const { data: directQuizzes } = await supabase
             .from("quizzes")
             .select("*")
             .eq("folder_id", folderId);
         (directQuizzes || []).forEach((q) => quizzes.push(q));
+
+        const { data: directLessons } = await supabase
+            .from("lessons")
+            .select("*")
+            .eq("folder_id", folderId);
+        (directLessons || []).forEach((l) => lessons.push(l));
     }
 
-    return { folders, quizzes };
+    return { folders, quizzes, lessons };
 }

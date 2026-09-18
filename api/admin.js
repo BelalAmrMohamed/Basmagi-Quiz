@@ -22,7 +22,7 @@
 // =============================================================================
 import { applyCors, requireAdmin, handleAuthError } from "./_middleware.js";
 import { notifySearchEngines } from "./_seoNotify.js";
-import { toSlug, absUrl, quizUrl } from "./_urls.js";
+import { toSlug, absUrl, quizUrl, lessonUrl } from "./_urls.js";
 import { createClient } from "@supabase/supabase-js";
 import { slugifyHandle, validateHandleFormat, claimHandle } from "./_handle.js";
 import {
@@ -34,8 +34,9 @@ import {
   purgeQuizMedia,
   collectCascadeItems,
 } from "./_trash.js";
-import { canPlaceItemServer, validateItemName, hasQuizNameCollision } from "./_itemActions.js";
+import { canPlaceItemServer, validateItemName, hasQuizNameCollision, hasLessonNameCollision } from "./_itemActions.js";
 import { validateQuizPayload, computeStats } from "./_validateQuiz.js";
+import { validateLessonContent } from "./_validateLesson.js";
 import crypto from "crypto";
 
 const MAX_BIO_LENGTH = 280;
@@ -280,6 +281,9 @@ const ITEM_ACTIONS = new Set([
   "move-item",
   "rename-item",
   "update-quiz",
+  "create-lesson",
+  "update-lesson",
+  "delete-lesson",
 ]);
 
 async function fetchItemForAuth(supabase, itemType, itemId) {
@@ -290,6 +294,20 @@ async function fetchItemForAuth(supabase, itemType, itemId) {
       .eq("id", itemId)
       .maybeSingle();
     return data ? { row: data, creatorId: data.uploaded_by, educationType: data.education_type } : null;
+  }
+  if (itemType === "lesson") {
+    // Lessons have no education_type column of their own — they inherit
+    // their course's, the same way folders resolve it through a join
+    // (below), since a lesson's placement rule (course-or-folder, never
+    // top-level-only) mirrors a quiz's, not a folder's.
+    const { data } = await supabase
+      .from("lessons")
+      .select("*, courses:course_id(education_type)")
+      .eq("id", itemId)
+      .maybeSingle();
+    return data
+      ? { row: data, creatorId: data.created_by, educationType: data.courses?.education_type || null }
+      : null;
   }
   if (itemType === "folder") {
     const { data } = await supabase
@@ -393,8 +411,9 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
 
   // Restore parent-first: courses, then folders (already ordered by
   // deleted_at, which was itself written parent-before-children by the
-  // cascade-delete handlers below), then quizzes.
-  const order = { course: 0, folder: 1, quiz: 2 };
+  // cascade-delete handlers below), then quizzes/lessons (order between
+  // these two doesn't matter — neither is ever a parent of the other).
+  const order = { course: 0, folder: 1, quiz: 2, lesson: 2 };
   const sorted = [...batchRows].sort((a, b) => order[a.item_type] - order[b.item_type]);
 
   // Tracks which original ids were actually restored in this pass, so a
@@ -486,6 +505,42 @@ async function handleTrashRestore(req, res, adminPayload, adminId, supabase) {
             console.error("[admin:trash-restore] increment_uploaded_quizzes failed:", rpcErr.message || rpcErr);
           }
         }
+      } else if (row.item_type === "lesson") {
+        // Mirrors the quiz branch above exactly (same folder_id/course_id
+        // fallback logic), minus the password/uploaded-quizzes-count bits
+        // that don't apply to lessons (no password concept, no scoring —
+        // see the lessons migration and the plan's ground rules).
+        const snap = { ...row.snapshot };
+        if (snap.folder_id) {
+          const parentStillGone = !restoredIds.has(snap.folder_id);
+          if (parentStillGone) {
+            const { data: folderExists } = await supabase
+              .from("folders")
+              .select("id")
+              .eq("id", snap.folder_id)
+              .maybeSingle();
+            if (!folderExists) snap.folder_id = null;
+          }
+        }
+        if (snap.course_id) {
+          const courseGone = !restoredIds.has(snap.course_id);
+          if (courseGone) {
+            const { data: courseExists } = await supabase
+              .from("courses")
+              .select("id")
+              .eq("id", snap.course_id)
+              .maybeSingle();
+            if (!courseExists) {
+              failures.push({ name: snap.title, reason: "المادة الأصلية لم تعد موجودة." });
+              continue;
+            }
+          }
+        }
+        const { error } = await supabase.from("lessons").insert(snap);
+        if (error) throw new Error(error.message);
+        restoredIds.add(row.original_id);
+        restoredNames.push(snap.title);
+        if (snap.id) restoredUrls.push(lessonUrl(snap.slug || snap.id));
       }
     } catch (e) {
       failures.push({ name: row.snapshot?.name || row.snapshot?.title || "?", reason: e.message });
@@ -629,7 +684,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
     return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا العنصر." });
   }
 
-  const { folders, quizzes } =
+  const { folders, quizzes, lessons } =
     itemType === "course"
       ? await collectCascadeItems(supabase, { courseId: id })
       : await collectCascadeItems(supabase, { folderId: id });
@@ -705,20 +760,44 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
     });
   }
 
+  // Lessons cascade the same way quizzes do — see collectCascadeItems'
+  // updated header comment on why this branch didn't exist before Phase 3.
+  // Lessons have no education_type column of their own, so this falls back
+  // to fetched.educationType (the folder/course being deleted) same as a
+  // quiz row that happens to have a null education_type would.
+  for (const lesson of lessons) {
+    trashRows.push({
+      item_type: "lesson",
+      original_id: lesson.id,
+      snapshot: lesson,
+      parent_folder_id: lesson.folder_id || null,
+      course_id: lesson.course_id || null,
+      education_type: fetched.educationType,
+      batch_id: batchId,
+      deleted_by: adminId,
+      expires_at: expiresAt,
+    });
+  }
+
   const { error: insertErr } = await supabase.from("trash_items").insert(trashRows);
   if (insertErr) {
     console.error(`[admin:delete-${itemType}] trash insert failed:`, insertErr.message);
     return res.status(500).json({ error: "فشل نقل العنصر إلى سلة المهملات." });
   }
 
-  // Delete children first (FKs point up: quizzes/folders reference the
-  // course/parent folder), then the root item itself.
+  // Delete children first (FKs point up: quizzes/lessons/folders reference
+  // the course/parent folder), then the root item itself.
   const quizIds = quizzes.map((q) => q.id);
+  const lessonIds = lessons.map((l) => l.id);
   const folderIds = folders.map((f) => f.id);
 
   if (quizIds.length) {
     const { error } = await supabase.from("quizzes").delete().in("id", quizIds);
     if (error) console.error(`[admin:delete-${itemType}] quiz cascade delete failed:`, error.message);
+  }
+  if (lessonIds.length) {
+    const { error } = await supabase.from("lessons").delete().in("id", lessonIds);
+    if (error) console.error(`[admin:delete-${itemType}] lesson cascade delete failed:`, error.message);
   }
   if (folderIds.length) {
     // Delete deepest folders first so parent_folder_id FKs never point at an
@@ -748,7 +827,7 @@ async function handleDeleteTree(req, res, adminPayload, adminId, supabase, itemT
   return res.status(200).json({
     success: true,
     trashed: true,
-    cascaded: { folders: folders.length, quizzes: quizzes.length },
+    cascaded: { folders: folders.length, quizzes: quizzes.length, lessons: lessons.length },
   });
 }
 
@@ -763,7 +842,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   if (!itemType || !itemId || !targetCourseId) {
     return res.status(400).json({ error: "بيانات النقل غير مكتملة." });
   }
-  if (itemType !== "quiz" && itemType !== "folder") {
+  if (itemType !== "quiz" && itemType !== "folder" && itemType !== "lesson") {
     return res.status(400).json({ error: "لا يمكن نقل هذا النوع من العناصر." });
   }
 
@@ -821,12 +900,23 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
       return res.status(400).json({ error: "يوجد امتحان آخر بهذا الاسم في المكان الوجهة." });
     }
   }
+  if (itemType === "lesson") {
+    const collision = await hasLessonNameCollision(supabase, {
+      courseId: targetCourseId,
+      folderId: targetFolderId,
+      title: fetched.row.title,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد درس آخر بهذا الاسم في المكان الوجهة." });
+    }
+  }
 
-  const table = itemType === "quiz" ? "quizzes" : "folders";
+  const table = itemType === "quiz" ? "quizzes" : itemType === "lesson" ? "lessons" : "folders";
   const updates =
-    itemType === "quiz"
-      ? { course_id: targetCourseId, folder_id: targetFolderId }
-      : { course_id: targetCourseId, parent_folder_id: targetFolderId };
+    itemType === "folder"
+      ? { course_id: targetCourseId, parent_folder_id: targetFolderId }
+      : { course_id: targetCourseId, folder_id: targetFolderId };
 
   const { error } = await supabase.from(table).update(updates).eq("id", itemId);
   if (error) {
@@ -834,10 +924,10 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     // supabase/migrations/20260901195646_courses_and_folders.sql) — moving
     // a folder into a destination that already has a same-named child hits
     // this the same way a rename can (see handleRenameItem's matching
-    // branch). Quizzes are now pre-checked above instead (no DB constraint
-    // to trip), so this branch only ever fires for itemType === "folder" in
-    // practice — kept keyed on the error code rather than itemType so it
-    // stays correct if that ever changes.
+    // branch). Quizzes/lessons are pre-checked above instead (no DB
+    // constraint to trip), so this branch only ever fires for
+    // itemType === "folder" in practice — kept keyed on the error code
+    // rather than itemType so it stays correct if that ever changes.
     if (error.code === "23505") {
       return res.status(400).json({ error: "يوجد عنصر آخر بهذا الاسم في المكان الوجهة." });
     }
@@ -859,6 +949,14 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
       notifySearchEngines({ add: [quizUrl(movedMetaId)], reason: "move-item:quiz" });
     }
   }
+  if (itemType === "lesson") {
+    // A lesson's URL (/lesson/{id-or-slug}) doesn't change when it moves
+    // between folders/courses — same reasoning as the quiz branch above.
+    const { data: movedLesson } = await supabase.from("lessons").select("id, slug").eq("id", itemId).maybeSingle();
+    if (movedLesson?.id) {
+      notifySearchEngines({ add: [lessonUrl(movedLesson.slug || movedLesson.id)], reason: "move-item:lesson" });
+    }
+  }
 
   // Moving a folder into a DIFFERENT course must cascade the new course_id
   // to every descendant folder and quiz. The DB consistency triggers
@@ -875,7 +973,7 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
   // re-reads the parent's course_id from the live table on every row write,
   // so a batch with unspecified row order could intermittently trip it.
   if (itemType === "folder") {
-    const { folders: childFolders, quizzes: childQuizzes } =
+    const { folders: childFolders, quizzes: childQuizzes, lessons: childLessons } =
       await collectCascadeItems(supabase, { folderId: itemId });
 
     for (const childFolder of childFolders) {
@@ -898,6 +996,18 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
       if (quizCascadeErr) {
         console.error("[admin:move-item] quiz course cascade failed:", quizCascadeErr.message);
         return res.status(500).json({ error: "فشل نقل الامتحانات التابعة. حاول مجددًا." });
+      }
+    }
+
+    const childLessonIds = childLessons.map((l) => l.id);
+    if (childLessonIds.length) {
+      const { error: lessonCascadeErr } = await supabase
+        .from("lessons")
+        .update({ course_id: targetCourseId })
+        .in("id", childLessonIds);
+      if (lessonCascadeErr) {
+        console.error("[admin:move-item] lesson course cascade failed:", lessonCascadeErr.message);
+        return res.status(500).json({ error: "فشل نقل الدروس التابعة. حاول مجددًا." });
       }
     }
   }
@@ -952,6 +1062,30 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
     if (metaId && !fetched.row.password) {
       notifySearchEngines({ add: [quizUrl(metaId)], reason: "rename-item:quiz" });
     }
+  } else if (itemType === "lesson") {
+    const collision = await hasLessonNameCollision(supabase, {
+      courseId: fetched.row.course_id,
+      folderId: fetched.row.folder_id,
+      title: nameCheck.clean,
+      excludeId: itemId,
+    });
+    if (collision) {
+      return res.status(400).json({ error: "يوجد درس آخر بهذا الاسم في نفس المكان." });
+    }
+
+    const { error } = await supabase
+      .from("lessons")
+      .update({ title: nameCheck.clean, updated_at: new Date().toISOString() })
+      .eq("id", itemId);
+    if (error) {
+      console.error("[admin:rename-item] lesson rename failed:", error.message);
+      return res.status(500).json({ error: "فشل إعادة تسمية الدرس." });
+    }
+    // A lesson's URL only changes on a *slug* change, not a title-only
+    // rename (see the lessons migration's comment on slug being separate
+    // from title) — so this is an "add" (content changed at the same URL),
+    // same reasoning as the quiz branch above.
+    notifySearchEngines({ add: [lessonUrl(fetched.row.slug || itemId)], reason: "rename-item:lesson" });
   } else {
     const table = itemType === "folder" ? "folders" : "courses";
     const { error } = await supabase
@@ -1105,6 +1239,219 @@ async function handleUpdateQuiz(req, res, adminPayload, adminId, supabase) {
   return res.status(200).json({ success: true, id, quizId: existingMetaId });
 }
 
+// =============================================================================
+// Lesson authoring actions (create-lesson / update-lesson / delete-lesson)
+// — see docs/plans/lessons-feature-plan.md's Phase 3 item 4. Follow the
+// exact existing pattern of handleRenameItem/handleMoveItem/handleUpdateQuiz
+// above: auth-check via fetchItemForAuth + isAuthorizedForItem, validation
+// via a shared validator (_validateLesson.js here, mirroring
+// _validateQuiz.js), a Supabase write, and friendly error mapping —
+// nothing here is a new authorization model.
+//
+// Unlike quizzes, lessons have no password concept and are never scored
+// (see the plan's ground rules) — so there's no clearPassword flag, no
+// stats computation, and no points/level side effect anywhere below.
+// =============================================================================
+
+/**
+ * Confirms targetFolderId (when given) actually exists and belongs to
+ * targetCourseId — the same destination-integrity check handleMoveItem
+ * already does inline for move-item, extracted here since create-lesson
+ * needs the identical check on first placement (there's no existing row to
+ * move FROM, but the destination still has to be validated the same way).
+ * @returns {Promise<{ok: true}|{ok: false, error: string}>}
+ */
+async function validateLessonPlacement(supabase, targetCourseId, targetFolderId) {
+  const { data: targetCourse } = await supabase.from("courses").select("id").eq("id", targetCourseId).maybeSingle();
+  if (!targetCourse) return { ok: false, error: "المادة الوجهة غير موجودة." };
+
+  if (targetFolderId) {
+    const { data: targetFolder } = await supabase
+      .from("folders")
+      .select("id, course_id")
+      .eq("id", targetFolderId)
+      .maybeSingle();
+    if (!targetFolder) return { ok: false, error: "المجلد الوجهة غير موجود." };
+    if (targetFolder.course_id !== targetCourseId) {
+      return { ok: false, error: "المجلد الوجهة لا ينتمي إلى المادة المحددة." };
+    }
+  }
+  return { ok: true };
+}
+
+// ── action=create-lesson ────────────────────────────────────────────────────
+// Body: { title, content, courseId, folderId?, slug?, readerPrefsDefault? }
+// courseId is required (a lesson can go directly under a course or under
+// any folder, never top-level-only — see canPlaceItemServer); folderId null
+// means "directly under the course."
+async function handleCreateLesson(req, res, adminPayload, adminId, supabase) {
+  const { title, content, courseId, folderId = null, slug = null, readerPrefsDefault = null } = req.body || {};
+
+  const nameCheck = validateItemName(title);
+  if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
+  if (!courseId) return res.status(400).json({ error: "المادة مطلوبة." });
+
+  const placement = canPlaceItemServer("lesson", folderId);
+  if (!placement.ok) return res.status(400).json({ error: placement.error });
+
+  const destinationCheck = await validateLessonPlacement(supabase, courseId, folderId);
+  if (!destinationCheck.ok) return res.status(404).json({ error: destinationCheck.error });
+
+  let cleanContent;
+  try {
+    cleanContent = validateLessonContent(content);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+
+  const collision = await hasLessonNameCollision(supabase, {
+    courseId,
+    folderId,
+    title: nameCheck.clean,
+  });
+  if (collision) {
+    return res.status(400).json({ error: "يوجد درس آخر بهذا الاسم في هذا المكان." });
+  }
+
+  const insertRow = {
+    title: nameCheck.clean,
+    content: cleanContent,
+    course_id: courseId,
+    folder_id: folderId,
+    slug: typeof slug === "string" && slug.trim() ? slug.trim() : null,
+    reader_prefs_default: isPlainObjectLoose(readerPrefsDefault) ? readerPrefsDefault : null,
+    created_by: adminId,
+  };
+
+  const { data, error } = await supabase.from("lessons").insert(insertRow).select("id, slug").maybeSingle();
+  if (error) {
+    console.error("[admin:create-lesson] failed:", error.message);
+    return res.status(500).json({ error: "فشل إنشاء الدرس." });
+  }
+
+  notifySearchEngines({ add: [lessonUrl(data.slug || data.id)], reason: "create-lesson" });
+
+  return res.status(200).json({ success: true, id: data.id });
+}
+
+// ── action=update-lesson ────────────────────────────────────────────────────
+// Body: { id, title, content, slug?, readerPrefsDefault? }
+// Placement (courseId/folderId) is changed only via action=move-item, never
+// as a side effect of an editing save — same convention as
+// handleUpdateQuiz's header comment on this exact point for quizzes.
+async function handleUpdateLesson(req, res, adminPayload, adminId, supabase) {
+  const { id, title, content, slug, readerPrefsDefault } = req.body || {};
+  if (!id) return res.status(400).json({ error: "معرف الدرس مطلوب." });
+
+  const nameCheck = validateItemName(title);
+  if (!nameCheck.ok) return res.status(400).json({ error: nameCheck.error });
+
+  const fetched = await fetchItemForAuth(supabase, "lesson", id);
+  if (!fetched) return res.status(404).json({ error: "الدرس غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لتعديل هذا الدرس." });
+  }
+
+  let cleanContent;
+  try {
+    cleanContent = validateLessonContent(content);
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+
+  const collision = await hasLessonNameCollision(supabase, {
+    courseId: fetched.row.course_id,
+    folderId: fetched.row.folder_id,
+    title: nameCheck.clean,
+    excludeId: id,
+  });
+  if (collision) {
+    return res.status(400).json({ error: "يوجد درس آخر بهذا الاسم في نفس المكان." });
+  }
+
+  const updates = {
+    title: nameCheck.clean,
+    content: cleanContent,
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof slug === "string") updates.slug = slug.trim() || null;
+  if (readerPrefsDefault !== undefined) {
+    updates.reader_prefs_default = isPlainObjectLoose(readerPrefsDefault) ? readerPrefsDefault : null;
+  }
+
+  const { error } = await supabase.from("lessons").update(updates).eq("id", id);
+  if (error) {
+    console.error("[admin:update-lesson] failed:", error.message);
+    return res.status(500).json({ error: "فشل حفظ التعديلات." });
+  }
+
+  const finalSlug = updates.slug !== undefined ? updates.slug : fetched.row.slug;
+  notifySearchEngines({ add: [lessonUrl(finalSlug || id)], reason: "update-lesson" });
+
+  return res.status(200).json({ success: true, id });
+}
+
+// ── action=delete-lesson ────────────────────────────────────────────────────
+// Body: { id }
+// A lesson has no cascade of its own (it's a leaf — see the plan's ground
+// rules on lessons never being a hierarchy level), so this is a direct
+// single-row soft-delete, unlike handleDeleteTree's folder/course cascade.
+async function handleDeleteLesson(req, res, adminPayload, adminId, supabase) {
+  const { id } = req.body || {};
+  if (!id) return res.status(400).json({ error: "معرف الدرس مطلوب." });
+
+  const fetched = await fetchItemForAuth(supabase, "lesson", id);
+  if (!fetched) return res.status(404).json({ error: "الدرس غير موجود." });
+
+  if (!isAuthorizedForItem(adminPayload, adminId, { creatorId: fetched.creatorId, educationType: fetched.educationType })) {
+    return res.status(403).json({ error: "ليس لديك صلاحية لحذف هذا الدرس." });
+  }
+
+  const retentionDays = await getTrashRetentionDays(supabase);
+  const expiresAt = computeExpiresAt(retentionDays);
+
+  const { error: insertErr } = await supabase.from("trash_items").insert({
+    item_type: "lesson",
+    original_id: fetched.row.id,
+    snapshot: fetched.row,
+    parent_folder_id: fetched.row.folder_id,
+    course_id: fetched.row.course_id,
+    education_type: fetched.educationType,
+    batch_id: crypto.randomUUID(),
+    deleted_by: adminId,
+    expires_at: expiresAt,
+  });
+  if (insertErr) {
+    console.error("[admin:delete-lesson] trash insert failed:", insertErr.message);
+    return res.status(500).json({ error: "فشل نقل الدرس إلى سلة المهملات." });
+  }
+
+  const { error: deleteErr } = await supabase.from("lessons").delete().eq("id", id);
+  if (deleteErr) {
+    console.error("[admin:delete-lesson] delete failed:", deleteErr.message);
+    return res.status(500).json({ error: "فشل حذف الدرس بعد نقله لسلة المهملات." });
+  }
+
+  // No delete verb in the IndexNow-style protocol this project uses (see
+  // handleDeleteTree's matching comment) — the sitemap/feed/llms-full
+  // simply stop listing this URL once the catalog is regenerated.
+  notifySearchEngines({ remove: [lessonUrl(fetched.row.slug || id)], reason: "delete-lesson" });
+
+  return res.status(200).json({ success: true, trashed: true });
+}
+
+/** Loose plain-object check for the optional readerPrefsDefault field — a
+ * small author-set font/highlight seed (see the lessons migration), never
+ * validated beyond "don't store something that isn't a plain object,"
+ * since the actual choices it can carry are a closed, small set already
+ * enumerated client-side in lesson-reader-prefs.js's FONT_CHOICES/
+ * HIGHLIGHT_CHOICES — an invalid id there just falls back to a default, it
+ * can't cause harm, so there's nothing worth a stricter whitelist here. */
+function isPlainObjectLoose(v) {
+  return v !== null && typeof v === "object" && !Array.isArray(v);
+}
+
 async function handleItemActions(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -1131,6 +1478,9 @@ async function handleItemActions(req, res) {
   if (action === "move-item") return handleMoveItem(req, res, payload, adminId, supabase);
   if (action === "rename-item") return handleRenameItem(req, res, payload, adminId, supabase);
   if (action === "update-quiz") return handleUpdateQuiz(req, res, payload, adminId, supabase);
+  if (action === "create-lesson") return handleCreateLesson(req, res, payload, adminId, supabase);
+  if (action === "update-lesson") return handleUpdateLesson(req, res, payload, adminId, supabase);
+  if (action === "delete-lesson") return handleDeleteLesson(req, res, payload, adminId, supabase);
 
   return res.status(400).json({ error: "Invalid action" });
 }

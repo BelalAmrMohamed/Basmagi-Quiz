@@ -38,15 +38,23 @@ import {
 import { openMoveToDialogWithSource } from "./move-to-dialog.js";
 
 // ── Type / id resolution ─────────────────────────────────────────────────────
-// The three item shapes fed into this module (see quizManifest.js):
+// The item shapes fed into this module (see quizManifest.js):
 //   - quiz:    { dbId, id (8-char meta id), title, education_type, author,
 //                author_email, author_id, courseId, folderId, ... }
+//   - lesson:  { itemType: "lesson", id (lessons.id uuid), title,
+//                education_type, courseId, folderId, created_by, ... } —
+//                built directly by create-lesson.js (lessons aren't in the
+//                manifest/categoryTree yet, see lesson-schema.js's header
+//                comment), so it's the one shape here that self-identifies
+//                via an explicit `itemType` field rather than needing
+//                shape-sniffing the way quiz/folder/course do.
 //   - folder:  { id (folder DB uuid), name, education_type, parent (path key),
 //                course_id, parent_folder_id, created_by, ... }
 //   - course:  { id (course DB uuid), name, education_type, parent: null,
 //                created_by, ... }
 function resolveItemType(item) {
   if (!item) return null;
+  if (item.itemType === "lesson") return "lesson";
   if (item.dbId) return "quiz";
   // Category-tree folder nodes carry a string `parent` path key; course nodes
   // have parent: null. A folder node is also identifiable by its DB
@@ -64,7 +72,7 @@ function resolveItemType(item) {
 function resolveItemId(item) {
   if (!item) return null;
   if (item.dbId) return item.dbId; // quizzes use the Supabase row uuid
-  return item.id || null;
+  return item.id || null; // lessons/folders/courses key off their own row uuid directly
 }
 
 // ── Visibility gate (UX only — the server re-authorizes everything) ──────────
@@ -401,8 +409,10 @@ export async function openSharedMoveToDialog(item) {
     : "العنصر";
 
   // Current location of the moving item, for the "الموقع الحالي" badge.
+  // quiz/lesson carry camelCase folderId/courseId (see the type-shape
+  // comment above); folder rows carry the DB's own snake_case columns.
   const currentId =
-    itemType === "quiz"
+    itemType === "quiz" || itemType === "lesson"
       ? item.folderId
         ? `folder:${item.folderId}`
         : item.courseId
