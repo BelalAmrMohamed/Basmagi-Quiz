@@ -271,6 +271,7 @@ export async function deleteSharedItem(item) {
   const label = item.title || item.name || "العنصر";
   const copyByType = {
     quiz: `سيُنقل "${label}" إلى سلة المهملات ويمكن استعادته لاحقاً.`,
+    lesson: `سيُنقل الدرس "${label}" إلى سلة المهملات ويمكن استعادته لاحقاً.`,
     folder: `سيُنقل المجلد "${label}" وكل ما يحتويه إلى سلة المهملات ويمكن استعادتها لاحقاً.`,
     course: `سيُنقل المادة "${label}" وكل مجلداتها وامتحاناتها إلى سلة المهملات ويمكن استعادتها لاحقاً.`,
   };
@@ -283,6 +284,17 @@ export async function deleteSharedItem(item) {
     const { deleteQuizFromDatabase } = await import("./delete-quiz.js");
     const ok = await deleteQuizFromDatabase(item);
     if (!ok) return false;
+  } else if (itemType === "lesson") {
+    // Lessons are a leaf with no cascade of their own (see
+    // handleDeleteLesson's header comment) — a direct action=delete-lesson
+    // call, same { id } body shape as delete-folder/delete-course.
+    const res = await postAdminAction("delete-lesson", { id: itemId });
+    if (!res) return false;
+    showNotification(
+      "تم النقل إلى سلة المهملات",
+      `تم نقل "${label}" إلى سلة المهملات.`,
+      "success",
+    );
   } else {
     const action = itemType === "folder" ? "delete-folder" : "delete-course";
     const res = await postAdminAction(action, { id: itemId });

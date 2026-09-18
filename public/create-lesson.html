@@ -4,12 +4,6 @@
 <head>
     <meta charset="UTF-8">
 
-    <!-- For relative asset URLs (src/..., assets/..., favicon.png, etc.)
-         on any page served from a nested path — e.g.
-         /course/:name and /course/:name/:sub/:sub2/... (see
-         render-course.js and api/render-course.js's :path* handling). -->
-    <base href="/">
-
     <!-- Critical Performance: DNS prefetch and preconnect -->
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://fonts.gstatic.com">
@@ -17,17 +11,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- Title and Favicon -->
-    <title>منصة امتحانات بصمجي</title>
+    <title>إنشاء دروس | منصة امتحانات بصمجي</title>
     <link rel="icon" href="favicon.png" type="image/png">
     <link rel="shortcut icon" href="favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta property="og:logo" content="https://basmagi-quiz.vercel.app/favicon.png" />
 
-    <!-- Meta tags -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- PWA Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="theme-color" content="#0088cc" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
 
     <script>
         (function () {
@@ -41,37 +36,35 @@
             } catch (e) { }
         })();
     </script>
-    <meta name="description"
-        content="منصة تعليمية مجانية تضم مكتبة شاملة من الامتحانات الخاصة بكلية الحاسبات والمعلومات. طوّر معرفتك من خلال امتحانات تفاعلية في جميع المواد.">
-    <meta name="author" content="Belal Amr Mohamed">
-    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
-    <meta name="keywords" content="امتحانات, كلية الحاسبات, امتحانات تفاعلية, تعليم, دراسة, امتحانات اون لاين">
-    <meta name="date" content="2025-07-08">
-    <link rel="canonical" href="https://basmagi-quiz.vercel.app/">
-
-    <!-- PWA Meta Tags -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="أنشئ دروسك التفاعلية بسهولة مع أقسام، وسائط، وأسئلة مدمجة">
     <meta name="apple-mobile-web-app-title" content="امتحانات بصمجي">
     <meta name="application-name" content="امتحانات بصمجي">
     <meta name="format-detection" content="telephone=no">
 
+    <!-- Manifest & Icons -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icon-180.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="assets/images/icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/icon-16.png">
+
+    <meta name="description"
+        content="أنشئ دروسك التفاعلية مجانًا: أقسام، وسائط، أسئلة مدمجة، وربط بامتحانات موجودة، وشاركها مع طلابك برابط مباشر.">
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+    <link rel="canonical" href="https://basmagi-quiz.vercel.app/create-lesson" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://basmagi-quiz.vercel.app/">
-    <meta property="og:title" content="منصة امتحانات بصمجي: إختبر أدائك في الامتحانات بجميع المستويات">
-    <meta property="og:description" content="منصة مجانية تحتوي على امتحانات لجميع مواد كلية الحاسبات والمعلومات">
-    <meta property="og:logo" content="https://basmagi-quiz.vercel.app/favicon.png" />
-    <meta property="og:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/thumbnail.png?v=3">
+    <meta property="og:url" content="https://basmagi-quiz.vercel.app/create-lesson">
+    <meta property="og:title" content="منصة امتحانات بصمجي: أنشئ دروساً تفاعلية وشاركها مع طلابك">
+    <meta property="og:description" content="منصة مجانية تحتوي على دروس وامتحانات لجميع مواد كلية الحاسبات والمعلومات">
+    <meta property="og:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="منصة امتحانات بصمجي">
     <meta property="og:site_name" content="منصة امتحانات بصمجي">
     <meta property="og:locale" content="ar_AR">
-    <!-- Publish Date -->
-    <meta property="article:published_time" content="2025-07-08T14:30:00+00:00" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
@@ -79,148 +72,17 @@
     <meta name="twitter:creator" content="@BelalAmrDev">
     <meta name="twitter:title" content="تقدر تختم أكثر من 10 امتحانات؟">
     <meta name="twitter:description" content="إختبر قدراتك في الامتحانات النهائية">
-    <meta name="twitter:image" content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/thumbnail.png?v=3">
+    <meta name="twitter:image"
+        content="https://basmagi-quiz.vercel.app/assets/images/thumbnails/create-thumbnail.png?v=3">
     <meta name="twitter:image:alt" content="منصة امتحانات بصمجي">
 
-    <!-- PWA Manifest & Icons -->
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icon-180.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="assets/images/icon-192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icon-32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/icon-16.png">
-
-    <!-- Feeds (SEO/GEO discovery — see docs/plans/SEO-GEO-plan.md §6.4) -->
-    <link rel="alternate" type="application/rss+xml" title="أحدث امتحانات بصمجي"
-        href="https://basmagi-quiz.vercel.app/feed.xml">
-    <link rel="alternate" type="application/feed+json" href="https://basmagi-quiz.vercel.app/feed.json">
-
-    <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "منصة امتحانات بصمجي",
-      "alternateName": "Basmagi Quiz Platform",
-      "description": "منصة تعليمية مجانية تضم مكتبة شاملة من الامتحانات الخاصة بكلية الحاسبات والمعلومات",
-      "url": "https://basmagi-quiz.vercel.app/",
-      "applicationCategory": "EducationalApplication",
-      "operatingSystem": "Any",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "inLanguage": "ar",
-      "author": {
-        "@type": "Person",
-        "name": "Belal Amr Mohamed",
-        "url": "https://portfolio-of-belal.vercel.app/"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "reviewCount": "150"
-      }
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "منصة امتحانات بصمجي",
-          "item": "https://basmagi-quiz.vercel.app/"
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "عن المنصة",
-          "item": "https://basmagi-quiz.vercel.app/about"
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": "إنشاء امتحانات",
-          "item": "https://basmagi-quiz.vercel.app/create-quiz"
-        },
-        {
-          "@type": "ListItem",
-          "position": 4,
-          "name": "كيفية إنشاء امتحان",
-          "item": "https://basmagi-quiz.vercel.app/how-to-create-a-quiz"
-        },
-        {
-          "@type": "ListItem",
-          "position": 5,
-          "name": "سياسة الخصوصية",
-          "item": "https://basmagi-quiz.vercel.app/privacy-policy"
-        },
-        {
-          "@type": "ListItem",
-          "position": 6,
-          "name": "شروط الخدمة",
-          "item": "https://basmagi-quiz.vercel.app/terms-of-service"
-        }
-      ]
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "منصة امتحانات بصمجي",
-      "alternateName": "Basmagi Quiz Platform",
-      "url": "https://basmagi-quiz.vercel.app/",
-      "description": "منصة تعليمية عربية مجانية تحتوي على مكتبة امتحانات تفاعلية خاصة بكلية الحاسبات والمعلومات ولجميع المراحل التعليمية",
-      "inLanguage": "ar",
-      "sameAs": [
-        "https://github.com/BelalAmrMohamed/Basmagi-Quiz",
-        "https://x.com/BelalAmrDev",
-        "https://portfolio-of-belal.vercel.app/"
-      ]
-    }
-    </script>
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "EducationalOrganization",
-      "name": "منصة امتحانات بصمجي",
-      "alternateName": "Basmagi Quiz Platform",
-      "url": "https://basmagi-quiz.vercel.app/",
-      "description": "منصة تعليمية عربية مجانية تحتوي على مكتبة امتحانات تفاعلية خاصة بكلية الحاسبات والمعلومات ولجميع المراحل التعليمية",
-      "inLanguage": "ar",
-      "sameAs": [
-        "https://github.com/BelalAmrMohamed/Basmagi-Quiz",
-        "https://x.com/BelalAmrDev",
-        "https://portfolio-of-belal.vercel.app/"
-      ]
-    }
-    </script>
-
-    <!-- CRITICAL: Anti-flash theme script (must run before paint) -->
+    <!-- CRITICAL: Anti-flash script -->
     <script>
         (function () {
-            try {
-                const savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
-                const savedAnimations = localStorage.getItem("quiz_animations_pref") !== "disabled";
-                const savedHighPerformance = localStorage.getItem("quiz_high_performance_pref") === "enabled";
-                const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-                document.documentElement.setAttribute("data-theme", savedTheme);
-                document.documentElement.setAttribute("data-animations", (savedAnimations && !reducedMotion && !savedHighPerformance) ? "enabled" : "disabled");
-                document.documentElement.setAttribute("data-motion", (savedHighPerformance || reducedMotion) ? "reduced" : "normal");
-
-                // Add loading class to prevent FOUC
-                document.documentElement.classList.add('is-loading');
-            } catch (e) {
-                console.error('Theme initialization error:', e);
-            }
+            const savedTheme = localStorage.getItem("quiz_theme_pref") || "light";
+            const savedAnimations = localStorage.getItem("quiz_animations_pref") !== "disabled";
+            document.documentElement.setAttribute("data-theme", savedTheme);
+            document.documentElement.setAttribute("data-animations", savedAnimations ? "enabled" : "disabled");
         })();
     </script>
 
@@ -283,7 +145,7 @@
         })();
     </script>
 
-    <!-- Fonts: Inter (Latin) + "IBM Plex Sans Arabic" (Arabic) — optimized loading -->
+    <!-- Fonts: Inter (Latin) + Tajawal (Arabic) — optimized loading -->
     <link
         href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Public+Sans:ital,wght@0,100..900;1,100..900&family=Tajawal:wght@200;300;400;500;700;800;900&display=swap"
         rel="stylesheet" media="print" onload="this.media='all'; this.onload=null;">
@@ -293,63 +155,31 @@
             rel="stylesheet">
     </noscript>
 
-    <!-- Preload critical resources -->
-    <link rel="preload" href="src/styles/themes.css" as="style">
-    <link rel="preload" href="src/features/home/index.css" as="style">
-
     <!-- CSS Files -->
     <link rel="stylesheet" href="src/styles/themes.css">
-    <link rel="stylesheet" href="src/features/home/index.css">
-    <link rel="stylesheet" href="src/components/quiz-info-modal/quiz-info-modal.css">
-    <!-- Local ("امتحاناتك") trash panel — extends the .quiz-info-dialog shell
-         above, so it must load after quiz-info-modal.css. -->
-    <link rel="stylesheet" href="src/features/home/user-quizzes-trash-panel.css">
-    <link rel="stylesheet" href="src/components/download-quiz-modal/download-quiz-modal.css">
-    <link rel="stylesheet" href="src/styles/advanced-liquid-metal-animations.css">
-    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
-    <link rel="stylesheet" href="src/features/home/exam-dropdown-menu.css">
-    <!-- ai-agent.css loads after side-menu.css: the FAB's z-index is now
-         pinned to the shared --z-tooltip token so load order no longer
-         affects who wins a tie, but keeping it after nav-related
-         stylesheets avoids relying on that in the future. -->
-    <link rel="stylesheet" href="src/components/ai-agent/ai-agent.css">
-    <!-- markdown.css supplies .text-rtl/.text-ltr direction classes used by
-         renderMarkdown()'s direction-detection engine (see markdown.js) —
-         needed here since the AI Helper on this page renders markdown via
-         the same engine result.html uses. -->
+    <link rel="stylesheet" href="src/features/lessons/create-lesson.css">
     <link rel="stylesheet" href="src/styles/markdown.css">
-    <!-- lessons.css styles the /lesson/:id viewer (sections, ToC, embedded
-         question/quiz-ref blocks, reader-prefs popover). Loaded here because
-         lesson pages render inside this same SPA shell. -->
     <link rel="stylesheet" href="src/styles/lessons.css">
+    <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
-    <link rel="stylesheet" href="src/features/home/search.css">
-    <link rel="stylesheet" href="src/components/offline-banner/offline-banner.css">
-    <link rel="stylesheet" href="src/features/home/sign-in.css">
 
-    <!-- Controller Scripts - with module preload -->
-    <link rel="modulepreload" href="src/shared/theme-controller.js">
-    <link rel="modulepreload" href="src/features/home/index-entrypoint.js">
     <link rel="modulepreload" href="src/components/side-menu/side-menu.js">
     <link rel="modulepreload" href="src/shared/avatarPicker.js">
     <link rel="modulepreload" href="src/shared/avatarEngine.js">
 
-    <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
-         KaTeX must load as a classic (non-deferred) script so that
-         window.katex is synchronously available when ES modules execute.
-         No SRI hashes: jsDelivr serves the canonical npm release unmodified.
-         Pinned to 0.16.9 exactly — do NOT add defer/async. -->
+    <!-- KaTeX — LaTeX math rendering
+         Classic (non-deferred) script so window.katex is synchronously
+         available before any ES module runs. No SRI: jsDelivr serves the
+         canonical npm release unmodified. -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
-    <!-- Security: Content Security Policy (recommended) But it prevented the Downloading libraries like pptx and pdf -->
-    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
-                   script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
-                   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-                   font-src 'self' https://fonts.gstatic.com; 
-                   img-src 'self' data: https:; 
-                   connect-src 'self';"> -->
+    <!-- Theme Controller Script -->
+    <script type="module" src="src/shared/theme-controller.js"></script>
 
+    <!-- Canvas Animation Script -->
+    <script type="module" src="src/shared/flow-field.js"></script>
 </head>
 
 <body>
@@ -384,7 +214,15 @@
         })();
     </script>
 
-    <!-- Side Menu, Uses seperate files: `side-menu.css` and `side-menu.js` -->
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loadingText">جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- Side Menu -->
     <!-- Backdrop (mobile overlay) -->
     <div class="side-menu-backdrop" id="sideMenuBackdrop" aria-hidden="true" role="presentation"></div>
 
@@ -458,7 +296,7 @@
         </div>
 
         <nav role="navigation" aria-label="روابط التنقل">
-            <a href="/" title="الصفحة الرئيسية" class="menu-item active" data-tooltip="الصفحة الرئيسية">
+            <a href="/" title="الصفحة الرئيسية" class="menu-item" data-tooltip="الصفحة الرئيسية">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     aria-hidden="true">
@@ -479,6 +317,17 @@
                         d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" />
                 </svg>
                 <span class="menu-label">إنشاء امتحانات</span>
+            </a>
+
+            <a href="create-lesson" title="إنشاء دروس" class="menu-item active" data-tooltip="إنشاء دروس">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    aria-hidden="true">
+                    <path d="M12 7v14" />
+                    <path
+                        d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                </svg>
+                <span class="menu-label">إنشاء دروس</span>
             </a>
 
             <a href="create-lesson" title="إنشاء دروس" class="menu-item" data-tooltip="إنشاء دروس">
@@ -730,10 +579,38 @@
                 </div>
             </div>
 
+
+            <!-- Live editor section navigator: jump between the lesson's
+                 sections. Sibling of the quiz editor's question navigator,
+                 but owned entirely by create-lesson.js (not a reuse of
+                 question-navigator.js, which is bound to .question-card
+                 scroll observation specific to the quiz editor DOM). -->
+            <aside id="createLessonSectionNav" class="create-question-navigator sidebar-expanded-only"
+                aria-label="التنقل بين الأقسام">
+                <button type="button" id="createLessonSectionNavToggle" class="create-question-navigator-toggle"
+                    aria-expanded="true" aria-controls="createLessonSectionNavPanel"
+                    title="إظهار أو إخفاء التنقل بين الأقسام">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <span>الأقسام</span>
+                    <span id="createLessonSectionNavCount" class="create-question-navigator-count">0</span>
+                    <svg class="create-question-navigator-chevron" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+                <div id="createLessonSectionNavPanel" class="create-question-navigator-panel"></div>
+            </aside>
         </nav>
 
-        <!-- Pinned bottom actions stay outside the scrollable nav so long
-                  menus cannot paint underneath them. -->
+        <!-- Pinned bottom actions — always visible at the foot of the
+             sidebar, regardless of how long/scrollable the nav content
+             above becomes, and regardless of expanded/collapsed state.
+             Sits as a sibling of <nav> (not inside it) so it can be
+             positioned outside the scroll container. -->
         <div class="sidebar-pinned-actions" role="navigation" aria-label="إجراءات إضافية">
             <a href="settings" title="الإعدادات" class="menu-item" data-tooltip="الإعدادات">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -762,7 +639,7 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="bottom-nav" id="bottomNav" role="navigation" aria-label="التنقل الرئيسي">
-        <a href="/" class="bottom-nav-item active" data-bottom-nav="home">
+        <a href="/" class="bottom-nav-item" data-bottom-nav="home">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -775,7 +652,7 @@
             <span class="bottom-nav-label">الرئيسية</span>
         </a>
 
-        <a href="create-quiz" class="bottom-nav-item" data-bottom-nav="create">
+        <a href="create-quiz" class="bottom-nav-item active" data-bottom-nav="create">
             <span class="bottom-nav-icon">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -791,7 +668,6 @@
 
         <a href="profile" class="bottom-nav-item bottom-nav-item-profile" data-bottom-nav="leaderboard">
             <span class="bottom-nav-icon bottom-nav-icon-profile">
-
                 <img class="bottom-nav-avatar" id="navBottomAvatar" src="" alt="" style="display:none;">
             </span>
             <span class="bottom-nav-label">الحساب</span>
@@ -897,471 +773,225 @@
             });
         })();
     </script>
-
-    <div class="container" id="mainContainer">
-        <nav id="breadcrumb" class="rtl-arrow" role="navigation" aria-label="مسار التصفح" tabindex="0">
-            <span class="breadcrumb-text">الرجوع إلى المواد ←</span>
-        </nav>
-
-        <header class="header" role="banner">
-            <!-- Clips the decorative top accent bar + radial glow to the header's
-                 rounded corners at all times — independent of the search bar/
-                 filters/summary below, which now need .header itself to stay
-                 overflow:visible so they can flyout past its edge. See
-                 .header-clip in index.css. -->
-            <div class="header-clip" aria-hidden="true"></div>
-
-            <div class="header-content">
-                <!-- Personalised greeting pill (JS sets innerHTML) -->
-                <button class="header-badge" id="user-name" onclick="changeUsername(``)" aria-live="polite"
-                    aria-label="تغيير اسم المستخدم" type="button">
-                    <!-- Content filled by JS -->
-                </button>
-
-                <!-- Platform title -->
-                <h1 id="pageTitle" data-text="منصة امتحانات بصمجي" class="advanced-liquid-metal-animations">منصة
-                    امتحانات بصمجي</h1>
-
-                <!-- Value-proposition subtitle -->
-                <p class="header-subtitle">
-                    المنهج لو طار.. بصمجي هو الاختيار
-                </p>
-
-                <div id="Subjects-text" role="status" aria-live="polite">
-                    جميع المواد
-                </div>
-            </div>
-
-            <!-- Context-Aware Search System — now lives inside the header itself.
-                 Collapsed by default, opened via the header trigger button below.
-                 .header stays overflow:visible at all times (see .header-clip
-                 above, which clips only the decorative accent bar/glow layers),
-                 so this can flyout past the header's own bottom edge without
-                 being clipped. -->
-            <div class="search-container" id="searchContainer" aria-hidden="true">
-                <!-- Bar + results summary share one row so the summary sits BESIDE
-                     the bar, not stacked under it — appearing/disappearing here can
-                     no longer move the bar's position (see .search-bar-row in
-                     search.css). .search-filters is a sibling of this row, not a
-                     child, since it needs to anchor its own flyout position
-                     independently (see below). -->
-                <div class="search-bar-row">
-                    <div class="search-bar">
-                        <svg class="search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20"
-                            height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <span class="search-spinner" aria-hidden="true"></span>
-                        <input type="text" id="courseSearch" dir="auto" class="search-input" dir="auto"
-                            placeholder="ابحث عن مادة" autocomplete="off" aria-label="البحث عن المواد والامتحانات" />
-                        <button class="search-close" id="searchClose" aria-label="إغلاق البحث" title="إغلاق البحث"
-                            type="button">
-                            <svg class="search-close-icon search-close-icon--clear" width="14" height="14"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                stroke-linecap="round" aria-hidden="true">
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                            <svg class="search-close-icon search-close-icon--collapse" width="14" height="14"
-                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <button class="search-filters-toggle" id="filterToggle" aria-label="فتح الفلاتر"
-                            title="الفلاتر (Ctrl+F)" aria-expanded="false" type="button">
-                            <svg class="filter-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16"
-                                height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="4" y1="6" x2="20" y2="6"></line>
-                                <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"></circle>
-                                <line x1="4" y1="12" x2="20" y2="12"></line>
-                                <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"></circle>
-                                <line x1="4" y1="18" x2="20" y2="18"></line>
-                                <circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"></circle>
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Search Results Summary — second in DOM so it lands to the
-                         LEFT of the bar in this RTL row. -->
-                    <div class="search-results-summary" id="searchSummary" style="display:none;">
-                        <span><span id="resultCount">0</span> نتيجة</span>
-                        <div class="active-filters" id="activeFilterTags"></div>
-                    </div>
-                </div>
-
-                <!-- Search Filters Panel (Collapsible) — a flyout anchored below
-                     .search-bar-row's right edge (== the bar's own corner), not a
-                     block stacked between the bar and the results summary. See
-                     .search-filters in search.css. -->
-                <div class="search-filters" id="searchFilters" style="display:none;">
-                    <div class="filter-section">
-                        <h4>نطاق البحث</h4>
-                        <div class="filter-options">
-                            <label class="filter-chip">
-                                <input type="radio" name="searchScope" value="all" checked>
-                                <span>جميع المواد</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="searchScope" value="subscribed">
-                                <span>المواد المشترك بها فقط</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="filter-section">
-                        <h4>نوع المحتوى</h4>
-                        <div class="filter-options">
-                            <label class="filter-chip">
-                                <input type="radio" name="contentType" value="all" checked>
-                                <span>الكل</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="contentType" value="courses">
-                                <span>مواد فقط</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="contentType" value="exams">
-                                <span>امتحانات فقط</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Education-type filter — new. Faculty section below is only shown when "University" is picked here. -->
-                    <div class="filter-section">
-                        <h4>المرحلة التعليمية</h4>
-                        <div class="filter-options">
-                            <label class="filter-chip">
-                                <input type="radio" name="educationType" value="all" checked>
-                                <span>الكل</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="educationType" value="University">
-                                <span>جامعي</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="educationType" value="High-School">
-                                <span>ثانوي</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="educationType" value="Middle-School">
-                                <span>إعدادي</span>
-                            </label>
-                            <label class="filter-chip">
-                                <input type="radio" name="educationType" value="Primary">
-                                <span>ابتدائي</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Faculty only applies to University courses; JS toggles this section's visibility. -->
-                    <div class="filter-section" id="facultyFilterGroup">
-                        <h4>الكلية</h4>
-                        <select id="facultyFilter" class="filter-select" aria-label="اختر الكلية">
-                            <option value="all">جميع الكليات</option>
-                            <!-- Populated by JS -->
-                        </select>
-                    </div>
-
-                    <div class="filter-section">
-                        <h4>الترتيب</h4>
-                        <select id="sortBy" class="filter-select" aria-label="ترتيب النتائج">
-                            <option value="relevance">الأكثر صلة</option>
-                            <option value="name">الاسم (أ-ي)</option>
-                            <option value="recent">الأحدث</option>
-                            <option value="progress">التقدم</option>
-                        </select>
-                    </div>
-
-                    <div class="filter-actions">
-                        <button class="btn-reset-filters" id="resetFilters" type="button">إعادة تعيين</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Search Toggle Button — shown/hidden by SearchManager based on context.
-                 Also hidden (independently) while the bar itself is open — see
-                 .header-search-btn.is-bar-open in search.css and openSearchBar()/
-                 closeSearchBar() in search-manager.js. -->
-            <button class="header-search-btn" title="البحث (Ctrl+K)" id="headerSearchBtn" type="button" aria-label="بحث"
-                aria-expanded="false" style="display:none;">
-                <svg class="header-search-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20"
-                    height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    <!-- Unified top bar: fixed at viewport top. Lighter than create-quiz's
+         (no undo/redo, no Docs-style menu bar) — see the plan's Phase 3
+         header: "its own lighter editor body." -->
+    <div class="app-title-bar" id="appTitleBar" style="display: none;">
+        <div class="app-title-start">
+            <button type="button" class="app-title-home" onclick="chooseEntryAction('exit')"
+                title="العودة للشاشة الرئيسية" aria-label="العودة للشاشة الرئيسية">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
+                    fill="var(--color-text-primary)">
+                    <path
+                        d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200-200 200Z" />
                 </svg>
             </button>
-        </header>
+            <span class="app-title-text" id="appTitleText" contenteditable="false" spellcheck="false"
+                title="اضغط لإعادة تسمية الدرس" onclick="startTitleEdit()" onblur="commitTitleEdit()"
+                onkeydown="handleTitleEditKeydown(event)">درس بدون عنوان</span>
 
-        <main id="contentArea" role="main" aria-live="polite" aria-busy="true" aria-label="محتوى الصفحة الرئيسية">
-            <!-- Shimmer skeleton shown while async data loads. JS replaces this on ready. -->
-            <div class="skeleton-grid" id="skeletonLoader" aria-hidden="true">
-                <!-- Static امتحاناتك stub — always first, renders before JS fires -->
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title" style="width:55%"></div>
-                    <div class="skeleton-block skeleton-text" style="width:30%"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block skeleton-icon"></div>
-                    <div class="skeleton-block skeleton-title"></div>
-                    <div class="skeleton-block skeleton-text"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-block .shimmer skeleton-icon"></div>
-                    <div class="skeleton-block .shimmer skeleton-title"></div>
-                    <div class="skeleton-block .shimmer skeleton-text"></div>
-                </div>
+            <div class="autosave-indicator" id="autosaveIndicator">
+                <span class="save-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                        <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+                        <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+                    </svg>
+                </span>
+                <span class="save-text" id="autosaveText">محفوظ</span>
             </div>
-        </main>
-
-        <footer class="watermark" role="contentinfo">
-            <p>
-                <a href="about" rel="noopener noreferrer" aria-label="زيارة موقع بلال عمرو (يفتح في نافذة جديدة)">عن
-                    المنصة</a> |
-                <a href="privacy-policy">سياسة الخصوصية</a> | <a href="terms-of-service">شروط الخدمة</a>
-            </p>
-        </footer>
-    </div>
-
-    <!-- ── Admin Sign-In Dialog ── -->
-    <!-- Triggered by "دخول المشرفين" button in the /#my-quizzes view.     -->
-    <!-- All sign-in logic lives in sign-in.js (scoped to this element). -->
-    <dialog id="adminSignInDialog" aria-modal="true" aria-label="تسجيل دخول المشرفين" dir="rtl">
-        <div class="sd-card">
-
-            <!-- Close button -->
-            <button class="sd-close-btn" id="sd-closeBtn" aria-label="إغلاق" type="button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
-                    <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-            </button>
-
-            <!-- Brand mark -->
-            <div class="sd-brand">
-                <img src="/favicon.png" width="32" height="32" alt="بصمجي" loading="lazy">
-                <span class="sd-brand-name">منصة امتحانات بصمجي</span>
-            </div>
-
-            <h2 class="sd-title">تسجيل دخول المشرفين</h2>
-            <p class="sd-subtitle">يرجى تسجيل الدخول باستخدام بريدك الإلكتروني أو حساب Google/GitHub.</p>
-
-            <!-- Email Form -->
-            <form id="sd-emailForm" novalidate>
-
-                <!-- Email Step -->
-                <div id="sd-emailStep">
-                    <label class="sd-field-label" for="sd-emailInput">البريد الإلكتروني</label>
-                    <div class="sd-field-wrapper">
-                        <input id="sd-emailInput" class="sd-field-input email-ltr" type="email"
-                            placeholder="admin@example.com" autocomplete="email" autocorrect="off" autocapitalize="off"
-                            spellcheck="false" required dir="ltr" />
-                    </div>
-                    <button type="submit" class="sd-btn" id="sd-submitBtnEmail">
-                        <div class="sd-spinner" id="sd-spinnerEmail"></div>
-                        <span id="sd-btnTextEmail">إرسال رمز التحقق</span>
-                    </button>
-                </div>
-
-                <!-- OTP Step (hidden initially) -->
-                <div id="sd-otpStep" style="display:none;">
-                    <label class="sd-field-label" for="sd-otpInput">رمز التحقق (OTP)</label>
-                    <div class="sd-field-wrapper">
-                        <input id="sd-otpInput" class="sd-field-input otp-ltr" type="text" placeholder="••••••"
-                            autocomplete="one-time-code" autocorrect="off" autocapitalize="off" spellcheck="false"
-                            inputmode="numeric" pattern="[0-9]*" maxlength="6" dir="ltr" />
-                    </div>
-                    <button type="button" class="sd-btn" id="sd-submitBtnOtp">
-                        <div class="sd-spinner" id="sd-spinnerOtp"></div>
-                        <span id="sd-btnTextOtp">تأكيد رمز التحقق</span>
-                    </button>
-                    <div class="sd-otp-actions">
-                        <button type="button" class="sd-link-btn" id="sd-resendOtpBtn">إعادة إرسال الرمز</button>
-                        <span class="sd-otp-sep">•</span>
-                        <button type="button" class="sd-link-btn" id="sd-changeEmailBtn">تغيير البريد</button>
-                    </div>
-                </div>
-
-                <!-- Messages -->
-                <div class="sd-error-msg" id="sd-errorMsg" role="alert" aria-live="polite"></div>
-                <div class="sd-success-msg" id="sd-successMsg" role="status" aria-live="polite"></div>
-
-                <!-- SSO Section -->
-                <div class="sd-divider" id="sd-ssoDivider"><span>أو الدخول بواسطة</span></div>
-                <div class="sd-sso-buttons" id="sd-ssoButtonsContainer">
-                    <button type="button" class="sd-sso-btn" id="sd-btnGitHub">
-                        <span>GitHub</span>
-                        <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden="true">
-                            <path fill="currentColor"
-                                d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z" />
-                        </svg>
-                    </button>
-                    <button type="button" class="sd-sso-btn" id="sd-btnGoogle">
-                        <span>Google</span>
-                        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden="true">
-                            <path fill="#EA4335"
-                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.73 17.74 9.5 24 9.5z" />
-                            <path fill="#4285F4"
-                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                            <path fill="#FBBC05"
-                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                            <path fill="#34A853"
-                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                        </svg>
-                    </button>
-                </div>
-
-            </form>
-
-            <div class="sd-footer">
-                <a href="/privacy-policy">سياسة الخصوصية</a> •
-                <a href="/terms-of-service">شروط الخدمة</a>
-            </div>
-
         </div>
-    </dialog>
-    <!-- End Admin Sign-In Dialog -->
 
-
-    <!-- Test it by typing this in the Browser console
-    setTimeout(() => { throw new Error("Testing the error boundary!"); }, 100);
-    -->
-    <!-- Error Boundary -->
-    <div id="errorBoundary" role="alert" aria-live="assertive" aria-atomic="true" style="display: none;">
-        <p>حدث خطأ غير متوقع. يرجى تحديث الصفحة.</p>
-        <button onclick="location.reload()" type="button">تحديث الصفحة</button>
+        <!-- Right-aligned actions: preview + save. No Docs-style menu bar —
+             lessons don't have bulk/reorder/template modes to hang menus off
+             of, so this is just the two primary actions. -->
+        <div class="app-title-actions">
+            <button type="button" class="btn btn-secondary" id="previewLessonBtn" onclick="previewLesson()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+                <span>معاينة</span>
+            </button>
+            <button type="button" class="btn btn-primary" id="saveLessonBtn" onclick="saveLesson()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+                    <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+                    <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+                </svg>
+                <span>حفظ الدرس</span>
+            </button>
+        </div>
     </div>
 
-    <!-- ── Markdown + KaTeX integration (mirrored from create-quiz) ──
-         KaTeX must load as a classic (non-deferred) script so that
-         window.katex is synchronously available when ES modules execute.
-         No SRI hashes: jsDelivr serves the canonical npm release unmodified.
-         Pinned to 0.16.9 exactly — do NOT add defer/async. -->
-    <!-- For the exports -->
+    <div class="container">
 
-    <!-- KaTeX lazy loader — resolves immediately if already loaded, otherwise
-         injects the stylesheet + script on first call and waits for load. -->
+        <!-- Entry Screen: mirrors create-quiz's start screen (new tile +
+             grid of recent items), but lessons have no local-draft concept
+             — every item here is a real Supabase row owned by this admin
+             (fetched in create-lesson.js), not a localStorage draft. -->
+        <div class="entry-screen" id="entryScreen">
+            <div class="entry-sections">
+                <div class="entry-section">
+                    <h2 class="entry-screen-heading">أنشئ درسًا جديدًا</h2>
+                    <div class="entry-items-grid">
+                        <div class="entry-item-wrap">
+                            <button type="button" class="entry-item entry-item-new" onclick="chooseEntryAction('new')">
+                                <span class="entry-item-thumb entry-item-thumb-new">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <path d="M5 12h14" />
+                                        <path d="M12 5v14" />
+                                    </svg>
+                                </span>
+                                <span class="entry-item-title">درس جديد</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-sections entry-skeleton" id="entrySkeleton" aria-hidden="true">
+                <div class="entry-section">
+                    <div class="entry-skeleton-heading"></div>
+                    <div class="entry-items-grid">
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                        <div class="entry-skeleton-tile"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="entry-sections" id="entryItemsGrid" style="display: none;">
+                <!-- Populated by renderEntryItemsGrid() in create-lesson.js:
+                     one .entry-section per admin (own lessons only, unless
+                     the admin is the platform owner), sorted newest-first. -->
+            </div>
+
+            <!-- Admin gate: authoring lessons is admin-only. Shown instead of
+                 the tiles above when the visitor isn't signed in as an
+                 admin. -->
+            <div class="entry-sections" id="entryNotAdmin" style="display: none;">
+                <div class="entry-section">
+                    <p class="entry-not-admin-message">
+                        إنشاء الدروس متاح للمشرفين فقط. سجّل الدخول كمشرف أولاً.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lesson Editor Form -->
+        <div class="lesson-creator" id="lessonCreatorForm" style="display: none;">
+
+            <!-- Lesson Metadata: title (also editable via the top-bar title),
+                 placement (course/folder), optional slug, optional reader
+                 font/highlight defaults. -->
+            <div class="lesson-metadata card">
+                <h2>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 7v14" />
+                        <path
+                            d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                    </svg>
+                    بيانات الدرس
+                </h2>
+
+                <div class="form-group">
+                    <label for="lessonTitleInput">عنوان الدرس</label>
+                    <input type="text" id="lessonTitleInput" class="form-input" placeholder="مثال: مقدمة في قواعد البيانات"
+                        maxlength="200">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lessonCourseSelect">المادة</label>
+                        <select id="lessonCourseSelect" class="form-input"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonFolderSelect">المجلد (اختياري)</label>
+                        <select id="lessonFolderSelect" class="form-input">
+                            <option value="">— مباشرة تحت المادة —</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lessonFontSelect">الخط الافتراضي للقارئ (اختياري)</label>
+                        <select id="lessonFontSelect" class="form-input"></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="lessonHighlightSelect">لون التظليل الافتراضي (اختياري)</label>
+                        <select id="lessonHighlightSelect" class="form-input"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section list -->
+            <div class="lesson-sections card">
+                <div class="lesson-sections-header">
+                    <h2>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        أقسام الدرس
+                    </h2>
+                    <button type="button" class="btn btn-secondary" onclick="addSection()">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14" />
+                            <path d="M12 5v14" />
+                        </svg>
+                        <span>قسم جديد</span>
+                    </button>
+                </div>
+                <div id="sectionsContainer" class="sections-container"></div>
+            </div>
+        </div>
+    </div>
     <script>
-        window.loadKatex = (function () {
-            let promise = null;
-            return function loadKatex() {
-                if (window.katex) return Promise.resolve();
-                if (promise) return promise;
-                promise = new Promise(function (resolve, reject) {
-                    var link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
-                    document.head.appendChild(link);
+        (function () {
+            var appReady = false;
+            document.addEventListener("app:ready", function () {
+                appReady = true;
+            }, { once: true });
 
-                    var script = document.createElement('script');
-                    script.src = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js';
-                    script.onload = resolve;
-                    script.onerror = function () {
-                        promise = null; // allow retry
-                        reject(new Error('KaTeX failed to load'));
-                    };
-                    document.head.appendChild(script);
-                });
-                return promise;
-            };
+            document.addEventListener("click", function (event) {
+                if (appReady) return;
+                var target = event.target.closest("[onclick]");
+                if (!target) return;
+                event.stopImmediatePropagation();
+                event.preventDefault();
+            }, true);
         })();
     </script>
 
-    <!-- Scripts -->
-    <!-- Supabase JS SDK — required so index-entrypoint.js can verify/sync the admin
-         session against Supabase on load.
-         Must load before index-entrypoint.js. -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script type="module" src="src/shared/theme-controller.js"></script>
-    <script type="module" src="src/shared/flow-field.js"></script>
-    <script type="module" src="src/features/home/index-entrypoint.js"></script>
+    <script type="module" src="src/features/lessons/create-lesson.js"></script>
     <script type="module" src="src/components/side-menu/side-menu.js"></script>
     <script type="module">
-        import { initPWAWithBanner } from "./src/shared/pwa-manager.js";
-        document.addEventListener("DOMContentLoaded", () =>
-            initPWAWithBanner(window.SUPABASE_URL ? `${window.SUPABASE_URL}/rest/v1/` : "")
-        );
-    </script>
-
-    <!-- Remove loading class when page is ready -->
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            document.documentElement.classList.remove('is-loading');
-        });
-
-        // Global error handler
-        window.addEventListener('error', (e) => {
-            console.error('Global error:', e);
-            const errorBoundary = document.getElementById('errorBoundary');
-            if (errorBoundary) {
-                errorBoundary.style.display = 'block';
-            }
+        import { syncAdminSession } from "./src/shared/adminBadgeSync.js";
+        import { refreshAdminUI } from "./src/components/side-menu/side-menu.js";
+        document.addEventListener("DOMContentLoaded", () => {
+            syncAdminSession({
+                onRecovered: refreshAdminUI,
+                onSignedOut: refreshAdminUI,
+            });
         });
     </script>
-
-    <!-- Performance monitoring -->
-    <script>
-        if ('PerformanceObserver' in window) {
-            // Monitor Largest Contentful Paint
-            const lcpObserver = new PerformanceObserver((list) => {
-                const entries = list.getEntries();
-                const lastEntry = entries[entries.length - 1];
-                // LCP recorded — send to analytics in production
-            });
-            lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-
-            // Monitor First Input Delay
-            const fidObserver = new PerformanceObserver((list) => {
-                const entries = list.getEntries();
-                entries.forEach((entry) => {
-                    // FID recorded — send to analytics in production
-                });
-            });
-            fidObserver.observe({ entryTypes: ['first-input'] });
-
-            // Monitor Cumulative Layout Shift
-            let clsValue = 0;
-            const clsObserver = new PerformanceObserver((list) => {
-                list.getEntries().forEach((entry) => {
-                    if (!entry.hadRecentInput) {
-                        clsValue += entry.value;
-                        // CLS recorded — send to analytics in production
-                    }
-                });
-            });
-            clsObserver.observe({ entryTypes: ['layout-shift'] });
-        }
+    <script type="module">
+        import { initPWA } from "./src/shared/pwa-manager.js";
+        document.addEventListener("DOMContentLoaded", () => initPWA());
     </script>
     <script defer src="/_vercel/insights/script.js"></script>
 </body>
