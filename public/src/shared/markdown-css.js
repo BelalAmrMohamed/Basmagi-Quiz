@@ -51,6 +51,42 @@ export const MARKDOWN_CSS = `
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   READER-CONTROLLED FONT + HIGHLIGHT HOOKS
+   ══════════════════════════════════════════════════════════════════════════════
+   Two CSS-variable hooks only — no picker UI lives here. The lesson viewer
+   sets --md-font-family / --md-highlight-color as inline styles on its own
+   container (see features/lessons/lesson-reader-prefs.js), so the choice is
+   scoped to that subtree and every other renderMarkdown() call site on the
+   platform keeps its existing appearance via the fallbacks below.
+
+   inherit  -> unset means "whatever the host page already used", which is
+   exactly the previous hardcoded behaviour for these containers.           */
+
+.md-content,
+.question-text,
+.option-label,
+.feedback,
+.explanation-body,
+.formal-answer,
+.formal-answer-text {
+  font-family: var(--md-font-family, inherit);
+}
+
+/* ==highlighted text== -> applyInline() in markdown.js. Deliberately a
+   <span>, not <mark>, so the color is fully ours (see that function's
+   comment). The default is a yellow-equivalent that stays legible on both
+   light and dark themes. */
+.md-highlight {
+  background-color: var(--md-highlight-color, rgba(250, 204, 21, 0.38));
+  color: inherit;
+  border-radius: 3px;
+  padding: 0.05em 0.18em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════════
    HEADINGS
    ══════════════════════════════════════════════════════════════════════════════ */
 

@@ -233,6 +233,24 @@ export function applyInline(s, options = {}) {
   s = s.replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>");
   // ── Strikethrough ───────────────────────────────────────────────────────
   s = s.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
+  // ── Highlight ───────────────────────────────────────────────────────────
+  // ==text== -> a <mark>-equivalent span colored from --md-highlight-color
+  // (defaults to a yellow-equivalent in markdown-css.js when the variable
+  // is unset). A <span> rather than a literal <mark> so the color is driven
+  // purely by our CSS variable instead of each browser's UA default for
+  // <mark>, which differs and isn't overridable per-container the way the
+  // lesson reader's font/highlight picker needs (see the lessons plan's
+  // Phase 2 step 7 — only this CSS-variable *hook* lives in the shared
+  // engine; the picker UI itself is lesson-page-only).
+  //
+  // SERIALIZATION NOTE: this rule is a plain regex replace with no new
+  // module-scope dependency, so applyInline() stays safe to
+  // .toString()-inline into standalone offline exports (see
+  // export-to-quiz.js, which serializes this function by reference). Any
+  // future change here that reaches for a module-scope const/helper MUST
+  // also be added to that file's serialization block, or exported quizzes
+  // will throw ReferenceErrors.
+  s = s.replace(/==([^=\n]+)==/g, '<span class="md-highlight">$1</span>');
 
   // SECURITY: the captured URL must be HTML-escaped before being placed
   // inside the href="…"/src="…" attribute. Without this, a URL containing a

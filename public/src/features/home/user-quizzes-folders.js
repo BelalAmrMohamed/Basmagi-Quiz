@@ -128,7 +128,16 @@ export function isRowReachable(row, userQuizzes, byId = null) {
  * "No two elements of the same type AND same name may share the same
  * parentId." Different levels are always allowed regardless of name reuse;
  * different types at the same level with the same name are always allowed
- * too (a folder and a course can both be named "math" side by side).
+ * too (a folder and a course can both be named "math" side by side) — and
+ * by the same rule a lesson and a quiz may share a name at one level.
+ *
+ * `type` is compared as an opaque string against each row's
+ * `meta.type` (defaulting to "quiz" for plain quiz rows that carry none),
+ * so the recognized set — "quiz" | "lesson" | "folder" | "course" — grows
+ * additively: "lesson" needed no signature or logic change here. Every
+ * existing call site passes its own explicit type ("quiz", or a variable
+ * already carrying the row's own type), so none of them can accidentally
+ * match a lesson row.
  *
  * Unreachable/orphaned rows (see isRowReachable above) never count as a
  * collision — a leftover row from an old bug shouldn't block a legitimate
@@ -139,7 +148,7 @@ export function isRowReachable(row, userQuizzes, byId = null) {
  *   (copyCategoryTreeToUserQuizzes copying two subtrees in one call) gets
  *   those included automatically — pass the same live array reference
  *   you're building, not a stale snapshot.
- * @param {{type: string, title: string, parentId: string|null, excludeId?: string}} candidate
+ * @param {{type: "quiz"|"lesson"|"folder"|"course", title: string, parentId: string|null, excludeId?: string}} candidate
  * @returns {boolean} true if placing `candidate` would collide
  */
 export function hasSameLevelCollision(userQuizzes, { type, title, parentId, excludeId = null }) {
