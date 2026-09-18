@@ -29,9 +29,16 @@ function git(args) {
 // staged state (including renames) that's actually about to be committed.
 git(["add", "-A"]);
 
-function buildAutoMessage() {
-  const statusOutput = git(["status", "--porcelain=v1", "-z"]);
+// A custom message must not bypass the empty-commit guard. Git treats an
+// empty commit as an error by default; make both invocation styles report
+// the same friendly result instead.
+const stagedStatus = git(["status", "--porcelain=v1", "-z"]);
+if (!stagedStatus) {
+  console.log("Nothing to commit — working tree is clean.");
+  process.exit(0);
+}
 
+function buildAutoMessage(statusOutput) {
   // --porcelain=v1 -z: NUL-separated records. Each record is
   // "XY <path>", and rename records ("R ") are followed by an extra
   // NUL-separated "<old path>" entry before the next record starts.
@@ -42,11 +49,7 @@ function buildAutoMessage() {
 let message = customMessage;
 
 if (!message) {
-  message = buildAutoMessage();
-  if (!message) {
-    console.log("Nothing to commit — working tree is clean.");
-    process.exit(0);
-  }
+  message = buildAutoMessage(stagedStatus);
 }
 
 git(["commit", "-m", message]);
