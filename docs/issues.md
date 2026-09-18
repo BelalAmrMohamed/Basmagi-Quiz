@@ -15,14 +15,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 ## New Features
 
 ### Lessons Page
-- Partially implemented phase 3 of `docs\plans\lessons-feature-plan.md`
-
-Still to do:
-- Finish the openSharedMoveToDialog/moveTo plumbing for lessons in admin-item-actions.js
-- Build public/create-lesson.html (new authoring page shell, reusing the shared nav/theme/sidebar markup pattern from create-quiz.html but with its own lighter editor body)
-- Build public/src/features/lessons/create-lesson.js — the section-list editor, per-block editors (markdown write/preview, media upload, quiz-reference picker via the manifest's examList, embedded-question editor), adaptive-rule dropdown, and save/placement wiring
-- New public/src/features/lessons/create-lesson.css
-- Wire the new page into any nav/sidebar links as appropriate
+- `docs\I'm continuing work on.md`
 
 ### Result Pages
 
