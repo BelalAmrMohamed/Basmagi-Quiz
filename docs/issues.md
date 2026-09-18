@@ -14,6 +14,9 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 
 ## New Features
 
+### Lessons Page
+- `docs\plans\lessons-feature-plan.md`
+
 ### Result Pages
 
 #### Videos (Easy to make, but very important)
@@ -55,11 +58,6 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 `المنصة بالأرقام` should have the number of views (maybe try to integraet vercel insights or even something custom).
 
 ### Create Quiz Page
-
-#### New Features
-- The `actionsMenuConvertSingleBtn` should behave like `multiSelectToggle` button on each question, it should be a toggle that does 2 purposes, not one button.
-- The question navigator should be in the `#sidebar`, not in it's own doc.
-#### Performance
 - `create-quiz.js` is 5000+ lines in one file — This is a good candidate to split into modules.
 
 ### Dynamic AI Agent Allowance (الباشــمبصمج)
