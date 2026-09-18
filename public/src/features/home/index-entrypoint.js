@@ -102,7 +102,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const isIndexPage =
     p === "/" ||
     p.endsWith("/index") ||
-    /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p);
+    /^\/course\/[^/]+(\/[^/]+)*\/?$/.test(p) ||
+    // /lesson/:id — Phase 1 skeleton, renders inside this same SPA shell
+    // (see render-course.js's contentType=lesson branch); same reasoning
+    // as /course/ above.
+    /^\/lesson\/[^/]+\/?$/.test(p);
   if (!isIndexPage) return;
 
   // Sync local admin session state with Supabase before anything renders

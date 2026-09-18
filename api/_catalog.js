@@ -1,13 +1,15 @@
 // =============================================================================
 // api/_catalog.js
-// Shared public-content query set: colleges -> courses -> folders -> quizzes
-// + public profiles, with URLs pre-built via api/_urls.js. Used by
-// api/seo.js's sitemap-dynamic/feeds/llms-full/cron actions so all four
-// surfaces enumerate exactly the same set of URLs from one place (plan
-// §6.3/§7.3/§8.2 all reuse "the same query set").
+// Shared public-content query set: colleges -> courses -> folders ->
+// {quizzes, lessons} + public profiles, with URLs pre-built via
+// api/_urls.js. Used by api/seo.js's sitemap-dynamic/feeds/llms-full/cron
+// actions so all four surfaces enumerate exactly the same set of URLs from
+// one place (plan §6.3/§7.3/§8.2 all reuse "the same query set").
 //
 // Guards applied here (once, centrally) match plan §6.3 "Guards":
 //   - skip quizzes with no meta.id, with a password set, or empty title
+//   - skip lessons with no id or empty title (no password guard — lessons
+//     have no password concept, see the lessons migration)
 //   - skip courses/folders whose slug is empty after toSlug()
 //   - dedupe is a non-issue: rows come straight from unique table PKs
 //
@@ -15,7 +17,7 @@
 // =============================================================================
 
 import { createClient } from "@supabase/supabase-js";
-import { toSlug, courseUrl, quizUrl, profileUrl, buildFolderPaths, findCollidingSlugs, absUrl } from "./_urls.js";
+import { toSlug, courseUrl, quizUrl, lessonUrl, profileUrl, buildFolderPaths, findCollidingSlugs, absUrl } from "./_urls.js";
 
 const supabase = createClient(
     process.env.SUPABASE_URL,
@@ -86,14 +88,19 @@ async function fetchAllQuizzes() {
  *   courses: Array<{id:string,name:string,education_type:string,url:string,lastmod:string}>,
  *   folders: Array<{id:string,course_id:string,name:string,url:string,lastmod:string}>,
  *   quizzes: CatalogQuiz[],
+ *   lessons: Array<{id:string,url:string,title:string,lastmod:string,courseId:string|null,folderId:string|null}>,
  *   profiles: Array<{handle:string,url:string,lastmod:string}>,
  * }>}
  */
 export async function loadPublicCatalog() {
-    const [coursesRes, foldersRes, quizzesRes, profilesRes] = await Promise.all([
+    const [coursesRes, foldersRes, quizzesRes, lessonsRes, profilesRes] = await Promise.all([
         supabase.from("courses").select("id, name, education_type, college, year, term, created_at, updated_at"),
         supabase.from("folders").select("id, course_id, parent_folder_id, name, created_at, updated_at"),
         fetchAllQuizzes(),
+        // Lessons stay small like courses/folders (curriculum-structure-sized,
+        // not upload-volume-sized) — one unbounded SELECT, no pagination
+        // needed the way fetchAllQuizzes() needs it.
+        supabase.from("lessons").select("id, slug, title, course_id, folder_id, created_at, updated_at"),
         // admin_users has no updated_at column (confirmed live: 42703 "column
         // admin_users.updated_at does not exist") — created_at is the only
         // timestamp available, so profile lastmod is necessarily "when the
@@ -110,18 +117,20 @@ export async function loadPublicCatalog() {
     if (coursesRes.error) console.error("[catalog] courses query failed:", coursesRes.error.message);
     if (foldersRes.error) console.error("[catalog] folders query failed:", foldersRes.error.message);
     if (quizzesRes.error) console.error("[catalog] quizzes query failed:", quizzesRes.error.message);
+    if (lessonsRes.error) console.error("[catalog] lessons query failed:", lessonsRes.error.message);
     if (profilesRes.error) console.error("[catalog] admin_users query failed:", profilesRes.error.message);
 
     // Only truly bail (return null -> callers fall back to an empty/static
     // response) when EVERY query failed — a total Supabase outage. Any
     // partial success still produces a partial-but-real catalog.
-    if (coursesRes.error && foldersRes.error && quizzesRes.error && profilesRes.error) {
+    if (coursesRes.error && foldersRes.error && quizzesRes.error && lessonsRes.error && profilesRes.error) {
         return null;
     }
 
     const rawCourses = coursesRes.error ? [] : (coursesRes.data || []);
     const rawFolders = foldersRes.error ? [] : (foldersRes.data || []);
     const rawQuizzes = quizzesRes.error ? [] : (quizzesRes.data || []);
+    const rawLessons = lessonsRes.error ? [] : (lessonsRes.data || []);
     const rawProfiles = profilesRes.error ? [] : (profilesRes.data || []);
 
     // ── Courses ────────────────────────────────────────────────────────────
@@ -187,6 +196,27 @@ export async function loadPublicCatalog() {
         });
     }
 
+    // ── Lessons ────────────────────────────────────────────────────────────
+    // Same guard shape as quizzes above (plan §Phase 1 step 2): skip empty
+    // title, skip missing id. No password guard — lessons have no password
+    // concept (see the lessons migration's comment on this).
+    const lessons = [];
+    for (const l of rawLessons) {
+        if (!l.id) continue; // guard: missing id
+        if (!l.title) continue; // guard: empty title
+        lessons.push({
+            id: l.id,
+            url: lessonUrl(l.id),
+            title: l.title,
+            lastmod: l.updated_at || l.created_at || null,
+            createdAt: l.created_at || null,
+            courseId: l.course_id || null,
+            folderId: l.folder_id || null,
+            courseName: l.course_id ? (rawCourses.find((c) => c.id === l.course_id)?.name ?? null) : null,
+            folderName: l.folder_id ? (folderById.get(l.folder_id)?.name ?? null) : null,
+        });
+    }
+
     // ── Public profiles ────────────────────────────────────────────────────
     const profiles = [];
     for (const p of rawProfiles) {
@@ -199,7 +229,7 @@ export async function loadPublicCatalog() {
         });
     }
 
-    return { courses, folders, quizzes, profiles };
+    return { courses, folders, quizzes, lessons, profiles };
 }
 
 /**
@@ -220,6 +250,7 @@ export function filterRecentlyChanged(catalog, hours = 24) {
         courses: catalog.courses.filter((c) => isRecent(c.lastmod)),
         folders: catalog.folders.filter((f) => isRecent(f.lastmod)),
         quizzes: catalog.quizzes.filter((q) => isRecent(q.lastmod) || isRecent(q.createdAt)),
+        lessons: catalog.lessons.filter((l) => isRecent(l.lastmod) || isRecent(l.createdAt)),
         profiles: catalog.profiles.filter((p) => isRecent(p.lastmod)),
     };
 }

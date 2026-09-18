@@ -64,6 +64,10 @@
       "destination": "/api/render-quiz?id=:id"
     },
     {
+      "source": "/lesson/:id",
+      "destination": "/api/render-course?contentType=lesson&id=:id"
+    },
+    {
       "source": "/course/:full(.*)",
       "destination": "/api/render-course?full=:full"
     },

@@ -78,11 +78,180 @@ function toSlug(str) {
 // =============================================================================
 // Handler
 // =============================================================================
+// This file is a shared function now (Vercel Hobby's 12-function cap is
+// already hit — see docs/plans/lessons-feature-plan.md's ground rules), so
+// the course-resolution path and the lesson-resolution path are kept
+// visually separate as two clearly-named internal functions called from
+// one small dispatcher, rather than interleaving `if` checks through the
+// existing course logic line-by-line — this is what keeps the two
+// responsibilities easy to read independently instead of accumulating the
+// same kind of scar tissue create-quiz.js has.
 export default async function handler(req, res) {
     if (req.method !== "GET" && req.method !== "HEAD") {
         return res.status(405).end();
     }
 
+    if (req.query.contentType === "lesson") {
+        return handleLessonRequest(req, res);
+    }
+    return handleCourseRequest(req, res);
+}
+
+// =============================================================================
+// Lesson resolution (Phase 1 skeleton) — /lesson/:id
+// =============================================================================
+// vercel.json: { "source": "/lesson/:id", "destination":
+// "/api/render-course?contentType=lesson&id=:id" }. Deliberately reuses this
+// file rather than a new api/render-lesson.js — see the plan's ⚠️ note on
+// the function-budget cap. Unlike course resolution, there is no slug-chain
+// to walk: a lesson is looked up directly by id (or slug, when present),
+// with no folder/course tree traversal.
+//
+// OG tags come straight from the lesson's title + a short plain-text
+// excerpt of its first content block — no dedicated OG image variant for
+// v1 (a generic site OG image is an acceptable fallback; og.js is already
+// one of the 12 functions, so a new branch there isn't justified for this).
+async function handleLessonRequest(req, res) {
+    const rawId = typeof req.query.id === "string" ? req.query.id : "";
+    if (!rawId) {
+        return res.redirect(302, "/");
+    }
+    let lessonId;
+    try {
+        lessonId = decodeURIComponent(rawId);
+    } catch {
+        lessonId = rawId;
+    }
+
+    let lesson = null;
+    try {
+        lesson = await fetchLessonMeta(lessonId);
+    } catch (err) {
+        console.error("[render-course] Lesson lookup failed:", err);
+    }
+
+    let html;
+    try {
+        html = fs.readFileSync(TEMPLATE_PATH, "utf8");
+    } catch (err) {
+        console.error("[render-course] Could not read index.html:", err);
+        return res.status(500).send("Internal Server Error");
+    }
+
+    if (!lesson) {
+        // Unknown lesson id/slug — let the SPA load normally, same
+        // never-cache-a-miss approach the course branch takes below.
+        html = html.replace(
+            "</head>",
+            `  <meta name="lesson:id" content="${escapeHtml(lessonId)}">\n</head>`,
+        );
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.setHeader("Cache-Control", "no-store");
+        return res.status(200).send(html);
+    }
+
+    // ── Data-island for the client SPA (navigation.js) to hydrate from ───────
+    html = html.replace(
+        "</head>",
+        `  <meta name="lesson:id" content="${escapeHtml(lesson.id)}">\n` +
+        `  <meta name="lesson:title" content="${escapeHtml(lesson.title)}">\n` +
+        `</head>`,
+    );
+
+    // ── OG / title / canonical tags ───────────────────────────────────────────
+    const excerpt = buildLessonExcerpt(lesson.content);
+    const canonicalUrl = `${SITE_ORIGIN}/lesson/${encodeURIComponent(lesson.slug || lesson.id)}`;
+
+    html = html.replace(
+        /<title>[^<]*<\/title>/i,
+        `<title>${escapeHtml(lesson.title)}</title>`,
+    );
+
+    html = replaceLinkHref(html, "canonical", canonicalUrl);
+
+    html = replaceMetaContent(html, "property", "og:title", lesson.title);
+    html = replaceMetaContent(html, "property", "og:url", canonicalUrl);
+    // No lesson-specific OG image variant for v1 — leave og:image as
+    // whatever the template's generic site image already is (a deliberate
+    // fallback, see the plan's ⚠️ note above). og:description/twitter still
+    // get the lesson's own excerpt, same as the course branch's title/desc.
+    if (excerpt) {
+        html = replaceMetaContent(html, "property", "og:description", excerpt);
+        html = replaceMetaContent(html, "name", "twitter:description", excerpt);
+        html = replaceMetaContent(html, "name", "description", excerpt);
+    }
+    html = replaceMetaContent(html, "name", "twitter:title", lesson.title);
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=3600, stale-while-revalidate=86400",
+    );
+    return res.status(200).send(html);
+}
+
+/**
+ * Fetches a lesson by id (or slug, when the lookup value isn't a UUID) for
+ * the /lesson/:id route. Phase 1 keeps this to a single direct lookup — no
+ * folder/course tree walk, since a lesson page doesn't need the
+ * folderCount/quizCount siblings a course page shows.
+ *
+ * @param {string} idOrSlug
+ * @returns {Promise<{id:string, slug:string|null, title:string, content:unknown}|null>}
+ */
+async function fetchLessonMeta(idOrSlug) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    const query = supabase.from("lessons").select("id, slug, title, content");
+    const { data, error } = isUuid
+        ? await query.eq("id", idOrSlug).maybeSingle()
+        : await query.eq("slug", idOrSlug).maybeSingle();
+
+    if (error) {
+        console.error("[render-course] Supabase lesson lookup error:", error.message);
+        return null;
+    }
+    if (!data) return null;
+
+    return {
+        id: data.id,
+        slug: data.slug || null,
+        title: data.title,
+        content: data.content,
+    };
+}
+
+/**
+ * Short plain-text excerpt of a lesson's first content block, for OG/
+ * meta-description tags. Phase 1's `content` shape is just a plain
+ * markdown body (see the lessons migration's comment on this column) —
+ * Phase 2 introduces real sections/blocks, at which point this should read
+ * the first block's text instead of assuming a single string.
+ *
+ * @param {unknown} content
+ * @returns {string} plain text, truncated to ~160 chars, or "" if none
+ */
+function buildLessonExcerpt(content) {
+    let raw = "";
+    if (typeof content === "string") {
+        raw = content;
+    } else if (content && typeof content === "object") {
+        // Best-effort forward-compat guess at a Phase-2-shaped sections
+        // array, without hard-depending on a shape that isn't defined yet.
+        const firstSection = Array.isArray(content.sections) ? content.sections[0] : null;
+        raw = firstSection?.text || firstSection?.body || content.body || "";
+    }
+    const plain = String(raw)
+        .replace(/[#*_`>[\]]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (!plain) return "";
+    return plain.length > 160 ? `${plain.slice(0, 157)}...` : plain;
+}
+
+// =============================================================================
+// Course resolution — /course/:name[/:sub1/:sub2/...]
+// =============================================================================
+async function handleCourseRequest(req, res) {
     // This file lives at api/render-course.js (a flat file). vercel.json
     // rewrites the /course/... subtree with a single named-param capture
     // that matches ANY depth in one shot:

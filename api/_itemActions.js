@@ -10,7 +10,7 @@
 // =============================================================================
 
 /**
- * @param {"quiz"|"folder"|"course"} itemType
+ * @param {"quiz"|"lesson"|"folder"|"course"} itemType
  * @param {string|null} targetFolderId
  * @returns {{ ok: boolean, error?: string }}
  */
@@ -21,6 +21,11 @@ export function canPlaceItemServer(itemType, targetFolderId) {
             error: "المواد تبقى في المستوى الرئيسي دائماً ولا يمكن نقلها داخل مجلد.",
         };
     }
+    // Lessons follow the exact same placement rule as quizzes: can go
+    // directly under a course (targetFolderId === null) or under any
+    // folder, never top-level-only like a course. No extra check needed
+    // beyond the course guard above — falls through to the ok:true below,
+    // same as "quiz" already does.
     return { ok: true };
 }
 
@@ -88,6 +93,37 @@ export async function hasQuizNameCollision(supabase, { courseId, folderId, title
     const { data, error } = await query.limit(1);
     if (error) {
         console.error("[hasQuizNameCollision] lookup failed:", error.message);
+        return false; // fail open — a lookup error shouldn't block a legitimate write
+    }
+    return Boolean(data && data.length);
+}
+
+/**
+ * Same-level naming rule for lessons, mirroring hasQuizNameCollision above
+ * exactly (same-course, same-folder-scope, `ilike` on title, and the same
+ * pre-check-not-constraint race-condition caveat documented on that
+ * function applies identically here — not re-litigated).
+ *
+ * @param {import('@supabase/supabase-js').SupabaseClient} supabase
+ * @param {{ courseId: string, folderId: string|null, title: string, excludeId?: string }} params
+ * @returns {Promise<boolean>} true if another lesson already occupies this name at this spot
+ */
+export async function hasLessonNameCollision(supabase, { courseId, folderId, title, excludeId = null }) {
+    const normalizedTitle = String(title || "").trim();
+    if (!normalizedTitle || !courseId) return false;
+
+    let query = supabase
+        .from("lessons")
+        .select("id")
+        .eq("course_id", courseId)
+        .ilike("title", normalizedTitle);
+
+    query = folderId ? query.eq("folder_id", folderId) : query.is("folder_id", null);
+    if (excludeId) query = query.neq("id", excludeId);
+
+    const { data, error } = await query.limit(1);
+    if (error) {
+        console.error("[hasLessonNameCollision] lookup failed:", error.message);
         return false; // fail open — a lookup error shouldn't block a legitimate write
     }
     return Boolean(data && data.length);

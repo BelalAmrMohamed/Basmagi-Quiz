@@ -36,6 +36,17 @@ export function profileUrl(handle) {
 }
 
 /**
+ * Lessons resolve by slug when present (falls back to id — see
+ * api/render-course.js's contentType=lesson branch), matching how
+ * /lesson/:id is documented in vercel.json, but the *catalog* always emits
+ * the id-based form since it's guaranteed stable even for lessons with no
+ * slug yet.
+ */
+export function lessonUrl(lessonIdOrSlug) {
+    return absUrl(`/lesson/${encodeURIComponent(lessonIdOrSlug)}`);
+}
+
+/**
  * Given the full course list, find every slug collision (two courses whose
  * toSlug(name) is identical), mirroring the disambiguation render-course.js
  * already performs via ?education_type=. Returns a Set of colliding slugs.

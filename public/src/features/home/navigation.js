@@ -38,6 +38,8 @@ import { toSlug, fromSlug } from "./slug-utils.js";
 import { setFolderState } from "./user-quizzes-folders.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
 import { showNotification } from "../../components/notifications/notifications.js";
+import { container } from "./dom-refs.js";
+import { renderLessonView } from "./lesson-view.js";
 
 // ============================================================================
 // findCategoryAncestors — original lines 1321-1343
@@ -84,6 +86,21 @@ function findCategoryAncestors(targetKey, tree) {
 export function restoreViewFromURL() {
   const hash = window.location.hash.slice(1); // strip leading #
   const pathname = window.location.pathname;
+
+  // ── Lesson view — pathname-based: /lesson/:id ─────────────────────────────
+  // Phase 1 skeleton (see docs/plans/lessons-feature-plan.md): renders the
+  // lesson's title + raw markdown body via renderMarkdown() with no chrome.
+  // The real content lives in the <meta name="lesson:*"> data-island
+  // injected by api/render-course.js's contentType=lesson branch — read
+  // directly from the DOM here rather than re-fetching, same as the
+  // course:* island is consumed elsewhere in this file only via
+  // categoryTree (already-loaded data), not a second network round trip.
+  const lessonMatch = pathname.match(/^\/lesson\/([^/]+)\/?$/);
+  if (lessonMatch) {
+    setNavigationStack([]);
+    renderLessonView();
+    return;
+  }
 
   // ── Course view — pathname-based: /course/:name/:subSlug/:subSlug2/... ────
   // Courses are always top-level (single-segment categoryTree key, parent
