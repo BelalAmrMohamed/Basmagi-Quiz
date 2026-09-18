@@ -60,7 +60,7 @@ Example: I lately found out that the `/quiz` page was rendering questions throug
 - The background animations doesn't work on the page, `themes.css` updated variabled used by elements to give them a bit of opacity, so the bg animations can appear through them, the create-quiz page might not be using them. 
 
 #### New Features
-- Add a button for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options). This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
+- Add a **toggle** for converting all MCQ questions that have 1 correct option only that are set to checkboxes (multi correct options) to radio buttons (one correct options) `تحويل إلى إجابة واحدة فقط/اختر إجابة واحدة أو أكثر`. This will save users from editing quizzes that have that issue, instead of going through each question one-by-one, opening the more menu, pressing the button that changes that, this new button will save so much time.
 - Add a dynamic question navigator. Similar to the question navigator at `quiz.html`, but it increases when a new question gets added, and decreases when a question gets deleted.
 
 #### Performance
