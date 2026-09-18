@@ -619,6 +619,27 @@
             </div>
 
 
+            <!-- Live editor question navigator. Kept inside the sidebar so it
+                 shares the menu's scroll area instead of floating as a
+                 separate document-level panel. -->
+            <aside id="createQuestionNavigator" class="create-question-navigator sidebar-expanded-only"
+                aria-label="التنقل بين الأسئلة">
+                <button type="button" id="createQuestionNavigatorToggle" class="create-question-navigator-toggle"
+                    aria-expanded="true" aria-controls="createQuestionNavigatorPanel" title="إظهار أو إخفاء التنقل بين الأسئلة">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <span>الأسئلة</span>
+                    <span id="createQuestionNavigatorCount" class="create-question-navigator-count">0</span>
+                    <svg class="create-question-navigator-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        aria-hidden="true">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+                <div id="createQuestionNavigatorPanel" class="create-question-navigator-panel"></div>
+            </aside>
         </nav>
 
         <!-- Pinned bottom actions — always visible at the foot of the
@@ -1076,7 +1097,7 @@
                             <span>تحديد أسئلة</span>
                         </button>
                         <button type="button" class="menu-option" id="actionsMenuConvertSingleBtn"
-                            onclick="convertSingleCorrectMcqsToSingleSelect(); closeAllMenus();">
+                            onclick="toggleSingleCorrectMcqsSelectMode(); closeAllMenus();" aria-pressed="false">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -1379,27 +1400,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Dynamic question navigator for the editor. It mirrors the quiz
-         page's number grid, but its contents follow the editor's live
-         question list and therefore grow/shrink with add/delete/reorder. -->
-    <aside id="createQuestionNavigator" class="create-question-navigator" aria-label="التنقل بين الأسئلة">
-        <button type="button" id="createQuestionNavigatorToggle" class="create-question-navigator-toggle"
-            aria-expanded="true" aria-controls="createQuestionNavigatorPanel" title="إظهار أو إخفاء التنقل بين الأسئلة">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-            <span>الأسئلة</span>
-            <span id="createQuestionNavigatorCount" class="create-question-navigator-count">0</span>
-            <svg class="create-question-navigator-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="m6 9 6 6 6-6" />
-            </svg>
-        </button>
-        <div id="createQuestionNavigatorPanel" class="create-question-navigator-panel"></div>
-    </aside>
 
     <div class="container">
 

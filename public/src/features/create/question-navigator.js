@@ -97,7 +97,12 @@ export function initCreateQuestionNavigator() {
   if (!toggle || toggle.dataset.bound === "true") return;
 
   toggle.dataset.bound = "true";
-  toggle.addEventListener("click", () => {
+  toggle.addEventListener("click", (event) => {
+    // The navigator now lives inside the sidebar's interactive nav tree.
+    // Keep this local disclosure independent from any sidebar-level click
+    // handling so its open state cannot be immediately overridden.
+    event.preventDefault();
+    event.stopPropagation();
     isOpen = !isOpen;
     updateToggleState();
   });

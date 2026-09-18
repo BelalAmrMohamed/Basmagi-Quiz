@@ -970,6 +970,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupReorderHandles();
   initCreateQuestionNavigator();
   renderCreateQuestionNavigator(quizData.questions);
+  syncActionsMenuConvertSingleButton();
 
   // Signals create-quiz.html's early "RACE-CONDITION FIX" click-guard
   // (see the inline <script> right before this module's own <script> tag)
@@ -2673,6 +2674,7 @@ function updateQuestionNumbers() {
 }
 
 renderCreateQuestionNavigator(quizData.questions);
+syncActionsMenuConvertSingleButton();
 
 // ============================================================================
 // GITHUB-STYLE MEDIA EMBEDDING: drag-and-drop / paste into markdown fields
@@ -3304,26 +3306,77 @@ window.setMultiSelect = async function (questionId, multiSelect) {
   updateIncompleteState(questionId);
   updateQuestionNumbers();
   autosave();
+  syncActionsMenuConvertSingleButton();
 };
 
 /**
- * Convert every MCQ that allows multiple answers but has exactly one marked
- * correct answer into single-select mode. Questions with zero or multiple
- * correct answers are intentionally left unchanged.
+ * Keep the bulk action's label and next action aligned with the per-question
+ * multi-select toggle. If any multi-select MCQ has exactly one answer, the
+ * next action is to make those questions single-select; otherwise the action
+ * turns current single-select MCQs into multi-select questions.
  */
-window.convertSingleCorrectMcqsToSingleSelect = async function () {
-  const candidates = quizData.questions.filter(
+function getSingleCorrectMultiSelectQuestions() {
+  return quizData.questions.filter(
     (question) =>
       !question.answer &&
       isMultiSelectQuestion(question) &&
       Array.isArray(question.correct) &&
       question.correct.length === 1,
   );
+}
 
-  if (candidates.length === 0) {
+function syncActionsMenuConvertSingleButton() {
+  const button = document.getElementById("actionsMenuConvertSingleBtn");
+  if (!button) return;
+
+  const convertsToSingle = getSingleCorrectMultiSelectQuestions().length > 0;
+  button.setAttribute("aria-pressed", String(convertsToSingle));
+  const label = button.querySelector("span");
+  if (label) {
+    label.textContent = convertsToSingle
+      ? "تحويل الأسئلة ذات الإجابة الواحدة إلى اختيار واحد"
+      : "تحويل أسئلة الاختيار الواحد إلى إجابة واحدة أو أكثر";
+  }
+}
+
+window.toggleSingleCorrectMcqsSelectMode = async function () {
+  const candidates = getSingleCorrectMultiSelectQuestions();
+
+  if (candidates.length > 0) {
+    if (
+      !(await _confirm(
+        `سيتم تحويل ${candidates.length} سؤال إلى «اختيار واحد» مع الإبقاء على الإجابة الصحيحة الحالية. هل تريد المتابعة؟`,
+      ))
+    ) {
+      return;
+    }
+
+    pushHistorySnapshot();
+    candidates.forEach((question) => {
+      question.multiSelect = false;
+      rerenderOptions(question.id);
+      updateIncompleteState(question.id);
+    });
+
+    autosave();
+    renderCreateQuestionNavigator(quizData.questions);
+    syncActionsMenuConvertSingleButton();
+    showNotification(
+      "تم التحويل",
+      `تم تحويل ${candidates.length} سؤال إلى «اختيار واحد».`,
+      "success",
+    );
+    return;
+  }
+
+  const singleSelectQuestions = quizData.questions.filter(
+    (question) => !question.answer && !isMultiSelectQuestion(question),
+  );
+
+  if (singleSelectQuestions.length === 0) {
     showNotification(
       "لا توجد أسئلة مطابقة",
-      "لا توجد أسئلة اختيار من متعدد بإجابة صحيحة واحدة تحتاج إلى تحويل.",
+      "لا توجد أسئلة اختيار من متعدد يمكن تحويلها.",
       "info",
     );
     return;
@@ -3331,7 +3384,7 @@ window.convertSingleCorrectMcqsToSingleSelect = async function () {
 
   if (
     !(await _confirm(
-      `سيتم تحويل ${candidates.length} سؤال إلى «اختيار واحد» مع الإبقاء على الإجابة الصحيحة الحالية. هل تريد المتابعة؟`,
+      `سيتم تحويل ${singleSelectQuestions.length} سؤال إلى «إجابة واحدة أو أكثر». هل تريد المتابعة؟`,
     ))
   ) {
     return;
@@ -3339,21 +3392,25 @@ window.convertSingleCorrectMcqsToSingleSelect = async function () {
 
   pushHistorySnapshot();
 
-  candidates.forEach((question) => {
-    question.multiSelect = false;
+  singleSelectQuestions.forEach((question) => {
+    question.multiSelect = true;
     rerenderOptions(question.id);
     updateIncompleteState(question.id);
   });
 
   autosave();
   renderCreateQuestionNavigator(quizData.questions);
+  syncActionsMenuConvertSingleButton();
 
   showNotification(
     "تم التحويل",
-    `تم تحويل ${candidates.length} سؤال إلى «اختيار واحد».`,
+    `تم تحويل ${singleSelectQuestions.length} سؤال إلى «إجابة واحدة أو أكثر».`,
     "success",
   );
 };
+
+// Compatibility for callers that used the old one-way action name.
+window.convertSingleCorrectMcqsToSingleSelect = window.toggleSingleCorrectMcqsSelectMode;
 
 function renderOptions(question) {
   if (question.answer) {
@@ -3500,6 +3557,7 @@ function rerenderOptions(questionId) {
         : "اختر إجابة واحدة أو أكثر";
     }
   }
+  syncActionsMenuConvertSingleButton();
 
   // ── Keep card class, label, and button in sync with question type ──────────
   // Truthy check (not `=== 1`) to match renderQuestion()/renderOptions()/
