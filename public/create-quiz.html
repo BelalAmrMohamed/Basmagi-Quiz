@@ -625,16 +625,17 @@
             <aside id="createQuestionNavigator" class="create-question-navigator sidebar-expanded-only"
                 aria-label="التنقل بين الأسئلة">
                 <button type="button" id="createQuestionNavigatorToggle" class="create-question-navigator-toggle"
-                    aria-expanded="true" aria-controls="createQuestionNavigatorPanel" title="إظهار أو إخفاء التنقل بين الأسئلة">
+                    aria-expanded="true" aria-controls="createQuestionNavigatorPanel"
+                    title="إظهار أو إخفاء التنقل بين الأسئلة">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                     <span>الأسئلة</span>
                     <span id="createQuestionNavigatorCount" class="create-question-navigator-count">0</span>
-                    <svg class="create-question-navigator-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        aria-hidden="true">
+                    <svg class="create-question-navigator-chevron" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
                         <path d="m6 9 6 6 6-6" />
                     </svg>
                 </button>
@@ -1991,25 +1992,6 @@
         </div>
     </div>
 
-
-    <!-- RACE-CONDITION FIX ("chooseEntryAction is not defined"):
-         create-quiz.js is a `type="module"` script, so it's always deferred
-         until AFTER the HTML above (including the entry screen's "New quiz"
-         tile, visible on first paint) has already parsed and become
-         clickable. A fast click/tap — or a slow network delaying the
-         module fetch — can land before the module has finished evaluating
-         and attached its ~60 window.<handler> functions (chooseEntryAction,
-         startTitleEdit, etc.), throwing "X is not defined".
-
-         Rather than relocate every inline onclick="window.X(...)" handler
-         in create-quiz.html, gate clicks at the document level: capture
-         clicks on any element whose onclick would call one of these
-         handlers, and no-op them (instead of letting the inline handler
-         throw) until create-quiz.js signals it has finished attaching
-         everything by dispatching 'app:ready' (added at the bottom of
-         create-quiz.js, after all window.* assignments). This is a single
-         listener, so it covers every current and future window.* handler,
-         not just chooseEntryAction. -->
     <script>
         (function () {
             var appReady = false;

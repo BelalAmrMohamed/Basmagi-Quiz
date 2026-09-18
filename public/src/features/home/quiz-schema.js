@@ -37,7 +37,6 @@ export function qz(quiz, field) {
       return quiz.meta?.mode || "";
     case "count":
       return quiz.stats?.questionCount ?? quiz.questions?.length ?? 0;
-    // FIX: guard against undefined questionTypes before calling .join()
     case "type":
       return (quiz.stats?.questionTypes || []).join(" · ");
     default:
@@ -121,14 +120,6 @@ export function formatQuestionTypesForDownload(questionTypes) {
  * create_quiz tool call (user-quizzes-view.js). Callers are responsible for
  * validating `parsed.questions` is non-empty before calling this.
  *
- * BUG FIX: this never checked for a same-name/same-level clash at all — the
- * "no two same-type/same-name items at one level" rule (hasSameLevelCollision,
- * see its doc comment in user-quizzes-folders.js) is enforced for
- * create-folder/course, rename, copy, and move, but a brand new QUIZ could
- * always be created even when a quiz with the exact same title already
- * existed in the same folder, silently producing the same-level duplicate
- * the rule exists to prevent. Routed through the same shared predicate
- * every other creation path uses, so it applies universally here too.
  * @param {{questions: Array, meta?: object, stats?: object}} parsed
  * @param {string} titleFallback
  * @param {string|null} [parentId]

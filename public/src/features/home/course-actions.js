@@ -131,14 +131,6 @@ export function showCourseInfoModal(course) {
 
   const table = document.createElement("table");
   table.className = "quiz-info-table";
-  // BUG FIX: the "featured-value" class used to go directly on the <td>,
-  // making the cell itself `display: inline-flex` (see index.css) — that
-  // drops the cell out of normal table layout and shrink-wraps/left-aligns
-  // it at flex-start instead of centering in the column. Every other caller
-  // of this same class (course-info-tooltip.js, exam-dropdown-menu.js) wraps
-  // an inner <span> instead of styling the row/cell container directly; do
-  // the same here so the pill centers via the <td>'s own text-align, exactly
-  // like the submenu/tooltip previews already do.
   const rowsHtml = buildCourseInfoRows(course)
     .map(({ label, val, highlight }) => {
       const escapedVal = escapeHtml(String(val));

@@ -181,18 +181,6 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   function handleBranch(branch) {
     const newPanel = createChatPanel({
       ...options,
-      // BUG FIX: this used to pass `handleBranch` directly, which bakes a
-      // closure over THIS modal-open's `body`/`chatPanelSlot` straight
-      // into the panel's DOM-attached listener. That's fine for the rest
-      // of this same modal session, but this panel is also cached via
-      // setChatPanelForPageKey below and can be reused as `existingChatPanel`
-      // on a LATER modal reopen — at which point `body` here has already
-      // been removed (closeModal()'s modal.remove()) and a brand new one
-      // exists in the new buildWidgetContent() call. Routing through the
-      // same per-pageKey forwarding proxy every other cached panel uses
-      // (see getOrCreateChatPanel) fixes this: the proxy always calls
-      // whichever handleBranch the CURRENTLY open modal most recently
-      // registered, never a stale one.
       onBranchConversation: branchHandlerRef
         ? (b) => branchHandlerRef.current?.(b)
         : handleBranch,
@@ -484,22 +472,7 @@ function buildWidgetContent(options = {}, existingChatPanel = null, branchHandle
   }
   relocateModelBar();
 
-  // PHASE 6: the full, scrollable history list (see historyPanel above),
-  // not a capped 5-item recents list — this is what "sidebar becomes the
-  // permanent history surface" means structurally: createHistoryPanel's
-  // own panel node IS the sidebar's history section now, refreshed
-  // through the exact same refresh()/refreshHistoryHighlights() path the
-  // old History tab used.
   sidebar.appendChild(historyPanel);
-  // BUG FIX: same class of bug as the settings modal (see openSettingsModal's
-  // own comment) — .ai-agent-panel is `display: none !important` unless
-  // it also carries `.active` (a leftover requirement from the old tab
-  // system, where activateTab() added it). historyPanel is mounted here
-  // as a permanent, always-visible part of the sidebar, not one of
-  // several panels being switched between, so nothing else was ever
-  // going to add that class — the full history list was rendering
-  // correctly into the DOM (refresh() below works fine) but was
-  // invisible the entire time.
   historyPanel.classList.add("active");
   historyPanel.refresh();
 
@@ -562,25 +535,6 @@ function getOrCreateChatPanel(options) {
   const key = options.pageKey || "default";
   let chatPanel = chatPanelsByPageKey.get(key);
   if (!chatPanel) {
-    // BUG FIX: this used to call createChatPanel(options) with no
-    // onBranchConversation at all, so the very FIRST panel ever created
-    // for a pageKey (i.e. what every fresh modal open — mobile or
-    // desktop — actually renders) never got the Edit-user-prompt
-    // callback, and appendMessage()'s addEditButton is only invoked when
-    // onBranchConversation is truthy (see ai-agent-chat.js) — so the pen
-    // icon silently never appeared until AFTER a branch had already
-    // happened once (branch panels are built via handleBranch, which did
-    // pass it directly). The real handleBranch() closure doesn't exist
-    // yet at panel-creation time (it's defined inside buildWidgetContent,
-    // which runs once per modal OPEN, well after this) — worse, it's
-    // rebuilt fresh on every single reopen (new `body`/`chatTabBtn`
-    // closure vars each time), while this panel instance is cached and
-    // reused across reopens. So onBranchConversation forwards through a
-    // ref keyed by pageKey (not a fresh one per call) — buildWidgetContent
-    // repoints ref.current at its own freshly-built handleBranch on every
-    // open (see its own comment), and this panel's closure always calls
-    // whatever the current ref.current is, so it never ends up calling a
-    // handleBranch left over from an already-closed modal instance.
     let ref = branchHandlerRefsByPageKey.get(key);
     if (!ref) {
       ref = { current: null };
@@ -589,12 +543,6 @@ function getOrCreateChatPanel(options) {
     chatPanel = createChatPanel({
       ...options,
       onBranchConversation: (branch) => ref.current?.(branch),
-      // Same forwarding trick as onBranchConversation just above, for the
-      // History tab/sidebar active-highlight refresh (see
-      // buildWidgetContent's own comment on branchHandlerRef.onHistoryChanged):
-      // this panel is cached and can outlive the modal instance that
-      // created it, so it must always call whichever modal is CURRENTLY
-      // open's refresh function, not one captured at creation time.
       onHistoryChanged: () => ref.onHistoryChanged?.(),
     });
     chatPanelsByPageKey.set(key, chatPanel);
@@ -624,20 +572,6 @@ function setChatPanelForPageKey(key, chatPanel) {
   chatPanelsByPageKey.set(key || "default", chatPanel);
 }
 
-// BUG FIX: this was called from the sidebar's settings button but never
-// defined anywhere in the file — a leftover from Phase 6a's plan (see
-// this file's own top-of-file comment) never actually being implemented,
-// which threw "openSettingsModal is not defined" on every click. Per the
-// plan's own recommendation (6a: "reuse the existing .modal-card pattern
-// as a second, stacked modal ... less risk of breaking
-// ai-agent-settings.js's internals"), this opens createSettingsPanel()
-// unchanged inside a small second modal layered on top of the AI Agent
-// modal, rather than a popover.
-// @param {object} options - same options object the chat panel/settings
-//   panel were built with (needs pageKey/defaultSystemPrompt).
-// @param {() => void} [onClose] - called after the settings modal closes,
-//   so the caller can refresh anything settings may have changed (see the
-//   sidebar settings button's own onKeyChanged-equivalent refresh call).
 function openSettingsModal(options, onClose) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay ai-agent-modal-overlay ai-agent-settings-modal-overlay";
@@ -661,21 +595,6 @@ function openSettingsModal(options, onClose) {
     if (typeof onClose === "function") onClose();
   }
 
-  // BUG FIX: this used to be a bubble-phase listener calling
-  // stopImmediatePropagation(). That only prevents listeners registered
-  // AFTER this one (on the same target) from also firing — but the
-  // underlying AI Agent panel's own Escape listener (openAIAgentModal's
-  // `onKeydown`, further down this file) is registered BEFORE this one
-  // (the panel has to already be open for its settings button to exist),
-  // so stopImmediatePropagation() here was too late: the panel's listener
-  // had already run and closed the whole panel on the very same Escape
-  // press this handler was trying to intercept. In practice this meant
-  // Escape closed BOTH the settings modal and the panel underneath it at
-  // once — the exact bug this handler's own (incorrect) comment claimed
-  // to prevent. Capture phase (the trailing `true`) fixes this for real:
-  // capture-phase listeners on `document` all run, top-down, before ANY
-  // bubble-phase listener fires — so this reliably intercepts Escape
-  // first regardless of which listener was attached first.
   const onSettingsKeydown = (e) => {
     if (e.key === "Escape") {
       e.stopPropagation();
@@ -697,12 +616,6 @@ function openSettingsModal(options, onClose) {
     // reach the caller immediately, same as they did as a tab.
     onKeyChanged: onClose,
   });
-  // BUG FIX: .ai-agent-panel is `display: none !important` by default
-  // (see ai-agent.css) — under the old tab system, activateTab() was
-  // what added `.active` to make the selected panel visible. Now that
-  // this panel is mounted standalone (not one of several panels being
-  // switched between), nothing else adds that class, so without this the
-  // settings modal would open with a hidden empty body.
   settingsPanel.classList.add("active");
 
   card.appendChild(header);

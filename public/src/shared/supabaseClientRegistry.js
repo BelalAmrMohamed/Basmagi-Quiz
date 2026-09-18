@@ -26,18 +26,6 @@ export function getSharedSupabaseClient() {
 export async function ensureSharedSupabaseClient() {
   if (sharedSupabaseClient) return sharedSupabaseClient;
 
-  // BUG FIX: the previous version only memoized the *resolved* client,
-  // checked synchronously at the top of this function. But this function
-  // is async and awaits an import() before ever assigning
-  // sharedSupabaseClient — so two callers invoked back-to-back before that
-  // await resolves (e.g. session-sync.js's syncAdminSessionWithSupabase()
-  // and quizManifest.js's fetchDbManifest(), which both fire near page
-  // load on index.html) BOTH pass the `if (sharedSupabaseClient)` guard
-  // while it's still null, and BOTH call window.supabase.createClient(),
-  // producing two independent GoTrueClient instances fighting over the
-  // same "sb-...-auth-token" localStorage key. Memoizing the in-flight
-  // Promise itself (not just its eventual result) closes that window:
-  // every concurrent caller awaits the exact same createClient() call.
   if (creationPromise) return creationPromise;
 
   creationPromise = (async () => {

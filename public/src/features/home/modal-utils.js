@@ -2,20 +2,6 @@
 // public/src/features/home/modal-utils.js
 // MODAL UTILITIES — shared dismiss/cleanup wiring for overlay-style modals
 // ============================================================================
-//
-// BUG FIX (memory leak): the original code wired a document-level Escape-key
-// listener per modal, but only removed it from the Escape-key handler itself
-// and the overlay-click-outside handler. Every other way of closing a modal
-// (a Cancel button, a Create/Confirm button, etc.) called `close()` without
-// removing that listener, so a dead `keydown` listener stayed attached to
-// `document` forever every time one of those modals was dismissed via a
-// button. Repeated use of "احفظ امتحان" / "برومبت الذكاء الاصطناعي" would
-// accumulate stray listeners over a session.
-//
-// Fix: centralize the wiring so there is exactly ONE way to close a modal,
-// and cleanup (removing the escape listener) always happens as part of that
-// single path — the same pattern already used correctly by
-// exam-dropdown-menu.js's openExamDropdownMenu()/closeMenu().
 
 /**
  * Wires standard modal dismiss behavior (Escape key + click-outside-overlay)

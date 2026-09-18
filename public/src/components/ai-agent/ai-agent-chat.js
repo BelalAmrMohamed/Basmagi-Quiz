@@ -476,21 +476,6 @@ export function createChatPanel(options = {}) {
    * in `attachments`) down to the lightweight persisted shape IndexedDB
    * actually stores.
    *
-   * BUG FIX: this used to persist ONLY `attachmentName` (a bare display
-   * string) — enough for the old plain-text chip, but openAttachmentPreviewModal
-   * needs `kind` (to pick an icon/kind-badge and know whether to treat
-   * `name` as a file name vs a platform-item title) and `summary` (the
-   * actual context text the preview shows) too. Without them, every
-   * attachment in a RELOADED conversation fell back through
-   * labelForAttachment/ATTACHMENT_KIND_LABEL_AR's "nothing matched"
-   * paths straight to "مرفق"/"بدون عنوان", even though the original
-   * title/context was known perfectly well at save time — it just wasn't
-   * being written down. `payload` (the full quiz/course JSON, or a raw
-   * file's base64) is deliberately still NOT persisted: nothing ever
-   * re-attaches or re-sends a past conversation's attachment as new
-   * context (loadConversation's own comment confirms reloaded history is
-   * display-only), so keeping payload out keeps saved records small
-   * without losing anything the preview modal actually shows.
    * @param {Array<object>} historyToPersist
    */
   function toPersistedMessages(historyToPersist) {

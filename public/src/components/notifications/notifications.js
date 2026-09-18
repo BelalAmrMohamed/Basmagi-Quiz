@@ -350,18 +350,6 @@ export function _alert(message) {
       Usage: const answer = await _prompt("Your name?", "Guest");
       Resolves with the entered string, or null if cancelled
       (matches native prompt() semantics exactly).
-
-      BUG FIX: the input previously had no `dir` attribute, so it inherited
-      a single static direction (LTR, or RTL depending on ambient page/CSS
-      direction) for the entire session regardless of what the user actually
-      typed — typing Arabic into an LTR-inherited input left the caret and
-      text alignment fighting the script the whole time, and vice versa for
-      English typed into an RTL-inherited one. `dir="auto"` (native browser
-      behavior, no JS needed) makes the browser re-run the Unicode
-      bidirectional algorithm on the input's own content as it changes, so
-      the field's direction always matches whatever script the user is
-      currently typing, live, per keystroke — the same fix already used for
-      the AI agent's chat textarea (see ai-agent-chat.js).
      ============================ */
 
 export function _prompt(message, defaultValue = "") {

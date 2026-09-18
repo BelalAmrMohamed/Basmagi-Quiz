@@ -41,33 +41,11 @@ let openTriggerBtn = null;
 
 /** Anchors `menu` below (or, if there's no room, above) `triggerBtn`,
  * right-edge aligned (this is an RTL UI), clamped so it never runs off
- * either side of the viewport.
- *
- * BUG FIX: every "⋮" trigger's onclick unconditionally calls this to open
- * its menu, with no way to tell "the menu that's currently open IS this
- * button's own menu, so this click means close, not reopen." Since this
- * function always started by closeAllExamDropdownMenus()-ing whatever was
- * open and then immediately building a brand new menu, clicking an
- * already-open trigger a second time closed the old menu and instantly
- * opened a new one in the same spot — reads as "closes then reopens
- * quickly" instead of just closing. Tracking which trigger currently owns
- * the open menu (openTriggerBtn) lets a second click on that same trigger
- * short-circuit into a close instead. */
+ * either side of the viewport. */
 export function openExamDropdownMenu(triggerBtn, buildContent) {
-  // Captured BEFORE closeAllExamDropdownMenus() below, which itself resets
-  // openTriggerBtn to null — checking after would always see null and this
-  // toggle-close would never trigger.
   const wasOpenForThisTrigger = openTriggerBtn === triggerBtn;
   closeAllExamDropdownMenus();
-  // BUG FIX — overlay exclusivity: #userQuizContextMenu (the right-click
-  // menu in user-quizzes-folders.js) and this dropdown used to be two
-  // independent overlay systems, each only aware of closing copies of
-  // itself. The .exam-more-btn onclick that leads here already calls
-  // e.stopPropagation(), so a click opening this dropdown never reached the
-  // document-level listener that would otherwise close the context menu —
-  // the two could end up open at once. Closing it here (the mirror of
-  // showContextMenu() calling closeAllExamDropdownMenus() before it opens)
-  // means opening either overlay always closes the other.
+
   closeUserQuizContextMenu();
   if (wasOpenForThisTrigger) {
     return null;

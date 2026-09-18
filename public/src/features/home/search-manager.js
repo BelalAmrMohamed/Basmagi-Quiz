@@ -141,12 +141,6 @@ export class SearchManager {
           this.elements.headerSearchBtn.style.display = "flex";
         }
       } else {
-        // BUG FIX: this used to only check currentCategory.exams/.quizzes at
-        // the CURRENT level, so a course whose first level holds only
-        // subfolders (no direct exams) hid the search button entirely — even
-        // though quizzes existed several levels deeper. collectAllExams()
-        // already recurses through subcategories (see below), so reuse it
-        // here for a check that actually matches what search can find.
         const hasExams =
           currentCategory && this.collectAllExams(currentCategory).length > 0;
 
@@ -1031,11 +1025,6 @@ export class SearchManager {
       sortBy: "relevance",
     };
 
-    // FIX: educationType is the one filter persisted to localStorage (see
-    // setEducationTypeSetting()/loadSearchSettings()). Resetting it above in
-    // `this.filters` only cleared the in-memory value — the persisted
-    // setting stayed behind and would silently reappear on the next page
-    // load, contradicting what "إعادة تعيين" (reset) implies it does.
     this.setEducationTypeSetting("all");
 
     // Reset UI controls

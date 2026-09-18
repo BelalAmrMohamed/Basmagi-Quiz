@@ -12,13 +12,6 @@ export function positionExamDropdownMenu(menu, triggerBtn) {
   const menuW = menu.offsetWidth;
   const menuH = menu.offsetHeight;
 
-  // BUG FIX: on phones this clamped only to the raw viewport height, not
-  // accounting for the fixed .bottom-nav bar sitting on top of the page's
-  // bottom edge — so a menu tall enough to reach the bottom of the screen
-  // (e.g. with several actions, including "حذف الامتحان") could get placed
-  // (or clamped) partly underneath the nav instead of above it. Reserve the
-  // nav's height the same way positionCourseInfoTooltip already does for
-  // the course-info tooltip.
   const bottomNav = document.querySelector(".bottom-nav");
   let bottomInset = 0;
   if (bottomNav && window.getComputedStyle(bottomNav).display !== "none") {

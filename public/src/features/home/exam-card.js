@@ -68,15 +68,6 @@ export function createExamCard(exam) {
   h.textContent = exam.title || exam.id;
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
-  // h3. BUG FIX: the emoji used to live inside <h3>, so on the mobile list
-  // row its vertical centering was governed by the title text's line-height
-  // instead of the row's own flex alignment — sitting slightly too high
-  // compared to category/subfolder cards, which use a dedicated sibling
-  // `.icon` element (see createCategoryCard in category-view.js). Using the
-  // same sibling-element pattern here (kept as `.phone-only-emoji` so the
-  // existing mobile CSS — width/height/flex-centering — still applies
-  // unchanged) fixes the misalignment structurally instead of with a CSS
-  // hack.
   const iconEl = document.createElement("span");
   iconEl.className = "phone-only-emoji";
   iconEl.textContent = "📖";
@@ -350,13 +341,6 @@ function showExamActionsOverlay(exam, showDownloadPopup, triggerBtn) {
     copyToMineOpt.innerHTML = `${DUPLICATE_ICON_SVG}<span>نسخ لامتحاناتي</span>`;
     copyToMineOpt.onclick = async (e) => {
       e.stopPropagation();
-      // BUG FIX: this used to call closeMenu() *before* the copy started,
-      // so the button (and its disabled state) vanished immediately and a
-      // slow copy — a big course tree can mean many sequential
-      // loadFullQuizData() fetches — gave zero visible feedback that
-      // anything was happening. Keep the menu open, show the spinner via
-      // withCopyButtonLoadingState(), and only close once the copy (success
-      // or failure) has actually finished.
       await withCopyButtonLoadingState(copyToMineOpt, () =>
         copyQuizToUserQuizzes(exam),
       );

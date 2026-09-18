@@ -2,27 +2,6 @@
 // public/src/features/home/course-count.js
 // COURSE ITEM COUNT — recursive exam-count for category cards
 // ============================================================================
-// PERF FIX: the original getCourseItemCount() walked the entire subtree under
-// a category from scratch on every call, with no caching. renderRootCategories()
-// and renderCategory() each call this once per card, on every render — so for
-// a catalog with deep nesting, opening the home page re-walked the same
-// subtrees repeatedly per frame. This is very likely the performance issue
-// flagged by the app's own boot-sequence diagnostic ("psst — this is the
-// perf issue we're hunting").
-//
-// Fix: memoize per category object using a WeakMap. A WeakMap (rather than a
-// Map keyed by category.key) is used because not every category object that
-// flows through this function reliably carries a `.key` property — some
-// callers pass plain nodes straight out of `categoryTree[k]`, others spread
-// `{ key, ...category }` copies (see initializeSearchManager). Keying by
-// object identity works for both without relying on that field, and still
-// naturally invalidates itself: a fresh manifest load produces entirely new
-// category objects, so old entries simply become unreachable and are
-// garbage-collected — no manual cache-clearing required.
-//
-// resetCourseItemCountCache() is kept as a no-op-safe explicit reset for
-// callers that want a hard guarantee (e.g. tests), but normal manifest
-// reloads don't need to call it.
 
 import { getCategoryTree } from "./app-state.js";
 import { getFromStorage } from "../../shared/storage-helpers.js";
@@ -69,31 +48,6 @@ export function getCourseItemCount(category) {
  * Drops "orphaned" rows from a flat user_quizzes array — rows that aren't
  * genuinely reachable from a root (parentId === null) node.
  *
- * BUG FIX: bulk-delete (the "حذف" bulk action in user-quizzes-view.js) only
- * ever removes exactly the ids the user checked. That's correct when
- * "تحديد الكل" is used (it selects literally every row in the flat array,
- * nested children included), but a manual partial selection — e.g. checking
- * just a course/folder row without its children also being individually
- * checked — deletes the parent while leaving its children behind with a
- * parentId that no longer resolves to anything. Those orphans don't render
- * anywhere (every view walks the tree top-down from a real parent), so they
- * were invisible in the UI, but getUserQuizzesBreakdown() was still tallying
- * them into the "امتحاناتك" card's counts — hence counts that didn't match
- * what was actually visible (e.g. reporting content after the visible list
- * had already been fully emptied). Filtering to only reachable rows before
- * counting keeps the card's numbers in sync with what user-quizzes-view.js
- * actually shows.
- *
- * BUG FIX 2: this originally only checked one level up — a row was kept if
- * `parentId === null` OR the immediate parent id existed *anywhere* in the
- * array. That misses the case where the parent itself is an orphan (e.g. its
- * own parent — the grandparent — was deleted): the row's direct parent still
- * exists as an array entry, so the one-level check wrongly called it "live"
- * even though neither of them is actually reachable from a root node. Now
- * delegates to isRowReachable() (user-quizzes-folders.js), which walks the
- * *entire* ancestor chain up to a real root, so a multi-level dangling chain
- * is correctly excluded in full rather than just its first broken link.
- *
  * @param {Array} userQuizzes - raw entries from the "user_quizzes" key
  * @returns {Array} only the rows genuinely reachable from a root node
  */
@@ -138,18 +92,7 @@ export function getUserQuizzesBreakdown(userQuizzes) {
 
 /** Small internal Arabic-pluralization helper for a (singular, dual, plural,
  * plural11plus) label set: 1 → singular, 2 → dual, 3-10 → "N plural", 11+ →
- * "N plural11plus".
- *
- * BUG FIX: this used to always use the 3-10 plural form for any count above
- * 2, including 11+ ("11 امتحانات") — Arabic counted-noun agreement actually
- * switches at 11 (tamyiz singular, e.g. "11 امتحان" not "11 امتحانات"). This
- * previously drifted out of sync with getItemText() in category-view.js,
- * which already had the correct 3-10 vs 11+ split for the same "امتحان(ات)"
- * label — passing pluralWord as both the `plural` and `plural11plus` arg
- * reproduces the old always-3-10-form behavior for callers where the
- * 11+ label happens to be identical (courses/folders below don't currently
- * have real-world counts high enough for this to matter, but the helper
- * supports it for correctness). */
+ * "N plural11plus". */
 function pluralizeArabic(count, singular, dual, plural, plural11Plus = plural) {
   if (count === 1) return singular;
   if (count === 2) return dual;
@@ -261,18 +204,6 @@ export function exportUserQuizzesAsJson() {
 /**
  * Patches the already-rendered "امتحاناتك" card's subtext in place, instead
  * of waiting for the next full renderRootCategories() call (root-view.js).
- *
- * BUG FIX: the card's quiz-count subtext was only ever recomputed inside
- * renderRootCategories(), which only runs on navigation back to the root
- * view. After "نسخ لامتحاناتي" (copy-to-my-quizzes.js) finished writing the
- * new entries to localStorage, the card kept showing its old, stale count
- * until the user left the course/quiz page and came back (or reloaded).
- * Every "نسخ لامتحاناتي" click handler now calls this right after its copy
- * promise resolves. It's a no-op (silently returns) if the root view isn't
- * currently mounted (e.g. the copy happened from inside a course page and
- * the card behind it isn't in the DOM at all) — renderRootCategories() will
- * compute the correct number the next time the user does navigate back, so
- * nothing is lost by skipping the patch in that case.
  *
  * Lives here (rather than in root-view.js, which creates the card) so both
  * category-view.js and exam-card.js can call it after their own copy

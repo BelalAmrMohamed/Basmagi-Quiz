@@ -273,23 +273,10 @@ export function createFolderOrCourseNamed(type, name, parentId) {
 
   const userQuizzes = readUserQuizzes();
 
-  // BUG FIX: this used to compare only parentId + title, never type — a
-  // course named "math" would block a folder also named "math" at the same
-  // level, even though they're different types and the rule only forbids
-  // same-type + same-name clashes. Now routed through the single shared
-  // predicate every other creation/rename/move/copy path also uses.
   if (hasSameLevelCollision(userQuizzes, { type, title: trimmedName, parentId: parentId || null })) {
     return { ok: false, reason: "يوجد عنصر بنفس الاسم والنوع في هذا المستوى بالفعل." };
   }
 
-  // BUG FIX (schema consistency): give every row both a top-level `id` and
-  // a `meta.id` set to the same value. Two different code paths create
-  // folder/course rows — this one (previously top-level id only) and
-  // copyCategoryTreeToUserQuizzes()'s copyNode() (previously meta.id only,
-  // no top-level id at all) — and every reader in this codebase falls back
-  // with `q.id || q.meta?.id`. Keeping both in sync means that fallback
-  // always finds the same value regardless of which function created the
-  // row.
   const newId = crypto.randomUUID();
   const newFolder = {
     id: newId,
@@ -360,10 +347,6 @@ export async function renameItem(itemId, currentTitle) {
   const parentId = item.meta?.parentId || null;
   const itemType = item.meta?.type || "quiz";
 
-  // BUG FIX: same predicate as createFolderOrCourseNamed — routed through
-  // the shared hasSameLevelCollision() so type is actually compared (a
-  // rename to a name already used by a different-typed sibling should be
-  // allowed) and unreachable/orphaned rows never block a legitimate rename.
   if (hasSameLevelCollision(userQuizzes, { type: itemType, title: trimmedName, parentId, excludeId: itemId })) {
     showNotification("الاسم مستخدم", "يوجد عنصر بنفس الاسم والنوع في هذا المستوى. اختر اسماً مختلفاً.", "warning");
     return;
@@ -381,16 +364,6 @@ export async function renameItem(itemId, currentTitle) {
  * folder/course) and the bulk-delete action in user-quizzes-view.js (a mixed
  * selection that may or may not include folders/courses).
  *
- * BUG FIX: the bulk-delete handler used to remove only the exact ids the
- * user had checked. That's fine when "تحديد الكل" was used first (it selects
- * every row in the flat array, nested children included), but checking a
- * folder/course row without also individually checking its children left
- * those children behind as orphans — rows whose meta.parentId pointed at an
- * id that no longer existed. They didn't render anywhere (every view walks
- * down from a real, existing parent), but they kept inflating the
- * "امتحاناتك" card's counts (see pruneOrphanedRows in course-count.js) even
- * after the visible list looked empty. Expanding the selection to include
- * descendants before deleting stops new orphans from being created.
  * @param {Set<string>} selectedIds
  * @param {Array} userQuizzes
  * @returns {Set<string>}
@@ -411,18 +384,12 @@ export function expandSelectionWithDescendants(selectedIds, userQuizzes) {
   return idsToDelete;
 }
 
-/**
- * Soft-deletes an item (quiz/folder/course, called from showContextMenu's
+/* Soft-deletes an item (quiz/folder/course, called from showContextMenu's
  * "حذف" for any targetType) into the local trash instead of discarding it —
  * see user-quizzes-trash.js and plan §4. Cascades to every descendant via
  * expandSelectionWithDescendants (unchanged from the old hard-delete
  * behavior) so a folder/course and everything inside it move to the trash
- * together, as one restorable/purgeable batch.
- *
- * BUG FIX (copy): the confirm wording used to say the delete "لا يمكن
- * التراجع عنه" (irreversible) — no longer true now that this routes through
- * the trash, so the message reflects that instead.
- */
+ * together, as one restorable/purgeable batch. */
 export async function deleteFolder(folderId) {
   const userQuizzes = readUserQuizzes();
   const target = userQuizzes.find((q) => (q.id || q.meta?.id) === folderId);
@@ -460,23 +427,7 @@ export async function deleteFolder(folderId) {
  * only removes rows that are provably unreachable; it deliberately does NOT
  * address rows that are technically reachable yet never rendered due to an
  * unrelated view-layer bug — this button is the deliberately blunter, fully
- * manual alternative for exactly that residual case.
- *
- * BUG FIX (double verification): a single button-press _confirm() dialog
- * was the original safeguard here, but "حذف الكل" and the far more common,
- * far less dangerous per-item "حذف" both live in the same #userQuizContextMenu
- * — a user who has learned to reflexively click through the "هل أنت متأكد؟"
- * dialog for routine single-item deletes can just as easily click through
- * it here without reading it, and wipe their entire collection by mistake.
- * Now routed through _confirmTyped() (notifications.js) instead: the
- * button-press step still happens first (identical UI to every other
- * destructive confirmation in the app), but only unlocks a second step
- * where the destructive button stays disabled until the user retypes the
- * literal phrase "حذف الكل" — the same text as the menu item they clicked —
- * exactly. This mirrors GitHub's "type the repo name to confirm deletion"
- * pattern and can't be clicked through on autopilot the way a single
- * yes/no dialog can.
- */
+ * manual alternative for exactly that residual case. */
 export async function deleteAllUserQuizzes() {
   const confirmed = await _confirmTyped({
     message:
@@ -547,13 +498,6 @@ export function handleDrop(e, targetFolderId) {
   if (!userQuizzes[itemIndex].meta) userQuizzes[itemIndex].meta = {};
   if ((userQuizzes[itemIndex].meta.parentId || null) === (targetFolderId || null)) return; // already there
 
-  // BUG FIX: this drag-and-drop path is a separate implementation from
-  // moveItemsToFolder() below (used by the "نقل إلى" dialog/bulk-move bar)
-  // and had never been routed through the shared hasSameLevelCollision()
-  // guard — so dragging a quiz/folder onto a target that already had a
-  // same-named same-type child silently succeeded and created a same-level
-  // duplicate, even though the non-drag move path already blocked exactly
-  // this. Both paths now share the same rule.
   const item = userQuizzes[itemIndex];
   if (
     hasSameLevelCollision(userQuizzes, {
@@ -615,12 +559,6 @@ export function moveItemsToFolder(itemIds, targetFolderId) {
     if (!item) return;
     if (!item.meta) item.meta = {};
     if ((item.meta.parentId || null) === (targetFolderId || null)) return; // already there
-    // BUG FIX: moving an item used to skip the same-level collision check
-    // entirely — e.g. dragging a quiz into a folder that already had a
-    // same-named quiz would silently create a same-level duplicate. Routed
-    // through the same shared predicate as create/rename/copy so this rule
-    // applies universally instead of only where someone remembered to add
-    // it.
     if (
       hasSameLevelCollision(userQuizzes, {
         type: item.meta?.type || "quiz",
@@ -838,19 +776,6 @@ export function initContextMenu() {
   });
 }
 
-/**
- * BUG FIX — overlay exclusivity: #userQuizContextMenu (this file's
- * right-click menu) and .exam-dropdown-menu (exam-dropdown-menu.js's ⋮
- * dropdown) used to be two independent overlay systems with no awareness of
- * each other. This menu was closed only by the document-level click
- * listener registered in initContextMenu() above, but .exam-more-btn's
- * onclick calls e.stopPropagation() before opening its dropdown — so that
- * click never reached this listener, and both menus could end up open at
- * once. Exported so exam-dropdown-menu.js's openExamDropdownMenu() can call
- * it before opening its own menu, the same way showContextMenu() below
- * calls closeAllExamDropdownMenus() before opening this one. A no-op if the
- * menu was never created or is already hidden.
- */
 export function closeUserQuizContextMenu() {
   if (!contextMenuEl) return;
   contextMenuEl.style.display = "none";
@@ -860,19 +785,12 @@ export function closeUserQuizContextMenu() {
 export function showContextMenu(e, targetType, targetId, targetTitle) {
   initContextMenu();
 
-  // Toggle behavior: if the custom menu is already open, hide it and let
-  // the browser's native context menu appear naturally on this 2nd click.
   if (contextMenuEl.style.display !== "none") {
     contextMenuEl.style.display = "none";
     customMenuJustOpened = false;
-    // Do NOT call e.preventDefault() — the native menu will open
     return;
   }
 
-  // BUG FIX: close any open ⋮ dropdown menu before opening this one — see
-  // closeUserQuizContextMenu()'s doc comment above for the other half of
-  // this fix. Without this, right-clicking a card while its own ⋮ dropdown
-  // (or another card's) was still open left both visible simultaneously.
   closeAllExamDropdownMenus();
 
   e.preventDefault();
@@ -882,15 +800,6 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
   if (targetType === "item" || targetType === "folder" || targetType === "course") {
     contextMenuEl.appendChild(createMenuItem(SELECT_SVG, "تحديد", () => selectItem(targetId)));
     contextMenuEl.appendChild(createMenuItem(RENAME_SVG, "إعادة تسمية", () => renameItem(targetId, targetTitle)));
-    // BUG FIX: this right-click menu had no way to edit a quiz at all — the
-    // ⋮ dropdown menu (showUserQuizActionsOverlay in user-quiz-card.js)
-    // already has a "تعديل الامتحان" option that opens create-quiz.html in
-    // edit mode; this menu was simply missing the same entry point.
-    // Folders/courses have no "edit" concept of their own (there's nothing
-    // to edit — see canPlaceItem's doc comment for why courses/folders are
-    // structural, not content), so this is quiz-only ("item" is only ever
-    // passed for plain quizzes — see the two showContextMenu call sites in
-    // user-quizzes-view.js).
     if (targetType === "item") {
       contextMenuEl.appendChild(
         createMenuItem(EDIT_SVG, "تعديل الامتحان", () => {
@@ -898,18 +807,11 @@ export function showContextMenu(e, targetType, targetId, targetTitle) {
         }),
       );
     }
-    // Non-drag fallback for moving items — essential on touch devices,
-    // which have no usable drag gesture for this grid, and a faster path
-    // than drag-and-drop even on desktop for deeply nested moves.
-    // Courses are top-level only (see canPlaceItem) — there is nowhere
-    // else a course could move to, so the option is omitted entirely
-    // instead of opening a dialog with no valid destination.
+
     if (targetType !== "course") {
       contextMenuEl.appendChild(createMenuItem(MOVE_TO_SVG, "نقل إلى", () => openMoveToDialog([targetId])));
     }
-    // "Move out" is only meaningful when the item is actually inside
-    // something — one click straight to the immediate parent, instead of
-    // making every out-of-folder move go through the full picker dialog.
+
     if (targetType !== "course" && currentFolderId !== null) {
       const parentId = pathStackParentId();
       contextMenuEl.appendChild(
@@ -1292,14 +1194,6 @@ async function importFolderTree(jsonFiles, skippedCount = 0) {
     userQuizzes.push({
       id,
       meta: {
-        // BUG FIX (schema consistency, same class of issue as
-        // createFolderOrCourseNamed's — see its own comment above): this
-        // path built folder rows with a top-level `id` but no matching
-        // `meta.id`, unlike every other folder-creation path in this file.
-        // Every reader falls back with `q.id || q.meta?.id`, so this was
-        // harmless as long as `id` stayed present — but any future code
-        // (or a copy/export round-trip) that only looks at `meta.id` would
-        // silently fail to find folders created via a bulk folder import.
         id,
         type: isRootLevel ? "course" : "folder",
         title,

@@ -647,11 +647,9 @@ body.is-resizing-media .media-container.resizable-media {
 
 .code-block-wrapper {
   display: grid;
-  /* FIX: 3-column layout ensures a dedicated middle spacer column that prevents overlap */
   grid-template-columns: auto 1fr auto;
   grid-template-rows: auto 1fr;
   margin: 20px 0;
-  /* FIX: Strictly lock the physical grid coordinates regardless of parent document direction */
   direction: ltr !important;
   border-radius: 10px;
   background: #121214;
@@ -665,7 +663,6 @@ body.is-resizing-media .media-container.resizable-media {
 /* Distinct Code-Editor Header Bar Background */
 .code-block-wrapper::before {
   content: "";
-  /* FIX: Spans across all 3 structural columns */
   grid-column: 1 / span 3;
   grid-row: 1;
   height: 38px;
@@ -681,7 +678,6 @@ body.is-resizing-media .media-container.resizable-media {
   grid-row: 1;
   z-index: 2;
   align-self: center;
-  /* FIX: Insulation package against global text-align or direction resets */
   justify-self: start;
   text-align: left !important;
   direction: ltr !important;
@@ -750,7 +746,6 @@ body.is-resizing-media .media-container.resizable-media {
 
 /* Scrollable Inner Code Body (<pre>) */
 .code-block {
-  /* FIX: Spans across all 3 layout columns to maximize horizontal canvas room */
   grid-column: 1 / span 3;
   grid-row: 2;
   margin: 0;

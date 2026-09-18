@@ -6,14 +6,6 @@
 // dismiss it calls finalizeAppRender() so the rest of the app starts up
 // exactly as it would on a returning-visitor load.
 // ============================================================================
-// BUG FIX (resize listener leak): the original initLandingParticles() added
-// window.addEventListener("resize", resize) but the cleanup path that
-// cancelled the RAF loop (checking !canvas.parentElement) never called
-// window.removeEventListener("resize", resize), so the listener leaked for
-// the life of the page.  Fixed here: the resize function is captured in a
-// variable and removeEventListener is called inside the same MutationObserver
-// callback that cancels the RAF loop — both are now removed together.
-// ============================================================================
 //
 // DESIGN NOTE (full-screen, not a modal): this used to be a centered
 // glassmorphism card floating over a dimmed/blurred backdrop — modal chrome
@@ -369,14 +361,7 @@ export function renderLandingScreen() {
 
 /**
  * Lightweight confetti-like particle system for the landing page.
- * Draws small shapes (circles, stars, diamonds) that float & drift.
- *
- * BUG FIX: the resize handler is now stored in a local variable so that
- * removeEventListener can remove the *same* function reference that was
- * passed to addEventListener.  The MutationObserver cleanup path now calls
- * window.removeEventListener("resize", resize) alongside cancelAnimationFrame,
- * preventing a listener leak for the page's lifetime after the overlay is gone.
- */
+ * Draws small shapes (circles, stars, diamonds) that float & drift. */
 function initLandingParticles(canvas) {
   if (!canvas || !canvas.parentElement) return;
 
@@ -487,9 +472,6 @@ function initLandingParticles(canvas) {
 
   draw();
 
-  // BUG FIX: cleanup when overlay is removed from the DOM — cancel both the
-  // RAF loop AND the resize listener (the original only cancelled the RAF loop,
-  // leaving window.addEventListener("resize", resize) active forever).
   const observer = new MutationObserver(() => {
     if (!document.getElementById("landingOverlay")) {
       cancelAnimationFrame(animFrame);

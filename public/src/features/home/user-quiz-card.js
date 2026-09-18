@@ -107,12 +107,6 @@ export function createUserQuizCard(quiz, index) {
   h.textContent = qz(quiz, "title") || quizId;
 
   // ── Phone-only leading emoji — sibling of .card-text, not nested inside
-  // h3. BUG FIX: the emoji used to live inside <h3>, so on the mobile list
-  // row its vertical centering was governed by the title text's line-height
-  // instead of the row's own flex alignment — sitting slightly too high
-  // compared to course/subfolder cards, which use a dedicated sibling
-  // `.icon` element (see createCategoryCard in category-view.js). Kept as
-  // `.user-quiz--phone-only-emoji` so the existing mobile CSS still applies.
   const iconEl = document.createElement("span");
   iconEl.className = "user-quiz--phone-only-emoji";
   iconEl.textContent = "👤";
@@ -256,12 +250,7 @@ export function playUserQuiz(quiz) {
 
 /**
  * Delete a user-created quiz — soft delete into the local trash (see
- * user-quizzes-trash.js and plan §4) rather than discarding it outright.
- *
- * BUG FIX (copy): the confirm wording used to say "لا يمكن إسترداده" (can't
- * be recovered) — no longer true now that this routes through the trash, so
- * the message reflects that instead.
- */
+ * user-quizzes-trash.js and plan §4) rather than discarding it outright. */
 export async function deleteUserQuiz(quizId) {
   try {
     if (!(await _confirm("سيُنقل هذا الامتحان إلى سلة المهملات. هل تريد المتابعة؟"))) {
@@ -343,12 +332,6 @@ export function showUserQuizActionsOverlay(quiz, triggerBtn) {
     };
     menu.appendChild(editOpt);
 
-    // ── Rename — BUG FIX: this ⋮ dropdown had no way to rename a quiz at
-    // all; the right-click context menu already had it (renameItem, see
-    // showContextMenu in user-quizzes-folders.js) but this menu was simply
-    // missing the same entry point. Reuses that exact function so both
-    // menus share one implementation (and one same-level-name-collision
-    // guard — see renameItem's own doc comment).
     const renameOpt = document.createElement("button");
     renameOpt.type = "button";
     renameOpt.className = "exam-action-btn";

@@ -19,19 +19,6 @@
  * ancestor entirely — the same trick already used for `.exam-dropdown-menu`
  * (see openExamDropdownMenu above).
  *
- * BUG FIX: this function previously only toggled the `flip-above` class,
- * which under the CSS default `position: absolute` still left the tooltip
- * inside `.course-info-container`'s containing block — so it stayed subject
- * to `.grid-container`'s `overflow: hidden` clipping and, because the
- * container's own z-index/stacking context sits below other page chrome, it
- * could also render visually "under" later siblings. This now actually
- * switches the tooltip to `position: fixed` and sets explicit `top`/`left`
- * pixel coordinates (same technique `positionExamDropdownMenu` already uses
- * for `.exam-dropdown-menu`), which both escapes the clipping ancestor and
- * — since a fixed-position element is promoted out of its old stacking
- * context — lets `--z-tooltip` actually govern its stacking against the
- * rest of the page, including the bottom nav.
- *
  * Anchors below-right of the trigger (RTL UI, right-edge aligned), flipping
  * above it if there isn't enough room below, and clamps to the viewport.
  * Measures the tooltip's real rendered size (forcing its shown layout state
@@ -66,26 +53,6 @@ export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
   tooltip.style.left = "";
   tooltip.style.right = "";
 
-  // BUG FIX: this used to measure `offsetWidth`/`offsetHeight` BEFORE the
-  // `.show` class was applied by the caller, i.e. while the tooltip still
-  // had `opacity: 0; visibility: hidden; transform: translateY(-5px)`.
-  // `visibility: hidden` keeps the element in normal layout flow, so it
-  // usually still reports a real size — but combined with `width:
-  // max-content` and a `transform`, some browsers deferred/optimized that
-  // layout pass and returned 0 here intermittently (most reliably on a
-  // fast desktop hover-in, before the previous tooltip's close transition
-  // had settled). Whenever that happened, the code fell back to a
-  // hardcoded 200×150 guess, which is nothing like this tooltip's real
-  // size — producing exactly the "shows up in an unexpected place /
-  // sometimes doesn't appear" symptom on desktop hover (mobile tap was
-  // largely unaffected, since a fresh, settled tooltip on first open
-  // almost always measured correctly the old way).
-  //
-  // Fix: temporarily force the tooltip into its actual shown layout state
-  // (`.show`, opacity 1, no transform) while still invisible to the user,
-  // measure it for real, then restore whatever `.show` state the caller
-  // wants. This guarantees `tooltipW`/`tooltipH` reflect the tooltip's
-  // true rendered size every time — no fallback guess needed.
   const hadShow = tooltip.classList.contains("show");
   const prevVisibility = tooltip.style.visibility;
   const prevOpacity = tooltip.style.opacity;
@@ -117,25 +84,6 @@ export function positionCourseInfoTooltip(tooltip, triggerBtn, gap = 8) {
   if (left < gap) left = gap;
   if (left + tooltipW > vw - gap) left = vw - tooltipW - gap;
 
-  // BUG FIX: the CSS `.course-info-tooltip.flip-above` rule sets
-  // `bottom: 100%` (positioning the tooltip's bottom edge at the
-  // viewport's own bottom edge, since this is `position: fixed`) so it
-  // can grow upward from the trigger. Earlier this only cleared any
-  // *previous* inline `top`/`bottom` with `tooltip.style.top = ""` before
-  // measuring, then unconditionally set `tooltip.style.top` here — but
-  // never cleared `bottom` again afterward. So whenever `.flip-above` was
-  // active, the element ended up with BOTH an inline `top: <px>` AND a
-  // class-driven `bottom: 100%` in effect at once. A `position: fixed`
-  // box with both `top` and `bottom` set and no explicit `height` has its
-  // height computed as the distance between them — here, `100% of the
-  // viewport` minus `top` — which has nothing to do with the tooltip's
-  // actual content size. That stretched/mispositioned box is why the
-  // background (and border/shadow) rendered somewhere other than where
-  // the text appeared to sit, exactly when flip-above was in play.
-  // Fix: whichever edge we're NOT driving with inline `top` gets an
-  // explicit `auto`, so only one of `top`/`bottom` is ever a real
-  // constraint at a time — matching what `.flip-above`'s own CSS
-  // (`top: auto`) already does for the non-fixed fallback state.
   tooltip.style.top = `${top}px`;
   tooltip.style.bottom = "auto";
   tooltip.style.left = `${left}px`;

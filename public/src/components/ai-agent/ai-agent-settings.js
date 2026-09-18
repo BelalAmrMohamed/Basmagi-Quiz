@@ -224,12 +224,6 @@ export function createSettingsPanel(options = {}) {
       opt.textContent = label;
       modelSelect.appendChild(opt);
     });
-    // BUG FIX: getSelectedModel() returns "" (meaning "use the provider's
-    // own default") whenever no model has been explicitly saved yet, but
-    // "" never matches any <option>'s value — the select rendered with
-    // nothing visibly chosen. Fall back to the first (lightest/default)
-    // model in the list, same fix already applied to the chat tab's own
-    // model bar (see ai-agent-chat.js's refreshModelBarOptions).
     modelSelect.value = getSelectedModel() || (models[0] && models[0].value) || "";
     refreshModelSelectAvailability();
   }

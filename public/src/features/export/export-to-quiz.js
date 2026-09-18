@@ -3796,11 +3796,6 @@ ${quizInfoModalHtml}
   
     handleMCQSubmission(q, qIndex) {
       const userAns = this.userAnswers[qIndex];
-      // Local isAnswerCorrect mirrors shared/rate-answers.js's version
-      // (this file is a standalone-exported bundle, can't import it).
-      // BUG FIX: the previous version used correct.includes(ans) without
-      // checking userAns/correct are the same length or shape, which could
-      // wrongly mark a partial multi-select pick as fully correct.
       const isAnswerCorrect = (ans, correct) => {
         if (ans === undefined || ans === null) return false;
         if (Array.isArray(correct)) {

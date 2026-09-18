@@ -8,13 +8,6 @@
    result.html too — so these base rules live in their own stylesheet
    rather than only inside home/index.css, which those pages don't load.
 
-   BUG FIX: before this file existed, .exam-dropdown-menu/.exam-action-btn
-   were only styled in home/index.css. On create-quiz.html and result.html
-   (which never load index.css) the JS still worked and appended a real
-   `.exam-dropdown-menu` to <body>, but with none of these rules it rendered
-   unstyled/effectively invisible — reading as "the button is broken" when
-   it was actually a missing stylesheet.
-
    Page-specific extras (the "معلومات الامتحان" submenu, .root-quizzes-
    breakdown, --danger/--cancel button variants, etc.) are intentionally
    NOT duplicated here — they stay in index.css since only home-page menus

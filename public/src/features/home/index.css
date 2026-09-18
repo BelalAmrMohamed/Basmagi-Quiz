@@ -481,16 +481,6 @@ body.sidebar-expanded {
 /* Highlighted "مادة مميزة" value — stands out from regular education-type
    values (جامعي/ثانوي/إعدادي/إبتدائي) in both the full modal table and the
    dropdown submenu preview. */
-/* BUG FIX: the modal table's "featured-value" class used to go directly on
-   the <td> itself (course-actions.js), making the whole cell
-   `display: inline-flex` — that drops the cell out of normal table layout
-   and shrink-wraps/left-aligns it at the flex default (flex-start) instead of
-   centering it in the column. course-actions.js now wraps an inner
-   <span class="featured-value"> instead (matching how course-info-tooltip.js
-   and exam-dropdown-menu.js already did it) and gives the <td> itself a
-   separate ".featured-value-cell" class that just centers normally — the
-   pill now centers via the cell's own text-align instead of fighting table
-   layout with flex. */
 .quiz-info-table td.featured-value-cell {
   text-align: center;
 }
@@ -3743,13 +3733,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
 
 @media (max-width: 640px) {
 
-  /* BUG FIX: was `display: inline`, a leftover from when these emojis lived
-     inline inside <h3> text. Now that they're sibling `.icon`-style elements
-     (see exam-card.js / user-quiz-card.js / create-quiz-modal.js), `inline`
-     collapsed them to their glyph's own line-height instead of centering
-     them in the row — this is what made them sit slightly too high versus
-     `.category-card .icon` (which already uses flex centering, see the
-     shared rule above). `flex` here matches that rule instead of fighting it.  */
   .phone-only-emoji,
   .user-quiz--phone-only-emoji,
   .category-icon {
@@ -3758,12 +3741,6 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
     justify-content: center;
   }
 
-  /* BUG FIX: selection mode shows a checkbox absolutely positioned at the
-     same top-left corner (see .user-quiz-select-checkbox below), which
-     visually overlapped the emoji. Use visibility:hidden (not display:none)
-     so the emoji's flex slot is preserved — display:none would collapse
-     its space and shift the title text sideways into the checkbox instead
-     of just leaving a gap, trading one overlap for a worse one. */
   .user-quizzes-container.selection-mode-active .user-quiz--phone-only-emoji,
   .user-quizzes-container.selection-mode-active .category-icon {
     visibility: hidden !important;

@@ -120,12 +120,6 @@ function handleCreateQuizToolCall(toolCall) {
     throw err;
   }
 
-  // BUG FIX: saveNewUserQuiz can now reject a same-level duplicate name
-  // (see its doc comment in quiz-schema.js) — surface that back to the chat
-  // as a thrown error (same pattern as the "no questions" case above) so
-  // the AI Helper sees the failure and can tell the user / retry with a
-  // different title, rather than silently doing nothing while the tool
-  // call reports success.
   const result = saveNewUserQuiz(parsed, title, folderResolution.id);
   if (result.ok === false) {
     showNotification("الاسم مستخدم", result.reason, "warning", 10);
@@ -176,12 +170,6 @@ function handleEditQuizToolCall(toolCall) {
   const existing = quizzes[index];
   const newTitle = input.title || qz(existing, "title");
 
-  // BUG FIX: a title change here is a rename in every sense the same-level
-  // naming rule cares about (hasSameLevelCollision, see its doc comment in
-  // user-quizzes-folders.js) but this tool call never checked it — unlike
-  // the human-driven rename path (renameItem), which does. Only relevant
-  // when the model actually changed the title; excludeId keeps the quiz
-  // from colliding with its own pre-edit row.
   const existingId = qz(existing, "id") || existing.id;
   if (
     newTitle !== qz(existing, "title") &&
@@ -1098,20 +1086,10 @@ function renderBulkActionBar() {
       updateBulkActionBar();
     };
 
-    // BUG FIX (reversibility): this used to hard-delete straight out of
-    // user_quizzes. Now routes through moveToTrash() (user-quizzes-trash.js)
-    // — same as the single-item deleteFolder() in user-quizzes-folders.js —
-    // so a bulk delete lands in "سلة المهملات" as one restorable/purgeable
-    // batch instead of being unrecoverable. Confirm copy updated to match.
     bar.querySelector(".bulk-delete-btn").onclick = async () => {
       if (selectedUserQuizzes.size === 0) return;
       if (await _confirm("سيُنقل العناصر المحددة إلى سلة المهملات. هل تريد المتابعة؟")) {
         let userQuizzes = JSON.parse(getFromStorage("user_quizzes", "[]"));
-        // BUG FIX: expand the checked selection to include descendants of any
-        // selected folder/course first — see expandSelectionWithDescendants()
-        // in user-quizzes-folders.js for why a plain filter-by-checked-id
-        // left orphaned children behind that kept inflating the
-        // "امتحاناتك" card's counts after this delete.
         const idsToDelete = expandSelectionWithDescendants(
           selectedUserQuizzes,
           userQuizzes,

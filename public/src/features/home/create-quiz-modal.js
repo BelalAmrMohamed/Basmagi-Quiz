@@ -184,9 +184,6 @@ export function openInlineCreateQuizModal() {
     createBtn.style.boxShadow = "0 4px 14px rgba(220, 38, 38, 0.4)";
   };
 
-  // BUG FIX: same leaked-listener issue as openPromptSelectionModal() above —
-  // wireModalDismiss() guarantees the Escape listener is removed no matter
-  // which button triggers the close.
   const close = wireModalDismiss(overlay, () =>
     fadeOutAndRemove(overlay, modalCard),
   );
@@ -468,11 +465,6 @@ export function openPromptSelectionModal() {
   const closeBtn = modalCard.querySelector("#promptSelectionClose");
 
   // Close modal function — MUST be defined before being referenced.
-  // BUG FIX: previously this modal only removed its document-level Escape
-  // listener from the Escape-key handler and the overlay-click handler —
-  // closing via a prompt button or the Cancel button leaked that listener
-  // forever. wireModalDismiss() centralizes cleanup so every close path
-  // (button clicks included) removes it exactly once. See modal-utils.js.
   const close = wireModalDismiss(overlay, () =>
     fadeOutAndRemove(overlay, modalCard),
   );

@@ -226,24 +226,14 @@ export function applyInline(s, options = {}) {
   s = s.replace(/\*\*\*([^*]+)\*\*\*/g, "<strong><em>$1</em></strong>");
   // ── Bold ────────────────────────────────────────────────────────────────
   s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
-  // BUG FIX: underscore emphasis must only fire at a word boundary, matching
-  // GFM semantics. Without the (^|[^\w]) / (?!\w) guards, ordinary prose
-  // mentioning snake_case_identifiers gets mangled into nested <em> tags
-  // (e.g. "variable_name_here" → "variable<em>name</em>here"). The guard is
-  // captured back via "$1" since a lookbehind alternative isn't safe across
-  // older JS engines for the "start of string" case.
+  // Underscore emphasis must only fire at a word boundary
   s = s.replace(/(^|[^\w])__([^_\n]+)__(?!\w)/g, "$1<strong>$2</strong>");
   // ── Italic ──────────────────────────────────────────────────────────────
   s = s.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
   s = s.replace(/(^|[^\w])_([^_\n]+)_(?!\w)/g, "$1<em>$2</em>");
   // ── Strikethrough ───────────────────────────────────────────────────────
   s = s.replace(/~~([^~\n]+)~~/g, "<del>$1</del>");
-  // BUG FIX: Images must be matched BEFORE Links. Markdown image syntax is
-  // `![alt](url)` — just a Link preceded by `!`. If the Links regex ran
-  // first, it would match the `[alt](url)` portion on its own and render
-  // an <a> tag, leaving a stray, unconsumed "!" sitting in front of it
-  // instead of producing an <img>.
-  //
+
   // SECURITY: the captured URL must be HTML-escaped before being placed
   // inside the href="…"/src="…" attribute. Without this, a URL containing a
   // double-quote (e.g. `https://x/" onmouseover="alert(1)`) breaks out of
@@ -1356,11 +1346,6 @@ export function highlightCode(code, lang) {
           out += `<span class="sh-attr">${escHtml(word)}</span>`;
         } else {
           // After ':': this is a value keyword (color name, keyword, etc.)
-          // PERF FIX: this Set used to be allocated fresh on every single
-          // identifier token encountered inside a CSS value (i.e. potentially
-          // hundreds of times per code block). It's now a module-level
-          // constant (_CSS_VALUE_KEYWORDS, defined once near the other
-          // keyword tables) built exactly once.
           if (_CSS_VALUE_KEYWORDS.has(word))
             out += `<span class="sh-keyword">${escHtml(word)}</span>`;
           else
@@ -1839,14 +1824,6 @@ export function _renderMarkdownCore(str, options = {}) {
   // ── Step 3: Tokenize lines ─────────────────────────────────────────────────
   // Each raw line is classified into one of: stash | hr | heading | blockquote
   //   | list | blank | text
-  //
-  // FIX 2: List regexes now allow leading whitespace (\s*) so that indented
-  // bullet/number lines are correctly detected as nested list items.
-  //
-  // FIX 4: Instead of emitting bare lines joined later with <br>, we collect
-  // consecutive text lines into <p> segments and rely on CSS margins for
-  // spacing.  Adjacent text lines (no blank between them) join into the same
-  // paragraph with a space, matching GFM paragraph semantics.
 
   const rawLines = str.split("\n");
 
@@ -1880,7 +1857,6 @@ export function _renderMarkdownCore(str, options = {}) {
     if (bqMatch) {
       return { type: "blockquote", content: bqMatch[1] };
     }
-    // FIX 2: Unordered list item — leading spaces captured for indent level
     const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
     if (ulMatch) {
       return {
@@ -1890,10 +1866,6 @@ export function _renderMarkdownCore(str, options = {}) {
         content: ulMatch[2],
       };
     }
-    // FIX 2: Ordered list item — leading spaces captured for indent level
-    // BUG FIX: also capture the literal number itself (olMatch[2]) so a
-    // list that intentionally starts at e.g. "5." can render with
-    // <ol start="5"> instead of always silently renumbering from 1.
     const olMatch = line.match(/^(\s*)(\d+)\.\s+(.+)$/);
     if (olMatch) {
       return {
@@ -1933,9 +1905,6 @@ export function _renderMarkdownCore(str, options = {}) {
     }
 
     // ── Text lines → paragraph ───────────────────────────────────────────
-    // FIX 4: Consecutive text lines form one <p> (joined with a space).
-    // A blank line ends the paragraph accumulation, creating a new segment
-    // for the next run of text lines.
     if (tok.type === "text") {
       const lines = [];
       while (ti < lineTokens.length && lineTokens[ti].type === "text") {
@@ -1950,10 +1919,6 @@ export function _renderMarkdownCore(str, options = {}) {
     }
 
     // ── List items → list segment ─────────────────────────────────────────
-    // FIX 3: Blank lines between list items are absorbed as long as the
-    // next non-blank token is also a list item.  This keeps a numbered list
-    // with blank-line-separated entries as a single <ol> instead of
-    // resetting to item 1 for every sub-group.
     if (tok.type === "list") {
       const items = [];
       while (ti < lineTokens.length) {
@@ -1997,9 +1962,6 @@ export function _renderMarkdownCore(str, options = {}) {
   }
 
   // ── Step 4b: Nested list renderer ─────────────────────────────────────────
-  // FIX 2: Renders a flat array of list-item tokens into properly nested
-  // <ul>/<ol> elements by tracking indent levels recursively.
-  //
   // Algorithm: renderLevel() claims items whose indent equals the indent of
   // the first item it sees.  Any item with a greater indent triggers a
   // recursive call (sub-list appended inside the current <li>).  Any item
@@ -2015,9 +1977,6 @@ export function _renderMarkdownCore(str, options = {}) {
 
       const firstIndent = items[startIdx].indent;
       const tag = items[startIdx].listType;
-      // BUG FIX: preserve an explicit non-1 start number (e.g. "5. foo …")
-      // via the standard HTML start="" attribute instead of always
-      // rendering as a plain <ol> that browsers renumber from 1.
       const startAttr =
         tag === "ol" && items[startIdx].start && items[startIdx].start !== 1
           ? ` start="${items[startIdx].start}"`

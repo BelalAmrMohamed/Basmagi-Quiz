@@ -972,14 +972,6 @@ document.addEventListener("DOMContentLoaded", () => {
   renderCreateQuestionNavigator(quizData.questions);
   syncActionsMenuConvertSingleButton();
 
-  // Signals create-quiz.html's early "RACE-CONDITION FIX" click-guard
-  // (see the inline <script> right before this module's own <script> tag)
-  // that every window.<handler> used by inline onclick="..." attributes
-  // has been attached and all DOMContentLoaded setup above has finished,
-  // so it can stop swallowing clicks. Must fire — the guard was written
-  // expecting this dispatch and has no timeout/fallback, so omitting it
-  // (as this file previously did) left every inline-onclick click on the
-  // page silently swallowed forever, with no console error, on every load.
   document.dispatchEvent(new Event("app:ready"));
 });
 
@@ -1412,21 +1404,7 @@ window.closeAllQuestionMenus = function () {
     .forEach((menu) => menu.classList.remove("open"));
 };
 
-/**
- * Rename a saved quiz directly in user_quizzes, then refresh the grid.
- *
- * BUG FIX: this is a second, independent rename implementation from
- * renameItem() (user-quizzes-folders.js) — the one the home page's
- * "امتحاناتك" context menu/card ⋮ menu use, which already enforces the
- * same-level naming rule (hasSameLevelCollision). This entry-screen version
- * skipped that check entirely (and didn't even look at parentId), so a
- * rename here could silently collide with a same-titled sibling. Not
- * delegated to renameItem() itself: that function also calls
- * renderUserQuizzesView(), which touches breadcrumb/navigation-stack DOM
- * that only exists on the home page, not this one — so the check is
- * reused directly and this function keeps its own (already-correct) grid
- * refresh.
- */
+/* Rename a saved quiz directly in user_quizzes, then refresh the grid. */
 window.renameEntryItem = async function (event, quizId) {
   event.stopPropagation();
   closeAllEntryItemMenus();
@@ -4765,13 +4743,6 @@ function saveToUserQuizzes(quizToSave) {
     );
     const title = quizToSave.title?.trim() || "Untitled";
 
-    // BUG FIX: this page's own "new quiz" save path never went through the
-    // same-level naming rule (see hasSameLevelCollision's doc comment in
-    // user-quizzes-folders.js) that every other create/rename/move/copy
-    // path already enforces — a quiz saved here could silently collide
-    // with an existing root-level quiz of the same title. New quizzes
-    // saved from this page always land at root (buildQuizPayload never
-    // sets meta.parentId), so only root needs checking.
     if (hasSameLevelCollision(existingQuizzes, { type: "quiz", title, parentId: null })) {
       saveToUserQuizzes.lastError =
         "يوجد امتحان بنفس الاسم في المستوى الرئيسي من امتحاناتك بالفعل.";
@@ -4803,10 +4774,6 @@ function updateInUserQuizzes(quizId, quizToSave) {
     const existing = existingQuizzes[quizIndex];
     const title = quizToSave.title?.trim() || "Untitled";
 
-    // BUG FIX: editing this page's title field is a rename in every sense
-    // the naming rule cares about (same type, same level, new title) but
-    // never went through hasSameLevelCollision — excludeId keeps this from
-    // false-flagging the quiz against its own pre-edit row.
     if (
       hasSameLevelCollision(existingQuizzes, {
         type: "quiz",
@@ -5443,7 +5410,6 @@ window.processImport = async function () {
         if (!quizData.title && parsed.meta) {
           quizData.title = parsed.meta.title || defaultTitle;
           quizData.description = parsed.meta.description || "";
-          // FIX: read source FROM parsed.meta, not from stale quizData.source
           quizData.source = parsed.meta.source || "";
           const titleEl = document.getElementById("quizTitle");
           const descEl = document.getElementById("quizDescription");
@@ -5481,7 +5447,6 @@ window.processImport = async function () {
       if (!quizData.title && parsed.meta) {
         quizData.title = parsed.meta.title || "";
         quizData.description = parsed.meta.description || "";
-        // FIX: read source FROM parsed.meta, not from stale quizData.source
         quizData.source = parsed.meta.source || "";
         const titleEl = document.getElementById("quizTitle");
         const descEl = document.getElementById("quizDescription");
@@ -5568,14 +5533,6 @@ window.processImport = async function () {
  *     synchronously right after it's called (see ai-agent-chat.js), so an
  *     awaited confirmation there would let the "done" chat bubble render
  *     before the user had even answered the dialog.
- *
- * BUG FIX: previously (inline in window.resetPage) this never cleared
- * editingQuizId. Opening the page via ?edit=<id> and then resetting left
- * editingQuizId pointing at that quiz — the next manual "Save" would
- * silently overwrite it with the now-empty draft instead of creating a
- * fresh, unlinked quiz. Also updates the page header back to "New quiz"
- * mode for the same reason (it was previously set to "تعديل الامتحان" by
- * loadQuizFromLocalStorage() and never reverted).
  */
 function resetPageData() {
   // Clear the old single-key draft (backwards compat)
@@ -5651,17 +5608,6 @@ window.resetPage = async function () {
  * so the assistant knows what's already on the page without a tool
  * round-trip.
  *
- * BUG FIX: a prior version passed this through `contextSummary` as a bare
- * object instead of an array — ai-agent-chat.js's Array.isArray() check on
- * that option was therefore always false, so the create-quiz page's
- * summary was silently never sent to the model at all, at any point. This
- * is now passed as `contextPrompt` (see mountAIHelper() below), which
- * ai-agent-chat.js accepts as either a plain string or a function; passing
- * a function specifically means it's re-read on every single message sent
- * (not just once when the panel first mounted), so the assistant always
- * sees the page's current title/question count — including after the
- * user resets the page, after the AI itself edits the quiz, or in a brand
- * new chat opened later in the same session.
  * @returns {string}
  */
 function buildCurrentQuizContextForAI() {

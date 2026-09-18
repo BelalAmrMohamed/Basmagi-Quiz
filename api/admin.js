@@ -810,12 +810,6 @@ async function handleMoveItem(req, res, adminPayload, adminId, supabase) {
     }
   }
 
-  // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 7): quizzes have
-  // no DB uniqueness constraint, so the 23505 branch below — which is what
-  // actually catches this for folders — never fires for a quiz moved into a
-  // destination that already holds a same-titled quiz. Checked explicitly,
-  // scoped to the destination course/folder rather than the quiz's current
-  // one.
   if (itemType === "quiz") {
     const collision = await hasQuizNameCollision(supabase, {
       courseId: targetCourseId,
@@ -931,11 +925,6 @@ async function handleRenameItem(req, res, adminPayload, adminId, supabase) {
   }
 
   if (itemType === "quiz") {
-    // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 5): quizzes
-    // have no DB uniqueness constraint the way folders/courses do, so a
-    // rename here previously never checked for a same-titled sibling at
-    // the same course/folder — unlike folders/courses, which get a
-    // friendly "name already taken" 400 via the 23505 branch below.
     const collision = await hasQuizNameCollision(supabase, {
       courseId: fetched.row.course_id,
       folderId: fetched.row.folder_id,
@@ -1074,11 +1063,6 @@ async function handleUpdateQuiz(req, res, adminPayload, adminId, supabase) {
   cleanQuiz.meta.path = fetched.row.data?.meta?.path;
   cleanQuiz.meta.author_id = fetched.row.data?.meta?.author_id ?? fetched.row.uploaded_by ?? null;
 
-  // BUG FIX (see docs/amtihanatak-naming-rule-audit.md, Gap 6): an edit-mode
-  // title change wrote straight to the row with no duplicate check at all —
-  // not even the path+filename check upload-quiz.js does on create. Edit
-  // never relocates a quiz (see header comment above), so the check is
-  // scoped to the row's own existing course_id/folder_id.
   const titleCollision = await hasQuizNameCollision(supabase, {
     courseId: fetched.row.course_id,
     folderId: fetched.row.folder_id,
