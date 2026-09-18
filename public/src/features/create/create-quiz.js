@@ -21,6 +21,7 @@ import { CREATE_QUIZ_PAGE_SYSTEM_PROMPT } from "../../components/ai-agent/ai-age
 import { CREATE_QUIZ_PAGE_SUGGESTED_PROMPTS } from "../../components/ai-agent/ai-agent-suggested-prompts.js";
 import { isMultiSelectQuestion } from "../../shared/rate-answers.js";
 import { hasSameLevelCollision } from "../home/user-quizzes-folders.js";
+import { renderCreateQuestionNavigator, initCreateQuestionNavigator } from "./question-navigator.js";
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -967,6 +968,8 @@ document.addEventListener("DOMContentLoaded", () => {
   mountAIHelper();
   updateUndoRedoButtons();
   setupReorderHandles();
+  initCreateQuestionNavigator();
+  renderCreateQuestionNavigator(quizData.questions);
 
   // Signals create-quiz.html's early "RACE-CONDITION FIX" click-guard
   // (see the inline <script> right before this module's own <script> tag)
@@ -2669,6 +2672,8 @@ function updateQuestionNumbers() {
   });
 }
 
+renderCreateQuestionNavigator(quizData.questions);
+
 // ============================================================================
 // GITHUB-STYLE MEDIA EMBEDDING: drag-and-drop / paste into markdown fields
 // ============================================================================
@@ -3271,18 +3276,83 @@ function normalizeCorrectField(question) {
  * creator is told this via a confirmation before it happens (see the
  * onclick wiring in renderQuestion()).
  */
-window.setMultiSelect = function (questionId, multiSelect) {
+window.setMultiSelect = async function (questionId, multiSelect) {
   const question = quizData.questions.find((q) => q.id === questionId);
   if (!question) return;
-  pushHistorySnapshot();
+
   normalizeCorrectField(question);
-  question.multiSelect = Boolean(multiSelect);
+  const nextMultiSelect = Boolean(multiSelect);
+
+  if (!nextMultiSelect && question.correct.length > 1) {
+    if (
+      !(await _confirm(
+        "هذا السؤال يحتوي على أكثر من إجابة صحيحة. تحويله إلى «اختيار واحد» سيُبقي أول إجابة صحيحة فقط. هل تريد المتابعة؟",
+      ))
+    ) {
+      return;
+    }
+  }
+
+  pushHistorySnapshot();
+  question.multiSelect = nextMultiSelect;
+
   if (!question.multiSelect && question.correct.length > 1) {
     question.correct = [question.correct[0]];
   }
+
   rerenderOptions(questionId);
   updateIncompleteState(questionId);
+  updateQuestionNumbers();
   autosave();
+};
+
+/**
+ * Convert every MCQ that allows multiple answers but has exactly one marked
+ * correct answer into single-select mode. Questions with zero or multiple
+ * correct answers are intentionally left unchanged.
+ */
+window.convertSingleCorrectMcqsToSingleSelect = async function () {
+  const candidates = quizData.questions.filter(
+    (question) =>
+      !question.answer &&
+      isMultiSelectQuestion(question) &&
+      Array.isArray(question.correct) &&
+      question.correct.length === 1,
+  );
+
+  if (candidates.length === 0) {
+    showNotification(
+      "لا توجد أسئلة مطابقة",
+      "لا توجد أسئلة اختيار من متعدد بإجابة صحيحة واحدة تحتاج إلى تحويل.",
+      "info",
+    );
+    return;
+  }
+
+  if (
+    !(await _confirm(
+      `سيتم تحويل ${candidates.length} سؤال إلى «اختيار واحد» مع الإبقاء على الإجابة الصحيحة الحالية. هل تريد المتابعة؟`,
+    ))
+  ) {
+    return;
+  }
+
+  pushHistorySnapshot();
+
+  candidates.forEach((question) => {
+    question.multiSelect = false;
+    rerenderOptions(question.id);
+    updateIncompleteState(question.id);
+  });
+
+  autosave();
+  renderCreateQuestionNavigator(quizData.questions);
+
+  showNotification(
+    "تم التحويل",
+    `تم تحويل ${candidates.length} سؤال إلى «اختيار واحد».`,
+    "success",
+  );
 };
 
 function renderOptions(question) {
@@ -3916,6 +3986,11 @@ function updateEmptyState() {
   if (questionBadge) {
     questionBadge.textContent = quizData.questions.length;
   }
+
+  // Keep the live editor navigator synchronized with every path that changes
+  // the question collection (add/import/load/reset/delete), not just the
+  // explicit reorder path.
+  renderCreateQuestionNavigator(quizData.questions);
 }
 
 // ============================================================================
