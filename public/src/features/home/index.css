@@ -3610,6 +3610,12 @@ html[dir="ltr"] .move-to-dialog-guide--elbow::after {
   }
 }
 
+@media (max-width: 640px) {
+  .user-quiz-search-actions {
+    margin-bottom: 28px;
+  }
+}
+
 @media (max-width: 480px) {
   .user-quiz-search-actions {
     gap: 5px;
