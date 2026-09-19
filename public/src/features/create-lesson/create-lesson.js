@@ -1213,7 +1213,7 @@ window.previewLesson = function () {
     win.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
     <title>معاينة: ${escapeHtml(lessonState.title || "درس بدون عنوان")}</title>
     <link rel="stylesheet" href="${window.location.origin}/src/styles/markdown.css">
-    <link rel="stylesheet" href="${window.location.origin}/src/styles/lessons.css">
+    <link rel="stylesheet" href="${window.location.origin}/src/features/lesson/lesson.css">
     <style>body{font-family:"IBM Plex Sans Arabic",sans-serif;max-width:760px;margin:0 auto;padding:32px 16px;} .is-correct{color:green;font-weight:700;}</style>
     </head><body><h1>${escapeHtml(lessonState.title || "درس بدون عنوان")}</h1>${sectionsHtml}</body></html>`);
     win.document.close();

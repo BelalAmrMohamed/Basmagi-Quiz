@@ -243,6 +243,18 @@ export function applyInline(s, options = {}) {
   // Phase 2 step 7 — only this CSS-variable *hook* lives in the shared
   // engine; the picker UI itself is lesson-page-only).
   //
+  // DYNAMIC PER-SPAN COLOR: an optional `==text==(color)` suffix sets that
+  // one span's color directly via an inline `style="--md-highlight-color:…"`
+  // override, so different `==...==` runs in the SAME document can each
+  // carry their own color instead of all sharing the one page-wide
+  // `--md-highlight-color` variable. `color` may be a `#rgb`/`#rrggbb` hex
+  // or a bare CSS color keyword (e.g. `pink`) — both are safe to place
+  // inside a style attribute unescaped since the pattern below only ever
+  // captures `[a-zA-Z0-9#]` characters, nothing that can break out of the
+  // attribute. Omitting the suffix keeps the old behavior (inherits
+  // whatever --md-highlight-color the container has set, e.g. from the
+  // lesson reader's picker).
+  //
   // SERIALIZATION NOTE: this rule is a plain regex replace with no new
   // module-scope dependency, so applyInline() stays safe to
   // .toString()-inline into standalone offline exports (see
@@ -250,7 +262,13 @@ export function applyInline(s, options = {}) {
   // future change here that reaches for a module-scope const/helper MUST
   // also be added to that file's serialization block, or exported quizzes
   // will throw ReferenceErrors.
-  s = s.replace(/==([^=\n]+)==/g, '<span class="md-highlight">$1</span>');
+  s = s.replace(
+    /==([^=\n]+)==(?:\(([a-zA-Z0-9#]{1,20})\))?/g,
+    (full, inner, color) =>
+      color
+        ? `<span class="md-highlight" style="--md-highlight-color:${color}">${inner}</span>`
+        : `<span class="md-highlight">${inner}</span>`,
+  );
 
   // SECURITY: the captured URL must be HTML-escaped before being placed
   // inside the href="…"/src="…" attribute. Without this, a URL containing a

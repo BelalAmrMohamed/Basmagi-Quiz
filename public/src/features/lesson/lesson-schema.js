@@ -203,6 +203,27 @@ export function recordQuestionAnswer(lessonId, questionId, wasCorrect) {
 }
 
 /**
+ * Extends an already-recorded question's progress entry with the reader's
+ * raw essay answer text, so a reload can redisplay what they wrote next to
+ * the model answer. Kept as a separate call (rather than an optional
+ * parameter on recordQuestionAnswer) since `answerText` is essay-only —
+ * every MCQ call site would otherwise have to pass a meaningless `null`.
+ * No-ops if recordQuestionAnswer wasn't called first (defensive; the only
+ * real call site always calls both together, in that order).
+ *
+ * @param {string} lessonId
+ * @param {string} questionId
+ * @param {string} answerText
+ */
+export function appendEssayAnswerText(lessonId, questionId, answerText) {
+  if (!lessonId || !questionId) return;
+  const entry = getLessonProgress(lessonId);
+  if (!entry.questions[questionId]) return;
+  entry.questions[questionId].answerText = String(answerText || "");
+  saveLessonProgress(lessonId, entry);
+}
+
+/**
  * Resolves which `defaultHidden` sections should currently be revealed,
  * by replaying every question's recorded answer against its one-rule
  * `onWrong` / `onCorrect` reveal target.

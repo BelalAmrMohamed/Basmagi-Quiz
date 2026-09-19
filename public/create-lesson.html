@@ -159,7 +159,7 @@
     <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/features/create-lesson/create-lesson.css">
     <link rel="stylesheet" href="src/styles/markdown.css">
-    <link rel="stylesheet" href="src/styles/lessons.css">
+    <link rel="stylesheet" href="src/features/lesson/lesson.css">
     <link rel="stylesheet" href="src/components/side-menu/side-menu.css">
     <link rel="stylesheet" href="src/components/notifications/notifications.css">
 
@@ -799,11 +799,34 @@
                 </span>
                 <span class="save-text" id="autosaveText">محفوظ</span>
             </div>
+
+            <!-- Undo/Redo: whole-lesson-snapshot history, same mechanism as
+                 create-quiz.js (see the UNDO / REDO block in
+                 create-lesson.js). Disabled state is toggled by JS
+                 (updateUndoRedoButtons) whenever the stacks change. -->
+            <div class="undo-redo-group">
+                <button type="button" class="app-title-home" id="undoBtn" onclick="performUndo()" title="تراجع (Ctrl+Z)"
+                    aria-label="تراجع" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 14 4 9l5-5" />
+                        <path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5v0a5.5 5.5 0 0 1-5.5 5.5H11" />
+                    </svg>
+                </button>
+                <button type="button" class="app-title-home" id="redoBtn" onclick="performRedo()" title="إعادة (Ctrl+Y)"
+                    aria-label="إعادة" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 14 5-5-5-5" />
+                        <path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5v0A5.5 5.5 0 0 0 9.5 20H13" />
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Right-aligned actions: preview + save. No Docs-style menu bar —
-             lessons don't have bulk/reorder/template modes to hang menus off
-             of, so this is just the two primary actions. -->
+        <!-- Right-aligned actions: preview + save. No Docs-style Insert/View
+             menu bar — lessons don't have bulk/reorder/template modes to
+             hang menus off of, so this is just the two primary actions. -->
         <div class="app-title-actions">
             <button type="button" class="btn btn-secondary" id="previewLessonBtn" onclick="previewLesson()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -824,6 +847,304 @@
                 </svg>
                 <span>حفظ الدرس</span>
             </button>
+        </div>
+    </div>
+
+    <!-- Global Markdown + LaTeX toolbar — fixed bar at top: 48px (just below
+         the merged app title bar). Only visible when body.lesson-form-active
+         (see create-lesson.js's showLessonForm/showEntryScreen). Buttons
+         apply formatting to the last focused .md-source textarea — same
+         mechanism as create-quiz.html's identical bar; kept byte-identical
+         to that copy (see create-quiz.js's setupGlobalMdBar) so the two
+         authoring pages share one mental model. -->
+    <div class="global-md-bar" id="globalMdBar" style="display: none;" aria-label="شريط تنسيق النص">
+        <div class="gmd-group gmd-group-md">
+            <div class="gmd-dropdown">
+                <button type="button" class="gmd-btn gmd-dropdown-toggle" id="gmdHeadingToggle" title="عنوان"
+                    aria-label="عنوان" aria-haspopup="true">
+                    <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 12h12" />
+                        <path d="M6 4v16" />
+                        <path d="M18 4v16" />
+                    </svg>
+                    <svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+                <div class="gmd-dropdown-menu gmd-dropdown-menu--headings" role="menu" aria-label="مستوى العنوان">
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="1">عنوان 1</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="2">عنوان 2</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="3">عنوان 3</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="4">عنوان 4</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="5">عنوان 5</button>
+                    <button type="button" class="gmd-btn" data-gmd-cmd="heading" data-gmd-heading="6">عنوان 6</button>
+                </div>
+            </div>
+            <button type="button" class="gmd-btn" id="gmdBold" title="غامق (Bold)" aria-label="غامق"
+                data-gmd-cmd="bold">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 12h9a4 4 0 0 1 0 8H6z" />
+                    <path d="M6 4h7a4 4 0 0 1 0 8H6z" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdItalic" title="مائل (Italic)" aria-label="مائل"
+                data-gmd-cmd="italic">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" x2="10" y1="4" y2="4" />
+                    <line x1="14" x2="5" y1="20" y2="20" />
+                    <line x1="15" x2="9" y1="4" y2="20" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdStrike" title="مشطوب" aria-label="مشطوب" data-gmd-cmd="strike">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 4H9a3 3 0 0 0-2.83 4" />
+                    <path d="M14 12a4 4 0 0 1 0 8H6" />
+                    <line x1="4" x2="20" y1="12" y2="12" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdCode" title="كود مضمّن" aria-label="كود مضمّن"
+                data-gmd-cmd="code">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m16 18 6-6-6-6" />
+                    <path d="m8 6-6 6 6 6" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdCodeblock" title="كتلة كود" aria-label="كتلة كود"
+                data-gmd-cmd="codeblock">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="m9 10-2 2 2 2" />
+                    <path d="m15 10 2 2-2 2" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdBlockquote" title="اقتباس" aria-label="اقتباس"
+                data-gmd-cmd="blockquote">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 6H3" />
+                    <path d="M21 12H8" />
+                    <path d="M21 18H8" />
+                    <path d="M3 12v6" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdHr" title="فاصل أفقي" aria-label="فاصل أفقي" data-gmd-cmd="hr">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" x2="20" y1="12" y2="12" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdUl" title="قائمة نقطية" aria-label="قائمة نقطية"
+                data-gmd-cmd="ul">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="10" x2="21" y1="6" y2="6" />
+                    <line x1="10" x2="21" y1="12" y2="12" />
+                    <line x1="10" x2="21" y1="18" y2="18" />
+                    <path d="M4 6h.01" />
+                    <path d="M4 12h.01" />
+                    <path d="M4 18h.01" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdOl" title="قائمة مرقمة" aria-label="قائمة مرقمة"
+                data-gmd-cmd="ol">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="10" x2="21" y1="6" y2="6" />
+                    <line x1="10" x2="21" y1="12" y2="12" />
+                    <line x1="10" x2="21" y1="18" y2="18" />
+                    <path d="M4 6h1v4" />
+                    <path d="M4 10h2" />
+                    <path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />
+                </svg>
+            </button>
+            <div class="gmd-dropdown">
+                <button type="button" class="gmd-btn gmd-dropdown-toggle" id="gmdHighlightToggle" title="تظليل"
+                    aria-label="تظليل" aria-haspopup="true">
+                    <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m9 11-6 6v3h9l3-3" />
+                        <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
+                    </svg>
+                    <svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+                <div class="gmd-dropdown-menu gmd-dropdown-menu--highlight" role="menu" aria-label="لون التظليل">
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#facc15" style="--swatch-color:#facc15" title="أصفر">أصفر</button>
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#4ade80" style="--swatch-color:#4ade80" title="أخضر">أخضر</button>
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#60a5fa" style="--swatch-color:#60a5fa" title="أزرق">أزرق</button>
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#f472b6" style="--swatch-color:#f472b6" title="وردي">وردي</button>
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#fb923c" style="--swatch-color:#fb923c" title="برتقالي">برتقالي</button>
+                    <button type="button" class="gmd-btn gmd-highlight-swatch" data-gmd-cmd="highlight"
+                        data-gmd-color="#c084fc" style="--swatch-color:#c084fc" title="بنفسجي">بنفسجي</button>
+                </div>
+            </div>
+            <button type="button" class="gmd-btn" id="gmdLink" title="رابط" aria-label="رابط" data-gmd-cmd="link">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+                    <path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+                    <line x1="8" x2="16" y1="12" y2="12" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdImage" title="صورة" aria-label="صورة" data-gmd-cmd="image">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdVideo" title="فيديو" aria-label="فيديو" data-gmd-cmd="video">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m16 13 5.223 3.482a0.5.5 0 0 0 .777-.416V7.87a0.5.5 0 0 0-.752-.432L16 10.5" />
+                    <rect x="2" y="6" width="14" height="12" rx="2" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdAudio" title="صوت" aria-label="صوت" data-gmd-cmd="audio">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn" id="gmdTable" title="جدول" aria-label="جدول" data-gmd-cmd="table">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 3v18" />
+                    <rect width="18" height="18" x="3" y="3" rx="2" />
+                    <path d="M3 9h18" />
+                    <path d="M3 15h18" />
+                </svg>
+            </button>
+        </div>
+        <div class="gmd-separator" aria-hidden="true"></div>
+        <div class="gmd-group gmd-group-latex">
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSup" title="أس (superscript)"
+                data-gmd-latex="^{}" aria-label="أس (superscript)">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="2" y="17" font-size="13" font-weight="700" font-family="inherit">x</text>
+                    <text x="13" y="9" font-size="9" font-weight="700" font-family="inherit">2</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSub" title="منخفض (subscript)"
+                data-gmd-latex="_{}" aria-label="منخفض (subscript)">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="2" y="15" font-size="13" font-weight="700" font-family="inherit">x</text>
+                    <text x="13" y="21" font-size="9" font-weight="700" font-family="inherit">n</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdFrac" title="كسر" data-gmd-latex="\frac{}{}"
+                aria-label="كسر">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="7" y="10" font-size="10" font-weight="700" font-family="inherit"
+                        text-anchor="middle">a</text>
+                    <line x1="3" y1="13" x2="15" y2="13" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                    <text x="7" y="22" font-size="10" font-weight="700" font-family="inherit"
+                        text-anchor="middle">b</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSqrt" title="جذر تربيعي" data-gmd-latex="\sqrt{}"
+                aria-label="جذر تربيعي">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 12h3l3 8 4-16h8" />
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInlineMath" title="رياضيات مضمّنة $…$"
+                data-gmd-cmd="inlinemath" aria-label="رياضيات مضمّنة">
+                <svg class="gmd-icon gmd-icon-math" viewBox="0 0 24 24" aria-hidden="true">
+                    <text x="12" y="17" font-size="14" font-weight="700" font-family="inherit"
+                        text-anchor="middle">$x$</text>
+                </svg>
+            </button>
+            <button type="button" class="gmd-btn gmd-btn-latex" id="gmdBlockMath" title="رياضيات منفصلة $$…$$"
+                data-gmd-cmd="blockmath" aria-label="رياضيات منفصلة (سطر مستقل)">
+                <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="6" width="18" height="12" rx="2" />
+                    <path d="M8 10v4" />
+                    <path d="M16 10v4" />
+                </svg>
+            </button>
+            <div class="gmd-dropdown">
+                <button type="button" class="gmd-btn gmd-btn-latex gmd-dropdown-toggle" id="gmdLatexMoreToggle"
+                    title="رموز رياضية إضافية" aria-label="رموز رياضية إضافية" aria-haspopup="true">
+                    <svg class="gmd-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="19" cy="12" r="1" />
+                        <circle cx="5" cy="12" r="1" />
+                    </svg>
+                    <svg class="gmd-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+                <div class="gmd-dropdown-menu gmd-dropdown-menu--latex" role="menu" aria-label="رموز رياضية إضافية">
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdSum" title="مجموع"
+                        data-gmd-latex="\sum_{}^{}"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">Σ</span><span class="gmd-btn-latex-label">مجموع</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInt" title="تكامل"
+                        data-gmd-latex="\int_{}^{}"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">∫</span><span class="gmd-btn-latex-label">تكامل</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdInfty" title="لا نهاية"
+                        data-gmd-latex="\infty"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">∞</span><span class="gmd-btn-latex-label">لا نهاية</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPi" title="باي"
+                        data-gmd-latex="\pi"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">π</span><span class="gmd-btn-latex-label">باي</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdPm" title="زائد أو ناقص"
+                        data-gmd-latex="\pm"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">±</span><span class="gmd-btn-latex-label">زائد أو ناقص</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdLeq" title="أصغر من أو يساوي"
+                        data-gmd-latex="\leq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≤</span><span class="gmd-btn-latex-label">أصغر من أو
+                            يساوي</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdGeq" title="أكبر من أو يساوي"
+                        data-gmd-latex="\geq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≥</span><span class="gmd-btn-latex-label">أكبر من أو
+                            يساوي</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdNeq" title="لا يساوي"
+                        data-gmd-latex="\neq"><span class="gmd-btn-latex-symbol gmd-btn-latex-symbol--char"
+                            aria-hidden="true">≠</span><span class="gmd-btn-latex-label">لا يساوي</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdArrow" title="سهم"
+                        data-gmd-latex="\rightarrow"><span class="gmd-btn-latex-symbol"><svg class="gmd-icon"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M5 12h14" />
+                                <path d="m13 6 6 6-6 6" />
+                            </svg></span><span class="gmd-btn-latex-label">سهم</span></button>
+                    <button type="button" class="gmd-btn gmd-btn-latex" id="gmdMatrix" title="مصفوفة"
+                        data-gmd-latex="\begin{pmatrix} &amp; \\ &amp; \end{pmatrix}"><span
+                            class="gmd-btn-latex-symbol"><svg class="gmd-icon" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                aria-hidden="true">
+                                <path d="M7 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2" />
+                                <path d="M17 3h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2" />
+                                <line x1="9" y1="9" x2="9" y2="9.01" />
+                                <line x1="15" y1="9" x2="15" y2="9.01" />
+                                <line x1="9" y1="15" x2="9" y2="15.01" />
+                                <line x1="15" y1="15" x2="15" y2="15.01" />
+                            </svg></span><span class="gmd-btn-latex-label">مصفوفة</span></button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -512,6 +512,24 @@ function applyGlobalMdAction(cmd, latex = null, headingLevel = null) {
       }
       case "inlinemath": wrap("$", "$", "math"); break;
       case "blockmath": wrap("$$", "$$", "math"); break;
+      case "highlight": {
+        // `headingLevel` is reused here to carry the chosen swatch color
+        // (a hex/keyword string) from the gmd-highlight dropdown's swatch
+        // buttons — see setupGlobalMdBar's dispatch and the dropdown
+        // markup in create-quiz.html/create-lesson.html. Emits the
+        // `==text==(color)` syntax applyInline() in markdown.js parses —
+        // see that function's "DYNAMIC PER-SPAN COLOR" comment for why the
+        // suffix, rather than always relying on the single page-wide
+        // --md-highlight-color variable, is what lets different runs of
+        // highlighted text carry different colors.
+        const text = selected || "نص مظلل";
+        const color = typeof headingLevel === "string" ? headingLevel : "";
+        const suffix = color ? `(${color})` : "";
+        replaceTextareaRange(ta, start, end, `==${text}==${suffix}`);
+        const cs = start + 2;
+        ta.setSelectionRange(cs, cs + text.length);
+        break;
+      }
     }
   }
 
@@ -694,7 +712,11 @@ function setupGlobalMdBar() {
         return;
       }
       const latex = btn.dataset.gmdLatex !== undefined ? btn.dataset.gmdLatex : null;
-      const heading = btn.dataset.gmdHeading || null;
+      // `heading` doubles as the "extra parameter" slot for cmd="highlight"
+      // buttons (data-gmd-color) — see applyGlobalMdAction's "highlight"
+      // case for why one param is reused rather than threading a fourth
+      // argument through every call site.
+      const heading = btn.dataset.gmdHeading || btn.dataset.gmdColor || null;
       applyGlobalMdAction(cmd, latex, heading);
       // Using a dropdown item closes the dropdown it came from.
       closeAllGmdDropdowns();

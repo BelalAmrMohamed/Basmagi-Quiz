@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════════════════════
-   src/styles/lessons.css
+   src/features/lesson/lesson.css
    Lesson viewer (/lesson/:id) — sections, ToC, embedded blocks, reader prefs.
    Design tokens come from themes.css; markdown body styling comes from
    markdown.css (this file never restyles .md-content itself).
@@ -38,7 +38,8 @@
 
 .lesson-section {
   margin-bottom: 2.5rem;
-  scroll-margin-top: 5rem; /* so ToC jumps clear any sticky header */
+  scroll-margin-top: 5rem;
+  /* so ToC jumps clear any sticky header */
 }
 
 .lesson-section__header {
@@ -105,7 +106,7 @@
   color: var(--color-primary);
 }
 
-.lesson-toc__item.is-active > .lesson-toc__link {
+.lesson-toc__item.is-active>.lesson-toc__link {
   color: var(--color-primary);
   font-weight: 600;
 }
@@ -182,6 +183,55 @@
 
 .lesson-question__verdict.is-wrong {
   color: #ef4444;
+}
+
+/* ── Embedded question: essay variant ────────────────────────────────────────
+   Free-text self-check instead of the MCQ's option buttons — see
+   lesson-blocks.js's renderEssayQuestionBody()/revealEssayAnswer(). */
+
+.lesson-question__essay-input {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.lesson-question__essay-input:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.lesson-question__essay-actions {
+  margin-top: 0.6rem;
+}
+
+.lesson-question__essay-check-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lesson-question__essay-check-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.lesson-question__model-answer {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: var(--color-primary-light, rgba(99, 102, 241, 0.1));
 }
 
 /* ── Quiz reference ────────────────────────────────────────────────────────── */

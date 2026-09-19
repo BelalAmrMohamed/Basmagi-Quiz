@@ -13,7 +13,8 @@
 
 import { renderMarkdown, renderInlineMediaTag } from "../../shared/markdown.js";
 import { escapeHtml } from "../home/escape-html.js";
-import { recordQuestionAnswer, getLessonProgress } from "./lesson-schema.js";
+import { recordQuestionAnswer, appendEssayAnswerText, getLessonProgress } from "./lesson-schema.js";
+import { gradeEssay } from "../../shared/rate-answers.js";
 
 /**
  * KaTeX pass. Ported verbatim from create-quiz.js's renderMathIn() (see the
@@ -121,19 +122,32 @@ function renderQuizRefBlock(block, ctx) {
  * question revealed immediately on answer — see the plan's Phase 2 step 6).
  *
  * Reveal-only: shows correct/incorrect + explanation on click, writes to
- * the local progress state, and never makes a network call.
+ * the local progress state, and never makes a network call. Dispatches on
+ * `block.questionKind` ("mcq", the default for pre-existing rows without
+ * the field, or "essay") to one of two structurally different bodies —
+ * see renderMcqQuestionBody/renderEssayQuestionBody below.
  */
 function renderQuestionBlock(block, ctx) {
   const questionId = block.id || "";
   if (!questionId) return "";
+
+  const prior = getLessonProgress(ctx.lessonId)?.questions?.[questionId] || null;
+  const isEssay = block.questionKind === "essay";
+
+  if (isEssay) {
+    if (!block.modelAnswer) return "";
+    return renderEssayQuestionBody(block, questionId, prior);
+  }
+
   const options = Array.isArray(block.options) ? block.options : [];
   if (options.length === 0) return "";
+  return renderMcqQuestionBody(block, questionId, options, prior);
+}
 
+function renderMcqQuestionBody(block, questionId, options, prior) {
   // Restore a previously-recorded answer so a reload shows the same
   // revealed state the reader left behind (the reveal itself is recomputed
   // from progress by resolveRevealedSections, so these must agree).
-  const prior = getLessonProgress(ctx.lessonId)?.questions?.[questionId] || null;
-
   const optionsHtml = options
     .map(
       (opt, i) =>
@@ -145,6 +159,7 @@ function renderQuestionBlock(block, ctx) {
 
   return (
     `<div class="lesson-block lesson-block--question lesson-question" ` +
+    `data-question-kind="mcq" ` +
     `data-question-id="${escapeHtml(questionId)}" ` +
     `data-correct-index="${Number(block.correctIndex) || 0}"` +
     (prior?.answered ? ` data-answered="true"` : "") +
@@ -153,6 +168,42 @@ function renderQuestionBlock(block, ctx) {
     `<div class="lesson-question__options">${optionsHtml}</div>` +
     `<div class="lesson-question__feedback" hidden>` +
     `<span class="lesson-question__verdict"></span>` +
+    (block.explanation
+      ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
+      : "") +
+    `</div>` +
+    `</div>`
+  );
+}
+
+/**
+ * Essay body: a free-text <textarea> plus a "تحقق" (check) button, rather
+ * than the MCQ's click-an-option interaction. Grading is client-side text
+ * similarity only (gradeEssay(), same function quiz.js uses for its own
+ * essay questions) — never a network call, and never anything that could
+ * be mistaken for a real score: the reveal shows the reader's own answer
+ * next to the model answer and a rough "قريب/بعيد عن الإجابة" read rather
+ * than a numeric grade, since a 0–5 similarity score has no meaning to a
+ * reader outside a scored-quiz context and lessons are never scored (see
+ * the plan's ground rules).
+ */
+function renderEssayQuestionBody(block, questionId, prior) {
+  const priorAnswer = typeof prior?.answerText === "string" ? prior.answerText : "";
+  return (
+    `<div class="lesson-block lesson-block--question lesson-question" ` +
+    `data-question-kind="essay" ` +
+    `data-question-id="${escapeHtml(questionId)}" ` +
+    `data-model-answer="${escapeHtml(block.modelAnswer || "")}"` +
+    (prior?.answered ? ` data-answered="true"` : "") +
+    `>` +
+    `<div class="lesson-question__prompt md-content">${renderMarkdown(block.prompt || "")}</div>` +
+    `<textarea class="lesson-question__essay-input" rows="4" placeholder="اكتب إجابتك هنا…" ${prior?.answered ? "disabled" : ""}>${escapeHtml(priorAnswer)}</textarea>` +
+    `<div class="lesson-question__essay-actions">` +
+    `<button type="button" class="lesson-question__essay-check-btn" ${prior?.answered ? "disabled" : ""}>تحقق من إجابتي</button>` +
+    `</div>` +
+    `<div class="lesson-question__feedback" hidden>` +
+    `<span class="lesson-question__verdict"></span>` +
+    `<div class="lesson-question__model-answer md-content"></div>` +
     (block.explanation
       ? `<div class="lesson-question__explanation md-content">${renderMarkdown(block.explanation)}</div>`
       : "") +
@@ -171,14 +222,14 @@ function renderQuestionBlock(block, ctx) {
  */
 export function equipQuestionBlocks(root, lessonId, onAnswered) {
   if (!root) return;
-  root.querySelectorAll(".lesson-question").forEach((questionEl) => {
+  root.querySelectorAll('.lesson-question[data-question-kind="mcq"]').forEach((questionEl) => {
     const questionId = questionEl.dataset.questionId;
     const correctIndex = Number(questionEl.dataset.correctIndex);
 
     // Replay a stored answer into the DOM without re-firing the handler.
     const prior = getLessonProgress(lessonId)?.questions?.[questionId];
     if (prior?.answered) {
-      revealAnswer(questionEl, correctIndex, prior.wasCorrect, null);
+      revealMcqAnswer(questionEl, correctIndex, prior.wasCorrect, null);
     }
 
     questionEl.querySelectorAll(".lesson-question__option").forEach((optionBtn) => {
@@ -187,14 +238,47 @@ export function equipQuestionBlocks(root, lessonId, onAnswered) {
         const chosen = Number(optionBtn.dataset.optionIndex);
         const wasCorrect = chosen === correctIndex;
         recordQuestionAnswer(lessonId, questionId, wasCorrect);
-        revealAnswer(questionEl, correctIndex, wasCorrect, chosen);
+        revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosen);
         if (typeof onAnswered === "function") onAnswered();
       });
     });
   });
+
+  root.querySelectorAll('.lesson-question[data-question-kind="essay"]').forEach((questionEl) => {
+    const questionId = questionEl.dataset.questionId;
+    const modelAnswer = questionEl.dataset.modelAnswer || "";
+
+    const prior = getLessonProgress(lessonId)?.questions?.[questionId];
+    if (prior?.answered) {
+      revealEssayAnswer(questionEl, modelAnswer, prior.answerText || "");
+    }
+
+    const checkBtn = questionEl.querySelector(".lesson-question__essay-check-btn");
+    const textarea = questionEl.querySelector(".lesson-question__essay-input");
+    checkBtn?.addEventListener("click", () => {
+      if (questionEl.dataset.answered === "true") return; // reveal-once
+      const answerText = textarea?.value || "";
+      // gradeEssay() is a rough 0–5 text-similarity score, purely
+      // client-side (see rate-answers.js) — never a network call, and
+      // never persisted or reported anywhere as a "grade": lessons are
+      // never scored (see the plan's ground rules). It only decides which
+      // of two self-check labels to show next to the model answer.
+      const score = gradeEssay(answerText, modelAnswer);
+      recordQuestionAnswer(lessonId, questionId, score >= 3);
+      // recordQuestionAnswer only stores {answered, wasCorrect} by default
+      // (see lesson-schema.js) — essay questions additionally need their
+      // own answer text preserved so a reload can redisplay what the
+      // reader wrote, so this call directly extends that same stored
+      // entry rather than growing recordQuestionAnswer's signature for a
+      // field only essay questions use.
+      appendEssayAnswerText(lessonId, questionId, answerText);
+      revealEssayAnswer(questionEl, modelAnswer, answerText);
+      if (typeof onAnswered === "function") onAnswered();
+    });
+  });
 }
 
-function revealAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
+function revealMcqAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
   questionEl.dataset.answered = "true";
 
   questionEl.querySelectorAll(".lesson-question__option").forEach((btn) => {
@@ -216,6 +300,42 @@ function revealAnswer(questionEl, correctIndex, wasCorrect, chosenIndex) {
       verdict.classList.toggle("is-correct", wasCorrect);
       verdict.classList.toggle("is-wrong", !wasCorrect);
     }
+    renderMathIn(feedback);
+  }
+}
+
+/**
+ * Reveals an essay question's self-check: disables further editing, shows
+ * the model answer, and labels the reader's own answer "قريب من الإجابة
+ * النموذجية" / "يختلف عن الإجابة النموذجية" based on gradeEssay()'s
+ * similarity score — deliberately NOT a numeric grade (see
+ * renderEssayQuestionBody's header comment on why).
+ */
+function revealEssayAnswer(questionEl, modelAnswer, answerText) {
+  questionEl.dataset.answered = "true";
+
+  const textarea = questionEl.querySelector(".lesson-question__essay-input");
+  if (textarea) {
+    textarea.value = answerText;
+    textarea.disabled = true;
+  }
+  const checkBtn = questionEl.querySelector(".lesson-question__essay-check-btn");
+  if (checkBtn) checkBtn.disabled = true;
+
+  const score = gradeEssay(answerText, modelAnswer);
+  const wasClose = score >= 3;
+
+  const feedback = questionEl.querySelector(".lesson-question__feedback");
+  if (feedback) {
+    feedback.hidden = false;
+    const verdict = feedback.querySelector(".lesson-question__verdict");
+    if (verdict) {
+      verdict.textContent = wasClose ? "إجابتك قريبة من الإجابة النموذجية" : "إجابتك تختلف عن الإجابة النموذجية";
+      verdict.classList.toggle("is-correct", wasClose);
+      verdict.classList.toggle("is-wrong", !wasClose);
+    }
+    const modelEl = feedback.querySelector(".lesson-question__model-answer");
+    if (modelEl) modelEl.innerHTML = `<strong>الإجابة النموذجية:</strong> ${renderMarkdown(modelAnswer || "")}`;
     renderMathIn(feedback);
   }
 }

@@ -29,8 +29,10 @@ const ALLOWED_BLOCK_KEYS_BY_TYPE = {
         "type",
         "id",
         "prompt",
+        "questionKind",
         "options",
         "correctIndex",
+        "modelAnswer",
         "explanation",
         "onWrong",
         "onCorrect",
@@ -109,6 +111,49 @@ function validateBlock(block, index, sectionIds) {
     if (prompt.length > MAX_MARKDOWN_LENGTH) {
         throw new Error(`نص السؤال طويل جداً في العنصر رقم ${index + 1}.`);
     }
+
+    // `questionKind` distinguishes multiple-choice ("mcq", the historical
+    // default when the field is omitted — keeps every pre-existing lesson
+    // row valid without a migration) from a free-text essay question. Kept
+    // as a separate discriminant rather than inferring essay-ness from
+    // "options is absent" so a future third kind doesn't have to hijack an
+    // absence check the way isEssayQuestion() in rate-answers.js infers it
+    // for quizzes (see that file's header comment on why quizzes use a
+    // sentinel answer value instead — lessons don't share that constraint
+    // since this whitelist already rejects unknown shapes outright).
+    const questionKind = block.questionKind === "essay" ? "essay" : "mcq";
+
+    if (questionKind === "essay") {
+        const modelAnswer = typeof block.modelAnswer === "string" ? block.modelAnswer : "";
+        if (!modelAnswer.trim()) {
+            throw new Error(`الإجابة النموذجية مطلوبة للسؤال المقالي في العنصر رقم ${index + 1}.`);
+        }
+        if (modelAnswer.length > MAX_MARKDOWN_LENGTH) {
+            throw new Error(`الإجابة النموذجية طويلة جداً في العنصر رقم ${index + 1}.`);
+        }
+        const clean = {
+            type: "question",
+            id,
+            questionKind: "essay",
+            prompt,
+            modelAnswer,
+        };
+        if (typeof block.explanation === "string" && block.explanation) {
+            clean.explanation = block.explanation.slice(0, MAX_MARKDOWN_LENGTH);
+        }
+        // Essay questions are never auto-graded server-side (client-side
+        // text-similarity only, same as quiz essay questions — see
+        // rate-answers.js's gradeEssay()), so "wrong"/"correct" adaptive
+        // reveal has no reliable signal to key off for this kind. Reject
+        // rather than silently drop, so an author who tried to set one
+        // finds out immediately instead of the rule quietly not firing at
+        // lesson-view time.
+        if (block.onWrong !== undefined || block.onCorrect !== undefined) {
+            throw new Error(`لا يمكن استخدام قواعد الكشف الشرطي مع الأسئلة المقالية (العنصر رقم ${index + 1}).`);
+        }
+        return clean;
+    }
+
     const options = Array.isArray(block.options) ? block.options : [];
     if (options.length < 2) throw new Error(`السؤال في العنصر رقم ${index + 1} يحتاج خيارين على الأقل.`);
     if (options.length > MAX_OPTIONS) throw new Error(`عدد كبير جداً من الخيارات في العنصر رقم ${index + 1}.`);
@@ -124,6 +169,7 @@ function validateBlock(block, index, sectionIds) {
     const clean = {
         type: "question",
         id,
+        questionKind: "mcq",
         prompt,
         options: cleanOptions,
         correctIndex,

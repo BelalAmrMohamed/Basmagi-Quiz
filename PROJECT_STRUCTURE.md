@@ -443,7 +443,6 @@ The map is useful for quickly identifying the layout of the project, understandi
 │   │   │
 │   │   └── styles/ [69.43 KB, 2325 LOC]
 │   │       ├── advanced-liquid-metal-animations.css
-│   │       ├── lessons.css
 │   │       ├── markdown.css
 │   │       └── themes.css
 │   │

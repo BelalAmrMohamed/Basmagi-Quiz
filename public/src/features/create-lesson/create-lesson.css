@@ -100,9 +100,12 @@ body.lesson-form-active {
     min-height: calc(100vh - 80px);
 }
 
+/* 44px app-title-bar + 40px global-md-bar = 84px, plus 10px breathing room
+   — same math as create-quiz.css's body.quiz-form-active .container, now
+   that this page also has the global markdown/LaTeX toolbar fixed below
+   its title bar. */
 body.lesson-form-active .container {
-    margin-top: 44px;
-    /* clears the fixed 44px app-title-bar */
+    margin-top: 94px;
 }
 
 /* ============================================================================
@@ -270,6 +273,14 @@ body.sidebar-expanded .app-title-bar {
 
     .app-title-actions .btn {
         padding: 10px 12px;
+    }
+
+    /* Sidebar collapses off-screen below this breakpoint (see side-menu.css),
+       so both fixed bars should run edge-to-edge rather than leave a gap on
+       the right for a sidebar that isn't actually reserving that space. */
+    .app-title-bar,
+    .global-md-bar {
+        right: 0;
     }
 }
 
@@ -1263,4 +1274,568 @@ body:not(.lesson-form-active) .create-question-navigator {
 .lesson-preview-question li.is-correct {
     color: var(--color-success);
     font-weight: 700;
+}
+
+/* ============================================================================
+   GLOBAL MARKDOWN + LATEX TOOLBAR (#globalMdBar) + WRITE/PREVIEW FIELDS
+   ============================================================================
+   Ported verbatim from create-quiz.css (same #globalMdBar markup, same
+   .md-source/.wp-field write/preview editor shape) so this page gets the
+   exact same authoring toolbar/undo history as create-quiz — see
+   create-lesson.js's setupGlobalMdBar()/applyGlobalMdAction() port and
+   equipMarkdownFields()'s use of mdEditorHtml() for the write/preview
+   fields these rules style. A couple of selectors here reference classes
+   quiz-only (.option-md-wrap, .preview-question) that never appear on
+   this page — harmless dead weight kept so this block stays a literal
+   copy rather than a hand-trimmed one that can drift out of sync.
+   ============================================================================ */
+
+.undo-redo-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.global-md-bar {
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: var(--sidebar-collapsed-width);
+    height: 40px;
+    z-index: 49;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    transition: right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+}
+
+/* When background animations are enabled, --color-surface becomes
+   semi-transparent (see themes.css) so the animated shader shows through
+   panels/cards — appropriate for large surfaces, but this toolbar's text
+   (.gmd-btn-latex in particular) was contrast-checked against an OPAQUE
+   surface color; layering it over a moving, unpredictable background
+   could silently drop it below AA depending on what's rendered behind it
+   at any given moment. backdrop-filter's blur keeps the same "shows
+   through" feel without ever letting the raw background color show
+   through at full strength under the text itself. */
+html[data-animations="enabled"] .global-md-bar {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+/* Same reasoning as .global-md-bar above, but for the dropdown POPOVERS
+   themselves (.gmd-dropdown-menu, .menu-dropdown incl. its submenu
+   variant) — these render position:fixed, detached from the toolbar/menu
+   bar's own DOM box, so they don't inherit that bar's blur just because
+   the bar has one. Each is its own semi-transparent --color-surface panel
+   in Lightfall mode and needs the same treatment, or .gmd-btn-latex's
+   label (and every .menu-option label) is only contrast-safe against an
+   opaque surface that Lightfall mode never actually gives it. */
+html[data-animations="enabled"] .gmd-dropdown-menu,
+html[data-animations="enabled"] .menu-dropdown {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.global-md-bar::-webkit-scrollbar {
+    display: none;
+}
+
+body.sidebar-expanded .global-md-bar {
+    right: var(--sidebar-expanded-width);
+}
+
+.gmd-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.gmd-separator {
+    width: 1px;
+    height: 20px;
+    background: var(--color-border);
+    margin: 0 6px;
+    flex-shrink: 0;
+}
+
+.gmd-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    min-width: 30px;
+    height: 28px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.gmd-btn:hover,
+.gmd-btn:focus-visible {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    outline: none;
+}
+
+.gmd-btn:active {
+    transform: scale(0.93);
+}
+
+/* LaTeX buttons — real icons (see .gmd-icon-math below for the
+   superscript/subscript/fraction/inline-math glyphs, which render their
+   mathematical notation as SVG <text> rather than plain button text: this
+   keeps their exact visual shape — "x" raised/lowered relative to a small
+   exponent, a fraction bar between two glyphs — independent of the
+   surrounding page's font/line-height, which plain text content inside a
+   26px button could not guarantee). Slightly different accent color than
+   the plain-markdown .gmd-btn group so the two toolbar sections stay
+   visually distinguishable at a glance. */
+.gmd-btn-latex {
+    color: var(--color-text-secondary);
+}
+
+.gmd-btn-latex:hover,
+.gmd-btn-latex:focus-visible {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    color: var(--color-primary);
+}
+
+/* The four math buttons whose icon is built from SVG <text> (sup/sub/frac/
+   inline-math) rather than <path> strokes — text needs fill, not stroke.
+   The page is dir="rtl" (Arabic UI), and SVG <text> inherits CSS
+   `direction`; with no explicit text-anchor, RTL direction reverses the
+   glyph's flow from its x coordinate, pushing it off the left edge of the
+   viewBox entirely (this is what made #gmdSup / #gmdSub render as empty
+   buttons). Forcing ltr here keeps every math glyph anchored the way its
+   x/y coordinates were authored, independent of page direction. */
+.gmd-icon-math text {
+    fill: currentColor;
+    direction: ltr;
+    unicode-bidi: bidi-override;
+}
+
+/* Tooltip for "no field focused" state — shown via JS as a brief flash */
+.gmd-no-field-tip {
+    position: fixed;
+    top: calc(44px + 40px + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-text-primary);
+    color: var(--color-surface);
+    font-size: 0.82rem;
+    padding: 5px 14px;
+    border-radius: 6px;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+    white-space: nowrap;
+}
+
+.gmd-no-field-tip.visible {
+    opacity: 1;
+}
+
+/* ── Dropdown toggles (heading levels, "more" LaTeX symbols) ────────────── */
+/* .gmd-dropdown-menu uses position:fixed (set via inline top/left in JS,
+   anchored to its toggle button) rather than position:absolute. The
+   toolbar itself scrolls horizontally (overflow-x: auto) and clips
+   vertical overflow (overflow-y: hidden) so its buttons don't visually
+   spill past the fixed bar's height — an absolutely-positioned dropdown
+   anchored inside it would be clipped by that same overflow:hidden and
+   never actually appear. Fixed positioning escapes the clipping ancestor
+   entirely. */
+.gmd-dropdown {
+    position: relative;
+}
+
+.gmd-dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.gmd-dropdown-toggle .gmd-caret {
+    width: 9px;
+    height: 9px;
+    opacity: 0.7;
+}
+
+/* Icon glyphs inside .gmd-btn (bold/italic/heading/etc.) — sized to sit
+   comfortably inside the 26px-tall button without the button growing. */
+.gmd-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.gmd-dropdown-menu {
+    position: fixed;
+    z-index: 200;
+    display: none;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+}
+
+.gmd-dropdown-menu.open {
+    display: flex;
+}
+
+/* Heading menu: single column list, one level per row */
+.gmd-dropdown-menu--headings {
+    flex-direction: column;
+    min-width: 130px;
+}
+
+.gmd-dropdown-menu--headings .gmd-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 6px 10px;
+    height: auto;
+}
+
+/* LaTeX "more" menu: one symbol per row, label next to it, so each command
+   is identifiable without hovering for the tooltip. */
+.gmd-dropdown-menu--latex {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 210px;
+    max-width: 260px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 12px;
+    height: auto;
+    padding: 4px 12px;
+    border-radius: 6px;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex-symbol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    flex-shrink: 0;
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex-symbol .gmd-icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* Mathematical notation (Σ, ∫, π, ±, ≤, ≥, ≠, ∞) has no meaningful icon
+   beyond the symbol itself, so these render as styled glyphs rather than
+   plain inline text — sized and weighted to match the SVG icons next to
+   them in the same menu. */
+.gmd-dropdown-menu--latex .gmd-btn-latex-symbol--char {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+/* Highlight color menu: one swatch per row, a colored dot next to the
+   color's name — same list shape as the LaTeX "more" menu so the two
+   dropdowns feel like the same UI family. */
+.gmd-dropdown-menu--highlight {
+    flex-direction: column;
+    gap: 2px;
+    min-width: 130px;
+}
+
+.gmd-highlight-swatch {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    text-align: right;
+}
+
+.gmd-highlight-swatch:hover,
+.gmd-highlight-swatch:focus-visible {
+    background: var(--color-surface-hover, rgba(127, 127, 127, 0.12));
+}
+
+.gmd-highlight-swatch::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--swatch-color);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.gmd-dropdown-menu--latex .gmd-btn-latex-label {
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+}
+
+.wp-field {
+    width: 100%;
+    border: 2px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-background);
+    transition:
+        border-color 0.18s,
+        box-shadow 0.18s;
+}
+
+.wp-field:focus-within {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.wp-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    flex-wrap: wrap;
+}
+
+.wp-tabs {
+    display: flex;
+    gap: 2px;
+}
+
+.wp-tab {
+    padding: 9px 14px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
+    margin-bottom: -1px;
+}
+
+.wp-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.wp-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.wp-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 0;
+}
+
+.wp-tool-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 5px;
+    background: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    transition:
+        background 0.15s,
+        color 0.15s;
+}
+
+.wp-tool-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.wp-tool-btn:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.wp-tool-dropdown {
+    position: relative;
+}
+
+.wp-heading-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    min-width: 110px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    box-shadow: var(--shadow-lg);
+    padding: 4px;
+    gap: 1px;
+}
+
+.wp-heading-option {
+    display: block;
+    width: 100%;
+    text-align: right;
+    padding: 6px 10px;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.wp-heading-option:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.wp-pane-wrap {
+    position: relative;
+}
+
+/* Selectors are doubled up (`.form-group textarea.wp-textarea` as well as
+   plain `.wp-textarea`) so this wins in the cascade over the generic
+   `.form-group textarea` / `.form-group textarea:focus` rules above.
+   Question-text and explanation fields render `.wp-textarea` *inside* a
+   `.form-group` (see renderQuestion()), so without this the more-specific
+   `.form-group textarea` rule was winning instead — giving the field its
+   own 2px border, its own `resize: vertical`, and on focus its own
+   border-color + box-shadow ring stacked directly on top of .wp-field's
+   ring below. That combination was both the visible "double border" and
+   the manual resize handle the field wasn't supposed to have. */
+.form-group textarea.wp-textarea,
+.wp-textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: var(--color-background);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: none;
+    box-sizing: border-box;
+    display: block;
+    overflow: hidden;
+    direction: rtl;
+}
+
+/* The focus ring lives on the outer .wp-field wrapper (border-color +
+   box-shadow above). Without this, the textarea's own default browser
+   focus outline — and, inside a .form-group, the generic
+   `.form-group textarea:focus` border/box-shadow — drew on top of that
+   ring at the same time, making an active field look like it had two
+   borders stacked on each other. */
+.form-group textarea.wp-textarea:focus,
+.wp-textarea:focus,
+.wp-textarea:focus-visible {
+    outline: none;
+    border: none;
+    box-shadow: none;
+    transform: none;
+}
+
+/* GitHub-style drag-and-drop media embedding: visual feedback while a file
+   is dragged over a markdown field (question text, options, explanation,
+   essay/formal answer — every .md-source textarea gets this via
+   setupMarkdownMediaDropzone). Applied to the textarea's wrapper so the
+   whole field visibly lights up as a drop target. */
+.wp-field:has(.md-source--drag-active) {
+    border-color: var(--gradient-start, #6366f1);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gradient-start, #6366f1) 25%, transparent);
+}
+
+.md-source--drag-active {
+    background: color-mix(in srgb, var(--gradient-start, #6366f1) 6%, var(--color-background));
+}
+
+.wp-preview-pane {
+    min-height: 60px;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    word-break: break-word;
+}
+
+.wp-footer {
+    padding: 6px 14px;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.wp-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--color-text-tertiary);
+    font-size: 0.75rem;
+}
+
+.md-placeholder {
+    color: var(--color-text-tertiary);
+    font-style: italic;
+    pointer-events: none;
+}
+
+.wp-preview-pane .inline-code,
+.preview-question .inline-code,
+.option-md-wrap .inline-code {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: "Fira Code", "Courier New", monospace;
+    font-size: 0.88em;
+    font-style: normal;
 }
