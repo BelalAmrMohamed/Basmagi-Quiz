@@ -7,7 +7,7 @@ I'm continuing work on `docs/plans/lessons-feature-plan.md`'s Phase 3 (`/create-
    **⚠️ This file was left mid-verification** — there was an unresolved LF/CRLF inconsistency spotted in its head section (around the copied anti-flash comment block) that was never fixed. **First step: re-check `create-lesson.html` end-to-end for line-ending consistency and balanced tags before building anything else on top of it.**
 
 **Not started yet — build these next:**
-1. **`public/src/features/lesson/create-lesson.js`** — the actual editor logic. Needs:
+1. **`public/src/features/create-lesson/create-lesson.js`** — the actual editor logic. Needs:
    - Entry-screen wiring: gate on admin auth (`isAdminAuthenticated()`/`getAdminRoleInfo()` from `adminAuth.js`); fetch the admin's own lessons directly from Supabase (`ensureSharedSupabaseClient()`) filtered by `created_by` (or list all if `roleInfo.isOwner`); render as tiles; "new lesson" tile starts a blank draft.
    - Section-list CRUD: add/remove/reorder sections. Use simple up/down move buttons for reordering rather than porting drag-and-drop machinery from `user-quizzes-folders.js` or `question-navigator.js` — neither is a close-enough fit to justify the port (this was a deliberate scoping decision made last session; feel free to revisit if there's a cleaner path, but don't default to a heavy port).
    - Per-block editors for `markdown`, `media`, `quizRef`, `question` block types (see `public/src/features/lesson/lesson-schema.js`'s `normalizeLessonContent()` and `api/_validateLesson.js` for the exact allowed shape/fields per block type — validation is strict/whitelist-based server-side, so match it exactly).

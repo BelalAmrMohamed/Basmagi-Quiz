@@ -289,7 +289,7 @@ two mutually-exclusive edit modes, bulk mode, reorder mode, a templates
 panel, and its own KaTeX/media/AI-agent wiring already. Threading a second
 content type through it turns every future quiz-editor change into a
 "does this also affect lessons" question. Build a new
-`public/create-lesson.html` + `public/src/features/lesson/create-lesson.js`
+`public/create-lesson.html` + `public/src/features/create-lesson/create-lesson.js`
 that **imports** shared pieces (`markdown.js`, `ai-agent.js`, the same
 media-upload helpers `create-quiz.js` uses if they're not quiz-specific —
 check `media-resolve.js`/`media-url.js` for that) rather than sharing the
